@@ -3,5 +3,15 @@ project(Saena)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES main.cpp)
+include_directories(
+        include
+)
+
+
+set(SOURCE_FILES
+        src/main.cpp
+        include/cssmatrix.h
+        src/cssmatrix.cpp
+        )
+
 add_executable(Saena ${SOURCE_FILES})
