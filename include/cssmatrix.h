@@ -10,8 +10,7 @@ using namespace std;
 
 #define matrixTol 1.e-6
 /**
- *
- * @author Abaris Majid
+ * @author Majid
  * @breif Contains the basic structure to define css matrices
  *
  * */
@@ -28,14 +27,11 @@ public:
     int *pointerE;
 
 
-
     //CSSMatrix();
     /**
-     * @author
+     * @param[in] M Number of rows in the matrix
      * @param[in] N Number of columns in the matrix
-     * @param[in]
-     *
-     *
+     * @param[in] A is a pointer to the matrix
      * */
     CSSMatrix(int M, int N, double** A);
     ~CSSMatrix();
@@ -45,8 +41,6 @@ public:
 
     //CSSMatrix& newsize(int M, int N, int nnz);
     //double& set(int i, int j);
-
-
 
 /*
     double* matvec(double v);

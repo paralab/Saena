@@ -5,7 +5,7 @@ using namespace std;
 
 int main() {
 
-    int M = 3;
+    int M = 1000;
     int N = M;
 
     double ** A = (double **)malloc(sizeof(double*)*M);
@@ -18,6 +18,7 @@ int main() {
 
 
     CSSMatrix B (M,N,A);
+
 
     for(unsigned int i=0;i<M;i++)
         delete [] A[i];

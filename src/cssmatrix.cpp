@@ -6,8 +6,6 @@
 
 CSSMatrix::CSSMatrix(int s1, int s2, double** A){
 
-    cout<<"constructor!"<<endl;
-
     M = s1;
     N = s2;
     unsigned int nz = 0;
@@ -44,5 +42,8 @@ CSSMatrix::CSSMatrix(int s1, int s2, double** A){
 
 CSSMatrix::~CSSMatrix()
 {
-
+    free(values);
+    free(rows);
+    free(pointerB);
+    free(pointerE);
 }
