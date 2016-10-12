@@ -1,5 +1,5 @@
 #include <iostream>
-#include "cssmatrix.h"
+#include "cscmatrix.h"
 using namespace std;
 
 
@@ -16,9 +16,16 @@ int main() {
         for(unsigned int j=0;j<N;j++)
             A[i][j]=i+j;
 
+    CSCMatrix B (M,N,A);
 
-    CSSMatrix B (M,N,A);
 
+    double* v = (double*) malloc(sizeof(double)*N);
+    double* w = (double*) malloc(sizeof(double)*N);
+
+    for(unsigned int i=0;i<N;i++)
+        v[i] = i+1;
+
+    B.matvec(v, w, M, N);
 
     for(unsigned int i=0;i<M;i++)
         delete [] A[i];
