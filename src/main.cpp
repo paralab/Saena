@@ -1,5 +1,6 @@
 #include <iostream>
 #include "cscmatrix.h"
+#include "csrmatrix.h"
 using namespace std;
 
 
@@ -18,7 +19,6 @@ int main() {
 
     CSCMatrix B (M,N,A);
 
-
     double* v = (double*) malloc(sizeof(double)*N);
     double* w = (double*) malloc(sizeof(double)*N);
 
@@ -26,6 +26,10 @@ int main() {
         v[i] = i+1;
 
     B.matvec(v, w, M, N);
+
+    for(unsigned int i=0;i<N;i++)
+        cout << "w = " << w[i] << endl;
+
 
     for(unsigned int i=0;i<M;i++)
         delete [] A[i];

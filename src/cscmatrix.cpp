@@ -46,8 +46,9 @@ CSCMatrix::~CSCMatrix()
 }
 
 void CSCMatrix::matvec(double* v, double* w, int M, int N){
-    for(unsigned int i=0;i<nnz;i++) {
-        w[rows[i]] += values[i] * v[rows[i]];
-        //w[i] += A[i][j] * v[j];
+    for(unsigned int i=0;i<N;i++) {
+        for(int j=colIndex[i];j<colIndex[i+1];j++) {
+            w[i] += values[j] * v[rows[j]];
+        }
     }
 }
