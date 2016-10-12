@@ -5,7 +5,7 @@ using namespace std;
 
 int main() {
 
-    int M = 1000;
+    int M = 3;
     int N = M;
 
     double ** A = (double **)malloc(sizeof(double*)*M);

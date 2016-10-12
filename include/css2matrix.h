@@ -1,9 +1,9 @@
 //
-// Created by abaris on 10/11/16.
+// Created by abaris on 10/12/16.
 //
 
-#ifndef SAENA_CSSMATRIX_H
-#define SAENA_CSSMATRIX_H
+#ifndef SAENA_CSS2MATRIX_H
+#define SAENA_CSS2MATRIX_H
 
 #include <iostream>
 using namespace std;
@@ -14,27 +14,27 @@ using namespace std;
  * @breif Contains the basic structure to define css matrices
  *
  * */
-class CSSMatrix {
+class CSS2Matrix {
 
 public:
 
     unsigned int nnz;
     int M;
     int N;
+    double *values ;
+    int *rows ;
+    int *pointerB ;
+    int *pointerE;
 
-    double *values;
-    int *rows;
-    int *colIndex;
 
-
-    //CSSMatrix();
+    //CSS2Matrix();
     /**
      * @param[in] M Number of rows in the matrix
      * @param[in] N Number of columns in the matrix
      * @param[in] A is a pointer to the matrix
      * */
-    CSSMatrix(int M, int N, double** A);
-    ~CSSMatrix();
+    CSS2Matrix(int M, int N, double** A);
+    ~CSS2Matrix();
 
     //int& rowIndex(int i) { return ; }
     //int& colPtr(int i) { return ;}
@@ -48,4 +48,4 @@ public:
 
 };
 
-#endif //SAENA_CSSMATRIX_H
+#endif //SAENA_CSS2MATRIX_H

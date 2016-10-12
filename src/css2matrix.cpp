@@ -2,9 +2,9 @@
 // Created by abaris on 10/11/16.
 //
 
-#include "cssmatrix.h"
+#include "css2matrix.h"
 
-CSSMatrix::CSSMatrix(int s1, int s2, double** A){
+CSS2Matrix::CSS2Matrix(int s1, int s2, double** A){
 
     M = s1;
     N = s2;
@@ -19,13 +19,15 @@ CSSMatrix::CSSMatrix(int s1, int s2, double** A){
     }
     nnz = nz;
 
-    values      = (double*)malloc(sizeof(double)*nnz);
-    rows        = (int*)malloc(sizeof(int)*nnz);
-    colIndex    = (int*)malloc(sizeof(int)*(N+1));
+    values = (double*)malloc(sizeof(double)*nnz);
+    rows = (int*)malloc(sizeof(int)*nnz);
+    pointerB  = (int*)malloc(sizeof(int)*N);
+    pointerE = (int*)malloc(sizeof(int)*N);
 
-    colIndex[0] = 0;
     int iter = 0;
     for(int j=0; j<N; j++){
+        pointerB[j] = iter;
+
         for(int i=0; i<M; i++){
             if (A[i][j] > matrixTol){
                 values[iter] = A[i][j];
@@ -33,14 +35,15 @@ CSSMatrix::CSSMatrix(int s1, int s2, double** A){
                 iter++;
             }
         } //for j
-        colIndex[j+1] = iter;
+        pointerE[j] = iter;
     } //for i
 
 }
 
-CSSMatrix::~CSSMatrix()
+CSS2Matrix::~CSS2Matrix()
 {
     free(values);
     free(rows);
-    free(colIndex);
+    free(pointerB);
+    free(pointerE);
 }
