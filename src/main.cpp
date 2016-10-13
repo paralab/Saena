@@ -2,8 +2,8 @@
 #include "cscmatrix.h"
 #include "csrmatrix.h"
 #include "mpi.h"
-using namespace std;
 
+using namespace std;
 
 int main() {
 
@@ -20,8 +20,8 @@ int main() {
     for(unsigned int i=0;i<M;i++)
         A[i]=(double*) malloc(sizeof(double)*N);
 
-    double* v = (double*) malloc(sizeof(double)*N);
-    double* w = (double*) malloc(sizeof(double)*N);
+    double* v = (double*) malloc(sizeof(double)*M);
+    double* w = (double*) malloc(sizeof(double)*M);
 
     if (rank ==0){
         A[0][0] = 2;
