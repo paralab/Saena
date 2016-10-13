@@ -5,7 +5,7 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char** argv) {
 
     MPI_Init(NULL, NULL);
     int p;
@@ -77,9 +77,9 @@ int main() {
                     w[B.rows[j]] += B.values[j] * v_remote;
             }
         }
-    } else if (rank == 1){
+    } else if (rank == p-1){
         source = -1;
-        for(int i=0;i<vStart;i++){
+        for(int i=1;i<vStart;i++){
             //update source for receive
             if(i%vSize) source++;
 
@@ -92,11 +92,12 @@ int main() {
         B.matvec(v, w, M, N);
     }else{
         source = -1;
-        for(int i=0;i<vStart;i++){
+        for(int i=1;i<vStart;i++){
             //update source for receive
             if(i%vSize) source++;
 
             if(B.colIndex[i] - B.colIndex[i-1] > 0){
+                // v_remote is v[i-1] in the bigV, and v[i-1]%vSize on the source V (i.e. small v)
                 MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 for (int j=B.colIndex[i]; j<B.colIndex[i+1]; j++)
                     w[B.rows[j]] += B.values[j] * v_remote;
