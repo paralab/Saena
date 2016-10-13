@@ -25,6 +25,9 @@ public:
     double *values;
     int *rows;
     int *colIndex;
+    void valprint();
+    void rowprint();
+    void colprint();
 
 
     //CSSMatrix();
