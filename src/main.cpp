@@ -67,13 +67,13 @@ int main(int argc, char** argv) {
         B.matvec(v, w, M, N);
 
         source = 0;
-        for(int i=vEnd;i<N;i++){
+        for(int i=vEnd;i<N+1;i++){
             //update source for receive
             if(i%vSize) source++;
 
             if(B.colIndex[i] - B.colIndex[i-1] > 0){
                 MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int j=B.colIndex[i]; j<B.colIndex[i+1]; j++)
+                for (int j=B.colIndex[i-1]; j<B.colIndex[i]; j++)
                     w[B.rows[j]] += B.values[j] * v_remote;
             }
         }
@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 
             if(B.colIndex[i] - B.colIndex[i-1] > 0){
                 MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int j=B.colIndex[i]; j<B.colIndex[i+1]; j++)
+                for (int j=B.colIndex[i-1]; j<B.colIndex[i]; j++)
                     w[B.rows[j]] += B.values[j] * v_remote;
             }
         }
@@ -99,21 +99,22 @@ int main(int argc, char** argv) {
             if(B.colIndex[i] - B.colIndex[i-1] > 0){
                 // v_remote is v[i-1] in the bigV, and v[i-1]%vSize on the source V (i.e. small v)
                 MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int j=B.colIndex[i]; j<B.colIndex[i+1]; j++)
+                for (int j=B.colIndex[i-1]; j<B.colIndex[i]; j++)
                     w[B.rows[j]] += B.values[j] * v_remote;
             }
         }
 
+        //change the domain of the for loop in matvec function for this part.
         B.matvec(v, w, M, N);
 
         source += vSize;
-        for(int i=vEnd;i<N;i++){
+        for(int i=vEnd;i<N+1;i++){
             //update source for receive
             if(i%vSize) source++;
 
             if(B.colIndex[i] - B.colIndex[i-1] > 0){
                 MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int j=B.colIndex[i]; j<B.colIndex[i+1]; j++)
+                for (int j=B.colIndex[i-1]; j<B.colIndex[i]; j++)
                     w[B.rows[j]] += B.values[j] * v_remote;
             }
         }
