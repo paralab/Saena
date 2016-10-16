@@ -1,4 +1,5 @@
 #include <iostream>
+#include "coomatrix.h"
 #include "cscmatrix.h"
 #include "csrmatrix.h"
 #include "mpi.h"
@@ -54,12 +55,13 @@ int main(int argc, char** argv) {
         v[1] = 2;
     }
 
-    CSCMatrix B (M,N,A);
+    COOMatrix B (M,N,A);
 
     int vSize = M/p;
     int vStart = rank * vSize;
     int vEnd = vStart + vSize;
 
+    /*
     int source;
     double v_remote;
 
@@ -119,7 +121,7 @@ int main(int argc, char** argv) {
             }
         }
     }
-
+*/
 
     /*
     for(unsigned int i=0;i<M;i++)
