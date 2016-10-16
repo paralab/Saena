@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int M = 2;
+    int M = 6/p;
     int N = 6;
 
     double ** A = (double **)malloc(sizeof(double*)*M);
@@ -55,11 +55,14 @@ int main(int argc, char** argv) {
         v[1] = 2;
     }
 
-    COOMatrix B (M,N,A);
+    COOMatrix B (M, N, A, 3, rank);
 
-    int vSize = M/p;
-    int vStart = rank * vSize;
-    int vEnd = vStart + vSize;
+    if (rank == 2) {
+        cout << "nnz = " << B.nnz << endl;
+        B.colprint();
+        B.vElementprint();
+        B.vProcessprint();
+    }
 
     /*
     int source;

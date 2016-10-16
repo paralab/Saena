@@ -4,11 +4,15 @@
 
 #include "coomatrix.h"
 
-COOMatrix::COOMatrix(int s1, int s2, double** A) {
+COOMatrix::COOMatrix(int s1, int s2, double** A, int p, int rank) {
 
     M = s1;
     N = s2;
     unsigned int nz = 0;
+
+    int vSize = M;
+    int vStart = rank * vSize;
+    int vEnd = vStart + vSize;
 
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
@@ -22,26 +26,38 @@ COOMatrix::COOMatrix(int s1, int s2, double** A) {
     values = (double *) malloc(sizeof(double) * nnz);
     row = (int *) malloc(sizeof(int) * nnz);
     col = (int *) malloc(sizeof(int) * nnz);
+    proc = (int *) malloc(sizeof(int) * nnz);
 
+    int procNo = -1 ;
     int iter = 0;
     for (int j = 0; j < N; j++) {
+        if(j%vSize == 0) procNo++;
         for (int i = 0; i < M; i++) {
             if (A[i][j] > matrixTol) {
                 values[iter] = A[i][j];
                 row[iter] = i;
                 col[iter] = j;
+                proc[iter] = procNo;
                 iter++;
             }
         } //for i
     } //for j
 
-    vElements = (int *) malloc(sizeof(int) * nnz);
-    vElements[0] = col[0];
-    vElementSize = 0;
-    for (unsigned int colIter = 1; colIter < nnz; colIter++) {
-        if (vElements[vElementSize] != col[colIter]){
+
+    vElement = (int *) malloc(sizeof(int) * nnz);
+    vElement[0] = col[0];
+    vElementSize = 1;
+
+    vProcess = (int *) malloc(sizeof(int) * nnz);
+    // fix this part:  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    vProcess[0] = 0;
+
+    for (unsigned int colIter = 1; colIter < nnz; ++colIter) {
+
+        if (vElement[vElementSize-1] != col[colIter]){
+            vElement[vElementSize] = col[colIter];
+            vProcess[vElementSize] = proc[colIter];
             vElementSize++;
-            vElements[vElementSize] = col[colIter];
         }
     }
 }
@@ -51,6 +67,8 @@ COOMatrix::~COOMatrix()
     free(values);
     free(row);
     free(col);
+    free(vElement);
+    free(vProcess);
 }
 
 void COOMatrix::matvec(double* v, double* w, int M, int N){
@@ -84,7 +102,14 @@ void COOMatrix::colprint(){
 void COOMatrix::vElementprint(){
     cout << "vElement:" << endl;
     for(unsigned int i=0;i<vElementSize;i++) {
-        cout << vElements[i] << endl;
+        cout << vElement[i] << endl;
+    }
+}
+
+void COOMatrix::vProcessprint(){
+    cout << "vProcess:" << endl;
+    for(unsigned int i=0;i<vElementSize;i++) {
+        cout << vProcess[i] << endl;
     }
 }
 
