@@ -14,7 +14,7 @@ using namespace std;
  * @breif Contains the basic structure to define csc matrices
  *
  * */
-class CSCMatrix {
+class COOMatrix {
 
 public:
 
@@ -25,23 +25,26 @@ public:
     double *values;
     int *row;
     int *col;
+    int *vElements;
+    int vElementSize;
     void valprint();
     void rowprint();
     void colprint();
+    void vElementprint();
     void print();
     void matvec(double* v, double* w, int M, int N);
 
-    //CSSMatrix();
+    //COOMatrix();
     /**
      * @param[in] M Number of rows in the matrix
      * @param[in] N Number of columns in the matrix
      * @param[in] A is a pointer to the matrix
      * */
-    CSCMatrix(int M, int N, double** A);
-    ~CSCMatrix();
+    COOMatrix(int M, int N, double** A);
+    ~COOMatrix();
 
     // for sparsifying:
-    //CSCMatrix& newsize(int M, int N, int nnz);
+    //COOMatrix& newsize(int M, int N, int nnz);
     //double& set(int i, int j);
 
 };
