@@ -25,12 +25,15 @@ public:
     double *values;
     int *row;
     int *col;
-    int *vElements;
+    int *proc;
+    int *vElement;
     int vElementSize;
+    int *vProcess;
     void valprint();
     void rowprint();
     void colprint();
     void vElementprint();
+    void vProcessprint();
     void print();
     void matvec(double* v, double* w, int M, int N);
 
@@ -40,7 +43,7 @@ public:
      * @param[in] N Number of columns in the matrix
      * @param[in] A is a pointer to the matrix
      * */
-    COOMatrix(int M, int N, double** A);
+    COOMatrix(int M, int N, double** A, int p, int rank);
     ~COOMatrix();
 
     // for sparsifying:
