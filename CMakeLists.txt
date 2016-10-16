@@ -10,13 +10,14 @@ include_directories(
         include
 )
 
-
 set(SOURCE_FILES
         src/main.cpp
         include/cscmatrix.h
         src/cscmatrix.cpp
         include/csrmatrix.h
         src/csrmatrix.cpp
+        include/coomatrix.h
+        src/coomatrix.cpp
         )
 
 add_executable(Saena ${SOURCE_FILES})
