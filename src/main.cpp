@@ -55,91 +55,12 @@ int main(int argc, char** argv) {
         v[1] = 2;
     }
 
-    COOMatrix B (M, N, A, 3, rank);
-
-    if (rank == 2) {
-        cout << "nnz = " << B.nnz << endl;
-        B.colprint();
-        B.vElementprint();
-        B.vProcessprint();
-    }
-
-    /*
-    int source;
-    double v_remote;
-
-    if (rank == 0){
-        B.matvec(v, w, M, N);
-
-        source = 0;
-        for(int i=vEnd;i<N+1;i++){
-            //update source for receive
-            if(i%vSize) source++;
-
-            if(B.colIndex[i] - B.colIndex[i-1] > 0){
-                MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int j=B.colIndex[i-1]; j<B.colIndex[i]; j++)
-                    w[B.rows[j]] += B.values[j] * v_remote;
-            }
-        }
-    } else if (rank == p-1){
-        source = -1;
-        for(int i=1;i<vStart;i++){
-            //update source for receive
-            if(i%vSize) source++;
-
-            if(B.colIndex[i] - B.colIndex[i-1] > 0){
-                MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int j=B.colIndex[i-1]; j<B.colIndex[i]; j++)
-                    w[B.rows[j]] += B.values[j] * v_remote;
-            }
-        }
-        B.matvec(v, w, M, N);
-    }else{
-        source = -1;
-        for(int i=1;i<vStart;i++){
-            //update source for receive
-            if(i%vSize) source++;
-
-            if(B.colIndex[i] - B.colIndex[i-1] > 0){
-                // v_remote is v[i-1] in the bigV, and v[i-1]%vSize on the source V (i.e. small v)
-                MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int j=B.colIndex[i-1]; j<B.colIndex[i]; j++)
-                    w[B.rows[j]] += B.values[j] * v_remote;
-            }
-        }
-
-        //change the domain of the for loop in matvec function for this part.
-        B.matvec(v, w, M, N);
-
-        source += vSize;
-        for(int i=vEnd;i<N+1;i++){
-            //update source for receive
-            if(i%vSize) source++;
-
-            if(B.colIndex[i] - B.colIndex[i-1] > 0){
-                MPI_Recv(&v_remote, 1, MPI_DOUBLE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int j=B.colIndex[i-1]; j<B.colIndex[i]; j++)
-                    w[B.rows[j]] += B.values[j] * v_remote;
-            }
-        }
-    }
-*/
-
-    /*
-    for(unsigned int i=0;i<M;i++)
-        for(unsigned int j=0;j<N;j++)
-            A[i][j]=i+j;
-
-    for(unsigned int i=0;i<N;i++)
-        v[i] = i+1;
+    COOMatrix B (M, N, A);
 
     B.matvec(v, w, M, N);
 
-    for(unsigned int i=0;i<N;i++)
-        cout << "w = " << w[i] << endl;
-*/
-
+    for(unsigned int i=0;i<M;i++)
+        cout << w[i] << endl;
 
     free(v);
     free(w);
