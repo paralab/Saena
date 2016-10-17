@@ -16,11 +16,15 @@ using namespace std;
  * */
 class COOMatrix {
 
-public:
+private:
+    int *vIndex;
+    int *vIndexCount;
+    int *recvCount;
 
-    unsigned int nnz;
+public:
     int M;
     int N;
+    unsigned int nnz;
 
     double *values;
     int *row;
@@ -43,7 +47,7 @@ public:
      * @param[in] N Number of columns in the matrix
      * @param[in] A is a pointer to the matrix
      * */
-    COOMatrix(int M, int N, double** A, int p, int rank);
+    COOMatrix(int M, int N, double** A);
     ~COOMatrix();
 
     // for sparsifying:
