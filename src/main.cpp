@@ -14,8 +14,11 @@ int main(int argc, char** argv) {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int M = 6/p;
-    int N = 6;
+/*    int M = 6/p;
+    int N = 6;*/
+
+    int M = 16/p;
+    int N = 16;
 
     double ** A = (double **)malloc(sizeof(double*)*M);
     for(unsigned int i=0;i<M;i++)
@@ -24,7 +27,7 @@ int main(int argc, char** argv) {
     double* v = (double*) malloc(sizeof(double)*M);
     double* w = (double*) malloc(sizeof(double)*M);
 
-    if (rank ==0){
+/*    if (rank ==0){
         A[0][0] = 2;
         A[0][1] = 3;
         A[1][1] = 6;
@@ -53,12 +56,50 @@ int main(int argc, char** argv) {
 
         v[0] = 7;
         v[1] = 2;
+    }*/
+
+    if (rank ==0){
+        for(unsigned int i=0;i<M;i++)
+            for(unsigned int j=0;j<N;j++)
+                A[i][j]=i+j;
+        for(unsigned int i=0;i<M;i++)
+            v[i] = i;
+    } else if (rank == 1){
+        for(unsigned int i=0;i<M;i++)
+            for(unsigned int j=0;j<N;j++)
+                A[i][j]=i+j+4;
+        for(unsigned int i=0;i<M;i++)
+            v[i] = i+4;
+    } else if (rank == 2){
+        for(unsigned int i=0;i<M;i++)
+            for(unsigned int j=0;j<N;j++)
+                A[i][j]=i+j+8;
+        for(unsigned int i=0;i<M;i++)
+            v[i] = i+8;
+    }else{
+        for(unsigned int i=0;i<M;i++)
+            for(unsigned int j=0;j<N;j++)
+                A[i][j]=i+j+12;
+        for(unsigned int i=0;i<M;i++)
+            v[i] = i+12;
+    }
+
+    int a;
+    if (rank == 0) {
+        cout << endl<< "result should be: " << endl;
+        for(unsigned int i=0;i<N;i++){
+            a = 0;
+            for(unsigned int j=0;j<N;j++)
+                a += (i+j) * j;
+            cout << a << endl;
+        }
     }
 
     COOMatrix B (M, N, A);
 
     B.matvec(v, w, M, N);
 
+    if (rank == 0) cout << endl << "result of matvec: " << endl;
     for(unsigned int i=0;i<M;i++)
         cout << w[i] << endl;
 

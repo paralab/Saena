@@ -16,8 +16,6 @@ COOMatrix::COOMatrix(int s1, int s2, double** A) {
     N = s2;
 
     int vSize = M;
-    int vStart = rank * vSize;
-    //int vEnd = vStart + vSize;
 
     nnz = 0;
     for (int i = 0; i < M; i++) {
@@ -31,8 +29,10 @@ COOMatrix::COOMatrix(int s1, int s2, double** A) {
     values = (double *) malloc(sizeof(double) * nnz);
     row = (int *) malloc(sizeof(int) * nnz);
     col = (int *) malloc(sizeof(int) * nnz);
-    proc = (int *) malloc(sizeof(int) * nnz);
     recvCount = (int*)malloc(sizeof(int)*p);
+    vElement = (int *) malloc(sizeof(int) * nnz);
+    vElementRep = (int *) malloc(sizeof(int) * nnz);
+    vElementSize = 0;
 
     int procNo = -1;
     int iter = 0;
@@ -43,8 +43,23 @@ COOMatrix::COOMatrix(int s1, int s2, double** A) {
                 values[iter] = A[i][j];
                 row[iter] = i;
                 col[iter] = j;
-                proc[iter] = procNo;
-                recvCount[procNo] = recvCount[procNo] + 1;
+
+                if(iter > 0){
+                    if(col[iter] == col[iter-1]){
+                        vElementRep[vElementSize-1] = vElementRep[vElementSize-1] + 1;
+                    }else{
+                        vElement[vElementSize] = col[iter];
+                        vElementRep[vElementSize] = 1;
+                        vElementSize++;
+                        recvCount[procNo] = recvCount[procNo] + 1;
+                    }
+                }else if(iter == 0){
+                    vElement[0] = col[0];
+                    vElementSize = 1;
+                    vElementRep[0] = 1;
+                    recvCount[procNo] = 1;
+                }
+
                 iter++;
             }
         } //for i
@@ -59,10 +74,11 @@ COOMatrix::COOMatrix(int s1, int s2, double** A) {
         vIndexSize += vIndexCount[i];
 
     vIndex = (int*)malloc(sizeof(int)*vIndexSize);
-    int* recvBuf = (int*)malloc(sizeof(int)*nnz);
+    int* vBuf = (int*)malloc(sizeof(int)*nnz);
 
-    for (unsigned int i=0; i<nnz; i++)
-        recvBuf[i] = col[i]%vSize;
+    for (unsigned int i=0; i<vElementSize; i++)
+        vBuf[i] = vElement[i]%vSize;
+
 
     int* vdispls = (int*)malloc(sizeof(int)*p);
     int* rdispls = (int*)malloc(sizeof(int)*p);
@@ -74,38 +90,21 @@ COOMatrix::COOMatrix(int s1, int s2, double** A) {
         rdispls[i] = rdispls[i-1] + recvCount[i-1];
     }
 
-    MPI_Alltoallv(recvBuf, recvCount, rdispls, MPI_INT, vIndex, vIndexCount, vdispls, MPI_INT, MPI_COMM_WORLD);
-
-
-    vElement = (int *) malloc(sizeof(int) * nnz);
-    vElement[0] = col[0];
-    vElementSize = 1;
-
-    vProcess = (int *) malloc(sizeof(int) * nnz);
-    // fix this part:  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    vProcess[0] = 0;
-
-    for (unsigned int coliter = 1; coliter < nnz; ++coliter) {
-        if (vElement[vElementSize-1] != col[coliter]){
-            vElement[vElementSize] = col[coliter];
-            vProcess[vElementSize] = proc[coliter];
-            vElementSize++;
-        }
-    }
+    MPI_Alltoallv(vBuf, recvCount, rdispls, MPI_INT, vIndex, vIndexCount, vdispls, MPI_INT, MPI_COMM_WORLD);
 
     free(vdispls);
     free(rdispls);
-    free(recvBuf);
+    free(vBuf);
 
 }
 
-COOMatrix::~COOMatrix()
-{
+COOMatrix::~COOMatrix() {
     free(values);
     free(row);
     free(col);
     free(vElement);
-    free(vProcess);
+    free(vElementRep);
+    free(recvCount);
 }
 
 void COOMatrix::matvec(double* v, double* w, int M, int N){
@@ -132,9 +131,19 @@ void COOMatrix::matvec(double* v, double* w, int M, int N){
         rdispls[i] = rdispls[i-1] + recvCount[i-1];
     }
 
-    double *vValues = (double *) malloc(sizeof(double) * nnz);
-    MPI_Alltoallv(vSend, vIndexCount, vdispls, MPI_DOUBLE, vValues, recvCount, rdispls, MPI_DOUBLE, MPI_COMM_WORLD);
+    double *vValuesCompressed = (double *) malloc(sizeof(double) * vIndexSize);
+    MPI_Alltoallv(vSend, vIndexCount, vdispls, MPI_DOUBLE, vValuesCompressed, recvCount, rdispls, MPI_DOUBLE, MPI_COMM_WORLD);
 
+    unsigned int iter = 0;
+    double *vValues = (double *) malloc(sizeof(double) * nnz);
+    for (unsigned int i=0; i<vElementSize; i++){
+        for (unsigned int j=0; j<vElementRep[i]; j++) {
+            vValues[iter] = vValuesCompressed[i];
+            iter++;
+        }
+    }
+
+    // the following and the above loops can be combined to have only one nested for loop.
     for(unsigned int i=0;i<nnz;i++) {
         w[row[i]] += values[i] * vValues[i];
         //w[row[i]] += values[i] * col[i];
@@ -142,6 +151,10 @@ void COOMatrix::matvec(double* v, double* w, int M, int N){
     }
 
     free(vSend);
+    free(vdispls);
+    free(rdispls);
+    free(vValuesCompressed);
+    free(vValues);
 }
 
 void COOMatrix::valprint(){
@@ -159,28 +172,28 @@ void COOMatrix::rowprint(){
 }
 
 void COOMatrix::colprint(){
-    cout << "col:" << endl;
+    cout << endl << "col:" << endl;
     for(unsigned int i=0;i<nnz;i++) {
         cout << col[i] << endl;
     }
 }
 
 void COOMatrix::vElementprint(){
-    cout << "vElement:" << endl;
+    cout << endl << "vElement:" << endl;
     for(unsigned int i=0;i<vElementSize;i++) {
         cout << vElement[i] << endl;
     }
 }
 
-void COOMatrix::vProcessprint(){
-    cout << "vProcess:" << endl;
+void COOMatrix::vElementRepprint(){
+    cout << endl << "vElementRep:" << endl;
     for(unsigned int i=0;i<vElementSize;i++) {
-        cout << vProcess[i] << endl;
+        cout << vElementRep[i] << endl;
     }
 }
 
 void COOMatrix::print(){
-    cout << "triple:" << endl;
+    cout << endl << "triple:" << endl;
     for(unsigned int i=0;i<nnz;i++) {
         cout << "(" << row[i] << " , " << col[i] << " , " << values[i] << ")" << endl;
     }
