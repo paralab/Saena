@@ -29,15 +29,14 @@ public:
     double *values;
     int *row;
     int *col;
-    int *proc;
     int *vElement;
     int vElementSize;
-    int *vProcess;
+    int *vElementRep;
     void valprint();
     void rowprint();
     void colprint();
     void vElementprint();
-    void vProcessprint();
+    void vElementRepprint();
     void print();
     void matvec(double* v, double* w, int M, int N);
 
