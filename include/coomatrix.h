@@ -20,11 +20,12 @@ private:
     int *vIndex;
     int *vIndexCount;
     int *recvCount;
+    int findProcess(int a, int procNo, int p);
 
 public:
-    int M;
-    int N;
-    unsigned int nnz;
+    long int M;
+    long int N;
+    long int nnz;
 
     double *values;
     int *row;
@@ -38,7 +39,7 @@ public:
     void vElementprint();
     void vElementRepprint();
     void print();
-    void matvec(double* v, double* w, int M, int N);
+    void matvec(double* v, double* w, long int M, long int N);
 
     //COOMatrix();
     /**
@@ -46,7 +47,7 @@ public:
      * @param[in] N Number of columns in the matrix
      * @param[in] A is a pointer to the matrix
      * */
-    COOMatrix(int M, int N, double** A);
+    COOMatrix(string filePath);
     ~COOMatrix();
 
     // for sparsifying:
