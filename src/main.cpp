@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+#include <algorithm>
 #include "coomatrix.h"
 #include "cscmatrix.h"
 #include "csrmatrix.h"
@@ -14,18 +16,20 @@ int main(int argc, char** argv) {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-/*    int M = 6/p;
-    int N = 6;*/
+//    if (rank==0){
+        //string filePath = "/home/abaris/Dropbox/Projects/Saena/data/LFAT5/LFAT5/LFAT5.mtx";
+        string filePath = "/home/abaris/Dropbox/Projects/Saena/data/example.mtx";
 
-    int M = 16/p;
-    int N = 16;
+        COOMatrix B (filePath);
 
-    double ** A = (double **)malloc(sizeof(double*)*M);
-    for(unsigned int i=0;i<M;i++)
-        A[i]=(double*) malloc(sizeof(double)*N);
+        //B.print();
 
-    double* v = (double*) malloc(sizeof(double)*M);
-    double* w = (double*) malloc(sizeof(double)*M);
+//    } //if rank
+
+
+
+
+
 
 /*    if (rank ==0){
         A[0][0] = 2;
@@ -58,6 +62,7 @@ int main(int argc, char** argv) {
         v[1] = 2;
     }*/
 
+/*
     if (rank ==0){
         for(unsigned int i=0;i<M;i++)
             for(unsigned int j=0;j<N;j++)
@@ -83,8 +88,9 @@ int main(int argc, char** argv) {
         for(unsigned int i=0;i<M;i++)
             v[i] = i+12;
     }
+*/
 
-    int a;
+/*    int a;
     if (rank == 0) {
         cout << endl<< "result should be: " << endl;
         for(unsigned int i=0;i<N;i++){
@@ -104,12 +110,7 @@ int main(int argc, char** argv) {
         cout << w[i] << endl;
 
     free(v);
-    free(w);
-
-    for(unsigned int i=0;i<M;i++)
-        delete [] A[i];
-
-    delete [] A;
+    free(w);*/
 
     MPI_Finalize();
     return 0;
