@@ -1,0 +1,16 @@
+%-------------------------------------------------------------------------------
+% UF Sparse Matrix Collection, Tim Davis
+% http://www.cise.ufl.edu/research/sparse/matrices/Oberwolfach/LFAT5
+% name: Oberwolfach/LFAT5
+% [Oberwolfach: linear 1D beam]
+% id: 1440
+% date: 2004
+% author: J. Lienemann, A. Greiner, J. Korvink
+% ed: E. Rudnyi
+% fields: name title A id notes aux date author ed kind
+% aux: M E B C
+% kind: model reduction problem
+%-------------------------------------------------------------------------------
+% notes:
+% Primary matrix in this model reduction problem is the Oberwolfach K matrix
+%-------------------------------------------------------------------------------
