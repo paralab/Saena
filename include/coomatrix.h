@@ -17,29 +17,30 @@ using namespace std;
 class COOMatrix {
 
 private:
-    int *vIndex;
+    long *vIndex;
     int *vIndexCount;
     int *recvCount;
-    int findProcess(int a, int procNo, int p);
+    long *split;
+    //int findProcess(long a, int procNo, int p);
 
 public:
-    long int M;
-    long int N;
-    long int nnz;
+    long M;
+    //long N;
+    long nnz_l;
 
     double *values;
-    int *row;
-    int *col;
-    int *vElement;
-    int vElementSize;
-    int *vElementRep;
+    long *row;
+    long *col;
+    long *vElement;
+    long vElementSize;
+    long *vElementRep;
     void valprint();
     void rowprint();
     void colprint();
     void vElementprint();
     void vElementRepprint();
     void print();
-    void matvec(double* v, double* w, long int M, long int N);
+    void matvec(double* v, double* w);
 
     //COOMatrix();
     /**
@@ -47,7 +48,7 @@ public:
      * @param[in] N Number of columns in the matrix
      * @param[in] A is a pointer to the matrix
      * */
-    COOMatrix(string filePath);
+    COOMatrix(const char* filePath, char* filePath2);
     ~COOMatrix();
 
     // for sparsifying:
