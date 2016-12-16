@@ -6,12 +6,13 @@
 #define SAENA_COOMATRIX_H
 
 #include <iostream>
+#include <vector>
 using namespace std;
 
 #define matrixTol 1.e-6
 /**
  * @author Majid
- * @breif Contains the basic structure to define csc matrices
+ * @breif Contains the basic structure to define coo matrices
  *
  * */
 class COOMatrix {
@@ -20,27 +21,34 @@ private:
     long *vIndex;
     int *vIndexCount;
     int *recvCount;
-    long *split;
-    //int findProcess(long a, int procNo, int p);
+    std::vector<int> vdispls;
+    std::vector<int> rdispls;
+    int vIndexSize;
+    int recvSize;
 
 public:
     long M;
     //long N;
-    long nnz_l;
+    unsigned long nnz_l;
 
-    double *values;
-    long *row;
-    long *col;
+    std::vector<double> values;
+    std::vector<long> row;
+    std::vector<long> col;
+
     long *vElement;
     long vElementSize;
     long *vElementRep;
+    long *split;
+
+    void matvec(double* v, double* w);
+
+    // print functions
     void valprint();
     void rowprint();
     void colprint();
     void vElementprint();
     void vElementRepprint();
     void print();
-    void matvec(double* v, double* w);
 
     //COOMatrix();
     /**
@@ -48,7 +56,7 @@ public:
      * @param[in] N Number of columns in the matrix
      * @param[in] A is a pointer to the matrix
      * */
-    COOMatrix(const char* filePath, char* filePath2);
+    COOMatrix(char* Aname, long Mbig);
     ~COOMatrix();
 
     // for sparsifying:
