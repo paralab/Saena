@@ -1,0 +1,241 @@
+Name of the mesh, on which the matrix is made in Nektar++:
+Helmholtz3D_Hex_AllBCs
+
+I have used 4 nodes on Kingspeak for all of them. Number of tasks are 4, 16, 64, since CombBLAS does not work on a number which is not a square. It gives this error:
+"This version of the Combinatorial BLAS only works on a square logical processor grid"
+
+*******************************************************
+--------------------------------------------------------
+order = 4
+Matrix info: 1440x1440, nnz = 185854
+--------------------------------------------------------
+number of MPI task = 4
+
+Setup in Saena took 0.0469229 seconds!
+Matvec in Saena took 0.000826821 seconds!
+
+Setup in CombBLAS took 0.258796 seconds!
+Matvec in CombBLAS took 9.38511e-05 seconds!
+
+--------------------------------------------------------
+number of MPI task = 16
+
+Setup in Saena took 0.0340502 seconds!
+Matvec in Saena took 0.000370431 seconds!
+
+Setup in CombBLAS took 0.237512 seconds!
+Matvec in CombBLAS took 8.73399e-05 seconds!
+
+--------------------------------------------------------
+number of MPI task = 64
+
+Setup in Saena took 0.306124 seconds!
+Matvec in Saena took 0.00027745 seconds!
+
+Setup in CombBLAS took 0.326243 seconds!
+Matvec in CombBLAS took 8.65507e-05 seconds!
+
+
+
+
+*******************************************************
+--------------------------------------------------------
+order = 5
+Matrix info: 2250x2250, nnz = 453750
+--------------------------------------------------------
+number of MPI task = 4
+
+Setup in Saena took 0.275323 seconds!
+Matvec in Saena took 0.00200524 seconds!
+
+Setup in CombBLAS took 0.752578 seconds!
+Matvec in CombBLAS took 0.00023241 seconds!
+
+--------------------------------------------------------
+number of MPI task = 16
+
+Setup in Saena took 0.094826 seconds!
+Matvec in Saena took 0.00071126 seconds!
+
+Setup in CombBLAS took 0.55068 seconds!
+Matvec in CombBLAS took 0.00015394 seconds!
+
+--------------------------------------------------------
+number of MPI task = 64
+
+Setup in Saena took 0.129409 seconds!
+Matvec in Saena took 0.000428989 seconds!
+
+Setup in CombBLAS took 0.668552 seconds!
+Matvec in CombBLAS took 0.000116889 seconds!
+
+
+
+
+*******************************************************
+--------------------------------------------------------
+order = 6
+Matrix info: 3240x3240, nnz = 940888
+--------------------------------------------------------
+number of MPI task = 4
+
+Setup in Saena took 0.107834 seconds!
+Matvec in Saena took 0.00413191 seconds!
+
+Setup in CombBLAS took 1.49624 seconds!
+Matvec in CombBLAS took 0.000349879 seconds!
+
+--------------------------------------------------------
+number of MPI task = 16
+
+Setup in Saena took 0.111628 seconds!
+Matvec in Saena took 0.00149176 seconds!
+
+Setup in CombBLAS took 1.44992 seconds!
+Matvec in CombBLAS took 0.000222118 seconds!
+
+--------------------------------------------------------
+number of MPI task = 64
+
+Setup in Saena took 0.193663 seconds!
+Matvec in Saena took 0.000487411 seconds!
+
+Setup in CombBLAS took 1.46184 seconds!
+Matvec in CombBLAS took 0.00013103 seconds!
+
+--------------------------------------------------------
+number of MPI task = 81
+
+Setup in Saena took 0.21254 seconds!
+Matvec in Saena took 0.000523171 seconds!
+
+Setup in CombBLAS took 1.24604 seconds!
+Matvec in CombBLAS took 0.00017107 seconds!
+
+--------------------------------------------------------
+number of MPI task = 100
+
+Setup in Saena took 0.322415 seconds!
+Matvec in Saena took 0.000612111 seconds!
+
+Setup in CombBLAS took 1.8713 seconds!
+Matvec in CombBLAS took 0.000249839 seconds!
+
+*******************************************************
+--------------------------------------------------------
+
+order = 7
+Matrix info: 4410x4410, nnz = 1743124
+--------------------------------------------------------
+number of MPI task = 4
+
+Setup in Saena took 0.256621 seconds!
+Matvec in Saena took 0.00727246 seconds!
+
+Setup in CombBLAS took 2.71896 seconds!
+Matvec in CombBLAS took 0.000617938 seconds!
+
+--------------------------------------------------------
+number of MPI task = 16
+
+Setup in Saena took 0.164462 seconds!
+Matvec in Saena took 0.00182063 seconds!
+
+Setup in CombBLAS took 2.43747 seconds!
+Matvec in CombBLAS took 0.000348501 seconds!
+
+--------------------------------------------------------
+number of MPI task = 25
+
+Setup in Saena took 0.229217 seconds!
+Matvec in Saena took 0.00177616 seconds!
+
+Setup in CombBLAS took 2.30013 seconds!
+Matvec in CombBLAS took 0.00033154 seconds!
+--------------------------------------------------------
+number of MPI task = 64
+
+error for Saena
+
+Setup in CombBLAS took 2.34704 seconds!
+Matvec in CombBLAS took 0.000226729 seconds!
+
+--------------------------------------------------------
+number of MPI task = 81
+
+Setup in Saena took 0.260287 seconds!
+Matvec in Saena took 0.000641031 seconds!
+
+Setup in CombBLAS took 2.75959 seconds!
+Matvec in CombBLAS took 0.000580158 seconds!
+
+--------------------------------------------------------
+number of MPI task = 100
+
+Setup in Saena took 0.336931 seconds!
+Matvec in Saena took 0.00063725 seconds!
+
+Setup in CombBLAS took 2.52115 seconds!
+Matvec in CombBLAS took 0.00036021 seconds!
+
+*******************************************************
+--------------------------------------------------------
+order = 8
+Matrix info: 5760x5760, nnz = 2973696
+
+
+--------------------------------------------------------
+number of MPI task = 4
+
+Setup in Saena took 0.628302 seconds!
+Matvec in Saena took 0.012031 seconds!
+
+Setup in CombBLAS took 4.215 seconds!
+Matvec in CombBLAS took 0.00113715 seconds!
+
+--------------------------------------------------------
+number of MPI task = 16
+
+Setup in Saena took 0.187113 seconds!
+Matvec in Saena took 0.00440949 seconds!
+
+Setup in CombBLAS took 3.84595 seconds!
+Matvec in CombBLAS took 0.00076051 seconds!
+
+--------------------------------------------------------
+number of MPI task = 25
+
+Setup in Saena took 0.246063 seconds!
+Matvec in Saena took 0.00201916 seconds!
+
+Setup in CombBLAS took 4.00446 seconds!
+Matvec in CombBLAS took 0.000523951 seconds!
+
+--------------------------------------------------------
+number of MPI task = 64
+
+error for Saena
+
+Setup in CombBLAS took 4.15871 seconds!
+Matvec in CombBLAS took 0.00042732 seconds!
+
+--------------------------------------------------------
+number of MPI task = 81
+
+Setup in Saena took 0.38329 seconds!
+Matvec in Saena took 0.00107215 seconds!
+
+Setup in CombBLAS took 4.06072 seconds!
+Matvec in CombBLAS took 0.000392878 seconds!
+
+--------------------------------------------------------
+number of MPI task = 100
+
+Setup in Saena took 0.362245 seconds!
+Matvec in Saena took 0.00092648 seconds!
+
+Setup in CombBLAS took 4.13659 seconds!
+Matvec in CombBLAS took 0.000470631 seconds!
+
+--------------------------------------------------------
+

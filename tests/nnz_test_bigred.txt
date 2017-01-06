@@ -1,0 +1,101 @@
+tested on bigred2.
+-----------------------------------
+generated matrices:
+I
+II
+III VI
+
+I:   grid size [II/2 II]
+II:  grid order
+III: matrix size IIIxIII
+VI:  nonzeros
+
+***********************************
+2D
+***********************************
+
+s16
+
+o4
+4225 134945
+
+2D_homg_matrices/4225o4s16.bin vectors/v4225.bin 4225
+2D_homg_matrices/4225o4s16.txt vectors/v4225.txt
+
+ccmrun mpirun -np 64 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/4225o4s16.bin ~/majid/saenaComb/vectors/v4225.bin 4225
+ccmrun mpirun -np 64 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/4225o4s16.txt ~/majid/saenaComb/vectors/v4225.txt
+
+jobid:
+1515129
+
+Setup in Saena took 0.294709 seconds!
+Matvec in Saena took 0.000139129 seconds!
+Application 7300272 resources: utime ~9s, stime ~14s, Rss ~8400, inblocks ~59825, outblocks ~7295
+Setup in CombBLAS took 1.46426 seconds!
+Matvec in CombBLAS took 0.000369821 seconds!
+
+
+-----------------------------------
+s8
+
+o6
+2401 129073
+
+ccmrun mpirun -np 64 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/2401o6s8.bin ~/majid/saenaComb/vectors/v2401.bin 2401
+ccmrun mpirun -np 64 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/2401o6s8.txt ~/majid/saenaComb/vectors/v2401.txt
+
+jobid:
+1515130
+
+Setup in Saena took 0.378454 seconds!
+Matvec in Saena took 0.000196228 seconds!
+Application 7300275 resources: utime ~11s, stime ~14s, Rss ~8524, inblocks ~59519, outblocks ~7261
+Setup in CombBLAS took 1.29403 seconds!
+Matvec in CombBLAS took 0.000363009 seconds!
+
+-----------------------------------
+***********************************
+3D
+***********************************
+
+s4
+
+o3
+2197 104689
+
+ccmrun mpirun -np 64 ~/majid/saenaComb/Saena           ~/majid/saenaComb/3D_homg_matrices/2197o3s4.bin ~/majid/saenaComb/vectors/v2197.bin 2197
+ccmrun mpirun -np 64 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/3D_homg_matrices/2197o3s4.txt ~/majid/saenaComb/vectors/v2197.txt
+
+jobid:
+1515131
+1515133
+
+Setup in Saena took 0.780539 seconds!
+Matvec in Saena took 0.00029985 seconds!
+Application 7300299 resources: utime ~10s, stime ~15s, Rss ~9032, inblocks ~58381, outblocks ~7263
+Setup in CombBLAS took 1.10362 seconds!
+Matvec in CombBLAS took 0.000346031 seconds!
+
+-----------------------------------
+s2
+
+o5
+1331 118251
+
+ccmrun mpirun -np 64 ~/majid/saenaComb/Saena           ~/majid/saenaComb/3D_homg_matrices/1331o5s2.bin ~/majid/saenaComb/vectors/v1331.bin 1331
+ccmrun mpirun -np 64 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/3D_homg_matrices/1331o5s2.txt ~/majid/saenaComb/vectors/v1331.txt
+
+jobid:
+1515132
+1515134
+1515136
+
+Setup in Saena took 0.672704 seconds!
+Matvec in Saena took 0.000392818 seconds!
+Application 7300335 resources: utime ~12s, stime ~16s, Rss ~9608, inblocks ~58989, outblocks ~7263
+Setup in CombBLAS took 1.38289 seconds!
+Matvec in CombBLAS took 0.000583959 seconds!
+
+-----------------------------------
+
+

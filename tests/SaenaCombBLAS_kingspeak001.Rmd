@@ -1,0 +1,64 @@
+---
+title: "SaenaCombBLAS"
+author: "Majid Rasouli"
+date: "December 16, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Helmholtz3D_Hex_AllBCs
+
+result_saena_combblas3
+
+```{r, echo=FALSE}
+x2 = c(4, 9, 25, 49, 64, 81, 100)
+p2saena = c(7.90119e-06, 1.16396e-05, 1.57881e-05, 3.60584e-05, 6.8171e-05, 7.93099e-05, 0.000141242)
+p2comb = c(2.15197e-05, 3.79395e-05, 5.06306e-05, 0.000138879, 5.59115e-05, 0.00010464, 0.00013247)
+
+par(bg = "grey")
+plot(x2, p2comb, type="o", xlab="p", ylab="time", col="red", xlim = c(0,100), ylim = c(0,0.0011), main=c("blue = Saena order2   -   red = CB order2   -   matrix: 360x360", "green = Saena order7  -  purple = CB order7  -  matrix: 4410x4410", "black = Saena order8  -  orange = CB order8  -  matrix: 5760x5760"))
+
+#leg.txt = c("red=Saena order2")
+#legend(x2[2],p2comb[2], leg.txt)
+#plot(x2,p2comb)
+
+lines(x2, p2saena, type="o", col="blue")
+
+x7 = c(4, 9, 16, 25, 81, 100)
+p7saena = c(0.000458522, 0.000217268, 0.00021888, 0.000155809, 0.00014492, 0.00019331)
+p7comb = c(0.00061837, 0.000693049, 0.00039438, 0.000360591, 0.00028985, 0.000591049)
+lines(x7, p7saena, type="o", col="green")
+lines(x7, p7comb, type="o", col="purple")
+
+x8 = c(4, 9, 16, 25, 81, 100)
+p8saena = c(0.000777571, 0.000411799, 0.000286431, 0.000253799, 0.00017019, 0.000224669)
+p8comb = c(0.00107558, 0.00081732, 0.000594568, 0.00054425, 0.00041049, 0.00854398)
+lines(x8, p8saena, type="o", col="black")
+lines(x8, p8comb, type="o", col="orange")
+```
+
+
+Helmholtz2D_CG_curved_tri
+
+result_saena_combblas4
+
+```{r}
+x2 = c(4, 9, 16, 25, 36, 64, 81)
+p2saena = c(2.13146e-06, 3.60966e-06, 5.85079e-06, 6.001e-06, 4.64916e-06, 9.49144e-06, 1.29914e-05)
+p2comb = c(1.21212e-05, 2.39682e-05, 2.76613e-05, 5.07283e-05, 4.1852e-05, 5.45192e-05, 9.74202e-05)
+
+par(bg = "grey")
+plot(x2, p2comb, type="o", xlab="p", ylab="time", col="red", xlim = c(0,100), ylim = c(0,0.000185421), main=c("blue = Saena order2  -  red = CB order2   -   matrix: 84x84", "black = Saena order8  -  orange = CB order8   -   matrix: 336x336"))
+lines(x2, p2saena, type="o", col="blue")
+
+x8 = c(4, 9, 25, 49, 64, 81, 100)
+p8saena = c(7.41959e-06, 7.35998e-06, 8.59976e-06, 1.11294e-05, 1.34015e-05, 3.03292e-05, 3.79705e-05)
+p8comb = c(2.3241e-05, 3.721e-05, 4.61411e-05, 6.00791e-05, 5.62501e-05, 9.84311e-05, 0.000185421)
+lines(x8, p8saena, type="o", col="black")
+lines(x8, p8comb, type="o", col="orange")
+
+
+```

@@ -1,0 +1,77 @@
+tested on bigred2.
+-----------------------------------
+generated matrices:
+I
+II
+III VI
+
+I:   grid size [II/2 II]
+II:  grid order
+III: matrix size IIIxIII
+VI:  nonzeros
+
+
+nodes: 8
+ppn: 32
+total tasks: 256
+
+***********************************
+2D
+***********************************
+s32
+
+o1
+1089 8409
+
+ccmrun mpirun -np 256 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/1089o1s32.bin ~/majid/saenaComb/vectors/v1089.bin 1089
+ccmrun mpirun -np 256 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/1089o1s32.txt ~/majid/saenaComb/vectors/v1089.txt
+jobid:
+1515229
+
+longer walltime
+jobid:
+1515236
+
+
+o2
+4225 61264
+
+ccmrun mpirun -np 256 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/4225o2s32.bin ~/majid/saenaComb/vectors/v4225.bin 4225 
+ccmrun mpirun -np 256 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/4225o2s32.txt ~/majid/saenaComb/vectors/v4225.txt
+jobid:
+
+
+
+
+o7
+50625 3949065
+
+ccmrun mpirun -np 256 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/50625o7s32.bin ~/majid/saenaComb/vectors/v50625.bin 50625
+ccmrun mpirun -np 256 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/50625o7s32.txt ~/majid/saenaComb/vectors/v50625.txt
+jobid:
+
+
+
+
+o8
+66049 6386753
+
+ccmrun mpirun -np 256 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/66049o8s32.bin ~/majid/saenaComb/vectors/v66049.bin 66049
+ccmrun mpirun -np 256 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/66049o8s32.txt ~/majid/saenaComb/vectors/v66049.txt
+jobid:
+
+
+
+
+o9
+83521 9804313
+
+ccmrun mpirun -np 256 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/83521o9s32.bin ~/majid/saenaComb/vectors/v83521.bin 83521
+ccmrun mpirun -np 256 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/83521o9s32.txt ~/majid/saenaComb/vectors/v83521.txt
+jobid:
+
+
+
+
+-----------------------------------
+
