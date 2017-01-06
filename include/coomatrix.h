@@ -1,7 +1,3 @@
-//
-// Created by abaris on 10/14/16.
-//
-
 #ifndef SAENA_COOMATRIX_H
 #define SAENA_COOMATRIX_H
 
@@ -21,6 +17,7 @@ private:
     long *vIndex;
     int *vIndexCount;
     int *recvCount;
+    std::vector<int> splitOffset;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
     int vIndexSize;
@@ -31,6 +28,8 @@ public:
     //long N;
     unsigned long nnz_l;
 
+    int nprocs, rank;
+
     std::vector<double> values;
     std::vector<long> row;
     std::vector<long> col;
@@ -38,7 +37,9 @@ public:
     long *vElement;
     long vElementSize;
     long *vElementRep;
-    long *split;
+    std::vector<long> split;
+    double *vSend;
+    double* vecValues;
 
     void matvec(double* v, double* w);
 
@@ -52,9 +53,8 @@ public:
 
     //COOMatrix();
     /**
-     * @param[in] M Number of rows in the matrix
-     * @param[in] N Number of columns in the matrix
-     * @param[in] A is a pointer to the matrix
+     * @param[in] Aname is the pointer to the matrix
+     * @param[in] Mbig Number of rows in the matrix
      * */
     COOMatrix(char* Aname, long Mbig);
     ~COOMatrix();
