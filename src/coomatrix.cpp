@@ -4,6 +4,9 @@
 #include "coomatrix.h"
 //#include <math.h>
 #include "mpi.h"
+#include <omp.h>
+
+#define ITERATIONS 1000
 
 // binary search tree using the lower bound
 template <class T>
@@ -28,9 +31,7 @@ T lower_bound2(T *left, T *right, T val) {
 
 COOMatrix::COOMatrix(char* Aname, long Mbig) {
 
-    int nprocs;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-    int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     struct stat st;
@@ -68,7 +69,17 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         }
     }*/
 
-    long n_buckets;
+    // definition of buckets: bucket[i] = [ firstSplit[i] , firstSplit[i+1] ). Number of buckets = n_buckets
+    int n_buckets=0;
+
+/*    if (Mbig > nprocs*nprocs){
+        if (nprocs < 1000)
+            n_buckets = nprocs*nprocs;
+        else
+            n_buckets = 1000*nprocs;
+    }
+    else
+        n_buckets = Mbig;*/
 
     if (Mbig > nprocs*nprocs){
         if (nprocs < 1000)
@@ -76,43 +87,61 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         else
             n_buckets = 1000*nprocs;
     }
-    else
+    else if(nprocs < Mbig){
         n_buckets = Mbig;
+    } else{
+        if(rank == 0)
+            cout << "number of tasks cannot be greater than te number of rows of the matrix." << endl;
+        MPI_Finalize();
+    }
 
-    // change this part to make it work with any number of processors, instead of just the factors of m
-    long splitOffset = long(floor(1.0*Mbig/n_buckets));
+/*    if (rank==0)
+        cout << "buck = " << n_buckets << ", Mbig = " << Mbig << endl;*/
 
-    //long n_buckets = nprocs*nprocs;
-    // change this part to make it work with any number of processors, instead of just the factors of m
-    //long splitOffset = Mbig / n_buckets;
+    splitOffset.resize(n_buckets);
+    int baseOffset = int(floor(1.0*Mbig/n_buckets));
+    float offsetRes = float(1.0*Mbig/n_buckets) - baseOffset;
+    //cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << endl;
+    float offsetResSum = 0;
+    splitOffset[0] = 0;
+    for(long i=1; i<n_buckets; i++){
+        splitOffset[i] = baseOffset;
+        offsetResSum += offsetRes;
+        if (offsetResSum >= 1){
+            splitOffset[i]++;
+            offsetResSum -= 1;
+        }
+    }
+
+/*    if (rank==0){
+        cout << "splitOffset:" << endl;
+        for(long i=0; i<n_buckets; i++)
+            cout << splitOffset[i] << endl;
+    }*/
 
     long firstSplit[n_buckets+1];
-
-    for(long i=0; i<n_buckets; i++){
-        firstSplit[i] = i*splitOffset;
+    firstSplit[0] = 0;
+    for(long i=1; i<n_buckets; i++){
+        firstSplit[i] = firstSplit[i-1] + splitOffset[i];
     }
     firstSplit[n_buckets] = Mbig;
 
-/*    if(rank==0){
+/*    if (rank==0){
         cout << "firstSplit:" << endl;
-        for(int i=0; i<n_buckets+1; i++)
+        for(long i=0; i<n_buckets+1; i++)
             cout << firstSplit[i] << endl;
     }*/
-
-    // definition of buckets: bucket[i] = [ firstSplit[i] , firstSplit[i+1] ). Number of buckets = n_buckets
 
     long H_l[n_buckets];
     fill(&H_l[0], &H_l[n_buckets], 0);
 
-    for(long i=0; i<initial_nnz_l; i++){
+    for(long i=0; i<initial_nnz_l; i++)
         H_l[lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[3*i])]++;
-        //cout << "data = " << data[3*i] << ", cpu owner = " << lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[3*i]) << endl;
-    }
 
 /*    if (rank==0){
         cout << "initial_nnz_l = " << initial_nnz_l << endl;
         cout << "local histogram:" << endl;
-        for(long i=0; i<n_buckets; i++)
+        for(unsigned int i=0; i<n_buckets; i++)
             cout << H_l[i] << endl;
     }*/
 
@@ -121,7 +150,7 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
 
 /*    if (rank==0){
         cout << "global histogram:" << endl;
-        for(long i=0; i<n_buckets; i++){
+        for(unsigned int i=0; i<n_buckets; i++){
             cout << H_g[i] << endl;
         }
     }*/
@@ -133,27 +162,25 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
 
 /*    if (rank==0){
         cout << "scan of global histogram:" << endl;
-        for(long i=0; i<n_buckets; i++)
+        for(unsigned int i=0; i<n_buckets; i++)
             cout << H_g_scan[i] << endl;
     }*/
 
-    long procNum=0;
-    //long split[nprocs+1];
-    split = (long*) malloc(sizeof(long) * nprocs+1);
+    unsigned int procNum=0;
+    split.resize(nprocs+1);
     split[0]=0;
-    for (long i=1; i<n_buckets; i++){
-        if (H_g_scan[i] >= ((procNum+1)*nnz_g/nprocs)){
-            //check the last element of split to be correct
-            split[procNum+1] = splitOffset*(i+1);
+    for (unsigned int i=1; i<n_buckets; i++){
+        //if (rank==0) cout << "here: " << (procNum+1)*nnz_g/nprocs << endl;
+        if (H_g_scan[i] > ((procNum+1)*nnz_g/nprocs)){
             procNum++;
+            split[procNum] = firstSplit[i];
         }
     }
-
     split[nprocs] = Mbig;
 
 /*    if (rank==0){
         cout << "split:" << endl;
-        for(long i=0; i<nprocs+1; i++)
+        for(unsigned int i=0; i<nprocs+1; i++)
             cout << split[i] << endl;
     }*/
 
@@ -293,8 +320,8 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         }*/
     }
 
-/*    if (rank==3){
-        vElementprint();
+/*    if (rank==0){
+        //vElementprint();
         //vElementRepprint();
         cout << "recvCount:" << endl;
         for(int i=0; i<nprocs; i++)
@@ -335,6 +362,9 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     vIndex = (long*)malloc(sizeof(long)*vIndexSize);
     MPI_Alltoallv(vElement, recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &*(vdispls.begin()), MPI_LONG, MPI_COMM_WORLD);
 
+    vSend = (double*)malloc(sizeof(double) * vIndexSize);
+    vecValues = (double*) malloc(sizeof(double) * recvSize);
+
     free(vBuf);
 }
 
@@ -344,42 +374,37 @@ COOMatrix::~COOMatrix() {
     free(recvCount);
     free(vIndex);
     free(vIndexCount);
+    free(vSend);
+    free(vecValues);
 }
 
-void COOMatrix::matvec(double* v, double* w){
-    int nprocs;
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+void COOMatrix::matvec(double* v, double* w) {
 
-    double *vSend = (double*)malloc(sizeof(double) * vIndexSize);
-    for(long i=0;i<vIndexSize;i++){
+    // put the values of the vector in vSend, for sending to other processors
+    // to change the index from global to local: vIndex[i]-split[rank]
+    for(long i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i]-split[rank] )];
-    }
 
-    double* vValuesCompressed = (double*) malloc(sizeof(double) * recvSize);
-    MPI_Alltoallv(vSend, vIndexCount, &*(vdispls.begin()), MPI_DOUBLE, vValuesCompressed, recvCount, &*(rdispls.begin()), MPI_DOUBLE, MPI_COMM_WORLD);
+    // send out values of the vector
+    MPI_Alltoallv(vSend, vIndexCount, &*(vdispls.begin()), MPI_DOUBLE, vecValues, recvCount, &*(rdispls.begin()), MPI_DOUBLE, MPI_COMM_WORLD);
 
+    // compute matvec w = B * v
+    // "values" is the array of value of the entries from matrix B
+    // to change the index from global to local: row[iter] - split[rank]
+
+    fill(&w[0], &w[M], 0);
     long iter = 0;
-    double *vValues = (double *) malloc(sizeof(double) * nnz_l);
     for (long i=0; i<vElementSize; i++){
         for (long j=0; j<vElementRep[i]; j++) {
-            vValues[iter] = vValuesCompressed[i];
+            w[row[iter] - split[rank]] += values[iter] * vecValues[i];
             iter++;
         }
     }
-
-    fill(&w[0], &w[M], 0);
-    // the following and the above loops can be combined to have only one nested for loop.
-    for(long i=0;i<nnz_l;i++) {
-        w[row[i] - split[rank]] += values[i] * vValues[i];
-        //w[row[i]] += values[i] * col[i];
-        //w[i] += values[j] * v[row[j]];
-    }
-
-    free(vSend);
-    free(vValuesCompressed);
 }
+
+// *******************************************
+// definition of the print functions
+// *******************************************
 
 void COOMatrix::valprint(){
     cout << "val:" << endl;

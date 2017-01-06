@@ -1,13 +1,10 @@
 #include <iostream>
-#include <fstream>
 #include <algorithm>
 #include "coomatrix.h"
-//#include "cscmatrix.h"
-//#include "csrmatrix.h"
 #include <sys/time.h>
 #include "mpi.h"
 
-#define ITERATIONS 100
+#define ITERATIONS 1000
 
 using namespace std;
 
@@ -17,9 +14,6 @@ int main(int argc, char* argv[]){
     int nprocs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    //const char* Aname = "/home/abaris/Dropbox/Projects/Saena/data/ch3-3-b1/ch3-3-b1.bin";
-    //char* Aname2 = "/home/abaris/Dropbox/Projects/Saena/data/ch3-3-b1/ch3-3-b1.bin";
 
     if(argc < 4)
     {
@@ -35,15 +29,7 @@ int main(int argc, char* argv[]){
     char* Aname(argv[1]);
     long Mbig = stol(argv[3]);
 
-/*    if (Mbig%(nprocs*nprocs) != 0){
-        if (rank==0)
-            cout << "This code only works when the number of rows are divisible by (number of prcessors)^2" << endl;
-
-        MPI_Finalize();
-        return -1;
-    }*/
-
-
+    // timing the setup phase
     MPI_Barrier(MPI_COMM_WORLD);
     double t1 = MPI_Wtime();
     COOMatrix B (Aname, Mbig);
@@ -71,11 +57,6 @@ int main(int argc, char* argv[]){
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
 
-/*    srand (time(NULL));
-    for (long i=0; i<B.M; i++){
-        v[i] = rand();
-    }*/
-
     double* w = (double*) malloc(sizeof(double) * B.M);
 
     // warming up
@@ -98,12 +79,6 @@ int main(int argc, char* argv[]){
     if (rank==0)
         cout << "Matvec in Saena took " << (t2 - t1)/ITERATIONS << " seconds!" << endl;
 
-
-/*
-    if (rank == 0) cout << endl << "result of matvec: " << endl;
-    for(unsigned int i=0;i<M;i++)
-        cout << w[i] << endl;
-*/
 
     // write the result of the matvec
     // txt file
