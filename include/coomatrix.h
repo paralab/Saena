@@ -14,16 +14,32 @@ using namespace std;
 class COOMatrix {
 
 private:
-    long *vIndex;
-    int *vIndexCount;
     int *recvCount;
+    int *vIndexCount;
+    long *vIndex;
     std::vector<int> splitOffset;
-    std::vector<int> vdispls;
-    std::vector<int> rdispls;
-    int vIndexSize;
-    int recvSize;
+
 
 public:
+
+    std::vector<int> vdispls;
+    std::vector<int> rdispls;
+    int recvSize;
+    int vIndexSize;
+    int numRecvProc;
+    int numSendProc;
+    std::vector<int> recvProcRank;
+    std::vector<int> recvProcCount;
+    std::vector<int> sendProcRank;
+    std::vector<int> sendProcCount;
+    std::vector<double> values_local;
+    std::vector<double> values_remote;
+    std::vector<long> row_local;
+    std::vector<long> row_remote;
+    std::vector<long> col_local;
+    std::vector<long> col_remote;
+
+
     long M;
     //long N;
     unsigned long nnz_l;
@@ -34,9 +50,16 @@ public:
     std::vector<long> row;
     std::vector<long> col;
 
-    long *vElement;
-    long vElementSize;
-    long *vElementRep;
+    //long *vElement;
+    std::vector<long> vElement_local;
+    std::vector<long> vElement_remote;
+    //long vElementSize;
+    //long vElementSize_local;
+    //long vElementSize_remote;
+    //long *vElementRep;
+    std::vector<long> vElementRep_local;
+    std::vector<long> vElementRep_remote;
+
     std::vector<long> split;
     double *vSend;
     double* vecValues;
@@ -47,8 +70,12 @@ public:
     void valprint();
     void rowprint();
     void colprint();
-    void vElementprint();
-    void vElementRepprint();
+    //void vElementprint();
+    void vElementprint_local();
+    void vElementprint_remote();
+    //void vElementRepprint();
+    void vElementRepprint_local();
+    void vElementRepprint_remote();
     void print();
 
     //COOMatrix();
