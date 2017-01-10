@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include "mpi.h"
 
-#define ITERATIONS 1000
+#define ITERATIONS 150
 
 using namespace std;
 
@@ -44,24 +44,31 @@ int main(int argc, char* argv[]){
     MPI_File fh;
     MPI_Offset offset;
 
-    MPI_File_open(MPI_COMM_WORLD, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    int mpiopen = MPI_File_open(MPI_COMM_WORLD, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) cout << "Unable to open the vector file!" << endl;
+        MPI_Finalize();
+        return -1;
+    }
 
-    double* v = (double*) malloc(sizeof(double) * B.M);
+    std::vector <double> v(B.M);
+    double* vp = &(*(v.begin()));
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
     offset = B.split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh, offset, v, B.M, MPI_UNSIGNED_LONG, &status);
+    MPI_File_read_at(fh, offset, vp, B.M, MPI_UNSIGNED_LONG, &status);
 
     int count;
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
 
-    double* w = (double*) malloc(sizeof(double) * B.M);
+    std::vector <double> w(B.M);
+    double* wp = &(*(w.begin()));
 
     // warming up
     for(int i=0; i<ITERATIONS; i++){
-        B.matvec(v, w);
+        B.matvec(vp, wp);
         v = w;
     }
 
@@ -69,7 +76,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     for(int i=0; i<ITERATIONS; i++){
-        B.matvec(v, w);
+        B.matvec(vp, wp);
         v = w;
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -87,18 +94,17 @@ int main(int argc, char* argv[]){
     MPI_Status status2;
     MPI_File fh2;
     MPI_Offset offset2;
-
     MPI_File_open(MPI_COMM_WORLD, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
 
     offset2 = B.split[rank] * 8; // value(double=8)
-    MPI_File_write_at(fh2, offset2, v, B.M, MPI_UNSIGNED_LONG, &status2);
+    MPI_File_write_at(fh2, offset2, vp, B.M, MPI_UNSIGNED_LONG, &status2);
 
     int count2;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
     //printf("process %d wrote %d lines of triples\n", rank, count2);
     MPI_File_close(&fh2);
 
-    free(v);
+    //free(v);
     //free(w);
     //free(Aname);
     //free(Aname2);

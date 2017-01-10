@@ -6,7 +6,7 @@
 #include "mpi.h"
 #include <omp.h>
 
-#define ITERATIONS 1000
+#define ITERATIONS 150
 
 // binary search tree using the lower bound
 template <class T>
@@ -43,7 +43,11 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     MPI_File fh;
     MPI_Offset offset;
 
-    MPI_File_open(MPI_COMM_WORLD, Aname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    int mpiopen = MPI_File_open(MPI_COMM_WORLD, Aname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) cout << "Unable to open the matrix file!" << endl;
+        MPI_Finalize();
+    }
 
     long initial_nnz_l = long(floor(1.0*nnz_g/nprocs)); // initial local nnz
     if (rank==nprocs-1)
@@ -89,14 +93,15 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     }
     else if(nprocs < Mbig){
         n_buckets = Mbig;
-    } else{
+    } else{ // nprocs > Mbig
+        // it may be better to set nprocs=Mbig and work only with the first Mbig processors.
         if(rank == 0)
             cout << "number of tasks cannot be greater than te number of rows of the matrix." << endl;
         MPI_Finalize();
     }
 
 /*    if (rank==0)
-        cout << "buck = " << n_buckets << ", Mbig = " << Mbig << endl;*/
+        cout << "n_buckets = " << n_buckets << ", Mbig = " << Mbig << endl;*/
 
     splitOffset.resize(n_buckets);
     int baseOffset = int(floor(1.0*Mbig/n_buckets));
@@ -253,7 +258,7 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     }*/
 
     nnz_l = rOffset[nprocs-1] + recvSizeArray[nprocs-1];
-    //cout << "nnz_l = " << nnz_l << endl;
+    //cout << "rank=" << rank << ", nnz_l = " << nnz_l << endl;
 
     values.resize(nnz_l);
     row.resize(nnz_l);
@@ -267,32 +272,52 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     MPI_Alltoallv(sendBufJ, sendSizeArray, sOffset, MPI_LONG, colP, recvSizeArray, rOffset, MPI_LONG, MPI_COMM_WORLD);
     MPI_Alltoallv(sendBufV, sendSizeArray, sOffset, MPI_DOUBLE, valuesP, recvSizeArray, rOffset, MPI_DOUBLE, MPI_COMM_WORLD);
 
-    // setting the number of rows for processor
+    // setting the number of rows for each processor
     M = split[rank+1] - split[rank];
 
-/*    if (rank==3){
-        colprint();
-        //cout << "M = " << M << endl;
+/*    if (rank==0){
+        //colprint();
+        cout << "M = " << M << endl;
         //cout << "nnz_l = " << nnz_l << endl;
         //valprint();
         //print();
     }*/
 
-    vElement = (long*) malloc(sizeof(long) * nnz_l);
-    vElementRep = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize
-    vElementSize = 0;
+/*    //vElement = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize
+    vElement_local = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize_local
+    vElement_remote = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize_remote
+    //vElementRep = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize
+    vElementRep_local = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize_local
+    vElementRep_remote = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize_remote
+    //vElementSize = 0;
+    //vElementSize_local = 0;
+    //vElementSize_remote = 0;*/
     recvCount = (int*)malloc(sizeof(long)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
-    std::fill(vElementRep, vElementRep + nnz_l, 0);
+    //std::fill(vElementRep, vElementRep + nnz_l, 0);
 
-    vElement[0] = col[0];
-    vElementSize = 1;
-    vElementRep[0] = 1;
-    recvCount[lower_bound2(&split[0], &split[nprocs], col[0])] = 1;
-    bool temp;
+    // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
+    if (col[0] >= split[rank] && col[0] < split[rank + 1]) {
+        values_local.push_back(values[0]);
+        row_local.push_back(row[0]);
+        col_local.push_back(col[0]);
+
+        vElement_local.push_back(col[0]);
+        vElementRep_local.push_back(1);
+    } else{
+        values_remote.push_back(values[0]);
+        row_remote.push_back(row[0]);
+        col_remote.push_back(col[0]);
+
+        vElement_remote.push_back(col[0]);
+        vElementRep_remote.push_back(1);
+        recvCount[lower_bound2(&split[0], &split[nprocs], col[0])] = 1;
+    }
+
+    //bool temp;
     for (long i = 1; i < nnz_l; i++) {
 
-        temp = (col[i] != col[i-1]);
+/*        temp = (col[i] != col[i-1]);
 
         vElementRep[vElementSize-1] += (1-temp);        // vElementRep[vElementSize-1]++;
 
@@ -301,29 +326,69 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         vElementSize += temp;
 
         procNum = lower_bound2(&split[0], &split[nprocs], col[i]);
-        recvCount[procNum] += temp;
+        recvCount[procNum] += temp;*/
 
-        // following "if statement" is changed to the above part. Computing the temp value is the same as checking the if statement. Which one is better?
+        // The following "if statement" is equivalent to the above part. Computing the temp value is the same as checking the if statement. Which one is better?
 
-/*        if(col[i] == col[i-1]){
-            vElementRep[vElementSize-1]++;
-        }else{
-            vElement[vElementSize] = col[i];
-            vElementRep[vElementSize] = 1;
-            vElementSize++;
+        if (col[i] >= split[rank] && col[i] < split[rank+1]) {
 
-            //procNum = findProcess(col[i], procNum, nprocs);
-            procNum = lower_bound2(&split[0], &split[nprocs], col[i]);
-            //cout << "rank = " << rank << ", nnz_l = " << nnz_l << ", col[i] = " << col[i] << ", procNum = " << procNum << endl;
-            recvCount[procNum]++;
-            //cout << "recvCount[procNum] = " << recvCount[procNum] << endl;
-        }*/
-    }
+            values_local.push_back(values[i]);
+            row_local.push_back(row[i]);
+            col_local.push_back(col[i]);
+
+            if (col[i] == col[i - 1]) {
+                (*(vElementRep_local.end()-1))++;
+            } else {
+                vElement_local.push_back(col[i]);
+                vElementRep_local.push_back(1);
+            }
+        } else {
+            values_remote.push_back(values[i]);
+            row_remote.push_back(row[i]);
+            col_remote.push_back(col[i]);
+
+            if (col[i] == col[i - 1]) {
+                (*(vElementRep_remote.end()-1))++;
+            } else {
+                vElement_remote.push_back(col[i]);
+                vElementRep_remote.push_back(1);
+
+                procNum = lower_bound2(&split[0], &split[nprocs], col[i]);
+                recvCount[procNum]++;
+            }
+        }
+    } // for i
 
 /*    if (rank==0){
-        //vElementprint();
-        //vElementRepprint();
-        cout << "recvCount:" << endl;
+        cout << "values_local.size()=" << values_local.size() << ", rank=" << rank << endl;
+        for(int i=0; i<values_local.size(); i++)
+            cout << values_local[i] << endl;
+    }*/
+
+/*    if (rank==0){
+        vElementRepprint_remote();
+        cout << "values_local: rank=" << rank << endl;
+        for(int i=0; i<values_local.size(); i++)
+            cout << i << "\trow=" << row_local[i] <<", col=" << col_local[i] << ", val=" << values_local[i] << endl;
+    }*/
+
+    // don't receive anything from yourself
+    recvCount[rank] = 0;
+
+    // set vElementSize_local and vElementSize_remote
+    //vElementSize_local = recvCount[rank];
+    //vElementSize_remote = vElementSize - vElementSize_local;
+
+/*    if (rank==0){
+        cout << "rank=" << rank << ", vElement_local.size() = " << vElement_local.size() << endl;
+        cout << "rank=" << rank << ", vElement_remote.size() = " << vElement_remote.size() << endl;
+
+        vElementprint_local();
+        vElementRepprint_local();
+        vElementprint_remote();
+        vElementRepprint_remote();
+
+        cout << "recvCount: rank=" << rank  << endl;
         for(int i=0; i<nprocs; i++)
             cout << recvCount[i] << endl;
     }*/
@@ -332,18 +397,38 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, MPI_COMM_WORLD);
 
 /*    if (rank==1){
-        cout << "vIndexCount:" << endl;
+        cout << "vIndexCount: rank=" << rank << endl;
         for(int i=0; i<nprocs; i++)
             cout << vIndexCount[i] << endl;
     }*/
 
-/*    int vIndexSize = 0;
+    /*    int vIndexSize = 0;
     for (int i=0; i<nprocs; i++)
         vIndexSize += vIndexCount[i];*/
 
-    long* vBuf = (long*)malloc(sizeof(long)*nnz_l);
-    for (long i=0; i<vElementSize; i++)
-        vBuf[i] = vElement[i]%M;
+    numRecvProc = 0;
+    numSendProc = 0;
+    for(int i=0; i<nprocs; i++){
+        if(recvCount[i]!=0){
+            numRecvProc++;
+            recvProcRank.push_back(i);
+            recvProcCount.push_back(recvCount[i]);
+        }
+        if(vIndexCount[i]!=0){
+            numSendProc++;
+            sendProcRank.push_back(i);
+            sendProcCount.push_back(vIndexCount[i]);
+        }
+
+    }
+
+/*    if (rank==0){
+        cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
+    }*/
+
+//    long* vBuf = (long*)malloc(sizeof(long)*nnz_l);
+//    for (long i=0; i<vElementSize_remote; i++)
+//        vBuf[i] = vElement[i]%M;
 
     vdispls.resize(nprocs);
     rdispls.resize(nprocs);
@@ -360,17 +445,25 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
 
     vIndex = (long*)malloc(sizeof(long)*vIndexSize);
-    MPI_Alltoallv(vElement, recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &*(vdispls.begin()), MPI_LONG, MPI_COMM_WORLD);
+    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_LONG, MPI_COMM_WORLD);
 
+/*    if (rank==0){
+        cout << "vIndex: rank=" << rank  << endl;
+        for(int i=0; i<vIndexSize; i++)
+            cout << vIndex[i] << endl;
+    }*/
+
+    // vSend = vector values to send to other procs
+    // vecValues = vector values that received from other procs
+    // These will be used in matvec and they are set here to reduce the time of matvec.
     vSend = (double*)malloc(sizeof(double) * vIndexSize);
     vecValues = (double*) malloc(sizeof(double) * recvSize);
-
-    free(vBuf);
+    //free(vBuf);
 }
 
 COOMatrix::~COOMatrix() {
-    free(vElement);
-    free(vElementRep);
+    //free(vElement);
+    //free(vElementRep);
     free(recvCount);
     free(vIndex);
     free(vIndexCount);
@@ -385,21 +478,104 @@ void COOMatrix::matvec(double* v, double* w) {
     for(long i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i]-split[rank] )];
 
+/*    if (rank==0){
+        cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << endl;
+        for(int i=0; i<vIndexSize; i++)
+            cout << vSend[i] << endl;
+    }*/
+
+    // There are at least two ways to store the vector values that we need to to matvec:
+    // 1. Have one vector, called vecValues, and use that for both local and remote multiplication.
+    // 2. Create two vectors, vecValues_local and vecValues_remote.
+
+    // vElementSize_local = M;
+
+    // iSend your data, and iRecv from others
+    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
+    MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
+
+    //First place all recv requests. Do not recv from self.
+    for(int i = 0; i < numRecvProc; i++) {
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, MPI_COMM_WORLD, &(requests[i]));
+        //Mpi_Irecv( &(recvbuf[rdispls[i]]) , recvcnts[i], i, 1, comm, &(requests[i]) );
+    }
+
+    //Next send the messages. Do not send to self.
+    for(int i = 0; i < numSendProc; i++) {
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, MPI_COMM_WORLD, &(requests[numRecvProc+i]));
+        //par::Mpi_Issend<T>( &(sendbuf[sdispls[i]]), sendcnts[i], i, 1, comm, &(requests[numRecvProc+i]) );
+    }
+
+/*    if (rank==0){
+        cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << endl;
+        for(int i=0; i<recvSize; i++)
+            cout << vecValues[i] << endl;
+    }*/
+
+/*    if (rank==0){
+        cout << "vElement_local.size()=" << vElement_local.size() << ", M=" << M << ", vElement_local: rank=" << rank << endl;
+        for(int i=0; i<M; i++)
+            cout << v[i] << endl;
+    }*/
+
+/*    if (rank==0){
+        vElementRepprint_remote();
+        cout << "values_local: rank=" << rank << endl;
+        for(int i=0; i<values_local.size(); i++)
+            cout << i << "\trow=" << row_local[i] <<", col=" << col_local[i] << ", val=" << values_local[i] << endl;
+    }*/
+
+    // delete vElement_local in the setup phase. it is just v, since v is stored locally on each proc.
+    // Also, delete values_local. Instead, find the starting index of values which correspond to the vector values which are stored locally. Then, use values[starting index].
+
+    fill(&w[0], &w[M], 0);
+    unsigned int iter = 0;
+    // local loop first
+    for (unsigned int i=0; i<M; ++i) {
+        for (unsigned int j=0; j<vElementRep_local[i]; ++j,++iter) {
+            //if(rank==0) cout << "row_local[iter]=" << row_local[iter] << ", values_local[iter]=" << values_local[iter] << ", v[i]=" << v[i] << endl;
+            w[row_local[iter]-split[rank]] += values_local[iter] * v[i];
+        }
+    }
+
+    // Wait for comm to finish.
+    MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
+
+//    cout << "rank=" << rank << ", values_remote.size()=" << values_remote.size() << endl;
+/*    if(rank==0){
+        cout << "rank=" << rank << ", values_remote.size()=" << values_remote.size() << endl;
+        for (int i=0; i<vElementRep_remote.size(); i++){
+            cout << vElementRep_remote[i] << endl;
+        }
+    }*/
+
+    iter = 0;
+    // remote loop
+    for (unsigned int i=0; i<recvSize; ++i) {
+        for (unsigned int j=0; j<vElementRep_remote[i]; ++j, iter++) {
+            //if(rank==0) cout << "iter=" << iter << ", vElementRep_remote[i]=" << vElementRep_remote[i] << endl;
+            w[row_remote[iter]-split[rank]] += values_remote[iter] * vecValues[i];
+        }
+    }
+
+
+
+
     // send out values of the vector
-    MPI_Alltoallv(vSend, vIndexCount, &*(vdispls.begin()), MPI_DOUBLE, vecValues, recvCount, &*(rdispls.begin()), MPI_DOUBLE, MPI_COMM_WORLD);
+    //MPI_Alltoallv(vSend, vIndexCount, &*(vdispls.begin()), MPI_DOUBLE, vecValues, recvCount, &*(rdispls.begin()), MPI_DOUBLE, MPI_COMM_WORLD);
 
     // compute matvec w = B * v
     // "values" is the array of value of the entries from matrix B
     // to change the index from global to local: row[iter] - split[rank]
 
-    fill(&w[0], &w[M], 0);
+/*    fill(&w[0], &w[M], 0);
     long iter = 0;
     for (long i=0; i<vElementSize; i++){
-        for (long j=0; j<vElementRep[i]; j++) {
+        for (long j=0; j<vElementRep[i]; j++, iter++) {
             w[row[iter] - split[rank]] += values[iter] * vecValues[i];
-            iter++;
+            //iter++;
         }
-    }
+    }*/
 }
 
 // *******************************************
@@ -427,17 +603,29 @@ void COOMatrix::colprint(){
     }
 }
 
-void COOMatrix::vElementprint(){
-    cout << endl << "vElement:" << endl;
-    for(long i=0;i<vElementSize;i++) {
-        cout << vElement[i] << endl;
+void COOMatrix::vElementprint_local(){
+    cout << endl << "vElement_local:" << endl;
+    for(std::vector<long>::iterator it = vElement_local.begin() ; it != vElement_local.end(); ++it) {
+        cout << *it << endl;
+    }
+}
+void COOMatrix::vElementprint_remote(){
+    cout << endl << "vElement_remote:" << endl;
+    for(std::vector<long>::iterator it = vElement_remote.begin() ; it != vElement_remote.end(); ++it) {
+        cout << *it << endl;
     }
 }
 
-void COOMatrix::vElementRepprint(){
-    cout << endl << "vElementRep:" << endl;
-    for(long i=0;i<vElementSize;i++) {
-        cout << vElementRep[i] << endl;
+void COOMatrix::vElementRepprint_local(){
+    cout << endl << "vElementRep_local:" << endl;
+    for(std::vector<long>::iterator it = vElementRep_local.begin() ; it != vElementRep_local.end(); ++it) {
+        cout << *it << endl;
+    }
+}
+void COOMatrix::vElementRepprint_remote(){
+    cout << endl << "vElementRep_remote:" << endl;
+    for(std::vector<long>::iterator it = vElementRep_remote.begin() ; it != vElementRep_remote.end(); ++it) {
+        cout << *it << endl;
     }
 }
 
