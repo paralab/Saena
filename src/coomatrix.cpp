@@ -6,7 +6,7 @@
 #include "mpi.h"
 #include <omp.h>
 
-#define ITERATIONS 150
+#define ITERATIONS 100
 
 // binary search tree using the lower bound
 template <class T>
@@ -453,6 +453,16 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
             cout << vIndex[i] << endl;
     }*/
 
+    // change the indices from global to local
+    for (unsigned int i=0; i<vIndexSize; i++)
+        vIndex[i] -= split[rank];
+
+    // change the indices from global to local
+    for (unsigned int i=0; i<row_local.size(); i++)
+        row_local[i] -= split[rank];
+    for (unsigned int i=0; i<row_remote.size(); i++)
+        row_remote[i] -= split[rank];
+
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
     // These will be used in matvec and they are set here to reduce the time of matvec.
@@ -476,7 +486,7 @@ void COOMatrix::matvec(double* v, double* w) {
     // put the values of the vector in vSend, for sending to other processors
     // to change the index from global to local: vIndex[i]-split[rank]
     for(long i=0;i<vIndexSize;i++)
-        vSend[i] = v[( vIndex[i]-split[rank] )];
+        vSend[i] = v[( vIndex[i] )];
 
 /*    if (rank==0){
         cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << endl;
@@ -534,7 +544,7 @@ void COOMatrix::matvec(double* v, double* w) {
     for (unsigned int i=0; i<M; ++i) {
         for (unsigned int j=0; j<vElementRep_local[i]; ++j,++iter) {
             //if(rank==0) cout << "row_local[iter]=" << row_local[iter] << ", values_local[iter]=" << values_local[iter] << ", v[i]=" << v[i] << endl;
-            w[row_local[iter]-split[rank]] += values_local[iter] * v[i];
+            w[row_local[iter]] += values_local[iter] * v[i];
         }
     }
 
@@ -554,7 +564,7 @@ void COOMatrix::matvec(double* v, double* w) {
     for (unsigned int i=0; i<recvSize; ++i) {
         for (unsigned int j=0; j<vElementRep_remote[i]; ++j, iter++) {
             //if(rank==0) cout << "iter=" << iter << ", vElementRep_remote[i]=" << vElementRep_remote[i] << endl;
-            w[row_remote[iter]-split[rank]] += values_remote[iter] * vecValues[i];
+            w[row_remote[iter]] += values_remote[iter] * vecValues[i];
         }
     }
 

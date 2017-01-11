@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include "mpi.h"
 
-#define ITERATIONS 150
+#define ITERATIONS 100
 
 using namespace std;
 
