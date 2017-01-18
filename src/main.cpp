@@ -72,16 +72,32 @@ int main(int argc, char* argv[]){
         v = w;
     }
 
+    double totalTime = 0;
+    int time_num = 4;
+    double time[time_num];
+    fill(&time[0], &time[time_num], 0);
+
     // timing matvec
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     for(int i=0; i<ITERATIONS; i++){
         B.matvec(vp, wp);
         v = w;
+
+        for(int j=0; j<time_num; j++)
+            time[j] += B.time[j]/ITERATIONS;
+        totalTime += B.totalTime/ITERATIONS;
     }
     MPI_Barrier(MPI_COMM_WORLD);
     t2 = MPI_Wtime();
     //end of timing matvec
+
+    if (rank==0){
+        cout << "Saena matvec time: " << totalTime << endl;
+        cout << "phase 0: " << time[0] << endl;
+        cout << "phase 1: " << (time[3]-time[1]-time[2]) << endl;
+        cout << "phase 2: " << (time[1]+time[2]) << endl;
+    }
 
     if (rank==0)
         cout << "Matvec in Saena took " << (t2 - t1)/ITERATIONS << " seconds!" << endl;
