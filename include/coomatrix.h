@@ -18,10 +18,6 @@ private:
     int *vIndexCount;
     long *vIndex;
     std::vector<int> splitOffset;
-
-
-public:
-
     std::vector<int> vdispls;
     std::vector<int> rdispls;
     int recvSize;
@@ -38,8 +34,12 @@ public:
     std::vector<long> row_remote;
     std::vector<long> col_local;
     std::vector<long> col_remote;
+    long num_threads;
+//    int thread_id;
+    long* iter_local_array;
+    long* iter_remote_array;
 
-
+public:
     long M;
     //long N;
     unsigned long nnz_l;
@@ -51,7 +51,7 @@ public:
     std::vector<long> col;
 
     //long *vElement;
-    std::vector<long> vElement_local;
+    //std::vector<long> vElement_local;
     std::vector<long> vElement_remote;
     //long vElementSize;
     //long vElementSize_local;
@@ -66,12 +66,15 @@ public:
 
     void matvec(double* v, double* w);
 
+    double time[4];
+    double totalTime=0;
+
     // print functions
     void valprint();
     void rowprint();
     void colprint();
     //void vElementprint();
-    void vElementprint_local();
+    //void vElementprint_local();
     void vElementprint_remote();
     //void vElementRepprint();
     void vElementRepprint_local();
