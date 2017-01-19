@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include "mpi.h"
 
-#define ITERATIONS 1
+#define ITERATIONS 100
 
 using namespace std;
 
@@ -36,8 +36,8 @@ int main(int argc, char* argv[]){
     MPI_Barrier(MPI_COMM_WORLD);
     double t2 = MPI_Wtime();
 
-//    if (rank==0)
-//        cout << "Setup in Saena took " << t2 - t1 << " seconds!" << endl;
+    if (rank==0)
+        cout << "Setup in Saena took " << t2 - t1 << " seconds!" << endl;
 
     char* Vname(argv[2]);
     MPI_Status status;
@@ -67,10 +67,10 @@ int main(int argc, char* argv[]){
     double* wp = &(*(w.begin()));
 
     // warming up
-/*    for(int i=0; i<ITERATIONS; i++){
+    for(int i=0; i<ITERATIONS; i++){
         B.matvec(vp, wp);
         v = w;
-    }*/
+    }
 
     double totalTime = 0;
     int time_num = 4;
@@ -92,12 +92,12 @@ int main(int argc, char* argv[]){
     t2 = MPI_Wtime();
     //end of timing matvec
 
-/*    if (rank==0){
+    if (rank==0){
         cout << "Saena matvec time: " << totalTime << endl;
         cout << "phase 0: " << time[0] << endl;
         cout << "phase 1: " << (time[3]-time[1]-time[2]) << endl;
         cout << "phase 2: " << (time[1]+time[2]) << endl;
-    }*/
+    }
 
 //    if (rank==0)
 //        cout << "Matvec in Saena took " << (t2 - t1)/ITERATIONS << " seconds!" << endl;

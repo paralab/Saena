@@ -6,7 +6,7 @@
 #include "mpi.h"
 #include <omp.h>
 
-#define ITERATIONS 1
+#define ITERATIONS 100
 
 // binary search tree using the lower bound
 template <class T>
