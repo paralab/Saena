@@ -6,7 +6,7 @@
 #include "mpi.h"
 #include <omp.h>
 
-#define ITERATIONS 100
+#define ITERATIONS 1
 
 // binary search tree using the lower bound
 template <class T>
@@ -258,7 +258,7 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     }*/
 
     nnz_l = rOffset[nprocs-1] + recvSizeArray[nprocs-1];
-    //cout << "rank=" << rank << ", nnz_l = " << nnz_l << endl;
+//    cout << "rank=" << rank << ", nnz_l = " << nnz_l << endl;
 
     values.resize(nnz_l);
     row.resize(nnz_l);
@@ -283,18 +283,8 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         //print();
     }*/
 
-/*    //vElement = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize
-    vElement_local = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize_local
-    vElement_remote = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize_remote
-    //vElementRep = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize
-    vElementRep_local = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize_local
-    vElementRep_remote = (long*) malloc(sizeof(long) * nnz_l); //the size of this, which is nnz_l, will be less, exactly: vElementSize_remote
-    //vElementSize = 0;
-    //vElementSize_local = 0;
-    //vElementSize_remote = 0;*/
     recvCount = (int*)malloc(sizeof(long)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
-    //std::fill(vElementRep, vElementRep + nnz_l, 0);
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
     if (col[0] >= split[rank] && col[0] < split[rank + 1]) {
@@ -465,28 +455,45 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     vSend = (double*)malloc(sizeof(double) * vIndexSize);
     vecValues = (double*) malloc(sizeof(double) * recvSize);
 
-    #pragma omp parallel
-        num_threads = omp_get_num_threads();
+#pragma omp parallel
+    num_threads = omp_get_num_threads();
 
     iter_local_array = (long*)malloc(sizeof(long)*(num_threads+1));
     iter_remote_array = (long*)malloc(sizeof(long)*(num_threads+1));
     long iter_local, iter_remote;
-    #pragma omp parallel private(iter_local, iter_remote)
+#pragma omp parallel private(iter_local, iter_remote)
     {
 //        num_threads = omp_get_num_threads();
         const int thread_id = omp_get_thread_num();
         long istart, iend;
 
         // compute local iter to do matvec using openmp (it is done to make iter independent data on threads)
-        istart = thread_id*M/num_threads;
-        iend = (thread_id+1)*M/num_threads;
-        if(thread_id == num_threads-1) iend = M;
+//        istart = long(ceil( thread_id*M*1.0/num_threads ));
+//        iend = long(ceil( (thread_id+1)*M*1.0/num_threads ));
+//        if(thread_id == num_threads-1) iend = M;
+
+        int index=0;
+        #pragma omp for
+            for (unsigned int i = 0; i < M; ++i) {
+                    if(index==0){
+                        istart = i;
+                        index++;
+                        iend = istart;
+                    }
+                iend++;
+            }
+
         iter_local = 0;
         for (long i = istart; i < iend; ++i)
             iter_local += vElementRep_local[i];
 
         iter_local_array[0] = 0;
         iter_local_array[thread_id+1] = iter_local;
+
+/*        if (rank==0){
+            cout << "thread_id*M*1.0/num_threads = " << thread_id*M*1.0/num_threads << ", ceil=" << istart << endl;
+            cout << "(thread_id+1)*M*1.0/num_threads = " << (thread_id+1)*M*1.0/num_threads << ", ceil=" << iend << endl;
+        }*/
 
         // compute remote iter to do matvec using openmp (it is done to make iter independent data on threads)
 /*        istart = thread_id*recvSize/num_threads;
@@ -499,9 +506,9 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         iter_remote_array[0] = 0;
         iter_remote_array[thread_id+1] = iter_remote;*/
 
-/*        if (rank==0 && thread_id==1){
+/*        if (rank==0 && thread_id==2){
             cout << "M=" << M << endl;
-            cout << "recvSize=" << recvSize << endl;
+//            cout << "recvSize=" << recvSize << endl;
             cout << "istart=" << istart << endl;
             cout << "iend=" << iend << endl;
             cout  << "nnz_l=" << nnz_l << ", iter_local=" << iter_local << endl;
@@ -514,18 +521,23 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         iter_local_array[i] += iter_local_array[i-1];
 
     //scan of iter_remote_array
-    for(int i=1; i<num_threads+1; i++)
-        iter_remote_array[i] += iter_remote_array[i-1];
+//    for(int i=1; i<num_threads+1; i++)
+//        iter_remote_array[i] += iter_remote_array[i-1];
 
 //    if(rank==0) cout << "nnz=" << nnz_l << endl;
 
- /*   if (rank==0)
-    for(int i=0; i<num_threads+1; i++)
-        cout << iter_local_array[i] << endl;*/
-
-/*    if (rank==0)
+/*    if (rank==0){
+        cout << "iter_local_array:" << endl;
         for(int i=0; i<num_threads+1; i++)
-            cout << iter_remote_array[i] << endl;*/
+            cout << iter_local_array[i] << endl;
+    }*/
+
+/*    if (rank==0){
+        cout << "iter_remote_array:" << endl;
+        for(int i=0; i<num_threads+1; i++)
+            cout << iter_remote_array[i] << endl;
+    }*/
+
 }
 
 COOMatrix::~COOMatrix() {
@@ -547,7 +559,7 @@ void COOMatrix::matvec(double* v, double* w) {
 
     // put the values of the vector in vSend, for sending to other processors
     // to change the index from global to local: vIndex[i]-split[rank]
-    #pragma omp parallel for
+//    #pragma omp parallel for
     for(unsigned int i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i] )];
     double t20 = MPI_Wtime();
@@ -624,12 +636,38 @@ void COOMatrix::matvec(double* v, double* w) {
         }
     }*/
 
-    long iter = 0;
-    for (unsigned int i = 0; i < M; ++i) {
-        for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
-            w[row_local[iter]] += values_local[iter] * v[i];
+
+    #pragma omp parallel
+    {
+        long iter = iter_local_array[omp_get_thread_num()];
+    #pragma omp for
+        for (unsigned int i = 0; i < M; ++i) {
+            for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
+//            w[row_local[iter]] += values_local[iter] * v[i];
+//                if (rank==0 && omp_get_thread_num()==2) cout << i << "\t" << j << "\t" << "iter=" << iter << endl;
+                w[i] += values_local[iter] * v[row_local[iter]];
+            }
         }
+/*        iter = iter_local_array[1];
+        for (unsigned int i = M/2; i < M; ++i) {
+//            double w_temp = 0;
+            for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
+//            w[row_local[iter]] += values_local[iter] * v[i];
+                w[i] += values_local[iter] * v[row_local[iter]];
+            }
+//            w[i] = w_temp;
+        }*/
     }
+
+    long iter = 0;
+
+
+/*    for (unsigned int i = 0; i < M; ++i) {
+        for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
+//            w[row_local[iter]] += values_local[iter] * v[i];
+            w[i] += values_local[iter] * v[row_local[iter]];
+        }
+    }*/
 
     double t21 = MPI_Wtime();
     time[1] = (t21-t11);
@@ -657,7 +695,7 @@ void COOMatrix::matvec(double* v, double* w) {
             }
         }
     }*/
-//    long iter=0;
+    iter=0;
     for (unsigned int i = 0; i < recvSize; ++i) {
         for (unsigned int j = 0; j < vElementRep_remote[i]; ++j, ++iter) {
             w[row_remote[iter]] += values_remote[iter] * vecValues[i];
