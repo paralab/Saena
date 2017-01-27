@@ -29,6 +29,7 @@ T lower_bound2(T *left, T *right, T val) {
 }
 
 
+
 COOMatrix::COOMatrix(char* Aname, long Mbig) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
@@ -283,21 +284,47 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         //print();
     }*/
 
+
+
+
+
+/*    if (rank==1){
+//        cout << nnz_l << endl;
+        for (int i=0; i<nnz_l; i++)
+            cout << rowP[indicesP[i]] << "\t" << colP[indicesP[i]] << "\titer=" << i << "\t\tvalues=" << valuesP[indicesP[i]] << endl;
+    }*/
+
+
+
+    col_remote_size=-1;
+    nnz_l_local = 0;
+    nnz_l_remote = 0;
     recvCount = (int*)malloc(sizeof(long)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
+    nnz_row_local.assign(M,0);
+    nnz_row_remote.assign(M,0);
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
     if (col[0] >= split[rank] && col[0] < split[rank + 1]) {
+        nnz_row_local[row[0]-split[rank]]++;
+        nnz_l_local++;
+
         values_local.push_back(values[0]);
         row_local.push_back(row[0]);
         col_local.push_back(col[0]);
 
         //vElement_local.push_back(col[0]);
         vElementRep_local.push_back(1);
+
     } else{
+        nnz_l_remote++;
+
         values_remote.push_back(values[0]);
         row_remote.push_back(row[0]);
-        col_remote.push_back(col[0]);
+//        col_remote.push_back(col[0]);
+        col_remote_size++;
+        col_remote.push_back(col_remote_size);
+        nnz_row_remote[col_remote_size]++;
 
         vElement_remote.push_back(col[0]);
         vElementRep_remote.push_back(1);
@@ -321,6 +348,8 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         // The following "if statement" is equivalent to the above part. Computing the temp value is the same as checking the if statement. Which one is better?
 
         if (col[i] >= split[rank] && col[i] < split[rank+1]) {
+            nnz_row_local[row[i]-split[rank]]++;
+            nnz_l_local++;
 
             values_local.push_back(values[i]);
             row_local.push_back(row[i]);
@@ -333,41 +362,34 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
                 vElementRep_local.push_back(1);
             }
         } else {
+            nnz_l_remote++;
+
             values_remote.push_back(values[i]);
             row_remote.push_back(row[i]);
-            col_remote.push_back(col[i]);
+//            col_remote.push_back(col[i]);
 
             if (col[i] == col[i - 1]) {
                 (*(vElementRep_remote.end()-1))++;
             } else {
+//                col_remote.push_back(col_remote_size);
+                col_remote_size++;
+
                 vElement_remote.push_back(col[i]);
                 vElementRep_remote.push_back(1);
 
                 procNum = lower_bound2(&split[0], &split[nprocs], col[i]);
                 recvCount[procNum]++;
             }
+            col_remote.push_back(col_remote_size);
+            nnz_row_remote[col_remote_size]++;
         }
     } // for i
 
+    // since col_remote_size starts from -1
+    col_remote_size++;
+
     // don't receive anything from yourself
     recvCount[rank] = 0;
-
-/*    if (rank==0){
-        cout << "values_local.size()=" << values_local.size() << ", rank=" << rank << endl;
-        for(int i=0; i<values_local.size(); i++)
-            cout << values_local[i] << endl;
-    }*/
-
-/*    if (rank==0){
-        vElementRepprint_remote();
-        cout << "values_local: rank=" << rank << endl;
-        for(int i=0; i<values_local.size(); i++)
-            cout << i << "\trow=" << row_local[i] <<", col=" << col_local[i] << ", val=" << values_local[i] << endl;
-    }*/
-
-    // set vElementSize_local and vElementSize_remote
-    //vElementSize_local = recvCount[rank];
-    //vElementSize_remote = vElementSize - vElementSize_local;
 
 /*    if (rank==0){
         cout << "rank=" << rank << ", vElement_local.size() = " << vElement_local.size() << endl;
@@ -444,10 +466,14 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         vIndex[i] -= split[rank];
 
     // change the indices from global to local
-    for (unsigned int i=0; i<row_local.size(); i++)
+    for (unsigned int i=0; i<row_local.size(); i++){
         row_local[i] -= split[rank];
-    for (unsigned int i=0; i<row_remote.size(); i++)
+        col_local[i] -= split[rank];
+    }
+    for (unsigned int i=0; i<row_remote.size(); i++){
         row_remote[i] -= split[rank];
+//        col_remote[i] -= split[rank];
+    }
 
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
@@ -463,57 +489,54 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
     long iter_local, iter_remote;
 #pragma omp parallel private(iter_local, iter_remote)
     {
-//        num_threads = omp_get_num_threads();
         const int thread_id = omp_get_thread_num();
         long istart, iend;
 
         // compute local iter to do matvec using openmp (it is done to make iter independent data on threads)
-//        istart = long(ceil( thread_id*M*1.0/num_threads ));
-//        iend = long(ceil( (thread_id+1)*M*1.0/num_threads ));
-//        if(thread_id == num_threads-1) iend = M;
-
         int index=0;
-        #pragma omp for
-            for (unsigned int i = 0; i < M; ++i) {
-                    if(index==0){
-                        istart = i;
-                        index++;
-                        iend = istart;
-                    }
-                iend++;
+#pragma omp for
+        for (unsigned int i = 0; i < M; ++i) {
+            if(index==0){
+                istart = i;
+                index++;
+                iend = istart;
             }
+            iend++;
+        }
 
         iter_local = 0;
         for (long i = istart; i < iend; ++i)
-            iter_local += vElementRep_local[i];
+            iter_local += nnz_row_local[i];
 
         iter_local_array[0] = 0;
         iter_local_array[thread_id+1] = iter_local;
 
-/*        if (rank==0){
-            cout << "thread_id*M*1.0/num_threads = " << thread_id*M*1.0/num_threads << ", ceil=" << istart << endl;
-            cout << "(thread_id+1)*M*1.0/num_threads = " << (thread_id+1)*M*1.0/num_threads << ", ceil=" << iend << endl;
-        }*/
-
         // compute remote iter to do matvec using openmp (it is done to make iter independent data on threads)
-/*        istart = thread_id*recvSize/num_threads;
-        iend = (thread_id+1)*recvSize/num_threads;
-        if(thread_id == num_threads-1) iend = recvSize;
+        index=0;
+        #pragma omp for
+        for (unsigned int i = 0; i < col_remote_size; ++i) {
+            if(index==0){
+                istart = i;
+                index++;
+                iend = istart;
+            }
+            iend++;
+        }
+
         iter_remote = 0;
         for (long i = istart; i < iend; ++i)
-            iter_remote += vElementRep_remote[i];
+            iter_remote += nnz_row_remote[i];
 
         iter_remote_array[0] = 0;
-        iter_remote_array[thread_id+1] = iter_remote;*/
+        iter_remote_array[thread_id+1] = iter_remote;
 
-/*        if (rank==0 && thread_id==2){
+/*        if (rank==1 && thread_id==0){
             cout << "M=" << M << endl;
-//            cout << "recvSize=" << recvSize << endl;
+            cout << "recvSize=" << recvSize << endl;
             cout << "istart=" << istart << endl;
             cout << "iend=" << iend << endl;
-            cout  << "nnz_l=" << nnz_l << ", iter_local=" << iter_local << endl;
+            cout  << "nnz_l=" << nnz_l << ", iter_remote=" << iter_remote << ", iter_local=" << iter_local << endl;
         }*/
-//    #pragma omp barrier
     }
 
     //scan of iter_local_array
@@ -521,10 +544,8 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
         iter_local_array[i] += iter_local_array[i-1];
 
     //scan of iter_remote_array
-//    for(int i=1; i<num_threads+1; i++)
-//        iter_remote_array[i] += iter_remote_array[i-1];
-
-//    if(rank==0) cout << "nnz=" << nnz_l << endl;
+    for(int i=1; i<num_threads+1; i++)
+        iter_remote_array[i] += iter_remote_array[i-1];
 
 /*    if (rank==0){
         cout << "iter_local_array:" << endl;
@@ -538,6 +559,23 @@ COOMatrix::COOMatrix(char* Aname, long Mbig) {
             cout << iter_remote_array[i] << endl;
     }*/
 
+    //find the sorting on rows on both local and remote data
+    indicesP_local = (int*)malloc(sizeof(int)*nnz_l_local);
+    for(int i=0; i<nnz_l_local; i++)
+        indicesP_local[i] = i;
+    long* row_localP = &(*(row_local.begin()));
+    std::sort(indicesP_local, &indicesP_local[nnz_l_local], sort_indices(row_localP));
+
+    indicesP_remote = (int*)malloc(sizeof(int)*nnz_l_remote);
+    for(int i=0; i<nnz_l_remote; i++)
+        indicesP_remote[i] = i;
+    long* row_remoteP = &(*(row_remote.begin()));
+    std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
+
+    indicesP = (int*)malloc(sizeof(int)*nnz_l);
+    for(int i=0; i<nnz_l; i++)
+        indicesP[i] = i;
+    std::sort(indicesP, &indicesP[nnz_l], sort_indices(rowP));
 }
 
 COOMatrix::~COOMatrix() {
@@ -550,6 +588,7 @@ COOMatrix::~COOMatrix() {
     free(vecValues);
     free(iter_local_array);
     free(iter_remote_array);
+    free(indicesP);
 }
 
 void COOMatrix::matvec(double* v, double* w) {
@@ -559,7 +598,7 @@ void COOMatrix::matvec(double* v, double* w) {
 
     // put the values of the vector in vSend, for sending to other processors
     // to change the index from global to local: vIndex[i]-split[rank]
-//    #pragma omp parallel for
+    #pragma omp parallel for
     for(unsigned int i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i] )];
     double t20 = MPI_Wtime();
@@ -620,54 +659,31 @@ void COOMatrix::matvec(double* v, double* w) {
 /*    #pragma omp parallel
     {
         long iter = iter_local_array[omp_get_thread_num()];
-        double w_private[M];
-        fill(&w_private[0], &w_private[M], 0);
         #pragma omp for
         for (unsigned int i = 0; i < M; ++i) {
-            for (unsigned int j = 0; j < vElementRep_local[i]; ++j, iter++) {
-                w_private[row_local[iter]] += values_local[iter] * v[i];
-            }
-        }
-        #pragma omp critical
-        {
-            for (unsigned int i = 0; i < M; ++i) {
-                w[i] += w_private[i];
+            for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
+//                if (rank==1) cout << i << "\t" << j << "\t" << "iter = " << iter << endl;
+//                w[row_local[iter]] += values_local[iter] * v[i];
+                w[i] += values_local[iter] * v[row_local[iter]];
             }
         }
     }*/
-
 
     #pragma omp parallel
     {
         long iter = iter_local_array[omp_get_thread_num()];
-    #pragma omp for
+        #pragma omp for
         for (unsigned int i = 0; i < M; ++i) {
-            for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
-//            w[row_local[iter]] += values_local[iter] * v[i];
-//                if (rank==0 && omp_get_thread_num()==2) cout << i << "\t" << j << "\t" << "iter=" << iter << endl;
-                w[i] += values_local[iter] * v[row_local[iter]];
+            for (unsigned int j = 0; j < nnz_row_local[i]; ++j, ++iter) {
+//                for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
+//                if (rank==1) cout << i << "\t" << j << "\t" << "iter = " << iter << "\tnnz_row=" << nnz_row_local[i] << endl;
+//                if (rank==1) cout << i << "\t" << j << "\t" << "iter = " << iter << endl;
+//                w[row_local[iter]] += values_local[iter] * v[i];
+                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]]];
+//                w[i] += values_local[iter] * v[row_local[iter]];
             }
         }
-/*        iter = iter_local_array[1];
-        for (unsigned int i = M/2; i < M; ++i) {
-//            double w_temp = 0;
-            for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
-//            w[row_local[iter]] += values_local[iter] * v[i];
-                w[i] += values_local[iter] * v[row_local[iter]];
-            }
-//            w[i] = w_temp;
-        }*/
     }
-
-    long iter = 0;
-
-
-/*    for (unsigned int i = 0; i < M; ++i) {
-        for (unsigned int j = 0; j < vElementRep_local[i]; ++j, ++iter) {
-//            w[row_local[iter]] += values_local[iter] * v[i];
-            w[i] += values_local[iter] * v[row_local[iter]];
-        }
-    }*/
 
     double t21 = MPI_Wtime();
     time[1] = (t21-t11);
@@ -675,32 +691,71 @@ void COOMatrix::matvec(double* v, double* w) {
     // Wait for comm to finish.
     MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
 
-//    cout << "rank=" << rank << ", values_remote.size()=" << values_remote.size() << endl;
-/*    if(rank==0){
-        cout << "rank=" << rank << ", values_remote.size()=" << values_remote.size() << endl;
-        for (int i=0; i<vElementRep_remote.size(); i++){
-            cout << vElementRep_remote[i] << endl;
-        }
+/*    if (rank==1){
+        cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << endl;
+        for(int i=0; i<recvSize; i++)
+            cout << vecValues[i] << endl;
     }*/
 
     // remote loop
     double t12 = MPI_Wtime();
-/*    #pragma omp parallel private(iter)
+
+/*    #pragma omp parallel
     {
-        iter = iter_remote_array[thread_id];
-    #pragma omp for
-        for (unsigned int i = 0; i < recvSize; ++i) {
-            for (unsigned int j = 0; j < vElementRep_remote[i]; ++j, ++iter) {
-                w[row_remote[iter]] += values_remote[iter] * vecValues[i];
+        long iter = iter_remote_array[omp_get_thread_num()];
+        #pragma omp for
+        for (unsigned int i = 0; i < M; ++i) {
+            for (unsigned int j = 0; j < nnz_row_remote[i]; ++j, ++iter) {
+                w[i] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
             }
         }
     }*/
-    iter=0;
-    for (unsigned int i = 0; i < recvSize; ++i) {
-        for (unsigned int j = 0; j < vElementRep_remote[i]; ++j, ++iter) {
-            w[row_remote[iter]] += values_remote[iter] * vecValues[i];
+//    long iter=0;
+    #pragma omp parallel
+    {
+        long iter = iter_remote_array[omp_get_thread_num()];
+        #pragma omp for
+        for (unsigned int i = 0; i < col_remote_size; ++i) {
+            for (unsigned int j = 0; j < nnz_row_remote[i]; ++j, ++iter) {
+//                if (rank==0) cout << "row=" << row_remote[indicesP_remote[i]] << "\t, col=" << col_remote[indicesP_remote[i]] << "\t, values=" << values_remote[indicesP_remote[i]] << "\t, vec=" << vecValues[col_remote[indicesP_remote[i]]] << endl;
+//                if (rank==0) cout << "row=" << row_remote[indicesP_remote[i]] << "\t, col=" << col_remote[indicesP_remote[i]] << "\t, values=" << values_remote[indicesP_remote[i]] << "\t, vec=" << vecValues[col_remote[indicesP_remote[i]]] << endl;
+//                if (rank==0) cout << i << "\t" << j << "\t" << "iter = " << iter << "\tvec1=" << vecValues[indicesP_remote[i]] << "\tindices=" << indicesP_remote[iter] << endl;
+//                w[i] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[i]]];
+//                w[recvCount[i]] += values_remote[iter] * vecValues[row_remote[iter]];
+//                w[row_remote[iter]] += values_remote[iter] * vecValues[i];
+                w[row_remote[indicesP_remote[iter]]] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
+            }
         }
     }
+
+/*    #pragma omp parallel
+    {
+        long iter = iter_remote_array[omp_get_thread_num()];
+        #pragma omp for
+        for (unsigned int i = 0; i < nnz_l_remote; ++i) {
+//            for (unsigned int j = 0; j < nnz_row_remote[row_remote[indicesP_remote[i]]]; ++j, ++iter) {
+//            if (rank==1) cout << "row=" << row_remote[indicesP_remote[i]] << "\t, col=" << col_remote[indicesP_remote[i]] << "\t, values=" << values_remote[indicesP_remote[i]] << "\t, vec=" << vecValues[col_remote[indicesP_remote[i]]] << endl;
+            if (rank==1) cout << "row=" << row_remote[i] << "\t, col=" << col_remote[i] << "\t, values=" << values_remote[i] << "\t, vec=" << vecValues[col_remote[i]] << endl;
+//                if (rank==0) cout << i << "\t" << j << "\t" << "iter = " << iter << "\tvec1=" << vecValues[indicesP_remote[i]] << "\tindices=" << indicesP_remote[iter] << endl;
+//                w[i] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[i]]];
+//                w[recvCount[i]] += values_remote[iter] * vecValues[row_remote[iter]];
+//                w[row_remote[iter]] += values_remote[iter] * vecValues[i];
+            w[row_remote[indicesP_remote[i]]] += values_remote[indicesP_remote[i]] * vecValues[col_remote[indicesP_remote[i]]];
+//            iter++;
+//            }
+        }
+    }*/
+
+/*    long iter=0;
+    for (unsigned int i = 0; i < recvSize; ++i) {
+        for (unsigned int j = 0; j < vElementRep_remote[i]; ++j, ++iter) {
+//            if (rank==1) cout << i << "\t" << j << "\t" << "iter = " << iter << "\trow=" << row_remote[indicesP_remote[iter]] << endl;
+//            if (rank==1) cout << "row=" << row_remote[indicesP_remote[iter]] << "\t, col=" << col_remote[indicesP_remote[iter]] << "\t, values=" << values_remote[iter] << "\t, vec=" << vecValues[i] << endl;
+            if (rank==1) cout << "row=" << row_remote[iter] << "\t, col=" << col_remote[iter] << "\t, values=" << values_remote[iter] << "\t, vec=" << vecValues[i] << endl;
+            w[row_remote[iter]] += values_remote[iter] * vecValues[i];
+//            w[recvCount[i]] += values_remote[iter] * vecValues[row_remote[iter]];
+        }
+    }*/
 
     double t22 = MPI_Wtime();
     time[2] = (t22-t12);
