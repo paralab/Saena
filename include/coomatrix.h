@@ -38,6 +38,23 @@ private:
 //    int thread_id;
     long* iter_local_array;
     long* iter_remote_array;
+    int* indicesP;
+    int* indicesP_local;
+    int* indicesP_remote;
+    //long *vElement;
+    //std::vector<long> vElement_local;
+    std::vector<long> vElement_remote;
+    //long vElementSize;
+    //long vElementSize_local;
+    //long vElementSize_remote;
+    //long *vElementRep;
+    std::vector<long> vElementRep_local;
+    std::vector<long> vElementRep_remote;
+    std::vector<long> nnz_row_local;
+    std::vector<long> nnz_row_remote;
+    long nnz_l_local;
+    long nnz_l_remote;
+    long col_remote_size;
 
 public:
     long M;
@@ -49,16 +66,6 @@ public:
     std::vector<double> values;
     std::vector<long> row;
     std::vector<long> col;
-
-    //long *vElement;
-    //std::vector<long> vElement_local;
-    std::vector<long> vElement_remote;
-    //long vElementSize;
-    //long vElementSize_local;
-    //long vElementSize_remote;
-    //long *vElementRep;
-    std::vector<long> vElementRep_local;
-    std::vector<long> vElementRep_remote;
 
     std::vector<long> split;
     double *vSend;
@@ -93,6 +100,15 @@ public:
     //COOMatrix& newsize(int M, int N, int nnz);
     //double& set(int i, int j);
 
+};
+
+class sort_indices
+{
+private:
+    long* mparr;
+public:
+    sort_indices(long* parr) : mparr(parr) {}
+    bool operator()(long i, long j) const { return mparr[i]<mparr[j]; }
 };
 
 #endif //SAENA_COOMATRIX_H
