@@ -26,13 +26,13 @@ T lower_bound2(T *left, T *right, T val) {
 }
 
 
-COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
+COOMatrix::COOMatrix(char* Aname, unsigned int Mbig) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // set Mbig in the class
-    Mbig = Mbig2;
+//    Mbig = Mbig2;
 
     // find number of general nonzero of the input matrix
     struct stat st;
@@ -70,7 +70,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
 
-    //cout << "nnz_g = " << nnz_g << ", initial_nnz_l = " << initial_nnz_l << endl;
+//    if(rank==0) cout << "nnz_g = " << nnz_g << ", initial_nnz_l = " << initial_nnz_l << endl;
 
 
     // *************************** find splitters ****************************
@@ -108,7 +108,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
     splitOffset.resize(n_buckets);
     int baseOffset = int(floor(1.0*Mbig/n_buckets));
     float offsetRes = float(1.0*Mbig/n_buckets) - baseOffset;
-    //cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << endl;
+//    if (rank==0) cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << endl;
     float offsetResSum = 0;
     splitOffset[0] = 0;
     for(unsigned int i=1; i<n_buckets; i++){
@@ -139,7 +139,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
             cout << firstSplit[i] << endl;
     }*/
 
-    unsigned int H_l[n_buckets];
+    long H_l[n_buckets];
     fill(&H_l[0], &H_l[n_buckets], 0);
 
     for(unsigned int i=0; i<initial_nnz_l; i++)
@@ -152,17 +152,17 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
             cout << H_l[i] << endl;
     }*/
 
-    unsigned int H_g[n_buckets];
+    long H_g[n_buckets];
     MPI_Allreduce(H_l, H_g, n_buckets, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
 
-/*    if (rank==0){
+/*    if (rank==1){
         cout << "global histogram:" << endl;
         for(unsigned int i=0; i<n_buckets; i++){
             cout << H_g[i] << endl;
         }
     }*/
 
-    unsigned int H_g_scan[n_buckets];
+    long H_g_scan[n_buckets];
     H_g_scan[0] = H_g[0];
     for (unsigned int i=1; i<n_buckets; i++)
         H_g_scan[i] = H_g[i] + H_g_scan[i-1];
@@ -462,7 +462,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
     // *************************** find start and end of each thread for matvec ****************************
     // also, find nnz per row for local and remote matvec
 
-    #pragma omp parallel
+#pragma omp parallel
     {
         num_threads = omp_get_num_threads();
     }
@@ -480,7 +480,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
 
         // compute local iter to do matvec using openmp (it is done to make iter independent data on threads)
         int index=0;
-        #pragma omp for
+#pragma omp for
         for (unsigned int i = 0; i < M; ++i) {
             if(index==0){
                 istart = i;
@@ -499,7 +499,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
 
         // compute remote iter to do matvec using openmp (it is done to make iter independent data on threads)
         index=0;
-        #pragma omp for
+#pragma omp for
         for (unsigned int i = 0; i < col_remote_size; ++i) {
             if(index==0){
                 istart = i;
@@ -588,7 +588,7 @@ void COOMatrix::matvec(double* v, double* w) {
 
     // put the values of the vector in vSend, for sending to other processors
     // to change the index from global to local: vIndex[i]-split[rank]
-    #pragma omp parallel for
+#pragma omp parallel for
     for(unsigned int i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i] )];
     double t20 = MPI_Wtime();
@@ -625,10 +625,10 @@ void COOMatrix::matvec(double* v, double* w) {
     double t11 = MPI_Wtime();
     // local loop
     fill(&w[0], &w[M], 0);
-    #pragma omp parallel
+#pragma omp parallel
     {
         long iter = iter_local_array[omp_get_thread_num()];
-        #pragma omp for
+#pragma omp for
         for (unsigned int i = 0; i < M; ++i) {
             for (unsigned int j = 0; j < nnz_row_local[i]; ++j, ++iter) {
                 w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]]];
@@ -651,10 +651,10 @@ void COOMatrix::matvec(double* v, double* w) {
     // remote loop
     double t12 = MPI_Wtime();
 
-    #pragma omp parallel
+#pragma omp parallel
     {
         unsigned int iter = iter_remote_array[omp_get_thread_num()];
-        #pragma omp for
+#pragma omp for
         for (unsigned int i = 0; i < col_remote_size; ++i) {
             for (unsigned int j = 0; j < nnz_row_remote[i]; ++j, ++iter) {
                 w[row_remote[indicesP_remote[iter]]] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
