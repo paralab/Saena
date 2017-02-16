@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <vector>
-#include "mpi.h"
 
 using namespace std;
 
@@ -44,7 +43,7 @@ private:
 
 public:
     unsigned int M;
-    unsigned int Mbig;
+//    unsigned int Mbig;
     unsigned long nnz_l;
     int nprocs, rank;
 
