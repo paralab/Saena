@@ -1,10 +1,10 @@
 #include <iostream>
 #include <algorithm>
 #include "coomatrix.h"
-#include <sys/time.h>
+#include <sys/stat.h>
 #include "mpi.h"
 
-#define ITERATIONS 100
+#define ITERATIONS 1
 
 using namespace std;
 
@@ -15,19 +15,28 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if(argc < 4)
+    if(argc < 3)
     {
         if(rank == 0)
         {
-            cout << "Usage: ./Saena <MatrixA> <vecX> <#rows of A>" << endl;
-            cout << "<MatrixA> is absolute address, and files should be in triples format" << endl;
+            cout << "Usage: ./Saena <MatrixA> <vecX>" << endl;
+            cout << "Files should be in triples format." << endl;
         }
         MPI_Finalize();
         return -1;
     }
 
+    // *************************** get number of rows ****************************
+
+    char* Vname(argv[2]);
+    struct stat vst;
+    stat(Vname, &vst);
+    // sizeof(double) = 8
+    unsigned int Mbig = vst.st_size/8;
+
+    // *************************** Setup Phase: Initialize the matrix ****************************
+
     char* Aname(argv[1]);
-    long Mbig = stol(argv[3]);
 
     // timing the setup phase
     MPI_Barrier(MPI_COMM_WORLD);
@@ -39,7 +48,8 @@ int main(int argc, char* argv[]){
     if (rank==0)
         cout << "Setup in Saena took " << t2 - t1 << " seconds!" << endl;
 
-    char* Vname(argv[2]);
+    // *************************** read the vector ****************************
+
     MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
@@ -51,6 +61,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
+    // define the size of v as the local number of rows on each process
     std::vector <double> v(B.M);
     double* vp = &(*(v.begin()));
 
@@ -62,6 +73,43 @@ int main(int argc, char* argv[]){
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
+
+    // *************************** use jacobi to find the answer x ****************************
+
+    for(unsigned int i=0; i<B.M; i++){
+        v[i] = i + 1 + B.split[rank];
+    }
+
+    // initial x for Ax=b
+    std::vector <double> x(B.M);
+    double* xp = &(*(x.begin()));
+    x.assign(B.M, 0);
+
+    // xp first points to the initial guess, after doing jacobi it is the approximate answer for the system
+    // vp points to the right-hand side
+    int vv = 40;
+    for(int i=0; i<vv; i++)
+        B.jacobi(xp, vp);
+
+    // *************************** write the result of jacobi ****************************
+
+    char* outFileNameTxt = "jacobi_saena.bin";
+
+    MPI_Status status2;
+    MPI_File fh2;
+    MPI_Offset offset2;
+    MPI_File_open(MPI_COMM_WORLD, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
+
+    offset2 = B.split[rank] * 8; // value(double=8)
+    MPI_File_write_at(fh2, offset2, xp, B.M, MPI_UNSIGNED_LONG, &status2);
+
+    int count2;
+    MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
+    //printf("process %d wrote %d lines of triples\n", rank, count2);
+    MPI_File_close(&fh2);
+
+    /*
+    // *************************** matvec ****************************
 
     std::vector <double> w(B.M);
     double* wp = &(*(w.begin()));
@@ -103,8 +151,8 @@ int main(int argc, char* argv[]){
 //        cout << "Matvec in Saena took " << (t2 - t1)/ITERATIONS << " seconds!" << endl;
 
 
-    // write the result of the matvec
-    // txt file
+    // *************************** write the result of matvec to file ****************************
+
     char* outFileNameTxt = "matvec_result_saena.bin";
 
     MPI_Status status2;
@@ -119,11 +167,8 @@ int main(int argc, char* argv[]){
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
     //printf("process %d wrote %d lines of triples\n", rank, count2);
     MPI_File_close(&fh2);
+*/
 
-    //free(v);
-    //free(w);
-    //free(Aname);
-    //free(Aname2);
 
     MPI_Finalize();
     return 0;
