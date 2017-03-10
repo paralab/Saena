@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include "mpi.h"
 
-#define ITERATIONS 10
+#define ITERATIONS 1
 
 using namespace std;
 
@@ -47,8 +47,8 @@ int main(int argc, char* argv[]){
     MPI_Barrier(MPI_COMM_WORLD);
     double t2 = MPI_Wtime();
 
-//    if (rank==0)
-//        cout << "Setup in Saena took " << t2 - t1 << " seconds!" << endl;
+    if (rank==0)
+        cout << "Matrix setup in Saena took " << t2 - t1 << " seconds!" << endl;
 
     // *************************** read the vector ****************************
 
