@@ -1,1 +1,4 @@
-examples
+Example 1:
+homg matrix of size 289x289 from a grid of size 16x16 order 1. 
+Inside build folder type:
+mpirun -np 5 ./Saena ../data/289o1s16.bin ../data/v289.bin
