@@ -1,5 +1,5 @@
-SET(CMAKE_CXX_COMPILER mpicxx)
-SET(CMAKE_C_COMPILER mpicc)
+#SET(CMAKE_CXX_COMPILER mpicxx)
+#SET(CMAKE_C_COMPILER mpicc)
 
 cmake_minimum_required(VERSION 2.8)
 project(Saena)
@@ -22,10 +22,6 @@ include_directories(
 
 set(SOURCE_FILES
         src/main.cpp
-        include/cscmatrix.h
-        src/cscmatrix.cpp
-        include/csrmatrix.h
-        src/csrmatrix.cpp
         include/coomatrix.h
         src/coomatrix.cpp
         )
