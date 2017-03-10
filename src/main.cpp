@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include "mpi.h"
 
-#define ITERATIONS 1
+#define ITERATIONS 10
 
 using namespace std;
 
@@ -31,8 +31,7 @@ int main(int argc, char* argv[]){
     char* Vname(argv[2]);
     struct stat vst;
     stat(Vname, &vst);
-    // sizeof(double) = 8
-    unsigned int Mbig = vst.st_size/8;
+    unsigned int Mbig = vst.st_size/8;  // sizeof(double) = 8
 
     // *************************** Setup Phase: Initialize the matrix ****************************
 
@@ -41,16 +40,19 @@ int main(int argc, char* argv[]){
     // timing the setup phase
     MPI_Barrier(MPI_COMM_WORLD);
     double t1 = MPI_Wtime();
+
     COOMatrix B (Aname, Mbig);
+    B.MatrixSetup();
+
     MPI_Barrier(MPI_COMM_WORLD);
     double t2 = MPI_Wtime();
 
-    if (rank==0)
-        cout << "Setup in Saena took " << t2 - t1 << " seconds!" << endl;
+//    if (rank==0)
+//        cout << "Setup in Saena took " << t2 - t1 << " seconds!" << endl;
 
     // *************************** read the vector ****************************
 
-    MPI_Status status;
+/*    MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
 
@@ -72,11 +74,11 @@ int main(int argc, char* argv[]){
     int count;
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
-    MPI_File_close(&fh);
+    MPI_File_close(&fh);*/
 
     // *************************** use jacobi to find the answer x ****************************
 
-    for(unsigned int i=0; i<B.M; i++){
+/*    for(unsigned int i=0; i<B.M; i++){
         v[i] = i + 1 + B.split[rank];
     }
 
@@ -89,11 +91,11 @@ int main(int argc, char* argv[]){
     // vp points to the right-hand side
     int vv = 40;
     for(int i=0; i<vv; i++)
-        B.jacobi(xp, vp);
+        B.jacobi(xp, vp);*/
 
-    // *************************** write the result of jacobi ****************************
+    // *************************** write the result of jacobi to file ****************************
 
-    char* outFileNameTxt = "jacobi_saena.bin";
+/*    char* outFileNameTxt = "jacobi_saena.bin";
 
     MPI_Status status2;
     MPI_File fh2;
@@ -106,54 +108,50 @@ int main(int argc, char* argv[]){
     int count2;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
     //printf("process %d wrote %d lines of triples\n", rank, count2);
-    MPI_File_close(&fh2);
+    MPI_File_close(&fh2);*/
 
-    /*
     // *************************** matvec ****************************
 
-    std::vector <double> w(B.M);
+/*    std::vector <double> w(B.M);
     double* wp = &(*(w.begin()));
+
+    int time_num = 4; // 4 of them are used to time 3 phases in matvec. check the print section to see how they work.
+    double time[time_num]; // array for timing matvec
+    fill(&time[0], &time[time_num], 0);
 
     // warming up
     for(int i=0; i<ITERATIONS; i++){
-        B.matvec(vp, wp);
+        B.matvec(vp, wp, time);
         v = w;
     }
 
-    double totalTime = 0;
-    int time_num = 4;
-    double time[time_num];
     fill(&time[0], &time[time_num], 0);
-
-    // timing matvec
     MPI_Barrier(MPI_COMM_WORLD);
     t1 = MPI_Wtime();
     for(int i=0; i<ITERATIONS; i++){
-        B.matvec(vp, wp);
+        B.matvec(vp, wp, time);
         v = w;
 
-        for(int j=0; j<time_num; j++)
-            time[j] += B.time[j]/ITERATIONS;
-        totalTime += B.totalTime/ITERATIONS;
+//        for(int j=0; j<time_num; j++)
+//            time[j] += time[j]/ITERATIONS;
     }
     MPI_Barrier(MPI_COMM_WORLD);
     t2 = MPI_Wtime();
     //end of timing matvec
 
     if (rank==0){
-        cout << "Saena matvec time: " << totalTime << endl;
-        cout << "phase 0: " << time[0] << endl;
-        cout << "phase 1: " << (time[3]-time[1]-time[2]) << endl;
-        cout << "phase 2: " << (time[1]+time[2]) << endl;
+        cout << "Saena matvec total time: " << (time[0]+time[3])/ITERATIONS << endl;
+        cout << "phase 0: " << time[0]/ITERATIONS << endl;
+        cout << "phase 1: " << (time[3]-time[1]-time[2])/ITERATIONS << endl;
+        cout << "phase 2: " << (time[1]+time[2])/ITERATIONS << endl;
     }
 
-//    if (rank==0)
-//        cout << "Matvec in Saena took " << (t2 - t1)/ITERATIONS << " seconds!" << endl;
-
+    if (rank==0)
+        cout << "Matvec in Saena took " << (t2 - t1)/ITERATIONS << " seconds!" << endl;*/
 
     // *************************** write the result of matvec to file ****************************
 
-    char* outFileNameTxt = "matvec_result_saena.bin";
+/*    char* outFileNameTxt = "matvec_result_saena.bin";
 
     MPI_Status status2;
     MPI_File fh2;
@@ -166,9 +164,7 @@ int main(int argc, char* argv[]){
     int count2;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
     //printf("process %d wrote %d lines of triples\n", rank, count2);
-    MPI_File_close(&fh2);
-*/
-
+    MPI_File_close(&fh2);*/
 
     MPI_Finalize();
     return 0;

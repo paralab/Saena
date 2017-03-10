@@ -5,6 +5,16 @@
 #include "mpi.h"
 #include <omp.h>
 
+// sort indices and store the ordering.
+class sort_indices
+{
+private:
+    long* mparr;
+public:
+    sort_indices(long* parr) : mparr(parr) {}
+    bool operator()(long i, long j) const { return mparr[i]<mparr[j]; }
+};
+
 // binary search tree using the lower bound
 template <class T>
 T lower_bound2(T *left, T *right, T val) {
@@ -26,19 +36,28 @@ T lower_bound2(T *left, T *right, T val) {
 }
 
 
-COOMatrix::COOMatrix(char* Aname, unsigned int Mbig) {
+
+COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // set Mbig in the class
-//    Mbig = Mbig2;
+    Mbig = Mbig2;
 
-    // find number of general nonzero of the input matrix
+    // find number of general nonzeros of the input matrix
     struct stat st;
     stat(Aname, &st);
     // 2*sizeof(long)+sizeof(double) = 24
-    unsigned int nnz_g = st.st_size/24;
+    nnz_g = st.st_size / 24;
+
+    // find initial local nonzero
+    initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
+    if (rank == nprocs - 1)
+        initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
+
+    data.resize(3 * initial_nnz_l); // 3 is for i and j and val
+    long* datap = &(*(data.begin()));
 
     // *************************** read the matrix ****************************
 
@@ -47,23 +66,18 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig) {
     MPI_Offset offset;
 
     int mpiopen = MPI_File_open(MPI_COMM_WORLD, Aname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    if(mpiopen){
-        if (rank==0) cout << "Unable to open the matrix file!" << endl;
+    if (mpiopen) {
+        if (rank == 0) cout << "Unable to open the matrix file!" << endl;
         MPI_Finalize();
     }
-
-    // find initial local nonzero
-    unsigned int initial_nnz_l = (unsigned int)(floor(1.0*nnz_g/nprocs)); // initial local nnz
-    if (rank==nprocs-1)
-        initial_nnz_l = nnz_g - (nprocs-1)*initial_nnz_l;
 
     //offset = rank * initial_nnz_l * 24; // row index(long=8) + column index(long=8) + value(double=8) = 24
     // the offset for the last process will be wrong if you use the above formula,
     // because initial_nnz_l of the last process will be used, instead of the initial_nnz_l of the other processes.
 
-    offset = rank * (unsigned int)(floor(1.0*nnz_g/nprocs)) * 24; // row index(long=8) + column index(long=8) + value(double=8) = 24
-    long data[3*initial_nnz_l];
-    MPI_File_read_at(fh, offset, data, 3*initial_nnz_l, MPI_UNSIGNED_LONG, &status);
+    offset = rank * (unsigned int) (floor(1.0 * nnz_g / nprocs)) * 24; // row index(long=8) + column index(long=8) + value(double=8) = 24
+
+    MPI_File_read_at(fh, offset, datap, 3 * initial_nnz_l, MPI_UNSIGNED_LONG, &status);
 
     int count;
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
@@ -71,7 +85,9 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig) {
     MPI_File_close(&fh);
 
 //    if(rank==0) cout << "nnz_g = " << nnz_g << ", initial_nnz_l = " << initial_nnz_l << endl;
+} //COOMatrix::COOMatrix
 
+void COOMatrix::MatrixSetup(){
 
     // *************************** find splitters ****************************
     // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
@@ -569,8 +585,6 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig) {
 }
 
 COOMatrix::~COOMatrix() {
-//    free(recvCount);
-//    free(vIndexCount);
     free(vIndex);
     free(vSend);
     free(vecValues);
@@ -578,12 +592,14 @@ COOMatrix::~COOMatrix() {
     free(iter_remote_array);
     free(indicesP_local);
     free(indicesP_remote);
+//    free(vIndexCount);
+//    free(vIndexCount);
     //free(indicesP);
 }
 
-void COOMatrix::matvec(double* v, double* w) {
+void COOMatrix::matvec(double* v, double* w, double time[4]) {
 
-    totalTime = 0;
+//    totalTime = 0;
     double t10 = MPI_Wtime();
 
     // put the values of the vector in vSend, for sending to other processors
@@ -592,8 +608,7 @@ void COOMatrix::matvec(double* v, double* w) {
     for(unsigned int i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i] )];
     double t20 = MPI_Wtime();
-    time[0] = (t20-t10);
-    totalTime += time[0];
+    time[0] += (t20-t10);
 
 /*    if (rank==0){
         cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << endl;
@@ -637,7 +652,7 @@ void COOMatrix::matvec(double* v, double* w) {
     }
 
     double t21 = MPI_Wtime();
-    time[1] = (t21-t11);
+    time[1] += (t21-t11);
 
     // Wait for comm to finish.
     MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
@@ -650,7 +665,6 @@ void COOMatrix::matvec(double* v, double* w) {
 
     // remote loop
     double t12 = MPI_Wtime();
-
 #pragma omp parallel
     {
         unsigned int iter = iter_remote_array[omp_get_thread_num()];
@@ -663,11 +677,9 @@ void COOMatrix::matvec(double* v, double* w) {
     }
 
     double t22 = MPI_Wtime();
-    time[2] = (t22-t12);
-
+    time[2] += (t22-t12);
     double t23 = MPI_Wtime();
-    time[3] = (t23-t13);
-    totalTime += time[3];
+    time[3] += (t23-t13);
 }
 
 void COOMatrix::inverseDiag(double* x) {
@@ -681,15 +693,16 @@ void COOMatrix::jacobi(double* x, double* b) {
 
 // Ax = b
 // x = x - (D^(-1))(Ax - b)
-// 1. B.matvec(x, one)
+// 1. B.matvec(x, one) --> put the value of matvec in one.
 // 2. two = one - b
 // 3. three = inverseDiag * two * omega
 // 4. four = x - three
 
     float omega = float(2.0/3);
     unsigned int i;
+    // replace allocating and deallocating with a pre-allocated memory.
     double* temp = (double*)malloc(sizeof(double)*M);
-    matvec(x, temp);
+    matvec(x, temp, NULL);
     for(i=0; i<M; i++){
         temp[i] -= b[i];
         temp[i] *= invDiag[i] * omega;
@@ -698,13 +711,17 @@ void COOMatrix::jacobi(double* x, double* b) {
     free(temp);
 }
 
-// *******************************************
-// definition of the print functions
-// *******************************************
-
 void COOMatrix::print(){
     cout << endl << "triple:" << endl;
     for(long i=0;i<nnz_l;i++) {
         cout << "(" << row[i] << " , " << col[i] << " , " << values[i] << ")" << endl;
     }
+}
+
+void COOMatrix::SaenaSetup(){
+
+}
+
+void COOMatrix::SaenaSolve(){
+
 }
