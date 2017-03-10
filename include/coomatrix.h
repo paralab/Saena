@@ -15,6 +15,27 @@ using namespace std;
 class COOMatrix {
 
 private:
+    unsigned int initial_nnz_l;
+    int nprocs, rank;
+
+    std::vector<long> data;
+    std::vector<long> row;
+    std::vector<long> col;
+    std::vector<double> values;
+    double *vSend;
+    double* vecValues;
+    std::vector<double> values_local;
+    std::vector<double> values_remote;
+    std::vector<long> col_local;
+    std::vector<long> col_remote;
+    std::vector<unsigned int> nnz_row_local;
+    std::vector<unsigned int> nnz_row_remote;
+    std::vector<double> invDiag;
+
+    //    int* indicesP;
+    int* indicesP_local;
+    int* indicesP_remote;
+
     long *vIndex;
     std::vector<int> splitOffset;
     std::vector<int> vdispls;
@@ -43,36 +64,22 @@ private:
 
 public:
     unsigned int M;
-//    unsigned int Mbig;
-    unsigned long nnz_l;
-    int nprocs, rank;
-
-    std::vector<double> values;
-    std::vector<long> row;
-    std::vector<long> col;
+    unsigned int Mbig;
+    unsigned int nnz_g;
+    unsigned int nnz_l;
     std::vector<long> split;
-    double *vSend;
-    double* vecValues;
-    std::vector<double> values_local;
-    std::vector<double> values_remote;
-    std::vector<long> col_local;
-    std::vector<long> col_remote;
-    std::vector<unsigned int> nnz_row_local;
-    std::vector<unsigned int> nnz_row_remote;
-    std::vector<double> invDiag;
-
-//    int* indicesP;
-    int* indicesP_local;
-    int* indicesP_remote;
 
     // functions
-    void print();
-    void matvec(double* v, double* w);
+    void MatrixSetup();
+
+    /**
+     * */
+    void matvec(double* v, double* w, double time[4]);
     void jacobi(double* v, double* w);
     void inverseDiag(double* x);
-
-    double time[4];
-    double totalTime=0;
+    void SaenaSetup();
+    void SaenaSolve();
+    void print();
 
     //COOMatrix();
     /**
@@ -88,13 +95,6 @@ public:
 
 };
 
-class sort_indices
-{
-private:
-    long* mparr;
-public:
-    sort_indices(long* parr) : mparr(parr) {}
-    bool operator()(long i, long j) const { return mparr[i]<mparr[j]; }
-};
-
 #endif //SAENA_COOMATRIX_H
+
+
