@@ -1,8 +1,9 @@
 #include <iostream>
 #include <algorithm>
-#include "coomatrix.h"
 #include <sys/stat.h>
 #include "mpi.h"
+#include "coomatrix.h"
+#include "AMGClass.h"
 
 #define ITERATIONS 1
 
@@ -49,6 +50,32 @@ int main(int argc, char* argv[]){
 
     if (rank==0)
         cout << "Matrix setup in Saena took " << t2 - t1 << " seconds!" << endl;
+
+    // *************************** AMG ****************************
+
+    int levels          = 2;
+    int vcycle_num      = 1;
+    double relTol       = 1e-6;
+    string relaxType    = "jacobi";
+    int preSmooth       = 2;
+    int postSmooth      = 2;
+    float connStrength  = 0.5; // connection strength parameter
+    bool doSparsify     = 0;
+
+    AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, doSparsify);
+    amgClass.AMGsetup(&B, doSparsify);
+
+
+
+
+
+
+
+
+
+
+
+
 
     // *************************** read the vector ****************************
 

@@ -36,7 +36,6 @@ T lower_bound2(T *left, T *right, T val) {
 }
 
 
-
 COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
