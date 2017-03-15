@@ -62,14 +62,8 @@ int main(int argc, char* argv[]){
     float connStrength  = 0.5; // connection strength parameter
     bool doSparsify     = 0;
 
-    AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, doSparsify);
+    AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength);
     amgClass.AMGsetup(&B, doSparsify);
-
-
-
-
-
-
 
 
 
