@@ -13,7 +13,7 @@ public:
     int levels;
     int vcycle_num;
     double relTol;
-    char* relaxType;
+    string smoother;
     int preSmooth;
     int postSmooth;
     float connStrength; // connection strength parameter
@@ -29,12 +29,11 @@ public:
     int* P;
     int* R;
 
-    AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, bool doSparsify);
-    int AMGsetup(COOMatrix* A, bool doSparsify);
+    AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength);
     ~AMGClass();
+    int AMGsetup(COOMatrix* A, bool doSparsify);
     int findAggregation(COOMatrix* A, float connStrength, double* S);
     int createStrengthMatrix(COOMatrix* A, double* S);
-
 };
 
 
