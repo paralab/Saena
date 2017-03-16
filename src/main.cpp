@@ -4,6 +4,7 @@
 #include "mpi.h"
 #include "coomatrix.h"
 #include "AMGClass.h"
+#include "csrmatrix.h"
 
 #define ITERATIONS 1
 
@@ -60,9 +61,10 @@ int main(int argc, char* argv[]){
     int preSmooth       = 2;
     int postSmooth      = 2;
     float connStrength  = 0.5; // connection strength parameter
+    float tau           = 3; // is used during making aggregates.
     bool doSparsify     = 0;
 
-    AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength);
+    AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
     amgClass.AMGsetup(&B, doSparsify);
 
 
