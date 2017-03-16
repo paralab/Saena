@@ -1,7 +1,3 @@
-//
-// Created by abaris on 3/13/17.
-//
-
 #ifndef SAENA_AMGCLASS_H
 #define SAENA_AMGCLASS_H
 
@@ -32,7 +28,7 @@ public:
     AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength);
     ~AMGClass();
     int AMGsetup(COOMatrix* A, bool doSparsify);
-    int findAggregation(COOMatrix* A, float connStrength, double* S);
+    int findAggregation(COOMatrix* A, double* S);
     int createStrengthMatrix(COOMatrix* A, double* S);
 };
 
