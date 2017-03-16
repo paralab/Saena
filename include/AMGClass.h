@@ -1,8 +1,8 @@
 #ifndef SAENA_AMGCLASS_H
 #define SAENA_AMGCLASS_H
 
-
 #include "coomatrix.h"
+#include "csrmatrix.h"
 
 class AMGClass {
 public:
@@ -13,6 +13,7 @@ public:
     int preSmooth;
     int postSmooth;
     float connStrength; // connection strength parameter
+    float tau; // is used during making aggregates.
 
 //    As:: Array{SparseMatrixCSC{Float64}}
 //    Ps:: Array{SparseMatrixCSC{Float64}}
@@ -25,11 +26,12 @@ public:
     int* P;
     int* R;
 
-    AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength);
+    AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, float tau);
     ~AMGClass();
     int AMGsetup(COOMatrix* A, bool doSparsify);
-    int findAggregation(COOMatrix* A, double* S);
-    int createStrengthMatrix(COOMatrix* A, double* S);
+    int findAggregation(COOMatrix* A);
+    int createStrengthMatrix(COOMatrix* A, CSRMatrix* S);
+    int Aggregation(CSRMatrix* S);
 };
 
 

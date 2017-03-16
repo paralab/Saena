@@ -6,7 +6,8 @@
 
 using namespace std;
 
-#define MATRIX_TOL 1.e-6
+//#define MATRIX_TOL 1.e-6
+
 /**
  * @author Majid
  * @breif Contains the basic structure to define coo matrices
@@ -19,9 +20,7 @@ private:
     int nprocs, rank;
 
     std::vector<long> data;
-    std::vector<long> row;
-    std::vector<long> col;
-    std::vector<double> values;
+
     double *vSend;
     double* vecValues;
     std::vector<double> values_local;
@@ -63,6 +62,10 @@ private:
     long col_remote_size;
 
 public:
+    std::vector<long> row;
+    std::vector<long> col;
+    std::vector<double> values;
+
     unsigned int M;
     unsigned int Mbig;
     unsigned int nnz_g;
@@ -71,9 +74,6 @@ public:
 
     // functions
     void MatrixSetup();
-
-    /**
-     * */
     void matvec(double* v, double* w, double time[4]);
     void jacobi(double* v, double* w);
     void inverseDiag(double* x);
