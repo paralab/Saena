@@ -21,12 +21,28 @@ private:
 
     std::vector<long> data;
 
+public:
+    std::vector<long> row;
+    std::vector<long> col;
+    std::vector<double> values;
+
+    unsigned int M;
+    unsigned int Mbig;
+    unsigned int nnz_g;
+    unsigned int nnz_l;
+    std::vector<long> split;
+
+    int vIndexSize;
     double *vSend;
+    long *vIndex;
     double* vecValues;
     std::vector<double> values_local;
     std::vector<double> values_remote;
+    std::vector<long> row_local;
+    std::vector<long> row_remote;
     std::vector<long> col_local;
     std::vector<long> col_remote;
+    std::vector<long> col_remote2;
     std::vector<unsigned int> nnz_row_local;
     std::vector<unsigned int> nnz_row_remote;
     std::vector<double> invDiag;
@@ -35,20 +51,16 @@ private:
     int* indicesP_local;
     int* indicesP_remote;
 
-    long *vIndex;
     std::vector<int> splitOffset;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
     int recvSize;
-    int vIndexSize;
     int numRecvProc;
     int numSendProc;
     std::vector<int> recvProcRank;
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
-    std::vector<long> row_local;
-    std::vector<long> row_remote;
 
     long num_threads;
     unsigned int* iter_local_array;
@@ -60,17 +72,6 @@ private:
     unsigned int nnz_l_local;
     unsigned int nnz_l_remote;
     long col_remote_size;
-
-public:
-    std::vector<long> row;
-    std::vector<long> col;
-    std::vector<double> values;
-
-    unsigned int M;
-    unsigned int Mbig;
-    unsigned int nnz_g;
-    unsigned int nnz_l;
-    std::vector<long> split;
 
     // functions
     void MatrixSetup();

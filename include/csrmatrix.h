@@ -8,6 +8,7 @@ public:
     std::vector<long>   rowIndex;
     std::vector<long>   col;
     std::vector<double> values;
+
 //    long*   rowIndex;
 //    long*   col;
 //    double* values;
