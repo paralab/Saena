@@ -313,8 +313,8 @@ void COOMatrix::MatrixSetup(){
     }*/
 
     // *************************** set and exchange local and remote elements ****************************
-    // local elements are  elements which correspond to vector elements which are local to this process,
-    // and, remote elements coresspond to vector elements which should be received from another processes
+    // local elements are elements that correspond to vector elements which are local to this process,
+    // and, remote elements correspond to vector elements which should be received from another processes
 
     col_remote_size = -1;
     nnz_l_local = 0;
@@ -372,6 +372,8 @@ void COOMatrix::MatrixSetup(){
             nnz_l_remote++;
             values_remote.push_back(values[i]);
             row_remote.push_back(row[i]);
+            // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
+            col_remote2.push_back(col[i]);
 
             if (col[i] != col[i - 1]) {
                 col_remote_size++;
@@ -386,6 +388,7 @@ void COOMatrix::MatrixSetup(){
             }
             // the original col values are not being used. the ordering starts from 0, and goes up by 1.
             col_remote.push_back(col_remote_size);
+
 //            nnz_row_remote[col_remote_size]++;
         }
     } // for i
