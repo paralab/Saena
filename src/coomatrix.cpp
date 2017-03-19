@@ -344,6 +344,7 @@ void COOMatrix::MatrixSetup(){
         row_remote.push_back(row[0]);
         col_remote_size++;
         col_remote.push_back(col_remote_size);
+        col_remote2.push_back(col[0]);
 //        nnz_row_remote[col_remote_size]++;
         nnz_row_remote.push_back(1);
 
@@ -351,7 +352,6 @@ void COOMatrix::MatrixSetup(){
         vElementRep_remote.push_back(1);
         recvCount[lower_bound2(&split[0], &split[nprocs], col[0])] = 1;
     }
-
 
     for (long i = 1; i < nnz_l; i++) {
 
