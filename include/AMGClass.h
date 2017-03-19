@@ -21,17 +21,17 @@ public:
 //    relaxPrecs
 //    LU
 
-    double* A;
+//    double* A;
     double* Ac;
-    int* P;
-    int* R;
+    long* P;
+    long* R;
 
     AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, float tau);
     ~AMGClass();
     int AMGsetup(COOMatrix* A, bool doSparsify);
     int findAggregation(COOMatrix* A);
     int createStrengthMatrix(COOMatrix* A, CSRMatrix* S);
-    int Aggregation(CSRMatrix* S);
+    int Aggregation(CSRMatrix* S, long* aggregate);
 };
 
 

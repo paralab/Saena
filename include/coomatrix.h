@@ -41,8 +41,8 @@ public:
     std::vector<long> row_local;
     std::vector<long> row_remote;
     std::vector<long> col_local;
-    std::vector<long> col_remote;
-    std::vector<long> col_remote2;
+    std::vector<long> col_remote; // index starting from 0, instead of the original column index
+    std::vector<long> col_remote2; //original col index
     std::vector<unsigned int> nnz_row_local;
     std::vector<unsigned int> nnz_row_remote;
     std::vector<double> invDiag;
