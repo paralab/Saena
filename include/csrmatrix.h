@@ -25,12 +25,14 @@ public:
 
     unsigned int nnz_l_local;
     unsigned int nnz_l_remote;
-    long col_remote_size;
+    long col_remote_size; // this is the same as vElement_remote.size()
 
     int vIndexSize;
     long *vSend;
+    int *vSend2;
     long *vIndex;
     long* vecValues;
+    int* vecValues2;
     std::vector<double> values_local;
     std::vector<double> values_remote;
     std::vector<long> row_local;
@@ -39,7 +41,8 @@ public:
     std::vector<long> col_remote; // index starting from 0, instead of the original column index
     std::vector<long> col_remote2; //original col index
     std::vector<unsigned int> nnz_row_local;
-    std::vector<unsigned int> nnz_row_remote;
+//    std::vector<unsigned int> nnz_row_remote;
+    std::vector<unsigned int> nnz_col_remote;
     std::vector<long> vElement_remote;
     std::vector<long> vElementRep_local;
     std::vector<long> vElementRep_remote;
