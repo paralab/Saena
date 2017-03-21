@@ -323,7 +323,7 @@ void COOMatrix::MatrixSetup(){
     int recvCount[nprocs];
     std::fill(recvCount, recvCount + nprocs, 0);
     nnz_row_local.assign(M,0);
-//    nnz_row_remote.assign(M,0);
+//    nnz_col_remote.assign(M,0);
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
     if (col[0] >= split[rank] && col[0] < split[rank + 1]) {
@@ -345,8 +345,8 @@ void COOMatrix::MatrixSetup(){
         col_remote_size++;
         col_remote.push_back(col_remote_size);
         col_remote2.push_back(col[0]);
-//        nnz_row_remote[col_remote_size]++;
-        nnz_row_remote.push_back(1);
+//        nnz_col_remote[col_remote_size]++;
+        nnz_col_remote.push_back(1);
 
         vElement_remote.push_back(col[0]);
         vElementRep_remote.push_back(1);
@@ -381,15 +381,15 @@ void COOMatrix::MatrixSetup(){
                 vElementRep_remote.push_back(1);
                 procNum = lower_bound2(&split[0], &split[nprocs], col[i]);
                 recvCount[procNum]++;
-                nnz_row_remote.push_back(1);
+                nnz_col_remote.push_back(1);
             } else {
                 (*(vElementRep_remote.end()-1))++;
-                (*(nnz_row_remote.end()-1))++;
+                (*(nnz_col_remote.end()-1))++;
             }
             // the original col values are not being used. the ordering starts from 0, and goes up by 1.
             col_remote.push_back(col_remote_size);
 
-//            nnz_row_remote[col_remote_size]++;
+//            nnz_col_remote[col_remote_size]++;
         }
     } // for i
 
@@ -528,9 +528,9 @@ void COOMatrix::MatrixSetup(){
         }
 
         iter_remote = 0;
-        if(nnz_row_remote.size() != 0){
+        if(nnz_col_remote.size() != 0){
             for (unsigned int i = istart; i < iend; ++i)
-                iter_remote += nnz_row_remote[i];
+                iter_remote += nnz_col_remote[i];
         }
 
         iter_remote_array[0] = 0;
@@ -672,7 +672,7 @@ void COOMatrix::matvec(double* v, double* w, double time[4]) {
         unsigned int iter = iter_remote_array[omp_get_thread_num()];
 #pragma omp for
         for (unsigned int i = 0; i < col_remote_size; ++i) {
-            for (unsigned int j = 0; j < nnz_row_remote[i]; ++j, ++iter) {
+            for (unsigned int j = 0; j < nnz_col_remote[i]; ++j, ++iter) {
                 w[row_remote[indicesP_remote[iter]]] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
             }
         }

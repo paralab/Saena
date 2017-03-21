@@ -256,8 +256,7 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, CSRMatrix* S){
     // add OpenMP just like matvec.
 //    iter = 0;
 //    for (i = 0; i < A->col_remote_size; ++i) {
-//        for (unsigned int j = 0; j < A->nnz_row_remote[i]; ++j, ++iter) {
-//            w[A->row_remote[A->indicesP_remote[iter]]] += A->values_remote[A->indicesP_remote[iter]] * A->vecValues[A->col_remote[A->indicesP_remote[iter]]];
+//        for (unsigned int j = 0; j < A->nnz_col_remote[i]; ++j, ++iter) {
 //            STi.push_back(A->row_remote[A->indicesP_remote[iter]]);
 //            STj.push_back(A->col_remote2[A->indicesP_remote[iter]]);
 //            STval.push_back( -A->values_remote[A->indicesP_remote[iter]] / A->vecValues[A->col_remote[A->indicesP_remote[iter]]] );
@@ -307,7 +306,7 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, CSRMatrix* S){
         }
     }
 
-//    if(rank==3)
+//    if(rank==1)
 //        for(i=0; i<Si2.size(); i++){
 //            cout << "S:  " << "[" << Si2[i] << "," << Sj2[i] << "] = " << Sval2[i] << endl;
 //            cout << "S:  " << "[" << (Si2[i] - A->split[rank]) << "," << Sj2[i] << "] = \t" << Sval2[i] << endl;
@@ -332,21 +331,23 @@ int AMGClass::Aggregation(CSRMatrix* S, long* aggregate) {
     long size = S->M;
     long maxIndex[size];
     long maxIndex2[size];
-    int aggregated[size];
+    int aggStatus[size];
+    int aggStatus2[size];
 //    long aggregate[size];
     long aggregate2[size];
-    randomVector(aggregate, size);
+    long initialWeight[size];
+    randomVector(initialWeight, size);
 
 //    if(rank==0){
 //        cout << endl << "after initialization!" << endl;
 //        for (i = 0; i < size; ++i)
-//            cout << i << "\taggregate = " << aggregate[i] << endl;
+//            cout << i << "\tinitialWeight = " << initialWeight[i] << endl;
 //    }
 
     for(i=0; i<size; i++) {
         maxIndex[i] = i + S->split[rank];
 //        maxIndex[i] = -1;
-        aggregated[i] = 0;
+        aggStatus[i] = 0;
     }
 
 //    long maxTemp;
@@ -355,127 +356,312 @@ int AMGClass::Aggregation(CSRMatrix* S, long* aggregate) {
 //        for(j=S->rowIndex[i]; j<S->rowIndex[i+1]; j++){
 //            if(j >= S->split[rank] && j < S->split[rank+1])
 //                //store index of max too.
-//                maxTemp = max(maxTemp, aggregate[j]);
+//                maxTemp = max(maxTemp, initialWeight[j]);
 //        }
 //    }
 
     // ******************************* first round of max computation *******************************
+    // first "compute max" is local. second one is both local and remote.
 
     long maxWeightTemp, maxIndexTemp;
-    // first "compute max" is local. second one is both local and remote.
-    long iter = 0;
-    for (i = 0; i < size; ++i) {
-        maxWeightTemp = aggregate[i];
-        maxIndexTemp  = maxIndex[i];
-        for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
-//            w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]]];
-//            if(rank==0) cout << i << "\t" << S->col_local[S->indicesP_local[iter]] << endl;
-            if(aggregate[S->col_local[S->indicesP_local[iter]]] > maxWeightTemp){
-                maxWeightTemp = aggregate[S->col_local[S->indicesP_local[iter]]];
-                maxIndexTemp  = maxIndex[S->col_local[S->indicesP_local[iter]]];
-            }
+    int aggStatusTemp;
+    bool continueAggLocal = true;
+    bool continueAgg = true;
+    long iter;
+    int whileiter=0;
+    MPI_Request *requests  = new MPI_Request[S->numSendProc + S->numRecvProc];
+    MPI_Status *statuses   = new MPI_Status[S->numSendProc + S->numRecvProc];
+    MPI_Request *requests2 = new MPI_Request[S->numSendProc + S->numRecvProc];
+    MPI_Status *statuses2  = new MPI_Status[S->numSendProc + S->numRecvProc];
+
+    while(continueAgg) {
+        // initialization
+        for (i = 0; i < size; ++i) {
+            aggregate[i] = initialWeight[i];
+            maxIndex[i] = i+S->split[rank];
         }
-        aggregate2[i]   = maxWeightTemp;
-        maxIndex2[i] = maxIndexTemp;
-    }
-    for (i = 0; i < size; ++i) {
-        aggregate[i] = aggregate2[i];
-        maxIndex[i] = maxIndex2[i];
-    }
 
-//    if(rank==0){
-//        cout << endl << "after first max computation!" << endl;
-//        for (i = 0; i < size; ++i)
-//            cout << i << "\tweight = " << aggregate[i] << "\tindex = " << maxIndex[i] << endl;
-//    }
-
-    // ******************************* exchange remote max values for the second round of max computation *******************************
-
-    //vSend are maxPerCol for remote elements that should be sent to other processes.
-    for(i=0;i<S->vIndexSize;i++)
-        S->vSend[i] = aggregate[( S->vIndex[i] )];
-
-    MPI_Request* requests = new MPI_Request[S->numSendProc+S->numRecvProc];
-    MPI_Status* statuses = new MPI_Status[S->numSendProc+S->numRecvProc];
-
-    //vecValues are maxperCol for remote elements that are received from other processes.
-    // Do not recv from self.
-    for(i = 0; i < S->numRecvProc; i++)
-        MPI_Irecv(&S->vecValues[S->rdispls[S->recvProcRank[i]]], S->recvProcCount[i], MPI_LONG, S->recvProcRank[i], 1, MPI_COMM_WORLD, &(requests[i]));
-
-    // Do not send to self.
-    for(i = 0; i < S->numSendProc; i++)
-        MPI_Isend(&S->vSend[S->vdispls[S->sendProcRank[i]]], S->sendProcCount[i], MPI_LONG, S->sendProcRank[i], 1, MPI_COMM_WORLD, &(requests[S->numRecvProc+i]));
-
-    // ******************************* second round of max computation *******************************
-
-    // local part
-    iter = 0;
-    for (i = 0; i < size; ++i) {
-        maxWeightTemp = aggregate[i];
-        maxIndexTemp = maxIndex[i];
-        for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
-//            w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]]];
-            if(aggregate[S->col_local[S->indicesP_local[iter]]] > maxWeightTemp){
-                maxWeightTemp = aggregate[S->col_local[S->indicesP_local[iter]]];
-                maxIndexTemp  = maxIndex[S->col_local[S->indicesP_local[iter]]];
+        iter = 0;
+        for (i = 0; i < size; ++i) {
+            maxWeightTemp = aggregate[i];
+            maxIndexTemp = maxIndex[i];
+            aggStatusTemp = aggStatus[i];
+//            if(rank==1) cout << i << "\tmaxWeightTemp = " << maxWeightTemp << "\tmaxIndexTemp = " << maxIndexTemp << "\t\taggStatusTemp = " << aggStatusTemp << endl;
+            for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
+//                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]]];
+//                if(rank==1) cout << i << "\t" << S->col_local[S->indicesP_local[iter]] << endl;
+//                if(rank==1) cout << i << "\t" << S->col_local[S->indicesP_local[iter]] << "\t" << aggregate[S->col_local[S->indicesP_local[iter]]] << "\t" << maxIndex[S->col_local[S->indicesP_local[iter]]] << endl;
+                if(aggStatus[S->col_local[S->indicesP_local[iter]]] > aggStatusTemp ||
+                   ((aggStatus[S->col_local[S->indicesP_local[iter]]] == aggStatusTemp)  &&  (aggregate[S->col_local[S->indicesP_local[iter]]] > maxWeightTemp))){
+                    maxWeightTemp = aggregate[S->col_local[S->indicesP_local[iter]]];
+                    maxIndexTemp = maxIndex[S->col_local[S->indicesP_local[iter]]];
+                    aggStatusTemp = aggStatus[S->col_local[S->indicesP_local[iter]]];
+                }
             }
+
+            aggregate2[i] = maxWeightTemp;
+            maxIndex2[i]  = maxIndexTemp;
+            aggStatus2[i] = aggStatusTemp;
         }
-        aggregate2[i]   = maxWeightTemp;
-        maxIndex2[i] = maxIndexTemp;
-    }
-    for (i = 0; i < size; ++i) {
-        aggregate[i] = aggregate2[i];
-        maxIndex[i] = maxIndex2[i];
-    }
 
-//    if(rank==0){
-//        cout << endl << "after second max computation!" << endl;
-//        for (i = 0; i < size; ++i)
-//            cout << i << "\tweight = " << aggregate[i] << "\tindex = " << maxIndex[i] << endl;
-//    }
-
-    MPI_Waitall(S->numSendProc+S->numRecvProc, requests, statuses);
-
-    // remote part
-    iter = 0;
-    long iter2;
-    for (i = 0; i < S->col_remote_size; ++i) {
-        iter2 = iter;
-        maxWeightTemp = aggregate[S->row_remote[S->indicesP_remote[iter]]]; // the weight of the row so far.
-        maxIndexTemp  = maxIndex[S->row_remote[S->indicesP_remote[iter]]];
-        for (j = 0; j < S->nnz_row_remote[i]; ++j, ++iter) {
-            if(S->vecValues[S->col_remote[S->indicesP_remote[iter]]] > maxWeightTemp) {
-                maxWeightTemp = S->vecValues[S->col_remote[S->indicesP_remote[iter]]];
-                maxIndexTemp = S->col_remote2[S->indicesP_remote[iter]];
-//            cout << "row = " << S->row_remote[S->indicesP_remote[iter]] << ", col = " << S->col_remote2[S->indicesP_remote[iter]] << "\tweight = " << S->vecValues[S->col_remote[S->indicesP_remote[iter]]] << endl;
-            }
-        }
-        aggregate2[S->row_remote[S->indicesP_remote[iter2]]]   = maxWeightTemp;
-        maxIndex2[S->row_remote[S->indicesP_remote[iter2]]] = maxIndexTemp;
-//        if(rank==0) cout << S->row_remote[S->indicesP_remote[iter]] << "\t" << aggregate2[i] << endl;
-    }
-
-    for (i = S->row_remote[S->indicesP_remote[0]]; i < size; ++i) {
-        aggregate[i] = aggregate2[i];
-        maxIndex[i] = maxIndex2[i];
-    }
-
-//    if(rank==0){
-//        cout << "final weight for remote part!" << endl;
-//        for (i = S->row_remote[S->indicesP_remote[0]]; i < size; ++i)
-//            cout << i << "\tweight = " << aggregate[i] << "\tindex = " << maxIndex[i] << endl;
-//    }
-
-//    if(rank==3){
-//        cout << "final aggregate!" << endl;
-//        for (i = 0; i < size; ++i){
-//            cout << i << "\tweight = " << aggregate[i] << "\tindex = " << maxIndex[i] << endl;
-//            cout << "i = " << i << "\tmax_index = " << maxIndex[i] << endl;
+//        for (i = 0; i < size; ++i) {
+//            aggregate[i] = aggregate2[i];
+//            maxIndex[i] = maxIndex2[i];
+//            aggStatus[i] = aggStatus2[i];
 //        }
-//    }
 
-        return 0;
+        for (i = 0; i < size; ++i) {
+            if(S->nnz_row_local[i] != 0) {
+                aggregate[i] = aggregate2[i];
+                maxIndex[i]  = maxIndex2[i];
+            }
+        }
+
+        //    if(rank==0){
+        //        cout << endl << "after first max computation!" << endl;
+        //        for (i = 0; i < size; ++i)
+        //            cout << i << "\tweight = " << aggregate[i] << "\tindex = " << maxIndex[i] << endl;
+        //    }
+
+        // ******************************* exchange remote max values for the second round of max computation *******************************
+
+        // vSend is maxPerCol for remote elements that should be sent to other processes.
+        for (i = 0; i < S->vIndexSize; i++)
+            S->vSend[i] = aggregate[(S->vIndex[i])];
+
+        //vecValues are maxperCol for remote elements that are received from other processes.
+        // Do not recv from self.
+        for (i = 0; i < S->numRecvProc; i++)
+            MPI_Irecv(&S->vecValues[S->rdispls[S->recvProcRank[i]]], S->recvProcCount[i], MPI_LONG, S->recvProcRank[i],
+                      1, MPI_COMM_WORLD, &(requests[i]));
+
+        // Do not send to self.
+        for (i = 0; i < S->numSendProc; i++)
+            MPI_Isend(&S->vSend[S->vdispls[S->sendProcRank[i]]], S->sendProcCount[i], MPI_LONG, S->sendProcRank[i], 1,
+                      MPI_COMM_WORLD, &(requests[S->numRecvProc + i]));
+
+
+
+        // vSend2 is aggStatus for remote elements that should be sent to other processes.
+        for (i = 0; i < S->vIndexSize; i++)
+            S->vSend2[i] = aggStatus[(S->vIndex[i])];
+
+        // vecValues2 is aggStatus for remote elements that are received from other processes.
+        for (i = 0; i < S->numRecvProc; i++)
+            MPI_Irecv(&S->vecValues2[S->rdispls[S->recvProcRank[i]]], S->recvProcCount[i], MPI_INT, S->recvProcRank[i],
+                      2, MPI_COMM_WORLD, &(requests2[i]));
+
+        for (i = 0; i < S->numSendProc; i++)
+            MPI_Isend(&S->vSend2[S->vdispls[S->sendProcRank[i]]], S->sendProcCount[i], MPI_INT, S->sendProcRank[i], 2,
+                      MPI_COMM_WORLD, &(requests2[S->numRecvProc + i]));
+
+        // ******************************* second round of max computation *******************************
+
+        // local part
+        iter = 0;
+        for (i = 0; i < size; ++i) {
+            maxWeightTemp = aggregate[i];
+            maxIndexTemp = maxIndex[i];
+            aggStatusTemp = aggStatus[i];
+            for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
+//                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]]];
+                if(aggStatus[S->col_local[S->indicesP_local[iter]]] > aggStatusTemp ||
+                   ((aggStatus[S->col_local[S->indicesP_local[iter]]] == aggStatusTemp)  &&  (aggregate[S->col_local[S->indicesP_local[iter]]] > maxWeightTemp))){
+                    maxWeightTemp = aggregate[S->col_local[S->indicesP_local[iter]]];
+                    maxIndexTemp = maxIndex[S->col_local[S->indicesP_local[iter]]];
+                    aggStatusTemp = aggStatus[S->col_local[S->indicesP_local[iter]]];
+                }
+            }
+            aggregate2[i] = maxWeightTemp;
+            maxIndex2[i]  = maxIndexTemp;
+            aggStatus2[i] = aggStatusTemp;
+        }
+
+//        for (i = 0; i < size; ++i) {
+//            aggregate[i] = aggregate2[i];
+//            maxIndex[i]  = maxIndex2[i];
+//            aggStatus[i] = aggStatus2[i];
+//        }
+
+        for (i = 0; i < size; ++i) {
+            if(S->nnz_row_local[i] != 0) {
+                aggregate[i] = aggregate2[i];
+                maxIndex[i]  = maxIndex2[i];
+            }
+        }
+
+//        if(rank==1){
+//            cout << endl << "after second max computation!" << endl;
+//            for (i = 0; i < size; ++i)
+//                cout << i << "\tweight = " << aggregate[i] << "\tindex = " << maxIndex[i] << "\taggStatus = " << aggStatus[i] << endl;
+//        }
+
+        MPI_Waitall(S->numSendProc + S->numRecvProc, requests, statuses);
+        MPI_Waitall(S->numSendProc + S->numRecvProc, requests2, statuses2);
+
+/*
+        // remote part
+        iter = 0;
+        for (i = 0; i < S->col_remote_size; ++i) {
+            iter2 = iter;
+            maxWeightTemp = aggregate[S->row_remote[S->indicesP_remote[iter]]]; // the weight of the row so far.
+            maxIndexTemp = maxIndex[S->row_remote[S->indicesP_remote[iter]]];
+            aggStatusTemp = aggStatus2[S->row_remote[S->indicesP_remote[iter]]]; // aggStatus2 is used here to know which one was used in the previous local part.
+            for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter) {
+//                if(rank==0) cout << "i = " << i << "\tnnz_col_remote[i] = " << S->nnz_col_remote[i] << endl;
+//                if(rank==0) cout << "iter = " << iter << "\trow = " << S->row_remote[S->indicesP_remote[iter]] << "\t  col = " << S->col_remote[S->indicesP_remote[iter]] << "\tvecval = " << S->vecValues[S->col_remote[S->indicesP_remote[iter]]] << "\tvecval2 = " << S->vecValues2[S->col_remote[S->indicesP_remote[iter]]] << endl;
+//                if(rank==0) cout << "iter = " << iter << "\trow = " << S->row_remote[iter] << "\t  col = " << S->col_remote[iter] << "\tvecval = " << S->vecValues[S->col_remote[iter]] << "\tvecval2 = " << S->vecValues2[S->col_remote[iter]] << endl;
+                if(aggStatus[S->col_remote[S->indicesP_remote[iter]]] > aggStatusTemp ||
+                   ((aggStatus[S->col_remote[S->indicesP_remote[iter]]] == aggStatusTemp)  &&  (aggregate[S->col_remote[S->indicesP_remote[iter]]] > maxWeightTemp))){
+                    maxWeightTemp = S->vecValues[S->col_remote[S->indicesP_remote[iter]]];
+                    maxIndexTemp = S->col_remote2[S->indicesP_remote[iter]];
+                    aggStatusTemp = aggStatus[S->col_remote[S->indicesP_remote[iter]]];
+//                    cout << "row = " << S->row_remote[S->indicesP_remote[iter]] << ", col = " << S->col_remote2[S->indicesP_remote[iter]] << "\tweight = " << S->vecValues[S->col_remote[S->indicesP_remote[iter]]] << endl;
+                }
+            }
+            aggregate2[S->row_remote[S->indicesP_remote[iter2]]] = maxWeightTemp;
+            maxIndex2[S->row_remote[S->indicesP_remote[iter2]]]  = maxIndexTemp;
+            aggStatus2[S->row_remote[S->indicesP_remote[iter2]]] = aggStatusTemp;
+            //        if(rank==0) cout << S->row_remote[S->indicesP_remote[iter]] << "\t" << aggregate2[i] << endl;
+        }
+*/
+
+        // remote part
+        // store the max of rows of remote elements in aggregate2 and maxIndex2.
+        iter = 0;
+        for (i = 0; i < S->col_remote_size; ++i) {
+            for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter) {
+//                if(rank==0) cout << "iter = " << iter << "\trow = " << S->row_remote[iter] << "  \t  col = " << S->col_remote[iter] << "\tvecval = " << S->vecValues[S->col_remote[iter]] << "\tvecval2 = " << S->vecValues2[S->col_remote[iter]] << endl;
+
+                if(S->vecValues2[S->col_remote[iter]] > aggStatus2[S->row_remote[iter]]) {
+                    // the current aggregate value of remote elements is S->vecValues[S->col_remote[iter]]
+                    if (S->vecValues2[S->col_remote[iter]] > aggStatus[S->row_remote[iter]] ||
+                        ((S->vecValues2[S->col_remote[iter]] == aggStatus[S->row_remote[iter]]) &&
+                         (S->vecValues[S->col_remote[iter]] > aggregate[S->row_remote[iter]]))) {
+                        aggregate2[S->row_remote[iter]] = S->vecValues[S->col_remote[iter]];
+                        maxIndex2[S->row_remote[iter]] = S->col_remote2[iter];
+                    }
+                }
+            }
+        }
+
+        // max of local elements are saved in aggregate and maxIndex and max of remote elements saved in aggregate2 and maxIndex2. now take a max between local and remote.
+        for(i=0; i<size; i++){
+            if(aggregate2[i] > aggregate[i]){
+                aggregate[i] = aggregate2[i];
+                maxIndex[i] = maxIndex2[i];
+            }
+        }
+
+//        for (i = S->row_remote[S->indicesP_remote[0]]; i < size; ++i) {
+//            aggregate[i] = aggregate2[i];
+//            maxIndex[i] = maxIndex2[i];
+//            aggStatus[i] = aggStatus2[i];
+//        }
+
+//        iter = 0;
+//        for (i = 0; i < S->col_remote_size; ++i) {
+//            aggregate[S->row_remote[S->indicesP_remote[iter]]] = aggregate2[S->row_remote[S->indicesP_remote[iter]]];
+//            maxIndex[S->row_remote[S->indicesP_remote[iter]]]  = maxIndex2[S->row_remote[S->indicesP_remote[iter]]];
+//            iter += S->nnz_col_remote[i];
+//        }
+
+    //    if(rank==0){
+    //        cout << "final weight for remote part!" << endl;
+    //        for (i = S->row_remote[S->indicesP_remote[0]]; i < size; ++i)
+    //            cout << i << "\tweight = " << aggregate[i] << "\tindex = " << maxIndex[i] << endl;
+    //    }
+
+//            if(rank==1){
+//                cout << "final aggregate!" << endl;
+//                for (i = 0; i < size; ++i){
+        //            cout << i << "\tweight = " << aggregate[i] << "\tmaxIndex = " << maxIndex[i] << endl;
+//                    cout << "i = " << i << "\tmax_index = " << maxIndex[i]-S->split[rank] << "\taggStatus = " << aggStatus[i] << endl;
+//                }
+//            }
+
+
+//        for (i = 0; i < size; ++i) {
+//            if (aggStatus[i] == 0) {
+//                if(rank==1) cout << "i=" << i << "\tmaxIndex = " << maxIndex[i] << endl;
+//                if ( (maxIndex[i]) == i){
+//                    aggStatus[i] = 1;
+//                }
+//                else if (aggStatus[ maxIndex[i] ] == 1)
+//                    aggStatus[i] = -1;
+//            }
+//        }
+
+        // update aggStatus - local
+        for (i = 0; i < size; ++i) {
+            if(maxIndex[i] >= S->split[rank] && maxIndex[i] < S->split[rank+1]) {
+//                if(rank==0) cout << "i = " << i << "\tmaxIndex[i] = " << maxIndex[i] << "\taggStatus[maxIndex[i]] = " << aggStatus[maxIndex[i]-S->split[rank]] << endl;
+                if (aggStatus[i] == 0) {
+//                    if(rank==1) cout << "i = " << i << "\tmaxIndex[i] = " << maxIndex[i] << "\taggStatus[maxIndex[i]] = " << aggStatus[maxIndex[i]] << endl;
+                    if ((maxIndex[i]) == i+S->split[rank]) {
+                        aggStatus[i] = 1;
+                    } else if (aggStatus[maxIndex[i]-S->split[rank]] == 1)
+                        aggStatus[i] = -1;
+                }
+            }
+        }
+
+        // update aggStatus - remote
+        iter = 0;
+        for (i = 0; i < S->col_remote_size; ++i) {
+            for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter) {
+                if (maxIndex[S->row_remote[iter]] < S->split[rank] || maxIndex[S->row_remote[iter]] >= S->split[rank + 1]) {
+                    if (aggStatus[S->row_remote[iter]] == 0) {
+                        // the first case, which is (maxIndex == i), is not possible here, since maxIndex is on another process.
+                        // aggStatus[maxIndex[i]] is vecValues2 that was received from another process.
+                        if (S->vecValues2[S->col_remote[iter]] == 1) {
+                            aggStatus[S->row_remote[iter]] = -1;
+                        }
+                    }
+                }
+            }
+        }
+
+//        if(rank==0){
+//            cout << "final aggregate! rank:" << rank << endl;
+//            for (i = 0; i < size; ++i){
+//                cout << "i = " << i+S->split[rank] << "\t\tmax_index = " << maxIndex[i] << "\t\taggStatus = " << aggStatus[i] << endl;
+//            }
+//        }
+//
+//        MPI_Barrier(MPI_COMM_WORLD);
+//        if(rank==1){
+//            cout << "final aggregate! rank:" << rank << endl;
+//            for (i = 0; i < size; ++i){
+//                cout << "i = " << i+S->split[rank] << "\t\tmax_index = " << maxIndex[i] << "\t\taggStatus = " << aggStatus[i] << endl;
+//            }
+//        }
+//        MPI_Barrier(MPI_COMM_WORLD);
+
+        continueAggLocal = false;
+        for (i = 0; i < size; ++i) {
+            // if any un-assigned node is available, continue aggregating.
+            if(aggStatus[i] == 0) {
+                continueAggLocal = true;
+                break;
+            }
+        }
+
+//        whileiter++;
+//        if(whileiter==40)
+//            continueAggLocal = false;
+
+//        MPI_Barrier(MPI_COMM_WORLD);
+//        if(rank==0) cout << "rank " << rank << ", continueAggLocal = " << continueAggLocal << endl << endl;
+
+        // check if every processor does not have any non-assigned node, otherwise all the processors should continue aggregating.
+        MPI_Allreduce(&continueAggLocal, &continueAgg, 1, MPI_CXX_BOOL, MPI_LOR, MPI_COMM_WORLD);
+//        cout << "rank " << rank << ", continueAgg = " << continueAgg << endl << endl;
+
+//        if(rank==0) cout << "**************" << whileiter << endl;
+
+    } //while(continueAgg)
+    return 0;
 }
 
 

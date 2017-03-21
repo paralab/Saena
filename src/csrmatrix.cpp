@@ -83,7 +83,7 @@ int CSRMatrix::CSRMatrixSet(long* r, long* c, double* v, long m1, long m2, long 
 */
     long procNum;
     long i;
-    col_remote_size = -1;
+    col_remote_size = -1; // number of remote columns
     nnz_l_local = 0;
     nnz_l_remote = 0;
     int recvCount[nprocs];
@@ -108,10 +108,10 @@ int CSRMatrix::CSRMatrixSet(long* r, long* c, double* v, long m1, long m2, long 
 
         values_remote.push_back(v[0]);
         row_remote.push_back(r[0]);
-        col_remote_size++;
+        col_remote_size++; // number of remote columns
         col_remote.push_back(col_remote_size);
-//        nnz_row_remote[col_remote_size]++;
-        nnz_row_remote.push_back(1);
+//        nnz_col_remote[col_remote_size]++;
+        nnz_col_remote.push_back(1);
 
         vElement_remote.push_back(c[0]);
         vElementRep_remote.push_back(1);
@@ -146,17 +146,18 @@ int CSRMatrix::CSRMatrixSet(long* r, long* c, double* v, long m1, long m2, long 
                 vElementRep_remote.push_back(1);
                 procNum = lower_bound2(&split[0], &split[nprocs], c[i]);
                 recvCount[procNum]++;
-                nnz_row_remote.push_back(1);
+                nnz_col_remote.push_back(1);
             } else {
                 (*(vElementRep_remote.end()-1))++;
-                (*(nnz_row_remote.end()-1))++;
+                (*(nnz_col_remote.end()-1))++;
             }
-            // the original col values are not being used. the ordering starts from 0, and goes up by 1.
+            // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
             col_remote.push_back(col_remote_size);
 
-//            nnz_row_remote[col_remote_size]++;
+//            nnz_col_remote[col_remote_size]++;
         }
     } // for i
+
     // since col_remote_size starts from -1
     col_remote_size++;
     recvCount[rank] = 0;
@@ -221,8 +222,9 @@ int CSRMatrix::CSRMatrixSet(long* r, long* c, double* v, long m1, long m2, long 
     // vecValues = vector values that received from other procs
     // These will be used in matvec and they are set here to reduce the time of matvec.
     vSend = (long*)malloc(sizeof(long) * vIndexSize);
+    vSend2 = (int*)malloc(sizeof(int) * vIndexSize);
     vecValues = (long*) malloc(sizeof(long) * recvSize);
-
+    vecValues2 = (int*) malloc(sizeof(int) * recvSize);
 
 
     indicesP_local = (long*)malloc(sizeof(long)*nnz_l_local);
