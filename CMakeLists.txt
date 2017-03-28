@@ -26,8 +26,8 @@ set(SOURCE_FILES
         src/coomatrix.cpp
         include/AMGClass.h
         src/AMGClass.cpp
-        include/csrmatrix.h
-        src/csrmatrix.cpp)
+        include/strengthmatrix.h
+        src/strengthmatrix.cpp)
 
 add_executable(Saena ${SOURCE_FILES})
 
