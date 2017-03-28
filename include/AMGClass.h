@@ -2,7 +2,7 @@
 #define SAENA_AMGCLASS_H
 
 #include "coomatrix.h"
-#include "csrmatrix.h"
+#include "strengthmatrix.h"
 
 class AMGClass {
 public:
@@ -30,8 +30,8 @@ public:
     ~AMGClass();
     int AMGsetup(COOMatrix* A, bool doSparsify);
     int findAggregation(COOMatrix* A);
-    int createStrengthMatrix(COOMatrix* A, CSRMatrix* S);
-    int Aggregation(CSRMatrix* S, long* aggregate);
+    int createStrengthMatrix(COOMatrix* A, StrengthMatrix* S);
+    int Aggregation(StrengthMatrix* S, long* aggregate);
 };
 
 
