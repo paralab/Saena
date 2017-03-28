@@ -4,7 +4,7 @@
 #include "mpi.h"
 #include "coomatrix.h"
 #include "AMGClass.h"
-#include "csrmatrix.h"
+#include "strengthmatrix.h"
 
 #define ITERATIONS 1
 
