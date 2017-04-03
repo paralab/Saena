@@ -4,20 +4,22 @@
 cmake_minimum_required(VERSION 2.8)
 project(Saena)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
 #set(CMAKE_CXX_STANDARD 11)
 
-#find_package(OpenMP)
-#if (OPENMP_FOUND)
-#    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#endif()
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
 
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 
 include_directories(
         include
+        include/usort
 )
 
 set(SOURCE_FILES
@@ -27,7 +29,12 @@ set(SOURCE_FILES
         include/AMGClass.h
         src/AMGClass.cpp
         include/strengthmatrix.h
-        src/strengthmatrix.cpp)
+        src/strengthmatrix.cpp
+        src/usort/binUtils.cpp
+        src/usort/parUtils.cpp
+        include/prolongMatrix.h
+        src/prolongMatrix.cpp
+        )
 
 add_executable(Saena ${SOURCE_FILES})
 
