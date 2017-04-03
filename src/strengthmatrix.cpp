@@ -83,7 +83,8 @@ int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long
     col_remote_size = -1; // number of remote columns
     nnz_l_local = 0;
     nnz_l_remote = 0;
-    int recvCount[nprocs];
+//    int recvCount[nprocs];
+    int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
     nnz_row_local.assign(M,0);
 
@@ -159,7 +160,8 @@ int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long
     col_remote_size++;
     recvCount[rank] = 0;
 
-    int vIndexCount[nprocs];
+//    int vIndexCount[nprocs];
+    int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
     MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, MPI_COMM_WORLD);
 
     numRecvProc = 0;
@@ -195,6 +197,9 @@ int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long
     vIndex = (long*)malloc(sizeof(long)*vIndexSize);
     MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_LONG, MPI_COMM_WORLD);
 
+    free(vIndexCount);
+    free(recvCount);
+
 /*    if (rank==0){
         cout << "vIndex: rank=" << rank  << endl;
         for(int i=0; i<vIndexSize; i++)
@@ -218,9 +223,9 @@ int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
     // These will be used in matvec and they are set here to reduce the time of matvec.
-    vSend = (long*)malloc(sizeof(long) * vIndexSize);
+    vSend  = (long*)malloc(sizeof(long) * vIndexSize);
     vSend2 = (int*)malloc(sizeof(int) * vIndexSize);
-    vecValues = (long*) malloc(sizeof(long) * recvSize);
+    vecValues  = (long*) malloc(sizeof(long) * recvSize);
     vecValues2 = (int*) malloc(sizeof(int) * recvSize);
 
     indicesP_local = (long*)malloc(sizeof(long)*nnz_l_local);
