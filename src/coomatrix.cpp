@@ -140,7 +140,8 @@ void COOMatrix::MatrixSetup(){
             cout << splitOffset[i] << endl;
     }*/
 
-    long firstSplit[n_buckets+1];
+//    long firstSplit[n_buckets+1];
+    long* firstSplit = (long*)malloc(sizeof(long)*(n_buckets+1));
     firstSplit[0] = 0;
     for(unsigned int i=1; i<n_buckets; i++){
         firstSplit[i] = firstSplit[i-1] + splitOffset[i];
@@ -153,8 +154,8 @@ void COOMatrix::MatrixSetup(){
             cout << firstSplit[i] << endl;
     }*/
 
-    long H_l[n_buckets];
-//    long* H_l = (long*)malloc(sizeof(long)*n_buckets);
+//    long H_l[n_buckets];
+    long* H_l = (long*)malloc(sizeof(long)*n_buckets);
     fill(&H_l[0], &H_l[n_buckets], 0);
 
     for(unsigned int i=0; i<initial_nnz_l; i++)
@@ -167,10 +168,11 @@ void COOMatrix::MatrixSetup(){
             cout << H_l[i] << endl;
     }*/
 
-    long H_g[n_buckets];
+//    long H_g[n_buckets];
+    long* H_g = (long*)malloc(sizeof(long)*n_buckets);
     MPI_Allreduce(H_l, H_g, n_buckets, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
 
-//    free(H_l);
+    free(H_l);
 
 /*    if (rank==1){
         cout << "global histogram:" << endl;
@@ -179,10 +181,13 @@ void COOMatrix::MatrixSetup(){
         }
     }*/
 
-    long H_g_scan[n_buckets];
+//    long H_g_scan[n_buckets];
+    long* H_g_scan = (long*)malloc(sizeof(long)*n_buckets);
     H_g_scan[0] = H_g[0];
     for (unsigned int i=1; i<n_buckets; i++)
         H_g_scan[i] = H_g[i] + H_g_scan[i-1];
+
+    free(H_g);
 
 /*    if (rank==0){
         cout << "scan of global histogram:" << endl;
@@ -202,6 +207,9 @@ void COOMatrix::MatrixSetup(){
     }
     split[nprocs] = Mbig;
 
+    free(H_g_scan);
+    free(firstSplit);
+
 /*    if (rank==0){
         cout << "split:" << endl;
         for(unsigned int i=0; i<nprocs+1; i++)
@@ -214,7 +222,8 @@ void COOMatrix::MatrixSetup(){
     // *************************** exchange data ****************************
 
     long tempIndex;
-    int sendSizeArray[nprocs];
+//    int sendSizeArray[nprocs];
+    int* sendSizeArray = (int*)malloc(sizeof(int)*nprocs);
     fill(&sendSizeArray[0], &sendSizeArray[nprocs], 0);
     for (unsigned int i=0; i<initial_nnz_l; i++){
         tempIndex = lower_bound2(&split[0], &split[nprocs+1], data[3*i]);
@@ -227,7 +236,8 @@ void COOMatrix::MatrixSetup(){
             cout << sendSizeArray[i] << endl;
     }*/
 
-    int recvSizeArray[nprocs];
+//    int recvSizeArray[nprocs];
+    int* recvSizeArray = (int*)malloc(sizeof(int)*nprocs);
     MPI_Alltoall(sendSizeArray, 1, MPI_INT, recvSizeArray, 1, MPI_INT, MPI_COMM_WORLD);
 
 /*    if (rank==0){
@@ -236,7 +246,8 @@ void COOMatrix::MatrixSetup(){
             cout << recvSizeArray[i] << endl;
     }*/
 
-    int sOffset[nprocs];
+//    int sOffset[nprocs];
+    int* sOffset = (int*)malloc(sizeof(int)*nprocs);
     sOffset[0] = 0;
     for (int i=1; i<nprocs; i++)
         sOffset[i] = sendSizeArray[i-1] + sOffset[i-1];
@@ -247,7 +258,8 @@ void COOMatrix::MatrixSetup(){
             cout << sOffset[i] << endl;
     }*/
 
-    int rOffset[nprocs];
+//    int rOffset[nprocs];
+    int* rOffset = (int*)malloc(sizeof(int)*nprocs);
     rOffset[0] = 0;
     for (int i=1; i<nprocs; i++)
         rOffset[i] = recvSizeArray[i-1] + rOffset[i-1];
@@ -260,10 +272,15 @@ void COOMatrix::MatrixSetup(){
 
     long procOwner;
     unsigned int bufTemp;
-    long sendBufI[initial_nnz_l];
-    long sendBufJ[initial_nnz_l];
-    long sendBufV[initial_nnz_l];
-    unsigned int sIndex[nprocs];
+//    long sendBufI[initial_nnz_l];
+//    long sendBufJ[initial_nnz_l];
+//    long sendBufV[initial_nnz_l];
+    long* sendBufI = (long*)malloc(sizeof(long)*initial_nnz_l);
+    long* sendBufJ = (long*)malloc(sizeof(long)*initial_nnz_l);
+    long* sendBufV = (long*)malloc(sizeof(long)*initial_nnz_l);
+
+//    unsigned int sIndex[nprocs];
+    unsigned int* sIndex = (unsigned int*)malloc(sizeof(unsigned int)*nprocs);
     fill(&sIndex[0], &sIndex[nprocs], 0);
 
     for (long i=0; i<initial_nnz_l; i++){
@@ -274,6 +291,8 @@ void COOMatrix::MatrixSetup(){
         sendBufV[bufTemp] = data[3*i+2];
         sIndex[procOwner]++;
     }
+
+    free(sIndex);
 
 /*    if (rank==1){
         cout << "sendBufJ:" << endl;
@@ -295,6 +314,14 @@ void COOMatrix::MatrixSetup(){
     MPI_Alltoallv(sendBufI, sendSizeArray, sOffset, MPI_LONG, rowP, recvSizeArray, rOffset, MPI_LONG, MPI_COMM_WORLD);
     MPI_Alltoallv(sendBufJ, sendSizeArray, sOffset, MPI_LONG, colP, recvSizeArray, rOffset, MPI_LONG, MPI_COMM_WORLD);
     MPI_Alltoallv(sendBufV, sendSizeArray, sOffset, MPI_DOUBLE, valuesP, recvSizeArray, rOffset, MPI_DOUBLE, MPI_COMM_WORLD);
+
+    free(sendSizeArray);
+    free(recvSizeArray);
+    free(sOffset);
+    free(rOffset);
+    free(sendBufI);
+    free(sendBufJ);
+    free(sendBufV);
 
 /*    if (rank==0){
         cout << "nnz_l = " << nnz_l << endl;
@@ -322,7 +349,8 @@ void COOMatrix::MatrixSetup(){
     nnz_l_local = 0;
     nnz_l_remote = 0;
 //    recvCount = (int*)malloc(sizeof(int)*nprocs);
-    int recvCount[nprocs];
+//    int recvCount[nprocs];
+    int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
     nnz_row_local.assign(M,0);
 //    nnz_col_remote.assign(M,0);
@@ -410,7 +438,8 @@ void COOMatrix::MatrixSetup(){
 
 
 //    vIndexCount = (int*)malloc(sizeof(int)*nprocs);
-    int vIndexCount[nprocs];
+//    int vIndexCount[nprocs];
+    int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
     MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, MPI_COMM_WORLD);
 
 /*    MPI_Barrier(MPI_COMM_WORLD);
@@ -452,6 +481,9 @@ void COOMatrix::MatrixSetup(){
 
     vIndex = (long*)malloc(sizeof(long)*vIndexSize);
     MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_LONG, MPI_COMM_WORLD);
+
+    free(recvCount);
+    free(vIndexCount);
 
 /*    if (rank==0){
         cout << "vIndex: rank=" << rank  << endl;
