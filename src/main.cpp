@@ -4,7 +4,7 @@
 #include "mpi.h"
 #include "coomatrix.h"
 #include "AMGClass.h"
-#include "strengthmatrix.h"
+//#include "strengthmatrix.h"
 
 #define ITERATIONS 1
 
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]){
     bool doSparsify     = 0;
 
     AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
-    amgClass.AMGsetup(&B, doSparsify);
+    amgClass.AMGSetup(&B, doSparsify);
 
 
 

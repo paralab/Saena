@@ -35,7 +35,6 @@ T lower_bound2(T *left, T *right, T val) {
         return distance(first, left-1);
 }
 
-
 COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
 
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
@@ -155,6 +154,7 @@ void COOMatrix::MatrixSetup(){
     }*/
 
     long H_l[n_buckets];
+//    long* H_l = (long*)malloc(sizeof(long)*n_buckets);
     fill(&H_l[0], &H_l[n_buckets], 0);
 
     for(unsigned int i=0; i<initial_nnz_l; i++)
@@ -169,6 +169,8 @@ void COOMatrix::MatrixSetup(){
 
     long H_g[n_buckets];
     MPI_Allreduce(H_l, H_g, n_buckets, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+//    free(H_l);
 
 /*    if (rank==1){
         cout << "global histogram:" << endl;

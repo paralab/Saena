@@ -6,8 +6,10 @@
 #include <algorithm>
 #include <mpi.h>
 #include <random>
+#include <usort/parUtils.h>
 
 #include "AMGClass.h"
+#include "prolongMatrix.h"
 //#include "coomatrix.h"
 //#include "strengthmatrix.h"
 
@@ -44,7 +46,7 @@ T lower_bound2(T *left, T *right, T val) {
 
 int randomVector(long* V, long size){
     //Type of random number distribution
-    std::uniform_real_distribution<double> dist(1, 10*size); //(min, max)
+    std::uniform_int_distribution<long> dist(1, 10*size); //(min, max)
 
     //Mersenne Twister: Good quality random number generator
     std::mt19937 rng;
@@ -53,11 +55,10 @@ int randomVector(long* V, long size){
     rng.seed(std::random_device{}());
 
     for (long i=0; i<size; i++)
-        V[i] = (long)dist(rng);
+        V[i] = dist(rng);
 
     return 0;
 }
-
 
 
 AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int postSm, float connStr, float ta){
@@ -71,20 +72,73 @@ AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int p
     tau = ta;
 } //AMGClass
 
+
 AMGClass::~AMGClass(){}
 
-int AMGClass::AMGsetup(COOMatrix* A, bool doSparsify){
+
+int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify){
 
     int nprocs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    findAggregation(A);
+    std::vector<long> aggregate(A->M);
+    long* aggregate_p = &(*aggregate.begin());
+    findAggregation(A, aggregate_p);
+
+
+//    if(rank==0)
+//        for(long i=0; i<A->M; i++)
+//            cout << i << "\t" << aggregate[i] << endl;
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    if(rank==1)
+//        for(long i=0; i<A->M; i++)
+//            cout << i << "\t" << aggregate[i] << endl;
+//    MPI_Barrier(MPI_COMM_WORLD);
+
+
+/*
+    std::vector<long> aggregateSorted(A->M);
+//    long* aggregateSorted_p = &(*aggregateSorted.begin());
+    par::sampleSort(aggregate, aggregateSorted, MPI_COMM_WORLD);
+    if(rank==0) cout << "\nafter:" << endl;
+    if(rank==0)
+        for(long i=0; i<A->M; i++)
+            cout << i << "\t" << aggregate[i] << "\t" << aggregateSorted[i] << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank==1)
+        for(long i=0; i<A->M; i++)
+            cout << i << "\t" << aggregate[i] << "\t" << aggregateSorted[i] << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+*/
+
+
+//    par::sampleSort(aggregate, MPI_COMM_WORLD);
+
+    /*
+    if(rank==0) cout << "\nafter:" << endl;
+    if(rank==0)
+        for(long i=0; i<A->M; i++)
+            cout << i << "\t" << aggregate[i] << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank==1)
+        for(long i=0; i<A->M; i++)
+            cout << i << "\t" << aggregate[i] << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+*/
+
+    prolongMatrix P;
+    createProlongation(A, aggregate_p, &P);
+
+//    if(rank==0)
+//        for(long i=0; i<A->nnz_l; i++)
+//            cout << P.row[i] << "\t" << P.col[i] << "\t" << P.values[i] << endl;
 
     return 0;
 }
 
-int AMGClass::findAggregation(COOMatrix* A){
+
+int AMGClass::findAggregation(COOMatrix* A, long* aggregate){
     int nprocs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -93,16 +147,15 @@ int AMGClass::findAggregation(COOMatrix* A){
     createStrengthMatrix(A, &S);
 //    S.print(0);
 
-    std::vector<long> aggregate(S.M);
-    long* aggregate_p = &(*aggregate.begin());
-    Aggregation(&S, aggregate_p);
+    Aggregation(&S, aggregate);
 
 //    if(rank==0)
 //        for(long i=0; i<S.M; i++)
 //            cout << i << "\t" << aggregate[i] << endl;
 
     return 0;
-}
+} // end of AMGClass::findAggregation
+
 
 int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
 
@@ -115,7 +168,8 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
     // ******************************** compute max per row ********************************
 
     unsigned int i;
-    double maxPerRow[A->M];
+//    double maxPerRow[A->M];
+    std::vector<double> maxPerRow(A->M);
     fill(&maxPerRow[0], &maxPerRow[A->M], 0);
     for(i=0; i<A->nnz_l; i++){
         if( A->row[i] != A->col[i] ){
@@ -146,8 +200,6 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
                 Si.push_back(A->row[i]);
                 Sj.push_back(A->col[i]);
                 Sval.push_back(  -A->values[i] / (maxPerRow[A->row[i] - A->split[rank]])  );
-//                if (rank==0) cout << Sval[Sval.size()-1] << "\t" << connStrength << endl;
-//                if(rank==1) cout << "index = " << A->row[i] - A->split[rank] << ", max = " << maxPerRow[A->row[i] - A->split[rank]] << endl;
 //                if(rank==0) cout << "A.val = " << -A->values[i] << ", max = " << maxPerRow[A->row[i] - A->split[rank]] << ", divide = " << (-A->values[i] / (maxPerRow[A->row[i] - A->split[rank]])) << endl;
 //            }
         }
@@ -159,8 +211,12 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
 
     // ******************************** compute max per column - version 1 - for general matrices ********************************
 
-    double local_maxPerCol[A->Mbig];
-    fill(&local_maxPerCol[0], &local_maxPerCol[A->Mbig], 0);
+//    double local_maxPerCol[A->Mbig];
+    std::vector<double> local_maxPerCol(A->Mbig);
+    double* local_maxPerCol_p = &(*local_maxPerCol.begin());
+    local_maxPerCol.assign(A->Mbig,0);
+//    fill(&local_maxPerCol[0], &local_maxPerCol[A->Mbig], 0);
+
     for(i=0; i<A->nnz_l; i++){
         if( A->row[i] != A->col[i] ){
             if(local_maxPerCol[A->col[i]] == 0)
@@ -170,8 +226,11 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
         }
     }
 
-    double maxPerCol[A->Mbig];
-    MPI_Allreduce(&local_maxPerCol, &maxPerCol, A->Mbig, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+//    double maxPerCol[A->Mbig];
+    std::vector<double> maxPerCol(A->Mbig);
+    double* maxPerCol_p = &(*maxPerCol.begin());
+//    MPI_Allreduce(&local_maxPerCol, &maxPerCol, A->Mbig, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(local_maxPerCol_p, maxPerCol_p, A->Mbig, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
 //    if(rank==0)
 //        for(i=0; i<A->Mbig; i++)
@@ -327,7 +386,7 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
     S->StrengthMatrixSet(&(*(Si2.begin())), &(*(Sj2.begin())), &(*(Sval2.begin())), A->M, A->Mbig, Si2.size(), &(*(A->split.begin())));
 //    S->print(0);
     return 0;
-}
+} // end of AMGClass::createStrengthMatrix
 
 
 // Using MIS(2) from the following paper by Luke Olson:
@@ -341,13 +400,15 @@ int AMGClass::Aggregation(StrengthMatrix* S, long* aggregate) {
     long i, j;
     long size = S->M;
 //    long aggregate[size];
-    long aggregate2[size];
-    int aggStatus[size];
-    int aggStatus2[size];
-    long weight[size];
-    long weight2[size];
-    long initialWeight[size];
-    randomVector(initialWeight, size);
+    std::vector<long> aggregate2(size);
+    std::vector<int> aggStatus(size);
+    std::vector<int> aggStatus2(size);
+    std::vector<long> weight(size);
+    std::vector<long> weight2(size);
+    std::vector<long> initialWeight(size);
+    long * initialWeight_p = &(*initialWeight.begin());
+
+    randomVector(initialWeight_p, size);
 
 //    if(rank==0){
 //        cout << endl << "after initialization!" << endl;
@@ -357,7 +418,6 @@ int AMGClass::Aggregation(StrengthMatrix* S, long* aggregate) {
 
     for(i=0; i<size; i++) {
         aggregate[i] = i + S->split[rank];
-//        aggregate[i] = -1;
         aggStatus[i] = 0;
     }
 
@@ -399,8 +459,6 @@ int AMGClass::Aggregation(StrengthMatrix* S, long* aggregate) {
             aggStatusTemp = aggStatus[i];
 //            if(rank==1) cout << i << "\tmaxWeightTemp = " << maxWeightTemp << "\taggregateTemp = " << aggregateTemp << "\t\taggStatusTemp = " << aggStatusTemp << endl;
             for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
-//                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]]];
-//                if(rank==1) cout << i << "\t" << S->col_local[S->indicesP_local[iter]] << endl;
 //                if(rank==1) cout << i << "\t" << S->col_local[S->indicesP_local[iter]] << "\t" << weight[S->col_local[S->indicesP_local[iter]]] << "\t" << aggregate[S->col_local[S->indicesP_local[iter]]] << endl;
                 if(aggStatus[S->col_local[S->indicesP_local[iter]]] > aggStatusTemp ||
                    ((aggStatus[S->col_local[S->indicesP_local[iter]]] == aggStatusTemp)  &&  (weight[S->col_local[S->indicesP_local[iter]]] > maxWeightTemp))){
@@ -612,7 +670,6 @@ int AMGClass::Aggregation(StrengthMatrix* S, long* aggregate) {
         }
 
         whileiter++;
-        if(rank==0) cout << "**************" << whileiter << endl;
 //        if(whileiter==40)
 //            continueAggLocal = false;
 
@@ -621,9 +678,10 @@ int AMGClass::Aggregation(StrengthMatrix* S, long* aggregate) {
 //        cout << "rank " << rank << ", continueAgg = " << continueAgg << endl << endl;
 
     } //while(continueAgg)
+
+    if(rank==0) cout << "\nnumber of loops to find aggregation: " << whileiter << endl;
     return 0;
 }
-
 
 // Decoupled Aggregation - not complete
 /*
@@ -694,3 +752,48 @@ int AMGClass::Aggregation(CSRMatrix* S){
     return 0;
 };
  */
+
+
+int AMGClass::createProlongation(COOMatrix* A, long* aggregate, prolongMatrix* P){
+
+    // store remote elements from aggregate in vSend to be sent to other processes.
+    // change datatype for vSend and send and receive from double to long
+    for(unsigned int i=0; i<A->vIndexSize; i++)
+        A->vSend[i] = aggregate[( A->vIndex[i] )];
+
+    MPI_Request* requests = new MPI_Request[A->numSendProc+A->numRecvProc];
+    MPI_Status* statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
+
+    for(int i = 0; i < A->numRecvProc; i++) {
+        MPI_Irecv(&A->vecValues[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_DOUBLE, A->recvProcRank[i], 1, MPI_COMM_WORLD, &(requests[i]));
+    }
+
+    for(int i = 0; i < A->numSendProc; i++) {
+        MPI_Isend(&A->vSend[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_DOUBLE, A->sendProcRank[i], 1, MPI_COMM_WORLD, &(requests[A->numRecvProc+i]));
+    }
+
+    // local
+    long iter = 0;
+    for (unsigned int i = 0; i < A->M; ++i) {
+        for (unsigned int j = 0; j < A->nnz_row_local[i]; ++j, ++iter) {
+            P->row.push_back(A->row_local[A->indicesP_local[iter]]);
+            P->col.push_back(aggregate[  A->col_local[A->indicesP_local[iter]]  ]);
+            P->values.push_back(A->values_local[A->indicesP_local[iter]]);
+        }
+    }
+
+    MPI_Waitall(A->numSendProc+A->numRecvProc, requests, statuses);
+
+    // remote
+    iter = 0;
+    for (unsigned int i = 0; i < A->col_remote_size; ++i) {
+        for (unsigned int j = 0; j < A->nnz_col_remote[i]; ++j, ++iter) {
+            P->row.push_back(A->row_remote[A->indicesP_remote[iter]]);
+//            P->col.push_back(A->vecValues[  A->col_remote[A->indicesP_remote[iter]]  ]);
+            P->col.push_back(long(  A->vecValues[  A->col_remote[A->indicesP_remote[iter]]  ]  ));
+            P->values.push_back(A->values_remote[A->indicesP_remote[iter]]);
+        }
+    }
+
+    return 0;
+}// end of AMGClass::createProlongation

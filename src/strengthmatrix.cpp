@@ -38,9 +38,6 @@ T lower_bound2(T *left, T *right, T val) {
 }
 
 
-
-//CSRMatrix::CSRMatrix(){}
-
 int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long m2, long m3, long* spl){
     int nprocs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
@@ -226,7 +223,6 @@ int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long
     vecValues = (long*) malloc(sizeof(long) * recvSize);
     vecValues2 = (int*) malloc(sizeof(int) * recvSize);
 
-
     indicesP_local = (long*)malloc(sizeof(long)*nnz_l_local);
     for(i=0; i<nnz_l_local; i++)
         indicesP_local[i] = i;
@@ -243,6 +239,13 @@ int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long
 }
 
 StrengthMatrix::~StrengthMatrix(){
+    free(vIndex);
+    free(vSend);
+    free(vSend2);
+    free(vecValues);
+    free(vecValues2);
+    free(indicesP_local);
+    free(indicesP_remote);
 //    rowIndex.resize(0);
 //    col.resize(0);
 //    values.resize(0);
