@@ -3,6 +3,7 @@
 
 #include "coomatrix.h"
 #include "strengthmatrix.h"
+#include "prolongMatrix.h"
 
 class AMGClass {
 public:
@@ -28,10 +29,11 @@ public:
 
     AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, float tau);
     ~AMGClass();
-    int AMGsetup(COOMatrix* A, bool doSparsify);
-    int findAggregation(COOMatrix* A);
+    int AMGSetup(COOMatrix* A, bool doSparsify);
+    int findAggregation(COOMatrix* A, long* aggregate);
     int createStrengthMatrix(COOMatrix* A, StrengthMatrix* S);
     int Aggregation(StrengthMatrix* S, long* aggregate);
+    int createProlongation(COOMatrix* A, long* aggregate, prolongMatrix* P);
 };
 
 

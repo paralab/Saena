@@ -18,10 +18,8 @@ public:
     long M;
     long Mbig;
     long nnz_l;
-    long nnz_g;
-    double average_sparsity;
-
-
+//    long nnz_g;
+//    double average_sparsity;
 
     unsigned int nnz_l_local;
     unsigned int nnz_l_remote;
@@ -49,7 +47,7 @@ public:
     long* indicesP_local;
     long* indicesP_remote;
 
-    std::vector<int> splitOffset;
+//    std::vector<int> splitOffset;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
     int recvSize;
