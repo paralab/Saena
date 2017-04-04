@@ -7,9 +7,8 @@
 #include <mpi.h>
 #include <random>
 #include <usort/parUtils.h>
-
 #include "AMGClass.h"
-#include "prolongMatrix.h"
+#include "prolongmatrix.h"
 //#include "coomatrix.h"
 //#include "strengthmatrix.h"
 
@@ -44,9 +43,9 @@ T lower_bound2(T *left, T *right, T val) {
         return distance(first, left-1);
 }
 
-int randomVector(long* V, long size){
+int randomVector(unsigned long* V, unsigned long size){
     //Type of random number distribution
-    std::uniform_int_distribution<long> dist(1, 10*size); //(min, max)
+    std::uniform_int_distribution<unsigned long> dist(1, size); //(min, max)
 
     //Mersenne Twister: Good quality random number generator
     std::mt19937 rng;
@@ -82,10 +81,9 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify){
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::vector<long> aggregate(A->M);
-    long* aggregate_p = &(*aggregate.begin());
+    std::vector<unsigned long> aggregate(A->M);
+    unsigned long* aggregate_p = &(*aggregate.begin());
     findAggregation(A, aggregate_p);
-
 
 //    if(rank==0)
 //        for(long i=0; i<A->M; i++)
@@ -138,7 +136,7 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify){
 }
 
 
-int AMGClass::findAggregation(COOMatrix* A, long* aggregate){
+int AMGClass::findAggregation(COOMatrix* A, unsigned long* aggregate){
     int nprocs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -186,8 +184,8 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
 
     // ******************************** compute S ********************************
 
-    std::vector<long> Si;
-    std::vector<long> Sj;
+    std::vector<unsigned long> Si;
+    std::vector<unsigned long> Sj;
     std::vector<double> Sval;
     for(i=0; i<A->nnz_l; i++){
         if(A->row[i] == A->col[i]) {
@@ -352,8 +350,8 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
 
     // *************************** make S symmetric and apply the connection strength parameter ****************************
 
-    std::vector<long> Si2;
-    std::vector<long> Sj2;
+    std::vector<unsigned long> Si2;
+    std::vector<unsigned long> Sj2;
     std::vector<double> Sval2;
 
     for(i=0; i<Si.size(); i++){
@@ -391,22 +389,22 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S){
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
-int AMGClass::Aggregation(StrengthMatrix* S, long* aggregate) {
+int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate) {
 
     int nprocs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     long i, j;
-    long size = S->M;
+    unsigned long size = S->M;
 //    long aggregate[size];
-    std::vector<long> aggregate2(size);
-    std::vector<int> aggStatus(size);
+    std::vector<unsigned long> aggregate2(size);
+    std::vector<int> aggStatus(size); // 0-> not assigned to any aggregate. 1-> root. 2-> assigned to an aggregate.
     std::vector<int> aggStatus2(size);
-    std::vector<long> weight(size);
-    std::vector<long> weight2(size);
-    std::vector<long> initialWeight(size);
-    long * initialWeight_p = &(*initialWeight.begin());
+    std::vector<unsigned long> weight(size);
+    std::vector<unsigned long> weight2(size);
+    std::vector<unsigned long> initialWeight(size);
+    unsigned long* initialWeight_p = &(*initialWeight.begin());
 
     randomVector(initialWeight_p, size);
 
@@ -469,7 +467,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, long* aggregate) {
             }
 
             weight2[i] = maxWeightTemp;
-            aggregate2[i]  = aggregateTemp;
+            aggregate2[i] = aggregateTemp;
             aggStatus2[i] = aggStatusTemp;
         }
 
@@ -679,7 +677,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, long* aggregate) {
 
     } //while(continueAgg)
 
-    if(rank==0) cout << "\nnumber of loops to find aggregation: " << whileiter << endl;
+    if(rank==0) cout << "number of loops to find aggregation: " << whileiter << endl;
     return 0;
 }
 
@@ -754,7 +752,7 @@ int AMGClass::Aggregation(CSRMatrix* S){
  */
 
 
-int AMGClass::createProlongation(COOMatrix* A, long* aggregate, prolongMatrix* P){
+int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, prolongMatrix* P){
 
     // store remote elements from aggregate in vSend to be sent to other processes.
     // change datatype for vSend and send and receive from double to long

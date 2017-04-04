@@ -9,10 +9,10 @@
 class sort_indices
 {
 private:
-    long* mparr;
+    unsigned long* mparr;
 public:
-    sort_indices(long* parr) : mparr(parr) {}
-    bool operator()(long i, long j) const { return mparr[i]<mparr[j]; }
+    sort_indices(unsigned long* parr) : mparr(parr) {}
+    bool operator()(unsigned long i, unsigned long j) const { return mparr[i]<mparr[j]; }
 };
 
 // binary search tree using the lower bound
@@ -55,7 +55,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
 
     data.resize(3 * initial_nnz_l); // 3 is for i and j and val
-    long* datap = &(*(data.begin()));
+    unsigned long* datap = &(*(data.begin()));
 
     // *************************** read the matrix ****************************
 
@@ -141,7 +141,7 @@ void COOMatrix::MatrixSetup(){
     }*/
 
 //    long firstSplit[n_buckets+1];
-    long* firstSplit = (long*)malloc(sizeof(long)*(n_buckets+1));
+    unsigned long* firstSplit = (unsigned long*)malloc(sizeof(unsigned long)*(n_buckets+1));
     firstSplit[0] = 0;
     for(unsigned int i=1; i<n_buckets; i++){
         firstSplit[i] = firstSplit[i-1] + splitOffset[i];
@@ -278,7 +278,6 @@ void COOMatrix::MatrixSetup(){
     long* sendBufI = (long*)malloc(sizeof(long)*initial_nnz_l);
     long* sendBufJ = (long*)malloc(sizeof(long)*initial_nnz_l);
     long* sendBufV = (long*)malloc(sizeof(long)*initial_nnz_l);
-
 //    unsigned int sIndex[nprocs];
     unsigned int* sIndex = (unsigned int*)malloc(sizeof(unsigned int)*nprocs);
     fill(&sIndex[0], &sIndex[nprocs], 0);
@@ -307,8 +306,8 @@ void COOMatrix::MatrixSetup(){
     col.resize(nnz_l);
     values.resize(nnz_l);
 
-    long* rowP = &(*(row.begin()));
-    long* colP = &(*(col.begin()));
+    unsigned long* rowP = &(*(row.begin()));
+    unsigned long* colP = &(*(col.begin()));
     double* valuesP = &(*(values.begin()));
 
     MPI_Alltoallv(sendBufI, sendSizeArray, sOffset, MPI_LONG, rowP, recvSizeArray, rOffset, MPI_LONG, MPI_COMM_WORLD);
@@ -602,16 +601,16 @@ void COOMatrix::MatrixSetup(){
     // *************************** find sortings ****************************
     //find the sorting on rows on both local and remote data to be used in matvec
 
-    indicesP_local = (int*)malloc(sizeof(int)*nnz_l_local);
-    for(int i=0; i<nnz_l_local; i++)
+    indicesP_local = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_local);
+    for(unsigned long i=0; i<nnz_l_local; i++)
         indicesP_local[i] = i;
-    long* row_localP = &(*(row_local.begin()));
+    unsigned long* row_localP = &(*(row_local.begin()));
     std::sort(indicesP_local, &indicesP_local[nnz_l_local], sort_indices(row_localP));
 
-    indicesP_remote = (int*)malloc(sizeof(int)*nnz_l_remote);
-    for(int i=0; i<nnz_l_remote; i++)
+    indicesP_remote = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_remote);
+    for(unsigned long i=0; i<nnz_l_remote; i++)
         indicesP_remote[i] = i;
-    long* row_remoteP = &(*(row_remote.begin()));
+    unsigned long* row_remoteP = &(*(row_remote.begin()));
     std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
 
 /*    indicesP = (int*)malloc(sizeof(int)*nnz_l);
@@ -630,7 +629,7 @@ COOMatrix::~COOMatrix() {
     free(indicesP_remote);
 //    free(vIndexCount);
 //    free(vIndexCount);
-    //free(indicesP);
+//    free(indicesP);
 }
 
 void COOMatrix::matvec(double* v, double* w, double time[4]) {

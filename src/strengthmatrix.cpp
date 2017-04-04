@@ -11,10 +11,10 @@ using namespace std;
 class sort_indices
 {
 private:
-    long* mparr;
+    unsigned long* mparr;
 public:
-    sort_indices(long* parr) : mparr(parr) {}
-    bool operator()(long i, long j) const { return mparr[i]<mparr[j]; }
+    sort_indices(unsigned long* parr) : mparr(parr) {}
+    bool operator()(unsigned long i, unsigned long j) const { return mparr[i]<mparr[j]; }
 };
 
 // binary search tree using the lower bound
@@ -38,7 +38,7 @@ T lower_bound2(T *left, T *right, T val) {
 }
 
 
-int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long m2, long m3, long* spl){
+int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double* v, long m1, long m2, long m3, unsigned long* spl){
     int nprocs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -228,16 +228,16 @@ int StrengthMatrix::StrengthMatrixSet(long* r, long* c, double* v, long m1, long
     vecValues  = (long*) malloc(sizeof(long) * recvSize);
     vecValues2 = (int*) malloc(sizeof(int) * recvSize);
 
-    indicesP_local = (long*)malloc(sizeof(long)*nnz_l_local);
+    indicesP_local = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_local);
     for(i=0; i<nnz_l_local; i++)
         indicesP_local[i] = i;
-    long* row_localP = &(*(row_local.begin()));
+    unsigned long* row_localP = &(*(row_local.begin()));
     std::sort(indicesP_local, &indicesP_local[nnz_l_local], sort_indices(row_localP));
 
-    indicesP_remote = (long*)malloc(sizeof(long)*nnz_l_remote);
+    indicesP_remote = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_remote);
     for(i=0; i<nnz_l_remote; i++)
         indicesP_remote[i] = i;
-    long* row_remoteP = &(*(row_remote.begin()));
+    unsigned long* row_remoteP = &(*(row_remote.begin()));
     std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
 
     return 0;

@@ -50,7 +50,7 @@ int main(int argc, char* argv[]){
     double t2 = MPI_Wtime();
 
     if (rank==0)
-        cout << "Matrix setup in Saena took " << t2 - t1 << " seconds!" << endl;
+        cout << "\nMatrix setup in Saena took " << t2 - t1 << " seconds!" << endl;
 
     // *************************** AMG ****************************
 
@@ -68,14 +68,10 @@ int main(int argc, char* argv[]){
     amgClass.AMGSetup(&B, doSparsify);
 
 
-
-
-
-
-
     // *************************** read the vector ****************************
 
-/*    MPI_Status status;
+    /*
+    MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
 
@@ -97,7 +93,8 @@ int main(int argc, char* argv[]){
     int count;
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
-    MPI_File_close(&fh);*/
+    MPI_File_close(&fh);
+*/
 
     // *************************** use jacobi to find the answer x ****************************
 
@@ -135,7 +132,8 @@ int main(int argc, char* argv[]){
 
     // *************************** matvec ****************************
 
-/*    std::vector <double> w(B.M);
+    /*
+    std::vector <double> w(B.M);
     double* wp = &(*(w.begin()));
 
     int time_num = 4; // 4 of them are used to time 3 phases in matvec. check the print section to see how they work.
@@ -170,11 +168,13 @@ int main(int argc, char* argv[]){
     }
 
     if (rank==0)
-        cout << "Matvec in Saena took " << (t2 - t1)/ITERATIONS << " seconds!" << endl;*/
+        cout << "Matvec in Saena took " << (t2 - t1)/ITERATIONS << " seconds!" << endl;
+*/
 
     // *************************** write the result of matvec to file ****************************
 
-/*    char* outFileNameTxt = "matvec_result_saena.bin";
+/*
+    char* outFileNameTxt = "matvec_result_saena.bin";
 
     MPI_Status status2;
     MPI_File fh2;
@@ -187,7 +187,10 @@ int main(int argc, char* argv[]){
     int count2;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
     //printf("process %d wrote %d lines of triples\n", rank, count2);
-    MPI_File_close(&fh2);*/
+    MPI_File_close(&fh2);
+*/
+
+    // *************************** finalize ****************************
 
     MPI_Finalize();
     return 0;
