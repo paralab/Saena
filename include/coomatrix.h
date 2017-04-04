@@ -19,18 +19,18 @@ private:
     unsigned int initial_nnz_l;
     int nprocs, rank;
 
-    std::vector<long> data;
+    std::vector<unsigned long> data;
 
 public:
-    std::vector<long> row;
-    std::vector<long> col;
+    std::vector<unsigned long> row;
+    std::vector<unsigned long> col;
     std::vector<double> values;
 
     unsigned int M;
     unsigned int Mbig;
     unsigned int nnz_g;
     unsigned int nnz_l;
-    std::vector<long> split;
+    std::vector<unsigned long> split;
 
     int vIndexSize;
     double *vSend;
@@ -38,19 +38,19 @@ public:
     double* vecValues;
     std::vector<double> values_local;
     std::vector<double> values_remote;
-    std::vector<long> row_local;
-    std::vector<long> row_remote;
-    std::vector<long> col_local;
-    std::vector<long> col_remote; // index starting from 0, instead of the original column index
-    std::vector<long> col_remote2; //original col index
+    std::vector<unsigned long> row_local;
+    std::vector<unsigned long> row_remote;
+    std::vector<unsigned long> col_local;
+    std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
+    std::vector<unsigned long> col_remote2; //original col index
     std::vector<unsigned int> nnz_row_local;
 //    std::vector<unsigned int> nnz_row_remote;
     std::vector<unsigned int> nnz_col_remote;
     std::vector<double> invDiag;
 
     //    int* indicesP;
-    int* indicesP_local;
-    int* indicesP_remote;
+    unsigned long* indicesP_local;
+    unsigned long* indicesP_remote;
 
     std::vector<int> splitOffset;
     std::vector<int> vdispls;
@@ -63,16 +63,16 @@ public:
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
 
-    long num_threads;
+    unsigned long num_threads;
     unsigned int* iter_local_array;
     unsigned int* iter_remote_array;
-    std::vector<long> vElement_remote;
-    std::vector<long> vElementRep_local;
-    std::vector<long> vElementRep_remote;
+    std::vector<unsigned long> vElement_remote;
+    std::vector<unsigned long> vElementRep_local;
+    std::vector<unsigned long> vElementRep_remote;
 
     unsigned int nnz_l_local;
     unsigned int nnz_l_remote;
-    long col_remote_size;
+    unsigned long col_remote_size;
 
     // functions
     void MatrixSetup();

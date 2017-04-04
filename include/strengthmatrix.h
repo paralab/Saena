@@ -13,7 +13,7 @@ public:
 //    long*   col;
 //    double* values;
 
-    long* split;
+    unsigned long* split;
 
     long M;
     long Mbig;
@@ -23,7 +23,7 @@ public:
 
     unsigned int nnz_l_local;
     unsigned int nnz_l_remote;
-    long col_remote_size; // this is the same as vElement_remote.size()
+    unsigned long col_remote_size; // this is the same as vElement_remote.size()
 
     int vIndexSize;
     long *vSend;
@@ -33,19 +33,19 @@ public:
     int* vecValues2;
     std::vector<double> values_local;
     std::vector<double> values_remote;
-    std::vector<long> row_local;
-    std::vector<long> row_remote;
-    std::vector<long> col_local;
-    std::vector<long> col_remote; // index starting from 0, instead of the original column index
-    std::vector<long> col_remote2; //original col index
+    std::vector<unsigned long> row_local;
+    std::vector<unsigned long> row_remote;
+    std::vector<unsigned long> col_local;
+    std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
+    std::vector<unsigned long> col_remote2; //original col index
     std::vector<unsigned int> nnz_row_local;
 //    std::vector<unsigned int> nnz_row_remote;
     std::vector<unsigned int> nnz_col_remote;
-    std::vector<long> vElement_remote;
-    std::vector<long> vElementRep_local;
-    std::vector<long> vElementRep_remote;
-    long* indicesP_local;
-    long* indicesP_remote;
+    std::vector<unsigned long> vElement_remote;
+    std::vector<unsigned long> vElementRep_local;
+    std::vector<unsigned long> vElementRep_remote;
+    unsigned long* indicesP_local;
+    unsigned long* indicesP_remote;
 
 //    std::vector<int> splitOffset;
     std::vector<int> vdispls;
@@ -59,7 +59,7 @@ public:
     std::vector<int> sendProcCount;
 
 //    StrengthMatrix(){}
-    int StrengthMatrixSet(long* row, long* col, double* values, long M, long Mbig, long nnzl, long* split);
+    int StrengthMatrixSet(unsigned long* row, unsigned long* col, double* values, long M, long Mbig, long nnzl, unsigned long* split);
     ~StrengthMatrix();
     void print(int rank);
 };
