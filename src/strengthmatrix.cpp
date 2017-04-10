@@ -108,6 +108,7 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
         row_remote.push_back(r[0]);
         col_remote_size++; // number of remote columns
         col_remote.push_back(col_remote_size);
+        col_remote2.push_back(c[0]);
 //        nnz_col_remote[col_remote_size]++;
         nnz_col_remote.push_back(1);
 
@@ -170,12 +171,12 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
         if(recvCount[i]!=0){
             numRecvProc++;
             recvProcRank.push_back(i);
-            recvProcCount.push_back(recvCount[i]);
+            recvProcCount.push_back(2*recvCount[i]);
         }
         if(vIndexCount[i]!=0){
             numSendProc++;
             sendProcRank.push_back(i);
-            sendProcCount.push_back(vIndexCount[i]);
+            sendProcCount.push_back(2*vIndexCount[i]);
         }
 
     }
@@ -200,6 +201,11 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     free(vIndexCount);
     free(recvCount);
 
+    for (int i=1; i<nprocs; i++){
+        vdispls[i] *= 2;
+        rdispls[i] *= 2;
+    }
+
 /*    if (rank==0){
         cout << "vIndex: rank=" << rank  << endl;
         for(int i=0; i<vIndexSize; i++)
@@ -223,10 +229,10 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
     // These will be used in matvec and they are set here to reduce the time of matvec.
-    vSend  = (long*)malloc(sizeof(long) * vIndexSize);
-    vSend2 = (int*)malloc(sizeof(int) * vIndexSize);
-    vecValues  = (long*) malloc(sizeof(long) * recvSize);
-    vecValues2 = (int*) malloc(sizeof(int) * recvSize);
+    vSend     = (unsigned long*)malloc(sizeof(unsigned long) * 2*vIndexSize);
+//    vSend2 = (int*)malloc(sizeof(int) * vIndexSize);
+    vecValues = (unsigned long*)malloc(sizeof(unsigned long) * 2*recvSize);
+//    vecValues2 = (int*) malloc(sizeof(int) * recvSize);
 
     indicesP_local = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_local);
     for(i=0; i<nnz_l_local; i++)
@@ -234,11 +240,11 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     unsigned long* row_localP = &(*(row_local.begin()));
     std::sort(indicesP_local, &indicesP_local[nnz_l_local], sort_indices(row_localP));
 
-    indicesP_remote = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_remote);
-    for(i=0; i<nnz_l_remote; i++)
-        indicesP_remote[i] = i;
-    unsigned long* row_remoteP = &(*(row_remote.begin()));
-    std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
+//    indicesP_remote = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_remote);
+//    for(i=0; i<nnz_l_remote; i++)
+//        indicesP_remote[i] = i;
+//    unsigned long* row_remoteP = &(*(row_remote.begin()));
+//    std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
 
     return 0;
 }
@@ -246,11 +252,11 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
 StrengthMatrix::~StrengthMatrix(){
     free(vIndex);
     free(vSend);
-    free(vSend2);
+//    free(vSend2);
     free(vecValues);
-    free(vecValues2);
+//    free(vecValues2);
     free(indicesP_local);
-    free(indicesP_remote);
+//    free(indicesP_remote);
 //    rowIndex.resize(0);
 //    col.resize(0);
 //    values.resize(0);
@@ -259,6 +265,12 @@ StrengthMatrix::~StrengthMatrix(){
 void StrengthMatrix::print(int r){
 //    int rank;
 //    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//
+//    if(rank==r)
+//        for(unsigned int i=0; i<nnz_l; i++){
+//            cout << "S:  " << "[" << Si2[i] << "," << Sj2[i] << "] = " << Sval2[i] << endl;
+//            cout << "S:  " << "[" << (Si2[i] - A->split[rank]) << "," << Sj2[i] << "] = \t" << Sval2[i] << endl;
+//        }
 //
 //    if (rank==r)
 //        for(unsigned int i=0; i<M; i++){
