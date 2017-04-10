@@ -26,11 +26,11 @@ public:
     unsigned long col_remote_size; // this is the same as vElement_remote.size()
 
     int vIndexSize;
-    long *vSend;
-    int *vSend2;
-    long *vIndex;
-    long* vecValues;
-    int* vecValues2;
+    unsigned long* vSend;
+//    int* vSend2;
+    long* vIndex;
+    unsigned long* vecValues;
+//    int* vecValues2;
     std::vector<double> values_local;
     std::vector<double> values_remote;
     std::vector<unsigned long> row_local;
