@@ -67,6 +67,7 @@ int main(int argc, char* argv[]){
     AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
     amgClass.AMGSetup(&B, doSparsify);
 
+//    cout << rank << "\t1st here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
     // *************************** read the vector ****************************
 

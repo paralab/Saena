@@ -344,7 +344,7 @@ void COOMatrix::MatrixSetup(){
     // local elements are elements that correspond to vector elements which are local to this process,
     // and, remote elements correspond to vector elements which should be received from another processes
 
-    col_remote_size = -1;
+    col_remote_size = -1; // todo:change this to 0 and subtract 1 from it anywhere it is used.
     nnz_l_local = 0;
     nnz_l_remote = 0;
 //    recvCount = (int*)malloc(sizeof(int)*nprocs);

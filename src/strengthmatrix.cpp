@@ -80,7 +80,7 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
 */
     long procNum;
     long i;
-    col_remote_size = -1; // number of remote columns
+    col_remote_size = 0; // number of remote columns
     nnz_l_local = 0;
     nnz_l_remote = 0;
 //    int recvCount[nprocs];
@@ -107,9 +107,9 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
         values_remote.push_back(v[0]);
         row_remote.push_back(r[0]);
         col_remote_size++; // number of remote columns
-        col_remote.push_back(col_remote_size);
+        col_remote.push_back(col_remote_size-1);
         col_remote2.push_back(c[0]);
-//        nnz_col_remote[col_remote_size]++;
+//        nnz_col_remote[col_remote_size-1]++;
         nnz_col_remote.push_back(1);
 
         vElement_remote.push_back(c[0]);
@@ -151,15 +151,10 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
                 (*(nnz_col_remote.end()-1))++;
             }
             // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-            col_remote.push_back(col_remote_size);
-
-//            nnz_col_remote[col_remote_size]++;
+            col_remote.push_back(col_remote_size-1);
+//            nnz_col_remote[col_remote_size-1]++;
         }
     } // for i
-
-    // since col_remote_size starts from -1
-    col_remote_size++;
-    recvCount[rank] = 0;
 
 //    int vIndexCount[nprocs];
     int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
@@ -195,13 +190,15 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
     recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
 
-    vIndex = (long*)malloc(sizeof(long)*vIndexSize);
-    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_LONG, MPI_COMM_WORLD);
+    vIndex = (unsigned long*)malloc(sizeof(unsigned long)*vIndexSize);
+    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
     free(vIndexCount);
     free(recvCount);
 
     for (int i=1; i<nprocs; i++){
+//        if(rank==1) cout << rdispls[i] << "\tof total: " << recvSize << endl;
+//        if(rank==3) cout << vdispls[i] << "\tof total: " << vIndexSize << endl;
         vdispls[i] *= 2;
         rdispls[i] *= 2;
     }
