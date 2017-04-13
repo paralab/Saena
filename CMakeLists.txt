@@ -32,8 +32,6 @@ set(SOURCE_FILES
         src/strengthmatrix.cpp
         src/usort/binUtils.cpp
         src/usort/parUtils.cpp
-#        include/prolongMatrix.h
-#        src/prolongMatrix.cpp
         include/prolongmatrix.h
         src/prolongmatrix.cpp
         )
