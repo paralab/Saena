@@ -28,7 +28,7 @@ public:
     int vIndexSize;
     unsigned long* vSend;
 //    int* vSend2;
-    long* vIndex;
+    unsigned long* vIndex;
     unsigned long* vecValues;
 //    int* vecValues2;
     std::vector<double> values_local;
