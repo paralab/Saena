@@ -79,7 +79,7 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     average_sparsity = (1.0*nnz_g)/Mbig;
 */
     long procNum;
-    long i;
+    unsigned long i;
     col_remote_size = 0; // number of remote columns
     nnz_l_local = 0;
     nnz_l_remote = 0;
@@ -166,12 +166,12 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
         if(recvCount[i]!=0){
             numRecvProc++;
             recvProcRank.push_back(i);
-            recvProcCount.push_back(2*recvCount[i]);
+            recvProcCount.push_back(2*recvCount[i]); // make them double size for prolongation the communication in the aggregation function.
         }
         if(vIndexCount[i]!=0){
             numSendProc++;
             sendProcRank.push_back(i);
-            sendProcCount.push_back(2*vIndexCount[i]);
+            sendProcCount.push_back(2*vIndexCount[i]); // make them double size for prolongation the communication in the aggregation function.
         }
 
     }
@@ -196,9 +196,8 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     free(vIndexCount);
     free(recvCount);
 
+    // make them double size for prolongation the communication in the aggregation function.
     for (int i=1; i<nprocs; i++){
-//        if(rank==1) cout << rdispls[i] << "\tof total: " << recvSize << endl;
-//        if(rank==3) cout << vdispls[i] << "\tof total: " << vIndexSize << endl;
         vdispls[i] *= 2;
         rdispls[i] *= 2;
     }
@@ -226,9 +225,9 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
     // These will be used in matvec and they are set here to reduce the time of matvec.
-    vSend     = (unsigned long*)malloc(sizeof(unsigned long) * 2*vIndexSize);
+    vSend     = (unsigned long*)malloc(sizeof(unsigned long) * 2*vIndexSize); // make them double size for prolongation the communication in the aggregation function.
 //    vSend2 = (int*)malloc(sizeof(int) * vIndexSize);
-    vecValues = (unsigned long*)malloc(sizeof(unsigned long) * 2*recvSize);
+    vecValues = (unsigned long*)malloc(sizeof(unsigned long) * 2*recvSize); // make them double size for prolongation the communication in the aggregation function.
 //    vecValues2 = (int*) malloc(sizeof(int) * recvSize);
 
     indicesP_local = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_local);

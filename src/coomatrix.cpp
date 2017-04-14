@@ -344,7 +344,7 @@ void COOMatrix::MatrixSetup(){
     // local elements are elements that correspond to vector elements which are local to this process,
     // and, remote elements correspond to vector elements which should be received from another processes
 
-    col_remote_size = -1; // todo:change this to 0 and subtract 1 from it anywhere it is used.
+    col_remote_size = 0;
     nnz_l_local = 0;
     nnz_l_remote = 0;
 //    recvCount = (int*)malloc(sizeof(int)*nprocs);
@@ -372,7 +372,7 @@ void COOMatrix::MatrixSetup(){
         values_remote.push_back(values[0]);
         row_remote.push_back(row[0]);
         col_remote_size++;
-        col_remote.push_back(col_remote_size);
+        col_remote.push_back(col_remote_size-1);
         col_remote2.push_back(col[0]);
 //        nnz_col_remote[col_remote_size]++;
         nnz_col_remote.push_back(1);
@@ -416,14 +416,13 @@ void COOMatrix::MatrixSetup(){
                 (*(nnz_col_remote.end()-1))++;
             }
             // the original col values are not being used. the ordering starts from 0, and goes up by 1.
-            col_remote.push_back(col_remote_size);
-
+            col_remote.push_back(col_remote_size-1);
 //            nnz_col_remote[col_remote_size]++;
         }
     } // for i
 
     // since col_remote_size starts from -1
-    col_remote_size++;
+//    col_remote_size++;
 
     // don't receive anything from yourself
     recvCount[rank] = 0;
