@@ -34,6 +34,8 @@ set(SOURCE_FILES
         src/usort/parUtils.cpp
         include/prolongmatrix.h
         src/prolongmatrix.cpp
+        include/restrictmatrix.h
+        src/restrictmatrix.cpp
         )
 
 add_executable(Saena ${SOURCE_FILES})
