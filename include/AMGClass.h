@@ -4,6 +4,7 @@
 #include "coomatrix.h"
 #include "strengthmatrix.h"
 #include "prolongmatrix.h"
+#include "restrictmatrix.h"
 
 class AMGClass {
 public:
@@ -34,7 +35,8 @@ public:
     int createStrengthMatrix(COOMatrix* A, StrengthMatrix* S);
     int Aggregation(StrengthMatrix* S, unsigned long* aggregate);
     int createProlongation(COOMatrix* A, unsigned long* aggregate, prolongMatrix* P);
-};
+    int createRestriction(prolongMatrix* P, restrictMatrix* R);
+    };
 
 
 #endif //SAENA_AMGCLASS_H
