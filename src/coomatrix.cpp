@@ -496,9 +496,11 @@ void COOMatrix::MatrixSetup(){
     // change the indices from global to local
     for (unsigned int i=0; i<row_local.size(); i++){
         row_local[i] -= split[rank];
-        col_local[i] -= split[rank];
+//        col_local[i] -= split[rank];
     }
+
     for (unsigned int i=0; i<row_remote.size(); i++){
+//        if(rank==1) cout << col_remote[i] << endl;
         row_remote[i] -= split[rank];
 //        col_remote[i] -= split[rank];
     }
@@ -680,7 +682,8 @@ void COOMatrix::matvec(double* v, double* w, double time[4]) {
 #pragma omp for
         for (unsigned int i = 0; i < M; ++i) {
             for (unsigned int j = 0; j < nnz_row_local[i]; ++j, ++iter) {
-                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]]];
+//                if(rank==1) cout << col_local[indicesP_local[iter]] << endl;
+                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
             }
         }
     }

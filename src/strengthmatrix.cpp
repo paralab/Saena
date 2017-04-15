@@ -215,7 +215,7 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     // change the indices from global to local
     for (unsigned int i=0; i<row_local.size(); i++){
         row_local[i] -= split[rank];
-        col_local[i] -= split[rank];
+//        col_local[i] -= split[rank];
     }
     for (unsigned int i=0; i<row_remote.size(); i++){
         row_remote[i] -= split[rank];

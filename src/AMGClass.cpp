@@ -459,20 +459,20 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate) {
 
                     //distance-1 aggregate
                     if( weight[S->col_local[S->indicesP_local[iter]]] > weightTemp ){ // by doing this, it first compares aggStatus, then if aggStatus are both equal, it compares weight.
-                        aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]]];
-                        weightTemp = weight[S->col_local[S->indicesP_local[iter]]];
-                        aggStatusTemp = (weight[S->col_local[S->indicesP_local[iter]]]>>aggOffset);
+                        aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
+                        weightTemp = weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
+                        aggStatusTemp = (weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]>>aggOffset);
                         if(aggStatusTemp==2) oneDistanceRoot[i] = true;
 
                     // distance-2 aggregate
                     }else if(!oneDistanceRoot[i] &&
-                            (oneDistanceRoot[S->col_local[S->indicesP_local[iter]]]==1) &&
-                            ( (weight[S->col_local[S->indicesP_local[iter]]]&weightMax) > (weightTemp&weightMax) ) )
+                            (oneDistanceRoot[S->col_local[S->indicesP_local[iter]] - S->split[rank]]==1) &&
+                            ( (weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]&weightMax) > (weightTemp&weightMax) ) )
                     {
-                        aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]]];
-                        weightTemp = weight[S->col_local[S->indicesP_local[iter]]];
+                        aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
+                        weightTemp = weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
                         oneDistanceRoot[i] = false;
-                        aggStatusTemp = (weight[aggregate[S->col_local[S->indicesP_local[iter]]]]>>aggOffset); // this will be used for aggStatus2, and aggStatus2 will be used for thr remote part.
+                        aggStatusTemp = (weight[aggregate[S->col_local[S->indicesP_local[iter]] - S->split[rank]]]>>aggOffset); // this will be used for aggStatus2, and aggStatus2 will be used for thr remote part.
 //                        if(rank==1) cout << "*** second: " << i << "\tagg = " << aggregateTemp << "\taggStatus = " << aggStatusTemp << endl;
                     }
                 }
@@ -547,20 +547,20 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate) {
                 for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
 
                     // distance-1 aggregate
-                    if( weight[S->col_local[S->indicesP_local[iter]]] > weightTemp ){ // by doing this, it first compares aggStatus, then if aggStatus are both equal, it compares weight.
-                        aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]]];
-                        weightTemp = weight[S->col_local[S->indicesP_local[iter]]];
-                        aggStatusTemp = (weight[S->col_local[S->indicesP_local[iter]]]>>aggOffset); // this will be used for aggStatus2, and aggStatus2 will be used for thr remote part.
+                    if( weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]] > weightTemp ){ // by doing this, it first compares aggStatus, then if aggStatus are both equal, it compares weight.
+                        aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
+                        weightTemp = weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
+                        aggStatusTemp = (weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]>>aggOffset); // this will be used for aggStatus2, and aggStatus2 will be used for thr remote part.
                         if(aggStatusTemp==2) oneDistanceRoot[i] = true;
 
                     // distance-2 aggregate
                     }else if(!oneDistanceRoot[i] &&
-                             (oneDistanceRoot[S->col_local[S->indicesP_local[iter]]]==1) &&
-                             ( (weight[S->col_local[S->indicesP_local[iter]]]&weightMax) > (weightTemp&weightMax) ) )
+                             (oneDistanceRoot[S->col_local[S->indicesP_local[iter]] - S->split[rank]]==1) &&
+                             ( (weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]&weightMax) > (weightTemp&weightMax) ) )
                     {
-                        aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]]];
-                        weightTemp = weight[S->col_local[S->indicesP_local[iter]]];
-                        aggStatusTemp = (weight[aggregate[S->col_local[S->indicesP_local[iter]]]]>>aggOffset); // this will be used for aggStatus2, and aggStatus2 will be used for thr remote part.
+                        aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
+                        weightTemp = weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
+                        aggStatusTemp = (weight[aggregate[S->col_local[S->indicesP_local[iter]] - S->split[rank]]]>>aggOffset); // this will be used for aggStatus2, and aggStatus2 will be used for thr remote part.
                         oneDistanceRoot[i] = false;
 //                        if(rank==1) cout << "*** second: " << i << "\tagg = " << aggregateTemp << "\taggStatus = " << aggStatusTemp << endl;
                     }
