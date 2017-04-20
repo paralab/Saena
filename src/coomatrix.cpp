@@ -4,36 +4,7 @@
 #include "coomatrix.h"
 #include "mpi.h"
 #include <omp.h>
-
-// sort indices and store the ordering.
-class sort_indices
-{
-private:
-    unsigned long* mparr;
-public:
-    sort_indices(unsigned long* parr) : mparr(parr) {}
-    bool operator()(unsigned long i, unsigned long j) const { return mparr[i]<mparr[j]; }
-};
-
-// binary search tree using the lower bound
-template <class T>
-T lower_bound2(T *left, T *right, T val) {
-    T* first = left;
-    while (left < right) {
-        T *middle = left + (right - left) / 2;
-        if (*middle < val){
-            left = middle + 1;
-        }
-        else{
-            right = middle;
-        }
-    }
-    if(val == *left){
-        return distance(first, left);
-    }
-    else
-        return distance(first, left-1);
-}
+#include "auxFunctions.cpp"
 
 COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
 
@@ -490,8 +461,9 @@ void COOMatrix::MatrixSetup(){
     }*/
 
     // change the indices from global to local
-    for (unsigned int i=0; i<vIndexSize; i++)
+    for (unsigned int i=0; i<vIndexSize; i++){
         vIndex[i] -= split[rank];
+    }
 
     // change the indices from global to local
     for (unsigned int i=0; i<row_local.size(); i++){
@@ -682,7 +654,6 @@ void COOMatrix::matvec(double* v, double* w, double time[4]) {
 #pragma omp for
         for (unsigned int i = 0; i < M; ++i) {
             for (unsigned int j = 0; j < nnz_row_local[i]; ++j, ++iter) {
-//                if(rank==1) cout << col_local[indicesP_local[iter]] << endl;
                 w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
             }
         }

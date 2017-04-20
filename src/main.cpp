@@ -4,6 +4,7 @@
 #include "mpi.h"
 #include "coomatrix.h"
 #include "AMGClass.h"
+//#include "auxFunctions.cpp"
 //#include "strengthmatrix.h"
 
 #define ITERATIONS 1
@@ -71,7 +72,7 @@ int main(int argc, char* argv[]){
 
     // *************************** read the vector ****************************
 
-    /*
+/*
     MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
@@ -133,7 +134,7 @@ int main(int argc, char* argv[]){
 
     // *************************** matvec ****************************
 
-    /*
+/*
     std::vector <double> w(B.M);
     double* wp = &(*(w.begin()));
 
