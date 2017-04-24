@@ -25,10 +25,13 @@ public:
     unsigned long* split;
 
     int vIndexSize;
+    int vIndexSize_t;
     unsigned long* vSend;
-//    int* vSend2;
+    double* vSend_t;
     unsigned long* vIndex;
+    unsigned long* recvIndex_t;
     unsigned long* vecValues;
+    double* vecValues_t;
 //    int* vecValues2;
     std::vector<double> values_local;
     std::vector<double> values_remote;
@@ -40,22 +43,29 @@ public:
     std::vector<unsigned int> nnz_row_local;
 //    std::vector<unsigned int> nnz_row_remote;
     std::vector<unsigned int> nnz_col_remote;
+    std::vector<unsigned int> nnz_col_remote_t;
     std::vector<unsigned long> vElement_remote;
+    std::vector<unsigned long> vElement_remote_t;
     std::vector<unsigned long> vElementRep_local;
     std::vector<unsigned long> vElementRep_remote;
     unsigned long* indicesP_local;
-    unsigned long* indicesP_remote;
+//    unsigned long* indicesP_remote;
 
 //    std::vector<int> splitOffset;
     std::vector<int> vdispls;
+    std::vector<int> vdispls_t;
     std::vector<int> rdispls;
+    std::vector<int> rdispls_t;
     int recvSize;
+    int recvSize_t;
     int numRecvProc;
     int numSendProc;
     std::vector<int> recvProcRank;
     std::vector<int> recvProcCount;
+    std::vector<int> recvProcCount_t;
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
+    std::vector<int> sendProcCount_t;
 
 
     prolongMatrix();
