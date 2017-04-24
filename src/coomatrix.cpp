@@ -472,7 +472,6 @@ void COOMatrix::MatrixSetup(){
     }
 
     for (unsigned int i=0; i<row_remote.size(); i++){
-//        if(rank==1) cout << col_remote[i] << endl;
         row_remote[i] -= split[rank];
 //        col_remote[i] -= split[rank];
     }
@@ -480,8 +479,8 @@ void COOMatrix::MatrixSetup(){
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
     // These will be used in matvec and they are set here to reduce the time of matvec.
-    vSend = (double*)malloc(sizeof(double) * vIndexSize);
-    vecValues = (double*) malloc(sizeof(double) * recvSize);
+    vSend     = (double*)malloc(sizeof(double) * vIndexSize);
+    vecValues = (double*)malloc(sizeof(double) * recvSize);
 
     // *************************** find start and end of each thread for matvec ****************************
     // also, find nnz per row for local and remote matvec

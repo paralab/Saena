@@ -13,34 +13,55 @@ restrictMatrix::restrictMatrix(prolongMatrix* P) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // todo: fist figure out the epartitioning of R.
-    
+
     Mbig = P->Nbig;
     Nbig = P->Mbig;
 
     unsigned long i, j;
 
-    unsigned long iter = 0;
-    for (i = 0; i < P->M; ++i) {
-        for (j = 0; j < P->nnz_row_local[i]; ++j, ++iter) {
-            if(rank==1) cout << P->row_local[iter] << "\t" << P->col_local[iter] << "\t" << P->values_local[iter] << endl;
-//            if(rank==1) cout << P->row_local[P->indicesP_local[iter]] << "\t" << P->col_local[P->indicesP_local[iter]] << "\t" << P->values_local[P->indicesP_local[iter]] << endl;
-        }
-    }
-    cout << endl;
-
     //local
-//    unsigned long iter = 0;
-    iter = 0;
+    unsigned long iter = 0;
     for (i = 0; i < P->M; ++i) {
         for (j = 0; j < P->nnz_row_local[i]; ++j, ++iter) {
             row_local.push_back(P->col_local[P->indicesP_local[iter]] - P->split[rank]);
             col_local.push_back(P->row_local[P->indicesP_local[iter]] + P->split[rank]);
             values_local.push_back(P->values_local[P->indicesP_local[iter]]);
-            if(rank==1) cout << row_local[iter] << "\t" << col_local[iter] << "\t" << values_local[iter] << endl;
+//            if(rank==1) cout << row_local[iter] << "\t" << col_local[iter] << "\t" << values_local[iter] << endl;
 //            if(rank==1) cout << P->row_local[iter] << "\t" << P->col_local[iter] << "\t" << P->values_local[iter] << endl;
 //            if(rank==1) cout << P->row_local[P->indicesP_local[iter]] << "\t" << P->col_local[P->indicesP_local[iter]] << "\t" << P->values_local[P->indicesP_local[iter]] << endl;
         }
     }
+
+
+
+//    for(unsigned int i=0;i<vIndexSize;i++)
+//        vSend[i] = v[( vIndex[i] )];
+//        S->vSend[i] = weight[(S->vIndex[i])];
+
+//    for (i = 0; i < P->vIndexSize_t; i++){ // todo: make the size of vSend and the related diata structures triple.
+//        P->vSend_t[3*i]   = P->row_remote[P->vElement_remote_t[i]];
+//        P->vSend_t[3*i+1] = P->col_remote2[P->vElement_remote_t[i]];
+//        P->vSend_t[3*i+2] = P->values_remote[P->vElement_remote_t[i]];
+
+//        P->vSend_t[i] = P->values_remote[i];
+//        if(rank==1) cout << P->vElement_remote_t[i] << "\t" << P->vSend_t[i] << endl;
+//        if(rank==1) cout << P->recvIndex_t[i] << endl;
+//    }
+
+//    if(rank==1) cout << endl << "vIndexSize_t = " << P->vIndexSize_t << ", nnz_l_remote = " << P->nnz_l_remote << endl;
+
+//    if(rank==0) cout << endl << "second for:" << endl;
+//    for (i = 0; i < P->nnz_l_remote; i++){
+//        if(rank==0) cout << P->values_remote[i] << endl;
+//    }
+
+//    for (i = 0; i < S->numRecvProc; i++)
+//        MPI_Irecv(&S->vecValues[S->rdispls[S->sendProcRank[i]]], S->recvProcCount[i], MPI_UNSIGNED_LONG,
+//                  S->recvProcRank[i], 1, MPI_COMM_WORLD, &(requests[i]));
+//
+//    for (i = 0; i < S->numSendProc; i++)
+//        MPI_Isend(&S->vSend[S->vdispls[S->recvProcRank[i]]], S->sendProcCount[i], MPI_UNSIGNED_LONG,
+//                  S->sendProcRank[i], 1, MPI_COMM_WORLD, &(requests[S->numRecvProc + i]));
 
 }
 
