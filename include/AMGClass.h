@@ -33,7 +33,8 @@ public:
     int AMGSetup(COOMatrix* A, bool doSparsify);
     int findAggregation(COOMatrix* A, unsigned long* aggregate);
     int createStrengthMatrix(COOMatrix* A, StrengthMatrix* S);
-    int Aggregation(StrengthMatrix* S, unsigned long* aggregate);
+    int updateAggregation(unsigned long* aggregate, unsigned long* aggSize);
+    int Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned long* aggSize);
     int createProlongation(COOMatrix* A, unsigned long* aggregate, prolongMatrix* P);
     int createRestriction(prolongMatrix* P, restrictMatrix* R);
     };
