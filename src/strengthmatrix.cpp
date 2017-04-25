@@ -156,7 +156,6 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
         }
     } // for i
 
-//    int vIndexCount[nprocs];
     int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
     MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, MPI_COMM_WORLD);
 
@@ -173,7 +172,6 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
             sendProcRank.push_back(i);
             sendProcCount.push_back(2*vIndexCount[i]); // make them double size for prolongation the communication in the aggregation function.
         }
-
     }
 
 //    if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;

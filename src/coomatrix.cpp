@@ -446,7 +446,7 @@ void COOMatrix::MatrixSetup(){
         rdispls[i] = rdispls[i-1] + recvCount[i-1];
     }
     vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
-    recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
+    recvSize   = rdispls[nprocs-1] + recvCount[nprocs-1];
 
     vIndex = (long*)malloc(sizeof(long)*vIndexSize);
     MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_LONG, MPI_COMM_WORLD);

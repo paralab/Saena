@@ -12,7 +12,7 @@ restrictMatrix::restrictMatrix(prolongMatrix* P) {
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    // todo: fist figure out the epartitioning of R.
+    // todo: first figure out the repartitioning of R.
 
     Mbig = P->Nbig;
     Nbig = P->Mbig;

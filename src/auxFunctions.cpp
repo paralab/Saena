@@ -14,7 +14,7 @@ public:
 
 // binary search tree using the lower bound
 template <class T>
-T lower_bound2(T *left, T *right, T val) {
+T lower_bound2(T *left, T *right, T val){
     T* first = left;
     while (left < right) {
         T *middle = left + (right - left) / 2;
