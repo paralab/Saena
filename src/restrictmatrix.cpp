@@ -7,10 +7,10 @@ using namespace std;
 
 restrictMatrix::restrictMatrix(){}
 
-restrictMatrix::restrictMatrix(prolongMatrix* P) {
+restrictMatrix::restrictMatrix(prolongMatrix* P, MPI_Comm comm) {
     int nprocs, rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
     // todo: first figure out the repartitioning of R.
 
@@ -38,7 +38,7 @@ restrictMatrix::restrictMatrix(prolongMatrix* P) {
 //        vSend[i] = v[( vIndex[i] )];
 //        S->vSend[i] = weight[(S->vIndex[i])];
 
-//    for (i = 0; i < P->vIndexSize_t; i++){ // todo: make the size of vSend and the related diata structures triple.
+//    for (i = 0; i < P->vIndexSize_t; i++){ // todo: make the size of vSend and the related data structures triple.
 //        P->vSend_t[3*i]   = P->row_remote[P->vElement_remote_t[i]];
 //        P->vSend_t[3*i+1] = P->col_remote2[P->vElement_remote_t[i]];
 //        P->vSend_t[3*i+2] = P->values_remote[P->vElement_remote_t[i]];
@@ -57,11 +57,11 @@ restrictMatrix::restrictMatrix(prolongMatrix* P) {
 
 //    for (i = 0; i < S->numRecvProc; i++)
 //        MPI_Irecv(&S->vecValues[S->rdispls[S->sendProcRank[i]]], S->recvProcCount[i], MPI_UNSIGNED_LONG,
-//                  S->recvProcRank[i], 1, MPI_COMM_WORLD, &(requests[i]));
+//                  S->recvProcRank[i], 1, comm, &(requests[i]));
 //
 //    for (i = 0; i < S->numSendProc; i++)
 //        MPI_Isend(&S->vSend[S->vdispls[S->recvProcRank[i]]], S->sendProcCount[i], MPI_UNSIGNED_LONG,
-//                  S->sendProcRank[i], 1, MPI_COMM_WORLD, &(requests[S->numRecvProc + i]));
+//                  S->sendProcRank[i], 1, comm, &(requests[S->numRecvProc + i]));
 
 }
 

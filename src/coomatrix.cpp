@@ -6,10 +6,10 @@
 #include <omp.h>
 #include "auxFunctions.cpp"
 
-COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
+COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
 
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
     // set Mbig in the class
     Mbig = Mbig2;
@@ -34,7 +34,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
     MPI_File fh;
     MPI_Offset offset;
 
-    int mpiopen = MPI_File_open(MPI_COMM_WORLD, Aname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    int mpiopen = MPI_File_open(comm, Aname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (mpiopen) {
         if (rank == 0) cout << "Unable to open the matrix file!" << endl;
         MPI_Finalize();
@@ -56,7 +56,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2) {
 //    if(rank==0) cout << "nnz_g = " << nnz_g << ", initial_nnz_l = " << initial_nnz_l << endl;
 } //COOMatrix::COOMatrix
 
-void COOMatrix::MatrixSetup(){
+void COOMatrix::MatrixSetup(MPI_Comm comm){
 
     // *************************** find splitters ****************************
     // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
@@ -141,7 +141,7 @@ void COOMatrix::MatrixSetup(){
 
 //    long H_g[n_buckets];
     long* H_g = (long*)malloc(sizeof(long)*n_buckets);
-    MPI_Allreduce(H_l, H_g, n_buckets, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(H_l, H_g, n_buckets, MPI_LONG, MPI_SUM, comm);
 
     free(H_l);
 
@@ -209,7 +209,7 @@ void COOMatrix::MatrixSetup(){
 
 //    int recvSizeArray[nprocs];
     int* recvSizeArray = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(sendSizeArray, 1, MPI_INT, recvSizeArray, 1, MPI_INT, MPI_COMM_WORLD);
+    MPI_Alltoall(sendSizeArray, 1, MPI_INT, recvSizeArray, 1, MPI_INT, comm);
 
 /*    if (rank==0){
         cout << "recvSizeArray:" << endl;
@@ -281,9 +281,9 @@ void COOMatrix::MatrixSetup(){
     unsigned long* colP = &(*(col.begin()));
     double* valuesP = &(*(values.begin()));
 
-    MPI_Alltoallv(sendBufI, sendSizeArray, sOffset, MPI_LONG, rowP, recvSizeArray, rOffset, MPI_LONG, MPI_COMM_WORLD);
-    MPI_Alltoallv(sendBufJ, sendSizeArray, sOffset, MPI_LONG, colP, recvSizeArray, rOffset, MPI_LONG, MPI_COMM_WORLD);
-    MPI_Alltoallv(sendBufV, sendSizeArray, sOffset, MPI_DOUBLE, valuesP, recvSizeArray, rOffset, MPI_DOUBLE, MPI_COMM_WORLD);
+    MPI_Alltoallv(sendBufI, sendSizeArray, sOffset, MPI_LONG, rowP, recvSizeArray, rOffset, MPI_LONG, comm);
+    MPI_Alltoallv(sendBufJ, sendSizeArray, sOffset, MPI_LONG, colP, recvSizeArray, rOffset, MPI_LONG, comm);
+    MPI_Alltoallv(sendBufV, sendSizeArray, sOffset, MPI_DOUBLE, valuesP, recvSizeArray, rOffset, MPI_DOUBLE, comm);
 
     free(sendSizeArray);
     free(recvSizeArray);
@@ -398,7 +398,7 @@ void COOMatrix::MatrixSetup(){
     // don't receive anything from yourself
     recvCount[rank] = 0;
 
-/*    MPI_Barrier(MPI_COMM_WORLD);
+/*    MPI_Barrier(comm);
     if (rank==2){
         cout << "recvCount: rank=" << rank << endl;
         for(int i=0; i<nprocs; i++)
@@ -409,9 +409,9 @@ void COOMatrix::MatrixSetup(){
 //    vIndexCount = (int*)malloc(sizeof(int)*nprocs);
 //    int vIndexCount[nprocs];
     int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, MPI_COMM_WORLD);
+    MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
 
-/*    MPI_Barrier(MPI_COMM_WORLD);
+/*    MPI_Barrier(comm);
     if (rank==2){
         cout << "vIndexCount: rank=" << rank << endl;
         for(int i=0; i<nprocs; i++)
@@ -449,7 +449,7 @@ void COOMatrix::MatrixSetup(){
     recvSize   = rdispls[nprocs-1] + recvCount[nprocs-1];
 
     vIndex = (long*)malloc(sizeof(long)*vIndexSize);
-    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_LONG, MPI_COMM_WORLD);
+    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_LONG, comm);
 
     free(recvCount);
     free(vIndexCount);
@@ -481,6 +481,9 @@ void COOMatrix::MatrixSetup(){
     // These will be used in matvec and they are set here to reduce the time of matvec.
     vSend     = (double*)malloc(sizeof(double) * vIndexSize);
     vecValues = (double*)malloc(sizeof(double) * recvSize);
+
+    vSendULong     = (unsigned long*)malloc(sizeof(unsigned long) * vIndexSize);
+    vecValuesULong = (unsigned long*)malloc(sizeof(unsigned long) * recvSize);
 
     // *************************** find start and end of each thread for matvec ****************************
     // also, find nnz per row for local and remote matvec
@@ -594,7 +597,9 @@ void COOMatrix::MatrixSetup(){
 COOMatrix::~COOMatrix() {
     free(vIndex);
     free(vSend);
+    free(vSendULong);
     free(vecValues);
+    free(vecValuesULong);
     free(iter_local_array);
     free(iter_remote_array);
     free(indicesP_local);
@@ -604,7 +609,7 @@ COOMatrix::~COOMatrix() {
 //    free(indicesP);
 }
 
-void COOMatrix::matvec(double* v, double* w, double time[4]) {
+void COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
 
 //    totalTime = 0;
     double t10 = MPI_Wtime();
@@ -630,12 +635,12 @@ void COOMatrix::matvec(double* v, double* w, double time[4]) {
 
     //First place all recv requests. Do not recv from self.
     for(int i = 0; i < numRecvProc; i++) {
-        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, MPI_COMM_WORLD, &(requests[i]));
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
     }
 
     //Next send the messages. Do not send to self.
     for(int i = 0; i < numSendProc; i++) {
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, MPI_COMM_WORLD, &(requests[numRecvProc+i]));
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
     }
 
 /*    if (rank==0){
@@ -696,7 +701,7 @@ void COOMatrix::inverseDiag(double* x) {
     }
 }
 
-void COOMatrix::jacobi(double* x, double* b) {
+void COOMatrix::jacobi(double* x, double* b, MPI_Comm comm) {
 
 // Ax = b
 // x = x - (D^(-1))(Ax - b)
@@ -709,7 +714,7 @@ void COOMatrix::jacobi(double* x, double* b) {
     unsigned int i;
     // replace allocating and deallocating with a pre-allocated memory.
     double* temp = (double*)malloc(sizeof(double)*M);
-    matvec(x, temp, NULL);
+    matvec(x, temp, NULL, comm);
     for(i=0; i<M; i++){
         temp[i] -= b[i];
         temp[i] *= invDiag[i] * omega;

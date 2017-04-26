@@ -14,9 +14,10 @@ using namespace std;
 int main(int argc, char* argv[]){
 
     MPI_Init(&argc, &argv);
+    MPI_Comm comm = MPI_COMM_WORLD;
     int nprocs, rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
     if(argc < 3)
     {
@@ -41,13 +42,13 @@ int main(int argc, char* argv[]){
     char* Aname(argv[1]);
 
     // timing the setup phase
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     double t1 = MPI_Wtime();
 
-    COOMatrix B (Aname, Mbig);
-    B.MatrixSetup();
+    COOMatrix B (Aname, Mbig, comm);
+    B.MatrixSetup(comm);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     double t2 = MPI_Wtime();
 
     if (rank==0)
@@ -66,7 +67,7 @@ int main(int argc, char* argv[]){
     bool doSparsify     = 0;
 
     AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
-    amgClass.AMGSetup(&B, doSparsify);
+    amgClass.AMGSetup(&B, doSparsify, comm);
 
 //    cout << rank << "\t1st here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
