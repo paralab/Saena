@@ -2,6 +2,7 @@
 #define SAENA_PROLONGMATRIX_H
 
 #include <vector>
+#include "mpi.h"
 
 class prolongMatrix {
 private:
@@ -71,7 +72,7 @@ public:
     prolongMatrix();
 //    prolongMatrix(unsigned long Mbig, unsigned long Nbig, unsigned long nnz_g, unsigned long nnz_l, unsigned long* row, unsigned long* col, double* values);
     ~prolongMatrix();
-    int findLocalRemote(unsigned long* row, unsigned long* col, double* values);
+    int findLocalRemote(unsigned long* row, unsigned long* col, double* values, MPI_Comm comm);
 };
 
 

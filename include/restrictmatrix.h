@@ -24,7 +24,7 @@ public:
     std::vector<double> values_remote;
 
     restrictMatrix();
-    restrictMatrix(prolongMatrix* P);
+    restrictMatrix(prolongMatrix* P, MPI_Comm comm);
 //    restrictMatrix(unsigned long Mbig, unsigned long Nbig, unsigned long nnz_g, unsigned long nnz_l, unsigned long* row, unsigned long* col, double* values);
     ~restrictMatrix();
 };

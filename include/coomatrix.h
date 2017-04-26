@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <mpi.h>
 
 using namespace std;
 
@@ -33,9 +34,11 @@ public:
     std::vector<unsigned long> split;
 
     int vIndexSize;
-    double *vSend;
     long *vIndex;
+    double *vSend;
+    unsigned long *vSendULong;
     double* vecValues;
+    unsigned long* vecValuesULong;
     std::vector<double> values_local;
     std::vector<double> values_remote;
     std::vector<unsigned long> row_local;
@@ -75,9 +78,9 @@ public:
     unsigned long col_remote_size;
 
     // functions
-    void MatrixSetup();
-    void matvec(double* v, double* w, double time[4]);
-    void jacobi(double* v, double* w);
+    void MatrixSetup(MPI_Comm comm);
+    void matvec(double* v, double* w, double time[4], MPI_Comm comm);
+    void jacobi(double* v, double* w, MPI_Comm comm);
     void inverseDiag(double* x);
     void SaenaSetup();
     void SaenaSolve();
@@ -88,7 +91,7 @@ public:
      * @param[in] Aname is the pointer to the matrix
      * @param[in] Mbig Number of rows in the matrix
      * */
-    COOMatrix(char* Aname, unsigned int Mbig);
+    COOMatrix(char* Aname, unsigned int Mbig, MPI_Comm comm);
     ~COOMatrix();
 
     // for sparsifying:
