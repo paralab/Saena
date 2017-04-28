@@ -5,11 +5,11 @@
 #include <cstdio>
 #include <algorithm>
 #include <mpi.h>
-//#include <random>
 #include <usort/parUtils.h>
 #include <set>
 #include "AMGClass.h"
 #include "auxFunctions.cpp"
+//#include <random>
 //#include "prolongmatrix.h"
 //#include "restrictmatrix.h"
 
@@ -59,11 +59,16 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    // pointer for shrinking number of processors
+    unsigned long* initialNumberOfRows;
+    initialNumberOfRows = &A->split[0];
+
     std::vector<unsigned long> aggregate(A->M);
     unsigned long* aggregate_p = &(*aggregate.begin());
-    unsigned long* aggSizeArray = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
+    unsigned long* splitNew = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
+
     // todo: think about a parameter for making the aggregation less or more aggressive.
-    findAggregation(A, aggregate_p, aggSizeArray, comm);
+    findAggregation(A, aggregate_p, splitNew, comm);
 //    MPI_Barrier(comm);
 //    if(rank==0)
 //        for(long i=0; i<A->M; i++)
@@ -101,20 +106,20 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
 */
 
     prolongMatrix P;
-    createProlongation(A, aggregate_p, aggSizeArray[nprocs+1], &P, comm);
-    restrictMatrix R(&P, comm);
+    createProlongation(A, aggregate_p, splitNew, &P, comm);
+    restrictMatrix R(&P, initialNumberOfRows, comm);
 //    createRestriction(&P, &R);
 
 //    if(rank==0)
 //        for(long i=0; i<A->nnz_l; i++)
 //            cout << P.row[i] << "\t" << P.col[i] << "\t" << P.values[i] << endl;
 
-    free(aggSizeArray);
+    free(splitNew);
     return 0;
 }
 
 
-int AMGClass::findAggregation(COOMatrix* A, unsigned long* aggregate, unsigned long* aggSizeArray, MPI_Comm comm){
+int AMGClass::findAggregation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, MPI_Comm comm){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -124,7 +129,7 @@ int AMGClass::findAggregation(COOMatrix* A, unsigned long* aggregate, unsigned l
 //    S.print(0);
 
 //    unsigned long aggSize = 0;
-    Aggregation(&S, aggregate, aggSizeArray, comm);
+    Aggregation(&S, aggregate, splitNew, comm);
 //    updateAggregation(aggregate, &aggSize);
 
 //    if(rank==0)
@@ -366,7 +371,7 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
-int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned long* aggSizeArray, MPI_Comm comm) {
+int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned long* splitNew, MPI_Comm comm) {
 
     // the first two bits of aggregate are being used for aggStatus: 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
     // bits 0 up to 61 are for storing aggregate values.
@@ -401,8 +406,12 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 //            cout << i << "\tinitialWeight = " << initialWeight[i] << endl;
 //    }
 
-    int aggOffset = 62;
-    unsigned long weightMax = (1UL<<aggOffset) - 1;
+
+    const int aggOffset = 62;
+    const unsigned long weightMax = (1UL<<aggOffset) - 1;
+    const unsigned long UNDECIDED = 1UL<<aggOffset;
+    const unsigned long ROOT = 1UL<<(aggOffset+1);
+    const unsigned long UNDECIDED_OR_ROOT = 3UL<<aggOffset;
     unsigned long weightTemp, aggregateTemp, aggStatusTemp;
     bool* oneDistanceRoot = (bool*)malloc(sizeof(bool)*size);
 //    fill(&oneDistanceRoot[0], &oneDistanceRoot[size], 0);
@@ -421,21 +430,21 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
         aggStatus2[i] = 1;
     }
 
-    // todo: change "weight[i]>>aggOffset == 0 or 1 or 2" to "&rootStatus" and "undecided" and "assgined"
     while(continueAgg) {
         // ******************************* first round of max computation *******************************
         // first "compute max" is local. The second one is both local and remote.
 
+        // todo: check the aggregation for deadlock: two neighbors for each other to have a status other than 1, while both have status 1.
         //distance-1 aggregate
         iter = 0;
         for (i = 0; i < size; ++i) {
-            if(weight[i]>>aggOffset == 1) {
+            if(weight[i]&UNDECIDED) {
                 oneDistanceRoot[i] = 0; // initialization
                 aggregateTemp = aggregate[i];
                 weightTemp = weight[i];
 //                aggStatusTemp = 1UL; // this will be used for aggStatus2, and aggStatus2 will be used for the remote part.
                 for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
-                    if( (weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]>>aggOffset) >= 1 ) {
+                    if( weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]&UNDECIDED_OR_ROOT ) {
                         if (initialWeight[S->col_local[S->indicesP_local[iter]] - S->split[rank]] > (weightTemp & weightMax)) {
                             aggregateTemp = S->col_local[S->indicesP_local[iter]];
                             weightTemp = initialWeight[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
@@ -509,7 +518,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
         // local part - distance-2 aggregate
         iter = 0;
         for (i = 0; i < size; ++i) {
-            if(weight[i]>>aggOffset == 1) {
+            if(weight[i]&UNDECIDED) {
 //                oneDistanceRoot[i] = false;
                 aggregateTemp = aggregate[i];
                 weightTemp    = weight[i];
@@ -568,11 +577,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
         iter = 0;
         for (i = 0; i < S->col_remote_size; ++i) {
             for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter) {
-                if(weight[S->row_remote[iter]]>>aggOffset == 1) {
+                if(weight[S->row_remote[iter]]&UNDECIDED) {
 //                    if(rank==0) cout << "remote: row = " << S->row_remote[iter]+S->split[rank] << " \tcol = " << S->col_remote2[iter] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\tcurrent updated aggregate = " << aggregate2[S->row_remote[iter]] << "\t\tremote aggregate = " << (S->vecValues[2*S->col_remote[iter]+1]&weightMax) << "\t\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote oneDistance = " << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset) << "\t\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
 
                     //distance-1 aggregate
-                    if ((S->vecValues[2 * S->col_remote[iter]] >> aggOffset) >= 1) {
+                    if (S->vecValues[2 * S->col_remote[iter]] &UNDECIDED_OR_ROOT) {
                         if ((S->vecValues[2 * S->col_remote[iter]] & weightMax) > (weight2[S->row_remote[iter]] & weightMax)) {
 //                            if(rank==1) cout << "first  before\t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
                             weight2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]] & weightMax);
@@ -585,7 +594,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
                     //distance-2 aggregate
                     } else {
                         if (oneDistanceRoot[S->row_remote[iter]] == 0 &&
-                            (S->vecValues[2 * S->col_remote[iter] + 1] >> aggOffset) == 1 &&
+                            (S->vecValues[2 * S->col_remote[iter] + 1] &UNDECIDED) &&
                             // this is oneDistanceRoot of the neighbor's aggregate.
                             (S->vecValues[2 * S->col_remote[iter]] & weightMax) > (weight2[S->row_remote[iter]] & weightMax)) {
 //                            if(rank==1) cout << "second before\t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
@@ -611,7 +620,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 
         // update aggStatus
         for (i = 0; i < size; ++i) {
-            if(weight[i]>>aggOffset == 1) {
+            if(weight[i]&UNDECIDED) {
 //                if(rank==0) cout << "i = " << i << "\taggregate[i] = " << aggregate[i] << "\taggStatus[aggregate[i]] = " << aggStatus[aggregate[i]-S->split[rank]] << endl;
 
                 // local
@@ -623,7 +632,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
                         oneDistanceRoot[i] = 0;
                         aggArray.push_back(aggregate[i]);
 //                        (*aggSize)++;
-                    } else if ((weight[aggregate[i] - S->split[rank]] >> aggOffset) == 2) {
+                    } else if (weight[aggregate[i] - S->split[rank]] &ROOT) {
                         weight[i] = (0UL << aggOffset | weight[i] & weightMax); // this node is assigned to another aggregate.
                         if (oneDistanceRoot[aggregate[i] - S->split[rank]] == 0) oneDistanceRoot[i] = 1;
 //                        if(rank==1) cout << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>aggOffset) << endl;
@@ -654,7 +663,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
         continueAggLocal = false;
         for (i = 0; i < size; ++i) {
             // if any un-assigned node is available, continue aggregating.
-            if( (weight[i]>>aggOffset) == 1) {
+            if(weight[i]&UNDECIDED) {
                 continueAggLocal = true;
                 break;
             }
@@ -672,7 +681,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
         if(continueAgg){
             for (i = 0; i < size; ++i) {
                 aggStatus2[i] = 1;
-                if(weight[i]>>aggOffset==1){
+                if(weight[i]&UNDECIDED){
                     weight[i] = ( 1UL<<aggOffset | initialWeight[i] );
                     aggregate[i] = i+S->split[rank];
                 }
@@ -714,24 +723,24 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 //        cout << endl;
 //    }
 
-//    unsigned long* aggSizeArray = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
-    fill(aggSizeArray, &aggSizeArray[nprocs], 0);
-    aggSizeArray[rank] = aggArray.size();
+//    unsigned long* splitNew = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
+    fill(splitNew, &splitNew[nprocs], 0);
+    splitNew[rank] = aggArray.size();
 
-    unsigned long* aggSizeArrayTemp = (unsigned long*)malloc(sizeof(unsigned long)*nprocs);
-    MPI_Allreduce(aggSizeArray, aggSizeArrayTemp, nprocs, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    unsigned long* splitNewTemp = (unsigned long*)malloc(sizeof(unsigned long)*nprocs);
+    MPI_Allreduce(splitNew, splitNewTemp, nprocs, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
-    // do scan on aggSizeArray
-    aggSizeArray[0] = 0;
+    // do scan on splitNew
+    splitNew[0] = 0;
     for(i=1; i<nprocs+1; i++)
-        aggSizeArray[i] = aggSizeArray[i-1] + aggSizeArrayTemp[i-1];
+        splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
 
-    free(aggSizeArrayTemp);
+    free(splitNewTemp);
 
 //    if(rank==1){
-//        cout << "aggSizeArray:" << endl;
+//        cout << "splitNew:" << endl;
 //        for(i=0; i<nprocs+1; i++)
-//            cout << aggSizeArray[i] << endl;
+//            cout << S->split[i] << "\t" << splitNew[i] << endl;
 //        cout << endl;
 //    }
 
@@ -746,7 +755,8 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
     // local: aggregate update to new values.
     for(i=0; i<size; i++){
         if(aggregate[i] >= S->split[rank] && aggregate[i] < S->split[rank+1]){
-            aggregate[i] = lower_bound2(&*aggArray.begin(), &*aggArray.end(), aggregate[i]) + aggSizeArray[rank];
+            aggregate[i] = lower_bound2(&*aggArray.begin(), &*aggArray.end(), aggregate[i]) + splitNew[rank];
+//            if(rank==1) cout << aggregate[i] << endl;
             isAggRemote[i] = false;
         }else{
             isAggRemote[i] = true;
@@ -771,12 +781,6 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
         recvCount[procNum]++;
 //        if(rank==1) cout << i << "\t" << procNum << endl;
     }
-
-//    if(rank==1){
-//        cout << "recvCount:\t" << rank << endl;
-//        for(i=0; i<nprocs; i++)
-//            cout << recvCount[i] << endl;
-//    }
 
     int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
     MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
@@ -823,28 +827,17 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
     int recvSize   = rdispls[nprocs-1] + recvCount[nprocs-1];
 
     unsigned long* vIndex = (unsigned long*)malloc(sizeof(unsigned long)*vIndexSize); // indices to be sent. And aggregateRemote are indices to be received.
-    MPI_Alltoallv(  &*aggregateRemote.begin()  , recvCount, &*rdispls.begin(), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
-//    MPI_Alltoallv(  &*aggregateRemote2.begin()  , recvCount, &*rdispls.begin(), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
+    MPI_Alltoallv(&*aggregateRemote.begin(), recvCount, &*rdispls.begin(), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
+//    MPI_Alltoallv(&*aggregateRemote2.begin(), recvCount, &*rdispls.begin(), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
 
     unsigned long* aggSend = (unsigned long*)malloc(sizeof(unsigned long*) * vIndexSize);
     unsigned long* aggRecv = (unsigned long*)malloc(sizeof(unsigned long*) * recvSize);
 
-//    MPI_Barrier(comm);
 //    if(rank==0) cout << endl << "vSend:\trank:" << rank << endl;
-//    for(long i=0;i<vIndexSize;i++){
-//        aggSend[i] = aggregate[( vIndex[i]-S->split[rank] )];
+    for(long i=0;i<vIndexSize;i++){
+        aggSend[i] = aggregate[( vIndex[i]-S->split[rank] )];
 //        if(rank==0) cout << "vIndex = " << vIndex[i] << "\taggSend = " << aggSend[i] << endl;
-//    }
-//    if(rank==0) cout << endl;
-//    MPI_Barrier(comm);
-//    if(rank==2) cout << endl << "vSend:\trank:" << rank << endl;
-//    for(long i=0;i<vIndexSize;i++){
-//        aggSend[i] = aggregate[( vIndex[i]-S->split[rank] )];
-//        if(rank==2) cout << "vIndex = " << vIndex[i] << "\taggSend = " << aggSend[i] << endl;
-//    }
-//    if(rank==2) cout << endl;
-//    MPI_Barrier(comm);
-
+    }
 
     MPI_Alltoallv(aggSend, vIndexCount, &*(vdispls.begin()), MPI_UNSIGNED_LONG, aggRecv, recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, comm);
 
@@ -864,7 +857,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
     for(i=0; i<size; i++){
         if(isAggRemote[i]){
             aggregate[i] = aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ];
-//            if(rank==1) cout << aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ] << endl;
+//            if(rank==1) cout << i << "\t" << aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ] << endl;
         }
     }
 //    if(rank==1) cout << endl;
@@ -876,12 +869,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 //            cout << i << endl;
 //        cout << endl;
 //    }
-
     // update aggregate to new indices
 //    set<unsigned long>::iterator it;
 //    for(i=0; i<size; i++){
 //        it = aggArray.find(aggregate[i]);
-//        aggregate[i] = distance(aggArray.begin(), it) + aggSizeArray[rank];
+//        aggregate[i] = distance(aggArray.begin(), it) + splitNew[rank];
 //    }
 
 //    MPI_Barrier(comm);
@@ -893,7 +885,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 //    }
 //    MPI_Barrier(comm);
 //    if(rank==1){
-//        cout << "aggregate:\t"<< rank << endl;
+//        cout << "\naggregate:\t"<< rank << endl;
 //        for(i=0; i<size; i++)
 //            cout << aggregate[i] << endl;
 //        cout << endl;
@@ -987,7 +979,9 @@ int AMGClass::Aggregation(CSRMatrix* S){
  */
 
 
-int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long N, prolongMatrix* P, MPI_Comm comm){
+int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, prolongMatrix* P, MPI_Comm comm){
+    // todo: check ordering. add values with the same row and col.
+    // todo: do A_w on the fly here.
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -995,8 +989,10 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     unsigned int i, j;
 
     P->Mbig = A->Mbig;
-    P->Nbig = N; // N is the number of aggregates, which is the number of columns of P.
+    P->Nbig = splitNew[nprocs+1]; // This is the number of aggregates, which is the number of columns of P.
     P->M = A->M;
+
+    P->splitNew = splitNew;
 
     // store remote elements from aggregate in vSend to be sent to other processes.
     // todo: is it ok to use vSend instead of vSendULong? vSend is double and vSendULong is unsigned long.
@@ -1022,8 +1018,9 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     for (i = 0; i < A->M; ++i) {
         for (j = 0; j < A->nnz_row_local[i]; ++j, ++iter) {
             P->row.push_back(A->row_local[A->indicesP_local[iter]]);
-            P->col.push_back(aggregate[  A->col_local[A->indicesP_local[iter]] - A->split[rank] ]);
+            P->col.push_back(aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ]);
             P->values.push_back(A->values_local[A->indicesP_local[iter]]);
+            if(rank==1) cout << A->row_local[A->indicesP_local[iter]] << "\t" << A->col_local[A->indicesP_local[iter]] - A->split[rank] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] << endl;
         }
     }
 
@@ -1034,9 +1031,9 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     for (i = 0; i < A->col_remote_size; ++i) {
         for (j = 0; j < A->nnz_col_remote[i]; ++j, ++iter) {
             P->row.push_back(A->row_remote[iter]);
-//            P->col.push_back(A->vecValues[  A->col_remote[iter]  ]);
             P->col.push_back(A->vecValuesULong[A->col_remote[iter]]);
             P->values.push_back(A->values_remote[iter]);
+//            if(rank==1) cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t" << A->values_remote[iter] << endl;
         }
     }
 
