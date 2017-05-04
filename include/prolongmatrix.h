@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "mpi.h"
+#include "auxFunctions.h"
 
 class prolongMatrix {
 private:
@@ -14,9 +15,11 @@ public:
     unsigned long nnz_g;
     unsigned long nnz_l;
 
-    std::vector<unsigned long> row;
-    std::vector<unsigned long> col;
-    std::vector<double> values;
+//    std::vector<unsigned long> row;
+//    std::vector<unsigned long> col;
+//    std::vector<double> values;
+
+    std::vector<cooEntry> entry;
 
 
     unsigned int nnz_l_local;
@@ -68,11 +71,14 @@ public:
     std::vector<int> sendProcCount;
     std::vector<int> sendProcCount_t;
 
+    unsigned long* splitNew;
+
 
     prolongMatrix();
 //    prolongMatrix(unsigned long Mbig, unsigned long Nbig, unsigned long nnz_g, unsigned long nnz_l, unsigned long* row, unsigned long* col, double* values);
     ~prolongMatrix();
-    int findLocalRemote(unsigned long* row, unsigned long* col, double* values, MPI_Comm comm);
+//    int findLocalRemote(unsigned long* row, unsigned long* col, double* values, MPI_Comm comm);
+    int findLocalRemote(cooEntry* entry, MPI_Comm comm);
 };
 
 

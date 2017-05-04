@@ -34,7 +34,7 @@ public:
     int findAggregation(COOMatrix* A, unsigned long* aggregate, unsigned long* aggSizeArray, MPI_Comm comm);
     int createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm comm);
     int Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned long* aggSize, MPI_Comm comm);
-    int createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long N, prolongMatrix* P, MPI_Comm comm);
+    int createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, prolongMatrix* P, MPI_Comm comm);
     int createRestriction(prolongMatrix* P, restrictMatrix* R, MPI_Comm comm);
     };
 
