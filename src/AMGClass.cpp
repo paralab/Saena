@@ -558,6 +558,9 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 
         MPI_Waitall(S->numSendProc + S->numRecvProc, requests, statuses);
 
+//        delete requests; // todo: delete requests and statuses in whole project, if it is required.
+//        delete statuses;
+
 //        MPI_Barrier(comm);
 //        iter = 0;
 //        if(rank==1)
@@ -793,24 +796,24 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 
 
     // this part is for isend and ireceive.
-//    std::vector<int> recvProcRank;
-//    std::vector<int> recvProcCount;
-//    std::vector<int> sendProcRank;
-//    std::vector<int> sendProcCount;
-//    int numRecvProc = 0;
-//    int numSendProc = 0;
-//    for(int i=0; i<nprocs; i++){
-//        if(recvCount[i]!=0){
-//            numRecvProc++;
-//            recvProcRank.push_back(i);
-//            recvProcCount.push_back(recvCount[i]);
-//        }
-//        if(vIndexCount[i]!=0){
-//            numSendProc++;
-//            sendProcRank.push_back(i);
-//            sendProcCount.push_back(vIndexCount[i]);
-//        }
-//    }
+    std::vector<int> recvProcRank;
+    std::vector<int> recvProcCount;
+    std::vector<int> sendProcRank;
+    std::vector<int> sendProcCount;
+    int numRecvProc = 0;
+    int numSendProc = 0;
+    for(int i=0; i<nprocs; i++){
+        if(recvCount[i]!=0){
+            numRecvProc++;
+            recvProcRank.push_back(i);
+            recvProcCount.push_back(recvCount[i]);
+        }
+        if(vIndexCount[i]!=0){
+            numSendProc++;
+            sendProcRank.push_back(i);
+            sendProcCount.push_back(vIndexCount[i]);
+        }
+    }
 
     std::vector<int> vdispls;
     std::vector<int> rdispls;
@@ -839,7 +842,25 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 //        if(rank==0) cout << "vIndex = " << vIndex[i] << "\taggSend = " << aggSend[i] << endl;
     }
 
-    MPI_Alltoallv(aggSend, vIndexCount, &*(vdispls.begin()), MPI_UNSIGNED_LONG, aggRecv, recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, comm);
+    // replace this alltoallv with isend and irecv.
+//    MPI_Alltoallv(aggSend, vIndexCount, &*(vdispls.begin()), MPI_UNSIGNED_LONG, aggRecv, recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, comm);
+
+    MPI_Request *requests2 = new MPI_Request[numSendProc + numRecvProc];
+    MPI_Status  *statuses2 = new MPI_Status[numSendProc + numRecvProc];
+
+    for(int i = 0; i < numRecvProc; i++) {
+        MPI_Irecv(&aggRecv[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_UNSIGNED_LONG, recvProcRank[i], 1, comm, &(requests2[i]));
+    }
+
+    //Next send the messages. Do not send to self.
+    for(int i = 0; i < numSendProc; i++) {
+        MPI_Isend(&aggSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_UNSIGNED_LONG, sendProcRank[i], 1, comm, &(requests2[numRecvProc+i]));
+    }
+
+    MPI_Waitall(numSendProc+numRecvProc, requests2, statuses2);
+
+//    delete requests2;
+//    delete statuses2;
 
 //    if(rank==1) cout << "aggRemote received:" << endl;
 //    set<unsigned long>::iterator it;
@@ -980,7 +1001,7 @@ int AMGClass::Aggregation(CSRMatrix* S){
 
 
 int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, prolongMatrix* P, MPI_Comm comm){
-    // todo: check ordering. add values with the same row and col.
+    // todo: check when you should update new aggregate values: before creating prolongation or after.
 
     // Here P is computed: P = A_w * P_t; in which P_t is aggregate, and A_w = I - w*Q*A, Q is inverse of diagonal of A.
     // Here A_w is computed on the fly, while adding values to P. Diagonal entries of A_w are 0, so they are skipped.
@@ -1073,16 +1094,6 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     P->split = &*A->split.begin();
-
-//    unsigned long* indices_p = (unsigned long*)malloc(sizeof(unsigned long)*P->nnz_l);
-//    for(i=0; i<P->nnz_l; i++)
-//        indices_p[i] = i;
-//    std::sort(indices_p, &indices_p[P->nnz_l], sort_indices( &*P->col.begin() ));
-
-//    for (i = 0; i < P->nnz_l; i++)
-//        if(rank==1) cout << P->row[i] << "\t" << P->col[i] << "\t" << P->values[i] << endl;
-
-//    free(indices_p);
 
     P->findLocalRemote(&*P->entry.begin(), comm);
 //    P->findLocalRemote(&*P->row.begin(), &*P->col.begin(), &*P->values.begin(), comm);
