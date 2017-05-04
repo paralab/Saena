@@ -4,7 +4,7 @@
 #include "coomatrix.h"
 #include "mpi.h"
 #include <omp.h>
-#include "auxFunctions.cpp"
+#include "auxFunctions.h"
 
 COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
 
@@ -62,7 +62,7 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
     // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
 
     // definition of buckets: bucket[i] = [ firstSplit[i] , firstSplit[i+1] ). Number of buckets = n_buckets
-    int n_buckets=0;
+    int n_buckets = 0;
 
 /*    if (Mbig > nprocs*nprocs){
         if (nprocs < 1000)
@@ -111,7 +111,6 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
             cout << splitOffset[i] << endl;
     }*/
 
-//    long firstSplit[n_buckets+1];
     unsigned long* firstSplit = (unsigned long*)malloc(sizeof(unsigned long)*(n_buckets+1));
     firstSplit[0] = 0;
     for(unsigned int i=1; i<n_buckets; i++){
@@ -125,7 +124,6 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
             cout << firstSplit[i] << endl;
     }*/
 
-//    long H_l[n_buckets];
     long* H_l = (long*)malloc(sizeof(long)*n_buckets);
     fill(&H_l[0], &H_l[n_buckets], 0);
 
@@ -139,7 +137,6 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
             cout << H_l[i] << endl;
     }*/
 
-//    long H_g[n_buckets];
     long* H_g = (long*)malloc(sizeof(long)*n_buckets);
     MPI_Allreduce(H_l, H_g, n_buckets, MPI_LONG, MPI_SUM, comm);
 
@@ -166,11 +163,11 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
             cout << H_g_scan[i] << endl;
     }*/
 
-    long procNum=0;
+    long procNum = 0;
     split.resize(nprocs+1);
     split[0]=0;
     for (unsigned int i=1; i<n_buckets; i++){
-        //if (rank==0) cout << "here: " << (procNum+1)*nnz_g/nprocs << endl;
+        //if (rank==0) cout << "(procNum+1)*nnz_g/nprocs = " << (procNum+1)*nnz_g/nprocs << endl;
         if (H_g_scan[i] > ((procNum+1)*nnz_g/nprocs)){
             procNum++;
             split[procNum] = firstSplit[i];

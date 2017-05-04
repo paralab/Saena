@@ -4,7 +4,7 @@
 #include "mpi.h"
 #include "coomatrix.h"
 #include "AMGClass.h"
-//#include "auxFunctions.cpp"
+//#include "auxFunctions.h"
 //#include "strengthmatrix.h"
 
 #define ITERATIONS 1
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
     MPI_File fh;
     MPI_Offset offset;
 
-    int mpiopen = MPI_File_open(MPI_COMM_WORLD, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    int mpiopen = MPI_File_open(comm, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
         if (rank==0) cout << "Unable to open the vector file!" << endl;
         MPI_Finalize();
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]){
     MPI_Status status2;
     MPI_File fh2;
     MPI_Offset offset2;
-    MPI_File_open(MPI_COMM_WORLD, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
+    MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
 
     offset2 = B.split[rank] * 8; // value(double=8)
     MPI_File_write_at(fh2, offset2, xp, B.M, MPI_UNSIGNED_LONG, &status2);
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
     }
 
     fill(&time[0], &time[time_num], 0);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i=0; i<ITERATIONS; i++){
         B.matvec(vp, wp, time);
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]){
 //        for(int j=0; j<time_num; j++)
 //            time[j] += time[j]/ITERATIONS;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     t2 = MPI_Wtime();
     //end of timing matvec
 
@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
     MPI_Status status2;
     MPI_File fh2;
     MPI_Offset offset2;
-    MPI_File_open(MPI_COMM_WORLD, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
+    MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
 
     offset2 = B.split[rank] * 8; // value(double=8)
     MPI_File_write_at(fh2, offset2, vp, B.M, MPI_UNSIGNED_LONG, &status2);

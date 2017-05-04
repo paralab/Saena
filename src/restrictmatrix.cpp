@@ -7,17 +7,61 @@ using namespace std;
 
 restrictMatrix::restrictMatrix(){}
 
-restrictMatrix::restrictMatrix(prolongMatrix* P, MPI_Comm comm) {
+restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfRows, MPI_Comm comm) {
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    // todo: first figure out the repartitioning of R.
+    unsigned long i, j;
 
     Mbig = P->Nbig;
     Nbig = P->Mbig;
 
-    unsigned long i, j;
+    // *********************** check for shrinking ************************
+
+    bool shrinkLocal;
+    bool shrinkGlobal = false;
+
+    double temp1 = 0;
+    for(i=1; i<nprocs+1; i++){
+        temp1 += ((double)initialNumberOfRows[i] / P->splitNew[i]);
+    }
+    temp1 /= nprocs;
+
+//    cout << rank << "\t" << temp1 << endl;
+
+    if(temp1 >= 3){ // todo: decide about this later.
+        // todo: don't forget to update initialNumberOfRows after shrinking.
+        MPI_Group currentGroup;
+        MPI_Comm_group(comm, &currentGroup);
+
+        int newGroupSize = nprocs/4;
+        int* newGroupRanks = (int*)malloc(sizeof(int)*newGroupSize);
+        for(int i=0; i<newGroupSize; i++)
+            newGroupRanks[i] = 4*i;
+
+        MPI_Group newGroup;
+        MPI_Group_incl(currentGroup, newGroupSize, newGroupRanks, &newGroup);
+
+        MPI_Comm newComm;
+        MPI_Comm_create_group(comm, newGroup, 0, &newComm);
+
+        int newRank = -1;
+        int newSize = -1;
+        if (newComm != MPI_COMM_NULL) {
+            MPI_Comm_rank(newComm, &newRank);
+            MPI_Comm_size(newComm, &newSize);
+//            cout << "rank = " << newRank << ", size = " << newSize << endl;
+        }
+
+        MPI_Group_free(&currentGroup);
+        MPI_Group_free(&newGroup);
+        if (newComm != MPI_COMM_NULL) MPI_Comm_free(&newComm);
+        free(newGroupRanks);
+    }
+
+
+    // *********************** assign local part of restriction ************************
 
     //local
     unsigned long iter = 0;

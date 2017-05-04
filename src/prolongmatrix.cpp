@@ -3,21 +3,22 @@
 #include <algorithm>
 #include <iostream>
 #include "prolongmatrix.h"
-#include "auxFunctions.cpp"
+#include "auxFunctions.h"
 
 prolongMatrix::prolongMatrix(){}
 
-int prolongMatrix::findLocalRemote(unsigned long* r, unsigned long* c, double* v, MPI_Comm comm){
+
+int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     unsigned long i;
 
-    unsigned long* indices_p = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l);
-    for(i=0; i<nnz_l; i++)
-        indices_p[i] = i;
-    std::sort(indices_p, &indices_p[nnz_l], sort_indices(c));
+//    unsigned long* indices_p = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l);
+//    for(i=0; i<nnz_l; i++)
+//        indices_p[i] = i;
+//    std::sort(indices_p, &indices_p[nnz_l], sort_indices(c));
 
 //    for(unsigned int i=0; i<nnz_l; i++){
 //        if(rank==0) cout << r[indices_p[i]] << "\t" << c[indices_p[i]] << "\t\t" << v[indices_p[i]] << endl;
@@ -37,66 +38,68 @@ int prolongMatrix::findLocalRemote(unsigned long* r, unsigned long* c, double* v
     std::fill(vIndexCount_t, vIndexCount_t + nprocs, 0);
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
-    if (c[indices_p[0]] >= split[rank] && c[indices_p[0]] < split[rank + 1]) {
-        nnz_row_local[r[indices_p[0]]]++;
+    // local
+    if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
+        nnz_row_local[entry[0].row]++;
         nnz_l_local++;
 
-        values_local.push_back(v[indices_p[0]]);
-        row_local.push_back(r[indices_p[0]]);
-        col_local.push_back(c[indices_p[0]]);
+        values_local.push_back(entry[0].val);
+        row_local.push_back(entry[0].row);
+        col_local.push_back(entry[0].col);
 
         //vElement_local.push_back(col[0]);
         vElementRep_local.push_back(1);
 
+    // remote
     } else{
         nnz_l_remote++;
-        values_remote.push_back(v[indices_p[0]]);
-        row_remote.push_back(r[indices_p[0]]);
+        values_remote.push_back(entry[0].val);
+        row_remote.push_back(entry[0].row);
         col_remote_size++; // number of remote columns
         col_remote.push_back(col_remote_size-1);
-        col_remote2.push_back(c[indices_p[0]]);
+        col_remote2.push_back(entry[0].col);
 //        nnz_col_remote[col_remote_size-1]++;
         nnz_col_remote.push_back(1);
 
-        vElement_remote.push_back(c[indices_p[0]]);
+        vElement_remote.push_back(entry[0].col);
         vElementRep_remote.push_back(1);
-        recvCount[lower_bound2(&split[0], &split[nprocs], c[indices_p[0]])] = 1;
+        recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
 
         nnz_col_remote_t.push_back(1);
         vElement_remote_t.push_back(nnz_l_remote-1);
-        vIndexCount_t[lower_bound2(&split[0], &split[nprocs], c[indices_p[0]])] = 1;
+        vIndexCount_t[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
     }
 
     for (i = 1; i < nnz_l; i++) {
 
         // local
-        if (c[indices_p[i]] >= split[rank] && c[indices_p[i]] < split[rank+1]) {
-            nnz_row_local[r[indices_p[i]]]++;
+        if (entry[i].col >= split[rank] && entry[i].col < split[rank+1]) {
+            nnz_row_local[entry[i].row]++;
             nnz_l_local++;
 
-            values_local.push_back(v[indices_p[i]]);
-            row_local.push_back(r[indices_p[i]]);
-            col_local.push_back(c[indices_p[i]]);
+            values_local.push_back(entry[i].val);
+            row_local.push_back(entry[i].row);
+            col_local.push_back(entry[i].col);
 
         // remote
         } else {
             nnz_l_remote++;
-            values_remote.push_back(v[indices_p[i]]);
+            values_remote.push_back(entry[i].val);
 //            if(rank==0) cout << v[indices_p[i]] << endl;
-            row_remote.push_back(r[indices_p[i]]);
+            row_remote.push_back(entry[i].row);
             // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
-            col_remote2.push_back(c[indices_p[i]]);
+            col_remote2.push_back(entry[i].col);
 
-            procNum = lower_bound2(&split[0], &split[nprocs], c[indices_p[i]]);
+            procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
             vIndexCount_t[procNum]++;
             vElement_remote_t.push_back((unsigned long)nnz_l_remote-1);
             nnz_col_remote_t.push_back(1);
 
-            if (c[indices_p[i]] != c[indices_p[i-1]]) {
+            if (entry[i].col != entry[i-1].col) {
                 col_remote_size++;
-                vElement_remote.push_back(c[indices_p[i]]);
+                vElement_remote.push_back(entry[i].col);
                 vElementRep_remote.push_back(1);
-                procNum = lower_bound2(&split[0], &split[nprocs], c[indices_p[i]]);
+                procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
                 recvCount[procNum]++;
                 nnz_col_remote.push_back(1);
             } else {
@@ -109,7 +112,7 @@ int prolongMatrix::findLocalRemote(unsigned long* r, unsigned long* c, double* v
         }
     } // for i
 
-    free(indices_p);
+//    free(indices_p);
 
     int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
     MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
@@ -162,7 +165,6 @@ int prolongMatrix::findLocalRemote(unsigned long* r, unsigned long* c, double* v
 
     free(vIndexCount);
     free(recvCount);
-
 
     vdispls_t.resize(nprocs);
     rdispls_t.resize(nprocs);
@@ -228,6 +230,7 @@ int prolongMatrix::findLocalRemote(unsigned long* r, unsigned long* c, double* v
 
     return 0;
 }
+
 
 prolongMatrix::~prolongMatrix(){
     free(vIndex);

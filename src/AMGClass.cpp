@@ -8,7 +8,7 @@
 #include <usort/parUtils.h>
 #include <set>
 #include "AMGClass.h"
-#include "auxFunctions.cpp"
+#include "auxFunctions.h"
 //#include <random>
 //#include "prolongmatrix.h"
 //#include "restrictmatrix.h"
@@ -981,12 +981,18 @@ int AMGClass::Aggregation(CSRMatrix* S){
 
 int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, prolongMatrix* P, MPI_Comm comm){
     // todo: check ordering. add values with the same row and col.
-    // todo: do A_w on the fly here.
+
+    // Here P is computed: P = A_w * P_t; in which P_t is aggregate, and A_w = I - w*Q*A, Q is inverse of diagonal of A.
+    // Here A_w is computed on the fly, while adding values to P. Diagonal entries of A_w are 0, so they are skipped.
+    // todo: think about A_F which is A filtered.
+    // todo: think about smoothing preconditioners other than damped jacobi. check the following paper:
+    // todo: Eran Treister and Irad Yavneh, Non-Galerkin Multigrid based on Sparsified Smoothed Aggregation. page22.
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     unsigned int i, j;
+    float omega = 0.67; // todo: find the correct value for omega.
 
     P->Mbig = A->Mbig;
     P->Nbig = splitNew[nprocs+1]; // This is the number of aggregates, which is the number of columns of P.
@@ -1003,24 +1009,30 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     }
 
     MPI_Request* requests = new MPI_Request[A->numSendProc+A->numRecvProc];
-    MPI_Status* statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
+    MPI_Status*  statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
 
-    for(i = 0; i < A->numRecvProc; i++) {
+    for(i = 0; i < A->numRecvProc; i++)
         MPI_Irecv(&A->vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &(requests[i]));
-    }
 
-    for(i = 0; i < A->numSendProc; i++) {
+    for(i = 0; i < A->numSendProc; i++)
         MPI_Isend(&A->vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
-    }
+
+    std::vector<cooEntry> PEntryTemp;
 
     // local
     long iter = 0;
     for (i = 0; i < A->M; ++i) {
         for (j = 0; j < A->nnz_row_local[i]; ++j, ++iter) {
-            P->row.push_back(A->row_local[A->indicesP_local[iter]]);
-            P->col.push_back(aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ]);
-            P->values.push_back(A->values_local[A->indicesP_local[iter]]);
-            if(rank==1) cout << A->row_local[A->indicesP_local[iter]] << "\t" << A->col_local[A->indicesP_local[iter]] - A->split[rank] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] << endl;
+            if(A->row_local[A->indicesP_local[iter]] == A->col_local[A->indicesP_local[iter]]-A->split[rank]){ // diagonal element
+                PEntryTemp.push_back(cooEntry(A->row_local[A->indicesP_local[iter]],
+                         aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
+                         1 - omega));
+            }else{
+                PEntryTemp.push_back(cooEntry(A->row_local[A->indicesP_local[iter]],
+                         aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
+                         -omega * A->values_local[A->indicesP_local[iter]] * A->invDiag[A->row_local[A->indicesP_local[iter]]]));
+            }
+//            if(rank==1) cout << A->row_local[A->indicesP_local[iter]] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->invDiag[A->row_local[A->indicesP_local[iter]]] << endl;
         }
     }
 
@@ -1030,19 +1042,50 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     iter = 0;
     for (i = 0; i < A->col_remote_size; ++i) {
         for (j = 0; j < A->nnz_col_remote[i]; ++j, ++iter) {
-            P->row.push_back(A->row_remote[iter]);
-            P->col.push_back(A->vecValuesULong[A->col_remote[iter]]);
-            P->values.push_back(A->values_remote[iter]);
-//            if(rank==1) cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t" << A->values_remote[iter] << endl;
+            PEntryTemp.push_back(cooEntry(A->row_remote[iter],
+                                        A->vecValuesULong[A->col_remote[iter]],
+                                        -omega * A->values_remote[iter] * A->invDiag[A->row_remote[iter]]));
+//            P->values.push_back(A->values_remote[iter]);
+//            if(rank==1) cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t" << A->values_remote[iter] * A->invDiag[A->row_remote[iter]] << endl;
         }
     }
 
-    P->nnz_l = P->row.size();
+    std::sort(PEntryTemp.begin(), PEntryTemp.end());
+//    if(rank==1)
+//        for(i=0; i<PEntryTemp.size(); i++)
+//            cout << PEntryTemp[i].row << "\t" << PEntryTemp[i].col << "\t" << PEntryTemp[i].val << endl;
+
+    for(i=0; i<PEntryTemp.size(); i++){
+        P->entry.push_back(PEntryTemp[i]);
+        while(i<PEntryTemp.size()-1 && PEntryTemp[i] == PEntryTemp[i+1]){ // values of entries with the same row and col should be added.
+            P->entry[P->entry.size()-1].val += PEntryTemp[i+1].val;
+            i++;
+        }
+    }
+
+//    if(rank==1)
+//        for(i=0; i<P->entry.size(); i++)
+//            cout << P->entry[i].row << "\t" << P->entry[i].col << "\t" << P->entry[i].val << endl;
+
+    PEntryTemp.clear();
+
+    P->nnz_l = P->entry.size();
     MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     P->split = &*A->split.begin();
 
-    P->findLocalRemote(&*P->row.begin(), &*P->col.begin(), &*P->values.begin(), comm);
+//    unsigned long* indices_p = (unsigned long*)malloc(sizeof(unsigned long)*P->nnz_l);
+//    for(i=0; i<P->nnz_l; i++)
+//        indices_p[i] = i;
+//    std::sort(indices_p, &indices_p[P->nnz_l], sort_indices( &*P->col.begin() ));
+
+//    for (i = 0; i < P->nnz_l; i++)
+//        if(rank==1) cout << P->row[i] << "\t" << P->col[i] << "\t" << P->values[i] << endl;
+
+//    free(indices_p);
+
+    P->findLocalRemote(&*P->entry.begin(), comm);
+//    P->findLocalRemote(&*P->row.begin(), &*P->col.begin(), &*P->values.begin(), comm);
 
     return 0;
 }// end of AMGClass::createProlongation
