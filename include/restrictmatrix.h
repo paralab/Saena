@@ -16,6 +16,9 @@ public:
 //    std::vector<unsigned long> col;
 //    std::vector<double> values;
 
+    std::vector<cooEntry> entry_local;
+    std::vector<cooEntry> entry_remote;
+
     std::vector<unsigned long> row_local;
     std::vector<unsigned long> row_remote;
     std::vector<unsigned long> col_local;

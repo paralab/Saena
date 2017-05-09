@@ -31,12 +31,14 @@ public:
     int vIndexSize;
     int vIndexSize_t;
     unsigned long* vSend;
-    unsigned long* vSend_t;
+    cooEntry* vSend_t;
     unsigned long* vIndex;
 //    unsigned long* recvIndex_t;
     unsigned long* vecValues;
-    unsigned long* vecValues_t;
+    cooEntry* vecValues_t;
 //    int* vecValues2;
+    std::vector<cooEntry> entry_local;
+    std::vector<cooEntry> entry_remote;
     std::vector<double> values_local;
     std::vector<double> values_remote;
     std::vector<unsigned long> row_local;
