@@ -31,11 +31,11 @@ public:
     int vIndexSize;
     int vIndexSize_t;
     unsigned long* vSend;
-    double* vSend_t;
+    unsigned long* vSend_t;
     unsigned long* vIndex;
-    unsigned long* recvIndex_t;
+//    unsigned long* recvIndex_t;
     unsigned long* vecValues;
-    double* vecValues_t;
+    unsigned long* vecValues_t;
 //    int* vecValues2;
     std::vector<double> values_local;
     std::vector<double> values_remote;
@@ -47,7 +47,7 @@ public:
     std::vector<unsigned int> nnz_row_local;
 //    std::vector<unsigned int> nnz_row_remote;
     std::vector<unsigned int> nnz_col_remote;
-    std::vector<unsigned int> nnz_col_remote_t;
+//    std::vector<unsigned int> nnz_col_remote_t;
     std::vector<unsigned long> vElement_remote;
     std::vector<unsigned long> vElement_remote_t;
     std::vector<unsigned long> vElementRep_local;
@@ -63,11 +63,15 @@ public:
     int recvSize;
     int recvSize_t;
     int numRecvProc;
+    int numRecvProc_t;
     int numSendProc;
+    int numSendProc_t;
     std::vector<int> recvProcRank;
+    std::vector<int> recvProcRank_t;
     std::vector<int> recvProcCount;
     std::vector<int> recvProcCount_t;
     std::vector<int> sendProcRank;
+    std::vector<int> sendProcRank_t;
     std::vector<int> sendProcCount;
     std::vector<int> sendProcCount_t;
 

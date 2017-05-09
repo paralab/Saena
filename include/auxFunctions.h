@@ -47,6 +47,21 @@ public:
         else
             return false;
     }
+
+    static MPI_Datatype mpi_datatype()
+    {
+        static bool         first = true;
+        static MPI_Datatype datatype;
+
+        if (first)
+        {
+            first = false;
+            MPI_Type_contiguous(sizeof(cooEntry), MPI_BYTE, &datatype);
+            MPI_Type_commit(&datatype);
+        }
+
+        return datatype;
+    }
 };
 
 #endif //SAENA_AUXFUNCTIONS_H
