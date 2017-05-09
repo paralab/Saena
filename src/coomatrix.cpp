@@ -1,9 +1,9 @@
 #include <fstream>
 #include <algorithm>
 #include <sys/stat.h>
-#include "coomatrix.h"
 #include "mpi.h"
 #include <omp.h>
+#include "coomatrix.h"
 #include "auxFunctions.h"
 
 COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
@@ -245,7 +245,7 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 //    long sendBufV[initial_nnz_l];
     long* sendBufI = (long*)malloc(sizeof(long)*initial_nnz_l);
     long* sendBufJ = (long*)malloc(sizeof(long)*initial_nnz_l);
-    long* sendBufV = (long*)malloc(sizeof(long)*initial_nnz_l);
+    long* sendBufV = (long*)malloc(sizeof(long)*initial_nnz_l); // todo: should datatype be double?
 //    unsigned int sIndex[nprocs];
     unsigned int* sIndex = (unsigned int*)malloc(sizeof(unsigned int)*nprocs);
     fill(&sIndex[0], &sIndex[nprocs], 0);

@@ -5,6 +5,8 @@
 #include "prolongmatrix.h"
 #include "auxFunctions.h"
 
+using namespace std;
+
 prolongMatrix::prolongMatrix(){}
 
 
@@ -32,6 +34,8 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 //    int recvCount[nprocs];
     int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
+//    int* recvCount_t = (int*)malloc(sizeof(int)*nprocs);
+//    std::fill(recvCount_t, recvCount_t + nprocs, 0);
     nnz_row_local.assign(M,0);
 
     int* vIndexCount_t = (int*)malloc(sizeof(int)*nprocs);
@@ -39,13 +43,14 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
     // local
-    if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
+    if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) {
         nnz_row_local[entry[0].row]++;
         nnz_l_local++;
 
-        values_local.push_back(entry[0].val);
-        row_local.push_back(entry[0].row);
-        col_local.push_back(entry[0].col);
+        entry_local.push_back(cooEntry(entry[0].row, entry[0].col, entry[0].val));
+        row_local.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
+//        col_local.push_back(entry[0].col);
+//        values_local.push_back(entry[0].val);
 
         //vElement_local.push_back(col[0]);
         vElementRep_local.push_back(1);
@@ -53,11 +58,12 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
     // remote
     } else{
         nnz_l_remote++;
-        values_remote.push_back(entry[0].val);
-        row_remote.push_back(entry[0].row);
+        entry_remote.push_back(cooEntry(entry[0].row, entry[0].col, entry[0].val));
+//        row_remote.push_back(entry[0].row);
+//        col_remote2.push_back(entry[0].col);
+//        values_remote.push_back(entry[0].val);
         col_remote_size++; // number of remote columns
         col_remote.push_back(col_remote_size-1);
-        col_remote2.push_back(entry[0].col);
 //        nnz_col_remote[col_remote_size-1]++;
         nnz_col_remote.push_back(1);
 
@@ -65,35 +71,37 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         vElementRep_remote.push_back(1);
         recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
 
-        nnz_col_remote_t.push_back(1);
+//        nnz_col_remote_t.push_back(1);
         vElement_remote_t.push_back(nnz_l_remote-1);
-        vIndexCount_t[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
+        vIndexCount_t[lower_bound2(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
+//        recvCount_t[lower_bound2(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
     }
 
     for (i = 1; i < nnz_l; i++) {
 
         // local
-        if (entry[i].col >= split[rank] && entry[i].col < split[rank+1]) {
+        if (entry[i].col >= splitNew[rank] && entry[i].col < splitNew[rank+1]) {
             nnz_row_local[entry[i].row]++;
             nnz_l_local++;
 
-            values_local.push_back(entry[i].val);
-            row_local.push_back(entry[i].row);
-            col_local.push_back(entry[i].col);
+            entry_local.push_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
+            row_local.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then erase.
+//            col_local.push_back(entry[i].col);
+//            values_local.push_back(entry[i].val);
 
         // remote
         } else {
             nnz_l_remote++;
-            values_remote.push_back(entry[i].val);
-//            if(rank==0) cout << v[indices_p[i]] << endl;
-            row_remote.push_back(entry[i].row);
-            // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
-            col_remote2.push_back(entry[i].col);
-
-            procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+            entry_remote.push_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
+//            row_remote.push_back(entry[i].row);
+            // col_remote2 is the original col value. col_remote starts from 0.
+//            col_remote2.push_back(entry[i].col);
+//            values_remote.push_back(entry[i].val);
+            procNum = lower_bound2(&splitNew[0], &splitNew[nprocs], entry[i].col);
             vIndexCount_t[procNum]++;
-            vElement_remote_t.push_back((unsigned long)nnz_l_remote-1);
-            nnz_col_remote_t.push_back(1);
+//            recvCount_t[procNum]++;
+            vElement_remote_t.push_back((unsigned long)nnz_l_remote-1); // todo: is (unsigned long) required here?
+//            nnz_col_remote_t.push_back(1);
 
             if (entry[i].col != entry[i-1].col) {
                 col_remote_size++;
@@ -128,7 +136,6 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 //    }
 //    MPI_Barrier(comm);
 
-
     numRecvProc = 0;
     numSendProc = 0;
     for(int i=0; i<nprocs; i++){
@@ -136,17 +143,18 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
             numRecvProc++;
             recvProcRank.push_back(i);
             recvProcCount.push_back(recvCount[i]);
-            sendProcCount_t.push_back(vIndexCount_t[i]); // use recvProcRank for it.
+//            sendProcCount_t.push_back(vIndexCount_t[i]); // use recvProcRank for it.
+//            if(rank==0) cout << i << "\trecvCount[i] = " << recvCount[i] << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
         }
         if(vIndexCount[i]!=0){
             numSendProc++;
             sendProcRank.push_back(i);
             sendProcCount.push_back(vIndexCount[i]);
-            recvProcCount_t.push_back(recvCount_t[i]); // use sendProcRank for it.
+//            recvProcCount_t.push_back(recvCount_t[i]); // use sendProcRank for it.
         }
     }
 
-    //    if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
+    //  if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
 
     vdispls.resize(nprocs);
     rdispls.resize(nprocs);
@@ -158,13 +166,38 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         rdispls[i] = rdispls[i-1] + recvCount[i-1];
     }
     vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
-    recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
+    recvSize   = rdispls[nprocs-1] + recvCount[nprocs-1];
 
+//    for (int i=0; i<nprocs; i++)
+//        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
+//    MPI_Barrier(comm);
+//    for (int i=0; i<nprocs; i++)
+//        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
+
+    // vIndex is the set of indices of elements that should be sent.
     vIndex = (unsigned long*)malloc(sizeof(unsigned long)*vIndexSize);
     MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_UNSIGNED_LONG, comm);
 
     free(vIndexCount);
     free(recvCount);
+
+    MPI_Barrier(comm);
+    numRecvProc_t = 0;
+    numSendProc_t = 0;
+    for(int i=0; i<nprocs; i++){
+        if(recvCount_t[i]!=0){
+            numRecvProc_t++;
+            recvProcRank_t.push_back(i);
+            recvProcCount_t.push_back(recvCount_t[i]);
+//            if(rank==2) cout << i << "\trecvCount_t[i] = " << recvCount_t[i] << endl;
+        }
+        if(vIndexCount_t[i]!=0){
+            numSendProc_t++;
+            sendProcRank_t.push_back(i);
+            sendProcCount_t.push_back(vIndexCount_t[i]);
+//            if(rank==1) cout << i << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
+        }
+    }
 
     vdispls_t.resize(nprocs);
     rdispls_t.resize(nprocs);
@@ -176,26 +209,33 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         vdispls_t[i] = vdispls_t[i-1] + vIndexCount_t[i-1];
         rdispls_t[i] = rdispls_t[i-1] + recvCount_t[i-1];
     }
-    vIndexSize_t = vdispls_t[nprocs-1] + vIndexCount_t[nprocs-1];
+    vIndexSize_t = vdispls_t[nprocs-1] + vIndexCount_t[nprocs-1]; // the same as: vIndexSize_t = nnz_l_remote;
     recvSize_t   = rdispls_t[nprocs-1] + recvCount_t[nprocs-1];
-//    if(rank==0) cout << "vIndexCount_t = " << vIndexCount_t[nprocs-1] << endl;
+
+//    for (i=1; i<nprocs; i++){
+//        vdispls_t[i] = 2*vdispls_t[i];
+//        rdispls_t[i] = 2*rdispls_t[i];
+//    }
+
+    MPI_Barrier(comm);
+    printf("rank = %d\tvIndexSize_t = %u\trecvSize_t = %u \n", rank, vIndexSize_t, recvSize_t);
 
     // todo: is this part required?
-    recvIndex_t = (unsigned long*)malloc(sizeof(unsigned long)*recvSize_t);
-    MPI_Alltoallv(&(*(vElement_remote_t.begin())), vIndexCount_t, &*(vdispls_t.begin()), MPI_UNSIGNED_LONG, recvIndex_t, recvCount_t, &(*(rdispls_t.begin())), MPI_UNSIGNED_LONG, comm);
+    // vElement_remote_t is the set of indices of entries that should be sent.
+    // recvIndex_t       is the set of indices of entries that should be received.
+//    recvIndex_t = (unsigned long*)malloc(sizeof(unsigned long)*recvSize_t);
+//    MPI_Alltoallv(&(*(vElement_remote_t.begin())), vIndexCount_t, &*(vdispls_t.begin()), MPI_UNSIGNED_LONG, recvIndex_t, recvCount_t, &(*(rdispls_t.begin())), MPI_UNSIGNED_LONG, comm);
 
     free(vIndexCount_t);
     free(recvCount_t);
-
 
 //    if(rank==1) cout << endl << endl;
 //    for (unsigned int i=0; i<vElement_remote.size(); i++)
 //        if(rank==1) cout << vElement_remote[i] << endl;
 
     // change the indices from global to local
-    for (unsigned int i=0; i<vIndexSize; i++){
-        vIndex[i] -= split[rank];
-    }
+    for (i=0; i<vIndexSize; i++)
+        vIndex[i] -= split[rank]; // todo: check if this should be splitNew or split.
 
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
@@ -203,21 +243,21 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
     vSend     = (unsigned long*)malloc(sizeof(unsigned long) * vIndexSize);
     vecValues = (unsigned long*)malloc(sizeof(unsigned long) * recvSize);
 
-    vSend_t     = (double*)malloc(sizeof(double) * vIndexSize_t);
-    vecValues_t = (double*)malloc(sizeof(double) * recvSize_t);
+    vSend_t     = (cooEntry*)malloc(sizeof(cooEntry) * vIndexSize_t); // todo: check datatype here.
+    vecValues_t = (cooEntry*)malloc(sizeof(cooEntry) * recvSize_t);
 
     indicesP_local = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_local);
     for(i=0; i<nnz_l_local; i++)
         indicesP_local[i] = i;
     unsigned long* row_localP = &(*(row_local.begin()));
     std::sort(indicesP_local, &indicesP_local[nnz_l_local], sort_indices(row_localP));
+    row_local.clear();
 
 //    indicesP_remote = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_remote);
 //    for(i=0; i<nnz_l_remote; i++)
 //        indicesP_remote[i] = i;
 //    unsigned long* row_remoteP = &(*(row_remote.begin()));
 //    std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
-
 
 //    MPI_Barrier(comm);
 //    if(rank==1) cout << "nnz_l_remote = " << nnz_l_remote << "\t\trecvSize_t = " << recvSize_t << "\t\tvIndexSize_t = " << vIndexSize_t << endl;
@@ -237,7 +277,7 @@ prolongMatrix::~prolongMatrix(){
     free(vSend);
     free(vecValues);
     free(indicesP_local);
-    free(recvIndex_t);
+//    free(recvIndex_t); // recvIndex_t is equivalent of vIndex.
     free(vSend_t);
     free(vecValues_t);
 }

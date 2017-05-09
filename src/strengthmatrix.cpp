@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <iostream>
 #include <mpi.h>
-
 #include "strengthmatrix.h"
 
 using namespace std;
@@ -196,8 +195,8 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
 
     // make them double size for prolongation the communication in the aggregation function.
     for (int i=1; i<nprocs; i++){
-        vdispls[i] *= 2;
-        rdispls[i] *= 2;
+        vdispls[i] = 2*vdispls[i];
+        rdispls[i] = 2*rdispls[i];
     }
 
 /*    if (rank==0){

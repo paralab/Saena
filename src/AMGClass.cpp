@@ -108,11 +108,49 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     prolongMatrix P;
     createProlongation(A, aggregate_p, splitNew, &P, comm);
     restrictMatrix R(&P, initialNumberOfRows, comm);
+
 //    createRestriction(&P, &R);
 
 //    if(rank==0)
 //        for(long i=0; i<A->nnz_l; i++)
 //            cout << P.row[i] << "\t" << P.col[i] << "\t" << P.values[i] << endl;
+
+    // check if the cpus need to be shrinked
+    int threshold1 = 1000*nprocs;
+    int threshold2 = 100*nprocs;
+
+//    int color = rank/4;
+//    MPI_Comm comm2;
+//    MPI_Comm_split(comm, color, rank, &comm2);
+//    MPI_Comm_free(&comm2);
+//    printf("rank=%d\tMbig=%d\n", rank, P.Mbig);
+
+    if(R.Mbig < threshold1){
+        int color = rank/4;
+        MPI_Comm comm2;
+        MPI_Comm_split(comm, color, rank, &comm2);
+
+        bool active = false;
+        if(rank%4 == 0)
+            active = true;
+
+        // send the size from children to parent.
+
+
+        // allocate memory
+
+
+        // send data from children to parent.
+
+
+        // update split?
+
+
+        // update threshol1
+
+
+        MPI_Comm_free(&comm2);
+    }
 
     free(splitNew);
     return 0;
@@ -740,12 +778,12 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 
     free(splitNewTemp);
 
-//    if(rank==1){
-//        cout << "splitNew:" << endl;
-//        for(i=0; i<nprocs+1; i++)
-//            cout << S->split[i] << "\t" << splitNew[i] << endl;
-//        cout << endl;
-//    }
+    if(rank==1){
+        cout << "splitNew:" << endl;
+        for(i=0; i<nprocs+1; i++)
+            cout << S->split[i] << "\t" << splitNew[i] << endl;
+        cout << endl;
+    }
 
     unsigned long procNum;
     vector<unsigned long> aggregateRemote;
@@ -848,14 +886,12 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
     MPI_Request *requests2 = new MPI_Request[numSendProc + numRecvProc];
     MPI_Status  *statuses2 = new MPI_Status[numSendProc + numRecvProc];
 
-    for(int i = 0; i < numRecvProc; i++) {
+    for(int i = 0; i < numRecvProc; i++)
         MPI_Irecv(&aggRecv[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_UNSIGNED_LONG, recvProcRank[i], 1, comm, &(requests2[i]));
-    }
 
     //Next send the messages. Do not send to self.
-    for(int i = 0; i < numSendProc; i++) {
+    for(int i = 0; i < numSendProc; i++)
         MPI_Isend(&aggSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_UNSIGNED_LONG, sendProcRank[i], 1, comm, &(requests2[numRecvProc+i]));
-    }
 
     MPI_Waitall(numSendProc+numRecvProc, requests2, statuses2);
 
@@ -1013,12 +1049,11 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     unsigned int i, j;
-    float omega = 0.67; // todo: find the correct value for omega.
+    float omega = 0.67; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
 
     P->Mbig = A->Mbig;
-    P->Nbig = splitNew[nprocs+1]; // This is the number of aggregates, which is the number of columns of P.
+    P->Nbig = splitNew[nprocs]; // This is the number of aggregates, which is the number of columns of P.
     P->M = A->M;
-
     P->splitNew = splitNew;
 
     // store remote elements from aggregate in vSend to be sent to other processes.
