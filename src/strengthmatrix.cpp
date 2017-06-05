@@ -85,12 +85,12 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
 //    int recvCount[nprocs];
     int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
-    nnz_row_local.assign(M,0);
+    nnzPerRow_local.assign(M,0);
 
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
     if (c[0] >= split[rank] && c[0] < split[rank + 1]) {
-        nnz_row_local[r[0]-split[rank]]++;
+        nnzPerRow_local[r[0]-split[rank]]++;
         nnz_l_local++;
 
         values_local.push_back(v[0]);
@@ -119,7 +119,7 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     for (i = 1; i < nnz_l; i++) {
 
         if (c[i] >= split[rank] && c[i] < split[rank+1]) {
-            nnz_row_local[r[i]-split[rank]]++;
+            nnzPerRow_local[r[i]-split[rank]]++;
             nnz_l_local++;
 
             values_local.push_back(v[i]);

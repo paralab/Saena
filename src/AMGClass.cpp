@@ -7,6 +7,7 @@
 #include <mpi.h>
 #include <usort/parUtils.h>
 #include <set>
+#include <mpich/mpi.h>
 #include "AMGClass.h"
 #include "auxFunctions.h"
 //#include <random>
@@ -59,6 +60,8 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    unsigned long i;
+
     // pointer for shrinking number of processors
     unsigned long* initialNumberOfRows;
     initialNumberOfRows = &A->split[0];
@@ -105,52 +108,129 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     MPI_Barrier(comm);
 */
 
-    prolongMatrix P;
-    createProlongation(A, aggregate_p, splitNew, &P, comm);
-    restrictMatrix R(&P, initialNumberOfRows, comm);
+    // todo: shrink only if it is required to go to the next multigrid level.
+    // todo: move the shrinking to after aggregation.
+    // ******************** shrink cpus ********************
 
-//    createRestriction(&P, &R);
-
-//    if(rank==0)
-//        for(long i=0; i<A->nnz_l; i++)
-//            cout << P.row[i] << "\t" << P.col[i] << "\t" << P.values[i] << endl;
-
+    /*
     // check if the cpus need to be shrinked
     int threshold1 = 1000*nprocs;
     int threshold2 = 100*nprocs;
-
-//    int color = rank/4;
-//    MPI_Comm comm2;
-//    MPI_Comm_split(comm, color, rank, &comm2);
-//    MPI_Comm_free(&comm2);
-//    printf("rank=%d\tMbig=%d\n", rank, P.Mbig);
 
     if(R.Mbig < threshold1){
         int color = rank/4;
         MPI_Comm comm2;
         MPI_Comm_split(comm, color, rank, &comm2);
 
+        int nprocs2, rank2;
+        MPI_Comm_size(comm2, &nprocs2);
+        MPI_Comm_rank(comm2, &rank2);
+
         bool active = false;
-        if(rank%4 == 0)
+        if(rank2 == 0)
             active = true;
+//        if(active) printf("rank=%d\n", rank2);
+//        printf("rank=%d\trank2=%d\n", rank, rank2);
 
-        // send the size from children to parent.
+        // ******************** send the size from children to parent ********************
 
+        unsigned long* nnzGroup = NULL;
+        if(active)
+            nnzGroup = (unsigned long*)malloc(sizeof(unsigned long)*4);
+        MPI_Gather(&R.nnz_l, 1, MPI_UNSIGNED_LONG, nnzGroup, 1, MPI_UNSIGNED_LONG, 0, comm2);
 
-        // allocate memory
+        unsigned long* rdispls = NULL;
+        if(active)
+            rdispls = (unsigned long*)malloc(sizeof(unsigned long)*3);
 
+        unsigned long nnzNew = 0;
+        unsigned long nnzRecv = 0;
+        if(active){
+            rdispls[0] = 0;
+            rdispls[1] = nnzGroup[1];
+            rdispls[2] = rdispls[1] + nnzGroup[2];
 
-        // send data from children to parent.
+            for(i=0; i<4; i++)
+                nnzNew += nnzGroup[i];
 
+            nnzRecv = nnzNew - R.nnz_l;
+//            if(rank==0){
+//                cout << "rdispls:" << endl;
+//                for(i=0; i<3; i++)
+//                    cout << rdispls[i] << endl;
+//            }
+        }
+
+//        printf("rank=%d\tnnzNew=%lu\tnnzRecv=%lu\n", rank, nnzNew, nnzRecv);
+
+        // ******************** allocate memory ********************
+
+        cooEntry* sendData = NULL;
+        if(!active){
+            sendData = (cooEntry*)malloc(sizeof(cooEntry)*R.nnz_l);
+            for(i=0; i<R.entry_local.size(); i++)
+                sendData[i] = R.entry_local[i];
+            for(i=0; i<R.entry_remote.size(); i++)
+                sendData[i + R.entry_local.size()] = R.entry_remote[i];
+        }
+
+//        MPI_Barrier(comm2);
+//        if(rank2==2) cout << "sendData:" << endl;
+//        for(i=0; i<R.entry_local.size()+R.entry_remote.size(); i++)
+//            if(rank2==2) cout << sendData[i].row << "\t" << sendData[i].col << "\t" << sendData[i].val << endl;
+
+        cooEntry* recvData = NULL;
+        if(active)
+            recvData = (cooEntry*)malloc(sizeof(cooEntry)*nnzRecv);
+
+        // ******************** send data from children to parent ********************
+
+        int numRecvProc = 0;
+        int numSendProc = 1;
+        if(active){
+            numRecvProc = 3;
+            numSendProc = 0;
+        }
+
+        MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
+        MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
+
+        for(int i = 0; i < numRecvProc; i++)
+            MPI_Irecv(&recvData[rdispls[i]], (int)nnzGroup[i+1], cooEntry::mpi_datatype(), i+1, 1, comm2, &requests[i]);
+
+        if(!active)
+            MPI_Isend(sendData, (int)R.nnz_l, cooEntry::mpi_datatype(), 0, 1, comm2, &requests[numRecvProc]);
+
+        MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
+
+//        if(active)
+//            for(i=0; i<nnzRecv; i++)
+//                cout << i << "\t" << recvData[i].row << "\t" << recvData[i].col << "\t" << recvData[i].val << endl;
+
+        if(active)
+            free(nnzGroup);
+        if(!active)
+            free(sendData);
 
         // update split?
 
 
         // update threshol1
 
-
+        if(active){
+            free(recvData);
+            free(rdispls);
+        }
         MPI_Comm_free(&comm2);
-    }
+    }//end of cpu shrinking
+*/
+
+    prolongMatrix P;
+    createProlongation(A, aggregate_p, splitNew, &P, comm);
+    restrictMatrix R(&P, initialNumberOfRows, comm);
+
+    prolongMatrix Ac; // A_coarse = R*A*P
+    coarsen(A, &P, &R, &Ac, comm);
 
     free(splitNew);
     return 0;
@@ -311,7 +391,7 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
     long iter = 0;
     long iter2 = 0;
 //    for (i = 0; i < A->M; ++i, iter2++) {
-//        for (unsigned int j = 0; j < A->nnz_row_local[i]; ++j, ++iter) {
+//        for (unsigned int j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
 //
 //            // diagonal entry
 //            if(i == A->col_local[A->indicesP_local[iter]]){
@@ -481,7 +561,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
                 aggregateTemp = aggregate[i];
                 weightTemp = weight[i];
 //                aggStatusTemp = 1UL; // this will be used for aggStatus2, and aggStatus2 will be used for the remote part.
-                for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
+                for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
                     if( weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]&UNDECIDED_OR_ROOT ) {
                         if (initialWeight[S->col_local[S->indicesP_local[iter]] - S->split[rank]] > (weightTemp & weightMax)) {
                             aggregateTemp = S->col_local[S->indicesP_local[iter]];
@@ -496,11 +576,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
                 aggregate2[i] = aggregateTemp;
 //                if(rank==1) cout << i+S->split[rank] << "," << aggregate2[i] << "\t\t";
             }else
-                iter += S->nnz_row_local[i];
+                iter += S->nnzPerRow_local[i];
         }
 
         for (i = 0; i < size; ++i) {
-            if(S->nnz_row_local[i] != 0) {
+            if(S->nnzPerRow_local[i] != 0) {
                 aggStatusTemp = (weight[i]>>aggOffset);
                 weight[i] = (aggStatusTemp<<aggOffset | (weight2[i]&weightMax) );
                 aggregate[i] = aggregate2[i];
@@ -561,7 +641,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
                 aggregateTemp = aggregate[i];
                 weightTemp    = weight[i];
 //                aggStatusTemp = 1UL; // this will be used for aggStatus2, and aggStatus2 will be used for the remote part.
-                for (j = 0; j < S->nnz_row_local[i]; ++j, ++iter) {
+                for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
                     if((weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]>>aggOffset) <= 1){ // todo: merge these two if statements.
                         if(oneDistanceRoot[i]==0 &&
                            oneDistanceRoot[S->col_local[S->indicesP_local[iter]] - S->split[rank]]==1 &&
@@ -575,11 +655,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
                 aggregate2[i] = aggregateTemp;
 //                aggStatus2[i] = aggStatusTemp; // this is stored only to be compared with the remote one in the remote part.
             }else
-                iter += S->nnz_row_local[i];
+                iter += S->nnzPerRow_local[i];
         }
 
         for (i = 0; i < size; ++i) {
-            if(S->nnz_row_local[i] != 0) {
+            if(S->nnzPerRow_local[i] != 0) {
                 aggregate[i] = aggregate2[i];
                 aggStatusTemp = (weight[i]>>aggOffset);
                 if (aggregate[i] < S->split[rank] || aggregate[i] >= S->split[rank+1]) // this is distance-2 to a remote root.
@@ -1078,7 +1158,7 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     // local
     long iter = 0;
     for (i = 0; i < A->M; ++i) {
-        for (j = 0; j < A->nnz_row_local[i]; ++j, ++iter) {
+        for (j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
             if(A->row_local[A->indicesP_local[iter]] == A->col_local[A->indicesP_local[iter]]-A->split[rank]){ // diagonal element
                 PEntryTemp.push_back(cooEntry(A->row_local[A->indicesP_local[iter]],
                          aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
@@ -1137,7 +1217,75 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
 }// end of AMGClass::createProlongation
 
 
-int AMGClass::createRestriction(prolongMatrix* P, restrictMatrix* R, MPI_Comm comm){
+int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolongMatrix* Ac, MPI_Comm comm){
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    unsigned long i, j, start;
+    prolongMatrix RA;
+
+    // ************************************* RA - local *************************************
+
+    // iterate through A column-wise and P row-wise.
+//    for(i = 0; i < A->nnz_l_local; ++i) {
+//        start = P->nnzPerRowScan_local[A->col_local[i] - A->split[rank]];
+//        if(rank==1) printf("P.row=%lu, start=%lu \n", A->col_local[i]-A->split[rank], start);
+//        for(j=0; j < P->nnzPerRow_local[A->col_local[i] - A->split[rank]]; j++){
+//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
+//            AP->entry_local.push_back(cooEntry(A->row_local[i],
+//                                               P->entry_local[P->indicesP_local[start + j]].col,
+//                                               A->values_local[i] * P->entry_local[P->indicesP_local[start + j]].val));
+//        }
+//    }
+
+    // iterate through R column-wise and A row-wise.
+    // R local, A first local then A remote
+    for(i = 0; i < R->nnz_l_local; ++i) {
+        start = A->nnzPerRowScan_local[R->entry_local[i].col - P->splitNew[rank]];
+//        if(rank==1) printf("P.row=%lu, start=%lu \n", A->col_local[i]-A->split[rank], start);
+        // A local
+        for(j=0; j < A->nnzPerRow_local[R->entry_local[i].col - P->splitNew[rank]]; j++){
+//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
+            RA.entry_local.push_back(cooEntry( R->entry_local[i].row,
+                                               A->col_local[A->indicesP_local[start + j]],
+                                               R->entry_local[i].val * A->values_local[A->indicesP_local[start + j]]));
+        }
+        // A remote
+        start = A->nnzPerRowScan_remote[R->entry_local[i].col - P->splitNew[rank]];
+        for(j=0; j < A->nnzPerRow_remote[R->entry_local[i].col - P->splitNew[rank]]; j++){
+//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
+            RA.entry_local.push_back(cooEntry( R->entry_local[i].row,
+                                               A->col_remote2[A->indicesP_remote[start + j]],
+                                               R->entry_local[i].val * A->values_remote[A->indicesP_remote[start + j]]));
+        }
+    }
+
+    // iterate through R column-wise and A row-wise.
+    // R remote, A first local then A remote
+    for(i = 0; i < R->nnz_l_remote; ++i) {
+        start = A->nnzPerRowScan_local[R->entry_remote[i].col - P->splitNew[rank]];
+//        if(rank==1) printf("P.row=%lu, start=%lu \n", A->col_local[i]-A->split[rank], start);
+        // A local
+        for(j=0; j < A->nnzPerRow_local[R->entry_remote[i].col - P->splitNew[rank]]; j++){
+//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
+            RA.entry_local.push_back(cooEntry( R->entry_remote[i].row,
+                                               A->col_local[A->indicesP_local[start + j]],
+                                               R->entry_remote[i].val * A->values_local[A->indicesP_local[start + j]]));
+        }
+        // A remote
+        start = A->nnzPerRowScan_remote[R->entry_remote[i].col - P->splitNew[rank]];
+        for(j=0; j < A->nnzPerRow_remote[R->entry_remote[i].col - P->splitNew[rank]]; j++){
+//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
+            RA.entry_local.push_back(cooEntry( R->entry_remote[i].row,
+                                               A->col_remote2[A->indicesP_remote[start + j]],
+                                               R->entry_remote[i].val * A->values_remote[A->indicesP_remote[start + j]]));
+        }
+    }
+
+    // ************************************* RA - remote *************************************
+
 
     return 0;
-}// end of AMGClass::createRestriction
+} // end of AMGClass::coarsen

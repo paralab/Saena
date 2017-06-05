@@ -319,12 +319,16 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 //    int recvCount[nprocs];
     int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
-    nnz_row_local.assign(M,0);
+    nnzPerRow.assign(M,0);
+    nnzPerRow_local.assign(M,0);
+//    nnzPerCol_local.assign(Mbig,0); // todo: Nbig = Mbig, assuming A is symmetric.
 //    nnz_col_remote.assign(M,0);
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
+    nnzPerRow[row[0]-split[rank]]++;
     if (col[0] >= split[rank] && col[0] < split[rank + 1]) {
-        nnz_row_local[row[0]-split[rank]]++;
+        nnzPerRow_local[row[0]-split[rank]]++;
+//        nnzPerCol_local[col[0]]++;
         nnz_l_local++;
 
         values_local.push_back(values[0]);
@@ -336,6 +340,7 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 
     } else{
         nnz_l_remote++;
+        nnzPerRow_remote[row[0]-split[rank]]++;
 
         values_remote.push_back(values[0]);
         row_remote.push_back(row[0]);
@@ -351,10 +356,11 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
     }
 
     for (long i = 1; i < nnz_l; i++) {
-
+        nnzPerRow[row[i]-split[rank]]++;
         if (col[i] >= split[rank] && col[i] < split[rank+1]) {
-            nnz_row_local[row[i]-split[rank]]++;
+//            nnzPerCol_local[col[i]]++;
             nnz_l_local++;
+            nnzPerRow_local[row[i]-split[rank]]++;
 
             values_local.push_back(values[i]);
             row_local.push_back(row[i]);
@@ -367,6 +373,8 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
             }
         } else {
             nnz_l_remote++;
+            nnzPerRow_remote[row[i]-split[rank]]++;
+
             values_remote.push_back(values[i]);
             row_remote.push_back(row[i]);
             // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
@@ -389,8 +397,18 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
         }
     } // for i
 
-    // since col_remote_size starts from -1
-//    col_remote_size++;
+    nnzPerRowScan_local.resize(M+1);
+    nnzPerRowScan_local[0] = 0;
+    for(long i=0; i<M; i++){
+        nnzPerRowScan_local[i+1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
+    }
+
+    nnzPerRowScan_remote.resize(M+1);
+    nnzPerRowScan_remote[0] = 0;
+    for(long i=0; i<M; i++){
+//        nnzPerRowScan_remote[i+1] = nnzPerRowScan_remote[i] + (nnzPerRow[i] - nnzPerRow_local[i]); //nnzPerRow_remote[i] = nnzPerRow[i] - nnzPerRow_local[i]
+        nnzPerRowScan_remote[i+1] = nnzPerRowScan_remote[i] + nnzPerRow_remote[i];
+    }
 
     // don't receive anything from yourself
     recvCount[rank] = 0;
@@ -402,6 +420,12 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
             cout << i << "= " << recvCount[i] << endl;
     }*/
 
+//    nnzPerColScan_local.resize(Mbig+1);
+//    nnzPerColScan_local[0] = 0;
+//    for(long i=0; i<Mbig; i++){
+//        nnzPerColScan_local[i+1] = nnzPerColScan_local[i] + nnzPerColScan_local[i];
+//    }
+//    nnzPerCol_local.clear();
 
 //    vIndexCount = (int*)malloc(sizeof(int)*nprocs);
 //    int vIndexCount[nprocs];
@@ -515,7 +539,7 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 
         iter_local = 0;
         for (unsigned int i = istart; i < iend; ++i)
-            iter_local += nnz_row_local[i];
+            iter_local += nnzPerRow_local[i];
 
         iter_local_array[0] = 0;
         iter_local_array[thread_id+1] = iter_local;
@@ -654,7 +678,7 @@ void COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
         long iter = iter_local_array[omp_get_thread_num()];
 #pragma omp for
         for (unsigned int i = 0; i < M; ++i) {
-            for (unsigned int j = 0; j < nnz_row_local[i]; ++j, ++iter) {
+            for (unsigned int j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
                 w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
             }
         }

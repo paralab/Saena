@@ -70,48 +70,13 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
 //    if(rank==1) cout << "vSend_t:" << endl;
     for (i = 0; i < P->nnz_l_remote; i++){ // all remote entries should be sent.
         P->vSend_t[i] = P->entry_remote[i];
-
-//        P->vSend_t[3*i]   = P->col_remote2[i]; // todo: don't forget to subtract splitNew[rank] from vecValues.
-//        P->vSend_t[3*i+1] = P->row_remote[i] + P->split[rank];
-//        P->vSend_t[3*i+2] = P->values_remote[i];
-//        if(rank==1) cout << P->vSend_t[3*i] << "\t" << P->vSend_t[3*i+1] << "\t" << P->vSend_t[3*i+2] << endl;
-
-//        P->vSend_t[2*i]   = P->col_remote2[i]; // todo: don't forget to subtract splitNew[rank] from vecValues.
+//        P->vSend_t[2*i]   = P->col_remote2[i]; // don't forget to subtract splitNew[rank] from vecValues.
 //        P->vSend_t[2*i+1] = P->row_remote[i] + P->split[rank];
 //        if(rank==1) cout << i << "\t" << P->vSend_t[2*i] << "\t" << P->vSend_t[2*i+1] << endl;
-
-//        P->vSend_t[i] = P->col_remote2[i]; // todo: don't forget to change this.
-//        if(rank==1) cout << i << "\t" << P->vSend_t[i].row << "\t" << P->vSend_t[i].col << "\t" << P->vSend_t[i].val << endl;
     }
-
-//    MPI_Barrier(comm);
-//    if(rank==1) cout << "vSend_t: rank=" << rank << endl;
-//    for (i = 0; i < P->nnz_l_remote; i++){ // all remote entries should be sent.
-//        if(rank==1) cout << i << "\t" << P->vSend_t[2*i] << "\t" << P->vSend_t[2*i+1] << endl;
-//    }
-//    MPI_Barrier(comm);
-//    if(rank==2) cout << "vSend_t: rank=" << rank << endl;
-//    for (i = 0; i < P->nnz_l_remote; i++){ // all remote entries should be sent.
-//        if(rank==2) cout << i << "\t" << P->vSend_t[2*i] << "\t" << P->vSend_t[2*i+1] << endl;
-//    }
 
     MPI_Request *requests = new MPI_Request[P->numSendProc_t + P->numRecvProc_t];
     MPI_Status  *statuses = new MPI_Status[P->numSendProc_t + P->numRecvProc_t];
-
-    // todo: check datatype here.
-//    for (i = 0; i < P->numSendProc; i++)
-//        MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->sendProcRank[i]]], P->recvProcCount_t[i], MPI_UNSIGNED_LONG,
-//                  P->sendProcRank[i], 1, comm, &(requests[i]));
-//
-//    for (i = 0; i < P->numRecvProc; i++)
-//        MPI_Isend(&P->vSend_t[P->vdispls_t[P->recvProcRank[i]]], P->sendProcCount_t[i], MPI_UNSIGNED_LONG,
-//                  P->recvProcRank[i], 1, comm, &(requests[P->numSendProc + i]));
-
-//    for(i = 0; i < P->numRecvProc_t; i++)
-//        MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i], MPI_UNSIGNED_LONG, P->recvProcRank_t[i], 1, comm, &(requests[i]));
-//
-//    for(i = 0; i < P->numSendProc_t; i++)
-//        MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], MPI_UNSIGNED_LONG, P->sendProcRank_t[i], 1, comm, &(requests[P->numRecvProc_t+i]));
 
     for(i = 0; i < P->numRecvProc_t; i++)
         MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i], cooEntry::mpi_datatype(), P->recvProcRank_t[i], 1, comm, &(requests[i]));
@@ -119,39 +84,23 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
     for(i = 0; i < P->numSendProc_t; i++)
         MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], cooEntry::mpi_datatype(), P->sendProcRank_t[i], 1, comm, &(requests[P->numRecvProc_t+i]));
 
-//    if(rank==0)
-//        for(i=0; i<P->sendProcCount_t[0]; i++)
-//            cout << i << "\t" << P->vSend_t[P->vdispls_t[P->recvProcRank[0]]] << endl;
-
     // *********************** assign local part of restriction ************************
 
     //local
     unsigned long iter = 0;
     for (i = 0; i < P->M; ++i) {
-        for (j = 0; j < P->nnz_row_local[i]; ++j, ++iter) {
-//            if(rank==1) cout << P->row_local[P->indicesP_local[iter]] << "\t" << P->col_local[P->indicesP_local[iter]] << "\t" << P->values_local[P->indicesP_local[iter]] << endl;
-//            if(rank==1) cout << P->col_local[P->indicesP_local[iter]] - P->splitNew[rank] << "\t" << P->row_local[P->indicesP_local[iter]] + P->split[rank] << "\t" << P->values_local[P->indicesP_local[iter]] << endl << endl;
-
+        for (j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter) {
             entry_local.push_back(cooEntry(P->entry_local[P->indicesP_local[iter]].col - P->splitNew[rank], // make row index local
                                            P->entry_local[P->indicesP_local[iter]].row + P->split[rank],    // make col index global
                                            P->entry_local[P->indicesP_local[iter]].val));
-
-//            row_local.push_back(P->col_local[P->indicesP_local[iter]] - P->splitNew[rank]);
-//            col_local.push_back(P->row_local[P->indicesP_local[iter]] + P->split[rank]);
-//            values_local.push_back(P->values_local[P->indicesP_local[iter]]);
-//            if(rank==1) cout << row_local[iter] << "\t" << col_local[iter] << "\t" << values_local[iter] << endl;
-//            if(rank==1) cout << P->row_local[iter] << "\t" << P->col_local[iter] << "\t" << P->values_local[iter] << endl;
-//            if(rank==1) cout << P->row_local[P->indicesP_local[iter]] << "\t" << P->col_local[P->indicesP_local[iter]] << "\t" << P->values_local[P->indicesP_local[iter]] << endl;
         }
     }
 
 //    MPI_Barrier(comm);
 //    if(rank==1) cout << "local:" << endl;
-//    for (i = 0; i < P->M; ++i) {
-//        for (j = 0; j < P->nnz_row_local[i]; ++j, ++iter) {
+//    for (i = 0; i < P->M; ++i)
+//        for (j = 0; j < P->nnz_row_local[i]; ++j, ++iter)
 //            if(rank==1) cout << entry_local[i].row << "\t" << entry_local[i].col << "\t" << entry_local[i].val << endl;
-//        }
-//    }
 
     // *********************** assign remote part of restriction ************************
 
@@ -159,40 +108,24 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
 
 //    MPI_Barrier(comm);
 //    if(rank==0)cout << "vecValues_t:" << "\t" << rank << endl;
-//    MPI_Barrier(comm);
     for(i=0; i<P->recvSize_t; i++){
         entry_remote.push_back(cooEntry(P->vecValues_t[i].col - P->splitNew[rank], // make row index local
                                         P->vecValues_t[i].row + P->split[rank],    // make col index global
                                         P->vecValues_t[i].val));
-
-//        row_remote.push_back(P->vecValues_t[2*i] - P->splitNew[rank]);
-//        col_remote.push_back(P->vecValues_t[2*i+1]);
-//        if(rank==1) cout << P->vecValues_t[3*i] - P->splitNew[rank] << "\t" << P->vecValues_t[3*i+1] << "\t" << P->vecValues_t[3*i+2] << endl;
-//        if(rank==0) cout << i << "\t" << P->vecValues_t[2*i] - P->splitNew[rank] << "\t" << P->vecValues_t[2*i+1] << endl;
-//        if(rank==1) cout << P->vecValues_t[i] - P->splitNew[rank] << endl;
     }
 
 //    MPI_Barrier(comm);
 //    if(rank==1)cout << "remote:" << "\t" << rank << "\tP->recvSize_t = " << P->recvSize_t << endl;
 //    for(i=0; i<P->recvSize_t; i++)
 //        if(rank==1) cout << i << "\t" << entry_remote[i].row << "\t" << entry_remote[i].col << "\t" << entry_remote[i].val << endl;
-}
 
-//restrictMatrix::restrictMatrix(unsigned long Mb, unsigned long Nb, unsigned long nz_g, unsigned long nz_l, unsigned long* r, unsigned long* c, double* v){
-//    Mbig = Mb;
-//    Nbig = Nb;
-//    nnz_g = nz_g;
-//    nnz_l = nz_l;
-//
-//    row.resize(nnz_l);
-//    col.resize(nnz_l);
-//    values.resize(nnz_l);
-//
-//    for(long i=0; i<nnz_l; i++){
-//        row[i] = r[i];
-//        col[i] = c[i];
-//        values[i] = v[i];
-//    }
-//}
+    nnz_l_local  = entry_local.size();
+    nnz_l_remote = entry_remote.size();
+    nnz_l = nnz_l_local + nnz_l_remote;
+    MPI_Allreduce(&nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+//    printf("rank=%d\tnnz_l=%lu\tnnz_g=%lu\n", rank, nnz_l, nnz_g);
+
+} //end of restrictMatrix::restrictMatrix
+
 
 restrictMatrix::~restrictMatrix(){}
