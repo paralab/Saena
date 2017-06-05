@@ -46,7 +46,13 @@ public:
     std::vector<unsigned long> col_local;
     std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
     std::vector<unsigned long> col_remote2; //original col index
-    std::vector<unsigned int> nnz_row_local;
+    std::vector<unsigned int> nnzPerRow;
+    std::vector<unsigned int> nnzPerRow_local;
+    std::vector<unsigned int> nnzPerRow_remote;
+    std::vector<unsigned int> nnzPerRowScan_local;
+    std::vector<unsigned int> nnzPerRowScan_remote;
+//    std::vector<unsigned int> nnzPerCol_local;
+//    std::vector<unsigned int> nnzPerColScan_local;
 //    std::vector<unsigned int> nnz_row_remote;
     std::vector<unsigned int> nnz_col_remote;
     std::vector<double> invDiag;

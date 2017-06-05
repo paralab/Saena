@@ -11,20 +11,24 @@ public:
     unsigned long Nbig;
     unsigned long nnz_g;
     unsigned long nnz_l;
-
-//    std::vector<unsigned long> row;
-//    std::vector<unsigned long> col;
-//    std::vector<double> values;
+    unsigned long nnz_l_local;
+    unsigned long nnz_l_remote;
+//    unsigned long nnz;
 
     std::vector<cooEntry> entry_local;
     std::vector<cooEntry> entry_remote;
 
-    std::vector<unsigned long> row_local;
-    std::vector<unsigned long> row_remote;
-    std::vector<unsigned long> col_local;
-    std::vector<unsigned long> col_remote;
-    std::vector<double> values_local;
-    std::vector<double> values_remote;
+    // split is P.splitNew.
+
+//    std::vector<unsigned long> row;
+//    std::vector<unsigned long> col;
+//    std::vector<double> values;
+//    std::vector<unsigned long> row_local;
+//    std::vector<unsigned long> row_remote;
+//    std::vector<unsigned long> col_local;
+//    std::vector<unsigned long> col_remote;
+//    std::vector<double> values_local;
+//    std::vector<double> values_remote;
 
     restrictMatrix();
     restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfRows, MPI_Comm comm);

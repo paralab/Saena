@@ -28,6 +28,7 @@ public:
 
     unsigned long* split;
 
+    bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
     int vIndexSize;
     int vIndexSize_t;
     unsigned long* vSend;
@@ -39,17 +40,18 @@ public:
 //    int* vecValues2;
     std::vector<cooEntry> entry_local;
     std::vector<cooEntry> entry_remote;
-    std::vector<double> values_local;
-    std::vector<double> values_remote;
+//    std::vector<double> values_localvalues_local;
+//    std::vector<double> values_remote;
     std::vector<unsigned long> row_local;
-    std::vector<unsigned long> row_remote;
-    std::vector<unsigned long> col_local;
+//    std::vector<unsigned long> row_remote;
+//    std::vector<unsigned long> col_local;
     std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
-    std::vector<unsigned long> col_remote2; //original col index
-    std::vector<unsigned int> nnz_row_local;
+//    std::vector<unsigned long> col_remote2; //original col index
+    std::vector<unsigned int> nnzPerRow_local;
+    std::vector<unsigned int> nnzPerRowScan_local;
 //    std::vector<unsigned int> nnz_row_remote;
-    std::vector<unsigned int> nnz_col_remote;
-//    std::vector<unsigned int> nnz_col_remote_t;
+    std::vector<unsigned int> nnzPerCol_remote; //todo: number of columns is large!
+//    std::vector<unsigned int> nnzPerCol_remote_t;
     std::vector<unsigned long> vElement_remote;
     std::vector<unsigned long> vElement_remote_t;
     std::vector<unsigned long> vElementRep_local;
