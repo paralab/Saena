@@ -1045,6 +1045,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
     return 0;
 }
 
+
 // Decoupled Aggregation - not complete
 /*
 int AMGClass::Aggregation(CSRMatrix* S){
@@ -1285,7 +1286,27 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
     }
 
     // ************************************* RA - remote *************************************
+/*
+    printf("rank=%d,\tnnz_l=%lu",rank, R->nnz_l);
+    unsigned long nnzRecv;
+    MPI_Status* sendRecvStatus;
+    for(i=0; i<nprocs; i++){
+        if(i == rank)
+            continue;
 
+        //sendrecv(size)
+        MPI_Sendrecv(&R->nnz_l, 1, MPI_UNSIGNED_LONG, i, i, &nnzRecv, 1, MPI_UNSIGNED_LONG, rank, i, comm, sendRecvStatus);
+
+        //malloc
+
+        //sendrecv(data
+
+        //multiplication
+
+        //free
+
+    }
+*/
 
     return 0;
 } // end of AMGClass::coarsen

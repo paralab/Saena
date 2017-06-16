@@ -321,6 +321,7 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
     std::fill(recvCount, recvCount + nprocs, 0);
     nnzPerRow.assign(M,0);
     nnzPerRow_local.assign(M,0);
+    nnzPerRow_remote.assign(M,0);
 //    nnzPerCol_local.assign(Mbig,0); // todo: Nbig = Mbig, assuming A is symmetric.
 //    nnz_col_remote.assign(M,0);
 
