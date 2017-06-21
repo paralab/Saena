@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <mpi.h>
 #include <prolongmatrix.h>
 #include <restrictmatrix.h>
@@ -73,6 +74,7 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
 //        P->vSend_t[2*i]   = P->col_remote2[i]; // don't forget to subtract splitNew[rank] from vecValues.
 //        P->vSend_t[2*i+1] = P->row_remote[i] + P->split[rank];
 //        if(rank==1) cout << i << "\t" << P->vSend_t[2*i] << "\t" << P->vSend_t[2*i+1] << endl;
+//        if(rank==1) printf("%lu\t %lu\t %f\n", P->entry_remote[i].row, P->entry_remote[i].col, P->entry_remote[i].val);
     }
 
     MPI_Request *requests = new MPI_Request[P->numSendProc_t + P->numRecvProc_t];
@@ -86,7 +88,6 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
 
     // *********************** assign local part of restriction ************************
 
-    //local
     unsigned long iter = 0;
     for (i = 0; i < P->M; ++i) {
         for (j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter) {
@@ -95,6 +96,8 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
                                            P->entry_local[P->indicesP_local[iter]].val));
         }
     }
+
+    std::sort(entry_local.begin(), entry_local.end());
 
 //    MPI_Barrier(comm);
 //    if(rank==1) cout << "local:" << endl;
@@ -114,10 +117,12 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
                                         P->vecValues_t[i].val));
     }
 
+    std::sort(entry_remote.begin(), entry_remote.end());
+
 //    MPI_Barrier(comm);
-//    if(rank==1)cout << "remote:" << "\t" << rank << "\tP->recvSize_t = " << P->recvSize_t << endl;
+//    if(rank==2)cout << "remote:" << "\t" << rank << "\tP->recvSize_t = " << P->recvSize_t << endl;
 //    for(i=0; i<P->recvSize_t; i++)
-//        if(rank==1) cout << i << "\t" << entry_remote[i].row << "\t" << entry_remote[i].col << "\t" << entry_remote[i].val << endl;
+//        if(rank==2) cout << i << "\t" << entry_remote[i].row << "\t" << entry_remote[i].col << "\t" << entry_remote[i].val << endl;
 
     nnz_l_local  = entry_local.size();
     nnz_l_remote = entry_remote.size();

@@ -1227,7 +1227,43 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
     unsigned long i, j, start;
     prolongMatrix RA;
 
-    // ************************************* RA - local *************************************
+    // ************************************* RA - A local *************************************
+    // Some local and remote elements of RA are computed here using local R and local A.
+
+    unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*A->M);
+    fill(&AnnzPerRow[0], &AnnzPerRow[A->M], 0);
+    for(i=0; i<A->nnz_l; i++){
+        AnnzPerRow[A->row[i] - A->split[rank]]++;
+    }
+
+//    if(rank==2)
+//        for(i=0; i<A->M; i++)
+//            cout << AnnzPerRow[i] << endl;
+
+    unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(A->M+1));
+    AnnzPerRowScan[0] = 0;
+    for(i=0; i<A->M; i++){
+        AnnzPerRowScan[i+1] = AnnzPerRowScan[i] + AnnzPerRow[i];
+//        if(rank==2) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i, AnnzPerRow[i], AnnzPerRowScan[i]);
+    }
+
+    for(i=0; i<R->nnz_l_local; i++){
+        for(j = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]]; j < AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1]; j++){
+            RA.entry.push_back(cooEntry(R->entry_local[i].row,
+                                        A->col[i],
+                                        R->entry_local[i].val * A->values[i]));
+        }
+    }
+
+//    if(rank==1)
+//        for(i=0; i<RA.entry.size(); i++)
+//            cout << RA.entry[i].row << "\t" << RA.entry[i].col << "\t" << RA.entry[i].val << endl;
+
+    free(AnnzPerRow);
+    free(AnnzPerRowScan);
+
+
+
 
     // iterate through A column-wise and P row-wise.
 //    for(i = 0; i < A->nnz_l_local; ++i) {
@@ -1241,72 +1277,97 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
 //        }
 //    }
 
+/*
+    // todo: this is wrong: should switch rows of A with its columns. It means you should use nnzPerCol, which is expensive memory-wise.
     // iterate through R column-wise and A row-wise.
-    // R local, A first local then A remote
+    // R is stored in local and remote formats. there does not exist general entries for R, so R is iterated first through local entries, then the remote ones.
+    // R local, A first local then remote
     for(i = 0; i < R->nnz_l_local; ++i) {
-        start = A->nnzPerRowScan_local[R->entry_local[i].col - P->splitNew[rank]];
-//        if(rank==1) printf("P.row=%lu, start=%lu \n", A->col_local[i]-A->split[rank], start);
+        start = A->nnzPerRowScan_local[R->entry_local[i].col - P->split[rank]]; // todo: check if split should be replaced by splitNew.
+//        if(rank==1) printf("R.col=%lu, start=%lu, A.AnnzPerRow=%d \n", R->entry_local[i].col - P->split[rank], start, A->nnzPerRow_local[R->entry_local[i].col - P->split[rank]]);
         // A local
-        for(j=0; j < A->nnzPerRow_local[R->entry_local[i].col - P->splitNew[rank]]; j++){
-//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
+        for(j=0; j < A->nnzPerRow_local[R->entry_local[i].col - P->split[rank]]; j++){
+//            if(rank==1) printf("R.row=%lu, R.col=%lu, R.val=%f,\tA.row=%lu, A.col=%lu, A.val=%f \n", R->entry_local[i].row, (R->entry_local[i].col-P->split[rank]), R->entry_local[i].val, A->row_local[A->indicesP_local[start + j]], A->col_local[A->indicesP_local[start + j]], A->values_local[A->indicesP_local[start + j]]);
             RA.entry_local.push_back(cooEntry( R->entry_local[i].row,
                                                A->col_local[A->indicesP_local[start + j]],
                                                R->entry_local[i].val * A->values_local[A->indicesP_local[start + j]]));
         }
+
         // A remote
-        start = A->nnzPerRowScan_remote[R->entry_local[i].col - P->splitNew[rank]];
-        for(j=0; j < A->nnzPerRow_remote[R->entry_local[i].col - P->splitNew[rank]]; j++){
-//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
+        start = A->nnzPerRowScan_remote[R->entry_local[i].col - P->split[rank]];
+        for(j=0; j < A->nnzPerRow_remote[R->entry_local[i].col - P->split[rank]]; j++){
+//            if(rank==1) printf("R.col=%lu, start=%lu, A.AnnzPerRow=%d \n", R->entry_local[i].col - P->split[rank], start, A->nnzPerRow_remote[R->entry_local[i].col - P->split[rank]]);
             RA.entry_local.push_back(cooEntry( R->entry_local[i].row,
                                                A->col_remote2[A->indicesP_remote[start + j]],
                                                R->entry_local[i].val * A->values_remote[A->indicesP_remote[start + j]]));
         }
     }
-
-    // iterate through R column-wise and A row-wise.
-    // R remote, A first local then A remote
+//    printf("rank=%d\thereeeeee!!!\n", rank);
+    // iterate through R column-wise and A row-wise. (R remote is not sorted!)
+    // R remote, A first local then remote
     for(i = 0; i < R->nnz_l_remote; ++i) {
-        start = A->nnzPerRowScan_local[R->entry_remote[i].col - P->splitNew[rank]];
-//        if(rank==1) printf("P.row=%lu, start=%lu \n", A->col_local[i]-A->split[rank], start);
+        start = A->nnzPerRowScan_local[R->entry_remote[i].col - P->split[rank]];
+        if(rank==2) printf("\nR.col=%lu, R.col-split=%lu, start=%lu, A.AnnzPerRow=%d, nnz_l_remote=%lu \n", R->entry_remote[i].col, R->entry_remote[i].col-P->split[rank], start, A->nnzPerRow_local[R->entry_remote[i].col - P->split[rank]], R->nnz_l_remote);
         // A local
-        for(j=0; j < A->nnzPerRow_local[R->entry_remote[i].col - P->splitNew[rank]]; j++){
-//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
-            RA.entry_local.push_back(cooEntry( R->entry_remote[i].row,
-                                               A->col_local[A->indicesP_local[start + j]],
-                                               R->entry_remote[i].val * A->values_local[A->indicesP_local[start + j]]));
+        for(j=0; j < A->nnzPerRow_local[R->entry_remote[i].col - P->split[rank]]; j++){
+            if(rank==2) printf("R.row=%lu, R.col=%lu, R.val=%f,\tA.row=%lu, A.col=%lu, A.val=%f \n", R->entry_remote[i].row, (R->entry_remote[i].col-P->split[rank]), R->entry_remote[i].val, A->row_local[A->indicesP_local[start + j]], A->col_local[A->indicesP_local[start + j]], A->values_local[A->indicesP_local[start + j]]);
+//            RA.entry_local.push_back(cooEntry( R->entry_remote[i].row,
+//                                               A->col_local[A->indicesP_local[start + j]],
+//                                               R->entry_remote[i].val * A->values_local[A->indicesP_local[start + j]]));
         }
         // A remote
-        start = A->nnzPerRowScan_remote[R->entry_remote[i].col - P->splitNew[rank]];
-        for(j=0; j < A->nnzPerRow_remote[R->entry_remote[i].col - P->splitNew[rank]]; j++){
+        start = A->nnzPerRowScan_remote[R->entry_remote[i].col - P->split[rank]];
+        for(j=0; j < A->nnzPerRow_remote[R->entry_remote[i].col - P->split[rank]]; j++){
 //            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
             RA.entry_local.push_back(cooEntry( R->entry_remote[i].row,
                                                A->col_remote2[A->indicesP_remote[start + j]],
                                                R->entry_remote[i].val * A->values_remote[A->indicesP_remote[start + j]]));
         }
     }
+*/
 
-    // ************************************* RA - remote *************************************
-/*
-    printf("rank=%d,\tnnz_l=%lu",rank, R->nnz_l);
-    unsigned long nnzRecv;
-    MPI_Status* sendRecvStatus;
-    for(i=0; i<nprocs; i++){
-        if(i == rank)
-            continue;
+    // ************************************* RA - A remote *************************************
+
+    unsigned int AMaxNnz;
+    MPI_Allreduce(&A->nnz_l, &AMaxNnz, 1, MPI_UNSIGNED, MPI_MAX, comm);
+    cooEntry* Arecv = (cooEntry*)malloc(sizeof(cooEntry)*AMaxNnz);
+
+//    unsigned int* RStart = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
+
+    int left, right;
+    unsigned int nnzRecv;
+    MPI_Status sendRecvStatus;
+
+    for(int i = 1; i < nprocs; i++) {
+        // Don't communicate with yourself.
+//        if(i == rank)
+//            continue;
 
         //sendrecv(size)
-        MPI_Sendrecv(&R->nnz_l, 1, MPI_UNSIGNED_LONG, i, i, &nnzRecv, 1, MPI_UNSIGNED_LONG, rank, i, comm, sendRecvStatus);
+        // send A to the right processor, recieve A from the left processor. "left" decreases by one in each iteration. "right" increases by one.
+        right = (rank + i) % nprocs;
+        left = rank - i;
+        if (left < 0)
+            left += nprocs;
 
-        //malloc
+        MPI_Sendrecv(&A->nnz_l, 1, MPI_UNSIGNED, right, rank, &nnzRecv, 1, MPI_UNSIGNED, left, left, comm, &sendRecvStatus);
+//        int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf,
+//                         int recvcount, MPI_Datatype recvtype, int source, int recvtag, MPI_Comm comm, MPI_Status *status)
 
-        //sendrecv(data
+//        if(rank==2) cout << "own A->nnz_l = " << A->nnz_l << "\tnnzRecv = " << nnzRecv << endl;
+
+
+        //sendrecv(data)
+//        MPI_Sendrecv(&A->nnz_l, 1, MPI_UNSIGNED, right, rank, &nnzRecv, 1, MPI_UNSIGNED, left, left, comm, &sendRecvStatus);
+
 
         //multiplication
 
-        //free
 
     }
-*/
+
+    free(Arecv);
+//    free(RStart);
 
     return 0;
 } // end of AMGClass::coarsen

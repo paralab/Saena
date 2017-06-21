@@ -93,6 +93,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         // remote
         } else {
             nnz_l_remote++;
+//            if(rank==2) printf("entry[i].row = %lu\n", entry[i].row+split[rank]);
             entry_remote.push_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
 //            row_remote.push_back(entry[i].row);
             // col_remote2 is the original col value. col_remote starts from 0.
