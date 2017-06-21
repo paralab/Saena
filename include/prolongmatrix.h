@@ -6,6 +6,11 @@
 #include "auxFunctions.h"
 
 class prolongMatrix {
+// A matrix of this class is ordered <<ONLY>> if it is defined in createProlongation function in AMGClass.cpp.
+// Otherwise it can be ordered using the following line:
+//#include <algorithm>
+//std::sort(P->entry.begin(), P->entry.end());
+// It is ordered first column-wise, then row-wise, using std:sort with cooEntry class "< operator".
 private:
 
 public:
@@ -14,13 +19,6 @@ public:
     unsigned long M;
     unsigned long nnz_g;
     unsigned long nnz_l;
-
-//    std::vector<unsigned long> row;
-//    std::vector<unsigned long> col;
-//    std::vector<double> values;
-
-    std::vector<cooEntry> entry;
-
 
     unsigned int nnz_l_local;
     unsigned int nnz_l_remote;
@@ -38,9 +36,15 @@ public:
     unsigned long* vecValues;
     cooEntry* vecValues_t;
 //    int* vecValues2;
+
+//    std::vector<unsigned long> row;
+//    std::vector<unsigned long> col;
+//    std::vector<double> values;
+
+    std::vector<cooEntry> entry;
     std::vector<cooEntry> entry_local;
     std::vector<cooEntry> entry_remote;
-//    std::vector<double> values_localvalues_local;
+//    std::vector<double> values_local;
 //    std::vector<double> values_remote;
     std::vector<unsigned long> row_local;
 //    std::vector<unsigned long> row_remote;

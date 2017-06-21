@@ -4,6 +4,8 @@
 #include <vector>
 
 class restrictMatrix {
+// A matrix of this class is ordered first column-wise, then row-wise, using std:sort with cooEntry class "< operator".
+// It is sorted in restrictMatrix constructor function in restrictmatrix.cpp.
 private:
 
 public:
@@ -35,6 +37,5 @@ public:
 //    restrictMatrix(unsigned long Mbig, unsigned long Nbig, unsigned long nnz_g, unsigned long nnz_l, unsigned long* row, unsigned long* col, double* values);
     ~restrictMatrix();
 };
-
 
 #endif //SAENA_RESTRICTMATRIX_H
