@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include "mpi.h"
 #include <omp.h>
+#include <string.h>
 #include "coomatrix.h"
 #include "auxFunctions.h"
 
@@ -48,6 +49,13 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
     offset = rank * (unsigned int) (floor(1.0 * nnz_g / nprocs)) * 24; // row index(long=8) + column index(long=8) + value(double=8) = 24
 
     MPI_File_read_at(fh, offset, datap, 3 * initial_nnz_l, MPI_UNSIGNED_LONG, &status);
+
+//    double val;
+//    if(rank==0)
+//        for(long i=0; i<initial_nnz_l; i++){
+//            val = data[3*i+2];
+//            cout << datap[3*i] << "\t" << datap[3*i+1] << "\t" << val << endl;
+//        }
 
     int count;
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
@@ -244,62 +252,72 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 
     long procOwner;
     unsigned int bufTemp;
-//    long sendBufI[initial_nnz_l];
-//    long sendBufJ[initial_nnz_l];
-//    long sendBufV[initial_nnz_l];
-    long* sendBufI = (long*)malloc(sizeof(long)*initial_nnz_l);
-    long* sendBufJ = (long*)malloc(sizeof(long)*initial_nnz_l);
-    long* sendBufV = (long*)malloc(sizeof(long)*initial_nnz_l); // todo: should datatype be double?
+    cooEntry* sendBuf = (cooEntry*)malloc(sizeof(cooEntry)*initial_nnz_l);
+//    long* sendBufI = (long*)malloc(sizeof(long)*initial_nnz_l);
+//    long* sendBufJ = (long*)malloc(sizeof(long)*initial_nnz_l);
+//    long* sendBufV = (long*)malloc(sizeof(long)*initial_nnz_l); // todo: should datatype be double?
 //    unsigned int sIndex[nprocs];
     unsigned int* sIndex = (unsigned int*)malloc(sizeof(unsigned int)*nprocs);
     fill(&sIndex[0], &sIndex[nprocs], 0);
 
+    // memcpy(sendBuf, data.data(), initial_nnz_l*3*sizeof(unsigned long));
+
+
     for (long i=0; i<initial_nnz_l; i++){
         procOwner = lower_bound2(&split[0], &split[nprocs+1], data[3*i]);
         bufTemp = sOffset[procOwner]+sIndex[procOwner];
-        sendBufI[bufTemp] = data[3*i];
-        sendBufJ[bufTemp] = data[3*i+1];
-        sendBufV[bufTemp] = data[3*i+2];
+        memcpy(sendBuf+bufTemp, data.data() + 3*i, sizeof(cooEntry));
+        /*
+        sendBuf[bufTemp].row = data[3*i];
+        sendBuf[bufTemp].col = data[3*i+1];
+        sendBuf[bufTemp].val = data[3*i+2];
+         */
+//        sendBufI[bufTemp] = data[3*i];
+//        sendBufJ[bufTemp] = data[3*i+1];
+//        sendBufV[bufTemp] = data[3*i+2];
         sIndex[procOwner]++;
     }
 
     free(sIndex);
 
-/*    if (rank==1){
-        cout << "sendBufJ:" << endl;
-        for (long i=0; i<initial_nnz_l; i++)
-            cout << sendBufJ[i] << endl;
-    }*/
+//    if (rank==1){
+//        cout << "sendBufJ:" << endl;
+//        for (long i=0; i<initial_nnz_l; i++)
+//            cout << sendBufJ[i] << endl;
+//    }
 
     nnz_l = rOffset[nprocs-1] + recvSizeArray[nprocs-1];
 //    cout << "rank=" << rank << ", nnz_l = " << nnz_l << endl;
 
-    row.resize(nnz_l);
-    col.resize(nnz_l);
-    values.resize(nnz_l);
+    cooEntry* entry = (cooEntry*)malloc(sizeof(cooEntry)*nnz_l);
+    entryP = &entry[0];
+//    row.resize(nnz_l);
+//    col.resize(nnz_l);
+//    values.resize(nnz_l);
 
-    unsigned long* rowP = &(*(row.begin()));
-    unsigned long* colP = &(*(col.begin()));
-    double* valuesP = &(*(values.begin()));
+//    unsigned long* rowP = &(*(row.begin()));
+//    unsigned long* colP = &(*(col.begin()));
+//    double* valuesP = &(*(values.begin()));
 
-    MPI_Alltoallv(sendBufI, sendSizeArray, sOffset, MPI_LONG, rowP, recvSizeArray, rOffset, MPI_LONG, comm);
-    MPI_Alltoallv(sendBufJ, sendSizeArray, sOffset, MPI_LONG, colP, recvSizeArray, rOffset, MPI_LONG, comm);
-    MPI_Alltoallv(sendBufV, sendSizeArray, sOffset, MPI_DOUBLE, valuesP, recvSizeArray, rOffset, MPI_DOUBLE, comm);
+    MPI_Alltoallv(sendBuf, sendSizeArray, sOffset, cooEntry::mpi_datatype(), entryP, recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
+//    MPI_Alltoallv(sendBufI, sendSizeArray, sOffset, MPI_LONG, rowP, recvSizeArray, rOffset, MPI_LONG, comm);
+//    MPI_Alltoallv(sendBufJ, sendSizeArray, sOffset, MPI_LONG, colP, recvSizeArray, rOffset, MPI_LONG, comm);
+//    MPI_Alltoallv(sendBufV, sendSizeArray, sOffset, MPI_DOUBLE, valuesP, recvSizeArray, rOffset, MPI_DOUBLE, comm);
 
     free(sendSizeArray);
     free(recvSizeArray);
     free(sOffset);
     free(rOffset);
-    free(sendBufI);
-    free(sendBufJ);
-    free(sendBufV);
+    free(sendBuf);
+//    free(sendBufI);
+//    free(sendBufJ);
+//    free(sendBufV);
 
-/*    if (rank==0){
-        cout << "nnz_l = " << nnz_l << endl;
-        for (int i=0; i<nnz_l; i++)
-            //cout << rowP[indicesP[i]] << "\t" << colP[indicesP[i]] << "\titer=" << i << "\t\tvalues=" << valuesP[indicesP[i]] << endl;
-            cout << rowP[i] << "\t" << colP[i] << "\titer=" << i << "\t\tvalues=" << valuesP[i] << endl;
-    }*/
+//    if (rank==0){
+//        cout << "nnz_l = " << nnz_l << endl;
+//        for (int i=0; i<nnz_l; i++)
+//            cout << "i=" << i << "\t" << entryP[i].row << "\t" << entryP[i].col << "\t" << entryP[i].val << endl;
+//    }
 
     // *************************** set the inverse of diagonal of A (for smoothers) ****************************
 
@@ -331,14 +349,14 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //    nnzPerRow[row[0]-split[rank]]++;
-    if (col[0] >= split[rank] && col[0] < split[rank + 1]) {
-        nnzPerRow_local[row[0]-split[rank]]++;
+    if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
+        nnzPerRow_local[entry[0].row-split[rank]]++;
 //        nnzPerCol_local[col[0]]++;
         nnz_l_local++;
 
-        values_local.push_back(values[0]);
-        row_local.push_back(row[0]);
-        col_local.push_back(col[0]);
+        values_local.push_back(entry[0].val);
+        row_local.push_back(entry[0].row);
+        col_local.push_back(entry[0].col);
 
         //vElement_local.push_back(col[0]);
         vElementRep_local.push_back(1);
@@ -347,31 +365,31 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
         nnz_l_remote++;
 //        nnzPerRow_remote[row[0]-split[rank]]++;
 
-        values_remote.push_back(values[0]);
-        row_remote.push_back(row[0]);
+        values_remote.push_back(entry[0].val);
+        row_remote.push_back(entry[0].row);
         col_remote_size++;
         col_remote.push_back(col_remote_size-1);
-        col_remote2.push_back(col[0]);
+        col_remote2.push_back(entry[0].col);
 //        nnz_col_remote[col_remote_size]++;
         nnz_col_remote.push_back(1);
 
-        vElement_remote.push_back(col[0]);
+        vElement_remote.push_back(entry[0].col);
         vElementRep_remote.push_back(1);
-        recvCount[lower_bound2(&split[0], &split[nprocs], col[0])] = 1;
+        recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
     }
 
     for (long i = 1; i < nnz_l; i++) {
 //        nnzPerRow[row[i]-split[rank]]++;
-        if (col[i] >= split[rank] && col[i] < split[rank+1]) {
+        if (entry[i].col >= split[rank] && entry[i].col < split[rank+1]) {
 //            nnzPerCol_local[col[i]]++;
             nnz_l_local++;
-            nnzPerRow_local[row[i]-split[rank]]++;
+            nnzPerRow_local[entry[i].row-split[rank]]++;
 
-            values_local.push_back(values[i]);
-            row_local.push_back(row[i]);
-            col_local.push_back(col[i]);
+            values_local.push_back(entry[i].val);
+            row_local.push_back(entry[i].row);
+            col_local.push_back(entry[i].col);
 
-            if (col[i] != col[i - 1]) {
+            if (entry[i].col != entry[i-1].col) {
                 vElementRep_local.push_back(1);
             } else {
                 (*(vElementRep_local.end()-1))++;
@@ -380,16 +398,16 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
             nnz_l_remote++;
 //            nnzPerRow_remote[row[i]-split[rank]]++;
 
-            values_remote.push_back(values[i]);
-            row_remote.push_back(row[i]);
+            values_remote.push_back(entry[i].val);
+            row_remote.push_back(entry[i].row);
             // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
-            col_remote2.push_back(col[i]);
+            col_remote2.push_back(entry[i].col);
 
-            if (col[i] != col[i - 1]) {
+            if (entry[i].col != entry[i-1].col) {
                 col_remote_size++;
-                vElement_remote.push_back(col[i]);
+                vElement_remote.push_back(entry[i].col);
                 vElementRep_remote.push_back(1);
-                procNum = lower_bound2(&split[0], &split[nprocs], col[i]);
+                procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
                 recvCount[procNum]++;
                 nnz_col_remote.push_back(1);
             } else {
@@ -724,8 +742,8 @@ void COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
 
 void COOMatrix::inverseDiag(double* x) {
     for(unsigned int i=0; i<nnz_l; i++){
-        if(row[i] == col[i])
-            x[row[i]-split[rank]] = 1/values[i];
+        if(entryP[i].row == entryP[i].col)
+            x[entryP[i].row-split[rank]] = 1/entryP[i].val;
     }
 }
 
@@ -754,7 +772,7 @@ void COOMatrix::jacobi(double* x, double* b, MPI_Comm comm) {
 void COOMatrix::print(){
     cout << endl << "triple:" << endl;
     for(long i=0;i<nnz_l;i++) {
-        cout << "(" << row[i] << " , " << col[i] << " , " << values[i] << ")" << endl;
+        cout << "(" << entryP[i].row << " , " << entryP[i].col << " , " << entryP[i].val << ")" << endl;
     }
 }
 
