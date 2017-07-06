@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <mpi.h>
+#include "auxFunctions.h"
 
 using namespace std;
 
@@ -24,9 +25,11 @@ private:
     std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitiong.
 
 public:
-    std::vector<unsigned long> row;
-    std::vector<unsigned long> col;
-    std::vector<double> values;
+//    std::vector<unsigned long> row;
+//    std::vector<unsigned long> col;
+//    std::vector<double> values;
+//    std::vector<cooEntry> entry;
+    cooEntry* entryP;
 
     unsigned int M;
     unsigned int Mbig;
