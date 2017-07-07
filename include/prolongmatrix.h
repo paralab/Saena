@@ -11,6 +11,7 @@ class prolongMatrix {
 //#include <algorithm>
 //std::sort(P->entry.begin(), P->entry.end());
 // It is ordered first column-wise, then row-wise, using std:sort with cooEntry class "< operator".
+// duplicates are removed in createProlongation function in AMGClass.cpp.
 private:
 
 public:
