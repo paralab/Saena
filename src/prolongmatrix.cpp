@@ -259,14 +259,14 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
     for(i=0; i<nnz_l_local; i++)
         indicesP_local[i] = i;
     unsigned long* row_localP = &(*(row_local.begin()));
-    std::sort(indicesP_local, &indicesP_local[nnz_l_local], sort_indices(row_localP));
+    std::sort(indicesP_local, &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
     row_local.clear();
 
 //    long start;
 //    for(i = 0; i < M; ++i) {
 //        start = nnzPerRowScan_local[i];
 //        for(long j=0; j < nnzPerRow_local[i]; j++){
-//            if(rank==1) printf("P.row=%lu, P.col=%lu, P.val=%f \n", entry_local[indicesP_local[start + j]].row+split[rank], entry_local[indicesP_local[start + j]].col, entry_local[indicesP_local[start + j]].val);
+//            if(rank==1) printf("%lu \t %lu \t %f \n", entry_local[indicesP_local[start + j]].row+split[rank], entry_local[indicesP_local[start + j]].col, entry_local[indicesP_local[start + j]].val);
 //        }
 //    }
 

@@ -253,28 +253,21 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
     long procOwner;
     unsigned int bufTemp;
     cooEntry* sendBuf = (cooEntry*)malloc(sizeof(cooEntry)*initial_nnz_l);
-//    long* sendBufI = (long*)malloc(sizeof(long)*initial_nnz_l);
-//    long* sendBufJ = (long*)malloc(sizeof(long)*initial_nnz_l);
-//    long* sendBufV = (long*)malloc(sizeof(long)*initial_nnz_l); // todo: should datatype be double?
-//    unsigned int sIndex[nprocs];
     unsigned int* sIndex = (unsigned int*)malloc(sizeof(unsigned int)*nprocs);
     fill(&sIndex[0], &sIndex[nprocs], 0);
 
     // memcpy(sendBuf, data.data(), initial_nnz_l*3*sizeof(unsigned long));
 
-
+    // todo: try to avoid this for loop.
     for (long i=0; i<initial_nnz_l; i++){
         procOwner = lower_bound2(&split[0], &split[nprocs+1], data[3*i]);
         bufTemp = sOffset[procOwner]+sIndex[procOwner];
         memcpy(sendBuf+bufTemp, data.data() + 3*i, sizeof(cooEntry));
-        /*
-        sendBuf[bufTemp].row = data[3*i];
-        sendBuf[bufTemp].col = data[3*i+1];
-        sendBuf[bufTemp].val = data[3*i+2];
-         */
-//        sendBufI[bufTemp] = data[3*i];
-//        sendBufJ[bufTemp] = data[3*i+1];
-//        sendBufV[bufTemp] = data[3*i+2];
+        // todo: the above line is better than the following thre lines. think why it works.
+//        sendBuf[bufTemp].row = data[3*i];
+//        sendBuf[bufTemp].col = data[3*i+1];
+//        sendBuf[bufTemp].val = data[3*i+2];
+//        if(rank==1) cout << sendBuf[bufTemp].row << "\t" << sendBuf[bufTemp].col << "\t" << sendBuf[bufTemp].val << endl;
         sIndex[procOwner]++;
     }
 
@@ -291,27 +284,14 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 
     cooEntry* entry = (cooEntry*)malloc(sizeof(cooEntry)*nnz_l);
     entryP = &entry[0];
-//    row.resize(nnz_l);
-//    col.resize(nnz_l);
-//    values.resize(nnz_l);
-
-//    unsigned long* rowP = &(*(row.begin()));
-//    unsigned long* colP = &(*(col.begin()));
-//    double* valuesP = &(*(values.begin()));
 
     MPI_Alltoallv(sendBuf, sendSizeArray, sOffset, cooEntry::mpi_datatype(), entryP, recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
-//    MPI_Alltoallv(sendBufI, sendSizeArray, sOffset, MPI_LONG, rowP, recvSizeArray, rOffset, MPI_LONG, comm);
-//    MPI_Alltoallv(sendBufJ, sendSizeArray, sOffset, MPI_LONG, colP, recvSizeArray, rOffset, MPI_LONG, comm);
-//    MPI_Alltoallv(sendBufV, sendSizeArray, sOffset, MPI_DOUBLE, valuesP, recvSizeArray, rOffset, MPI_DOUBLE, comm);
 
     free(sendSizeArray);
     free(recvSizeArray);
     free(sOffset);
     free(rOffset);
     free(sendBuf);
-//    free(sendBufI);
-//    free(sendBufJ);
-//    free(sendBufV);
 
 //    if (rank==0){
 //        cout << "nnz_l = " << nnz_l << endl;
