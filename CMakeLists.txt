@@ -36,7 +36,9 @@ set(SOURCE_FILES
         src/prolongmatrix.cpp
         include/restrictmatrix.h
         src/restrictmatrix.cpp
-        )
+        include/auxFunctions.h
+        src/auxFunctions.cpp
+)
 
 add_executable(Saena ${SOURCE_FILES})
 
