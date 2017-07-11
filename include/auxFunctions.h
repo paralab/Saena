@@ -21,6 +21,9 @@ template <class T>
 T lower_bound2(T *left, T *right, T val);
 
 
+int randomVector(unsigned long* V, unsigned long size);
+
+
 class cooEntry{
 public:
     unsigned long row;
