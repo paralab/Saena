@@ -858,12 +858,12 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 
     free(splitNewTemp);
 
-    if(rank==1){
-        cout << "splitNew:" << endl;
-        for(i=0; i<nprocs+1; i++)
-            cout << S->split[i] << "\t" << splitNew[i] << endl;
-        cout << endl;
-    }
+//    if(rank==1){
+//        cout << "splitNew:" << endl;
+//        for(i=0; i<nprocs+1; i++)
+//            cout << S->split[i] << "\t" << splitNew[i] << endl;
+//        cout << endl;
+//    }
 
     unsigned long procNum;
     vector<unsigned long> aggregateRemote;
@@ -1197,7 +1197,7 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     for(i=0; i<PEntryTemp.size(); i++){
         P->entry.push_back(PEntryTemp[i]);
         while(i<PEntryTemp.size()-1 && PEntryTemp[i] == PEntryTemp[i+1]){ // values of entries with the same row and col should be added.
-            P->entry[P->entry.size()-1].val += PEntryTemp[i+1].val;
+            P->entry.back().val += PEntryTemp[i+1].val;
             i++;
         }
     }
@@ -1232,16 +1232,16 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
     // ************************************* RATemp - A local *************************************
     // Some local and remote elements of RATemp are computed here using local R and local A.
 
-    unsigned int AMaxNnz;
+    unsigned int AMaxNnz, AMaxM;
     MPI_Allreduce(&A->nnz_l, &AMaxNnz, 1, MPI_UNSIGNED, MPI_MAX, comm);
+    MPI_Allreduce(&A->M, &AMaxM, 1, MPI_UNSIGNED, MPI_MAX, comm);
 //    MPI_Barrier(comm); printf("rank=%d, AMaxNnz=%d \n", rank, AMaxNnz); MPI_Barrier(comm);
     // todo: is this way better than using the previous Allreduce? reduce on processor 0, then broadcast to other processors.
 
-    unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*AMaxNnz);
+    unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*AMaxM);
     fill(&AnnzPerRow[0], &AnnzPerRow[A->M], 0);
-    for(i=0; i<A->nnz_l; i++){
+    for(i=0; i<A->nnz_l; i++)
         AnnzPerRow[A->entryP[i].row - A->split[rank]]++;
-    }
 
 //    if(rank==2)
 //        for(i=0; i<A->M; i++)
@@ -1256,9 +1256,10 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
 
     for(i=0; i<R->nnz_l_local; i++){
         for(j = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]]; j < AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1]; j++){
+//            if(rank==1) cout << j << "\t" << A->entryP[j].row << "\t" << A->entryP[j].col << "\t" << A->entryP[j].val << endl;
             RATemp.entry.push_back(cooEntry(R->entry_local[i].row,
-                                        A->entryP[i].col,
-                                        R->entry_local[i].val * A->entryP[i].val));
+                                        A->entryP[j].col,
+                                        R->entry_local[i].val * A->entryP[j].val));
         }
     }
 
@@ -1266,100 +1267,28 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
 //        for(i=0; i<RATemp.entry.size(); i++)
 //            cout << RATemp.entry[i].row << "\t" << RATemp.entry[i].col << "\t" << RATemp.entry[i].val << endl;
 
-
-
-
-
-    // iterate through A column-wise and P row-wise.
-//    for(i = 0; i < A->nnz_l_local; ++i) {
-//        start = P->nnzPerRowScan_local[A->col_local[i] - A->split[rank]];
-//        if(rank==1) printf("P.row=%lu, start=%lu \n", A->col_local[i]-A->split[rank], start);
-//        for(j=0; j < P->nnzPerRow_local[A->col_local[i] - A->split[rank]]; j++){
-//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
-//            AP->entry_local.push_back(cooEntry(A->row_local[i],
-//                                               P->entry_local[P->indicesP_local[start + j]].col,
-//                                               A->values_local[i] * P->entry_local[P->indicesP_local[start + j]].val));
-//        }
-//    }
-
-/*
-    // todo: this is wrong: should switch rows of A with its columns. It means you should use nnzPerCol, which is expensive memory-wise.
-    // iterate through R column-wise and A row-wise.
-    // R is stored in local and remote formats. there does not exist general entries for R, so R is iterated first through local entries, then the remote ones.
-    // R local, A first local then remote
-    for(i = 0; i < R->nnz_l_local; ++i) {
-        start = A->nnzPerRowScan_local[R->entry_local[i].col - P->split[rank]]; // todo: check if split should be replaced by splitNew.
-//        if(rank==1) printf("R.col=%lu, start=%lu, A.AnnzPerRow=%d \n", R->entry_local[i].col - P->split[rank], start, A->nnzPerRow_local[R->entry_local[i].col - P->split[rank]]);
-        // A local
-        for(j=0; j < A->nnzPerRow_local[R->entry_local[i].col - P->split[rank]]; j++){
-//            if(rank==1) printf("R.row=%lu, R.col=%lu, R.val=%f,\tA.row=%lu, A.col=%lu, A.val=%f \n", R->entry_local[i].row, (R->entry_local[i].col-P->split[rank]), R->entry_local[i].val, A->row_local[A->indicesP_local[start + j]], A->col_local[A->indicesP_local[start + j]], A->values_local[A->indicesP_local[start + j]]);
-            RATemp.entry_local.push_back(cooEntry( R->entry_local[i].row,
-                                               A->col_local[A->indicesP_local[start + j]],
-                                               R->entry_local[i].val * A->values_local[A->indicesP_local[start + j]]));
-        }
-
-        // A remote
-        start = A->nnzPerRowScan_remote[R->entry_local[i].col - P->split[rank]];
-        for(j=0; j < A->nnzPerRow_remote[R->entry_local[i].col - P->split[rank]]; j++){
-//            if(rank==1) printf("R.col=%lu, start=%lu, A.AnnzPerRow=%d \n", R->entry_local[i].col - P->split[rank], start, A->nnzPerRow_remote[R->entry_local[i].col - P->split[rank]]);
-            RATemp.entry_local.push_back(cooEntry( R->entry_local[i].row,
-                                               A->col_remote2[A->indicesP_remote[start + j]],
-                                               R->entry_local[i].val * A->values_remote[A->indicesP_remote[start + j]]));
-        }
-    }
-//    printf("rank=%d\thereeeeee!!!\n", rank);
-    // iterate through R column-wise and A row-wise. (R remote is not sorted!)
-    // R remote, A first local then remote
-    for(i = 0; i < R->nnz_l_remote; ++i) {
-        start = A->nnzPerRowScan_local[R->entry_remote[i].col - P->split[rank]];
-        if(rank==2) printf("\nR.col=%lu, R.col-split=%lu, start=%lu, A.AnnzPerRow=%d, nnz_l_remote=%lu \n", R->entry_remote[i].col, R->entry_remote[i].col-P->split[rank], start, A->nnzPerRow_local[R->entry_remote[i].col - P->split[rank]], R->nnz_l_remote);
-        // A local
-        for(j=0; j < A->nnzPerRow_local[R->entry_remote[i].col - P->split[rank]]; j++){
-            if(rank==2) printf("R.row=%lu, R.col=%lu, R.val=%f,\tA.row=%lu, A.col=%lu, A.val=%f \n", R->entry_remote[i].row, (R->entry_remote[i].col-P->split[rank]), R->entry_remote[i].val, A->row_local[A->indicesP_local[start + j]], A->col_local[A->indicesP_local[start + j]], A->values_local[A->indicesP_local[start + j]]);
-//            RATemp.entry_local.push_back(cooEntry( R->entry_remote[i].row,
-//                                               A->col_local[A->indicesP_local[start + j]],
-//                                               R->entry_remote[i].val * A->values_local[A->indicesP_local[start + j]]));
-        }
-        // A remote
-        start = A->nnzPerRowScan_remote[R->entry_remote[i].col - P->split[rank]];
-        for(j=0; j < A->nnzPerRow_remote[R->entry_remote[i].col - P->split[rank]]; j++){
-//            if(rank==1) printf("A.row=%lu, A.col=%lu, A.val=%f \tP.row=%lu, P.col=%lu, P.val=%f \n", A->row_local[i], A->col_local[i], A->values_local[i], P->entry_local[P->indicesP_local[start + j]].row, P->entry_local[P->indicesP_local[start + j]].col, P->entry_local[P->indicesP_local[start + j]].val);
-            RATemp.entry_local.push_back(cooEntry( R->entry_remote[i].row,
-                                               A->col_remote2[A->indicesP_remote[start + j]],
-                                               R->entry_remote[i].val * A->values_remote[A->indicesP_remote[start + j]]));
-        }
-    }
-*/
-
     // ************************************* RATemp - A remote *************************************
 
-//    if(rank==1)
-//        for(i=0; i<R->entry_local.size(); i++)
-//            cout << R->entry_local[i].row << "\t" << R->entry_local[i].col << "\t" << R->entry_local[i].val << endl;
-//    if(rank==1)
-//        for(i=0; i<R->entry_remote.size(); i++)
-//            cout << R->entry_remote[i].row << "\t" << R->entry_remote[i].col << "\t" << R->entry_remote[i].val << endl;
-
     // find the start and end of each block of R.
-    unsigned int* RBlockEnd = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
-    fill(RBlockEnd, &RBlockEnd[nprocs+1], 0);
+    unsigned int* RBlockStart = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
+    fill(RBlockStart, &RBlockStart[nprocs+1], 0);
     long procNum = lower_bound2(&A->split[0], &A->split[nprocs+1], R->entry_remote[0].col);
     unsigned int nnzIter = 1;
     for(i=1; i<R->entry_remote.size(); i++){
         nnzIter++;
         if(R->entry_remote[i].col >= A->split[procNum+1]){
-            RBlockEnd[procNum+1] = nnzIter-1;
+            RBlockStart[procNum+1] = nnzIter-1;
             procNum = lower_bound2(&A->split[0], &A->split[nprocs+1], R->entry_remote[i].col);
         }
 //        if(rank==2) cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << endl;
     }
-    RBlockEnd[rank+1] = RBlockEnd[rank]; // there is not any nonzero of R_remote on the local processor.
-    fill(&RBlockEnd[procNum+1], &RBlockEnd[nprocs+1], nnzIter);
+    RBlockStart[rank+1] = RBlockStart[rank]; // there is not any nonzero of R_remote on the local processor.
+    fill(&RBlockStart[procNum+1], &RBlockStart[nprocs+1], nnzIter);
 
 //    if(rank==1){
-//        cout << "RBlockEnd: " << endl;
+//        cout << "RBlockStart: " << endl;
 //        for(i=0; i<nprocs+1; i++)
-//            cout << RBlockEnd[i] << endl;}
+//            cout << RBlockStart[i] << endl;}
 
     cooEntry* Arecv = (cooEntry*)malloc(sizeof(cooEntry)*AMaxNnz);
     int left, right;
@@ -1374,7 +1303,8 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
         if (left < 0)
             left += nprocs;
 
-        // *************************** sendrecv(size) ****************************
+        // *************************** RATemp - A remote - sendrecv(size) ****************************
+
         // use sender rank for send and receive tags.
         MPI_Sendrecv(&A->nnz_l, 1, MPI_UNSIGNED, right, rank, &nnzRecv, 1, MPI_UNSIGNED, left, left, comm, &sendRecvStatus);
 //        int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf,
@@ -1382,15 +1312,17 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
 
 //        if(rank==2) cout << "own A->nnz_l = " << A->nnz_l << "\tnnzRecv = " << nnzRecv << endl;
 
-        // *************************** sendrecv(A) ****************************
+        // *************************** RATemp - A remote - sendrecv(A) ****************************
+
         // use sender rank for send and receive tags.
         MPI_Sendrecv(A->entryP, A->nnz_l, cooEntry::mpi_datatype(), right, rank, Arecv, nnzRecv, cooEntry::mpi_datatype(), left, left, comm, &sendRecvStatus);
 //        if(rank==1) for(int j=0; j<nnzRecv; j++)
 //                        printf("j=%d \t %lu \t %lu \t %f \n", j, Arecv[j].row, Arecv[j].col, Arecv[j].val);
 
-        // *************************** multiplication ****************************
+        // *************************** RATemp - A remote - multiplication ****************************
+
         ARecvM = A->split[left+1] - A->split[left];
-        fill(&AnnzPerRow[0], &AnnzPerRow[nnzRecv], 0);
+        fill(&AnnzPerRow[0], &AnnzPerRow[ARecvM], 0);
         for(j=0; j<nnzRecv; j++){
             AnnzPerRow[Arecv[j].row - A->split[left]]++;
         }
@@ -1405,21 +1337,22 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
 //            if(rank==2) printf("i=%d, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i, AnnzPerRow[i], AnnzPerRowScan[i]);
         }
 
-//        if(rank==1) cout << "block start = " << RBlockEnd[left] << "\tend = " << RBlockEnd[left+1] << "\tleft rank = " << left << "\t i = " << i << endl;
-        for(j=RBlockEnd[left]; j<RBlockEnd[left+1]; j++){
+//        if(rank==1) cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << endl;
+        for(j=RBlockStart[left]; j<RBlockStart[left+1]; j++){
 //            if(rank==1) cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << endl;
             for(unsigned long k = AnnzPerRowScan[R->entry_remote[j].col - P->split[left]]; k < AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1]; k++){
                 RATemp.entry.push_back(cooEntry(R->entry_remote[j].row,
-                                            Arecv[j].col,
-                                            R->entry_remote[j].val * Arecv[j].val));
+                                            Arecv[k].col,
+                                            R->entry_remote[j].val * Arecv[k].val));
             }
         }
+
     } //for i
 
     free(AnnzPerRow);
     free(AnnzPerRowScan);
     free(Arecv);
-    free(RBlockEnd);
+    free(RBlockStart);
 
     std::sort(RATemp.entry.begin(), RATemp.entry.end());
 
@@ -1432,15 +1365,173 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
     // remove duplicates.
     for(i=0; i<RATemp.entry.size(); i++){
         RA.entry.push_back(RATemp.entry[i]);
+//        if(rank==1) cout << endl << "start:" << endl << RATemp.entry[i].val << endl;
         while(i<RATemp.entry.size()-1 && RATemp.entry[i] == RATemp.entry[i+1]){ // values of entries with the same row and col should be added.
-            RA.entry[RA.entry.size()-1].val += RATemp.entry[i+1].val;
+            RA.entry.back().val += RATemp.entry[i+1].val;
             i++;
+//            if(rank==1) cout << RATemp.entry[i+1].val << endl;
+        }
+//        if(rank==1) cout << endl << "final: " << endl << RA.entry[RA.entry.size()-1].val << endl;
+        // todo: pruning. talk to Hari about this part.
+        if( abs(RA.entry.back().val) < 1e-6)
+            RA.entry.pop_back();
+//        if(rank==1) cout << "final: " << endl << RA.entry.back().val << endl;
+    }
+
+//    if(rank==1)
+//        for(j=0; j<RA.entry.size(); j++)
+//            cout << RA.entry[j].row << "\t" << RA.entry[j].col << "\t" << RA.entry[j].val << endl;
+
+    // ************************************* RAPTemp - A local *************************************
+    // Some local and remote elements of RATemp are computed here using local R and local A.
+
+    prolongMatrix RAPTemp; // RATemp is being used to remove duplicates while pushing back to RA.
+    unsigned int PMaxNnz;
+    MPI_Allreduce(&P->nnz_l, &PMaxNnz, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+//    MPI_Barrier(comm); printf("rank=%d, PMaxNnz=%d \n", rank, PMaxNnz); MPI_Barrier(comm);
+    // todo: is this way better than using the previous Allreduce? reduce on processor 0, then broadcast to other processors.
+
+    unsigned int* PnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*PMaxNnz);
+    fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
+    for(i=0; i<P->nnz_l; i++){
+        PnnzPerRow[P->entry[i].row]++;
+    }
+
+//    if(rank==1)
+//        for(i=0; i<P->M; i++)
+//            cout << PnnzPerRow[i] << endl;
+
+    unsigned int* PnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(PMaxNnz+1));
+    PnnzPerRowScan[0] = 0;
+    for(i=0; i<P->M; i++){
+        PnnzPerRowScan[i+1] = PnnzPerRowScan[i] + PnnzPerRow[i];
+//        if(rank==2) printf("i=%lu, PnnzPerRow=%d, PnnzPerRowScan = %d\n", i, PnnzPerRow[i], PnnzPerRowScan[i]);
+    }
+
+    // find the start and end of each block of R.
+    unsigned int* RABlockStart = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
+    fill(RABlockStart, &RABlockStart[nprocs+1], 0);
+    procNum = lower_bound2(&P->split[0], &P->split[nprocs+1], RA.entry[0].col);
+    nnzIter = 1;
+    for(i=1; i<RA.entry.size(); i++){
+        nnzIter++;
+        if(RA.entry[i].col >= P->split[procNum+1]){
+            RABlockStart[procNum+1] = nnzIter-1;
+            procNum = lower_bound2(&P->split[0], &P->split[nprocs+1], RA.entry[i].col);
+        }
+//        if(rank==2) cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << endl;
+    }
+//    RABlockStart[rank+1] = RABlockStart[rank]; // there is not any nonzero of R_remote on the local processor.
+    fill(&RABlockStart[procNum+1], &RABlockStart[nprocs+1], nnzIter);
+
+//    if(rank==1){
+//        cout << "RABlockStart: " << endl;
+//        for(i=0; i<nprocs+1; i++)
+//            cout << RABlockStart[i] << endl;}
+
+    for(i=RABlockStart[rank]; i<RABlockStart[rank+1]; i++){
+        for(j = PnnzPerRowScan[RA.entry[i].col - P->split[rank]]; j < PnnzPerRowScan[RA.entry[i].col - P->split[rank] + 1]; j++){
+            RAPTemp.entry.push_back(cooEntry(RA.entry[i].row,
+                                             P->entry[j].col,
+                                             RA.entry[i].val * P->entry[j].val));
         }
     }
 
-    if(rank==1)
-        for(j=0; j<RA.entry.size(); j++)
-            cout << RA.entry[j].row << "\t" << RA.entry[j].col << "\t" << RA.entry[j].val << endl;
+//    if(rank==1)
+//        for(i=0; i<RAPTemp.entry.size(); i++)
+//            cout << RAPTemp.entry[i].row << "\t" << RAPTemp.entry[i].col << "\t" << RAPTemp.entry[i].val << endl;
+
+    // ************************************* RATemp - A remote *************************************
+
+    cooEntry* Precv = (cooEntry*)malloc(sizeof(cooEntry)*PMaxNnz);
+    long PrecvM;
+
+
+    for(int i = 1; i < nprocs; i++) {
+        // send P to the right processor, receive P from the left processor. "left" decreases by one in each iteration. "right" increases by one.
+        right = (rank + i) % nprocs;
+        left = rank - i;
+        if (left < 0)
+            left += nprocs;
+
+        // *************************** RATemp - A remote - sendrecv(size) ****************************
+
+        // use sender rank for send and receive tags.
+        MPI_Sendrecv(&P->nnz_l, 1, MPI_UNSIGNED_LONG, right, rank, &nnzRecv, 1, MPI_UNSIGNED_LONG, left, left, comm, &sendRecvStatus);
+//        int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf,
+//                         int recvcount, MPI_Datatype recvtype, int source, int recvtag, MPI_Comm comm, MPI_Status *status)
+
+//        if(rank==2) cout << "own P->nnz_l = " << P->nnz_l << "\tnnzRecv = " << nnzRecv << endl;
+
+        // *************************** RATemp - A remote - sendrecv(P) ****************************
+
+        // use sender rank for send and receive tags.
+        MPI_Sendrecv(&P->entry[0], P->nnz_l, cooEntry::mpi_datatype(), right, rank, Precv, nnzRecv, cooEntry::mpi_datatype(), left, left, comm, &sendRecvStatus);
+
+//        if(rank==1) for(int j=0; j<P->nnz_l; j++)
+//                        printf("j=%d \t %lu \t %lu \t %f \n", j, P->entry[j].row, P->entry[j].col, P->entry[j].val);
+//        if(rank==1) for(int j=0; j<nnzRecv; j++)
+//                        printf("j=%d \t %lu \t %lu \t %f \n", j, Precv[j].row, Precv[j].col, Precv[j].val);
+
+        // *************************** RATemp - A remote - multiplication ****************************
+
+        PrecvM = P->split[left+1] - P->split[left];
+        fill(&PnnzPerRow[0], &PnnzPerRow[PrecvM], 0);
+        for(j=0; j<nnzRecv; j++)
+            PnnzPerRow[Precv[j].row]++;
+
+//        if(rank==1) cout << "PrecvM = " << PrecvM << endl;
+
+//        if(rank==1)
+//            for(j=0; j<PrecvM; j++)
+//                cout << PnnzPerRow[i] << endl;
+
+        PnnzPerRowScan[0] = 0;
+        for(j=0; j<PrecvM; j++){
+            PnnzPerRowScan[j+1] = PnnzPerRowScan[j] + PnnzPerRow[j];
+//            if(rank==1) printf("j=%lu, PnnzPerRow=%d, PnnzPerRowScan = %d\n", j, PnnzPerRow[j], PnnzPerRowScan[j]);
+        }
+
+//        if(rank==1) cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << endl;
+        for(j=RABlockStart[left]; j<RABlockStart[left+1]; j++){
+//            if(rank==1) cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << endl;
+            for(unsigned long k = PnnzPerRowScan[RA.entry[j].col - P->split[left]]; k < PnnzPerRowScan[RA.entry[j].col - P->split[left] + 1]; k++){
+                RAPTemp.entry.push_back(cooEntry(RA.entry[j].row,
+                                                Precv[k].col,
+                                                RA.entry[j].val * Precv[k].val));
+            }
+        }
+
+    } //for i
+
+    free(PnnzPerRow);
+    free(PnnzPerRowScan);
+    free(Precv);
+    free(RABlockStart);
+
+    std::sort(RAPTemp.entry.begin(), RAPTemp.entry.end());
+
+//    if(rank==1)
+//        for(j=0; j<RAPTemp.entry.size(); j++)
+//            cout << RAPTemp.entry[j].row << "\t" << RAPTemp.entry[j].col << "\t" << RAPTemp.entry[j].val << endl;
+
+    prolongMatrix RAP;
+
+    // remove duplicates.
+    for(i=0; i<RAPTemp.entry.size(); i++){
+        RAP.entry.push_back(RAPTemp.entry[i]);
+        while(i<RAPTemp.entry.size()-1 && RAPTemp.entry[i] == RAPTemp.entry[i+1]){ // values of entries with the same row and col should be added.
+            RAP.entry.back().val += RAPTemp.entry[i+1].val;
+            i++;
+        }
+        // todo: pruning. talk to Hari about this part.
+        if( abs(RAP.entry.back().val) < 1e-6)
+            RAP.entry.pop_back();
+    }
+
+//    if(rank==1)
+//        for(j=0; j<RAP.entry.size(); j++)
+//            cout << RAP.entry[j].row << "\t" << RAP.entry[j].col << "\t" << RAP.entry[j].val << endl;
 
     return 0;
 } // end of AMGClass::coarsen
