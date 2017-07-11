@@ -10,33 +10,8 @@
 #include <mpich/mpi.h>
 #include "AMGClass.h"
 #include "auxFunctions.h"
-//#include <random>
 //#include "prolongmatrix.h"
 //#include "restrictmatrix.h"
-
-int randomVector(unsigned long* V, unsigned long size){
-//    int rank;
-//    MPI_Comm_rank(comm, &rank);
-
-    //Type of random number distribution
-    std::uniform_int_distribution<unsigned long> dist(1, size); //(min, max)
-
-    //Mersenne Twister: Good quality random number generator
-    std::mt19937 rng;
-
-    //Initialize with non-deterministic seeds
-    rng.seed(std::random_device{}());
-
-    for (unsigned long i=0; i<size; i++)
-        V[i] = dist(rng);
-
-//    if(rank==0){
-//        V[6] = 100;
-//        V[11] = 100;
-//    }
-
-    return 0;
-}
 
 
 AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int postSm, float connStr, float ta){

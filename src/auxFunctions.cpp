@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 
 using namespace std;
 
@@ -22,4 +23,27 @@ T lower_bound2(T *left, T *right, T val){
         return distance(first, left-1);
 }
 
+int randomVector(unsigned long* V, unsigned long size){
 
+//    int rank;
+//    MPI_Comm_rank(comm, &rank);
+
+    //Type of random number distribution
+    std::uniform_int_distribution<unsigned long> dist(1, size); //(min, max)
+
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    for (unsigned long i=0; i<size; i++)
+        V[i] = dist(rng);
+
+//    if(rank==0){
+//        V[6] = 100;
+//        V[11] = 100;
+//    }
+
+    return 0;
+}
