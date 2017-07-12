@@ -16,7 +16,7 @@ using namespace std;
  *
  * */
 class COOMatrix {
-// A matrix of this class is order first column-wise, then row-wise.
+// A matrix of this class is ordered first column-wise, then row-wise.
 
 private:
     unsigned int initial_nnz_l;

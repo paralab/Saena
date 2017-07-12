@@ -31,10 +31,10 @@ public:
     AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, float tau);
     ~AMGClass();
     int AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm);
-    int findAggregation(COOMatrix* A, unsigned long* aggregate, unsigned long* aggSizeArray, MPI_Comm comm);
+    int findAggregation(COOMatrix* A, unsigned long* aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
     int createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm comm);
-    int Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned long* aggSize, MPI_Comm comm);
-    int createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, prolongMatrix* P, MPI_Comm comm);
+    int Aggregation(StrengthMatrix* S, unsigned long* aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
+    int createProlongation(COOMatrix* A, unsigned long* aggregate, prolongMatrix* P, MPI_Comm comm);
 //    int createRestriction(prolongMatrix* P, restrictMatrix* R, MPI_Comm comm);
     int coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatrix* Ac, MPI_Comm comm);
     int solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, MPI_Comm comm);
