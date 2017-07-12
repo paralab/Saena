@@ -85,7 +85,7 @@ public:
     std::vector<int> sendProcCount_t;
 
     unsigned long* splitNew;
-
+//    std::vector<unsigned long> splitNew;
 
     prolongMatrix();
 //    prolongMatrix(unsigned long Mbig, unsigned long Nbig, unsigned long nnz_g, unsigned long nnz_l, unsigned long* row, unsigned long* col, double* values);

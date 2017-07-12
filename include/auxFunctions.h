@@ -30,6 +30,8 @@ public:
     unsigned long col;
     double val;
 
+    cooEntry(){}
+
     cooEntry(unsigned long i, unsigned long j, double v){
         row = i;
         col = j;
@@ -66,5 +68,12 @@ public:
         return datatype;
     }
 };
+
+
+//template <class T>
+//float myNorm(std::vector<T>& v);
+
+double myNorm(std::vector<double>& v);
+
 
 #endif //SAENA_AUXFUNCTIONS_H

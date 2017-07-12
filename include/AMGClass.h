@@ -36,7 +36,8 @@ public:
     int Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned long* aggSize, MPI_Comm comm);
     int createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, prolongMatrix* P, MPI_Comm comm);
 //    int createRestriction(prolongMatrix* P, restrictMatrix* R, MPI_Comm comm);
-    int coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolongMatrix* Ac, MPI_Comm comm);
+    int coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatrix* Ac, MPI_Comm comm);
+    int solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, MPI_Comm comm);
     };
 
 
