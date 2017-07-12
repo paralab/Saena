@@ -1,14 +1,24 @@
 #include <fstream>
 #include <algorithm>
 #include <sys/stat.h>
+#include <string.h>
 #include "mpi.h"
 #include <omp.h>
-#include <string.h>
 #include "coomatrix.h"
 #include "auxFunctions.h"
 
-COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
 
+COOMatrix::COOMatrix() {
+
+}
+
+
+COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
+    // the following variables of coomatrix class will be set in this function:
+    // Mbig", "nnz_g", "initial_nnz_l", "data"
+    // "data" is only required for repartition function.
+
+    int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -25,6 +35,8 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
     initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
     if (rank == nprocs - 1)
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
+
+    //    if(rank==0) cout << "nnz_g = " << nnz_g << ", initial_nnz_l = " << initial_nnz_l << endl;
 
     // todo: change data from vector to malloc. then free after repartitioning.
     data.resize(3 * initial_nnz_l); // 3 is for i and j and val
@@ -57,16 +69,40 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
 //            cout << datap[3*i] << "\t" << datap[3*i+1] << "\t" << val << endl;
 //        }
 
-    int count;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
 
-//    if(rank==0) cout << "nnz_g = " << nnz_g << ", initial_nnz_l = " << initial_nnz_l << endl;
 } //COOMatrix::COOMatrix
 
-void COOMatrix::MatrixSetup(MPI_Comm comm){
 
+COOMatrix::~COOMatrix() {
+    if(freeBoolean){
+        free(vIndex);
+        free(vSend);
+        free(vSendULong);
+        free(vecValues);
+        free(vecValuesULong);
+        free(iter_local_array);
+        free(iter_remote_array);
+        free(indicesP_local);
+        free(indicesP_remote);
+//    free(vIndexCount);
+//    free(vIndexCount);
+//    free(indicesP);
+    }
+}
+
+
+int COOMatrix::repartition(MPI_Comm comm){
+    // before using this function these variables of coomatrix should be set:
+    // Mbig", "nnz_g", "initial_nnz_l", "data"
+
+    // the following variables of coomatrix class will be set in this function:
+    // "split", "entry"
+
+    int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -102,6 +138,7 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 
 //    if (rank==0) cout << "n_buckets = " << n_buckets << ", Mbig = " << Mbig << endl;
 
+    std::vector<int> splitOffset;
     splitOffset.resize(n_buckets);
     int baseOffset = int(floor(1.0*Mbig/n_buckets));
     float offsetRes = float(1.0*Mbig/n_buckets) - baseOffset;
@@ -129,6 +166,8 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
         firstSplit[i] = firstSplit[i-1] + splitOffset[i];
     }
     firstSplit[n_buckets] = Mbig;
+
+    splitOffset.clear();
 
 /*    if (rank==0){
         cout << "firstSplit:" << endl;
@@ -263,7 +302,7 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
         procOwner = lower_bound2(&split[0], &split[nprocs+1], data[3*i]);
         bufTemp = sOffset[procOwner]+sIndex[procOwner];
         memcpy(sendBuf+bufTemp, data.data() + 3*i, sizeof(cooEntry));
-        // todo: the above line is better than the following thre lines. think why it works.
+        // todo: the above line is better than the following three lines. think why it works.
 //        sendBuf[bufTemp].row = data[3*i];
 //        sendBuf[bufTemp].col = data[3*i+1];
 //        sendBuf[bufTemp].val = data[3*i+2];
@@ -282,10 +321,11 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
     nnz_l = rOffset[nprocs-1] + recvSizeArray[nprocs-1];
 //    cout << "rank=" << rank << ", nnz_l = " << nnz_l << endl;
 
-    cooEntry* entry = (cooEntry*)malloc(sizeof(cooEntry)*nnz_l);
-    entryP = &entry[0];
+//    cooEntry* entry = (cooEntry*)malloc(sizeof(cooEntry)*nnz_l);
+//    cooEntry* entryP = &entry[0];
+    entry.resize(nnz_l);
 
-    MPI_Alltoallv(sendBuf, sendSizeArray, sOffset, cooEntry::mpi_datatype(), entryP, recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
+    MPI_Alltoallv(sendBuf, sendSizeArray, sOffset, cooEntry::mpi_datatype(), &entry[0], recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
 
     free(sendSizeArray);
     free(recvSizeArray);
@@ -296,14 +336,28 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 //    if (rank==0){
 //        cout << "nnz_l = " << nnz_l << endl;
 //        for (int i=0; i<nnz_l; i++)
-//            cout << "i=" << i << "\t" << entryP[i].row << "\t" << entryP[i].col << "\t" << entryP[i].val << endl;
+//            cout << "i=" << i << "\t" << entry[i].row << "\t" << entry[i].col << "\t" << entry[i].val << endl;
 //    }
+
+    return 0;
+}
+
+
+int COOMatrix::matrixSetup(MPI_Comm comm){
+    // before using this function these variables of coomatrix should be set:
+    // "Mbig", "nnz_g", "split", "entry",
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    freeBoolean = true; // use this parameter to know if deconstructor for COOMatrix class should free the variables or not.
 
     // *************************** set the inverse of diagonal of A (for smoothers) ****************************
 
     invDiag.resize(M);
     double* invDiag_p = &(*(invDiag.begin()));
-    inverseDiag(invDiag_p);
+    inverseDiag(invDiag_p, comm);
 
 /*    if(rank==1){
         for(unsigned int i=0; i<M; i++)
@@ -317,18 +371,16 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
     col_remote_size = 0;
     nnz_l_local = 0;
     nnz_l_remote = 0;
-//    recvCount = (int*)malloc(sizeof(int)*nprocs);
-//    int recvCount[nprocs];
     int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
 //    nnzPerRow.assign(M,0);
     nnzPerRow_local.assign(M,0);
-//    nnzPerRow_remote.assign(M,0);
 //    nnzPerCol_local.assign(Mbig,0); // todo: Nbig = Mbig, assuming A is symmetric.
 //    nnz_col_remote.assign(M,0);
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //    nnzPerRow[row[0]-split[rank]]++;
+    long procNum;
     if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
         nnzPerRow_local[entry[0].row-split[rank]]++;
 //        nnzPerCol_local[col[0]]++;
@@ -402,21 +454,6 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
 
     // don't receive anything from yourself
     recvCount[rank] = 0;
-/*
-    nnzPerRowScan_local.resize(M+1);
-    nnzPerRowScan_local[0] = 0;
-    for(long i=0; i<M; i++){
-        nnzPerRowScan_local[i+1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
-//        if(rank==2) printf("i=%lu, nnzPerRow_local=%d, nnzPerRowScan_local = %d\n", i, nnzPerRow_local[i], nnzPerRowScan_local[i+1]);
-    }
-
-    nnzPerRowScan_remote.resize(M+1);
-    nnzPerRowScan_remote[0] = 0;
-    for(long i=0; i<M; i++){
-//        nnzPerRowScan_remote[i+1] = nnzPerRowScan_remote[i] + (nnzPerRow[i] - nnzPerRow_local[i]); //nnzPerRow_remote[i] = nnzPerRow[i] - nnzPerRow_local[i]
-        nnzPerRowScan_remote[i+1] = nnzPerRowScan_remote[i] + nnzPerRow_remote[i];
-    }
-*/
 
 /*    MPI_Barrier(comm);
     if (rank==2){
@@ -425,15 +462,6 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
             cout << i << "= " << recvCount[i] << endl;
     }*/
 
-//    nnzPerColScan_local.resize(Mbig+1);
-//    nnzPerColScan_local[0] = 0;
-//    for(long i=0; i<Mbig; i++){
-//        nnzPerColScan_local[i+1] = nnzPerColScan_local[i] + nnzPerColScan_local[i];
-//    }
-//    nnzPerCol_local.clear();
-
-//    vIndexCount = (int*)malloc(sizeof(int)*nprocs);
-//    int vIndexCount[nprocs];
     int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
     MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
 
@@ -614,28 +642,20 @@ void COOMatrix::MatrixSetup(MPI_Comm comm){
     unsigned long* row_remoteP = &(*(row_remote.begin()));
     std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
 
-/*    indicesP = (int*)malloc(sizeof(int)*nnz_l);
-    for(int i=0; i<nnz_l; i++)
-        indicesP[i] = i;
-    std::sort(indicesP, &indicesP[nnz_l], sort_indices(rowP));*/
+//    indicesP = (int*)malloc(sizeof(int)*nnz_l);
+//    for(int i=0; i<nnz_l; i++)
+//        indicesP[i] = i;
+//    std::sort(indicesP, &indicesP[nnz_l], sort_indices(rowP));
+
+    return 0;
 }
 
-COOMatrix::~COOMatrix() {
-    free(vIndex);
-    free(vSend);
-    free(vSendULong);
-    free(vecValues);
-    free(vecValuesULong);
-    free(iter_local_array);
-    free(iter_remote_array);
-    free(indicesP_local);
-    free(indicesP_remote);
-//    free(vIndexCount);
-//    free(vIndexCount);
-//    free(indicesP);
-}
 
-void COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
+int COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
 //    totalTime = 0;
     double t10 = MPI_Wtime();
@@ -718,16 +738,24 @@ void COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
     time[2] += (t22-t12);
     double t23 = MPI_Wtime();
     time[3] += (t23-t13);
+    return 0;
 }
 
-void COOMatrix::inverseDiag(double* x) {
+
+int COOMatrix::inverseDiag(double* x, MPI_Comm comm) {
+    int nprocs, rank;
+//    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
     for(unsigned int i=0; i<nnz_l; i++){
-        if(entryP[i].row == entryP[i].col)
-            x[entryP[i].row-split[rank]] = 1/entryP[i].val;
+        if(entry[i].row == entry[i].col)
+            x[entry[i].row-split[rank]] = 1/entry[i].val;
     }
+    return 0;
 }
 
-void COOMatrix::jacobi(double* x, double* b, MPI_Comm comm) {
+
+int COOMatrix::jacobi(double* x, double* b, MPI_Comm comm) {
 
 // Ax = b
 // x = x - (D^(-1))(Ax - b)
@@ -747,19 +775,24 @@ void COOMatrix::jacobi(double* x, double* b, MPI_Comm comm) {
         x[i] -= temp[i];
     }
     free(temp);
+    return 0;
 }
 
-void COOMatrix::print(){
+
+int COOMatrix::print(){
     cout << endl << "triple:" << endl;
     for(long i=0;i<nnz_l;i++) {
-        cout << "(" << entryP[i].row << " , " << entryP[i].col << " , " << entryP[i].val << ")" << endl;
+        cout << "(" << entry[i].row << " , " << entry[i].col << " , " << entry[i].val << ")" << endl;
     }
+    return 0;
 }
 
-void COOMatrix::SaenaSetup(){
 
+int COOMatrix::SaenaSetup(){
+    return 0;
 }
 
-void COOMatrix::SaenaSolve(){
 
+int COOMatrix::SaenaSolve(){
+    return 0;
 }

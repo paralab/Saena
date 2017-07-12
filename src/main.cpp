@@ -46,7 +46,8 @@ int main(int argc, char* argv[]){
     double t1 = MPI_Wtime();
 
     COOMatrix B (Aname, Mbig, comm);
-    B.MatrixSetup(comm);
+    B.repartition(comm);
+    B.matrixSetup(comm);
 
     MPI_Barrier(comm);
     double t2 = MPI_Wtime();

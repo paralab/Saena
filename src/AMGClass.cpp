@@ -9,6 +9,7 @@
 #include <set>
 #include <mpich/mpi.h>
 #include "AMGClass.h"
+#include "coomatrix.h"
 #include "auxFunctions.h"
 //#include "prolongmatrix.h"
 //#include "restrictmatrix.h"
@@ -67,7 +68,6 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
             cout << i << "\t" << aggregate[i] << "\t" << aggregateSorted[i] << endl;
     MPI_Barrier(comm);
 */
-
 
 //    par::sampleSort(aggregate, comm);
 
@@ -189,7 +189,6 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
 
         // update split?
 
-
         // update threshol1
 
         if(active){
@@ -204,8 +203,15 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     createProlongation(A, aggregate_p, splitNew, &P, comm);
     restrictMatrix R(&P, initialNumberOfRows, comm);
 
-    prolongMatrix Ac; // A_coarse = R*A*P
+    COOMatrix Ac; // A_coarse = R*A*P
     coarsen(A, &P, &R, &Ac, comm);
+
+    // system: A*u = b
+    std::vector<double> uc(Ac.Mbig);
+    fill(uc.begin(), uc.end(), 0);
+    std::vector<double> bc(Ac.Mbig);
+    fill(bc.begin(), bc.end(), 1);
+    solveCoarsest(&Ac, uc, bc, comm);
 
     free(splitNew);
     return 0;
@@ -247,11 +253,11 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
     std::vector<double> maxPerRow(A->M);
     fill(&maxPerRow[0], &maxPerRow[A->M], 0);
     for(i=0; i<A->nnz_l; i++){
-        if( A->entryP[i].row != A->entryP[i].col ){
-            if(maxPerRow[A->entryP[i].row - A->split[rank]] == 0) // use split to convert the index from global to local.
-                maxPerRow[A->entryP[i].row - A->split[rank]] = -A->entryP[i].val;
-            else if(maxPerRow[A->entryP[i].row - A->split[rank]] < -A->entryP[i].val)
-                maxPerRow[A->entryP[i].row - A->split[rank]] = -A->entryP[i].val;
+        if( A->entry[i].row != A->entry[i].col ){
+            if(maxPerRow[A->entry[i].row - A->split[rank]] == 0) // use split to convert the index from global to local.
+                maxPerRow[A->entry[i].row - A->split[rank]] = -A->entry[i].val;
+            else if(maxPerRow[A->entry[i].row - A->split[rank]] < -A->entry[i].val)
+                maxPerRow[A->entry[i].row - A->split[rank]] = -A->entry[i].val;
         }
     }
 
@@ -265,16 +271,16 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
     std::vector<unsigned long> Sj;
     std::vector<double> Sval;
     for(i=0; i<A->nnz_l; i++){
-        if(A->entryP[i].row == A->entryP[i].col) {
-            Si.push_back(A->entryP[i].row);
-            Sj.push_back(A->entryP[i].col);
+        if(A->entry[i].row == A->entry[i].col) {
+            Si.push_back(A->entry[i].row);
+            Sj.push_back(A->entry[i].col);
             Sval.push_back(1);
         }
-        else if(maxPerRow[A->entryP[i].row - A->split[rank]] != 0) {
+        else if(maxPerRow[A->entry[i].row - A->split[rank]] != 0) {
 //            if ( -A->values[i] / (maxPerRow[A->row[i] - A->split[rank]] ) > connStrength) {
-            Si.push_back(A->entryP[i].row);
-            Sj.push_back(A->entryP[i].col);
-            Sval.push_back(  -A->entryP[i].val / (maxPerRow[A->entryP[i].row - A->split[rank]])  );
+            Si.push_back(A->entry[i].row);
+            Sj.push_back(A->entry[i].col);
+            Sval.push_back(  -A->entry[i].val / (maxPerRow[A->entry[i].row - A->split[rank]])  );
 //                if(rank==0) cout << "A.val = " << -A->values[i] << ", max = " << maxPerRow[A->row[i] - A->split[rank]] << ", divide = " << (-A->values[i] / (maxPerRow[A->row[i] - A->split[rank]])) << endl;
 //            }
         }
@@ -293,11 +299,11 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
 //    fill(&local_maxPerCol[0], &local_maxPerCol[A->Mbig], 0);
 
     for(i=0; i<A->nnz_l; i++){
-        if( A->entryP[i].row != A->entryP[i].col ){
-            if(local_maxPerCol[A->entryP[i].col] == 0)
-                local_maxPerCol[A->entryP[i].col] = -A->entryP[i].val;
-            else if(local_maxPerCol[A->entryP[i].col] < -A->entryP[i].val)
-                local_maxPerCol[A->entryP[i].col] = -A->entryP[i].val;
+        if( A->entry[i].row != A->entry[i].col ){
+            if(local_maxPerCol[A->entry[i].col] == 0)
+                local_maxPerCol[A->entry[i].col] = -A->entry[i].val;
+            else if(local_maxPerCol[A->entry[i].col] < -A->entry[i].val)
+                local_maxPerCol[A->entry[i].col] = -A->entry[i].val;
         }
     }
 
@@ -317,16 +323,16 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
     std::vector<long> STj;
     std::vector<double> STval;
     for(i=0; i<A->nnz_l; i++){
-        if(A->entryP[i].row == A->entryP[i].col) {
-            STi.push_back(A->entryP[i].row - A->split[rank]);
-            STj.push_back(A->entryP[i].col - A->split[rank]);
+        if(A->entry[i].row == A->entry[i].col) {
+            STi.push_back(A->entry[i].row - A->split[rank]);
+            STj.push_back(A->entry[i].col - A->split[rank]);
             STval.push_back(1);
         }
         else{
 //            if ( (-A->values[i] / maxPerCol[A->col[i]]) > connStrength) {
-            STi.push_back(A->entryP[i].row - A->split[rank]);
-            STj.push_back(A->entryP[i].col - A->split[rank]);
-            STval.push_back( -A->entryP[i].val / maxPerCol[A->entryP[i].col] );
+            STi.push_back(A->entry[i].row - A->split[rank]);
+            STj.push_back(A->entry[i].col - A->split[rank]);
+            STval.push_back( -A->entry[i].val / maxPerCol[A->entry[i].col] );
 //            }
         }
     }
@@ -1195,7 +1201,7 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
 }// end of AMGClass::createProlongation
 
 
-int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolongMatrix* Ac, MPI_Comm comm){
+int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatrix* Ac, MPI_Comm comm){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1216,7 +1222,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
     unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*AMaxM);
     fill(&AnnzPerRow[0], &AnnzPerRow[A->M], 0);
     for(i=0; i<A->nnz_l; i++)
-        AnnzPerRow[A->entryP[i].row - A->split[rank]]++;
+        AnnzPerRow[A->entry[i].row - A->split[rank]]++;
 
 //    if(rank==2)
 //        for(i=0; i<A->M; i++)
@@ -1231,10 +1237,10 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
 
     for(i=0; i<R->nnz_l_local; i++){
         for(j = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]]; j < AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1]; j++){
-//            if(rank==1) cout << j << "\t" << A->entryP[j].row << "\t" << A->entryP[j].col << "\t" << A->entryP[j].val << endl;
+//            if(rank==1) cout << j << "\t" << A->entry[j].row << "\t" << A->entry[j].col << "\t" << A->entry[j].val << endl;
             RATemp.entry.push_back(cooEntry(R->entry_local[i].row,
-                                        A->entryP[j].col,
-                                        R->entry_local[i].val * A->entryP[j].val));
+                                        A->entry[j].col,
+                                        R->entry_local[i].val * A->entry[j].val));
         }
     }
 
@@ -1290,7 +1296,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
         // *************************** RATemp - A remote - sendrecv(A) ****************************
 
         // use sender rank for send and receive tags.
-        MPI_Sendrecv(A->entryP, A->nnz_l, cooEntry::mpi_datatype(), right, rank, Arecv, nnzRecv, cooEntry::mpi_datatype(), left, left, comm, &sendRecvStatus);
+        MPI_Sendrecv(&A->entry[0], A->nnz_l, cooEntry::mpi_datatype(), right, rank, Arecv, nnzRecv, cooEntry::mpi_datatype(), left, left, comm, &sendRecvStatus);
 //        if(rank==1) for(int j=0; j<nnzRecv; j++)
 //                        printf("j=%d \t %lu \t %lu \t %f \n", j, Arecv[j].row, Arecv[j].col, Arecv[j].val);
 
@@ -1490,23 +1496,46 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, prolong
 //        for(j=0; j<RAPTemp.entry.size(); j++)
 //            cout << RAPTemp.entry[j].row << "\t" << RAPTemp.entry[j].col << "\t" << RAPTemp.entry[j].val << endl;
 
-    prolongMatrix RAP;
-
     // remove duplicates.
     for(i=0; i<RAPTemp.entry.size(); i++){
-        RAP.entry.push_back(RAPTemp.entry[i]);
+        Ac->entry.push_back(RAPTemp.entry[i]);
         while(i<RAPTemp.entry.size()-1 && RAPTemp.entry[i] == RAPTemp.entry[i+1]){ // values of entries with the same row and col should be added.
-            RAP.entry.back().val += RAPTemp.entry[i+1].val;
+            Ac->entry.back().val += RAPTemp.entry[i+1].val;
             i++;
         }
         // todo: pruning. talk to Hari about this part.
-        if( abs(RAP.entry.back().val) < 1e-6)
-            RAP.entry.pop_back();
+        if( abs(Ac->entry.back().val) < 1e-6)
+            Ac->entry.pop_back();
     }
 
-//    if(rank==1)
-//        for(j=0; j<RAP.entry.size(); j++)
-//            cout << RAP.entry[j].row << "\t" << RAP.entry[j].col << "\t" << RAP.entry[j].val << endl;
+    if(rank==1)
+        for(j=0; j<Ac->entry.size(); j++)
+            cout << Ac->entry[j].row << "\t" << Ac->entry[j].col << "\t" << Ac->entry[j].val << endl;
+
+    // todo: check these parameters. set other required parameters of Ac here.
+    unsigned int nnz_gTemp = Ac->entry.size();
+    MPI_Allreduce(&nnz_gTemp, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
+    Ac->Mbig = P->Nbig;
+//    Ac->split = P->splitNew;
 
     return 0;
 } // end of AMGClass::coarsen
+
+
+int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, MPI_Comm comm){
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    float resid;
+//    Vector p, z, q;
+//    Vector alpha(1), beta(1), rho(1), rho_1(1);
+
+    double normb = myNorm(b);
+//    if(rank==1) cout << normb << endl;
+
+//    Vector r = b - A*x;
+
+
+    return 0;
+}

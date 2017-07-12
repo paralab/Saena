@@ -23,6 +23,7 @@ T lower_bound2(T *left, T *right, T val){
         return distance(first, left-1);
 }
 
+
 int randomVector(unsigned long* V, unsigned long size){
 
 //    int rank;
@@ -46,4 +47,25 @@ int randomVector(unsigned long* V, unsigned long size){
 //    }
 
     return 0;
+}
+
+
+//template <class T>
+//float myNorm(std::vector<T>& v){
+//    float norm = 0;
+//    for(long i=0; i<v.size(); i++)
+//        norm += v[i] * v[i];
+//
+//    norm = sqrt(norm);
+//    return  norm;
+//}
+
+
+double myNorm(std::vector<double>& v){
+    double norm = 0;
+    for(long i=0; i<v.size(); i++)
+        norm += v[i] * v[i];
+
+    norm = sqrt(norm);
+    return  norm;
 }
