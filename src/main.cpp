@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
     double t2 = MPI_Wtime();
 
     if (rank==0)
-        cout << "\nMatrix setup in Saena took " << t2 - t1 << " seconds!" << endl;
+        cout << "\nMatrix setup in Saena took " << t2 - t1 << " seconds!" << endl << endl;
 
     // *************************** AMG ****************************
 

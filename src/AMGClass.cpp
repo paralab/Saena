@@ -44,15 +44,14 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
 
     std::vector<unsigned long> aggregate(A->M);
     unsigned long* aggregate_p = &(*aggregate.begin());
-    unsigned long* splitNew = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
+//    unsigned long* splitNew = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
-    findAggregation(A, aggregate_p, splitNew, comm);
-//    MPI_Barrier(comm);
+    prolongMatrix P;
+    findAggregation(A, aggregate_p, P.splitNew, comm);
 //    if(rank==0)
 //        for(long i=0; i<A->M; i++)
 //            cout << i << "\t" << aggregate[i] << endl;
-//    MPI_Barrier(comm);
 
 /*
     std::vector<long> aggregateSorted(A->M);
@@ -62,11 +61,9 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     if(rank==0)
         for(long i=0; i<A->M; i++)
             cout << i << "\t" << aggregate[i] << "\t" << aggregateSorted[i] << endl;
-    MPI_Barrier(comm);
     if(rank==1)
         for(long i=0; i<A->M; i++)
             cout << i << "\t" << aggregate[i] << "\t" << aggregateSorted[i] << endl;
-    MPI_Barrier(comm);
 */
 
 //    par::sampleSort(aggregate, comm);
@@ -76,131 +73,13 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     if(rank==0)
         for(long i=0; i<A->M; i++)
             cout << i << "\t" << aggregate[i] << endl;
-    MPI_Barrier(comm);
     if(rank==1)
         for(long i=0; i<A->M; i++)
             cout << i << "\t" << aggregate[i] << endl;
-    MPI_Barrier(comm);
 */
 
-    // todo: shrink only if it is required to go to the next multigrid level.
-    // todo: move the shrinking to after aggregation.
-    // ******************** shrink cpus ********************
-
-    /*
-    // check if the cpus need to be shrinked
-    int threshold1 = 1000*nprocs;
-    int threshold2 = 100*nprocs;
-
-    if(R.Mbig < threshold1){
-        int color = rank/4;
-        MPI_Comm comm2;
-        MPI_Comm_split(comm, color, rank, &comm2);
-
-        int nprocs2, rank2;
-        MPI_Comm_size(comm2, &nprocs2);
-        MPI_Comm_rank(comm2, &rank2);
-
-        bool active = false;
-        if(rank2 == 0)
-            active = true;
-//        if(active) printf("rank=%d\n", rank2);
-//        printf("rank=%d\trank2=%d\n", rank, rank2);
-
-        // ******************** send the size from children to parent ********************
-
-        unsigned long* nnzGroup = NULL;
-        if(active)
-            nnzGroup = (unsigned long*)malloc(sizeof(unsigned long)*4);
-        MPI_Gather(&R.nnz_l, 1, MPI_UNSIGNED_LONG, nnzGroup, 1, MPI_UNSIGNED_LONG, 0, comm2);
-
-        unsigned long* rdispls = NULL;
-        if(active)
-            rdispls = (unsigned long*)malloc(sizeof(unsigned long)*3);
-
-        unsigned long nnzNew = 0;
-        unsigned long nnzRecv = 0;
-        if(active){
-            rdispls[0] = 0;
-            rdispls[1] = nnzGroup[1];
-            rdispls[2] = rdispls[1] + nnzGroup[2];
-
-            for(i=0; i<4; i++)
-                nnzNew += nnzGroup[i];
-
-            nnzRecv = nnzNew - R.nnz_l;
-//            if(rank==0){
-//                cout << "rdispls:" << endl;
-//                for(i=0; i<3; i++)
-//                    cout << rdispls[i] << endl;
-//            }
-        }
-
-//        printf("rank=%d\tnnzNew=%lu\tnnzRecv=%lu\n", rank, nnzNew, nnzRecv);
-
-        // ******************** allocate memory ********************
-
-        cooEntry* sendData = NULL;
-        if(!active){
-            sendData = (cooEntry*)malloc(sizeof(cooEntry)*R.nnz_l);
-            for(i=0; i<R.entry_local.size(); i++)
-                sendData[i] = R.entry_local[i];
-            for(i=0; i<R.entry_remote.size(); i++)
-                sendData[i + R.entry_local.size()] = R.entry_remote[i];
-        }
-
-//        MPI_Barrier(comm2);
-//        if(rank2==2) cout << "sendData:" << endl;
-//        for(i=0; i<R.entry_local.size()+R.entry_remote.size(); i++)
-//            if(rank2==2) cout << sendData[i].row << "\t" << sendData[i].col << "\t" << sendData[i].val << endl;
-
-        cooEntry* recvData = NULL;
-        if(active)
-            recvData = (cooEntry*)malloc(sizeof(cooEntry)*nnzRecv);
-
-        // ******************** send data from children to parent ********************
-
-        int numRecvProc = 0;
-        int numSendProc = 1;
-        if(active){
-            numRecvProc = 3;
-            numSendProc = 0;
-        }
-
-        MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
-        MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
-
-        for(int i = 0; i < numRecvProc; i++)
-            MPI_Irecv(&recvData[rdispls[i]], (int)nnzGroup[i+1], cooEntry::mpi_datatype(), i+1, 1, comm2, &requests[i]);
-
-        if(!active)
-            MPI_Isend(sendData, (int)R.nnz_l, cooEntry::mpi_datatype(), 0, 1, comm2, &requests[numRecvProc]);
-
-        MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
-
-//        if(active)
-//            for(i=0; i<nnzRecv; i++)
-//                cout << i << "\t" << recvData[i].row << "\t" << recvData[i].col << "\t" << recvData[i].val << endl;
-
-        if(active)
-            free(nnzGroup);
-        if(!active)
-            free(sendData);
-
-        // update split?
-
-        // update threshol1
-
-        if(active){
-            free(recvData);
-            free(rdispls);
-        }
-        MPI_Comm_free(&comm2);
-    }//end of cpu shrinking
-*/
-
-    prolongMatrix P;
-    createProlongation(A, aggregate_p, splitNew, &P, comm);
+//    prolongMatrix P;
+    createProlongation(A, aggregate_p, &P, comm);
     restrictMatrix R(&P, initialNumberOfRows, comm);
 
     COOMatrix Ac; // A_coarse = R*A*P
@@ -213,12 +92,130 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     fill(bc.begin(), bc.end(), 1);
     solveCoarsest(&Ac, uc, bc, comm);
 
-    free(splitNew);
+//    free(splitNew);
     return 0;
 }
 
 
-int AMGClass::findAggregation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, MPI_Comm comm){
+// ******************** shrink cpus ********************
+// this part was located in AMGClass::AMGSetup function after findAggregation.
+// todo: shrink only if it is required to go to the next multigrid level.
+// todo: move the shrinking to after aggregation.
+
+/*
+// check if the cpus need to be shrinked
+int threshold1 = 1000*nprocs;
+int threshold2 = 100*nprocs;
+
+if(R.Mbig < threshold1){
+    int color = rank/4;
+    MPI_Comm comm2;
+    MPI_Comm_split(comm, color, rank, &comm2);
+
+    int nprocs2, rank2;
+    MPI_Comm_size(comm2, &nprocs2);
+    MPI_Comm_rank(comm2, &rank2);
+
+    bool active = false;
+    if(rank2 == 0)
+        active = true;
+//        if(active) printf("rank=%d\n", rank2);
+//        printf("rank=%d\trank2=%d\n", rank, rank2);
+
+    // ******************** send the size from children to parent ********************
+
+    unsigned long* nnzGroup = NULL;
+    if(active)
+        nnzGroup = (unsigned long*)malloc(sizeof(unsigned long)*4);
+    MPI_Gather(&R.nnz_l, 1, MPI_UNSIGNED_LONG, nnzGroup, 1, MPI_UNSIGNED_LONG, 0, comm2);
+
+    unsigned long* rdispls = NULL;
+    if(active)
+        rdispls = (unsigned long*)malloc(sizeof(unsigned long)*3);
+
+    unsigned long nnzNew = 0;
+    unsigned long nnzRecv = 0;
+    if(active){
+        rdispls[0] = 0;
+        rdispls[1] = nnzGroup[1];
+        rdispls[2] = rdispls[1] + nnzGroup[2];
+
+        for(i=0; i<4; i++)
+            nnzNew += nnzGroup[i];
+
+        nnzRecv = nnzNew - R.nnz_l;
+//            if(rank==0){
+//                cout << "rdispls:" << endl;
+//                for(i=0; i<3; i++)
+//                    cout << rdispls[i] << endl;
+//            }
+    }
+
+//        printf("rank=%d\tnnzNew=%lu\tnnzRecv=%lu\n", rank, nnzNew, nnzRecv);
+
+    // ******************** allocate memory ********************
+
+    cooEntry* sendData = NULL;
+    if(!active){
+        sendData = (cooEntry*)malloc(sizeof(cooEntry)*R.nnz_l);
+        for(i=0; i<R.entry_local.size(); i++)
+            sendData[i] = R.entry_local[i];
+        for(i=0; i<R.entry_remote.size(); i++)
+            sendData[i + R.entry_local.size()] = R.entry_remote[i];
+    }
+
+//        MPI_Barrier(comm2);
+//        if(rank2==2) cout << "sendData:" << endl;
+//        for(i=0; i<R.entry_local.size()+R.entry_remote.size(); i++)
+//            if(rank2==2) cout << sendData[i].row << "\t" << sendData[i].col << "\t" << sendData[i].val << endl;
+
+    cooEntry* recvData = NULL;
+    if(active)
+        recvData = (cooEntry*)malloc(sizeof(cooEntry)*nnzRecv);
+
+    // ******************** send data from children to parent ********************
+
+    int numRecvProc = 0;
+    int numSendProc = 1;
+    if(active){
+        numRecvProc = 3;
+        numSendProc = 0;
+    }
+
+    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
+    MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
+
+    for(int i = 0; i < numRecvProc; i++)
+        MPI_Irecv(&recvData[rdispls[i]], (int)nnzGroup[i+1], cooEntry::mpi_datatype(), i+1, 1, comm2, &requests[i]);
+
+    if(!active)
+        MPI_Isend(sendData, (int)R.nnz_l, cooEntry::mpi_datatype(), 0, 1, comm2, &requests[numRecvProc]);
+
+    MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
+
+//        if(active)
+//            for(i=0; i<nnzRecv; i++)
+//                cout << i << "\t" << recvData[i].row << "\t" << recvData[i].col << "\t" << recvData[i].val << endl;
+
+    if(active)
+        free(nnzGroup);
+    if(!active)
+        free(sendData);
+
+    // update split?
+
+    // update threshol1
+
+    if(active){
+        free(recvData);
+        free(rdispls);
+    }
+    MPI_Comm_free(&comm2);
+}//end of cpu shrinking
+*/
+
+
+int AMGClass::findAggregation(COOMatrix* A, unsigned long* aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -470,7 +467,7 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
-int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned long* splitNew, MPI_Comm comm) {
+int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm) {
 
     // the first two bits of aggregate are being used for aggStatus: 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
     // bits 0 up to 61 are for storing aggregate values.
@@ -825,12 +822,12 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
 //        cout << endl;
 //    }
 
-//    unsigned long* splitNew = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
-    fill(splitNew, &splitNew[nprocs], 0);
+    splitNew.resize(nprocs+1);
+    fill(splitNew.begin(), splitNew.end(), 0);
     splitNew[rank] = aggArray.size();
 
     unsigned long* splitNewTemp = (unsigned long*)malloc(sizeof(unsigned long)*nprocs);
-    MPI_Allreduce(splitNew, splitNewTemp, nprocs, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&splitNew[0], splitNewTemp, nprocs, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     // do scan on splitNew
     splitNew[0] = 0;
@@ -955,9 +952,6 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, unsigned 
         MPI_Isend(&aggSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_UNSIGNED_LONG, sendProcRank[i], 1, comm, &(requests2[numRecvProc+i]));
 
     MPI_Waitall(numSendProc+numRecvProc, requests2, statuses2);
-
-//    delete requests2;
-//    delete statuses2;
 
 //    if(rank==1) cout << "aggRemote received:" << endl;
 //    set<unsigned long>::iterator it;
@@ -1098,7 +1092,7 @@ int AMGClass::Aggregation(CSRMatrix* S){
  */
 
 
-int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigned long* splitNew, prolongMatrix* P, MPI_Comm comm){
+int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, prolongMatrix* P, MPI_Comm comm){
     // todo: check when you should update new aggregate values: before creating prolongation or after.
 
     // Here P is computed: P = A_w * P_t; in which P_t is aggregate, and A_w = I - w*Q*A, Q is inverse of diagonal of A.
@@ -1114,9 +1108,8 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, unsigne
     float omega = 0.67; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
 
     P->Mbig = A->Mbig;
-    P->Nbig = splitNew[nprocs]; // This is the number of aggregates, which is the number of columns of P.
+    P->Nbig = P->splitNew[nprocs]; // This is the number of aggregates, which is the number of columns of P.
     P->M = A->M;
-    P->splitNew = splitNew;
 
     // store remote elements from aggregate in vSend to be sent to other processes.
     // todo: is it ok to use vSend instead of vSendULong? vSend is double and vSendULong is unsigned long.
@@ -1508,15 +1501,15 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
             Ac->entry.pop_back();
     }
 
-    if(rank==1)
-        for(j=0; j<Ac->entry.size(); j++)
-            cout << Ac->entry[j].row << "\t" << Ac->entry[j].col << "\t" << Ac->entry[j].val << endl;
+//    if(rank==1)
+//        for(j=0; j<Ac->entry.size(); j++)
+//            cout << Ac->entry[j].row << "\t" << Ac->entry[j].col << "\t" << Ac->entry[j].val << endl;
 
     // todo: check these parameters. set other required parameters of Ac here.
     unsigned int nnz_gTemp = Ac->entry.size();
     MPI_Allreduce(&nnz_gTemp, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
     Ac->Mbig = P->Nbig;
-//    Ac->split = P->splitNew;
+    Ac->split = P->splitNew;
 
     return 0;
 } // end of AMGClass::coarsen
