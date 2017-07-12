@@ -100,7 +100,7 @@ int COOMatrix::repartition(MPI_Comm comm){
     // Mbig", "nnz_g", "initial_nnz_l", "data"
 
     // the following variables of coomatrix class will be set in this function:
-    // "split", "entry"
+    // "nnz_l", "M", "split", "entry"
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -345,7 +345,7 @@ int COOMatrix::repartition(MPI_Comm comm){
 
 int COOMatrix::matrixSetup(MPI_Comm comm){
     // before using this function these variables of coomatrix should be set:
-    // "Mbig", "nnz_g", "split", "entry",
+    // "Mbig", "M", "nnz_g", "split", "entry",
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -380,6 +380,7 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //    nnzPerRow[row[0]-split[rank]]++;
+    MPI_Barrier(comm); printf("rank=%d here!!!!!!! \n", rank);
     long procNum;
     if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
         nnzPerRow_local[entry[0].row-split[rank]]++;

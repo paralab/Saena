@@ -1505,11 +1505,18 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //        for(j=0; j<Ac->entry.size(); j++)
 //            cout << Ac->entry[j].row << "\t" << Ac->entry[j].col << "\t" << Ac->entry[j].val << endl;
 
-    // todo: check these parameters. set other required parameters of Ac here.
-    unsigned int nnz_gTemp = Ac->entry.size();
-    MPI_Allreduce(&nnz_gTemp, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
+    Ac->nnz_l = Ac->entry.size();
+    MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
     Ac->Mbig = P->Nbig;
     Ac->split = P->splitNew;
+    Ac->M = Ac->split[rank+1] - Ac->split[rank];
+//    printf("rank=%d \tA: Mbig=%u, nnz_g = %u, nnz_l = %u, M = %u \tAc: Mbig=%u, nnz_g = %u, nnz_l = %u, M = %u \n", rank, A->Mbig, A->nnz_g, A->nnz_l, A->M, Ac->Mbig, Ac->nnz_g, Ac->nnz_l, Ac->M);
+//    MPI_Barrier(comm);
+//    if(rank==1)
+//        for(i=0; i<nprocs+1; i++)
+//            cout << Ac->split[i] << endl;
+
+    Ac->matrixSetup(comm);
 
     return 0;
 } // end of AMGClass::coarsen
