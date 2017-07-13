@@ -79,6 +79,8 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
 
 COOMatrix::~COOMatrix() {
     if(freeBoolean){
+//        printf("**********here!!!!!!! \n");
+
         free(vIndex);
         free(vSend);
         free(vSendULong);
@@ -229,11 +231,11 @@ int COOMatrix::repartition(MPI_Comm comm){
     free(H_g_scan);
     free(firstSplit);
 
-/*    if (rank==0){
+    if (rank==0){
         cout << "split:" << endl;
         for(unsigned int i=0; i<nprocs+1; i++)
             cout << split[i] << endl;
-    }*/
+    }
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
@@ -245,7 +247,7 @@ int COOMatrix::repartition(MPI_Comm comm){
     int* sendSizeArray = (int*)malloc(sizeof(int)*nprocs);
     fill(&sendSizeArray[0], &sendSizeArray[nprocs], 0);
     for (unsigned int i=0; i<initial_nnz_l; i++){
-        tempIndex = lower_bound2(&split[0], &split[nprocs+1], data[3*i]);
+        tempIndex = lower_bound2(&split[0], &split[nprocs], data[3*i]);
         sendSizeArray[tempIndex]++;
     }
 
@@ -299,7 +301,7 @@ int COOMatrix::repartition(MPI_Comm comm){
 
     // todo: try to avoid this for loop.
     for (long i=0; i<initial_nnz_l; i++){
-        procOwner = lower_bound2(&split[0], &split[nprocs+1], data[3*i]);
+        procOwner = lower_bound2(&split[0], &split[nprocs], data[3*i]);
         bufTemp = sOffset[procOwner]+sIndex[procOwner];
         memcpy(sendBuf+bufTemp, data.data() + 3*i, sizeof(cooEntry));
         // todo: the above line is better than the following three lines. think why it works.
@@ -380,7 +382,6 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //    nnzPerRow[row[0]-split[rank]]++;
-    MPI_Barrier(comm); printf("rank=%d here!!!!!!! \n", rank);
     long procNum;
     if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
         nnzPerRow_local[entry[0].row-split[rank]]++;

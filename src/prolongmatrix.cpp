@@ -122,6 +122,8 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         }
     } // for i
 
+//    MPI_Barrier(comm); printf("rank=%d, nnz_l=%lu, nnz_l_local=%u, nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
+
 //    free(indices_p);
 
     nnzPerRowScan_local.resize(M+1);

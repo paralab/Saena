@@ -46,6 +46,7 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     unsigned long* aggregate_p = &(*aggregate.begin());
 //    unsigned long* splitNew = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
 
+
     // todo: think about a parameter for making the aggregation less or more aggressive.
     prolongMatrix P;
     findAggregation(A, aggregate_p, P.splitNew, comm);
@@ -90,7 +91,9 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     fill(uc.begin(), uc.end(), 0);
     std::vector<double> bc(Ac.Mbig);
     fill(bc.begin(), bc.end(), 1);
-    solveCoarsest(&Ac, uc, bc, comm);
+
+//    solveCoarsest(&Ac, uc, bc, comm);
+//    MPI_Barrier(comm); printf("rank=%d here!!!!!!! \n", rank); MPI_Barrier(comm);
 
 //    free(splitNew);
     return 0;
@@ -876,7 +879,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, std::vect
     aggregateRemote.erase(last, aggregateRemote.end());
 //    if(rank==1) cout << "i and procNum:" << endl;
     for(auto i:aggregateRemote){
-        procNum = lower_bound2(&S->split[0], &S->split[nprocs+1], i);
+        procNum = lower_bound2(&S->split[0], &S->split[nprocs], i);
         recvCount[procNum]++;
 //        if(rank==1) cout << i << "\t" << procNum << endl;
     }
@@ -1245,14 +1248,23 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 
     // find the start and end of each block of R.
     unsigned int* RBlockStart = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
-    fill(RBlockStart, &RBlockStart[nprocs+1], 0);
-    long procNum = lower_bound2(&A->split[0], &A->split[nprocs+1], R->entry_remote[0].col);
+    fill(RBlockStart, &RBlockStart[nprocs], 0);
+
+
+//    MPI_Barrier(comm); printf("rank=%d here!!!!!!!! \n", rank); MPI_Barrier(comm);
+//    MPI_Barrier(comm); printf("rank=%d entry = %ld \n", rank, R->entry_remote[0].col); MPI_Barrier(comm);
+    long procNum = -1;
+    if(R->entry_remote.size() > 0)
+        procNum = lower_bound2(&*A->split.begin(), &*A->split.end(), R->entry_remote[0].col);
+//    MPI_Barrier(comm); printf("rank=%d procNum = %ld \n", rank, procNum); MPI_Barrier(comm);
+
+
     unsigned int nnzIter = 1;
     for(i=1; i<R->entry_remote.size(); i++){
         nnzIter++;
         if(R->entry_remote[i].col >= A->split[procNum+1]){
             RBlockStart[procNum+1] = nnzIter-1;
-            procNum = lower_bound2(&A->split[0], &A->split[nprocs+1], R->entry_remote[i].col);
+            procNum = lower_bound2(&*A->split.begin(), &*A->split.end(), R->entry_remote[i].col);
         }
 //        if(rank==2) cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << endl;
     }
@@ -1264,6 +1276,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //        for(i=0; i<nprocs+1; i++)
 //            cout << RBlockStart[i] << endl;}
 
+    //    printf("rank=%d A.nnz=%u \n", rank, A->nnz_l);
     cooEntry* Arecv = (cooEntry*)malloc(sizeof(cooEntry)*AMaxNnz);
     int left, right;
     unsigned int nnzRecv;
@@ -1283,6 +1296,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
         MPI_Sendrecv(&A->nnz_l, 1, MPI_UNSIGNED, right, rank, &nnzRecv, 1, MPI_UNSIGNED, left, left, comm, &sendRecvStatus);
 //        int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf,
 //                         int recvcount, MPI_Datatype recvtype, int source, int recvtag, MPI_Comm comm, MPI_Status *status)
+//        if(rank==1) printf("i=%d, rank=%d, left=%d, right=%d \n", i, rank, left, right);
 
 //        if(rank==2) cout << "own A->nnz_l = " << A->nnz_l << "\tnnzRecv = " << nnzRecv << endl;
 
@@ -1322,6 +1336,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
         }
 
     } //for i
+//    MPI_Barrier(comm); printf("rank=%d here!!!!!!!! \n", rank); MPI_Barrier(comm);
 
     free(AnnzPerRow);
     free(AnnzPerRowScan);
@@ -1385,13 +1400,13 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
     // find the start and end of each block of R.
     unsigned int* RABlockStart = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
     fill(RABlockStart, &RABlockStart[nprocs+1], 0);
-    procNum = lower_bound2(&P->split[0], &P->split[nprocs+1], RA.entry[0].col);
+    procNum = lower_bound2(&P->split[0], &P->split[nprocs], RA.entry[0].col);
     nnzIter = 1;
     for(i=1; i<RA.entry.size(); i++){
         nnzIter++;
         if(RA.entry[i].col >= P->split[procNum+1]){
             RABlockStart[procNum+1] = nnzIter-1;
-            procNum = lower_bound2(&P->split[0], &P->split[nprocs+1], RA.entry[i].col);
+            procNum = lower_bound2(&P->split[0], &P->split[nprocs], RA.entry[i].col);
         }
 //        if(rank==2) cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << endl;
     }
@@ -1516,7 +1531,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //        for(i=0; i<nprocs+1; i++)
 //            cout << Ac->split[i] << endl;
 
-    Ac->matrixSetup(comm);
+//    Ac->matrixSetup(comm);
 
     return 0;
 } // end of AMGClass::coarsen

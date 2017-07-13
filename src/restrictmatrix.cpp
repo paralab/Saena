@@ -92,6 +92,9 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
     unsigned long iter = 0;
     for (i = 0; i < P->M; ++i) {
         for (j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter) {
+//            if(rank==4) cout << P->entry_local[P->indicesP_local[iter]].col << "\t" << P->entry_local[P->indicesP_local[iter]].col - P->splitNew[rank]
+//                             << "\t" << P->entry_local[P->indicesP_local[iter]].row << "\t" << P->entry_local[P->indicesP_local[iter]].row + P->split[rank]
+//                             << "\t" << P->entry_local[P->indicesP_local[iter]].val << endl;
             entry_local.push_back(cooEntry(P->entry_local[P->indicesP_local[iter]].col - P->splitNew[rank], // make row index local
                                            P->entry_local[P->indicesP_local[iter]].row + P->split[rank],    // make col index global
                                            P->entry_local[P->indicesP_local[iter]].val));
@@ -101,10 +104,13 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
     std::sort(entry_local.begin(), entry_local.end());
 
 //    MPI_Barrier(comm);
-//    if(rank==1) cout << "local:" << endl;
-//    for (i = 0; i < P->M; ++i)
-//        for (j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter)
-//            if(rank==1) cout << entry_local[i].row << "\t" << entry_local[i].col << "\t" << entry_local[i].val << endl;
+//    iter = 0;
+//    if(rank==4){
+//        cout << endl << "local:" << " rank=" << rank << endl;
+//        for (i = 0; i < P->M; ++i)
+//            for (j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter)
+//                cout << entry_local[iter].row << "\t" << entry_local[iter].col << "\t" << entry_local[iter].val << endl;}
+//    MPI_Barrier(comm);
 
     // *********************** assign remote part of restriction ************************
 
@@ -122,16 +128,18 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfR
     std::sort(entry_remote.begin(), entry_remote.end());
 
 //    MPI_Barrier(comm);
-//    if(rank==1){
-//        cout << "remote:" << "\t" << rank << "\tP->recvSize_t = " << P->recvSize_t << endl;
+//    if(rank==4){
+//        cout << endl << "remote:" << " rank = " << rank << "\tP->recvSize_t = " << P->recvSize_t << endl;
 //        for(i=0; i<P->recvSize_t; i++)
 //            cout << i << "\t" << entry_remote[i].row << "\t" << entry_remote[i].col << "\t" << entry_remote[i].val << endl;}
+//    MPI_Barrier(comm);
 
     nnz_l_local  = entry_local.size();
     nnz_l_remote = entry_remote.size();
     nnz_l = nnz_l_local + nnz_l_remote;
     MPI_Allreduce(&nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
-//    printf("rank=%d\tnnz_l=%lu\tnnz_g=%lu\n", rank, nnz_l, nnz_g);
+    // todo: check why is R so imbalanced for 289 size matrix on 8 processors. use the following print function.
+//    printf("rank=%d \t nnz_l=%lu \t nnz_l_local=%lu   \t nnz_l_remote=%lu \t nnz_g=%lu \n", rank, nnz_l, nnz_l_local, nnz_l_remote, nnz_g);
 
 } //end of restrictMatrix::restrictMatrix
 

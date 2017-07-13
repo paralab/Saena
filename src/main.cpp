@@ -197,6 +197,7 @@ int main(int argc, char* argv[]){
     // *************************** finalize ****************************
 //    MPI_Barrier(comm);
 //    cout << rank << "\there!" << endl;
+
     MPI_Finalize();
     return 0;
 }
