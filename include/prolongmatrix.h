@@ -25,18 +25,8 @@ public:
     unsigned int nnz_l_remote;
     unsigned long col_remote_size; // this is the same as vElement_remote.size()
 
-    unsigned long* split;
-
-    bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
-    int vIndexSize;
-    int vIndexSize_t;
-    unsigned long* vSend;
-    cooEntry* vSend_t;
-    unsigned long* vIndex;
-//    unsigned long* recvIndex_t;
-    unsigned long* vecValues;
-    cooEntry* vecValues_t;
-//    int* vecValues2;
+    std::vector<unsigned long> split;
+    std::vector<unsigned long> splitNew;
 
 //    std::vector<unsigned long> row;
 //    std::vector<unsigned long> col;
@@ -64,7 +54,17 @@ public:
     unsigned long* indicesP_local;
 //    unsigned long* indicesP_remote;
 
-//    std::vector<int> splitOffset;
+    bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
+    int vIndexSize;
+    int vIndexSize_t;
+    unsigned long* vSend;
+    cooEntry* vSend_t;
+    unsigned long* vIndex;
+//    unsigned long* recvIndex_t;
+    unsigned long* vecValues;
+    cooEntry* vecValues_t;
+//    int* vecValues2;
+
     std::vector<int> vdispls;
     std::vector<int> vdispls_t;
     std::vector<int> rdispls;
@@ -83,9 +83,6 @@ public:
     std::vector<int> sendProcRank_t;
     std::vector<int> sendProcCount;
     std::vector<int> sendProcCount_t;
-
-//    unsigned long* splitNew;
-    std::vector<unsigned long> splitNew;
 
     prolongMatrix();
 //    prolongMatrix(unsigned long Mbig, unsigned long Nbig, unsigned long nnz_g, unsigned long nnz_l, unsigned long* row, unsigned long* col, double* values);

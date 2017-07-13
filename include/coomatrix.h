@@ -21,7 +21,6 @@ class COOMatrix {
 private:
     unsigned int initial_nnz_l;
     bool freeBoolean = false; // use this parameter to know if deconstructor for COOMatrix class should free the variables or not.
-
     std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitioning.
 
 public:
