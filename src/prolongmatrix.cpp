@@ -294,7 +294,6 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 
 prolongMatrix::~prolongMatrix(){
     if(arrays_defined){
-//        printf("**********~prolongMatrix!!!!!!! \n");
         free(vIndex);
         free(vSend);
         free(vecValues);

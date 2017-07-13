@@ -79,8 +79,6 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
 
 COOMatrix::~COOMatrix() {
     if(freeBoolean){
-//        printf("**********~COOMatrix!!!!!!! \n");
-
         free(vIndex);
         free(vSend);
         free(vSendULong);
@@ -93,7 +91,7 @@ COOMatrix::~COOMatrix() {
 //    free(vIndexCount);
 //    free(vIndexCount);
 //    free(indicesP);
-        printf("**********~COOMatrix!!!!!!! \n");
+//        printf("**********~COOMatrix!!!!!!! \n");
     }
 }
 
@@ -336,11 +334,10 @@ int COOMatrix::repartition(MPI_Comm comm){
     free(rOffset);
     free(sendBuf);
 
-//    if (rank==0){
+//    if (rank==1){
 //        cout << "nnz_l = " << nnz_l << endl;
 //        for (int i=0; i<nnz_l; i++)
-//            cout << "i=" << i << "\t" << entry[i].row << "\t" << entry[i].col << "\t" << entry[i].val << endl;
-//    }
+//            cout << "i=" << i << "\t" << entry[i].row << "\t" << entry[i].col << "\t" << entry[i].val << endl;}
 
     return 0;
 }

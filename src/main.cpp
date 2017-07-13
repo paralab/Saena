@@ -69,7 +69,6 @@ int main(int argc, char* argv[]){
 
     AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
     amgClass.AMGSetup(&B, doSparsify, comm);
-
 //    MPI_Barrier(comm); printf("----------main----------\n"); MPI_Barrier(comm);
 
     // *************************** read the vector ****************************

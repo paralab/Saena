@@ -85,14 +85,15 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     coarsen(A, &P, &R, &Ac, comm);
 
     // system: A*u = b
-//    std::vector<double> uc(Ac.Mbig);
-//    fill(uc.begin(), uc.end(), 0);
-//    std::vector<double> bc(Ac.Mbig);
-//    fill(bc.begin(), bc.end(), 1);
-//    solveCoarsest(&Ac, uc, bc, comm);
+    std::vector<double> uc(Ac.Mbig);
+    fill(uc.begin(), uc.end(), 0);
+    std::vector<double> bc(Ac.Mbig);
+    fill(bc.begin(), bc.end(), 1);
+    solveCoarsest(&Ac, uc, bc, comm);
 
-    MPI_Barrier(comm); printf("----------AMGsetup----------\n"); MPI_Barrier(comm);
+    aggregate.clear();
 
+//    MPI_Barrier(comm); printf("----------AMGsetup----------\n"); MPI_Barrier(comm);
     return 0;
 }
 
@@ -1417,7 +1418,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 
     for(i=RABlockStart[rank]; i<RABlockStart[rank+1]; i++){
         for(j = PnnzPerRowScan[RA.entry[i].col - P->split[rank]]; j < PnnzPerRowScan[RA.entry[i].col - P->split[rank] + 1]; j++){
-            RAPTemp.entry.push_back(cooEntry(RA.entry[i].row,
+            RAPTemp.entry.push_back(cooEntry(RA.entry[i].row + P->splitNew[rank],  // Ac.entry should have global indices at the end.
                                              P->entry[j].col,
                                              RA.entry[i].val * P->entry[j].val));
         }
@@ -1482,7 +1483,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
         for(j=RABlockStart[left]; j<RABlockStart[left+1]; j++){
 //            if(rank==1) cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << endl;
             for(unsigned long k = PnnzPerRowScan[RA.entry[j].col - P->split[left]]; k < PnnzPerRowScan[RA.entry[j].col - P->split[left] + 1]; k++){
-                RAPTemp.entry.push_back(cooEntry(RA.entry[j].row,
+                RAPTemp.entry.push_back(cooEntry(RA.entry[j].row + P->splitNew[rank], // Ac.entry should have global indices at the end.
                                                 Precv[k].col,
                                                 RA.entry[j].val * Precv[k].val));
             }
@@ -1528,9 +1529,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //        for(i=0; i<nprocs+1; i++)
 //            cout << Ac->split[i] << endl;
 
-//    Ac->matrixSetup(comm);
-
-//    MPI_Barrier(comm); printf("----------coarsen----------\n"); MPI_Barrier(comm);
+    Ac->matrixSetup(comm);
 
     return 0;
 } // end of AMGClass::coarsen
