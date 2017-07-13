@@ -9,6 +9,7 @@ using namespace std;
 
 prolongMatrix::prolongMatrix(){}
 
+
 int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 
     int nprocs, rank;
@@ -290,14 +291,16 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
     return 0;
 }
 
+
 prolongMatrix::~prolongMatrix(){
     if(arrays_defined){
+//        printf("**********~prolongMatrix!!!!!!! \n");
         free(vIndex);
         free(vSend);
         free(vecValues);
         free(indicesP_local);
-//       free(recvIndex_t); // recvIndex_t is equivalent of vIndex.
         free(vSend_t);
         free(vecValues_t);
+//       free(recvIndex_t); // recvIndex_t is equivalent of vIndex.
     }
 }

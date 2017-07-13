@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
     AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
     amgClass.AMGSetup(&B, doSparsify, comm);
 
-//    cout << rank << "\t1st here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+//    MPI_Barrier(comm); printf("----------main----------\n"); MPI_Barrier(comm);
 
     // *************************** read the vector ****************************
 
@@ -195,8 +195,8 @@ int main(int argc, char* argv[]){
 */
 
     // *************************** finalize ****************************
-//    MPI_Barrier(comm);
-//    cout << rank << "\there!" << endl;
+
+//    MPI_Barrier(comm); cout << rank << "\t*******end*******" << endl;
 
     MPI_Finalize();
     return 0;

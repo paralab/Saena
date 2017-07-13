@@ -79,7 +79,7 @@ COOMatrix::COOMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
 
 COOMatrix::~COOMatrix() {
     if(freeBoolean){
-//        printf("**********here!!!!!!! \n");
+//        printf("**********~COOMatrix!!!!!!! \n");
 
         free(vIndex);
         free(vSend);
@@ -93,6 +93,7 @@ COOMatrix::~COOMatrix() {
 //    free(vIndexCount);
 //    free(vIndexCount);
 //    free(indicesP);
+        printf("**********~COOMatrix!!!!!!! \n");
     }
 }
 

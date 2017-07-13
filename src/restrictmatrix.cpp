@@ -9,7 +9,8 @@ using namespace std;
 
 restrictMatrix::restrictMatrix(){}
 
-restrictMatrix::restrictMatrix(prolongMatrix* P, unsigned long* initialNumberOfRows, MPI_Comm comm) {
+
+restrictMatrix::restrictMatrix(prolongMatrix* P, MPI_Comm comm) {
 
     // todo: this matrix is not sorted at the end.
     int nprocs, rank;

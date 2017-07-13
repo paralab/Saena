@@ -39,17 +39,15 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     unsigned long i;
 
     // pointer for shrinking number of processors
-    unsigned long* initialNumberOfRows;
-    initialNumberOfRows = &A->split[0];
+//    unsigned long* initialNumberOfRows;
+//    initialNumberOfRows = &A->split[0];
 
     std::vector<unsigned long> aggregate(A->M);
-    unsigned long* aggregate_p = &(*aggregate.begin());
-//    unsigned long* splitNew = (unsigned long*)malloc(sizeof(unsigned long)*(nprocs+1));
-
+//    unsigned long* aggregate_p = &(*aggregate.begin());
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
     prolongMatrix P;
-    findAggregation(A, aggregate_p, P.splitNew, comm);
+    findAggregation(A, aggregate, P.splitNew, comm);
 //    if(rank==0)
 //        for(long i=0; i<A->M; i++)
 //            cout << i << "\t" << aggregate[i] << endl;
@@ -79,23 +77,22 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
             cout << i << "\t" << aggregate[i] << endl;
 */
 
-//    prolongMatrix P;
-    createProlongation(A, aggregate_p, &P, comm);
-    restrictMatrix R(&P, initialNumberOfRows, comm);
+    createProlongation(A, aggregate, &P, comm);
+    restrictMatrix R(&P, comm);
+//    restrictMatrix R(&P, initialNumberOfRows, comm);
 
     COOMatrix Ac; // A_coarse = R*A*P
     coarsen(A, &P, &R, &Ac, comm);
 
     // system: A*u = b
-    std::vector<double> uc(Ac.Mbig);
-    fill(uc.begin(), uc.end(), 0);
-    std::vector<double> bc(Ac.Mbig);
-    fill(bc.begin(), bc.end(), 1);
-
+//    std::vector<double> uc(Ac.Mbig);
+//    fill(uc.begin(), uc.end(), 0);
+//    std::vector<double> bc(Ac.Mbig);
+//    fill(bc.begin(), bc.end(), 1);
 //    solveCoarsest(&Ac, uc, bc, comm);
-//    MPI_Barrier(comm); printf("rank=%d here!!!!!!! \n", rank); MPI_Barrier(comm);
 
-//    free(splitNew);
+    MPI_Barrier(comm); printf("----------AMGsetup----------\n"); MPI_Barrier(comm);
+
     return 0;
 }
 
@@ -218,7 +215,7 @@ if(R.Mbig < threshold1){
 */
 
 
-int AMGClass::findAggregation(COOMatrix* A, unsigned long* aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm){
+int AMGClass::findAggregation(COOMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -470,7 +467,7 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
-int AMGClass::Aggregation(StrengthMatrix* S, unsigned long* aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm) {
+int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm) {
 
     // the first two bits of aggregate are being used for aggStatus: 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
     // bits 0 up to 61 are for storing aggregate values.
@@ -1095,7 +1092,7 @@ int AMGClass::Aggregation(CSRMatrix* S){
  */
 
 
-int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, prolongMatrix* P, MPI_Comm comm){
+int AMGClass::createProlongation(COOMatrix* A, std::vector<unsigned long>& aggregate, prolongMatrix* P, MPI_Comm comm){
     // todo: check when you should update new aggregate values: before creating prolongation or after.
 
     // Here P is computed: P = A_w * P_t; in which P_t is aggregate, and A_w = I - w*Q*A, Q is inverse of diagonal of A.
@@ -1188,7 +1185,7 @@ int AMGClass::createProlongation(COOMatrix* A, unsigned long* aggregate, prolong
     P->nnz_l = P->entry.size();
     MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
-    P->split = &*A->split.begin();
+    P->split = A->split;
 
     P->findLocalRemote(&*P->entry.begin(), comm);
 //    P->findLocalRemote(&*P->row.begin(), &*P->col.begin(), &*P->values.begin(), comm);
@@ -1532,6 +1529,8 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //            cout << Ac->split[i] << endl;
 
 //    Ac->matrixSetup(comm);
+
+//    MPI_Barrier(comm); printf("----------coarsen----------\n"); MPI_Barrier(comm);
 
     return 0;
 } // end of AMGClass::coarsen
