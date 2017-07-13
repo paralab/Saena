@@ -15,7 +15,6 @@ public:
     unsigned long nnz_l;
     unsigned long nnz_l_local;
     unsigned long nnz_l_remote;
-//    unsigned long nnz;
 
     std::vector<cooEntry> entry_local;
     std::vector<cooEntry> entry_remote;
