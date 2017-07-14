@@ -95,7 +95,7 @@ public:
     ~COOMatrix();
     int repartition(MPI_Comm comm);
     int matrixSetup(MPI_Comm comm);
-    int matvec(double* v, double* w, double time[4], MPI_Comm comm);
+    int matvec(double* v, double* w, MPI_Comm comm);
     int jacobi(double* v, double* w, MPI_Comm comm);
     int inverseDiag(double* x, MPI_Comm comm);
     int SaenaSetup();

@@ -37,7 +37,7 @@ public:
     int createProlongation(COOMatrix* A, std::vector<unsigned long>& aggregate, prolongMatrix* P, MPI_Comm comm);
 //    int createRestriction(prolongMatrix* P, restrictMatrix* R, MPI_Comm comm);
     int coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatrix* Ac, MPI_Comm comm);
-    int solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, MPI_Comm comm);
+    int solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, int& maxIter, double& tol, MPI_Comm comm);
     };
 
 

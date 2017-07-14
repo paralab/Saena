@@ -89,6 +89,7 @@ public:
     ~prolongMatrix();
 //    int findLocalRemote(unsigned long* row, unsigned long* col, double* values, MPI_Comm comm);
     int findLocalRemote(cooEntry* entry, MPI_Comm comm);
+    int prolongMatrix::matvec(double* v, double* w, MPI_Comm comm);
 };
 
 
