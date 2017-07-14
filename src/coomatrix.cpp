@@ -231,7 +231,7 @@ int COOMatrix::repartition(MPI_Comm comm){
     free(firstSplit);
 
     if (rank==0){
-        cout << "split:" << endl;
+        cout << endl << "split:" << endl;
         for(unsigned int i=0; i<nprocs+1; i++)
             cout << split[i] << endl;
     }
@@ -515,20 +515,12 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
     }*/
 
     // change the indices from global to local
-    for (unsigned int i=0; i<vIndexSize; i++){
+    for (unsigned int i=0; i<vIndexSize; i++)
         vIndex[i] -= split[rank];
-    }
-
-    // change the indices from global to local
-    for (unsigned int i=0; i<row_local.size(); i++){
+    for (unsigned int i=0; i<row_local.size(); i++)
         row_local[i] -= split[rank];
-//        col_local[i] -= split[rank];
-    }
-
-    for (unsigned int i=0; i<row_remote.size(); i++){
+    for (unsigned int i=0; i<row_remote.size(); i++)
         row_remote[i] -= split[rank];
-//        col_remote[i] -= split[rank];
-    }
 
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
@@ -651,22 +643,22 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
 }
 
 
-int COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
+int COOMatrix::matvec(double* v, double* w, MPI_Comm comm) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
 //    totalTime = 0;
-    double t10 = MPI_Wtime();
+//    double t10 = MPI_Wtime();
 
     // put the values of the vector in vSend, for sending to other processors
     // to change the index from global to local: vIndex[i]-split[rank]
 #pragma omp parallel for
     for(unsigned int i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i] )];
-    double t20 = MPI_Wtime();
-    time[0] += (t20-t10);
+//    double t20 = MPI_Wtime();
+//    time[0] += (t20-t10);
 
 /*    if (rank==0){
         cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << endl;
@@ -674,7 +666,7 @@ int COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
             cout << vSend[i] << endl;
     }*/
 
-    double t13 = MPI_Wtime();
+//    double t13 = MPI_Wtime();
     // iSend your data, and iRecv from others
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
     MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
@@ -695,7 +687,7 @@ int COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
             cout << vecValues[i] << endl;
     }*/
 
-    double t11 = MPI_Wtime();
+//    double t11 = MPI_Wtime();
     // local loop
     fill(&w[0], &w[M], 0);
 #pragma omp parallel
@@ -709,8 +701,8 @@ int COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
         }
     }
 
-    double t21 = MPI_Wtime();
-    time[1] += (t21-t11);
+//    double t21 = MPI_Wtime();
+//    time[1] += (t21-t11);
 
     // Wait for comm to finish.
     MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
@@ -722,7 +714,7 @@ int COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
     }*/
 
     // remote loop
-    double t12 = MPI_Wtime();
+//    double t12 = MPI_Wtime();
 #pragma omp parallel
     {
         unsigned int iter = iter_remote_array[omp_get_thread_num()];
@@ -734,10 +726,11 @@ int COOMatrix::matvec(double* v, double* w, double time[4], MPI_Comm comm) {
         }
     }
 
-    double t22 = MPI_Wtime();
-    time[2] += (t22-t12);
-    double t23 = MPI_Wtime();
-    time[3] += (t23-t13);
+//    double t22 = MPI_Wtime();
+//    time[2] += (t22-t12);
+//    double t23 = MPI_Wtime();
+//    time[3] += (t23-t13);
+
     return 0;
 }
 
@@ -768,7 +761,7 @@ int COOMatrix::jacobi(double* x, double* b, MPI_Comm comm) {
     unsigned int i;
     // replace allocating and deallocating with a pre-allocated memory.
     double* temp = (double*)malloc(sizeof(double)*M);
-    matvec(x, temp, NULL, comm);
+    matvec(x, temp, comm);
     for(i=0; i<M; i++){
         temp[i] -= b[i];
         temp[i] *= invDiag[i] * omega;

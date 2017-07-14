@@ -89,9 +89,16 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     fill(uc.begin(), uc.end(), 0);
     std::vector<double> bc(Ac.Mbig);
     fill(bc.begin(), bc.end(), 1);
-    solveCoarsest(&Ac, uc, bc, comm);
 
-    aggregate.clear();
+    int maxIter = 10;
+    double tol = 1e-10;
+    solveCoarsest(&Ac, uc, bc, maxIter, tol, comm);
+
+//    for(i=0; i<A->M; i++)
+//        cout << uc[i] << endl;
+
+//    std::vector<double> u(A->Mbig);
+
 
 //    MPI_Barrier(comm); printf("----------AMGsetup----------\n"); MPI_Barrier(comm);
     return 0;
@@ -1281,6 +1288,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
     long ARecvM;
     MPI_Status sendRecvStatus;
 
+    // todo: change tha algorithm so every processor sends data only to the next one and receives from the previous one in each iteration.
     for(int i = 1; i < nprocs; i++) {
         // send A to the right processor, recieve A from the left processor. "left" decreases by one in each iteration. "right" increases by one.
         right = (rank + i) % nprocs;
@@ -1535,20 +1543,189 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 } // end of AMGClass::coarsen
 
 
-int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, MPI_Comm comm){
+int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, int& maxIter, double& tol, MPI_Comm comm){
+
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    float resid;
-//    Vector p, z, q;
-//    Vector alpha(1), beta(1), rho(1), rho_1(1);
+    long i, j;
 
-    double normb = myNorm(b);
+    //    Vector r = b - A*u;
+    std::vector<double> matvecTemp(A->M);
+    A->matvec(&*u.begin(), &*matvecTemp.begin(), comm);
+//    if(rank==2)
+//        for(i=0; i<matvecTemp.size(); i++)
+//            cout << matvecTemp[i] << endl;
+
+    std::vector<double> r(A->M);
+    for(i=0; i<matvecTemp.size(); i++)
+        r[i] = matvecTemp[i] - b[i]; // todo: check if it is true, or it needs a minus.
+
+//    if(rank==1)
+//        for(i=0; i<r.size(); i++)
+//            cout << r[i] << endl;
+
+    double sq_norm_l, sq_norm;
+    sq_norm_l = 0;
+    for(i=0; i<A->M; i++)
+        sq_norm_l += r[i] * r[i];
+    MPI_Allreduce(&sq_norm_l, &sq_norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+//    if(rank==1) cout << sq_norm << endl;
+
+    if ( sq_norm < tol*tol ) {
+        maxIter = 0;
+    }
+
+    std::vector<double> dir(A->M);
+    dir = r;
+
+    double factor, sq_norm_prev;
+    for (i = 0; i < maxIter; i++) {
+        MPI_Barrier(comm); if(rank==1) cout << endl << i << endl; MPI_Barrier(comm);
+
+        // factor = sq_norm/ (dir' * A * dir)
+        A->matvec(&*dir.begin(), &*matvecTemp.begin(), comm);
+        if(rank==1)
+            for(j=0; j<matvecTemp.size(); j++)
+                cout << matvecTemp[j] << endl;
+
+        factor = 0;
+        for(j = 0; j < A->M; j++)
+            factor += dir[j] * matvecTemp[j];
+        factor = sq_norm / factor;
+
+        for(j = 0; j < A->M; j++)
+            u[j] += factor * dir[j];
+
+        // update residual
+        for(j = 0; j < A->M; j++)
+            r[j] -= factor * matvecTemp[j];
+
+        sq_norm_prev = sq_norm;
+
+        sq_norm_l = 0;
+        for(j = 0; j < A->M; j++)
+            sq_norm_l += r[j] * r[j];
+        MPI_Allreduce(&sq_norm_l, &sq_norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+        if (sq_norm < tol*tol) {
+            break;
+        }
+
+        factor = sq_norm / sq_norm_prev;
+
+        // update direction
+        for(j = 0; j < A->M; j++)
+            dir[j] = r[j] + factor * dir[j];
+
+    } // k < maxIter
+    return 0;
+}
+
+// int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& x, std::vector<double>& b, int& max_iter, double& tol, MPI_Comm comm){
+/*
+int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& x, std::vector<double>& b, int& max_iter, double& tol, MPI_Comm comm){
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    long i, j;
+
+    double normb_l, normb;
+    normb_l = 0;
+    for(i=0; i<A->M; i++)
+        normb_l += b[i] * b[i];
+    MPI_Allreduce(&normb_l, &normb, 1, MPI_DOUBLE, MPI_SUM, comm);
+    normb = sqrt(normb);
 //    if(rank==1) cout << normb << endl;
 
 //    Vector r = b - A*x;
+    std::vector<double> matvecTemp(A->M);
+    A->matvec(&*x.begin(), &*matvecTemp.begin(), comm);
+//    if(rank==1)
+//        for(i=0; i<matvecTemp.size(); i++)
+//            cout << matvecTemp[i] << endl;
 
+    std::vector<double> r(A->M);
+    for(i=0; i<matvecTemp.size(); i++)
+        r[i] = b[i] - matvecTemp[i];
+
+    if (normb == 0.0)
+        normb = 1;
+
+    double resid_l, resid;
+    resid_l = 0;
+    for(i=0; i<A->M; i++)
+        resid_l += r[i] * r[i];
+    MPI_Allreduce(&resid_l, &resid, 1, MPI_DOUBLE, MPI_SUM, comm);
+    resid = sqrt(resid_l);
+
+    if ((resid / normb) <= tol) {
+        tol = resid;
+        max_iter = 0;
+        return 0;
+    }
+
+    double alpha, beta, rho, rho1, tempDot;
+    std::vector<double> z(A->M);
+    std::vector<double> p(A->M);
+    std::vector<double> q(A->M);
+    for (i = 0; i < max_iter; i++) {
+//        z = M.solve(r);
+        // todo: write this part.
+
+//        rho(0) = dot(r, z);
+        rho = 0;
+        for(j = 0; j < A->M; j++)
+            rho += r[j] * z[j];
+
+//        if (i == 1)
+//            p = z;
+//        else {
+//            beta(0) = rho(0) / rho_1(0);
+//            p = z + beta(0) * p;
+//        }
+
+        if(i == 0)
+            p = z;
+        else{
+            beta = rho / rho1;
+            for(j = 0; j < A->M; j++)
+                p[j] = z[j] + (beta * p[j]);
+        }
+
+//        q = A*p;
+        A->matvec(&*p.begin(), &*q.begin(), comm);
+
+//        alpha(0) = rho(0) / dot(p, q);
+        tempDot = 0;
+        for(j = 0; j < A->M; j++)
+            tempDot += p[j] * q[j];
+        alpha = rho / tempDot;
+
+//        x += alpha(0) * p;
+//        r -= alpha(0) * q;
+        for(j = 0; j < A->M; j++){
+            x[j] += alpha * p[j];
+            r[j] -= alpha * q[j];
+        }
+
+        resid_l = 0;
+        for(j = 0; j < A->M; j++)
+            resid_l += r[j] * r[j];
+        MPI_Allreduce(&resid_l, &resid, 1, MPI_DOUBLE, MPI_SUM, comm);
+        resid = sqrt(resid_l);
+
+        if ((resid / normb) <= tol) {
+            tol = resid;
+            max_iter = i;
+            return 0;
+        }
+
+        rho1 = rho;
+    }
 
     return 0;
 }
+*/
