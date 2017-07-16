@@ -28,7 +28,6 @@ public:
 //    std::vector<unsigned long> col;
 //    std::vector<double> values;
     std::vector<cooEntry> entry;
-//    cooEntry* entryP;
 
     unsigned int M;
     unsigned int Mbig;
@@ -47,7 +46,7 @@ public:
     std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
     std::vector<unsigned long> col_remote2; //original col index
     std::vector<unsigned int> nnzPerRow_local; // todo: this is used for openmp part of coomatrix.cpp
-    std::vector<unsigned int> nnz_col_remote; // todo: replace this. nnz Per Column is expensive.
+    std::vector<unsigned int> nnzPerCol_remote; // todo: replace this. nnz Per Column is expensive.
 //    std::vector<unsigned int> nnzPerRow;
 //    std::vector<unsigned int> nnzPerRow_remote;
 //    std::vector<unsigned int> nnzPerRowScan_local;
