@@ -230,11 +230,10 @@ int COOMatrix::repartition(MPI_Comm comm){
     free(H_g_scan);
     free(firstSplit);
 
-    if (rank==0){
-        cout << endl << "split:" << endl;
-        for(unsigned int i=0; i<nprocs+1; i++)
-            cout << split[i] << endl;
-    }
+//    if (rank==0){
+//        cout << endl << "split:" << endl;
+//        for(unsigned int i=0; i<nprocs+1; i++)
+//            cout << split[i] << endl;}
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
@@ -376,7 +375,7 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
 //    nnzPerRow.assign(M,0);
     nnzPerRow_local.assign(M,0);
 //    nnzPerCol_local.assign(Mbig,0); // todo: Nbig = Mbig, assuming A is symmetric.
-//    nnz_col_remote.assign(M,0);
+//    nnzPerCol_remote.assign(M,0);
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //    nnzPerRow[row[0]-split[rank]]++;
@@ -402,8 +401,8 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
         col_remote_size++;
         col_remote.push_back(col_remote_size-1);
         col_remote2.push_back(entry[0].col);
-//        nnz_col_remote[col_remote_size]++;
-        nnz_col_remote.push_back(1);
+//        nnzPerCol_remote[col_remote_size]++;
+        nnzPerCol_remote.push_back(1);
 
         vElement_remote.push_back(entry[0].col);
         vElementRep_remote.push_back(1);
@@ -441,14 +440,14 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
                 vElementRep_remote.push_back(1);
                 procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
                 recvCount[procNum]++;
-                nnz_col_remote.push_back(1);
+                nnzPerCol_remote.push_back(1);
             } else {
                 (*(vElementRep_remote.end()-1))++;
-                (*(nnz_col_remote.end()-1))++;
+                (*(nnzPerCol_remote.end()-1))++;
             }
             // the original col values are not being used. the ordering starts from 0, and goes up by 1.
             col_remote.push_back(col_remote_size-1);
-//            nnz_col_remote[col_remote_size]++;
+//            nnzPerCol_remote[col_remote_size]++;
         }
     } // for i
 
@@ -582,9 +581,9 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
         }
 
         iter_remote = 0;
-        if(nnz_col_remote.size() != 0){
+        if(nnzPerCol_remote.size() != 0){
             for (unsigned int i = istart; i < iend; ++i)
-                iter_remote += nnz_col_remote[i];
+                iter_remote += nnzPerCol_remote[i];
         }
 
         iter_remote_array[0] = 0;
@@ -653,7 +652,6 @@ int COOMatrix::matvec(double* v, double* w, MPI_Comm comm) {
 //    double t10 = MPI_Wtime();
 
     // put the values of the vector in vSend, for sending to other processors
-    // to change the index from global to local: vIndex[i]-split[rank]
 #pragma omp parallel for
     for(unsigned int i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i] )];
@@ -720,7 +718,7 @@ int COOMatrix::matvec(double* v, double* w, MPI_Comm comm) {
         unsigned int iter = iter_remote_array[omp_get_thread_num()];
 #pragma omp for
         for (unsigned int i = 0; i < col_remote_size; ++i) {
-            for (unsigned int j = 0; j < nnz_col_remote[i]; ++j, ++iter) {
+            for (unsigned int j = 0; j < nnzPerCol_remote[i]; ++j, ++iter) {
                 w[row_remote[indicesP_remote[iter]]] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
             }
         }

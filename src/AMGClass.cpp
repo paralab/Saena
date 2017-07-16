@@ -85,9 +85,9 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
     coarsen(A, &P, &R, &Ac, comm);
 
     // system: A*u = b
-    std::vector<double> uc(Ac.Mbig);
+    std::vector<double> uc(Ac.M);
     fill(uc.begin(), uc.end(), 0);
-    std::vector<double> bc(Ac.Mbig);
+    std::vector<double> bc(Ac.M);
     fill(bc.begin(), bc.end(), 1);
 
     int maxIter = 10;
@@ -99,6 +99,13 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
 
 //    std::vector<double> u(A->Mbig);
 
+    std::vector<double> testc(Ac.M);
+    testc.assign(Ac.M, 1);
+    std::vector<double> testf(A->M);
+    P.matvec(&*testc.begin(), &*testf.begin(), comm);
+//    if(rank==1)
+//        for(i=0; i<testf.size(); i++)
+//            cout << testf[i] << endl;
 
 //    MPI_Barrier(comm); printf("----------AMGsetup----------\n"); MPI_Barrier(comm);
     return 0;
@@ -502,7 +509,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     std::vector<unsigned long> initialWeight(size);
     unsigned long* initialWeight_p = &(*initialWeight.begin());
 
-    randomVector(initialWeight_p, size);
+    randomVector(size, initialWeight_p);
 
 //    if(rank==0){
 //        cout << endl << "after initialization!" << endl;
@@ -844,12 +851,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 
     free(splitNewTemp);
 
-//    if(rank==1){
-//        cout << "splitNew:" << endl;
-//        for(i=0; i<nprocs+1; i++)
-//            cout << S->split[i] << "\t" << splitNew[i] << endl;
-//        cout << endl;
-//    }
+    if(rank==1){
+        cout << "splitNew:" << endl;
+        for(i=0; i<nprocs+1; i++)
+            cout << S->split[i] << "\t" << splitNew[i] << endl;
+        cout << endl;}
 
     unsigned long procNum;
     vector<unsigned long> aggregateRemote;
@@ -1160,7 +1166,7 @@ int AMGClass::createProlongation(COOMatrix* A, std::vector<unsigned long>& aggre
     // remote
     iter = 0;
     for (i = 0; i < A->col_remote_size; ++i) {
-        for (j = 0; j < A->nnz_col_remote[i]; ++j, ++iter) {
+        for (j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
             PEntryTemp.push_back(cooEntry(A->row_remote[iter],
                                           A->vecValuesULong[A->col_remote[iter]],
                                           -omega * A->values_remote[iter] * A->invDiag[A->row_remote[iter]]));
@@ -1288,7 +1294,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
     long ARecvM;
     MPI_Status sendRecvStatus;
 
-    // todo: change tha algorithm so every processor sends data only to the next one and receives from the previous one in each iteration.
+    // todo: change the algorithm so every processor sends data only to the next one and receives from the previous one in each iteration.
     for(int i = 1; i < nprocs; i++) {
         // send A to the right processor, recieve A from the left processor. "left" decreases by one in each iteration. "right" increases by one.
         right = (rank + i) % nprocs;
@@ -1517,7 +1523,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
             Ac->entry.back().val += RAPTemp.entry[i+1].val;
             i++;
         }
-        // todo: pruning. talk to Hari about this part.
+        // todo: pruning. don't hard code tol.
         if( abs(Ac->entry.back().val) < 1e-6)
             Ac->entry.pop_back();
     }
@@ -1544,6 +1550,7 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 
 
 int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, int& maxIter, double& tol, MPI_Comm comm){
+    // this is CG.
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1582,13 +1589,13 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
 
     double factor, sq_norm_prev;
     for (i = 0; i < maxIter; i++) {
-        MPI_Barrier(comm); if(rank==1) cout << endl << i << endl; MPI_Barrier(comm);
+//        MPI_Barrier(comm); if(rank==1) cout << endl << i << endl; MPI_Barrier(comm);
 
         // factor = sq_norm/ (dir' * A * dir)
         A->matvec(&*dir.begin(), &*matvecTemp.begin(), comm);
-        if(rank==1)
-            for(j=0; j<matvecTemp.size(); j++)
-                cout << matvecTemp[j] << endl;
+//        if(rank==1)
+//            for(j=0; j<matvecTemp.size(); j++)
+//                cout << matvecTemp[j] << endl;
 
         factor = 0;
         for(j = 0; j < A->M; j++)
