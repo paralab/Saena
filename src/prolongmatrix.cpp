@@ -142,8 +142,6 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 
 //    MPI_Barrier(comm); printf("rank=%d, nnz_l=%lu, nnz_l_local=%u, nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
 
-//    free(indices_p);
-
     nnzPerRowScan_local.resize(M+1);
     nnzPerRowScan_local[0] = 0;
     for(i=0; i<M; i++){
@@ -262,8 +260,9 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 //        if(rank==1) cout << vElement_remote[i] << endl;
 
     // change the indices from global to local
-    for (i=0; i<vIndexSize; i++)
-        vIndex[i] -= split[rank];
+    for (i=0; i<vIndexSize; i++){
+        vIndex[i] -= splitNew[rank];
+    }
 
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
