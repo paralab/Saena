@@ -38,7 +38,9 @@ set(SOURCE_FILES
         src/restrictmatrix.cpp
         include/auxFunctions.h
         src/auxFunctions.cpp
-)
+        include/grid.h
+        src/grid.cpp
+        )
 
 add_executable(Saena ${SOURCE_FILES})
 
