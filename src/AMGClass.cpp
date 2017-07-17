@@ -107,6 +107,12 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
 //        for(i=0; i<testf.size(); i++)
 //            cout << testf[i] << endl;
 
+//    testf.assign(A->M, 1);
+//    R.matvec(&*testf.begin(), &*testc.begin(), comm);
+//    if(rank==1)
+//        for(i=0; i<testc.size(); i++)
+//            cout << testc[i] << endl;
+
 //    MPI_Barrier(comm); printf("----------AMGsetup----------\n"); MPI_Barrier(comm);
     return 0;
 }

@@ -67,7 +67,6 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         row_local.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
 //        col_local.push_back(entry[0].col);
 //        values_local.push_back(entry[0].val);
-
         //vElement_local.push_back(col[0]);
         vElementRep_local.push_back(1);
 
@@ -85,7 +84,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 
         vElement_remote.push_back(entry[0].col);
         vElementRep_remote.push_back(1);
-        recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
+        recvCount[lower_bound2(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
 
 //        nnzPerCol_remote_t.push_back(1);
         vElement_remote_t.push_back(nnz_l_remote-1);
@@ -104,6 +103,10 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
             row_local.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then erase. // todo: clear does not free memory. find a solution.
 //            col_local.push_back(entry[i].col);
 //            values_local.push_back(entry[i].val);
+            if (entry[i].col != entry[i-1].col)
+                vElementRep_local.push_back(1);
+            else
+                (*(vElementRep_local.end()-1))++;
 
         // remote
         } else {
@@ -124,7 +127,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
                 col_remote_size++;
                 vElement_remote.push_back(entry[i].col);
                 vElementRep_remote.push_back(1);
-                procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+                procNum = lower_bound2(&splitNew[0], &splitNew[nprocs], entry[i].col);
                 recvCount[procNum]++;
                 nnzPerCol_remote.push_back(1);
             } else {
@@ -207,7 +210,6 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
     free(vIndexCount);
     free(recvCount);
 
-    MPI_Barrier(comm);
     numRecvProc_t = 0;
     numSendProc_t = 0;
     for(int i=0; i<nprocs; i++){
