@@ -24,7 +24,6 @@ public:
     std::vector<unsigned long> row_remote;
     std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
 
-    // split is P.splitNew.
     std::vector<unsigned long> split;
     std::vector<unsigned long> splitNew;
 
@@ -64,8 +63,7 @@ public:
 //    std::vector<double> values_remote;
 
     restrictMatrix();
-    restrictMatrix(prolongMatrix* P, MPI_Comm comm);
-//    restrictMatrix(unsigned long Mbig, unsigned long Nbig, unsigned long nnz_g, unsigned long nnz_l, unsigned long* row, unsigned long* col, double* values);
+    int transposeP(prolongMatrix* P, MPI_Comm comm);
     ~restrictMatrix();
     int matvec(double* v, double* w, MPI_Comm comm);
 };

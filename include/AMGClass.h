@@ -5,6 +5,7 @@
 #include "strengthmatrix.h"
 #include "prolongmatrix.h"
 #include "restrictmatrix.h"
+#include "grid.h"
 
 class AMGClass {
 public:
@@ -30,7 +31,7 @@ public:
 
     AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, float tau);
     ~AMGClass();
-    int AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm);
+    int AMGSetup(Grid* grid, bool doSparsify, MPI_Comm comm);
     int findAggregation(COOMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
     int createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm comm);
     int Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
