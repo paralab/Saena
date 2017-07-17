@@ -53,15 +53,12 @@ public:
 //    std::vector<unsigned int> nnz_row_remote;
 //    std::vector<unsigned int> nnzPerCol_remote_t;
 
-    unsigned long* indicesP_local;
-    unsigned long* indicesP_remote;
-
     bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
     int vIndexSize;
     int vIndexSize_t;
+    unsigned long* vIndex;
     double* vSend;
     cooEntry* vSend_t;
-    unsigned long* vIndex;
     double* vecValues;
     cooEntry* vecValues_t;
 //    int* vecValues2;
@@ -85,6 +82,9 @@ public:
     int numRecvProc_t;
     int numSendProc;
     int numSendProc_t;
+
+    unsigned long* indicesP_local;
+    unsigned long* indicesP_remote;
 
     prolongMatrix();
     ~prolongMatrix();
