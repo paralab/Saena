@@ -7,7 +7,16 @@
 
 using namespace std;
 
-prolongMatrix::prolongMatrix(){}
+prolongMatrix::prolongMatrix(){
+    Mbig = 0;
+    Nbig = 0;
+    M = 0;
+    nnz_g = 0;
+    nnz_l = 0;
+    nnz_l_local = 0;
+    nnz_l_remote = 0;
+    col_remote_size = 0;
+}
 
 
 prolongMatrix::~prolongMatrix(){

@@ -30,7 +30,7 @@ AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int p
 AMGClass::~AMGClass(){}
 
 
-int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
+int AMGClass::AMGSetup(Grid* grid, bool doSparsify, MPI_Comm comm){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -42,15 +42,21 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
 //    unsigned long* initialNumberOfRows;
 //    initialNumberOfRows = &A->split[0];
 
-    std::vector<unsigned long> aggregate(A->M);
+    std::vector<unsigned long> aggregate(grid->A->M);
 //    unsigned long* aggregate_p = &(*aggregate.begin());
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
-    prolongMatrix P;
-    findAggregation(A, aggregate, P.splitNew, comm);
-//    if(rank==0)
+//    prolongMatrix P;
+//    findAggregation(A, aggregate, P.splitNew, comm);
+
+    findAggregation(grid->A, aggregate, grid->P.splitNew, comm);
+//    if(rank==1)
 //        for(long i=0; i<A->M; i++)
 //            cout << i << "\t" << aggregate[i] << endl;
+
+//    if(rank==1)
+//        for(long i=0; i<nprocs+1; i++)
+//            cout << grid->P->splitNew[i] << endl;
 
 /*
     std::vector<long> aggregateSorted(A->M);
@@ -77,32 +83,38 @@ int AMGClass::AMGSetup(COOMatrix* A, bool doSparsify, MPI_Comm comm){
             cout << i << "\t" << aggregate[i] << endl;
 */
 
-    createProlongation(A, aggregate, &P, comm);
-    restrictMatrix R(&P, comm);
+//    createProlongation(A, aggregate, &P, comm);
+//    restrictMatrix R(&grid->P, comm);
 //    restrictMatrix R(&P, initialNumberOfRows, comm);
 
-    COOMatrix Ac; // A_coarse = R*A*P
-    coarsen(A, &P, &R, &Ac, comm);
+    createProlongation(grid->A, aggregate, &grid->P, comm);
+    grid->R.transposeP(&grid->P, comm);
 
+//    COOMatrix Ac; // A_coarse = R*A*P
+    coarsen(grid->A, &grid->P, &grid->R, &grid->Ac, comm);
+
+/*
     // system: A*u = b
-    std::vector<double> uc(Ac.M);
+    std::vector<double> uc(grid->Ac.M);
     fill(uc.begin(), uc.end(), 0);
-    std::vector<double> bc(Ac.M);
+    std::vector<double> bc(grid->Ac.M);
     fill(bc.begin(), bc.end(), 1);
 
     int maxIter = 10;
     double tol = 1e-10;
-    solveCoarsest(&Ac, uc, bc, maxIter, tol, comm);
+    solveCoarsest(&grid->Ac, uc, bc, maxIter, tol, comm);
+*/
 
-//    for(i=0; i<A->M; i++)
-//        cout << uc[i] << endl;
+//    if(rank==1)
+//        for(i=0; i<grid->A->M; i++)
+//            cout << uc[i] << endl;
 
 //    std::vector<double> u(A->Mbig);
 
-    std::vector<double> testc(Ac.M);
-    testc.assign(Ac.M, 1);
-    std::vector<double> testf(A->M);
-    P.matvec(&*testc.begin(), &*testf.begin(), comm);
+//    std::vector<double> testc(Ac.M);
+//    testc.assign(Ac.M, 1);
+//    std::vector<double> testf(A->M);
+//    P.matvec(&*testc.begin(), &*testf.begin(), comm);
 //    if(rank==1)
 //        for(i=0; i<testf.size(); i++)
 //            cout << testf[i] << endl;
@@ -248,6 +260,7 @@ int AMGClass::findAggregation(COOMatrix* A, std::vector<unsigned long>& aggregat
 //    unsigned long aggSize = 0;
     Aggregation(&S, aggregate, splitNew, comm);
 //    updateAggregation(aggregate, &aggSize);
+//    printf("rank = %d \n", rank);
 
 //    if(rank==0)
 //        for(long i=0; i<S.M; i++)
@@ -522,7 +535,6 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //        for (i = 0; i < size; ++i)
 //            cout << i << "\tinitialWeight = " << initialWeight[i] << endl;
 //    }
-
 
     const int aggOffset = 62;
     const unsigned long weightMax = (1UL<<aggOffset) - 1;
@@ -1038,7 +1050,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     free(vIndexCount);
     free(vIndex);
     return 0;
-}
+} // end of AMGClass::Aggregation
 
 
 // Decoupled Aggregation - not complete
@@ -1634,7 +1646,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
 
     } // k < maxIter
     return 0;
-}
+} // end of AMGClass::solveCoarsest
 
 // int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& x, std::vector<double>& b, int& max_iter, double& tol, MPI_Comm comm){
 /*

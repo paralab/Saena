@@ -10,7 +10,7 @@ using namespace std;
 restrictMatrix::restrictMatrix(){}
 
 
-restrictMatrix::restrictMatrix(prolongMatrix* P, MPI_Comm comm) {
+int restrictMatrix::transposeP(prolongMatrix* P, MPI_Comm comm) {
 
     // todo: this matrix is not sorted at the end.
     int nprocs, rank;
@@ -387,6 +387,7 @@ restrictMatrix::restrictMatrix(prolongMatrix* P, MPI_Comm comm) {
 //    if(rank==0) cout << endl;
 //    MPI_Barrier(comm);
 
+    return 0;
 } //end of restrictMatrix::restrictMatrix
 
 

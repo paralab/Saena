@@ -4,6 +4,7 @@
 #include "mpi.h"
 #include "coomatrix.h"
 #include "AMGClass.h"
+#include "grid.h"
 //#include "auxFunctions.h"
 //#include "strengthmatrix.h"
 
@@ -68,8 +69,10 @@ int main(int argc, char* argv[]){
     bool doSparsify     = 0;
 
     AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
-    amgClass.AMGSetup(&B, doSparsify, comm);
+    Grid grid(&B, levels, levels);
+    amgClass.AMGSetup(&grid, doSparsify, comm);
 //    MPI_Barrier(comm); printf("----------main----------\n"); MPI_Barrier(comm);
+//    printf("rank = %d, A.M = %u \n", rank, grid.A->M);
 
     // *************************** read the vector ****************************
 
