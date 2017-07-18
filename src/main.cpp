@@ -43,40 +43,21 @@ int main(int argc, char* argv[]){
     char* Aname(argv[1]);
 
     // timing the setup phase
-    MPI_Barrier(comm);
-    double t1 = MPI_Wtime();
+//    MPI_Barrier(comm);
+//    double t1 = MPI_Wtime();
 
-    COOMatrix B (Aname, Mbig, comm);
-    B.repartition(comm);
-    B.matrixSetup(comm);
+    COOMatrix A (Aname, Mbig, comm);
+    A.repartition(comm);
+    A.matrixSetup(comm);
 
-    MPI_Barrier(comm);
-    double t2 = MPI_Wtime();
+//    MPI_Barrier(comm);
+//    double t2 = MPI_Wtime();
 
-    if (rank==0)
-        cout << "\nMatrix setup in Saena took " << t2 - t1 << " seconds!" << endl << endl;
+//    if (rank==0)
+//        cout << "\nMatrix setup in Saena took " << t2 - t1 << " seconds!" << endl << endl;
 
-    // *************************** AMG ****************************
+    // *************************** read the vector and set rhs ****************************
 
-    int levels          = 2;
-    int vcycle_num      = 1;
-    double relTol       = 1e-6;
-    string relaxType    = "jacobi";
-    int preSmooth       = 2;
-    int postSmooth      = 2;
-    float connStrength  = 0.5; // connection strength parameter
-    float tau           = 3; // is used during making aggregates.
-    bool doSparsify     = 0;
-
-    AMGClass amgClass (levels, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
-    Grid grid(&B, levels, levels);
-    amgClass.AMGSetup(&grid, doSparsify, comm);
-//    MPI_Barrier(comm); printf("----------main----------\n"); MPI_Barrier(comm);
-//    printf("rank = %d, A.M = %u \n", rank, grid.A->M);
-
-    // *************************** read the vector ****************************
-
-/*
     MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
@@ -89,35 +70,63 @@ int main(int argc, char* argv[]){
     }
 
     // define the size of v as the local number of rows on each process
-    std::vector <double> v(B.M);
+    std::vector <double> v(A.M);
     double* vp = &(*(v.begin()));
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = B.split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh, offset, vp, B.M, MPI_UNSIGNED_LONG, &status);
+    offset = A.split[rank] * 8; // value(double=8)
+    MPI_File_read_at(fh, offset, vp, A.M, MPI_UNSIGNED_LONG, &status);
 
     int count;
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
-*/
+
+    // set rhs
+    std::vector<double> rhs(A.M);
+    A.matvec(&*v.begin(), &*rhs.begin(), comm);
+//    if(rank==1)
+//        for(long i = 0; i < rhs.size(); i++)
+//            cout << rhs[i] << endl;
+
+    // *************************** AMG ****************************
+
+    int maxLevel       = 1;
+    int vcycle_num     = 1;
+    double relTol      = 1e-6;
+    string relaxType   = "jacobi";
+    int preSmooth      = 2;
+    int postSmooth     = 2;
+    float connStrength = 0.5; // connection strength parameter
+    float tau          = 3; // is used during making aggregates.
+    bool doSparsify    = 0;
+
+    AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
+    Grid grid(&A, maxLevel, maxLevel);
+    amgClass.AMGSetup(&grid, doSparsify, comm);
+
+    std::vector<double> u(A.M);
+    u.assign(A.M, 0); // initial guess
+    amgClass.AMGSolve(&grid, u, rhs, comm);
+//    MPI_Barrier(comm); printf("----------main----------\n"); MPI_Barrier(comm);
+//    printf("rank = %d, A.M = %u \n", rank, grid.A->M);
 
     // *************************** use jacobi to find the answer x ****************************
 
-/*    for(unsigned int i=0; i<B.M; i++){
-        v[i] = i + 1 + B.split[rank];
+/*    for(unsigned int i=0; i<A.M; i++){
+        v[i] = i + 1 + A.split[rank];
     }
 
     // initial x for Ax=b
-    std::vector <double> x(B.M);
+    std::vector <double> x(A.M);
     double* xp = &(*(x.begin()));
-    x.assign(B.M, 0);
+    x.assign(A.M, 0);
 
     // xp first points to the initial guess, after doing jacobi it is the approximate answer for the system
     // vp points to the right-hand side
     int vv = 40;
     for(int i=0; i<vv; i++)
-        B.jacobi(xp, vp);*/
+        A.jacobi(xp, vp);*/
 
     // *************************** write the result of jacobi to file ****************************
 
@@ -128,8 +137,8 @@ int main(int argc, char* argv[]){
     MPI_Offset offset2;
     MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
 
-    offset2 = B.split[rank] * 8; // value(double=8)
-    MPI_File_write_at(fh2, offset2, xp, B.M, MPI_UNSIGNED_LONG, &status2);
+    offset2 = A.split[rank] * 8; // value(double=8)
+    MPI_File_write_at(fh2, offset2, xp, A.M, MPI_UNSIGNED_LONG, &status2);
 
     int count2;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
@@ -139,7 +148,7 @@ int main(int argc, char* argv[]){
     // *************************** matvec ****************************
 
 /*
-    std::vector <double> w(B.M);
+    std::vector <double> w(A.M);
     double* wp = &(*(w.begin()));
 
     int time_num = 4; // 4 of them are used to time 3 phases in matvec. check the print section to see how they work.
@@ -148,7 +157,7 @@ int main(int argc, char* argv[]){
 
     // warming up
     for(int i=0; i<ITERATIONS; i++){
-        B.matvec(vp, wp, time);
+        A.matvec(vp, wp, time);
         v = w;
     }
 
@@ -156,7 +165,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i=0; i<ITERATIONS; i++){
-        B.matvec(vp, wp, time);
+        A.matvec(vp, wp, time);
         v = w;
 
 //        for(int j=0; j<time_num; j++)
@@ -187,8 +196,8 @@ int main(int argc, char* argv[]){
     MPI_Offset offset2;
     MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
 
-    offset2 = B.split[rank] * 8; // value(double=8)
-    MPI_File_write_at(fh2, offset2, vp, B.M, MPI_UNSIGNED_LONG, &status2);
+    offset2 = A.split[rank] * 8; // value(double=8)
+    MPI_File_write_at(fh2, offset2, vp, A.M, MPI_UNSIGNED_LONG, &status2);
 
     int count2;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);

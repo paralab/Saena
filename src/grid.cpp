@@ -1,4 +1,3 @@
-
 #include <grid.h>
 
 Grid::Grid(COOMatrix* A1, int maxLev, int currentLev){

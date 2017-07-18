@@ -60,7 +60,7 @@ int randomVector(unsigned long size, unsigned long* V){
 //    return  norm;
 //}
 
-
+/*
 double myNorm(std::vector<double>& v){
     double norm = 0;
     for(long i=0; i<v.size(); i++)
@@ -69,3 +69,4 @@ double myNorm(std::vector<double>& v){
     norm = sqrt(norm);
     return  norm;
 }
+*/

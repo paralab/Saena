@@ -746,24 +746,24 @@ int COOMatrix::inverseDiag(double* x, MPI_Comm comm) {
 }
 
 
-int COOMatrix::jacobi(double* x, double* b, MPI_Comm comm) {
+int COOMatrix::jacobi(std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm) {
 
-// Ax = b
-// x = x - (D^(-1))(Ax - b)
-// 1. B.matvec(x, one) --> put the value of matvec in one.
-// 2. two = one - b
+// Ax = rhs
+// u = u - (D^(-1))(Ax - rhs)
+// 1. B.matvec(u, one) --> put the value of matvec in one.
+// 2. two = one - rhs
 // 3. three = inverseDiag * two * omega
-// 4. four = x - three
+// 4. four = u - three
 
     float omega = float(2.0/3);
     unsigned int i;
     // replace allocating and deallocating with a pre-allocated memory.
     double* temp = (double*)malloc(sizeof(double)*M);
-    matvec(x, temp, comm);
+    matvec(&*u.begin(), temp, comm);
     for(i=0; i<M; i++){
-        temp[i] -= b[i];
+        temp[i] -= rhs[i];
         temp[i] *= invDiag[i] * omega;
-        x[i] -= temp[i];
+        u[i] -= temp[i];
     }
     free(temp);
     return 0;
