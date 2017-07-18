@@ -73,7 +73,7 @@ public:
 //template <class T>
 //float myNorm(std::vector<T>& v);
 
-double myNorm(std::vector<double>& v);
+//double myNorm(std::vector<double>& v);
 
 
 #endif //SAENA_AUXFUNCTIONS_H

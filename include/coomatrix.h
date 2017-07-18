@@ -95,7 +95,7 @@ public:
     int repartition(MPI_Comm comm);
     int matrixSetup(MPI_Comm comm);
     int matvec(double* v, double* w, MPI_Comm comm);
-    int jacobi(double* v, double* w, MPI_Comm comm);
+    int jacobi(std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
     int inverseDiag(double* x, MPI_Comm comm);
     int SaenaSetup();
     int SaenaSolve();
