@@ -9,7 +9,7 @@
 
 class AMGClass {
 public:
-    int levels;
+    int maxLevel;
     int vcycle_num;
     double relTol;
     string smoother;
@@ -17,6 +17,7 @@ public:
     int postSmooth;
     float connStrength; // connection strength parameter
     float tau; // is used during making aggregates.
+    bool doSparsify;
 
 //    As:: Array{SparseMatrixCSC{Float64}}
 //    Ps:: Array{SparseMatrixCSC{Float64}}
@@ -24,9 +25,10 @@ public:
 //    relaxPrecs
 //    LU
 
-    AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, float tau);
+    AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, float tau, bool doSparsify);
     ~AMGClass();
-    int AMGSetup(Grid* grid, bool doSparsify, MPI_Comm comm);
+    int levelSetup(Grid* grid, MPI_Comm comm);
+    int AMGSetup(Grid* grids, COOMatrix* A, MPI_Comm comm);
     int findAggregation(COOMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
     int createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm comm);
     int Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
@@ -39,6 +41,5 @@ public:
     int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
     int AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
 };
-
 
 #endif //SAENA_AMGCLASS_H

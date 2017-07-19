@@ -20,9 +20,10 @@ public:
     int currentLevel, maxLevel;
     Grid* coarseGrid;
 
+    Grid();
     Grid(COOMatrix* A, int maxLevel, int currentLevel);
     ~Grid();
-    int setupCoarse();
+//    int setupCoarse();
 };
 
 #endif //SAENA_GRID_H

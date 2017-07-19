@@ -52,6 +52,8 @@ public:
     unsigned long* indicesP_local;
     unsigned long* indicesP_remote;
 
+    bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
+
 //    std::vector<unsigned long> row;
 //    std::vector<unsigned long> col;
 //    std::vector<double> values;
