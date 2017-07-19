@@ -91,7 +91,7 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG ****************************
 
-    int maxLevel       = 1;
+    int maxLevel       = 2; // not including fine level. fine level is 0.
     int vcycle_num     = 1;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
@@ -101,15 +101,21 @@ int main(int argc, char* argv[]){
     float tau          = 3; // is used during making aggregates.
     bool doSparsify    = 0;
 
-    AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau);
-    Grid grid(&A, maxLevel, maxLevel);
-    amgClass.AMGSetup(&grid, doSparsify, comm);
+    AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau, doSparsify);
+    Grid grids[maxLevel+1];
+    amgClass.AMGSetup(grids, &A, comm);
+
+//    MPI_Barrier(comm);
+//    for(int i=0; i<maxLevel; i++)
+//        if(rank==1) cout << "size = " << maxLevel << ", current level = " << grids[i].currentLevel << ", coarse level = " << grids[i].coarseGrid->currentLevel
+//                         << ", A.Mbig = " << grids[i].A->Mbig << ", A.M = " << grids[i].A->M << ", Ac.Mbig = " << grids[i].Ac.Mbig << ", Ac.M = " << grids[i].Ac.M << endl;
+//    MPI_Barrier(comm);
 
     std::vector<double> u(A.M);
     u.assign(A.M, 0); // initial guess
-    amgClass.AMGSolve(&grid, u, rhs, comm);
-//    MPI_Barrier(comm); printf("----------main----------\n"); MPI_Barrier(comm);
+    amgClass.AMGSolve(grids, u, rhs, comm);
 //    printf("rank = %d, A.M = %u \n", rank, grid.A->M);
+//    MPI_Barrier(comm); printf("----------main----------\n"); MPI_Barrier(comm);
 
     // *************************** use jacobi to find the answer x ****************************
 

@@ -15,8 +15,8 @@
 //#include "restrictmatrix.h"
 
 
-AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int postSm, float connStr, float ta){
-    levels = l;
+AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int postSm, float connStr, float ta, bool doSpars){
+    maxLevel = l;
     vcycle_num = vcycle_n;
     relTol  = relT;
     smoother = sm;
@@ -24,38 +24,45 @@ AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int p
     postSmooth = postSm;
     connStrength = connStr;
     tau = ta;
+    doSparsify = doSpars;
 } //AMGClass
 
 
 AMGClass::~AMGClass(){}
 
 
-int AMGClass::AMGSetup(Grid* grid, bool doSparsify, MPI_Comm comm){
+int AMGClass::AMGSetup(Grid* grids, COOMatrix* A, MPI_Comm comm) {
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    int i;
+
+    grids[0] = Grid(A, maxLevel, 0);
+    for(i = 0; i < maxLevel; i++){
+       levelSetup(&grids[i], comm);
+        grids[i+1] = Grid(&grids[i].Ac, maxLevel, i+1);
+        grids[i].coarseGrid = &grids[i+1];
+    }
+
+    return 0;
+}
+
+int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     unsigned long i;
 
-    // pointer for shrinking number of processors
-//    unsigned long* initialNumberOfRows;
-//    initialNumberOfRows = &A->split[0];
-
-    std::vector<unsigned long> aggregate(grid->A->M);
-//    unsigned long* aggregate_p = &(*aggregate.begin());
-
-//    prolongMatrix P;
-//    findAggregation(A, aggregate, P.splitNew, comm);
+//    MPI_Barrier(comm); if(rank==1) cout << "current level = " << grid->currentLevel << endl; MPI_Barrier(comm);
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
+    std::vector<unsigned long> aggregate(grid->A->M);
     findAggregation(grid->A, aggregate, grid->P.splitNew, comm);
 //    if(rank==1)
 //        for(long i=0; i<A->M; i++)
 //            cout << i << "\t" << aggregate[i] << endl;
 
-//    if(rank==1)
-//        for(long i=0; i<nprocs+1; i++)
-//            cout << grid->P->splitNew[i] << endl;
 
 /*
     std::vector<long> aggregateSorted(A->M);
@@ -82,15 +89,9 @@ int AMGClass::AMGSetup(Grid* grid, bool doSparsify, MPI_Comm comm){
             cout << i << "\t" << aggregate[i] << endl;
 */
 
-//    createProlongation(A, aggregate, &P, comm);
-//    restrictMatrix R(&grid->P, comm);
-//    restrictMatrix R(&P, initialNumberOfRows, comm);
-//    COOMatrix Ac; // A_coarse = R*A*P
-
     createProlongation(grid->A, aggregate, &grid->P, comm);
     grid->R.transposeP(&grid->P, comm);
     coarsen(grid->A, &grid->P, &grid->R, &grid->Ac, comm);
-
 //    MPI_Barrier(comm); printf("----------AMGsetup----------\n"); MPI_Barrier(comm);
     return 0;
 }
@@ -1751,7 +1752,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     MPI_Comm_rank(comm, &rank);
     long i;
 
-    printf("rank = %d, current level = %d here!!!!!!!!!! \n", rank, grid->currentLevel);
+//    printf("rank = %d, current level = %d here!!!!!!!!!! \n", rank, grid->currentLevel);
 
 //    % handle for the coarsest level
 //    if ( isempty( grid.Coarse ) )
@@ -1804,7 +1805,6 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 
     for(i=0; i<postSmooth; i++)
         grid->A->jacobi(u, rhs, comm);
-
     return 0;
 }
 
@@ -1815,7 +1815,7 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     MPI_Comm_rank(comm, &rank);
     long i;
 
-    if(rank==1) cout << "current level: " << grid->currentLevel << endl;
+//    if(rank==1) cout << "current level: " << grid->currentLevel << endl;
 
     std::vector<double> r(grid->A->M);
     residual(grid->A, u, rhs, r, comm);

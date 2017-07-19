@@ -19,6 +19,7 @@ int restrictMatrix::transposeP(prolongMatrix* P, MPI_Comm comm) {
 
     unsigned long i, j;
 
+    arrays_defined = true;
     Mbig = P->Nbig;
     Nbig = P->Mbig;
     split = P->split;
@@ -392,11 +393,13 @@ int restrictMatrix::transposeP(prolongMatrix* P, MPI_Comm comm) {
 
 
 restrictMatrix::~restrictMatrix(){
-    free(vIndex);
-    free(vSend);
-    free(vecValues);
-    free(indicesP_local);
-    free(indicesP_remote);
+    if(arrays_defined){
+        free(vIndex);
+        free(vSend);
+        free(vecValues);
+        free(indicesP_local);
+        free(indicesP_remote);
+    }
 }
 
 
