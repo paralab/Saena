@@ -23,7 +23,6 @@ public:
     Grid();
     Grid(COOMatrix* A, int maxLevel, int currentLevel);
     ~Grid();
-//    int setupCoarse();
 };
 
 #endif //SAENA_GRID_H

@@ -21,11 +21,16 @@ template <class T>
 T lower_bound2(T *left, T *right, T val);
 
 
+int randomVector(std::vector<unsigned long>& V, long size);
+
+
 class cooEntry{
 public:
     unsigned long row;
     unsigned long col;
     double val;
+
+    cooEntry(){}
 
     cooEntry(unsigned long i, unsigned long j, double v){
         row = i;
@@ -63,5 +68,12 @@ public:
         return datatype;
     }
 };
+
+
+//template <class T>
+//float myNorm(std::vector<T>& v);
+
+//double myNorm(std::vector<double>& v);
+
 
 #endif //SAENA_AUXFUNCTIONS_H
