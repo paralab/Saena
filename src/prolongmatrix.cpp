@@ -42,15 +42,12 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 
     arrays_defined = true;
 
-//    unsigned long* indices_p = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l);
-//    for(i=0; i<nnz_l; i++)
-//        indices_p[i] = i;
-//    std::sort(indices_p, &indices_p[nnz_l], sort_indices(c));
-
 //    for(unsigned int i=0; i<nnz_l; i++){
 //        if(rank==0) cout << r[indices_p[i]] << "\t" << c[indices_p[i]] << "\t\t" << v[indices_p[i]] << endl;
 //        if(rank==0) cout << r[i] << "\t" << c[i] << "\t\t" << v[i] << "\t\t\t" << r[indices_p[i]] << "\t" << c[indices_p[i]] << "\t\t" << v[indices_p[i]] << endl;
 //    }
+
+//    printf("rank=%d \t P.nnz_l=%lu \t P.nnz_g=%lu \n", rank, nnz_l, nnz_g);
 
     long procNum;
     col_remote_size = 0; // number of remote columns
@@ -62,6 +59,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 //    int* recvCount_t = (int*)malloc(sizeof(int)*nprocs);
 //    std::fill(recvCount_t, recvCount_t + nprocs, 0);
     nnzPerRow_local.assign(M,0);
+    nnzPerRowScan_local.assign(M+1, 0);
 
     int* vIndexCount_t = (int*)malloc(sizeof(int)*nprocs);
     std::fill(vIndexCount_t, vIndexCount_t + nprocs, 0);
@@ -71,8 +69,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
     if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) {
         nnzPerRow_local[entry[0].row]++;
         nnz_l_local++;
-
-        entry_local.push_back(cooEntry(entry[0].row, entry[0].col, entry[0].val));
+        entry_local.push_back(entry[0]);
         row_local.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
 //        col_local.push_back(entry[0].col);
 //        values_local.push_back(entry[0].val);
@@ -82,7 +79,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
     // remote
     } else{
         nnz_l_remote++;
-        entry_remote.push_back(cooEntry(entry[0].row, entry[0].col, entry[0].val));
+        entry_remote.push_back(entry[0]);
         row_remote.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
 //        col_remote2.push_back(entry[0].col);
 //        values_remote.push_back(entry[0].val);
@@ -107,9 +104,8 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         if (entry[i].col >= splitNew[rank] && entry[i].col < splitNew[rank+1]) {
             nnzPerRow_local[entry[i].row]++;
             nnz_l_local++;
-
-            entry_local.push_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
-            row_local.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then erase. // todo: clear does not free memory. find a solution.
+            entry_local.push_back(entry[i]);
+            row_local.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear. // todo: clear does not free memory. find a solution.
 //            col_local.push_back(entry[i].col);
 //            values_local.push_back(entry[i].val);
             if (entry[i].col != entry[i-1].col)
@@ -121,7 +117,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         } else {
             nnz_l_remote++;
 //            if(rank==2) printf("entry[i].row = %lu\n", entry[i].row+split[rank]);
-            entry_remote.push_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
+            entry_remote.push_back(entry[i]);
             row_remote.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
             // col_remote2 is the original col value. col_remote starts from 0.
 //            col_remote2.push_back(entry[i].col);
@@ -149,10 +145,8 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
         }
     } // for i
 
-//    MPI_Barrier(comm); printf("rank=%d, nnz_l=%lu, nnz_l_local=%u, nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
+//    MPI_Barrier(comm); printf("rank=%d, P.nnz_l=%lu, P.nnz_l_local=%u, P.nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
 
-    nnzPerRowScan_local.resize(M+1);
-    nnzPerRowScan_local[0] = 0;
     for(i=0; i<M; i++){
         nnzPerRowScan_local[i+1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
 //        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);

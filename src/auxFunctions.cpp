@@ -24,10 +24,15 @@ T lower_bound2(T *left, T *right, T val){
 }
 
 
-int randomVector(unsigned long size, unsigned long* V){
+int randomVector(std::vector<unsigned long>& V, long size){
 
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
+
+//    for (unsigned long i=0; i<V.size(); i++){
+//        srand (i);
+//        V[i] = rand()%(V.size());
+//    }
 
     //Type of random number distribution
     std::uniform_int_distribution<unsigned long> dist(1, size); //(min, max)
@@ -38,13 +43,12 @@ int randomVector(unsigned long size, unsigned long* V){
     //Initialize with non-deterministic seeds
     rng.seed(std::random_device{}());
 
-    for (unsigned long i=0; i<size; i++)
+    for (unsigned long i=0; i<V.size(); i++)
         V[i] = dist(rng);
 
-//    if(rank==0){
-//        V[6] = 100;
-//        V[11] = 100;
-//    }
+    // to have one node with the highest weight possible, so that node will be a root and consequently P and R won't be zero matrices.
+    if(V.size() != 0)
+        V[0] = size+1;
 
     return 0;
 }

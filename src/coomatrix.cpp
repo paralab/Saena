@@ -319,7 +319,7 @@ int COOMatrix::repartition(MPI_Comm comm){
 //    }
 
     nnz_l = rOffset[nprocs-1] + recvSizeArray[nprocs-1];
-//    cout << "rank=" << rank << ", nnz_l = " << nnz_l << endl;
+    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
 
 //    cooEntry* entry = (cooEntry*)malloc(sizeof(cooEntry)*nnz_l);
 //    cooEntry* entryP = &entry[0];

@@ -37,15 +37,21 @@ int AMGClass::AMGSetup(Grid* grids, COOMatrix* A, MPI_Comm comm) {
     MPI_Comm_rank(comm, &rank);
     int i;
 
+//    MPI_Barrier(comm); if(rank==1) printf("----------start of AMGSetup----------\n"); MPI_Barrier(comm);
     grids[0] = Grid(A, maxLevel, 0);
     for(i = 0; i < maxLevel; i++){
-       levelSetup(&grids[i], comm);
+//        MPI_Barrier(comm); if(rank==2) printf("\n\n----------111 AMGSetup----------\n"); MPI_Barrier(comm);
+        levelSetup(&grids[i], comm);
+//        MPI_Barrier(comm); if(rank==2) printf("----------222 AMGSetup----------\n"); MPI_Barrier(comm);
         grids[i+1] = Grid(&grids[i].Ac, maxLevel, i+1);
+//        MPI_Barrier(comm); if(rank==2) printf("----------333 AMGSetup----------\n"); MPI_Barrier(comm);
         grids[i].coarseGrid = &grids[i+1];
+//        MPI_Barrier(comm); if(rank==2) printf("----------444 AMGSetup----------\n"); MPI_Barrier(comm);
     }
 
     return 0;
 }
+
 
 int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
 
@@ -54,15 +60,16 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
     MPI_Comm_rank(comm, &rank);
     unsigned long i;
 
-//    MPI_Barrier(comm); if(rank==1) cout << "current level = " << grid->currentLevel << endl; MPI_Barrier(comm);
+    MPI_Barrier(comm); if(rank==1) cout << endl << "current level = " << grid->currentLevel << endl; MPI_Barrier(comm);
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
     findAggregation(grid->A, aggregate, grid->P.splitNew, comm);
-//    if(rank==1)
-//        for(long i=0; i<A->M; i++)
-//            cout << i << "\t" << aggregate[i] << endl;
+//    MPI_Barrier(comm); if(rank==2) printf("----------1 aggregate----------\n"); MPI_Barrier(comm);
 
+//    if(rank==1)
+//        for(long i=0; i<grid->A->M; i++)
+//            cout << i << "\t" << aggregate[i] << endl;
 
 /*
     std::vector<long> aggregateSorted(A->M);
@@ -76,10 +83,8 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
         for(long i=0; i<A->M; i++)
             cout << i << "\t" << aggregate[i] << "\t" << aggregateSorted[i] << endl;
 */
-
 //    par::sampleSort(aggregate, comm);
-
-    /*
+/*
     if(rank==0) cout << "\nafter:" << endl;
     if(rank==0)
         for(long i=0; i<A->M; i++)
@@ -90,9 +95,11 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
 */
 
     createProlongation(grid->A, aggregate, &grid->P, comm);
+//    MPI_Barrier(comm); if(rank==2) printf("----------2 createProlongation----------\n"); MPI_Barrier(comm);
     grid->R.transposeP(&grid->P, comm);
+//    MPI_Barrier(comm); if(rank==2) printf("----------3 transposeP----------\n"); MPI_Barrier(comm);
     coarsen(grid->A, &grid->P, &grid->R, &grid->Ac, comm);
-//    MPI_Barrier(comm); printf("----------AMGsetup----------\n"); MPI_Barrier(comm);
+//    MPI_Barrier(comm); if(rank==2) printf("----------4 coarsen----------\n"); MPI_Barrier(comm);
     return 0;
 }
 
@@ -487,21 +494,19 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     unsigned long i, j;
     unsigned long size = S->M;
 
-    std::vector<unsigned long> aggArray;
+    std::vector<unsigned long> aggArray; // root nodes.
     std::vector<unsigned long> aggregate2(size);
     std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
     std::vector<unsigned long> weight(size);
     std::vector<unsigned long> weight2(size);
     std::vector<unsigned long> initialWeight(size);
-    unsigned long* initialWeight_p = &(*initialWeight.begin());
 
-    randomVector(size, initialWeight_p);
+    randomVector(initialWeight, S->Mbig);
 
-//    if(rank==0){
+//    if(rank==1){
 //        cout << endl << "after initialization!" << endl;
 //        for (i = 0; i < size; ++i)
-//            cout << i << "\tinitialWeight = " << initialWeight[i] << endl;
-//    }
+//            cout << i << "\tinitialWeight = " << initialWeight[i] << endl;}
 
     const int aggOffset = 62;
     const unsigned long weightMax = (1UL<<aggOffset) - 1;
@@ -708,7 +713,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
         }
         // put weight2 in weight and aggregate2 in aggregate.
         // if a row does not have a remote element then (weight2[i]&weightMax) == (weight[i]&weightMax)
-        //update aggStatus of remote elements at the same time
+        // update aggStatus of remote elements at the same time
         for(i=0; i<size; i++){
             if(aggregate[i] != aggregate2[i]){
                 aggregate[i] = aggregate2[i];
@@ -797,30 +802,24 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 
     // *************************** update aggregate to new indices ****************************
 
-//    if(rank==1){
-//        cout << "split" << endl;
-//        for(i=0; i<nprocs+1; i++)
-//            cout << S->split[i] << endl;
-//        cout << endl;
-//    }
+//    if(rank==2)
+//        cout << endl << "S.M = " << S->M << ", S.nnz_l = " << S->nnz_l << ", S.nnz_l_local = " << S->nnz_l_local
+//             << ", S.nnz_l_remote = " << S->nnz_l_remote << endl << endl;
 
-//    sort(aggregate, &aggregate[size]);
-
-//    if(rank==1){
+//    if(rank==2){
 //        cout << "aggregate:" << endl;
 //        for(i=0; i<size; i++)
-//            cout << aggregate[i] << endl;
-//        cout << endl;
-//    }
+//            cout << i << "\t" << aggregate[i] << endl;
+//        cout << endl;}
 
+    // aggArray is the set of root nodes.
     sort(aggArray.begin(), aggArray.end());
 
-//    if(rank==1){
+//    if(rank==2){
 //        cout << "aggArray:" << endl;
 //        for(auto i:aggArray)
 //            cout << i << endl;
-//        cout << endl;
-//    }
+//        cout << endl;}
 
     splitNew.resize(nprocs+1);
     fill(splitNew.begin(), splitNew.end(), 0);
@@ -1564,7 +1563,7 @@ int AMGClass::normSQ(std::vector<double>& r, double* sq_norm, MPI_Comm comm){
     sq_norm_l = 0;
     for(i=0; i<r.size(); i++)
         sq_norm_l += r[i] * r[i];
-    MPI_Allreduce(&sq_norm_l, &sq_norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+    MPI_Allreduce(&sq_norm_l, sq_norm, 1, MPI_DOUBLE, MPI_SUM, comm);
 
     return 0;
 }
@@ -1576,9 +1575,9 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
     long i, j;
 
+    // r = A*u - b
     std::vector<double> r(A->M);
     residual(A, u, b, r, comm);
 
@@ -1762,8 +1761,21 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 
     int maxIter = 10;
     double tol = 1e-10;
-    if(grid->currentLevel == 0){
-        solveCoarsest(&grid->Ac, u, rhs, maxIter, tol, comm);
+    if(grid->currentLevel == maxLevel){
+        if(rank==1) cout << "Solving the coarsest level!" << endl;
+
+//        if(rank==1){
+//            cout << "before calling solveCoarsest: u" << endl;
+//            for(auto i:u)
+//                cout << i << endl;}
+
+        solveCoarsest(grid->A, u, rhs, maxIter, tol, comm);
+
+//        if(rank==1){
+//            cout << "after calling solveCoarsest: u" << endl;
+//            for(auto i:u)
+//                cout << i << endl;}
+
         return 0;
     }
 
@@ -1773,11 +1785,21 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     for(i=0; i<preSmooth; i++)
         grid->A->jacobi(u, rhs, comm);
 
+//    if(rank==1) cout << "\n1. pre-smooth: u" << endl;
+//    if(rank==1)
+//        for(auto i:u)
+//            cout << i << endl;
+
 //    % 2. compute residual
 //    res = grid.residual( rhs, u );
 
     std::vector<double> r(grid->A->M);
     residual(grid->A, u, rhs, r, comm);
+
+//    if(rank==1) cout << "\n2. compute residual: r" << endl;
+//    if(rank==1)
+//        for(auto i:r)
+//            cout << i << endl;
 
 //    % 3. restrict
 //    res_coarse = grid.R * res;
@@ -1785,26 +1807,48 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     std::vector<double> rCoarse(grid->Ac.M);
     grid->R.matvec(&*r.begin(), &*rCoarse.begin(), comm);
 
+//    if(rank==1) cout << "\n3. restrict: rCoarse" << endl;
+//    if(rank==1)
+//        for(auto i:rCoarse)
+//            cout << i << endl;
+
 //    % 4. recurse
 //    u_corr_coarse = grid.Coarse.vcycle(v1, v2, res_coarse, zeros(size(res_coarse)));
+//    function u = vcycle(grid, v1, v2, rhs, u)
 
-    std::vector<double> zeros(grid->Ac.M);
     std::vector<double> uCorrCoarse(grid->Ac.M);
-    vcycle(grid->coarseGrid, uCorrCoarse, zeros, comm);
+    uCorrCoarse.assign(grid->Ac.M, 0);
+    vcycle(grid->coarseGrid, uCorrCoarse, rCoarse, comm);
+
+//    if(rank==1) cout << "\n4. recurse: uCorrCoarse" << endl;
+//    if(rank==1)
+//        for(auto i:uCorrCoarse)
+//            cout << i << endl;
 
 //    % 5. prolong and correct
 //    u = u - grid.P * u_corr_coarse;
 
-    std::vector<double> uCorr(grid->Ac.M);
+    std::vector<double> uCorr(grid->A->M);
     grid->P.matvec(&*uCorrCoarse.begin(), &*uCorr.begin(), comm);
     for(i=0; i<u.size(); i++)
         u[i] -= uCorr[i];
+
+//    if(rank==1) cout << "\n5. prolong and correct: uCorr and u -= uCorr" << endl;
+//    if(rank==1)
+//        for(i=0; i<u.size(); i++)
+//            cout << uCorr[i] << "\t" << u[i] << endl;
 
 //    % 6. post-smooth
 //    u = grid.smooth ( v2, rhs, u );
 
     for(i=0; i<postSmooth; i++)
         grid->A->jacobi(u, rhs, comm);
+
+//    if(rank==1) cout << "\n6. post-smooth: u" << endl;
+//    if(rank==1)
+//        for(auto i:u)
+//            cout << i << endl;
+
     return 0;
 }
 
@@ -1815,18 +1859,22 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     MPI_Comm_rank(comm, &rank);
     long i;
 
-//    if(rank==1) cout << "current level: " << grid->currentLevel << endl;
+    double temp;
+    normSQ(rhs, &temp, comm);
+//    if(rank==1) cout << "norm(rhs) = " << sqrt(temp) << endl;
 
     std::vector<double> r(grid->A->M);
     residual(grid->A, u, rhs, r, comm);
     double initial_sq_norm;
     normSQ(r, &initial_sq_norm, comm);
+    if(rank==1) cout << "initial_norm = " << sqrt(initial_sq_norm) << endl;
 
     double sq_norm = 0;
     for(i=0; i<vcycle_num; i++){
         vcycle(grid, u, rhs, comm);
         residual(grid->A, u, rhs, r, comm);
         normSQ(r, &sq_norm, comm);
+        if(rank==1) printf("iter = %ld, residual = %f \n\n", i, sqrt(sq_norm));
         if(sq_norm/initial_sq_norm < relTol)
             break;
     }
@@ -1836,6 +1884,7 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     if(i == vcycle_num)
         i--;
 
-    if(rank==1) printf("iter = %ld, residual = %f \n", i, sqrt(sq_norm));
+    if(rank==1) printf("\nfinal:\niter = %ld, residual = %f \n", i, sqrt(sq_norm));
     return 0;
 }
+
