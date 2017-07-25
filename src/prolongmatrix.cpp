@@ -276,6 +276,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
     vSend_t     = (cooEntry*)malloc(sizeof(cooEntry) * vIndexSize_t); // todo: check datatype here.
     vecValues_t = (cooEntry*)malloc(sizeof(cooEntry) * recvSize_t);
 
+    // todo: change the following two parts the same as indicesP for A in coarsen, which is using entry, instead of row_local and row_remote.
     indicesP_local = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_local);
     for(i=0; i<nnz_l_local; i++)
         indicesP_local[i] = i;

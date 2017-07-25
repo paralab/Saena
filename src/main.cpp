@@ -33,7 +33,6 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-
     // *************************** get number of rows ****************************
 
     char* Vname(argv[2]);
@@ -88,14 +87,14 @@ int main(int argc, char* argv[]){
     // set rhs
     std::vector<double> rhs(A.M);
     A.matvec(&*v.begin(), &*rhs.begin(), comm);
-//    if(rank==1)
+//    if(rank==0)
 //        for(long i = 0; i < rhs.size(); i++)
 //            cout << rhs[i] << endl;
 
     // *************************** AMG ****************************
 
-    int maxLevel       = 1; // not including fine level. fine level is 0.
-    int vcycle_num     = 1 ;
+    int maxLevel       = 2; // not including fine level. fine level is 0.
+    int vcycle_num     = 10 ;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
     int preSmooth      = 3;
@@ -111,7 +110,7 @@ int main(int argc, char* argv[]){
 
 //    MPI_Barrier(comm);
 //    for(int i=0; i<maxLevel; i++)
-//        if(rank==1) cout << "size = " << maxLevel << ", current level = " << grids[i].currentLevel << ", coarse level = " << grids[i].coarseGrid->currentLevel
+//        if(rank==0) cout << "size = " << maxLevel << ", current level = " << grids[i].currentLevel << ", coarse level = " << grids[i].coarseGrid->currentLevel
 //                         << ", A.Mbig = " << grids[i].A->Mbig << ", A.M = " << grids[i].A->M << ", Ac.Mbig = " << grids[i].Ac.Mbig << ", Ac.M = " << grids[i].Ac.M << endl;
 //    MPI_Barrier(comm);
 
@@ -125,7 +124,7 @@ int main(int argc, char* argv[]){
 
     amgClass.AMGSolve(grids, u, rhs, comm);
 
-//    amgClass.writeMatrixToFile(&A, comm);
+//    amgClass.writeMatrixToFile(&grids[1].Ac, comm);
 
 //    int max = 10;
 //    double tol = 1e-10;

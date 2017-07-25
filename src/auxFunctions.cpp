@@ -1,5 +1,7 @@
 #include <iostream>
 #include <random>
+#include <auxFunctions.h>
+//#include <algorithm>
 
 using namespace std;
 

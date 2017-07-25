@@ -46,11 +46,8 @@ int AMGClass::AMGSetup(Grid* grids, COOMatrix* A, MPI_Comm comm) {
     for(i = 0; i < maxLevel; i++){
 //        MPI_Barrier(comm); if(rank==2) printf("\n\n----------111 AMGSetup----------\n"); MPI_Barrier(comm);
         levelSetup(&grids[i], comm);
-//        MPI_Barrier(comm); if(rank==2) printf("----------222 AMGSetup----------\n"); MPI_Barrier(comm);
         grids[i+1] = Grid(&grids[i].Ac, maxLevel, i+1);
-//        MPI_Barrier(comm); if(rank==2) printf("----------333 AMGSetup----------\n"); MPI_Barrier(comm);
         grids[i].coarseGrid = &grids[i+1];
-//        MPI_Barrier(comm); if(rank==2) printf("----------444 AMGSetup----------\n"); MPI_Barrier(comm);
     }
 
     return 0;
@@ -99,11 +96,8 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
 */
 
     createProlongation(grid->A, aggregate, &grid->P, comm);
-//    MPI_Barrier(comm); if(rank==2) printf("----------2 createProlongation----------\n"); MPI_Barrier(comm);
     grid->R.transposeP(&grid->P, comm);
-//    MPI_Barrier(comm); if(rank==2) printf("----------3 transposeP----------\n"); MPI_Barrier(comm);
     coarsen(grid->A, &grid->P, &grid->R, &grid->Ac, comm);
-//    MPI_Barrier(comm); if(rank==2) printf("----------4 coarsen----------\n"); MPI_Barrier(comm);
     return 0;
 }
 
@@ -839,7 +833,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 
     free(splitNewTemp);
 
-    if(rank==1){
+    if(rank==0){
         cout << "splitNew:" << endl;
         for(i=0; i<nprocs+1; i++)
             cout << S->split[i] << "\t" << splitNew[i] << endl;
@@ -1219,29 +1213,39 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
     for(i=0; i<A->nnz_l; i++)
         AnnzPerRow[A->entry[i].row - A->split[rank]]++;
 
-//    if(rank==2)
+//    if(rank==0)
 //        for(i=0; i<A->M; i++)
-//            cout << AnnzPerRow[i] << endl;
+//            cout << i << "\t" << AnnzPerRow[i] << endl;
 
-    unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(AMaxNnz+1));
+    unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(AMaxM+1));
     AnnzPerRowScan[0] = 0;
     for(i=0; i<A->M; i++){
         AnnzPerRowScan[i+1] = AnnzPerRowScan[i] + AnnzPerRow[i];
-//        if(rank==2) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i, AnnzPerRow[i], AnnzPerRowScan[i]);
+//        if(rank==0) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i, AnnzPerRow[i], AnnzPerRowScan[i]);
     }
+
+    // todo: combine indicesP and indicesPRecv together.
+    // find row-wise ordering for A and save it in indicesP
+    unsigned long* indicesP = (unsigned long*)malloc(sizeof(unsigned long)*A->nnz_l);
+    for(unsigned long i=0; i<A->nnz_l; i++)
+        indicesP[i] = i;
+    std::sort(indicesP, &indicesP[A->nnz_l], sort_indices2(&*A->entry.begin()));
 
     for(i=0; i<R->nnz_l_local; i++){
         for(j = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]]; j < AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1]; j++){
-//            if(rank==1) cout << j << "\t" << A->entry[j].row << "\t" << A->entry[j].col << "\t" << A->entry[j].val << endl;
+//            if(rank==0) cout << A->entry[indicesP[j]].row << "\t" << A->entry[indicesP[j]].col << "\t" << A->entry[indicesP[j]].val
+//                             << "\t" << R->entry_local[i].col << "\t" << R->entry_local[i].col - P->split[rank] << endl;
             RATemp.entry.push_back(cooEntry(R->entry_local[i].row,
-                                        A->entry[j].col,
-                                        R->entry_local[i].val * A->entry[j].val));
+                                        A->entry[indicesP[j]].col,
+                                        R->entry_local[i].val * A->entry[indicesP[j]].val));
         }
     }
 
 //    if(rank==1)
 //        for(i=0; i<RATemp.entry.size(); i++)
 //            cout << RATemp.entry[i].row << "\t" << RATemp.entry[i].col << "\t" << RATemp.entry[i].val << endl;
+
+    free(indicesP);
 
     // ************************************* RATemp - A remote *************************************
 
@@ -1274,6 +1278,8 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //        cout << "RBlockStart: " << endl;
 //        for(i=0; i<nprocs+1; i++)
 //            cout << RBlockStart[i] << endl;}
+
+    unsigned long* indicesPRecv = (unsigned long*)malloc(sizeof(unsigned long)*AMaxNnz);
 
     //    printf("rank=%d A.nnz=%u \n", rank, A->nnz_l);
     cooEntry* Arecv = (cooEntry*)malloc(sizeof(cooEntry)*AMaxNnz);
@@ -1325,19 +1331,27 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //            if(rank==2) printf("i=%d, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i, AnnzPerRow[i], AnnzPerRowScan[i]);
         }
 
+        // find row-wise ordering for Arecv and save it in indicesPRecv
+        for(unsigned long i=0; i<nnzRecv; i++)
+            indicesPRecv[i] = i;
+        std::sort(indicesPRecv, &indicesPRecv[nnzRecv], sort_indices2(Arecv));
+
 //        if(rank==1) cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << endl;
         for(j=RBlockStart[left]; j<RBlockStart[left+1]; j++){
 //            if(rank==1) cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << endl;
             for(unsigned long k = AnnzPerRowScan[R->entry_remote[j].col - P->split[left]]; k < AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1]; k++){
+//                if(rank==0) cout << Arecv[indicesPRecv[k]].row << "\t" << Arecv[indicesPRecv[k]].col << "\t" << Arecv[indicesPRecv[k]].val << endl;
                 RATemp.entry.push_back(cooEntry(R->entry_remote[j].row,
-                                            Arecv[k].col,
-                                            R->entry_remote[j].val * Arecv[k].val));
+                                            Arecv[indicesPRecv[k]].col,
+                                            R->entry_remote[j].val * Arecv[indicesPRecv[k]].val));
             }
         }
+
 
     } //for i
 //    MPI_Barrier(comm); printf("rank=%d here!!!!!!!! \n", rank); MPI_Barrier(comm);
 
+    free(indicesPRecv);
     free(AnnzPerRow);
     free(AnnzPerRowScan);
     free(Arecv);
@@ -1361,9 +1375,9 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //            if(rank==1) cout << RATemp.entry[i+1].val << endl;
         }
 //        if(rank==1) cout << endl << "final: " << endl << RA.entry[RA.entry.size()-1].val << endl;
-        // todo: pruning. talk to Hari about this part.
-        if( abs(RA.entry.back().val) < 1e-6)
-            RA.entry.pop_back();
+        // todo: pruning. don't hard code tol. it makes the matrix non-symmetric.
+//        if( abs(RA.entry.back().val) < 1e-6)
+//            RA.entry.pop_back();
 //        if(rank==1) cout << "final: " << endl << RA.entry.back().val << endl;
     }
 
@@ -1371,10 +1385,10 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //        for(j=0; j<RA.entry.size(); j++)
 //            cout << RA.entry[j].row << "\t" << RA.entry[j].col << "\t" << RA.entry[j].val << endl;
 
-    // ************************************* RAPTemp - A local *************************************
-    // Some local and remote elements of RATemp are computed here using local R and local A.
+    // ************************************* RAPTemp - P local *************************************
+    // Some local and remote elements of RAPTemp are computed here.
 
-    prolongMatrix RAPTemp; // RATemp is being used to remove duplicates while pushing back to RA.
+    prolongMatrix RAPTemp; // RAPTemp is being used to remove duplicates while pushing back to RAP.
     unsigned int PMaxNnz;
     MPI_Allreduce(&P->nnz_l, &PMaxNnz, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
 //    MPI_Barrier(comm); printf("rank=%d, PMaxNnz=%d \n", rank, PMaxNnz); MPI_Barrier(comm);
@@ -1418,11 +1432,19 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //        for(i=0; i<nprocs+1; i++)
 //            cout << RABlockStart[i] << endl;}
 
+    // todo: combine indicesP_Prolong and indicesP_ProlongRecv together.
+    // find row-wise ordering for A and save it in indicesP
+    unsigned long* indicesP_Prolong = (unsigned long*)malloc(sizeof(unsigned long)*P->nnz_l);
+    for(unsigned long i=0; i<P->nnz_l; i++)
+        indicesP_Prolong[i] = i;
+    std::sort(indicesP_Prolong, &indicesP_Prolong[P->nnz_l], sort_indices2(&*P->entry.begin()));
+
     for(i=RABlockStart[rank]; i<RABlockStart[rank+1]; i++){
         for(j = PnnzPerRowScan[RA.entry[i].col - P->split[rank]]; j < PnnzPerRowScan[RA.entry[i].col - P->split[rank] + 1]; j++){
+//            if(rank==0) cout << P->entry[indicesP[j]].row << "\t" << P->entry[indicesP[j]].col << "\t" << P->entry[indicesP[j]].val << endl;
             RAPTemp.entry.push_back(cooEntry(RA.entry[i].row + P->splitNew[rank],  // Ac.entry should have global indices at the end.
-                                             P->entry[j].col,
-                                             RA.entry[i].val * P->entry[j].val));
+                                             P->entry[indicesP_Prolong[j]].col,
+                                             RA.entry[i].val * P->entry[indicesP_Prolong[j]].val));
         }
     }
 
@@ -1430,11 +1452,13 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //        for(i=0; i<RAPTemp.entry.size(); i++)
 //            cout << RAPTemp.entry[i].row << "\t" << RAPTemp.entry[i].col << "\t" << RAPTemp.entry[i].val << endl;
 
-    // ************************************* RATemp - A remote *************************************
+    free(indicesP_Prolong);
 
+    // ************************************* RAPTemp - P remote *************************************
+
+    unsigned long* indicesP_ProlongRecv = (unsigned long*)malloc(sizeof(unsigned long)*PMaxNnz);
     cooEntry* Precv = (cooEntry*)malloc(sizeof(cooEntry)*PMaxNnz);
     long PrecvM;
-
 
     for(int i = 1; i < nprocs; i++) {
         // send P to the right processor, receive P from the left processor. "left" decreases by one in each iteration. "right" increases by one.
@@ -1481,18 +1505,25 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 //            if(rank==1) printf("j=%lu, PnnzPerRow=%d, PnnzPerRowScan = %d\n", j, PnnzPerRow[j], PnnzPerRowScan[j]);
         }
 
+        // find row-wise ordering for Arecv and save it in indicesPRecv
+        for(unsigned long i=0; i<nnzRecv; i++)
+            indicesP_ProlongRecv[i] = i;
+        std::sort(indicesP_ProlongRecv, &indicesP_ProlongRecv[nnzRecv], sort_indices2(Precv));
+
 //        if(rank==1) cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << endl;
         for(j=RABlockStart[left]; j<RABlockStart[left+1]; j++){
 //            if(rank==1) cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << endl;
             for(unsigned long k = PnnzPerRowScan[RA.entry[j].col - P->split[left]]; k < PnnzPerRowScan[RA.entry[j].col - P->split[left] + 1]; k++){
+//                if(rank==0) cout << Precv[indicesP_ProlongRecv[k]].row << "\t" << Precv[indicesP_ProlongRecv[k]].col << "\t" << Precv[indicesP_ProlongRecv[k]].val << endl;
                 RAPTemp.entry.push_back(cooEntry(RA.entry[j].row + P->splitNew[rank], // Ac.entry should have global indices at the end.
-                                                Precv[k].col,
-                                                RA.entry[j].val * Precv[k].val));
+                                                Precv[indicesP_ProlongRecv[k]].col,
+                                                RA.entry[j].val * Precv[indicesP_ProlongRecv[k]].val));
             }
         }
 
     } //for i
 
+    free(indicesP_ProlongRecv);
     free(PnnzPerRow);
     free(PnnzPerRowScan);
     free(Precv);
@@ -1511,9 +1542,9 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
             Ac->entry.back().val += RAPTemp.entry[i+1].val;
             i++;
         }
-        // todo: pruning. don't hard code tol.
-        if( abs(Ac->entry.back().val) < 1e-6)
-            Ac->entry.pop_back();
+        // todo: pruning. don't hard code tol. it makes the matrix non-symmetric.
+//        if( abs(Ac->entry.back().val) < 1e-6)
+//            Ac->entry.pop_back();
     }
 
 //    if(rank==1)
@@ -1581,27 +1612,6 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
     MPI_Comm_rank(comm, &rank);
     long i, j;
 
-
-/*
-    MPI_Barrier(comm);
-    printf("\n\n\nprocessor 0: nnz=%u, Mbig=%u\n\n\n", A->nnz_g, A->Mbig);
-    MPI_Barrier(comm);
-    MPI_Barrier(comm);
-    if(rank==0)
-        for(i=0; i<A->nnz_l; i++)
-            printf("%lu\t%lu\t%f\n", A->entry[i].row+1, A->entry[i].col+1, A->entry[i].val);
-    MPI_Barrier(comm);
-    MPI_Barrier(comm);
-    printf("\n\n\nprocessor 1:\n\n\n");
-    MPI_Barrier(comm);
-    MPI_Barrier(comm);
-    if(rank==1)
-        for(i=0; i<A->nnz_l; i++)
-            printf("%lu\t%lu\t%f\n", A->entry[i].row+1, A->entry[i].col+1, A->entry[i].val);
-    MPI_Barrier(comm);
-*/
-
-
     // res = A*u - rhs
     std::vector<double> res(A->M);
     residual(A, u, rhs, res, comm);
@@ -1617,7 +1627,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
 
     double dot;
     dotProduct(res, res, &dot, comm);
-    if(rank==1) cout << "\nsolveCoarsest: norm(res) = " << sqrt(dot) << endl;
+//    if(rank==1) cout << "\nsolveCoarsest: norm(res) = " << sqrt(dot) << endl;
 
     if (dot < tol*tol)
         maxIter = 0;
@@ -1629,7 +1639,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
     std::vector<double> matvecTemp(A->M);
     i = 0;
     while (i < maxIter) {
-        if(rank==1) cout << "\n\nstarting iteration of CG = " << i << endl;
+//        if(rank==1) cout << "\n\nstarting iteration of CG = " << i << endl;
         // factor = sq_norm/ (dir' * A * dir)
         A->matvec(&*dir.begin(), &*matvecTemp.begin(), comm);
 //        if(rank==1){
@@ -1642,7 +1652,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
 //            factor += dir[j] * matvecTemp[j];
         dotProduct(dir, matvecTemp, &factor, comm);
         factor = dot / factor;
-        if(rank==1) cout << "\nsolveCoarsest: factor = " << factor << endl;
+//        if(rank==1) cout << "\nsolveCoarsest: factor = " << factor << endl;
 
         for(j = 0; j < A->M; j++)
             u[j] += factor * dir[j];
@@ -1662,13 +1672,13 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
         dot_prev = dot;
 
         dotProduct(res, res, &dot, comm);
-        if(rank==1) cout << "\nsolveCoarsest: update norm(res) = " << sqrt(dot) << endl;
+//        if(rank==1) cout << "\nsolveCoarsest: update norm(res) = " << sqrt(dot) << endl;
 
         if (dot < tol*tol)
             break;
 
         factor = dot / dot_prev;
-        if(rank==1) cout << "\nsolveCoarsest: update factor = " << factor << endl;
+//        if(rank==1) cout << "\nsolveCoarsest: update factor = " << factor << endl;
 
         // update direction
         for(j = 0; j < A->M; j++)
@@ -1807,25 +1817,19 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //    return;
 //    end
 
-    int maxIter = 0;
+    int maxIter = 10;
     double tol = 1e-10;
     if(grid->currentLevel == maxLevel){
 //        if(rank==1) cout << "\n\n************************\nSolving the coarsest level!" << endl;
-
-//        if(rank==1){
-//            cout << "before calling solveCoarsest: u" << endl;
-//            for(auto i:u)
-//                cout << i << endl;}
-
         solveCoarsest(grid->A, u, rhs, maxIter, tol, comm);
-
-//        if(rank==1){
-//            cout << "after calling solveCoarsest: u" << endl;
-//            for(auto i:u)
-//                cout << i << endl;}
-
         return 0;
     }
+
+    double dot;
+    std::vector<double> r(grid->A->M);
+    residual(grid->A, u, rhs, r, comm);
+    dotProduct(r, r, &dot, comm);
+    if(rank==0) cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << endl;
 
 //    % 1. pre-smooth
 //    u = grid.smooth ( v1, rhs, u );
@@ -1838,16 +1842,20 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //        for(auto i:u)
 //            cout << i << endl;
 
+    residual(grid->A, u, rhs, r, comm);
+    dotProduct(r, r, &dot, comm);
+    if(rank==0) cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << endl;
+
 //    % 2. compute residual
 //    res = grid.residual( rhs, u );
 
-    std::vector<double> r(grid->A->M);
     residual(grid->A, u, rhs, r, comm);
 
 //    if(rank==1) cout << "\n2. compute residual: res, currentLevel = " << grid->currentLevel << endl;
 //    if(rank==1)
 //        for(auto i:r)
 //            cout << i << endl;
+
 
 //    % 3. restrict
 //    res_coarse = grid.R * res;
@@ -1864,7 +1872,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //    u_corr_coarse = grid.Coarse.vcycle(v1, v2, res_coarse, zeros(size(res_coarse)));
 //    function u = vcycle(grid, v1, v2, rhs, u)
 
-    if(rank==1) cout << "\n\n\nenter recursive vcycle = " << grid->currentLevel << endl;
+//    if(rank==1) cout << "\n\n\nenter recursive vcycle = " << grid->currentLevel << endl;
     std::vector<double> uCorrCoarse(grid->Ac.M);
     uCorrCoarse.assign(grid->Ac.M, 0);
     vcycle(grid->coarseGrid, uCorrCoarse, rCoarse, comm);
@@ -1892,6 +1900,10 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //        for(i=0; i<u.size(); i++)
 //            cout << u[i] << endl;
 
+    residual(grid->A, u, rhs, r, comm);
+    dotProduct(r, r, &dot, comm);
+    if(rank==0) cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << endl;
+
 //    % 7. post-smooth
 //    u = grid.smooth ( v2, rhs, u );
 
@@ -1902,6 +1914,10 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //    if(rank==1)
 //        for(auto i:u)
 //            cout << i << endl;
+
+    residual(grid->A, u, rhs, r, comm);
+    dotProduct(r, r, &dot, comm);
+    if(rank==0) cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << endl;
 
     return 0;
 }
@@ -1921,14 +1937,14 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     residual(grid->A, u, rhs, r, comm);
     double initial_dot;
     dotProduct(r, r, &initial_dot, comm);
-    if(rank==1) cout << "initial_norm = " << sqrt(initial_dot) << endl;
+    if(rank==1) cout << "initial_norm = " << sqrt(initial_dot) << endl << endl;
 
     double dot = 0;
     for(i=0; i<vcycle_num; i++){
         vcycle(grid, u, rhs, comm);
         residual(grid->A, u, rhs, r, comm);
         dotProduct(r, r, &dot, comm);
-        if(rank==1) printf("iter = %ld, residual = %f \n\n", i, sqrt(dot));
+        if(rank==1) printf("vcycle iteration = %ld, residual = %f \n\n", i, sqrt(dot));
         if(dot/initial_dot < relTol)
             break;
     }
@@ -1946,6 +1962,7 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
 int AMGClass::writeMatrixToFile(COOMatrix* A, MPI_Comm comm){
     // Create txt files with name Ac0.txt for processor 0, Ac1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat Ac0.txt Ac1.txt > Ac.txt
+    // row and column indices of txt files should start from 1, not 0.
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1955,14 +1972,13 @@ int AMGClass::writeMatrixToFile(COOMatrix* A, MPI_Comm comm){
     std::string outFileNameTxt = "/home/abaris/Acoarse/Ac";
     outFileNameTxt += std::to_string(rank);
     outFileNameTxt += ".txt";
-//    string outFileNameTxt = "Ac.txt";
     outFileTxt.open(outFileNameTxt);
 
     if(rank==0)
         outFileTxt << A->Mbig << "\t" << A->Mbig << "\t" << A->nnz_g << endl;
     for (long i = 0; i < A->nnz_l; i++) {
 //        cout << A->entry[i].row << "\t" << A->entry[i].col << "\t" << A->entry[i].val << endl;
-        outFileTxt << A->entry[i].row << "\t" << A->entry[i].col << "\t" << A->entry[i].val << endl;
+        outFileTxt << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
     }
 
     outFileTxt.clear();

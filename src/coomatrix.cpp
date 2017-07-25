@@ -633,10 +633,10 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
     unsigned long* row_remoteP = &(*(row_remote.begin()));
     std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
 
-//    indicesP = (int*)malloc(sizeof(int)*nnz_l);
-//    for(int i=0; i<nnz_l; i++)
+//    indicesP = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l);
+//    for(unsigned long i=0; i<nnz_l; i++)
 //        indicesP[i] = i;
-//    std::sort(indicesP, &indicesP[nnz_l], sort_indices(rowP));
+//    std::sort(indicesP, &indicesP[nnz_l], sort_indices2(&*entry.begin()));
 
     return 0;
 }
