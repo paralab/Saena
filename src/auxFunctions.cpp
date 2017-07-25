@@ -54,6 +54,32 @@ int randomVector(std::vector<unsigned long>& V, long size){
 }
 
 
+int randomVector2(std::vector<double>& V){
+
+//    int rank;
+//    MPI_Comm_rank(comm, &rank);
+
+//    for (unsigned long i=0; i<V.size(); i++){
+//        srand (i);
+//        V[i] = rand()%(V.size());
+//    }
+
+    //Type of random number distribution
+    std::uniform_real_distribution<double> dist(-1000.0,1000); //(min, max)
+
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    for (unsigned long i=0; i<V.size(); i++)
+        V[i] = dist(rng);
+
+    return 0;
+}
+
+
 //template <class T>
 //float myNorm(std::vector<T>& v){
 //    float norm = 0;

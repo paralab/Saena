@@ -3,6 +3,8 @@
 //
 
 #include <cstdio>
+#include <stdlib.h>
+#include <stdio.h>
 #include <algorithm>
 #include <mpi.h>
 #include <usort/parUtils.h>
@@ -13,6 +15,8 @@
 #include "auxFunctions.h"
 //#include "prolongmatrix.h"
 //#include "restrictmatrix.h"
+
+#include <fstream>
 
 
 AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int postSm, float connStr, float ta, bool doSpars){
@@ -60,7 +64,7 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
     MPI_Comm_rank(comm, &rank);
     unsigned long i;
 
-    MPI_Barrier(comm); if(rank==1) cout << endl << "current level = " << grid->currentLevel << endl; MPI_Barrier(comm);
+//    MPI_Barrier(comm); if(rank==1) cout << endl << "current level = " << grid->currentLevel << endl; MPI_Barrier(comm);
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
@@ -1533,12 +1537,12 @@ int AMGClass::coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatr
 } // end of AMGClass::coarsen
 
 
-int AMGClass::residual(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, std::vector<double>& r, MPI_Comm comm){
-    //    Vector r = A*u - b;
+int AMGClass::residual(COOMatrix* A, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res, MPI_Comm comm){
+    //    Vector res = A*u - rhs;
 
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+//    int nprocs, rank;
+//    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_rank(comm, &rank);
 
     std::vector<double> matvecTemp(A->M);
     A->matvec(&*u.begin(), &*matvecTemp.begin(), comm);
@@ -1546,91 +1550,135 @@ int AMGClass::residual(COOMatrix* A, std::vector<double>& u, std::vector<double>
 //        for(long i=0; i<matvecTemp.size(); i++)
 //            cout << matvecTemp[i] << endl;
 
-    for(long i=0; i<matvecTemp.size(); i++)
-        r[i] = matvecTemp[i] - b[i]; // todo: check if it is true, or it needs a minus.
+    for(long i=0; i<A->M; i++)
+        res[i] = matvecTemp[i] - rhs[i];
 //    if(rank==1)
-//        for(long i=0; i<r.size(); i++)
-//            cout << r[i] << endl;
+//        for(long i=0; i<res.size(); i++)
+//            cout << res[i] << endl;
 
     return 0;
 }
 
 
-int AMGClass::normSQ(std::vector<double>& r, double* sq_norm, MPI_Comm comm){
+int AMGClass::dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm){
 
     long i;
-    double sq_norm_l;
-    sq_norm_l = 0;
+    double dot_l = 0;
     for(i=0; i<r.size(); i++)
-        sq_norm_l += r[i] * r[i];
-    MPI_Allreduce(&sq_norm_l, sq_norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+        dot_l += r[i] * s[i];
+    MPI_Allreduce(&dot_l, dot, 1, MPI_DOUBLE, MPI_SUM, comm);
 
     return 0;
 }
 
 
-int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, int& maxIter, double& tol, MPI_Comm comm){
+int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& rhs, int& maxIter, double& tol, MPI_Comm comm){
     // this is CG.
+    // u is zero in the beginning. At the end, it is the solution.
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     long i, j;
 
-    // r = A*u - b
-    std::vector<double> r(A->M);
-    residual(A, u, b, r, comm);
 
-//    if(rank==1)
-//        for(i=0; i<r.size(); i++)
-//            cout << r[i] << endl;
+/*
+    MPI_Barrier(comm);
+    printf("\n\n\nprocessor 0: nnz=%u, Mbig=%u\n\n\n", A->nnz_g, A->Mbig);
+    MPI_Barrier(comm);
+    MPI_Barrier(comm);
+    if(rank==0)
+        for(i=0; i<A->nnz_l; i++)
+            printf("%lu\t%lu\t%f\n", A->entry[i].row+1, A->entry[i].col+1, A->entry[i].val);
+    MPI_Barrier(comm);
+    MPI_Barrier(comm);
+    printf("\n\n\nprocessor 1:\n\n\n");
+    MPI_Barrier(comm);
+    MPI_Barrier(comm);
+    if(rank==1)
+        for(i=0; i<A->nnz_l; i++)
+            printf("%lu\t%lu\t%f\n", A->entry[i].row+1, A->entry[i].col+1, A->entry[i].val);
+    MPI_Barrier(comm);
+*/
 
-    double sq_norm;
-    normSQ(r, &sq_norm, comm);
-//    if(rank==1) cout << sq_norm << endl;
 
-    // todo: check this. it will still enter the following for loop.
-    if ( sq_norm < tol*tol )
+    // res = A*u - rhs
+    std::vector<double> res(A->M);
+    residual(A, u, rhs, res, comm);
+
+    // make res = rhs - A*u
+    for(i=0; i<res.size(); i++)
+        res[i] = -res[i];
+
+//    if(rank==1){
+//        cout << "\nsolveCoarsest: initial res" << endl;
+//        for(auto i:res)
+//            cout << i << endl;}
+
+    double dot;
+    dotProduct(res, res, &dot, comm);
+    if(rank==1) cout << "\nsolveCoarsest: norm(res) = " << sqrt(dot) << endl;
+
+    if (dot < tol*tol)
         maxIter = 0;
 
     std::vector<double> dir(A->M);
-    dir = r;
+    dir = res;
 
-    double factor, sq_norm_prev;
+    double factor, dot_prev;
     std::vector<double> matvecTemp(A->M);
-    for (i = 0; i < maxIter; i++) {
-//        MPI_Barrier(comm); if(rank==1) cout << endl << i << endl; MPI_Barrier(comm);
+    i = 0;
+    while (i < maxIter) {
+        if(rank==1) cout << "\n\nstarting iteration of CG = " << i << endl;
         // factor = sq_norm/ (dir' * A * dir)
         A->matvec(&*dir.begin(), &*matvecTemp.begin(), comm);
-//        if(rank==1)
-//            for(j=0; j<matvecTemp.size(); j++)
-//                cout << matvecTemp[j] << endl;
+//        if(rank==1){
+//            cout << "\nsolveCoarsest: A*dir" << endl;
+//            for(auto i:matvecTemp)
+//                cout << i << endl;}
 
-        factor = 0;
-        for(j = 0; j < A->M; j++)
-            factor += dir[j] * matvecTemp[j];
-        factor = sq_norm / factor;
+//        factor = 0;
+//        for(j = 0; j < A->M; j++)
+//            factor += dir[j] * matvecTemp[j];
+        dotProduct(dir, matvecTemp, &factor, comm);
+        factor = dot / factor;
+        if(rank==1) cout << "\nsolveCoarsest: factor = " << factor << endl;
 
         for(j = 0; j < A->M; j++)
             u[j] += factor * dir[j];
+//        if(rank==1){
+//            cout << "\nsolveCoarsest: u" << endl;
+//            for(auto i:u)
+//                cout << i << endl;}
 
         // update residual
         for(j = 0; j < A->M; j++)
-            r[j] -= factor * matvecTemp[j];
+            res[j] -= factor * matvecTemp[j];
+//        if(rank==1){
+//            cout << "\nsolveCoarsest: update res" << endl;
+//            for(auto i:res)
+//                cout << i << endl;}
 
-        sq_norm_prev = sq_norm;
+        dot_prev = dot;
 
-        normSQ(r, &sq_norm, comm);
+        dotProduct(res, res, &dot, comm);
+        if(rank==1) cout << "\nsolveCoarsest: update norm(res) = " << sqrt(dot) << endl;
 
-        if (sq_norm < tol*tol)
+        if (dot < tol*tol)
             break;
 
-        factor = sq_norm / sq_norm_prev;
+        factor = dot / dot_prev;
+        if(rank==1) cout << "\nsolveCoarsest: update factor = " << factor << endl;
 
         // update direction
         for(j = 0; j < A->M; j++)
-            dir[j] = r[j] + factor * dir[j];
+            dir[j] = res[j] + factor * dir[j];
+//        if(rank==1){
+//            cout << "\nsolveCoarsest: update dir" << endl;
+//            for(auto i:dir)
+//                cout << i << endl;}
 
+        i++;
     }
 
     return 0;
@@ -1759,10 +1807,10 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //    return;
 //    end
 
-    int maxIter = 10;
+    int maxIter = 0;
     double tol = 1e-10;
     if(grid->currentLevel == maxLevel){
-        if(rank==1) cout << "Solving the coarsest level!" << endl;
+//        if(rank==1) cout << "\n\n************************\nSolving the coarsest level!" << endl;
 
 //        if(rank==1){
 //            cout << "before calling solveCoarsest: u" << endl;
@@ -1785,7 +1833,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     for(i=0; i<preSmooth; i++)
         grid->A->jacobi(u, rhs, comm);
 
-//    if(rank==1) cout << "\n1. pre-smooth: u" << endl;
+//    if(rank==1) cout << "\n1. pre-smooth: u, currentLevel = " << grid->currentLevel << endl;
 //    if(rank==1)
 //        for(auto i:u)
 //            cout << i << endl;
@@ -1796,7 +1844,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     std::vector<double> r(grid->A->M);
     residual(grid->A, u, rhs, r, comm);
 
-//    if(rank==1) cout << "\n2. compute residual: r" << endl;
+//    if(rank==1) cout << "\n2. compute residual: res, currentLevel = " << grid->currentLevel << endl;
 //    if(rank==1)
 //        for(auto i:r)
 //            cout << i << endl;
@@ -1807,7 +1855,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     std::vector<double> rCoarse(grid->Ac.M);
     grid->R.matvec(&*r.begin(), &*rCoarse.begin(), comm);
 
-//    if(rank==1) cout << "\n3. restrict: rCoarse" << endl;
+//    if(rank==1) cout << "\n3. restriction: rCoarse = R*res, currentLevel = " << grid->currentLevel << endl;
 //    if(rank==1)
 //        for(auto i:rCoarse)
 //            cout << i << endl;
@@ -1816,35 +1864,41 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //    u_corr_coarse = grid.Coarse.vcycle(v1, v2, res_coarse, zeros(size(res_coarse)));
 //    function u = vcycle(grid, v1, v2, rhs, u)
 
+    if(rank==1) cout << "\n\n\nenter recursive vcycle = " << grid->currentLevel << endl;
     std::vector<double> uCorrCoarse(grid->Ac.M);
     uCorrCoarse.assign(grid->Ac.M, 0);
     vcycle(grid->coarseGrid, uCorrCoarse, rCoarse, comm);
 
-//    if(rank==1) cout << "\n4. recurse: uCorrCoarse" << endl;
+//    if(rank==1) cout << "\n4. uCorrCoarse, currentLevel = " << grid->currentLevel << endl;
 //    if(rank==1)
 //        for(auto i:uCorrCoarse)
 //            cout << i << endl;
 
-//    % 5. prolong and correct
+//    % 5 & 6. prolong and correct
 //    u = u - grid.P * u_corr_coarse;
 
     std::vector<double> uCorr(grid->A->M);
     grid->P.matvec(&*uCorrCoarse.begin(), &*uCorr.begin(), comm);
+//    if(rank==1) cout << "\n5. prolongation: uCorr = P*uCorrCoarse , currentLevel = " << grid->currentLevel << endl;
+//    if(rank==1)
+//        for(i=0; i<u.size(); i++)
+//            cout << uCorr[i] << endl;
+
     for(i=0; i<u.size(); i++)
         u[i] -= uCorr[i];
 
-//    if(rank==1) cout << "\n5. prolong and correct: uCorr and u -= uCorr" << endl;
+//    if(rank==1) cout << "\n6. correct: u -= uCorr, currentLevel = " << grid->currentLevel << endl;
 //    if(rank==1)
 //        for(i=0; i<u.size(); i++)
-//            cout << uCorr[i] << "\t" << u[i] << endl;
+//            cout << u[i] << endl;
 
-//    % 6. post-smooth
+//    % 7. post-smooth
 //    u = grid.smooth ( v2, rhs, u );
 
     for(i=0; i<postSmooth; i++)
         grid->A->jacobi(u, rhs, comm);
 
-//    if(rank==1) cout << "\n6. post-smooth: u" << endl;
+//    if(rank==1) cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << endl;
 //    if(rank==1)
 //        for(auto i:u)
 //            cout << i << endl;
@@ -1859,23 +1913,23 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     MPI_Comm_rank(comm, &rank);
     long i;
 
-    double temp;
-    normSQ(rhs, &temp, comm);
+//    double temp;
+//    dot(rhs, rhs, &temp, comm);
 //    if(rank==1) cout << "norm(rhs) = " << sqrt(temp) << endl;
 
     std::vector<double> r(grid->A->M);
     residual(grid->A, u, rhs, r, comm);
-    double initial_sq_norm;
-    normSQ(r, &initial_sq_norm, comm);
-    if(rank==1) cout << "initial_norm = " << sqrt(initial_sq_norm) << endl;
+    double initial_dot;
+    dotProduct(r, r, &initial_dot, comm);
+    if(rank==1) cout << "initial_norm = " << sqrt(initial_dot) << endl;
 
-    double sq_norm = 0;
+    double dot = 0;
     for(i=0; i<vcycle_num; i++){
         vcycle(grid, u, rhs, comm);
         residual(grid->A, u, rhs, r, comm);
-        normSQ(r, &sq_norm, comm);
-        if(rank==1) printf("iter = %ld, residual = %f \n\n", i, sqrt(sq_norm));
-        if(sq_norm/initial_sq_norm < relTol)
+        dotProduct(r, r, &dot, comm);
+        if(rank==1) printf("iter = %ld, residual = %f \n\n", i, sqrt(dot));
+        if(dot/initial_dot < relTol)
             break;
     }
 
@@ -1884,7 +1938,83 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     if(i == vcycle_num)
         i--;
 
-    if(rank==1) printf("\nfinal:\niter = %ld, residual = %f \n", i, sqrt(sq_norm));
+    if(rank==1) printf("\nfinal:\niter = %ld, residual = %f \n", i, sqrt(dot));
     return 0;
 }
 
+
+int AMGClass::writeMatrixToFile(COOMatrix* A, MPI_Comm comm){
+    // Create txt files with name Ac0.txt for processor 0, Ac1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat Ac0.txt Ac1.txt > Ac.txt
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    ofstream outFileTxt;
+    std::string outFileNameTxt = "/home/abaris/Acoarse/Ac";
+    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".txt";
+//    string outFileNameTxt = "Ac.txt";
+    outFileTxt.open(outFileNameTxt);
+
+    if(rank==0)
+        outFileTxt << A->Mbig << "\t" << A->Mbig << "\t" << A->nnz_g << endl;
+    for (long i = 0; i < A->nnz_l; i++) {
+//        cout << A->entry[i].row << "\t" << A->entry[i].col << "\t" << A->entry[i].val << endl;
+        outFileTxt << A->entry[i].row << "\t" << A->entry[i].col << "\t" << A->entry[i].val << endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
+
+    /*
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+//    const char* fileName = "/home/abaris/Dropbox/Projects/Saena/build/Ac.txt";
+//    const char* fileName = (const char*)malloc(sizeof(const char)*49);
+//    fileName = "/home/abaris/Dropbox/Projects/Saena/build/Ac" + "1.txt";
+    std::string fileName = "/home/abaris/Acoarse/Ac";
+    fileName += std::to_string(7);
+    fileName += ".txt";
+
+    int mpierror = MPI_File_open(comm, fileName.c_str(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
+    if (mpierror) {
+        if (rank == 0) cout << "Unable to open the matrix file!" << endl;
+        MPI_Finalize();
+    }
+
+//    std::vector<unsigned int> nnzScan(nprocs);
+//    mpierror = MPI_Allgather(&A->nnz_l, 1, MPI_UNSIGNED, &nnzScan[1], 1, MPI_UNSIGNED, comm);
+//    if (mpierror) {
+//        if (rank == 0) cout << "Unable to gather!" << endl;
+//        MPI_Finalize();
+//    }
+
+//    nnzScan[0] = 0;
+//    for(unsigned long i=0; i<nprocs; i++){
+//        nnzScan[i+1] = nnzScan[i] + nnzScan[i+1];
+//        if(rank==1) cout << nnzScan[i] << endl;
+//    }
+//    offset = nnzScan[rank];
+//    MPI_File_write_at_all(fh, rank, &nnzScan[rank])
+//    unsigned int a = 1;
+//    double b = 3;
+//    MPI_File_write_at(fh, rank, &rank, 1, MPI_INT, &status);
+//    MPI_File_write_at_all(fh, offset, &A->entry[0], A->nnz_l, cooEntry::mpi_datatype(), &status);
+//    MPI_File_write_at_all(fh, &A->entry[0], A->nnz_l, cooEntry::mpi_datatype(), &status);
+//    if (mpierror) {
+//        if (rank == 0) cout << "Unable to write to the matrix file!" << endl;
+//        MPI_Finalize();
+//    }
+
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+    //printf("process %d read %d lines of triples\n", rank, count);
+    MPI_File_close(&fh);
+     */
+
+    return 0;
+}

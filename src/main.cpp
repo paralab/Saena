@@ -80,8 +80,8 @@ int main(int argc, char* argv[]){
     offset = A.split[rank] * 8; // value(double=8)
     MPI_File_read_at(fh, offset, vp, A.M, MPI_UNSIGNED_LONG, &status);
 
-    int count;
-    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
 
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG ****************************
 
-    int maxLevel       = 3; // not including fine level. fine level is 0.
+    int maxLevel       = 1; // not including fine level. fine level is 0.
     int vcycle_num     = 1 ;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
@@ -117,7 +117,20 @@ int main(int argc, char* argv[]){
 
     std::vector<double> u(A.M);
     u.assign(A.M, 0); // initial guess
+//    randomVector2(u);
+//    if(rank==1) cout << "\ninitial guess u" << endl;
+//    if(rank==1)
+//        for(auto i:u)
+//            cout << i << endl;
+
     amgClass.AMGSolve(grids, u, rhs, comm);
+
+//    amgClass.writeMatrixToFile(&A, comm);
+
+//    int max = 10;
+//    double tol = 1e-10;
+//    amgClass.solveCoarsest(&A, u, rhs, max, tol, comm);
+
 //    MPI_Barrier(comm); printf("----------main----------\n"); MPI_Barrier(comm);
 
     // *************************** finalize ****************************
