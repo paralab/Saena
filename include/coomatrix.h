@@ -64,6 +64,7 @@ public:
     double* vecValues;
     unsigned long* vecValuesULong;
 
+//    unsigned long* indicesP;
     unsigned long* indicesP_local;
     unsigned long* indicesP_remote;
 
