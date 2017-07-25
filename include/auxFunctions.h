@@ -24,6 +24,9 @@ T lower_bound2(T *left, T *right, T val);
 int randomVector(std::vector<unsigned long>& V, long size);
 
 
+int randomVector2(std::vector<double>& V);
+
+
 class cooEntry{
 public:
     unsigned long row;

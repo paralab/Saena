@@ -35,11 +35,13 @@ public:
     int createProlongation(COOMatrix* A, std::vector<unsigned long>& aggregate, prolongMatrix* P, MPI_Comm comm);
 //    int createRestriction(prolongMatrix* P, restrictMatrix* R, MPI_Comm comm);
     int coarsen(COOMatrix* A, prolongMatrix* P, restrictMatrix* R, COOMatrix* Ac, MPI_Comm comm);
-    int residual(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, std::vector<double>& r, MPI_Comm comm);
-    int normSQ(std::vector<double>& r, double* sq_norm, MPI_Comm comm);
-    int solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& b, int& maxIter, double& tol, MPI_Comm comm);
+    int residual(COOMatrix* A, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res, MPI_Comm comm);
+    int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm);
+    int solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<double>& rhs, int& maxIter, double& tol, MPI_Comm comm);
     int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
     int AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
+
+    int writeMatrixToFile(COOMatrix* A, MPI_Comm comm);
 };
 
 #endif //SAENA_AMGCLASS_H
