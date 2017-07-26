@@ -233,7 +233,9 @@ int COOMatrix::repartition(MPI_Comm comm){
 //    if (rank==0){
 //        cout << endl << "split:" << endl;
 //        for(unsigned int i=0; i<nprocs+1; i++)
-//            cout << split[i] << endl;}
+//            cout << split[i] << endl;
+//        cout << endl;
+//    }
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
@@ -351,6 +353,13 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
     MPI_Comm_rank(comm, &rank);
 
     freeBoolean = true; // use this parameter to know if deconstructor for COOMatrix class should free the variables or not.
+
+    if (rank==0){
+        cout << endl << "split:" << endl;
+        for(unsigned int i=0; i<nprocs+1; i++)
+            cout << split[i] << endl;
+        cout << endl;
+    }
 
     // *************************** set the inverse of diagonal of A (for smoothers) ****************************
 

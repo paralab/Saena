@@ -833,11 +833,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 
     free(splitNewTemp);
 
-    if(rank==0){
-        cout << "splitNew:" << endl;
-        for(i=0; i<nprocs+1; i++)
-            cout << S->split[i] << "\t" << splitNew[i] << endl;
-        cout << endl;}
+//    if(rank==0){
+//        cout << "splitNew:" << endl;
+//        for(i=0; i<nprocs+1; i++)
+//            cout << S->split[i] << "\t" << splitNew[i] << endl;
+//        cout << endl;}
 
     unsigned long procNum;
     vector<unsigned long> aggregateRemote;
@@ -1627,7 +1627,8 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
 
     double dot;
     dotProduct(res, res, &dot, comm);
-//    if(rank==1) cout << "\nsolveCoarsest: norm(res) = " << sqrt(dot) << endl;
+    double initialNorm = sqrt(dot);
+    if(rank==0) cout << "\nsolveCoarsest: initial norm(res) = " << initialNorm << endl;
 
     if (dot < tol*tol)
         maxIter = 0;
@@ -1639,7 +1640,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
     std::vector<double> matvecTemp(A->M);
     i = 0;
     while (i < maxIter) {
-//        if(rank==1) cout << "\n\nstarting iteration of CG = " << i << endl;
+        if(rank==0) cout << "starting iteration of CG = " << i << endl;
         // factor = sq_norm/ (dir' * A * dir)
         A->matvec(&*dir.begin(), &*matvecTemp.begin(), comm);
 //        if(rank==1){
@@ -1672,7 +1673,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
         dot_prev = dot;
 
         dotProduct(res, res, &dot, comm);
-//        if(rank==1) cout << "\nsolveCoarsest: update norm(res) = " << sqrt(dot) << endl;
+        if(rank==0) cout << "update norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << endl;
 
         if (dot < tol*tol)
             break;
@@ -1690,6 +1691,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
 
         i++;
     }
+    if(rank==0) cout << endl;
 
     return 0;
 }
@@ -1817,10 +1819,10 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //    return;
 //    end
 
-    int maxIter = 10;
-    double tol = 1e-10;
+    int maxIter = 20;
+    double tol = 1e-12;
     if(grid->currentLevel == maxLevel){
-//        if(rank==1) cout << "\n\n************************\nSolving the coarsest level!" << endl;
+        if(rank==0) cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << endl;
         solveCoarsest(grid->A, u, rhs, maxIter, tol, comm);
         return 0;
     }
@@ -1829,6 +1831,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     std::vector<double> r(grid->A->M);
     residual(grid->A, u, rhs, r, comm);
     dotProduct(r, r, &dot, comm);
+    if(rank==0) cout << "*******************" << endl;
     if(rank==0) cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << endl;
 
 //    % 1. pre-smooth
@@ -1937,14 +1940,14 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     residual(grid->A, u, rhs, r, comm);
     double initial_dot;
     dotProduct(r, r, &initial_dot, comm);
-    if(rank==1) cout << "initial_norm = " << sqrt(initial_dot) << endl << endl;
+    if(rank==0) cout << "initial_norm = " << sqrt(initial_dot) << endl << endl;
 
     double dot = 0;
     for(i=0; i<vcycle_num; i++){
         vcycle(grid, u, rhs, comm);
         residual(grid->A, u, rhs, r, comm);
         dotProduct(r, r, &dot, comm);
-        if(rank==1) printf("vcycle iteration = %ld, residual = %f \n\n", i, sqrt(dot));
+        if(rank==0) printf("vcycle iteration = %ld, residual = %f \n\n", i, sqrt(dot));
         if(dot/initial_dot < relTol)
             break;
     }
@@ -1954,7 +1957,7 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     if(i == vcycle_num)
         i--;
 
-    if(rank==1) printf("\nfinal:\niter = %ld, residual = %f \n", i, sqrt(dot));
+    if(rank==0) printf("\nfinal:\niter = %ld, residual = %f \n", i, sqrt(dot));
     return 0;
 }
 
@@ -1984,7 +1987,23 @@ int AMGClass::writeMatrixToFile(COOMatrix* A, MPI_Comm comm){
     outFileTxt.clear();
     outFileTxt.close();
 
-    /*
+/*
+    // this is the code for writing the result of jacobi to a file.
+    char* outFileNameTxt = "jacobi_saena.bin";
+    MPI_Status status2;
+    MPI_File fh2;
+    MPI_Offset offset2;
+    MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
+    offset2 = A.split[rank] * 8; // value(double=8)
+    MPI_File_write_at(fh2, offset2, xp, A.M, MPI_UNSIGNED_LONG, &status2);
+    int count2;
+    MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
+    //printf("process %d wrote %d lines of triples\n", rank, count2);
+    MPI_File_close(&fh2);
+*/
+
+/*
+    // failed try to write this part.
     MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
@@ -2030,7 +2049,7 @@ int AMGClass::writeMatrixToFile(COOMatrix* A, MPI_Comm comm){
 //    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
-     */
+*/
 
     return 0;
 }
