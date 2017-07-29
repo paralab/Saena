@@ -56,6 +56,7 @@ public:
 //    std::vector<unsigned int> nnz_row_remote;
 
     std::vector<double> invDiag;
+    double norm1, normInf, rhoDA;
 
     int vIndexSize;
     long *vIndex;

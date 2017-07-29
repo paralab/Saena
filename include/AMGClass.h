@@ -41,7 +41,9 @@ public:
     int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
     int AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
 
-    int writeMatrixToFile(COOMatrix* A, MPI_Comm comm);
+    int writeMatrixToFileA(COOMatrix* A, string name, MPI_Comm comm);
+    int writeMatrixToFileP(prolongMatrix* P, string name, MPI_Comm comm);
+    int changeAggregation(COOMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
 };
 
 #endif //SAENA_AMGCLASS_H
