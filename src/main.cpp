@@ -162,7 +162,8 @@ int main(int argc, char* argv[]){
 //    amgClass.AMGSolve(grids, u, rhs, comm);
 
 //    amgClass.writeMatrixToFileA(grids[1].A, "Ac", comm);
-    amgClass.writeMatrixToFileP(&grids[0].P, "P", comm);
+//    amgClass.writeMatrixToFileP(&grids[0].P, "P", comm);
+//    amgClass.writeMatrixToFileR(&grids[0].R, "R", comm);
 
     // *************************** write residual or the solution to a file ****************************
 

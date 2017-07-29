@@ -1980,12 +1980,14 @@ int AMGClass::writeMatrixToFileA(COOMatrix* A, string name, MPI_Comm comm){
     // Then, concatenate them in terminal: cat Ac0.txt Ac1.txt > Ac.txt
     // row and column indices of txt files should start from 1, not 0.
 
+    // todo: check global or local index and see if A->split[rank] is required for rows.
+
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
     ofstream outFileTxt;
-    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/wrteMatrix/";
+    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
     outFileNameTxt += name;
     outFileNameTxt += std::to_string(rank);
     outFileNameTxt += ".txt";
@@ -1994,7 +1996,7 @@ int AMGClass::writeMatrixToFileA(COOMatrix* A, string name, MPI_Comm comm){
     if(rank==0)
         outFileTxt << A->Mbig << "\t" << A->Mbig << "\t" << A->nnz_g << endl;
     for (long i = 0; i < A->nnz_l; i++) {
-//        cout << A->entry[i].row << "\t" << A->entry[i].col << "\t" << A->entry[i].val << endl;
+        cout       << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
         outFileTxt << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
     }
 
@@ -2088,8 +2090,38 @@ int AMGClass::writeMatrixToFileP(prolongMatrix* P, string name, MPI_Comm comm) {
     if (rank == 0)
         outFileTxt << P->Mbig << "\t" << P->Mbig << "\t" << P->nnz_g << endl;
     for (long i = 0; i < P->nnz_l; i++) {
-//        cout << P->entry[i].row << "\t" << P->entry[i].col << "\t" << P->entry[i].val << endl;
-        outFileTxt << P->entry[i].row + 1 << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << endl;
+//        cout       << P->entry[i].row + 1 + P->split[rank] << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << endl;
+        outFileTxt << P->entry[i].row + 1 + P->split[rank] << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
+
+    return 0;
+}
+
+
+int AMGClass::writeMatrixToFileR(restrictMatrix* R, string name, MPI_Comm comm) {
+    // Create txt files with name R0.txt for processor 0, R1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat R0.txt R1.txt > R.txt
+    // row and column indices of txt files should start from 1, not 0.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    ofstream outFileTxt;
+    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
+    outFileNameTxt += name;
+    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".txt";
+    outFileTxt.open(outFileNameTxt);
+
+    if (rank == 0)
+        outFileTxt << R->Mbig << "\t" << R->Mbig << "\t" << R->nnz_g << endl;
+    for (long i = 0; i < R->nnz_l; i++) {
+//        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
+        outFileTxt << R->entry[i].row + 1 +  R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
     }
 
     outFileTxt.clear();
