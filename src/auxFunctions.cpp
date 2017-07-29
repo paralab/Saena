@@ -67,7 +67,7 @@ int randomVector2(std::vector<double>& V){
 //    }
 
     //Type of random number distribution
-    std::uniform_real_distribution<double> dist(-1000.0,1000); //(min, max)
+    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max)
 
     //Mersenne Twister: Good quality random number generator
     std::mt19937 rng;

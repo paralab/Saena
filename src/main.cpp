@@ -24,12 +24,12 @@ int main(int argc, char* argv[]){
     unsigned long i;
     int assert1, assert2, assert3;
 
-    if(argc < 3)
+    if(argc < 4)
     {
         if(rank == 0)
         {
-            cout << "Usage: ./Saena <MatrixA> <vecX>" << endl;
-            cout << "Files should be in triples format." << endl;
+            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <u_vec>" << endl;
+            cout << "Matrix file should be in triples format." << endl;
         }
         MPI_Finalize();
         return -1;
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
 
     int mpiopen = MPI_File_open(comm, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
-        if (rank==0) cout << "Unable to open the vector file!" << endl;
+        if (rank==0) cout << "Unable to open the rhs vector file!" << endl;
         MPI_Finalize();
         return -1;
     }
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
     offset = A.split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh, offset, vp, A.M, MPI_UNSIGNED_LONG, &status);
+    MPI_File_read_at(fh, offset, vp, A.M, MPI_DOUBLE, &status);
 
 //    int count;
 //    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
@@ -88,20 +88,61 @@ int main(int argc, char* argv[]){
     // set rhs
     std::vector<double> rhs(A.M);
     A.matvec(&*v.begin(), &*rhs.begin(), comm);
+//    rhs.assign(A.M, 0);
 //    if(rank==0)
 //        for(i = 0; i < rhs.size(); i++)
 //            cout << rhs[i] << endl;
+
 //    for(i=0; i<A.M; i++)
 //        rhs[i] = i + 1 + A.split[rank];
 
-    // *************************** AMG ****************************
+    // *************************** read the vector and set u0 ****************************
+    // there are 3 options for u0:
+    // 1- zero
+    // 2- random
+    // 3- flat from homg
+
+    //    std::vector<double> u(A.M);
+    //    u.assign(A.M, 0); // initial guess = 0
+    //    randomVector2(u); // initial guess = random
+    //    if(rank==1) cout << "\ninitial guess u" << endl;
+    //    if(rank==1)
+    //        for(auto i:u)
+    //            cout << i << endl;
+
+    // u0 is generated as flat from homg: u0 = eigenvalues*ones. check homg010_u0flat.m file
+
+    MPI_Status status3;
+    MPI_File fh3;
+    MPI_Offset offset3;
+
+    char* Uname(argv[3]);
+    int mpiopen3 = MPI_File_open(comm, Uname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh3);
+    if(mpiopen3){
+        if (rank==0) cout << "Unable to open the U vector file!" << endl;
+        MPI_Finalize();
+        return -1;
+    }
+
+    std::vector<double> u(A.M);
+
+    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
+    offset3 = A.split[rank] * 8; // value(double=8)
+    MPI_File_read_at(fh3, offset3, &*u.begin(), A.M, MPI_DOUBLE, &status3);
+    MPI_File_close(&fh3);
+
+//    if(rank==0)
+//        for(i = 0; i < u.size(); i++)
+//            cout << u[i] << endl;
+
+    // *************************** AMG - Setup ****************************
 
     int maxLevel       = 1; // not including fine level. fine level is 0.
-    int vcycle_num     = 10 ;
+    int vcycle_num     = 1;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
-    int preSmooth      = 3;
-    int postSmooth     = 3;
+    int preSmooth      = 1;
+    int postSmooth     = 1;
     float connStrength = 0.5; // connection strength parameter
     float tau          = 3; // is used during making aggregates.
     bool doSparsify    = 0;
@@ -109,7 +150,6 @@ int main(int argc, char* argv[]){
     AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau, doSparsify);
     Grid grids[maxLevel+1];
     amgClass.AMGSetup(grids, &A, comm);
-//    MPI_Barrier(comm); printf("----------AMGSetup----------\n"); MPI_Barrier(comm);
 
 //    MPI_Barrier(comm);
 //    for(int i=0; i<maxLevel; i++)
@@ -117,44 +157,82 @@ int main(int argc, char* argv[]){
 //                         << ", A.Mbig = " << grids[i].A->Mbig << ", A.M = " << grids[i].A->M << ", Ac.Mbig = " << grids[i].Ac.Mbig << ", Ac.M = " << grids[i].Ac.M << endl;
 //    MPI_Barrier(comm);
 
-    std::vector<double> u(A.M);
-    u.assign(A.M, 0); // initial guess = 0
-//    randomVector2(u); // initial guess = random
-//    if(rank==1) cout << "\ninitial guess u" << endl;
-//    if(rank==1)
-//        for(auto i:u)
-//            cout << i << endl;
+    // *************************** AMG - Solve ****************************
 
-    amgClass.AMGSolve(grids, u, rhs, comm);
+//    amgClass.AMGSolve(grids, u, rhs, comm);
 
-//    amgClass.writeMatrixToFile(grids[3].A, comm);
+//    amgClass.writeMatrixToFileA(grids[1].A, "Ac", comm);
+    amgClass.writeMatrixToFileP(&grids[0].P, "P", comm);
 
+    // *************************** write residual or the solution to a file ****************************
+
+    //    double dot;
+//    std::vector<double> res(A.M);
+//    amgClass.residual(&A, u, rhs, res, comm);
+//    amgClass.dotProduct(res, res, &dot, comm);
+//    if(rank==0) cout << "initial residual = " << sqrt(dot) << endl;
+
+//    A.jacobi(u, rhs, comm);
 //    int max = 20;
 //    double tol = 1e-12;
 //    amgClass.solveCoarsest(&A, u, rhs, max, tol, comm);
+//    A.jacobi(u, rhs, comm);
+
+//    amgClass.residual(&A, u, rhs, res, comm);
+//    amgClass.dotProduct(res, res, &dot, comm);
+//    if(rank==0) cout << "final residual = " << sqrt(dot) << endl;
+
+/*
+    char* outFileNameTxt = "res1.bin";
+    MPI_Status status2;
+    MPI_File fh2;
+    MPI_Offset offset2;
+    MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
+    offset2 = A.split[rank] * 8; // value(double=8)
+    // write the solution
+//    MPI_File_write_at(fh2, offset2, &*u.begin(), A.M, MPI_DOUBLE, &status2);
+    // write the residual
+    MPI_File_write_at(fh2, offset2, &*res.begin(), A.M, MPI_DOUBLE, &status2);
+    MPI_File_close(&fh2);
+*/
 
     // *************************** use jacobi to find the answer x ****************************
 
 /*
 //    for(unsigned int i=0; i<A.M; i++)
 //        v[i] = i + 1 + A.split[rank];
+
+    std::vector<double> res(A.M);
+    amgClass.residual(&A, u, rhs, res, comm);
+    double dot;
+    amgClass.dotProduct(res, res, &dot, comm);
+    double initialNorm = sqrt(dot);
+    if(rank==0) cout << "\ninitial norm(res) = " << initialNorm << endl;
+
     // initial x for Ax=b
 //    std::vector <double> x(A.M);
 //    double* xp = &(*(x.begin()));
 //    x.assign(A.M, 0);
-    // xp first points to the initial guess, after doing jacobi it is the approximate answer for the system
+    // u first points to the initial guess, after doing jacobi it is the approximate answer for the system
     // vp points to the right-hand side
     int vv = 20;
-    for(int i=0; i<vv; i++)
+    for(int i=0; i<vv; i++){
         A.jacobi(u, rhs, comm);
+        amgClass.residual(&A, u, rhs, res, comm);
+        amgClass.dotProduct(res, res, &dot, comm);
+//        if(rank==0) cout << sqrt(dot) << endl;
+        if(rank==0) cout << sqrt(dot)/initialNorm << endl;
+    }
 
 //    for(auto i:u)
 //        cout << i << endl;
 
-    std::vector<double> res(A.M);
-    amgClass.residual(&A, u, rhs, res, comm);
-//    for(auto i:res)
-//        cout << i << endl;
+//    amgClass.residual(&A, u, rhs, res, comm);
+//    if(rank==0)
+//        for(auto i:res)
+//            cout << i << endl;
+//    amgClass.dotProduct(res, res, &dot, comm);
+//    if(rank==0) cout << sqrt(dot)/initialNorm << endl;
 */
 
     // *************************** write the result of jacobi (or its residual) to file ****************************

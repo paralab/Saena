@@ -372,6 +372,26 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
             cout << i << ":\t" << invDiag[i] << endl;
     }*/
 
+    // computing rhoDA for the prolongation matrix: P = (I - 4/(3*rhoDA) * DA) * P_t
+    // rhoDA = min( norm(DA , 1) , norm(DA , inf) )
+/*
+    double norm1_local = 0;
+    for(unsigned long i=0; i<M; i++)
+        norm1_local += abs(invDiag[i]);
+    MPI_Allreduce(&norm1_local, &norm1, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    double normInf_local = invDiag[0];
+    for(unsigned long i=1; i<M; i++)
+        if( abs(invDiag[i]) > normInf_local )
+            normInf_local = abs(invDiag[i]);
+    MPI_Allreduce(&normInf_local, &normInf, 1, MPI_DOUBLE, MPI_MAX, comm);
+
+    if(normInf < norm1)
+        rhoDA = normInf;
+    else
+        rhoDA = norm1;
+*/
+
     // *************************** set and exchange local and remote elements ****************************
     // local elements are elements that correspond to vector elements which are local to this process,
     // and, remote elements correspond to vector elements which should be received from another processes

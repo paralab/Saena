@@ -66,11 +66,19 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
     findAggregation(grid->A, aggregate, grid->P.splitNew, comm);
-//    MPI_Barrier(comm); if(rank==2) printf("----------1 aggregate----------\n"); MPI_Barrier(comm);
+//    if(rank==0)
+//        for(auto i:aggregate)
+//            cout << i << endl;
 
-//    if(rank==1)
-//        for(long i=0; i<grid->A->M; i++)
-//            cout << i << "\t" << aggregate[i] << endl;
+    // todo: delete this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*****************&&&&&&&&&&&&&&&&&&&&&&&&&&&$$$$$$$$$
+    changeAggregation(grid->A, aggregate, grid->P.splitNew, comm);
+
+//    if(rank==0) cout << "after changeAggregation" << endl;
+//    if(rank==0)
+//        for(auto i:aggregate)
+//            cout << i << endl;
+
+//    MPI_Barrier(comm); if(rank==0) printf("----------1 aggregate----------\n"); MPI_Barrier(comm);
 
 /*
     std::vector<long> aggregateSorted(A->M);
@@ -813,8 +821,8 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     // aggArray is the set of root nodes.
     sort(aggArray.begin(), aggArray.end());
 
-//    if(rank==2){
-//        cout << "aggArray:" << endl;
+//    if(rank==0){
+//        cout << "aggArray:" << aggArray.size() << endl;
 //        for(auto i:aggArray)
 //            cout << i << endl;
 //        cout << endl;}
@@ -1089,6 +1097,9 @@ int AMGClass::Aggregation(CSRMatrix* S){
 
 
 int AMGClass::createProlongation(COOMatrix* A, std::vector<unsigned long>& aggregate, prolongMatrix* P, MPI_Comm comm){
+    // formula for the prolongation matrix from Irad Yavneh's paper:
+    // P = (I - 4/(3*rhoDA) * DA) * P_t
+
     // todo: check when you should update new aggregate values: before creating prolongation or after.
 
     // Here P is computed: P = A_w * P_t; in which P_t is aggregate, and A_w = I - w*Q*A, Q is inverse of diagonal of A.
@@ -1126,6 +1137,7 @@ int AMGClass::createProlongation(COOMatrix* A, std::vector<unsigned long>& aggre
 
     std::vector<cooEntry> PEntryTemp;
 
+    // P = (I - 4/(3*rhoDA) * DA) * P_t
     // local
     long iter = 0;
     for (i = 0; i < A->M; ++i) {
@@ -1628,7 +1640,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
     double dot;
     dotProduct(res, res, &dot, comm);
     double initialNorm = sqrt(dot);
-    if(rank==0) cout << "\nsolveCoarsest: initial norm(res) = " << initialNorm << endl;
+//    if(rank==0) cout << "\nsolveCoarsest: initial norm(res) = " << initialNorm << endl;
 
     if (dot < tol*tol)
         maxIter = 0;
@@ -1640,7 +1652,7 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
     std::vector<double> matvecTemp(A->M);
     i = 0;
     while (i < maxIter) {
-        if(rank==0) cout << "starting iteration of CG = " << i << endl;
+//        if(rank==0) cout << "starting iteration of CG = " << i << endl;
         // factor = sq_norm/ (dir' * A * dir)
         A->matvec(&*dir.begin(), &*matvecTemp.begin(), comm);
 //        if(rank==1){
@@ -1673,7 +1685,8 @@ int AMGClass::solveCoarsest(COOMatrix* A, std::vector<double>& u, std::vector<do
         dot_prev = dot;
 
         dotProduct(res, res, &dot, comm);
-        if(rank==0) cout << "update norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << endl;
+//        if(rank==0) cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << endl;
+//        if(rank==0) cout << sqrt(dot)/initialNorm << endl;
 
         if (dot < tol*tol)
             break;
@@ -1845,10 +1858,6 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //        for(auto i:u)
 //            cout << i << endl;
 
-    residual(grid->A, u, rhs, r, comm);
-    dotProduct(r, r, &dot, comm);
-    if(rank==0) cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << endl;
-
 //    % 2. compute residual
 //    res = grid.residual( rhs, u );
 
@@ -1859,6 +1868,8 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //        for(auto i:r)
 //            cout << i << endl;
 
+    dotProduct(r, r, &dot, comm);
+    if(rank==0) cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << endl;
 
 //    % 3. restrict
 //    res_coarse = grid.R * res;
@@ -1903,6 +1914,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //        for(i=0; i<u.size(); i++)
 //            cout << u[i] << endl;
 
+    // todo: delete this part after debugging.
     residual(grid->A, u, rhs, r, comm);
     dotProduct(r, r, &dot, comm);
     if(rank==0) cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << endl;
@@ -1918,6 +1930,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //        for(auto i:u)
 //            cout << i << endl;
 
+    // todo: delete this part after debugging.
     residual(grid->A, u, rhs, r, comm);
     dotProduct(r, r, &dot, comm);
     if(rank==0) cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << endl;
@@ -1942,7 +1955,7 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     dotProduct(r, r, &initial_dot, comm);
     if(rank==0) cout << "initial_norm = " << sqrt(initial_dot) << endl << endl;
 
-    double dot = 0;
+    double dot = initial_dot;
     for(i=0; i<vcycle_num; i++){
         vcycle(grid, u, rhs, comm);
         residual(grid->A, u, rhs, r, comm);
@@ -1962,7 +1975,7 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
 }
 
 
-int AMGClass::writeMatrixToFile(COOMatrix* A, MPI_Comm comm){
+int AMGClass::writeMatrixToFileA(COOMatrix* A, string name, MPI_Comm comm){
     // Create txt files with name Ac0.txt for processor 0, Ac1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat Ac0.txt Ac1.txt > Ac.txt
     // row and column indices of txt files should start from 1, not 0.
@@ -1972,7 +1985,8 @@ int AMGClass::writeMatrixToFile(COOMatrix* A, MPI_Comm comm){
     MPI_Comm_rank(comm, &rank);
 
     ofstream outFileTxt;
-    std::string outFileNameTxt = "/home/abaris/Acoarse/Ac";
+    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/wrteMatrix/";
+    outFileNameTxt += name;
     outFileNameTxt += std::to_string(rank);
     outFileNameTxt += ".txt";
     outFileTxt.open(outFileNameTxt);
@@ -2050,6 +2064,113 @@ int AMGClass::writeMatrixToFile(COOMatrix* A, MPI_Comm comm){
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
 */
+
+    return 0;
+}
+
+
+int AMGClass::writeMatrixToFileP(prolongMatrix* P, string name, MPI_Comm comm) {
+    // Create txt files with name P0.txt for processor 0, P1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat P0.txt P1.txt > P.txt
+    // row and column indices of txt files should start from 1, not 0.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    ofstream outFileTxt;
+    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
+    outFileNameTxt += name;
+    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".txt";
+    outFileTxt.open(outFileNameTxt);
+
+    if (rank == 0)
+        outFileTxt << P->Mbig << "\t" << P->Mbig << "\t" << P->nnz_g << endl;
+    for (long i = 0; i < P->nnz_l; i++) {
+//        cout << P->entry[i].row << "\t" << P->entry[i].col << "\t" << P->entry[i].val << endl;
+        outFileTxt << P->entry[i].row + 1 << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
+
+    return 0;
+}
+
+
+int AMGClass::changeAggregation(COOMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm){
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    int i;
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    string aggName = "/home/abaris/Dropbox/Projects/Saena/build/juliaAgg.bin";
+    int mpiopen = MPI_File_open(comm, aggName.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) cout << "Unable to open the vector file!" << endl;
+        MPI_Finalize();
+        return -1;
+    }
+
+    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
+    offset = A->split[rank] * 8; // value(long=8)
+    MPI_File_read_at(fh, offset, &*aggregate.begin(), A->M, MPI_UNSIGNED_LONG, &status);
+    MPI_File_close(&fh);
+
+//    for(auto i:aggregate)
+//        cout << i << endl;
+
+    MPI_Status status2;
+    MPI_File fh2;
+    MPI_Offset offset2;
+
+    string aggName2 = "/home/abaris/Dropbox/Projects/Saena/build/juliaAggArray.bin";
+    int mpiopen2 = MPI_File_open(comm, aggName2.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh2);
+    if(mpiopen2){
+        if (rank==0) cout << "Unable to open the vector file!" << endl;
+        MPI_Finalize();
+        return -1;
+    }
+
+    std::vector<unsigned long> aggArray(A->M);
+    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
+    offset2 = A->split[rank] * 8; // value(long=8)
+    MPI_File_read_at(fh2, offset2, &*aggArray.begin(), A->M, MPI_UNSIGNED_LONG, &status);
+    MPI_File_close(&fh2);
+
+//    for(auto i:aggArray)
+//        cout << i << endl;
+
+    unsigned long newSize = 0;
+    for(auto i:aggArray)
+        if(i == 1)
+            newSize++;
+
+//    if(rank==0)
+//        cout << "newSize = " << newSize << endl;
+
+    // set splitNew
+    fill(splitNew.begin(), splitNew.end(), 0);
+    splitNew[rank] = newSize;
+
+    unsigned long* splitNewTemp = (unsigned long*)malloc(sizeof(unsigned long)*nprocs);
+    MPI_Allreduce(&splitNew[0], splitNewTemp, nprocs, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+    // do scan on splitNew
+    splitNew[0] = 0;
+    for(i=1; i<nprocs+1; i++)
+        splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
+
+//    for(i=0; i<nprocs+1; i++)
+//        cout << splitNew[i] << endl;
+
+    free(splitNewTemp);
 
     return 0;
 }
