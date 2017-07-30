@@ -51,7 +51,6 @@ public:
     std::vector<unsigned long> vElementRep_local;
     std::vector<unsigned long> vElementRep_remote;
 //    std::vector<unsigned int> nnz_row_remote;
-//    std::vector<unsigned int> nnzPerCol_remote_t;
 
     bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
     int vIndexSize;

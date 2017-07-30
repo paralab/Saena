@@ -1,7 +1,3 @@
-//
-// Created by abaris on 7/17/17.
-//
-
 #ifndef SAENA_GRID_H
 #define SAENA_GRID_H
 
