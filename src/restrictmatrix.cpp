@@ -205,6 +205,7 @@ int restrictMatrix::transposeP(prolongMatrix* P, MPI_Comm comm) {
 //            values_remote.push_back(entry[i].val);
 
                 if (entry[i].col != entry[i-1].col) {
+                    col_remote_size++;
                     vElement_remote.push_back(entry[i].col);
                     vElementRep_remote.push_back(1);
                     procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
@@ -415,8 +416,10 @@ int restrictMatrix::matvec(double* v, double* w, MPI_Comm comm) {
 //#pragma omp for
     for (unsigned int i = 0; i < col_remote_size; ++i) {
         for (unsigned int j = 0; j < nnzPerCol_remote[i]; ++j, ++iter) {
-            if(rank==1)
-//                cout << entry_remote[indicesP_remote[iter]].val << "\t" << vecValues[col_remote[indicesP_remote[iter]]] << endl;
+//            if(rank==0){
+//                cout << "matvec remote" << endl;
+//                cout << row_remote[indicesP_remote[iter]] << "\t" << entry_remote[indicesP_remote[iter]].val << "\t" << vecValues[col_remote[indicesP_remote[iter]]] << endl;
+//            }
             w[row_remote[indicesP_remote[iter]]] += entry_remote[indicesP_remote[iter]].val * vecValues[col_remote[indicesP_remote[iter]]];
         }
     }

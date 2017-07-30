@@ -1,4 +1,5 @@
 #include <grid.h>
+// add Doxygen parameters
 
 Grid::Grid() {}
 

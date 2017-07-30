@@ -71,7 +71,7 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
 //            cout << i << endl;
 
     // todo: delete this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*****************&&&&&&&&&&&&&&&&&&&&&&&&&&&$$$$$$$$$
-    changeAggregation(grid->A, aggregate, grid->P.splitNew, comm);
+//    changeAggregation(grid->A, aggregate, grid->P.splitNew, comm);
 
 //    if(rank==0) cout << "after changeAggregation" << endl;
 //    if(rank==0)
@@ -1877,10 +1877,10 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     std::vector<double> rCoarse(grid->Ac.M);
     grid->R.matvec(&*r.begin(), &*rCoarse.begin(), comm);
 
-//    if(rank==1) cout << "\n3. restriction: rCoarse = R*res, currentLevel = " << grid->currentLevel << endl;
-//    if(rank==1)
+//    if(rank==0){
+//        cout << "\n3. restriction: rCoarse = R*res, currentLevel = " << grid->currentLevel << endl;
 //        for(auto i:rCoarse)
-//            cout << i << endl;
+//            cout << i << endl;}
 
 //    % 4. recurse
 //    u_corr_coarse = grid.Coarse.vcycle(v1, v2, res_coarse, zeros(size(res_coarse)));
@@ -1996,7 +1996,7 @@ int AMGClass::writeMatrixToFileA(COOMatrix* A, string name, MPI_Comm comm){
     if(rank==0)
         outFileTxt << A->Mbig << "\t" << A->Mbig << "\t" << A->nnz_g << endl;
     for (long i = 0; i < A->nnz_l; i++) {
-        cout       << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
+//        cout       << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
         outFileTxt << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
     }
 

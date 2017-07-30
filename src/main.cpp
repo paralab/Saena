@@ -102,16 +102,16 @@ int main(int argc, char* argv[]){
     // 2- random
     // 3- flat from homg
 
-    //    std::vector<double> u(A.M);
-    //    u.assign(A.M, 0); // initial guess = 0
+    std::vector<double> u(A.M);
+    u.assign(A.M, 0); // initial guess = 0
     //    randomVector2(u); // initial guess = random
     //    if(rank==1) cout << "\ninitial guess u" << endl;
     //    if(rank==1)
     //        for(auto i:u)
     //            cout << i << endl;
 
+/*
     // u0 is generated as flat from homg: u0 = eigenvalues*ones. check homg010_u0flat.m file
-
     MPI_Status status3;
     MPI_File fh3;
     MPI_Offset offset3;
@@ -124,12 +124,11 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    std::vector<double> u(A.M);
-
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
     offset3 = A.split[rank] * 8; // value(double=8)
     MPI_File_read_at(fh3, offset3, &*u.begin(), A.M, MPI_DOUBLE, &status3);
     MPI_File_close(&fh3);
+*/
 
 //    if(rank==0)
 //        for(i = 0; i < u.size(); i++)
@@ -138,7 +137,7 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Setup ****************************
 
     int maxLevel       = 1; // not including fine level. fine level is 0.
-    int vcycle_num     = 1;
+    int vcycle_num     = 20;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
     int preSmooth      = 1;
@@ -159,15 +158,49 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Solve ****************************
 
-//    amgClass.AMGSolve(grids, u, rhs, comm);
+    amgClass.AMGSolve(grids, u, rhs, comm);
 
 //    amgClass.writeMatrixToFileA(grids[1].A, "Ac", comm);
 //    amgClass.writeMatrixToFileP(&grids[0].P, "P", comm);
 //    amgClass.writeMatrixToFileR(&grids[0].R, "R", comm);
 
+    std::vector<double> res(A.M);
+    amgClass.residual(&A, u, rhs, res, comm);
+    double dot;
+    amgClass.dotProduct(res, res, &dot, comm);
+    dot = sqrt(dot);
+
+    double rhsNorm;
+    amgClass.dotProduct(rhs, rhs, &rhsNorm, comm);
+    rhsNorm = sqrt(rhsNorm);
+
+    double relativeResidual = dot / rhsNorm;
+    if(rank==0) cout << "relativeResidual = " << relativeResidual << endl;
+
+    // *************************** tests ****************************
+
+//    std::vector<double> resCoarse(grids[1].A->M);
+//    grids[0].R.matvec(&*rhs.begin(), &*resCoarse.begin(), comm);
+//    for(i=0; i<resCoarse.size(); i++)
+//        resCoarse[i] = -resCoarse[i];
+//    if(rank==3)
+//        for(auto i:resCoarse)
+//            cout << -i << endl;
+
+//    if(rank==0){
+//        cout << "nnz_l = " << grids[0].R.nnz_l << ", nnz_l_local = " << grids[0].R.nnz_l_local << ", nnz_l_remote = " << grids[0].R.nnz_l_remote << endl;
+//        for(i=0; i<grids[0].R.entry.size(); i++)
+//            cout << grids[0].R.entry[i].row << "\t" << grids[0].R.entry[i].col << "\t" << grids[0].R.entry[i].val << endl;
+//    }
+
+//    grids[0].P.matvec(&*resCoarse.begin(), &*u.begin(), comm);
+//    if(rank==3)
+//        for(i=0; i<u.size(); i++)
+//            cout << u[i] << endl;
+
     // *************************** write residual or the solution to a file ****************************
 
-    //    double dot;
+//    double dot;
 //    std::vector<double> res(A.M);
 //    amgClass.residual(&A, u, rhs, res, comm);
 //    amgClass.dotProduct(res, res, &dot, comm);
