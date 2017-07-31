@@ -2131,6 +2131,35 @@ int AMGClass::writeMatrixToFileR(restrictMatrix* R, string name, MPI_Comm comm) 
 }
 
 
+int AMGClass::writeVectorToFile(std::vector<double>& v, unsigned long vSize, string name, MPI_Comm comm) {
+    // Create txt files with name V0.txt for processor 0, V1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat V0.txt V1.txt > V.txt
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    ofstream outFileTxt;
+    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
+    outFileNameTxt += name;
+    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".txt";
+    outFileTxt.open(outFileNameTxt);
+
+    if (rank == 0)
+        outFileTxt << vSize << endl;
+    for (long i = 0; i < v.size(); i++) {
+//        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
+        outFileTxt << v[i] << endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
+
+    return 0;
+}
+
+
 int AMGClass::changeAggregation(COOMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm){
 
     int nprocs, rank;

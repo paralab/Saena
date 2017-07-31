@@ -136,8 +136,9 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Setup ****************************
 
-    int maxLevel       = 1; // not including fine level. fine level is 0.
-    int vcycle_num     = 20;
+    int maxLevel       = 2;
+    maxLevel--; // Does not include fine level. fine level is 0.
+    int vcycle_num     = 5;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
     int preSmooth      = 1;
@@ -164,6 +165,9 @@ int main(int argc, char* argv[]){
 //    amgClass.writeMatrixToFileP(&grids[0].P, "P", comm);
 //    amgClass.writeMatrixToFileR(&grids[0].R, "R", comm);
 
+    // *************************** Residual ****************************
+
+/*
     std::vector<double> res(A.M);
     amgClass.residual(&A, u, rhs, res, comm);
     double dot;
@@ -176,8 +180,25 @@ int main(int argc, char* argv[]){
 
     double relativeResidual = dot / rhsNorm;
     if(rank==0) cout << "relativeResidual = " << relativeResidual << endl;
+*/
 
     // *************************** tests ****************************
+
+//    std::vector<double> res(A.M);
+//    amgClass.residual(&A, u, rhs, res, comm);
+//    amgClass.writeVectorToFile(v, A.Mbig, "V", comm);
+
+/*
+    // write the solution of overall multigrid to file
+    amgClass.writeVectorToFile(u, A.Mbig, "V", comm);
+
+    // write the solution of only jacobi to file
+    std::vector<double> uu;
+    uu.assign(A.M, 0);
+    for(i=0; i<10; i++)
+        A.jacobi(uu, rhs, comm);
+    amgClass.writeVectorToFile(uu, A.Mbig, "U", comm);
+*/
 
 //    std::vector<double> resCoarse(grids[1].A->M);
 //    grids[0].R.matvec(&*rhs.begin(), &*resCoarse.begin(), comm);
@@ -217,16 +238,16 @@ int main(int argc, char* argv[]){
 //    if(rank==0) cout << "final residual = " << sqrt(dot) << endl;
 
 /*
-    char* outFileNameTxt = "res1.bin";
+    char* outFileNameTxt = "u.bin";
     MPI_Status status2;
     MPI_File fh2;
     MPI_Offset offset2;
     MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
     offset2 = A.split[rank] * 8; // value(double=8)
     // write the solution
-//    MPI_File_write_at(fh2, offset2, &*u.begin(), A.M, MPI_DOUBLE, &status2);
+    MPI_File_write_at(fh2, offset2, &*u.begin(), A.M, MPI_DOUBLE, &status2);
     // write the residual
-    MPI_File_write_at(fh2, offset2, &*res.begin(), A.M, MPI_DOUBLE, &status2);
+//    MPI_File_write_at(fh2, offset2, &*res.begin(), A.M, MPI_DOUBLE, &status2);
     MPI_File_close(&fh2);
 */
 
