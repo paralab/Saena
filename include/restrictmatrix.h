@@ -11,7 +11,7 @@ private:
 public:
     unsigned int M;
     unsigned int Mbig;
-//    unsigned int Nbig;
+    unsigned int Nbig;
     unsigned long nnz_g;
     unsigned long nnz_l;
     unsigned long nnz_l_local;
