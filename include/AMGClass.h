@@ -44,7 +44,10 @@ public:
     int writeMatrixToFileA(COOMatrix* A, string name, MPI_Comm comm);
     int writeMatrixToFileP(prolongMatrix* P, string name, MPI_Comm comm);
     int writeMatrixToFileR(restrictMatrix* R, string name, MPI_Comm comm);
-    int writeVectorToFile(std::vector<double>& v, unsigned long vSize, string name, MPI_Comm comm);
+//    int writeVectorToFile(std::vector<double>& v, unsigned long vSize, string name, MPI_Comm comm);
+
+    template <class T>
+    int writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm);
     int changeAggregation(COOMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
 };
 
