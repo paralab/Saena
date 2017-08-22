@@ -2,7 +2,8 @@
 #include <algorithm>
 #include <sys/stat.h>
 #include <assert.h>
-#include "mpi.h"
+#include <mpich/mpi.h>
+//#include "mpi.h"
 #include "coomatrix.h"
 #include "AMGClass.h"
 #include "grid.h"
@@ -24,11 +25,12 @@ int main(int argc, char* argv[]){
     unsigned long i;
     int assert1, assert2, assert3;
 
-    if(argc < 4)
+    if(argc < 3)
     {
         if(rank == 0)
         {
-            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <u_vec>" << endl;
+//            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <u_vec>" << endl;
+            cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << endl;
             cout << "Matrix file should be in triples format." << endl;
         }
         MPI_Finalize();
@@ -138,13 +140,13 @@ int main(int argc, char* argv[]){
 
     int maxLevel       = 2;
     maxLevel--; // Does not include fine level. fine level is 0.
-    int vcycle_num     = 5;
+    int vcycle_num     = 1;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
     int preSmooth      = 1;
     int postSmooth     = 1;
     float connStrength = 0.5; // connection strength parameter
-    float tau          = 3; // is used during making aggregates.
+    float tau          = 3;   // is used during making aggregates.
     bool doSparsify    = 0;
 
     AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau, doSparsify);
@@ -188,17 +190,16 @@ int main(int argc, char* argv[]){
 //    amgClass.residual(&A, u, rhs, res, comm);
 //    amgClass.writeVectorToFile(v, A.Mbig, "V", comm);
 
-/*
     // write the solution of overall multigrid to file
-    amgClass.writeVectorToFile(u, A.Mbig, "V", comm);
+//    amgClass.writeVectorToFile(u, A.Mbig, "V", comm);
+//    int AMGClass::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm) {
 
     // write the solution of only jacobi to file
-    std::vector<double> uu;
-    uu.assign(A.M, 0);
-    for(i=0; i<10; i++)
-        A.jacobi(uu, rhs, comm);
-    amgClass.writeVectorToFile(uu, A.Mbig, "U", comm);
-*/
+//    std::vector<double> uu;
+//    uu.assign(A.M, 0);
+//    for(i=0; i<10; i++)
+//        A.jacobi(uu, rhs, comm);
+//    amgClass.writeVectorToFile(uu, A.Mbig, "U", comm);
 
 //    std::vector<double> resCoarse(grids[1].A->M);
 //    grids[0].R.matvec(&*rhs.begin(), &*resCoarse.begin(), comm);
@@ -215,7 +216,7 @@ int main(int argc, char* argv[]){
 //    }
 
 //    grids[0].P.matvec(&*resCoarse.begin(), &*u.begin(), comm);
-//    if(rank==3)
+//    if(rank==0)
 //        for(i=0; i<u.size(); i++)
 //            cout << u[i] << endl;
 

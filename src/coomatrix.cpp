@@ -672,6 +672,8 @@ int COOMatrix::matrixSetup(MPI_Comm comm){
 
 
 int COOMatrix::matvec(double* v, double* w, MPI_Comm comm) {
+// todo: to reduce the communication during matvec, consider reducing number of columns during coarsening,
+// todo: instead of reducing general non-zeros, since that is what is communicated for matvec.
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

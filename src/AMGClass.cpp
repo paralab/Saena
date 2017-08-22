@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <algorithm>
-#include <mpi.h>
+//#include <mpi.h>
+#include <mpich/mpi.h>
 #include <usort/parUtils.h>
 #include <set>
 #include <mpich/mpi.h>
@@ -483,15 +484,15 @@ int AMGClass::createStrengthMatrix(COOMatrix* A, StrengthMatrix* S, MPI_Comm com
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
 int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm) {
 
-    // the first two bits of aggregate are being used for aggStatus: 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
-    // bits 0 up to 61 are for storing aggregate values.
-    // the max value for aggregate is 2^63 - 1
+    // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
+    // If there is not any root in distance-2, that node should become a root.
 
     // variables used in this function:
     // weight[i]: the two most left bits store the status of node i, the other 62 bits store weight assigned to that node.
+    //            status of a node: 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
+    //            the max value for weight is 2^63 - 1
     //            weight is first generated randomly by randomVector function and saved in initialWeight. During the
     //            aggregation process, it becomes the weight of the node's aggregate.
-    //
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -502,7 +503,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 
     std::vector<unsigned long> aggArray; // root nodes.
     std::vector<unsigned long> aggregate2(size);
-    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
+//    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
     std::vector<unsigned long> weight(size);
     std::vector<unsigned long> weight2(size);
     std::vector<unsigned long> initialWeight(size);
@@ -514,17 +515,21 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //        for (i = 0; i < size; ++i)
 //            cout << i << "\tinitialWeight = " << initialWeight[i] << endl;}
 
-    const int aggOffset = 62;
-    const unsigned long weightMax = (1UL<<aggOffset) - 1;
-    const unsigned long UNDECIDED = 1UL<<aggOffset;
-    const unsigned long ROOT = 1UL<<(aggOffset+1);
-    const unsigned long UNDECIDED_OR_ROOT = 3UL<<aggOffset;
+    const int wOffset = 62;
+    const unsigned long weightMax = (1UL<<wOffset) - 1;
+    const unsigned long UNDECIDED = 1UL<<wOffset;
+    const unsigned long ROOT = 1UL<<(wOffset+1);
+    const unsigned long UNDECIDED_OR_ROOT = 3UL<<wOffset;
     unsigned long weightTemp, aggregateTemp, aggStatusTemp;
-    bool* oneDistanceRoot = (bool*)malloc(sizeof(bool)*size);
-//    fill(&oneDistanceRoot[0], &oneDistanceRoot[size], 0);
+    int* root_distance = (int*)malloc(sizeof(int)*size);
+    // root_distance is initialized to 3(11). root = 0 (00), 1-distance root = 1 (01), 2-distance root = 2 (10).
+    bool* dist1or2undecided = (bool*)malloc(sizeof(bool)*size);
+    // if there is a distance-2 neighbor which is undecided, set this to true.
+//    fill(&dist2undecided[0], &dist2undecided[size], 0);
     bool continueAggLocal;
     bool continueAgg = true;
-    unsigned long iter;
+    unsigned long i_remote, j_remote, weight_remote, agg_remote;
+    unsigned long iter, col_index;
     int whileiter = 0;
 
     MPI_Request *requests = new MPI_Request[S->numSendProc + S->numRecvProc];
@@ -533,31 +538,96 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     // initialization -> this part is merged to the first "for" loop in the following "while".
     for(i=0; i<size; i++) {
         aggregate[i] = i + S->split[rank];
-        weight[i] = (1UL<<aggOffset | (initialWeight[i]) ); // status of each node is initialized to 1 and its weight to initialWeight.
-        aggStatus2[i] = 1;
+//        aggStatus2[i] = 1;
+        // Boundary nodes are the ones which only have one neighbor (so one nnzPerRow), which is the diagonal element. They are roots for every coarse-grid.
+        if(S->nnzPerRow[i] == 1){
+            weight[i] = ( 2UL<<wOffset | initialWeight[i] );
+            root_distance[i] = 0;
+            aggArray.push_back(aggregate[i]);
+//            if(rank==0) cout << "boundary: " << i+S->split[rank] << endl;
+        }
+        else{
+            weight[i] = ( 1UL<<wOffset | initialWeight[i] ); // status of each node is initialized to 1 and its weight to initialWeight.
+//            if(rank==0) cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << endl;
+        }
     }
+
+//    if(rank==0){
+//        cout << "if(rank==0){" << endl;
+//        for(i=0; i<size; i++)
+//            cout << "V[" << i << "] = " << initialWeight[i] << ";" << endl;
+//        cout << "}" << endl;
+//    }
+//    MPI_Barrier(comm);
+//    if(rank==1){
+//        cout << "if(rank==1){" << endl;
+//        for(i=0; i<size; i++)
+//            cout << "V[" << i << "] = " << initialWeight[i] << ";" << endl;
+//        cout << "}" << endl;
+//    }
+//    MPI_Barrier(comm);
 
     while(continueAgg) {
         // ******************************* first round of max computation *******************************
         // first "compute max" is local. The second one is both local and remote.
+        // for loop is of size "number of rows". it checks if a node is UNDECIDED. Then, it goes over its neighbors, which are nonzeros on that row.
+        // if the neighbor is UNDECIDED or ROOT, and its weight is higher than weightTemp, then than node will be chosen for root.
+        // UNDECIDED is also considered because it may become a root later, and it may be a better root for that node.
+        // In the next "for" loop, weight and aggregate are updated, but not the status.
 
-        // todo: check the aggregation for deadlock: two neighbors for each other to have a status other than 1, while both have status 1.
+        iter = 0;
+        for (i = 0; i < size; ++i) {
+            if ( (weight[i] >> wOffset == 0) && (root_distance[i] == 2) ) {
+                for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
+                    col_index = S->col_local[S->indicesP_local[iter]] - S->split[rank];
+                    if (weight[col_index] & ROOT) {
+//                        cout << "$$$$$$$$$$$$$$$$$$$$$$$$$" << i << "\t col_index = " << col_index << "\t weight[col_index] = " << (weight[col_index] & weightMax) << "\t aggregate = " << S->col_local[S->indicesP_local[iter]] << endl;
+                        weight[i] = (0UL << wOffset | (weight[col_index] & weightMax));
+                        aggregate[i] = S->col_local[S->indicesP_local[iter]];
+                        root_distance[i] = 1;
+                    }
+//                    break; todo: try to add this break.
+                }
+            }else
+                iter += S->nnzPerRow_local[i];
+        }
+
+        // todo: check the aggregation for deadlock: two neighbors wait for each other to have a status other than 1, while both have status 1.
         //distance-1 aggregate
         iter = 0;
         for (i = 0; i < size; ++i) {
             if(weight[i]&UNDECIDED) {
-                oneDistanceRoot[i] = 0; // initialization
+//                if(i==25) cout << ">>>>>>>>>>>>>>>>>25 root ==================== " << root_distance[25] << "\taggregate = " << aggregate[25] << endl;
+//            if(weight[i]>>wOffset <= 1) {
+                root_distance[i] = 3; // initialization
+                dist1or2undecided[i] = false; // initialization
                 aggregateTemp = aggregate[i];
-                weightTemp = weight[i];
+                weightTemp = weight[i]&weightMax;
+//                weight2[i] = weight[i]&weightMax;
 //                aggStatusTemp = 1UL; // this will be used for aggStatus2, and aggStatus2 will be used for the remote part.
                 for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
-                    if( weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]&UNDECIDED_OR_ROOT ) {
-                        if (initialWeight[S->col_local[S->indicesP_local[iter]] - S->split[rank]] > (weightTemp & weightMax)) {
+                    col_index = S->col_local[S->indicesP_local[iter]] - S->split[rank];
+                    if(weight[col_index] & ROOT){
+                        weight[i] = (0UL << wOffset | (weight[col_index] & weightMax)); // 0UL << wOffset is not required.
+                        weightTemp = weight[i];
+                        aggregate[i] = S->col_local[S->indicesP_local[iter]];
+                        aggregateTemp = aggregate[i];
+                        root_distance[i] = 1;
+                        dist1or2undecided[i] = false;
+
+//                        if(rank==0) cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-1 local \t weight = " << weight[i] << endl;
+//                        break; todo: try to add this break. You can define nnzPerRowScan_local.
+                    } else if( (weight[col_index] & UNDECIDED) && (initialWeight[col_index] >= weightTemp) ){
+                        // if there is an UNDECIDED neighbor, and its weight is bigger than this node, this node should
+                        // wait until the next round of the "while" loop to see if that neighbor becomes root or assigned.
+//                        if(rank==0) cout << i+S->split[rank] << "\t neighbor = " << S->col_local[S->indicesP_local[iter]] << endl;
+
+                        if((initialWeight[col_index] > weightTemp) || ((initialWeight[col_index] == weightTemp) && (aggregate[col_index] > i+S->split[rank])) ){
+//                            if(rank==1 && i==2) cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << endl;
+                            weightTemp = (weight[col_index] & weightMax);
                             aggregateTemp = S->col_local[S->indicesP_local[iter]];
-                            weightTemp = initialWeight[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
-                            // this will be used for aggStatus2, and aggStatus2 will be used for the remote part.
-//                            aggStatusTemp = (weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]] >> aggOffset);
-                            oneDistanceRoot[i] = 1;
+                            root_distance[i] = 1;
+                            dist1or2undecided[i] = true;
                         }
                     }
                 }
@@ -567,15 +637,17 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
             }else
                 iter += S->nnzPerRow_local[i];
         }
+//        if(rank==1) cout << "1>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
 
+        // todo: for distance-1 it is probably safe to remove this for loop, and change weight2 to weight and aggregate2 to aggregate at the end of the previous for loop.
         for (i = 0; i < size; ++i) {
-            if(S->nnzPerRow_local[i] != 0) {
-                aggStatusTemp = (weight[i]>>aggOffset);
-                weight[i] = (aggStatusTemp<<aggOffset | (weight2[i]&weightMax) );
+            if( (S->nnzPerRow_local[i]!=0) && (weight[i]&UNDECIDED) && (root_distance[i]==1)) {
+                weight[i] = (1UL << wOffset | weight2[i] & weightMax );
                 aggregate[i] = aggregate2[i];
-//                if(rank==1) cout << i+S->split[rank] << "\t" << aggregate[i] << "\t" << aggregate2[i] << endl;
+//                if(rank==0) cout << i+S->split[rank] << "\t" << aggregate[i] << "\t" << aggregate2[i] << endl;
             }
         }
+//        if(rank==1) cout << "2>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
 
         //    if(rank==0){
         //        cout << endl << "after first max computation!" << endl;
@@ -585,10 +657,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 
         // ******************************* exchange remote max values for the second round of max computation *******************************
 
-        // vSend[2*i]: the first right 62 bits of vSend is maxPerCol for remote elements that should be sent to other processes.
-        // the first left 2 bits of vSend are aggStatus.
+        // vSend[2*i]:   the first right 62 bits of vSend is maxPerCol for remote elements that should be sent to other processes.
+        //               the first left 2 bits of vSend are aggStatus.
         // vSend[2*i+1]: the first right 62 bits of vSend is aggregate for remote elements that should be sent to other processes.
-        // the first left 2 bits are oneDistanceRoot.
+        //               the first left 2 bits are root_distance.
+        //               root_distance is initialized to 3(11). root = 0 (00), 1-distance root = 1 (01), 2-distance root = 2 (10).
 
         // the following shows how the data are being stored in vecValues:
 //        iter = 0;
@@ -596,10 +669,10 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //            for (i = 0; i < S->col_remote_size; ++i)
 //                for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter){
 //                    cout << "row:" << S->row_remote[iter]+S->split[rank] << "\tneighbor(col) = " << S->col_remote2[iter]
-//                         << "\tweight of neighbor = "          << (S->vecValues[2*S->col_remote[iter]]&weightMax)
-//                         << "\t\tstatus of neighbor = "        << (S->vecValues[2*S->col_remote[iter]]>>aggOffset)
-//                         << "\toneDistanceRoot of neighbor = " << (S->vecValues[2*S->col_remote[iter]+1]&weightMax)
-//                         << "\tstatus of agg = "               << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset)
+//                         << "\t weight of neighbor = "          << (S->vecValues[2*S->col_remote[iter]]&weightMax)
+//                         << "\t\t status of neighbor = "        << (S->vecValues[2*S->col_remote[iter]]>>wOffset)
+//                         << "\t root_distance of neighbor = " << (S->vecValues[2*S->col_remote[iter]+1]&weightMax)
+//                         << "\t status of agg = "               << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset)
 //                         << endl;
 //                }
 
@@ -607,9 +680,9 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
         for (i = 0; i < S->vIndexSize; i++){
 //            S->vSend[i] = weight[(S->vIndex[i])];
             S->vSend[2*i] = weight[S->vIndex[i]];
-            aggStatusTemp = (unsigned long)oneDistanceRoot[S->vIndex[i]]; // this is oneDistanceRoot of the neighbor's aggregate.
-            S->vSend[2*i+1] = ( (aggStatusTemp<<aggOffset) | (aggregate[S->vIndex[i]]&weightMax) );
-//            if(rank==1) cout << "vsend: " << S->vIndex[i]+S->split[rank] << "\tw = " << (S->vSend[2*i]&weightMax) << "\tst = " << (S->vSend[2*i]>>aggOffset) << "\tagg = " << (S->vSend[2*i+1]&weightMax) << "\t oneDis = " << (S->vSend[2*i+1]>>aggOffset) << endl;
+            aggStatusTemp = (unsigned long)root_distance[S->vIndex[i]]; // this is root_distance of the neighbor's aggregate.
+            S->vSend[2*i+1] = ( (aggStatusTemp<<wOffset) | (aggregate[S->vIndex[i]]&weightMax) );
+//            if(rank==1) cout << "vsend: " << S->vIndex[i]+S->split[rank] << "\tw = " << (S->vSend[2*i]&weightMax) << "\tst = " << (S->vSend[2*i]>>wOffset) << "\tagg = " << (S->vSend[2*i+1]&weightMax) << "\t oneDis = " << (S->vSend[2*i+1]>>wOffset) << endl;
         }
 
         for (i = 0; i < S->numRecvProc; i++)
@@ -621,22 +694,37 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
                       S->sendProcRank[i], 1, comm, &(requests[S->numRecvProc + i]));
 
         // ******************************* second round of max computation *******************************
+        // "for" loop is of size "number of rows". it checks if a node is UNDECIDED and also if it does not have a root of distance one.
+        // Roots of distance 1 have priority. Then, it goes over its neighbors, which are nonzeros on that row.
+        // The neighbor should be UNDECIDED or assigned. Then, it should have a 1-distance root, because we are looking for a distance-2 root.
+        // Finally, its weight should be higher than weightTemp, then than node will be chosen for root.
+        // UNDECIDED is also considered because it may become have a 1-distance root later.
+        // In the next "for" loop, weight and aggregate are updated, but not the status.
 
         // local part - distance-2 aggregate
         iter = 0;
         for (i = 0; i < size; ++i) {
-            if(weight[i]&UNDECIDED) {
+//            if(i==34) cout << ">>>>>>>>>>>>>>>>>34 root ==================== " << root_distance[34] << "\taggregate = " << aggregate[34] << endl;
+            if( (weight[i]&UNDECIDED) && root_distance[i]!=1) { // root_distance cannot be 2 or 0 here.
 //                oneDistanceRoot[i] = false;
                 aggregateTemp = aggregate[i];
                 weightTemp    = weight[i];
 //                aggStatusTemp = 1UL; // this will be used for aggStatus2, and aggStatus2 will be used for the remote part.
                 for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
-                    if((weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]>>aggOffset) <= 1){ // todo: merge these two if statements.
-                        if(oneDistanceRoot[i]==0 &&
-                           oneDistanceRoot[S->col_local[S->indicesP_local[iter]] - S->split[rank]]==1 &&
-                           ( (weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]]&weightMax) > (weightTemp&weightMax) )){
-                            aggregateTemp = aggregate[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
-                            weightTemp    = weight[S->col_local[S->indicesP_local[iter]] - S->split[rank]];
+                    col_index = S->col_local[S->indicesP_local[iter]] - S->split[rank];
+                    if( (weight[col_index]>>wOffset) <= 1 && root_distance[col_index]==1){
+                        if( ((weight[col_index]&weightMax) > (weightTemp&weightMax)) ||
+                                ( ((weight[col_index]&weightMax) == (weightTemp&weightMax)) && (aggregate[col_index] > i+S->split[rank]) ) ){
+
+//                            if(rank==1 && i==2) cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << endl;
+                            aggregateTemp = aggregate[col_index];
+                            weightTemp    = weight[col_index];
+                            root_distance[i] = 2;
+                            if(weight[col_index]&UNDECIDED)
+                                dist1or2undecided[i] = true;
+                            else
+                                dist1or2undecided[i] = false;
+
                         }
                     }
                 }
@@ -646,16 +734,19 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
             }else
                 iter += S->nnzPerRow_local[i];
         }
+//        if(rank==1) cout << "3>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
 
         for (i = 0; i < size; ++i) {
-            if(S->nnzPerRow_local[i] != 0) {
+            if( (S->nnzPerRow_local[i]!=0) && (weight[i]&UNDECIDED) && (root_distance[i]==2) ) {
                 aggregate[i] = aggregate2[i];
-                aggStatusTemp = (weight[i]>>aggOffset);
-                if (aggregate[i] < S->split[rank] || aggregate[i] >= S->split[rank+1]) // this is distance-2 to a remote root.
-                    aggStatusTemp = 0;
-                weight[i] = (aggStatusTemp<<aggOffset | (weight2[i]&weightMax) );
+                aggStatusTemp = (weight[i]>>wOffset);
+//                if (aggregate[i] < S->split[rank] || aggregate[i] >= S->split[rank+1]) // this is distance-2 to a remote root.
+//                    aggStatusTemp = 0;
+//                cout << "before: " << (weight[i]>>wOffset) << ",after: " << aggStatusTemp << endl;
+                weight[i] = (aggStatusTemp<<wOffset | (weight2[i]&weightMax) );
             }
         }
+//        if(rank==1) cout << "4>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
 
 //        if(rank==1){
 //            cout << endl << "after second max computation!" << endl;
@@ -675,9 +766,9 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //                for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter){
 //                    cout << "row:" << S->row_remote[iter]+S->split[rank] << "\tneighbor(col) = " << S->col_remote2[iter]
 //                         << "\tweight of neighbor = "          << (S->vecValues[2*S->col_remote[iter]]&weightMax)
-//                         << "\t\tstatus of neighbor = "        << (S->vecValues[2*S->col_remote[iter]]>>aggOffset)
-//                         << "\toneDistanceRoot of neighbor = " << (S->vecValues[2*S->col_remote[iter]+1]&weightMax)
-//                         << "\tstatus of agg = "               << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset)
+//                         << "\t\tstatus of neighbor = "        << (S->vecValues[2*S->col_remote[iter]]>>wOffset)
+//                         << "\t root_distance of neighbor = "  << (S->vecValues[2*S->col_remote[iter]+1]&weightMax)
+//                         << "\tstatus of agg = "               << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset)
 //                         << endl;
 //                }
 //        MPI_Barrier(comm);
@@ -687,74 +778,137 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
         iter = 0;
         for (i = 0; i < S->col_remote_size; ++i) {
             for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter) {
-                if(weight[S->row_remote[iter]]&UNDECIDED) {
-//                    if(rank==0) cout << "remote: row = " << S->row_remote[iter]+S->split[rank] << " \tcol = " << S->col_remote2[iter] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\tcurrent updated aggregate = " << aggregate2[S->row_remote[iter]] << "\t\tremote aggregate = " << (S->vecValues[2*S->col_remote[iter]+1]&weightMax) << "\t\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote oneDistance = " << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset) << "\t\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
+                i_remote = S->row_remote[iter];
+                j_remote = S->col_remote[iter];
+                weight_remote = S->vecValues[2 * j_remote];
+                agg_remote    = S->vecValues[2 * j_remote + 1];
+
+                if (weight[i_remote] & UNDECIDED) {
 
                     //distance-1 aggregate
-                    if (S->vecValues[2 * S->col_remote[iter]] &UNDECIDED_OR_ROOT) {
-                        if ((S->vecValues[2 * S->col_remote[iter]] & weightMax) > (weight2[S->row_remote[iter]] & weightMax)) {
-//                            if(rank==1) cout << "first  before\t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
-                            weight2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]] & weightMax);
-                            aggregate2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter] + 1] & weightMax);
-                            aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]] >> aggOffset);
-                            oneDistanceRoot[S->row_remote[iter]] = 1;
-//                            if(rank==1) cout << "first  after \t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\t\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
+                    if (weight_remote & ROOT) {
+                        weight[i_remote] = (0UL << wOffset | (weight_remote & weightMax));
+//                        weight2[i_remote] = weight[i_remote];
+                        aggregate[i_remote] = (agg_remote & weightMax);
+                        root_distance[i_remote] = 1;
+                        dist1or2undecided[i_remote] = false;
+//                        if(rank==0) cout << i+S->split[rank] << "\t assigned to = " << aggregate[i_remote] << " distance-1 remote \t weight = " << weight[i_remote] << endl;
+                    } else if (weight_remote & UNDECIDED) {
+
+                        if (root_distance[i_remote] == 1)
+                            weightTemp = (weight2[i_remote] & weightMax);
+                        else{
+                            weightTemp = initialWeight[i_remote];
                         }
 
-                        //distance-2 aggregate
-                    } else {
-                        if (oneDistanceRoot[S->row_remote[iter]] == 0 &&
-                            (S->vecValues[2 * S->col_remote[iter] + 1] &UNDECIDED) &&
-                            // this is oneDistanceRoot of the neighbor's aggregate.
-                            (S->vecValues[2 * S->col_remote[iter]] & weightMax) > (weight2[S->row_remote[iter]] & weightMax)) {
-//                            if(rank==1) cout << "second before\t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
-                            weight2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]] & weightMax);
-                            aggregate2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]+1]&weightMax);
-                            aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]]>>aggOffset); // this is always 0.
-//                            if(rank==1) cout << "second after \t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\t\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>aggOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
+                        if ( ( (weight_remote & weightMax) > weightTemp) ||
+                                ( ( (weight_remote & weightMax) == weightTemp) && ( ((agg_remote & weightMax) > i_remote+S->split[rank]) )) ) {
+//                            if(rank==1) cout << "first  before\t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
+                            weight2[i_remote] = (weight_remote & weightMax);
+                            aggregate2[i_remote] = (agg_remote & weightMax);
+                            root_distance[i_remote] = 1;
+                            dist1or2undecided[i_remote] = true;
+//                            aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]] >> wOffset);
+//                            if(rank==1) cout << "first  after \t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\t\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
                         }
+                    }
+
+                    //distance-2 aggregate
+                    if (weight_remote >> wOffset == 0) { // the neighbor is assigned (00).
+                        if (root_distance[i_remote] != 1 && ((agg_remote >> wOffset) == 1) ){ // this is root_distance of the neighbor.
+
+                            if( ( (weight_remote & weightMax) > (weight2[i_remote] & weightMax) ) ||
+                                    (( (weight_remote & weightMax) == (weight2[i_remote] & weightMax) ) && (agg_remote & weightMax) > i_remote+S->split[rank] ) ){
+
+                                weight2[i_remote] = (weight_remote & weightMax);
+                                aggregate2[i_remote] = (agg_remote & weightMax);
+//                            aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]]>>wOffset); // this is always 0.
+                                root_distance[i_remote] = 2;
+                                dist1or2undecided[i_remote] = false;
+
+                            }
+
+                        }
+                    } else if (weight_remote & UNDECIDED) { // the neighbor is UNDECIDED (01).
+                        if (root_distance[i_remote] != 1 ) {
+
+                            if( (weight_remote & weightMax) > (weight2[i_remote] & weightMax) ||
+                                    ((weight_remote & weightMax) > (weight2[i_remote] & weightMax)) && (agg_remote & weightMax) > i_remote+S->split[rank] ){
+
+                                weight2[i_remote] = (weight_remote & weightMax);
+                                aggregate2[i_remote] = (agg_remote & weightMax);
+//                            aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]]>>wOffset); // this is always 0.
+                                root_distance[i_remote] = 2;
+                                dist1or2undecided[i_remote] = true;
+
+                            }
+                        }
+                    }
+                    // if the node is assigned and root_distance is 2, check to see if there is a root in distance-1
+                } else if( (weight[i_remote]>>wOffset == 0) && (root_distance[i_remote] == 2) ){
+                    if (weight_remote & ROOT){
+                        weight[i_remote] = (0UL << wOffset | (weight_remote & weightMax));
+                        aggregate[i_remote] = (agg_remote & weightMax);
+                        root_distance[i_remote] = 1;
                     }
                 }
             }
         }
+//        if(rank==1) cout << "5>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
+
         // put weight2 in weight and aggregate2 in aggregate.
         // if a row does not have a remote element then (weight2[i]&weightMax) == (weight[i]&weightMax)
         // update aggStatus of remote elements at the same time
         for(i=0; i<size; i++){
-            if(aggregate[i] != aggregate2[i]){
+            if( (weight[i]&UNDECIDED) && aggregate[i] != aggregate2[i] ){
                 aggregate[i] = aggregate2[i];
-                if(aggStatus2[i] != 1) // if this is 1, it should go to the next aggregation round.
-                    weight[i] = (0UL<<aggOffset | weight2[i]&weightMax);
+                weight[i] = ( 1UL<<wOffset | weight2[i] );
+//                if(aggStatus2[i] != 1) // if this is 1, it should go to the next aggregation round.
+//                    weight[i] = (0UL<<wOffset | weight2[i]&weightMax);
             }
         }
+//        if(rank==1) cout << "6>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
 
-        // update aggStatus
+        // ******************************* Update Status *******************************
+        // "for" loop is of size "number of rows". it checks if a node is UNDECIDED.
+        // If aggregate of a node equals its index, that's a root.
+
+//        if(rank==0) cout << "******************** Update Status ********************" << endl;
         for (i = 0; i < size; ++i) {
             if(weight[i]&UNDECIDED) {
-//                if(rank==0) cout << "i = " << i << "\taggregate[i] = " << aggregate[i] << "\taggStatus[aggregate[i]] = " << aggStatus[aggregate[i]-S->split[rank]] << endl;
-
+//                if(rank==0) cout << "checking " << i << "\taggregate[i] = " << aggregate[i] << endl;
                 // local
                 if (aggregate[i] >= S->split[rank] && aggregate[i] < S->split[rank+1]) {
 //                    if(rank==1) cout << "i = " << i << "\taggregate[i] = " << aggregate[i] << "\taggStatus[aggregate[i]] = " << aggStatus[aggregate[i]] << endl;
-//                    if(rank==1) cout << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>aggOffset) << endl;
-                    if (aggregate[i] == i + S->split[rank]) {
-                        weight[i] = (2UL << aggOffset | weight[i] & weightMax); // change aggStatus of a root to 2.
-                        oneDistanceRoot[i] = 0;
+//                    if(rank==1) cout << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>wOffset) << endl;
+                    if (aggregate[i] == i + S->split[rank]) { // this node is a root.
+                        weight[i] = ( (2UL<<wOffset) | (weight[i]&weightMax) ); // change aggStatus of a root to 2.
+                        root_distance[i] = 0;
                         aggArray.push_back(aggregate[i]);
 //                        (*aggSize)++;
-                    } else if (weight[aggregate[i] - S->split[rank]] &ROOT) {
-                        weight[i] = (0UL << aggOffset | weight[i] & weightMax); // this node is assigned to another aggregate.
-                        if (oneDistanceRoot[aggregate[i] - S->split[rank]] == 0) oneDistanceRoot[i] = 1;
-//                        if(rank==1) cout << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>aggOffset) << endl;
+//                        if(rank==0) cout << "root " << "i = " << i+S->split[rank] << "\t weight = " << (weight[i]&weightMax) << endl;
+                    } else if ( (root_distance[i] == 1 && (weight[aggregate[i] - S->split[rank]]&ROOT) && (!dist1or2undecided[i])) ||
+                                (root_distance[i] == 2 && !dist1or2undecided[i]) ) {
+//                        if(rank==0) cout << "assign " << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>wOffset) << endl;
+                        weight[i] = ( (0UL<<wOffset) | (weight[i]&weightMax) );
+//                        if(rank==0) cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-1 or 2 local final step, root_distance = " << root_distance[i] << "\t weight = " << weight[i]  << endl;
+//                        if (root_distance[aggregate[i] - S->split[rank]] == 0) root_distance[i] = 1; // todo: this is WRONG!
                     }
-                }
+
                 // remote
-//                }else{
+                }else{
+//                    if(root_distance[i] == 1)
+//                        continue;
+                    if(root_distance[i] == 2 && !dist1or2undecided[i]){
+                        weight[i] = (0UL<<wOffset | weight[i]&weightMax);
+//                        if(rank==0) cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-2 remote final step" << endl;
+                    }
 //                    if(aggStatus2[i] != 1) // if it is 1, it should go to the next aggregation round.
-//                        weight[i] = (0UL<<aggOffset | weight2[i]&weightMax);
-//                }
+//                        weight[i] = (0UL<<wOffset | weight2[i]&weightMax);
+                }
             }
         }
+//        if(rank==1) cout << "7>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
 
 //        for(int k=0; k<nprocs; k++){
 //            MPI_Barrier(comm);
@@ -762,7 +916,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //                cout << "final aggregate! rank:" << rank << ", iter = " << whileiter << endl;
 //                for (i = 0; i < size; ++i){
 //                    cout << "i = " << i+S->split[rank] << "\t\taggregate = " << aggregate[i] << "\t\taggStatus = "
-//                         << (weight[i]>>aggOffset) << "\t\tinitial weight = " << initialWeight[i]
+//                         << (weight[i]>>wOffset) << "\t\tinitial weight = " << initialWeight[i]
 //                         << "\t\tcurrent weight = " << (weight[i]&weightMax) << "\t\taggStat2 = " << aggStatus2[i]
 //                         << "\t\toneDistanceRoot = " << oneDistanceRoot[i] << endl;
 //                }
@@ -770,6 +924,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //            MPI_Barrier(comm);
 //        }
 
+        // todo: merge this loop with the previous one.
         continueAggLocal = false;
         for (i = 0; i < size; ++i) {
             // if any un-assigned node is available, continue aggregating.
@@ -780,7 +935,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
         }
 
 //        whileiter++;
-//        if(whileiter==20) continueAggLocal = false;
+//        if(whileiter==15) continueAggLocal = false;
 
         // check if every processor does not have any non-assigned node, otherwise all the processors should continue aggregating.
         MPI_Allreduce(&continueAggLocal, &continueAgg, 1, MPI_CXX_BOOL, MPI_LOR, comm);
@@ -788,11 +943,13 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //        cout << rank << "\tcontinueAgg = " << continueAgg << endl;
 //        MPI_Barrier(comm);
 
+//        MPI_Barrier(comm); if(rank==0) cout << "UNDECIDED: " << whileiter << endl; MPI_Barrier(comm);
         if(continueAgg){
             for (i = 0; i < size; ++i) {
-                aggStatus2[i] = 1;
+//                aggStatus2[i] = 1;
                 if(weight[i]&UNDECIDED){
-                    weight[i] = ( 1UL<<aggOffset | initialWeight[i] );
+//                    printf("%lu\n", i+S->split[rank]);
+                    weight[i] = ( 1UL<<wOffset | initialWeight[i] );
                     aggregate[i] = i+S->split[rank];
                 }
             }
@@ -804,7 +961,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //    if(rank==nprocs-1) cout << "number of loops to find aggregation: " << whileiter << endl;
 //    MPI_Barrier(comm);
 
-    free(oneDistanceRoot);
+//    for(i=0; i<size;i++)
+//        if(rank==0) cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << endl;
+
+    free(root_distance);
+    free(dist1or2undecided);
 
     // *************************** update aggregate to new indices ****************************
 
@@ -812,20 +973,41 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //        cout << endl << "S.M = " << S->M << ", S.nnz_l = " << S->nnz_l << ", S.nnz_l_local = " << S->nnz_l_local
 //             << ", S.nnz_l_remote = " << S->nnz_l_remote << endl << endl;
 
-//    if(rank==2){
+//    if(rank==1){
 //        cout << "aggregate:" << endl;
 //        for(i=0; i<size; i++)
-//            cout << i << "\t" << aggregate[i] << endl;
+//            cout << i+S->split[rank] << "\t" << aggregate[i] << endl;
 //        cout << endl;}
+
+    // write the aggregate values of all the nodes to a file:
+    // use this command to concatenate the output files:
+    // cat aggregateSaena0.txt aggregateSaena1.txt > aggregateSaena.txt
+//    for(i=0; i<aggregate.size(); i++)
+//        aggregate[i]++;
+//    writeVectorToFile(aggregate, S->Mbig, "aggregateSaena", comm);
+//    for(i=0; i<aggregate.size(); i++)
+//        aggregate[i]--;
 
     // aggArray is the set of root nodes.
     sort(aggArray.begin(), aggArray.end());
 
-//    if(rank==0){
+//    if(rank==1){
 //        cout << "aggArray:" << aggArray.size() << endl;
 //        for(auto i:aggArray)
 //            cout << i << endl;
 //        cout << endl;}
+
+    // write the aggregate nodes to a file:
+    // use this command to concatenate the output files:
+    // cat aggArraySaena0.txt aggArraySaena1.txt > aggArraySaena.txt
+    unsigned long aggArray_size, aggArray_size_total;
+    aggArray_size = aggArray.size();
+    MPI_Allreduce(&aggArray_size, &aggArray_size_total, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    for(i=0; i<aggArray.size(); i++)
+        aggArray[i]++;
+    writeVectorToFile(aggArray, aggArray_size_total, "aggArraySaena", comm);
+    for(i=0; i<aggArray.size(); i++)
+        aggArray[i]--;
 
     splitNew.resize(nprocs+1);
     fill(splitNew.begin(), splitNew.end(), 0);
@@ -893,7 +1075,6 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //        for(i=0; i<nprocs; i++)
 //            cout << vIndexCount[i] << endl;
 //    }
-
 
     // this part is for isend and ireceive.
     std::vector<int> recvProcRank;
@@ -991,29 +1172,6 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //        it = aggArray.find(aggregate[i]);
 //        aggregate[i] = distance(aggArray.begin(), it) + splitNew[rank];
 //    }
-
-//    MPI_Barrier(comm);
-//    if(rank==0){
-//        cout << "aggregate:\t"<< rank << endl;
-//        for(i=0; i<size; i++)
-//            cout << aggregate[i] << endl;
-//        cout << endl;
-//    }
-//    MPI_Barrier(comm);
-//    if(rank==1){
-//        cout << "\naggregate:\t"<< rank << endl;
-//        for(i=0; i<size; i++)
-//            cout << aggregate[i] << endl;
-//        cout << endl;
-//    }
-//    MPI_Barrier(comm);
-//    if(rank==2){
-//        cout << "aggregate:\t"<< rank << endl;
-//        for(i=0; i<size; i++)
-//            cout << aggregate[i] << endl;
-//        cout << endl;
-//    }
-//    MPI_Barrier(comm);
 
     free(aggSend);
     free(aggRecv);
@@ -1138,6 +1296,7 @@ int AMGClass::createProlongation(COOMatrix* A, std::vector<unsigned long>& aggre
     std::vector<cooEntry> PEntryTemp;
 
     // P = (I - 4/(3*rhoDA) * DA) * P_t
+    // aggreagte is used as P_t in the following "for" loop.
     // local
     long iter = 0;
     for (i = 0; i < A->M; ++i) {
@@ -1844,7 +2003,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     std::vector<double> r(grid->A->M);
     residual(grid->A, u, rhs, r, comm);
     dotProduct(r, r, &dot, comm);
-    if(rank==0) cout << "*******************" << endl;
+    if(rank==0) cout << "******************************************************" << endl;
     if(rank==0) cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << endl;
 
 //    % 1. pre-smooth
@@ -1953,7 +2112,8 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     residual(grid->A, u, rhs, r, comm);
     double initial_dot;
     dotProduct(r, r, &initial_dot, comm);
-    if(rank==0) cout << "initial_norm = " << sqrt(initial_dot) << endl << endl;
+    if(rank==0) cout << "******************************************************" << endl;
+    if(rank==0) cout << "\ninitial_norm = " << sqrt(initial_dot) << endl << endl;
 
     double dot = initial_dot;
     for(i=0; i<vcycle_num; i++){
@@ -1970,7 +2130,10 @@ int AMGClass::AMGSolve(Grid* grid, std::vector<double>& u, std::vector<double>& 
     if(i == vcycle_num)
         i--;
 
-    if(rank==0) printf("\nfinal:\niter = %ld, residual = %f \n", i, sqrt(dot));
+    if(rank==0) cout << "******************************************************" << endl;
+    if(rank==0) printf("\nfinal:\niter = %ld, residual = %f \n\n", i, sqrt(dot));
+    if(rank==0) cout << "******************************************************" << endl;
+
     return 0;
 }
 
@@ -2130,10 +2293,12 @@ int AMGClass::writeMatrixToFileR(restrictMatrix* R, string name, MPI_Comm comm) 
     return 0;
 }
 
+template <class T>
+int AMGClass::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm) {
+//int AMGClass::writeVectorToFile(std::vector<double>& v, unsigned long vSize, string name, MPI_Comm comm) {
 
-int AMGClass::writeVectorToFile(std::vector<double>& v, unsigned long vSize, string name, MPI_Comm comm) {
-    // Create txt files with name V0.txt for processor 0, V1.txt for processor 1, etc.
-    // Then, concatenate them in terminal: cat V0.txt V1.txt > V.txt
+    // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
