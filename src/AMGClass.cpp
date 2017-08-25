@@ -8,7 +8,7 @@
 #include <algorithm>
 //#include <mpi.h>
 #include <mpich/mpi.h>
-#include <usort/parUtils.h>
+//#include <usort/parUtils.h>
 #include <set>
 #include <mpich/mpi.h>
 #include "AMGClass.h"
@@ -508,7 +508,8 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     std::vector<unsigned long> weight2(size);
     std::vector<unsigned long> initialWeight(size);
 
-    randomVector(initialWeight, S->Mbig);
+//    randomVector(initialWeight, S->Mbig);
+    randomVector(initialWeight, S->Mbig, S, comm);
 
 //    if(rank==1){
 //        cout << endl << "after initialization!" << endl;
@@ -623,7 +624,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //                        if(rank==0) cout << i+S->split[rank] << "\t neighbor = " << S->col_local[S->indicesP_local[iter]] << endl;
 
                         if((initialWeight[col_index] > weightTemp) || ((initialWeight[col_index] == weightTemp) && (aggregate[col_index] > i+S->split[rank])) ){
-//                            if(rank==1 && i==2) cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << endl;
+//                            if(rank==0 && i==10) cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << endl;
                             weightTemp = (weight[col_index] & weightMax);
                             aggregateTemp = S->col_local[S->indicesP_local[iter]];
                             root_distance[i] = 1;
@@ -637,7 +638,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
             }else
                 iter += S->nnzPerRow_local[i];
         }
-//        if(rank==1) cout << "1>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
+//        if(rank==0) cout << "1>>>>>>>>>>>>>>>>>10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << endl;
 
         // todo: for distance-1 it is probably safe to remove this for loop, and change weight2 to weight and aggregate2 to aggregate at the end of the previous for loop.
         for (i = 0; i < size; ++i) {
@@ -647,7 +648,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
 //                if(rank==0) cout << i+S->split[rank] << "\t" << aggregate[i] << "\t" << aggregate2[i] << endl;
             }
         }
-//        if(rank==1) cout << "2>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
+//        if(rank==0) cout << "2>>>>>>>>>>>>>>>>>10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << endl;
 
         //    if(rank==0){
         //        cout << endl << "after first max computation!" << endl;
@@ -982,11 +983,11 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     // write the aggregate values of all the nodes to a file:
     // use this command to concatenate the output files:
     // cat aggregateSaena0.txt aggregateSaena1.txt > aggregateSaena.txt
-//    for(i=0; i<aggregate.size(); i++)
-//        aggregate[i]++;
-//    writeVectorToFile(aggregate, S->Mbig, "aggregateSaena", comm);
-//    for(i=0; i<aggregate.size(); i++)
-//        aggregate[i]--;
+    for(i=0; i<aggregate.size(); i++)
+        aggregate[i]++;
+    writeVectorToFileul(aggregate, S->Mbig, "aggregateSaena", comm);
+    for(i=0; i<aggregate.size(); i++)
+        aggregate[i]--;
 
     // aggArray is the set of root nodes.
     sort(aggArray.begin(), aggArray.end());
@@ -1005,7 +1006,7 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     MPI_Allreduce(&aggArray_size, &aggArray_size_total, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
     for(i=0; i<aggArray.size(); i++)
         aggArray[i]++;
-    writeVectorToFile(aggArray, aggArray_size_total, "aggArraySaena", comm);
+    writeVectorToFileul(aggArray, aggArray_size_total, "aggArraySaena", comm);
     for(i=0; i<aggArray.size(); i++)
         aggArray[i]--;
 
@@ -2293,9 +2294,9 @@ int AMGClass::writeMatrixToFileR(restrictMatrix* R, string name, MPI_Comm comm) 
     return 0;
 }
 
-template <class T>
-int AMGClass::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm) {
-//int AMGClass::writeVectorToFile(std::vector<double>& v, unsigned long vSize, string name, MPI_Comm comm) {
+//template <class T>
+//int AMGClass::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm) {
+int AMGClass::writeVectorToFiled(std::vector<double>& v, unsigned long vSize, string name, MPI_Comm comm) {
 
     // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
@@ -2324,6 +2325,41 @@ int AMGClass::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string n
     return 0;
 }
 
+
+int AMGClass::writeVectorToFileul(std::vector<unsigned long>& v, unsigned long vSize, string name, MPI_Comm comm) {
+
+    // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    ofstream outFileTxt;
+    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
+    outFileNameTxt += name;
+    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".txt";
+    outFileTxt.open(outFileNameTxt);
+
+    if (rank == 0)
+        outFileTxt << vSize << endl;
+    for (long i = 0; i < v.size(); i++) {
+//        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
+        outFileTxt << v[i] << endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
+
+    return 0;
+}
+
+
+//template <class T>
+//int AMGClass::test(std::vector<T>& v) {
+//    return 0;
+//}
 
 int AMGClass::changeAggregation(COOMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm){
 

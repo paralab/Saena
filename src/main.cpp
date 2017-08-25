@@ -140,7 +140,7 @@ int main(int argc, char* argv[]){
 
     int maxLevel       = 2;
     maxLevel--; // Does not include fine level. fine level is 0.
-    int vcycle_num     = 1;
+    int vcycle_num     = 10;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
     int preSmooth      = 1;
@@ -219,6 +219,30 @@ int main(int argc, char* argv[]){
 //    if(rank==0)
 //        for(i=0; i<u.size(); i++)
 //            cout << u[i] << endl;
+
+
+/*
+    // write norm of residual for mutile solve iterations
+//    std::vector <long> v1;
+//    std::vector <float> v2;
+//    std::vector <double> v3;
+    double dot;
+    std::vector<double> res(A.M);
+    std::vector<double> res_norm;
+//    string name;
+    for(i=0; i<10; i++){
+//        name = "V";
+//        name += std::to_string(i);
+//        name += "_";
+        amgClass.AMGSolve(grids, u, rhs, comm);
+        amgClass.residual(&A, u, rhs, res, comm);
+        amgClass.dotProduct(res, res, &dot, comm);
+        res_norm.push_back(sqrt(dot));
+//        amgClass.writeVectorToFiled(u, A.Mbig, name, comm);
+//        amgClass.test(v1);
+    }
+    amgClass.writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
+*/
 
     // *************************** write residual or the solution to a file ****************************
 

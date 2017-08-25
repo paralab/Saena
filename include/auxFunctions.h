@@ -5,6 +5,7 @@
 //#include <mpi.h>
 #include <algorithm>
 #include <mpich/mpi.h>
+#include "strengthmatrix.h"
 
 using namespace std;
 
@@ -46,7 +47,9 @@ template <class T>
 T lower_bound2(T *left, T *right, T val);
 
 
-int randomVector(std::vector<unsigned long>& V, long size);
+//int randomVector(std::vector<unsigned long>& V, long size);
+
+int randomVector(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm);
 
 
 int randomVector2(std::vector<double>& V);

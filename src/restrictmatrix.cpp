@@ -3,7 +3,7 @@
 #include <mpi.h>
 #include <prolongmatrix.h>
 #include <restrictmatrix.h>
-#include <dtypes.h>
+//#include <dtypes.h>
 
 using namespace std;
 

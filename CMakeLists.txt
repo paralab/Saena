@@ -30,8 +30,8 @@ set(SOURCE_FILES
         src/AMGClass.cpp
         include/strengthmatrix.h
         src/strengthmatrix.cpp
-        src/usort/binUtils.cpp
-        src/usort/parUtils.cpp
+#        src/usort/binUtils.cpp
+#        src/usort/parUtils.cpp
         include/prolongmatrix.h
         src/prolongmatrix.cpp
         include/restrictmatrix.h
