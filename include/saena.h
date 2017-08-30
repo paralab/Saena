@@ -1,2 +1,2 @@
-#include "coomatrix.h"
-#include "AMGClass.h"
+#include "SaenaMatrix.h"
+#include "SaenaObject.h"
