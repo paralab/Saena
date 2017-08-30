@@ -5,8 +5,8 @@
 #include <mpich/mpi.h>
 //#include "mpi.h"
 
-#include "coomatrix.h"
-#include "AMGClass.h"
+#include "SaenaMatrix.h"
+#include "SaenaObject.h"
 #include "grid.h"
 //#include "auxFunctions.h"
 //#include "strengthmatrix.h"
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
 //    MPI_Barrier(comm);
 //    double t1 = MPI_Wtime();
 
-    COOMatrix A (Aname, Mbig, comm);
+    SaenaMatrix A (Aname, Mbig, comm);
     A.repartition(comm);
     A.matrixSetup(comm);
 
@@ -148,9 +148,9 @@ int main(int argc, char* argv[]){
     int preSmooth      = 3;
     int postSmooth     = 3;
 
-    AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth);
-    Grid grids[maxLevel+1];
-    amgClass.AMGSetup(grids, &A, comm);
+    SaenaObject Saena1 (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth);
+//    Grid grids[maxLevel+1];
+    Saena1.Setup(&A, comm);
 
 //    MPI_Barrier(comm);
 //    for(int i=0; i<maxLevel; i++)
@@ -160,23 +160,23 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Solve ****************************
 
-    amgClass.AMGSolve(grids, u, rhs, comm);
+    Saena1.Solve(u, rhs, comm);
 
-//    amgClass.writeMatrixToFileA(grids[1].A, "Ac", comm);
-//    amgClass.writeMatrixToFileP(&grids[0].P, "P", comm);
-//    amgClass.writeMatrixToFileR(&grids[0].R, "R", comm);
+//    Saena1.writeMatrixToFileA(grids[1].A, "Ac", comm);
+//    Saena1.writeMatrixToFileP(&grids[0].P, "P", comm);
+//    Saena1.writeMatrixToFileR(&grids[0].R, "R", comm);
 
     // *************************** Residual ****************************
 
 /*
     std::vector<double> res(A.M);
-    amgClass.residual(&A, u, rhs, res, comm);
+    Saena1.residual(&A, u, rhs, res, comm);
     double dot;
-    amgClass.dotProduct(res, res, &dot, comm);
+    Saena1.dotProduct(res, res, &dot, comm);
     dot = sqrt(dot);
 
     double rhsNorm;
-    amgClass.dotProduct(rhs, rhs, &rhsNorm, comm);
+    Saena1.dotProduct(rhs, rhs, &rhsNorm, comm);
     rhsNorm = sqrt(rhsNorm);
 
     double relativeResidual = dot / rhsNorm;
@@ -186,19 +186,19 @@ int main(int argc, char* argv[]){
     // *************************** tests ****************************
 
 //    std::vector<double> res(A.M);
-//    amgClass.residual(&A, u, rhs, res, comm);
-//    amgClass.writeVectorToFile(v, A.Mbig, "V", comm);
+//    Saena1.residual(&A, u, rhs, res, comm);
+//    Saena1.writeVectorToFile(v, A.Mbig, "V", comm);
 
     // write the solution of overall multigrid to file
-//    amgClass.writeVectorToFile(u, A.Mbig, "V", comm);
-//    int AMGClass::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm) {
+//    Saena1.writeVectorToFile(u, A.Mbig, "V", comm);
+//    int Saena1::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm) {
 
     // write the solution of only jacobi to file
 //    std::vector<double> uu;
 //    uu.assign(A.M, 0);
 //    for(i=0; i<10; i++)
 //        A.jacobi(uu, rhs, comm);
-//    amgClass.writeVectorToFile(uu, A.Mbig, "U", comm);
+//    Saena1.writeVectorToFile(uu, A.Mbig, "U", comm);
 
 //    std::vector<double> resCoarse(grids[1].A->M);
 //    grids[0].R.matvec(&*rhs.begin(), &*resCoarse.begin(), comm);
@@ -232,32 +232,32 @@ int main(int argc, char* argv[]){
 //        name = "V";
 //        name += std::to_string(i);
 //        name += "_";
-        amgClass.AMGSolve(grids, u, rhs, comm);
-        amgClass.residual(&A, u, rhs, res, comm);
-        amgClass.dotProduct(res, res, &dot, comm);
+        Saena1.AMGSolve(grids, u, rhs, comm);
+        Saena1.residual(&A, u, rhs, res, comm);
+        Saena1.dotProduct(res, res, &dot, comm);
         res_norm.push_back(sqrt(dot));
-//        amgClass.writeVectorToFiled(u, A.Mbig, name, comm);
-//        amgClass.test(v1);
+//        Saena1.writeVectorToFiled(u, A.Mbig, name, comm);
+//        Saena1.test(v1);
     }
-    amgClass.writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
+    Saena1.writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
 */
 
     // *************************** write residual or the solution to a file ****************************
 
 //    double dot;
 //    std::vector<double> res(A.M);
-//    amgClass.residual(&A, u, rhs, res, comm);
-//    amgClass.dotProduct(res, res, &dot, comm);
+//    Saena1.residual(&A, u, rhs, res, comm);
+//    Saena1.dotProduct(res, res, &dot, comm);
 //    if(rank==0) cout << "initial residual = " << sqrt(dot) << endl;
 
 //    A.jacobi(u, rhs, comm);
 //    int max = 20;
 //    double tol = 1e-12;
-//    amgClass.solveCoarsest(&A, u, rhs, max, tol, comm);
+//    Saena1.solveCoarsest(&A, u, rhs, max, tol, comm);
 //    A.jacobi(u, rhs, comm);
 
-//    amgClass.residual(&A, u, rhs, res, comm);
-//    amgClass.dotProduct(res, res, &dot, comm);
+//    Saena1.residual(&A, u, rhs, res, comm);
+//    Saena1.dotProduct(res, res, &dot, comm);
 //    if(rank==0) cout << "final residual = " << sqrt(dot) << endl;
 
 /*
@@ -281,9 +281,9 @@ int main(int argc, char* argv[]){
 //        v[i] = i + 1 + A.split[rank];
 
     std::vector<double> res(A.M);
-    amgClass.residual(&A, u, rhs, res, comm);
+    Saena1.residual(&A, u, rhs, res, comm);
     double dot;
-    amgClass.dotProduct(res, res, &dot, comm);
+    Saena1.dotProduct(res, res, &dot, comm);
     double initialNorm = sqrt(dot);
     if(rank==0) cout << "\ninitial norm(res) = " << initialNorm << endl;
 
@@ -296,8 +296,8 @@ int main(int argc, char* argv[]){
     int vv = 20;
     for(int i=0; i<vv; i++){
         A.jacobi(u, rhs, comm);
-        amgClass.residual(&A, u, rhs, res, comm);
-        amgClass.dotProduct(res, res, &dot, comm);
+        Saena1.residual(&A, u, rhs, res, comm);
+        Saena1.dotProduct(res, res, &dot, comm);
 //        if(rank==0) cout << sqrt(dot) << endl;
         if(rank==0) cout << sqrt(dot)/initialNorm << endl;
     }
@@ -305,11 +305,11 @@ int main(int argc, char* argv[]){
 //    for(auto i:u)
 //        cout << i << endl;
 
-//    amgClass.residual(&A, u, rhs, res, comm);
+//    Saena1.residual(&A, u, rhs, res, comm);
 //    if(rank==0)
 //        for(auto i:res)
 //            cout << i << endl;
-//    amgClass.dotProduct(res, res, &dot, comm);
+//    Saena1.dotProduct(res, res, &dot, comm);
 //    if(rank==0) cout << sqrt(dot)/initialNorm << endl;
 */
 
@@ -386,6 +386,8 @@ int main(int argc, char* argv[]){
     // *************************** finalize ****************************
 
 //    MPI_Barrier(comm); cout << rank << "\t*******end*******" << endl;
+    A.Destroy();
+    Saena1.Destroy();
     MPI_Finalize();
     return 0;
 }
