@@ -15,9 +15,8 @@ public:
     string smoother;
     int preSmooth;
     int postSmooth;
-    float connStrength; // connection strength parameter
-    float tau; // is used during making aggregates.
-    bool doSparsify;
+    float connStrength = 0.5; // connection strength parameter
+    bool doSparsify = false;
 
 //    As:: Array{SparseMatrixCSC{Float64}}
 //    Ps:: Array{SparseMatrixCSC{Float64}}
@@ -25,7 +24,7 @@ public:
 //    relaxPrecs
 //    LU
 
-    AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth, float connStrength, float tau, bool doSparsify);
+    AMGClass(int levels, int vcycle_num, double relTol, string relaxType, int preSmooth, int postSmooth);
     ~AMGClass();
     int levelSetup(Grid* grid, MPI_Comm comm);
     int AMGSetup(Grid* grids, COOMatrix* A, MPI_Comm comm);

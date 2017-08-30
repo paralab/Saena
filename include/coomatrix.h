@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <vector>
-#include <mpi.h>
+#include <mpich/mpi.h>
 #include "auxFunctions.h"
 
 using namespace std;

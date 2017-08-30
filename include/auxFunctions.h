@@ -2,7 +2,6 @@
 // Created by abaris on 4/28/17.
 //
 
-//#include <mpi.h>
 #include <algorithm>
 #include <mpich/mpi.h>
 #include "strengthmatrix.h"

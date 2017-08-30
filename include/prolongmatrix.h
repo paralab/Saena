@@ -2,7 +2,7 @@
 #define SAENA_PROLONGMATRIX_H
 
 #include <vector>
-#include "mpi.h"
+#include <mpich/mpi.h>
 #include "auxFunctions.h"
 
 class prolongMatrix {

@@ -1,9 +1,10 @@
 #include <iostream>
 #include <algorithm>
-#include <sys/stat.h>
-#include <assert.h>
+//#include <sys/stat.h>
+//#include <assert.h>
 #include <mpich/mpi.h>
 //#include "mpi.h"
+
 #include "coomatrix.h"
 #include "AMGClass.h"
 #include "grid.h"
@@ -23,14 +24,14 @@ int main(int argc, char* argv[]){
     MPI_Comm_rank(comm, &rank);
 
     unsigned long i;
-    int assert1, assert2, assert3;
+//    int assert1, assert2, assert3;
 
-    if(argc < 3)
+    if(argc < 4)
     {
         if(rank == 0)
         {
 //            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <u_vec>" << endl;
-            cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << endl;
+            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <number of columns of Matrix>" << endl;
             cout << "Matrix file should be in triples format." << endl;
         }
         MPI_Finalize();
@@ -38,10 +39,11 @@ int main(int argc, char* argv[]){
     }
     // *************************** get number of rows ****************************
 
-    char* Vname(argv[2]);
-    struct stat vst;
-    stat(Vname, &vst);
-    unsigned int Mbig = vst.st_size/8;  // sizeof(double) = 8
+//    char* Vname(argv[2]);
+//    struct stat vst;
+//    stat(Vname, &vst);
+//    unsigned int Mbig = vst.st_size/8;  // sizeof(double) = 8
+    unsigned int Mbig = stoul(argv[3]);
 
     // *************************** Setup Phase: Initialize the matrix ****************************
 
@@ -52,8 +54,8 @@ int main(int argc, char* argv[]){
 //    double t1 = MPI_Wtime();
 
     COOMatrix A (Aname, Mbig, comm);
-    assert1 = A.repartition(comm);
-    assert2 = A.matrixSetup(comm);
+    A.repartition(comm);
+    A.matrixSetup(comm);
 
 //    MPI_Barrier(comm);
 //    double t2 = MPI_Wtime();
@@ -67,6 +69,7 @@ int main(int argc, char* argv[]){
     MPI_File fh;
     MPI_Offset offset;
 
+    char* Vname(argv[2]);
     int mpiopen = MPI_File_open(comm, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
         if (rank==0) cout << "Unable to open the rhs vector file!" << endl;
@@ -139,17 +142,13 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Setup ****************************
 
     int maxLevel       = 2;
-    maxLevel--; // Does not include fine level. fine level is 0.
-    int vcycle_num     = 20;
+    int vcycle_num     = 10;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
     int preSmooth      = 3;
     int postSmooth     = 3;
-    float connStrength = 0.5; // connection strength parameter
-    float tau          = 3;   // is used during making aggregates.
-    bool doSparsify    = false;
 
-    AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau, doSparsify);
+    AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth);
     Grid grids[maxLevel+1];
     amgClass.AMGSetup(grids, &A, comm);
 

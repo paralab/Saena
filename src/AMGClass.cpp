@@ -20,16 +20,13 @@
 #include <fstream>
 
 
-AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int postSm, float connStr, float ta, bool doSpars){
-    maxLevel = l;
+AMGClass::AMGClass(int l, int vcycle_n, double relT, string sm, int preSm, int postSm){
+    maxLevel = l-1; // Does not include fine level. fine level is 0.
     vcycle_num = vcycle_n;
     relTol  = relT;
     smoother = sm;
     preSmooth = preSm;
     postSmooth = postSm;
-    connStrength = connStr;
-    tau = ta;
-    doSparsify = doSpars;
 } //AMGClass
 
 
@@ -1999,7 +1996,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     int maxIter = 20;
     double tol = 1e-12;
     if(grid->currentLevel == maxLevel){
-        if(rank==0) cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << endl;
+//        if(rank==0) cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << endl;
         solveCoarsest(grid->A, u, rhs, maxIter, tol, comm);
         return 0;
     }
@@ -2009,7 +2006,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     residual(grid->A, u, rhs, r, comm);
     dotProduct(r, r, &dot, comm);
     if(rank==0) cout << "******************************************************" << endl;
-    if(rank==0) cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << endl;
+//    if(rank==0) cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << endl;
 
 //    % 1. pre-smooth
 //    u = grid.smooth ( v1, rhs, u );
@@ -2033,7 +2030,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
 //            cout << i << endl;
 
     dotProduct(r, r, &dot, comm);
-    if(rank==0) cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << endl;
+//    if(rank==0) cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << endl;
 
 //    % 3. restrict
 //    res_coarse = grid.R * res;
@@ -2081,7 +2078,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     // todo: delete this part after debugging.
     residual(grid->A, u, rhs, r, comm);
     dotProduct(r, r, &dot, comm);
-    if(rank==0) cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << endl;
+//    if(rank==0) cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << endl;
 
 //    % 7. post-smooth
 //    u = grid.smooth ( v2, rhs, u );
@@ -2097,7 +2094,7 @@ int AMGClass::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh
     // todo: delete this part after debugging.
     residual(grid->A, u, rhs, r, comm);
     dotProduct(r, r, &dot, comm);
-    if(rank==0) cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << endl;
+//    if(rank==0) cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << endl;
 
     return 0;
 }
