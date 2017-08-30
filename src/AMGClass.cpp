@@ -76,8 +76,8 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
 
 //    if(rank==0) cout << "after changeAggregation" << endl;
 //    if(rank==0)
-//        for(auto i:aggregate)
-//            cout << i << endl;
+//        for(i=0; i<aggregate.size(); i++)
+//            cout << i << "\t" << aggregate[i] << endl;
 
 //    MPI_Barrier(comm); if(rank==0) printf("----------1 aggregate----------\n"); MPI_Barrier(comm);
 
@@ -105,8 +105,11 @@ int AMGClass::levelSetup(Grid* grid, MPI_Comm comm){
 */
 
     createProlongation(grid->A, aggregate, &grid->P, comm);
+//    MPI_Barrier(comm); if(rank==0) printf("----------2 createProlongation----------\n"); MPI_Barrier(comm);
     grid->R.transposeP(&grid->P, comm);
+//    MPI_Barrier(comm); if(rank==0) printf("----------3 transposeP----------\n"); MPI_Barrier(comm);
     coarsen(grid->A, &grid->P, &grid->R, &grid->Ac, comm);
+//    MPI_Barrier(comm); if(rank==0) printf("----------4 coarsen----------\n"); MPI_Barrier(comm);
     return 0;
 }
 
@@ -508,8 +511,9 @@ int AMGClass::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggrega
     std::vector<unsigned long> weight2(size);
     std::vector<unsigned long> initialWeight(size);
 
-//    randomVector(initialWeight, S->Mbig);
     randomVector(initialWeight, S->Mbig, S, comm);
+//    randomVector3(initialWeight, S->Mbig, S, comm);
+//    randomVector4(initialWeight, S->Mbig);
 
 //    if(rank==1){
 //        cout << endl << "after initialization!" << endl;

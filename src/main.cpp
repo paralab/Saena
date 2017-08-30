@@ -140,14 +140,14 @@ int main(int argc, char* argv[]){
 
     int maxLevel       = 2;
     maxLevel--; // Does not include fine level. fine level is 0.
-    int vcycle_num     = 10;
+    int vcycle_num     = 20;
     double relTol      = 1e-6;
     string relaxType   = "jacobi";
-    int preSmooth      = 1;
-    int postSmooth     = 1;
+    int preSmooth      = 3;
+    int postSmooth     = 3;
     float connStrength = 0.5; // connection strength parameter
     float tau          = 3;   // is used during making aggregates.
-    bool doSparsify    = 0;
+    bool doSparsify    = false;
 
     AMGClass amgClass (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth, connStrength, tau, doSparsify);
     Grid grids[maxLevel+1];
@@ -219,7 +219,6 @@ int main(int argc, char* argv[]){
 //    if(rank==0)
 //        for(i=0; i<u.size(); i++)
 //            cout << u[i] << endl;
-
 
 /*
     // write norm of residual for mutile solve iterations

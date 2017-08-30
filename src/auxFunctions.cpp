@@ -27,19 +27,34 @@ T lower_bound2(T *left, T *right, T val){
 }
 
 
-/*
-int randomVector(std::vector<unsigned long>& V, long size) {
+int randomVector(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm) {
 
     int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(comm, &rank);
 
 //    for (unsigned long i=0; i<V.size(); i++){
 //        srand (i);
 //        V[i] = rand()%(V.size());
 //    }
 
+    unsigned long max_weight = ( (1UL<<63) - 1);
+
+    unsigned long i;
+    unsigned int max_degree_local = 0;
+    for(i=0; i<S->M; i++){
+        if(S->nnzPerRow[i] > max_degree_local)
+            max_degree_local = S->nnzPerRow[i];
+    }
+
+    unsigned int max_degree;
+    MPI_Allreduce(&max_degree_local, &max_degree, 1, MPI_UNSIGNED, MPI_MAX, comm);
+    max_degree++;
+//    printf("rank = %d, max degree local = %lu, max degree = %lu \n", rank, max_degree_local, max_degree);
+
     //Type of random number distribution
-    std::uniform_int_distribution<unsigned long> dist(1, size); //(min, max)
+//    std::uniform_real_distribution<float> dist(-1.0,1.0); //(min, max)
+    unsigned int max_rand = ( (1UL<<32) - 1);
+    std::uniform_int_distribution<unsigned int> dist(0,max_rand); //(min, max)
 
     //Mersenne Twister: Good quality random number generator
     std::mt19937 rng;
@@ -47,20 +62,50 @@ int randomVector(std::vector<unsigned long>& V, long size) {
     //Initialize with non-deterministic seeds
     rng.seed(std::random_device{}());
 
-    for (unsigned long i = 0; i < V.size(); i++)
-        V[i] = dist(rng);
+    std::vector<double> rand(S->M);
+    for (i = 0; i < V.size(); i++){
+        V[i] = ((unsigned long)(max_degree - S->nnzPerRow[i])<<32) + dist(rng);
+//        V[i] = V[i] << 32;
+//        V[i] += dist(rng);
+//        if(rank==0) cout << i << "\tnnzPerRow = " << S->nnzPerRow[i] << "\t weight = " << V[i] << endl;
+    }
 
     // to have one node with the highest weight possible, so that node will be a root and consequently P and R won't be zero matrices.
     // the median index is being chosen here.
     if (V.size() != 0)
-        V[ floor(V.size()/2) ] = size + 1;
+        V[ floor(V.size()/2) ] = max_weight;
 
     return 0;
 }
- */
+
+int randomVector2(std::vector<double>& V){
+
+//    int rank;
+//    MPI_Comm_rank(comm, &rank);
+
+//    for (unsigned long i=0; i<V.size(); i++){
+//        srand (i);
+//        V[i] = rand()%(V.size());
+//    }
+
+    //Type of random number distribution
+    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max)
+
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    for (unsigned long i=0; i<V.size(); i++){
+        V[i] = dist(rng);
+    }
+
+    return 0;
+}
 
 
-int randomVector(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm) {
+int randomVector3(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm) {
 
     int rank;
     MPI_Comm_rank(comm, &rank);
@@ -101,17 +146,16 @@ int randomVector(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MP
     // to have one node with the highest weight possible, so that node will be a root and consequently P and R won't be zero matrices.
     // the median index is being chosen here.
     // todo: fix this later. doing this as follows will affect the aggregation in a bad way.
-//    if (V.size() != 0)
-//        V[ floor(V.size()/2) ] = size + 1;
+    if (V.size() != 0)
+        V[ floor(V.size()/2) ] = size + 1;
 
     return 0;
 }
 
+int randomVector4(std::vector<unsigned long>& V, long size) {
 
-int randomVector2(std::vector<double>& V){
-
-//    int rank;
-//    MPI_Comm_rank(comm, &rank);
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 //    for (unsigned long i=0; i<V.size(); i++){
 //        srand (i);
@@ -119,7 +163,7 @@ int randomVector2(std::vector<double>& V){
 //    }
 
     //Type of random number distribution
-    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max)
+    std::uniform_int_distribution<unsigned long> dist(1, size); //(min, max)
 
     //Mersenne Twister: Good quality random number generator
     std::mt19937 rng;
@@ -127,8 +171,13 @@ int randomVector2(std::vector<double>& V){
     //Initialize with non-deterministic seeds
     rng.seed(std::random_device{}());
 
-    for (unsigned long i=0; i<V.size(); i++)
+    for (unsigned long i = 0; i < V.size(); i++)
         V[i] = dist(rng);
+
+    // to have one node with the highest weight possible, so that node will be a root and consequently P and R won't be zero matrices.
+    // the median index is being chosen here.
+    if (V.size() != 0)
+        V[ floor(V.size()/2) ] = size + 1;
 
     return 0;
 }

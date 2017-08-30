@@ -51,8 +51,11 @@ T lower_bound2(T *left, T *right, T val);
 
 int randomVector(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm);
 
-
 int randomVector2(std::vector<double>& V);
+
+int randomVector3(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm);
+
+int randomVector4(std::vector<unsigned long>& V, long size);
 
 
 class cooEntry{
