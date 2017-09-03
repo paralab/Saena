@@ -22,13 +22,13 @@ public:
 //    SaenaObject(int levels, int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
     SaenaObject(int max_level);
     ~SaenaObject();
-    int Destroy();
+    int destroy();
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
     int levelSetup(Grid* grid, MPI_Comm comm);
-    int Setup(SaenaMatrix* A);
+    int setup(SaenaMatrix* A);
     int findAggregation(SaenaMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
     int createStrengthMatrix(SaenaMatrix* A, StrengthMatrix* S, MPI_Comm comm);
-    int Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
+    int aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm);
     int createProlongation(SaenaMatrix* A, std::vector<unsigned long>& aggregate, prolongMatrix* P, MPI_Comm comm);
 //    int createRestriction(prolongMatrix* P, restrictMatrix* R, MPI_Comm comm);
     int coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, SaenaMatrix* Ac, MPI_Comm comm);
@@ -36,7 +36,7 @@ public:
     int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm);
     int solveCoarsest(SaenaMatrix* A, std::vector<double>& u, std::vector<double>& rhs, int& maxIter, double& tol, MPI_Comm comm);
     int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
-    int Solve(std::vector<double>& u, std::vector<double>& rhs);
+    int solve(std::vector<double>& u, std::vector<double>& rhs);
 
     int writeMatrixToFileA(SaenaMatrix* A, std::string name, MPI_Comm comm);
     int writeMatrixToFileP(prolongMatrix* P, std::string name, MPI_Comm comm);

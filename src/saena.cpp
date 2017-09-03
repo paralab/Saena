@@ -8,6 +8,10 @@
 
 // ******************************* matrix *******************************
 
+saena::matrix::matrix() {
+    m_pImpl = new SaenaMatrix();
+}
+
 saena::matrix::matrix(char *name, unsigned int global_rows, MPI_Comm comm) {
     m_pImpl = new SaenaMatrix(name, global_rows, comm);
 }
@@ -54,6 +58,10 @@ saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, in
     smoother           = sm;
     preSmooth          = preSm;
     postSmooth         = postSm;
+}
+
+saena::options::options(char* name){
+
 }
 
 saena::options::~options(){
@@ -116,13 +124,21 @@ int saena::options::get_postSmooth(){
 
 saena::amg::amg(saena::matrix* A, int max_level){
     m_pImpl = new SaenaObject(max_level);
-    m_pImpl->Setup(A->get_internal_matrix());
+    m_pImpl->setup(A->get_internal_matrix());
 }
 
 void saena::amg::solve(std::vector<double>& u, std::vector<double>& rhs, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
-    m_pImpl->Solve(u, rhs);
+    m_pImpl->solve(u, rhs);
+}
+
+void saena::amg::save_to_file(char* name, unsigned int* agg){
+
+}
+
+unsigned int* saena::amg::load_from_file(char* name){
+    return 0;
 }
 
 void saena::amg::destroy(){

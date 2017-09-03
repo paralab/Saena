@@ -36,9 +36,10 @@ SaenaObject::SaenaObject(int max_lev){
 SaenaObject::~SaenaObject(){}
 
 
-int SaenaObject::Destroy(){
+int SaenaObject::destroy(){
     return 0;
 }
+
 
 void SaenaObject::set_parameters(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
@@ -49,7 +50,8 @@ void SaenaObject::set_parameters(int vcycle_n, double relT, std::string sm, int 
     postSmooth = postSm;
 }
 
-int SaenaObject::Setup(SaenaMatrix* A) {
+
+int SaenaObject::setup(SaenaMatrix* A) {
     MPI_Comm comm = MPI_COMM_WORLD; // todo: fix this.
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -257,7 +259,7 @@ int SaenaObject::findAggregation(SaenaMatrix* A, std::vector<unsigned long>& agg
 //    S.print(0);
 
 //    unsigned long aggSize = 0;
-    Aggregation(&S, aggregate, splitNew, comm);
+    aggregation(&S, aggregate, splitNew, comm);
 //    updateAggregation(aggregate, &aggSize);
 //    printf("rank = %d \n", rank);
 
@@ -500,7 +502,7 @@ int SaenaObject::createStrengthMatrix(SaenaMatrix* A, StrengthMatrix* S, MPI_Com
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
-int SaenaObject::Aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm) {
+int SaenaObject::aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew, MPI_Comm comm) {
 
     // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
     // If there is not any root in distance-2, that node should become a root.
@@ -2118,7 +2120,7 @@ int SaenaObject::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>&
 }
 
 
-int SaenaObject::Solve(std::vector<double>& u, std::vector<double>& rhs){
+int SaenaObject::solve(std::vector<double>& u, std::vector<double>& rhs){
     MPI_Comm comm = MPI_COMM_WORLD; // todo: fix this
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

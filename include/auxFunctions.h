@@ -23,30 +23,10 @@ public:
 };
 
 
-//template<typename T>
-//class sort_indices4 {
-//    std::vector<T>* _values;
-//public:
-//    sort_indices4(std::vector<T>* values) : _values(values) {}
-//public:
-//    bool operator() (const int& a, const int& b) const { return (_values)[a] > (_values)[b]; } };
-
-
-//template<typename cooEntry>
-//class sort_indices4 {
-//    std::vector<cooEntry>* _values;
-//private:
-//    sort_indices4(std::vector<cooEntry>* values) : _values(values) {}
-//public:
-//    bool operator() (const unsigned long& a, const unsigned long& b) const { return (_values)[a] > (_values)[b]; } };
-
-
 // binary search tree using the lower bound
 template <class T>
 T lower_bound2(T *left, T *right, T val);
 
-
-//int randomVector(std::vector<unsigned long>& V, long size);
 
 int randomVector(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm);
 
