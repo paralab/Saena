@@ -5,29 +5,31 @@
 #include <cstdio>
 #include <stdlib.h>
 #include <stdio.h>
+#include <fstream>
 #include <algorithm>
+#include <set>
 //#include <mpi.h>
 #include <mpich/mpi.h>
-//#include <usort/parUtils.h>
-#include <set>
-#include <mpich/mpi.h>
+
 #include "SaenaObject.h"
 #include "SaenaMatrix.h"
 #include "auxFunctions.h"
 //#include "prolongmatrix.h"
 //#include "restrictmatrix.h"
+//#include <usort/parUtils.h>
 
-#include <fstream>
 
+//SaenaObject::SaenaObject(int l, int vcycle_n, double relT, std::string sm, int preSm, int postSm){
+//    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
+//    vcycle_num = vcycle_n;
+//    relative_tolerance  = relT;
+//    smoother = sm;
+//    preSmooth = preSm;
+//    postSmooth = postSm;
+//} //SaenaObject
 
-SaenaObject::SaenaObject(int l, int vcycle_n, double relT, string sm, int preSm, int postSm){
-    maxLevel = l-1; // Does not include fine level. fine level is 0.
-    vcycle_num = vcycle_n;
-    relTol  = relT;
-    smoother = sm;
-    preSmooth = preSm;
-    postSmooth = postSm;
-    grids.resize(l);
+SaenaObject::SaenaObject(int max_lev){
+    maxLevel = max_lev-1;
 } //SaenaObject
 
 
@@ -38,13 +40,23 @@ int SaenaObject::Destroy(){
     return 0;
 }
 
+void SaenaObject::set_parameters(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
+//    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
+    vcycle_num = vcycle_n;
+    relative_tolerance  = relT;
+    smoother = sm;
+    preSmooth = preSm;
+    postSmooth = postSm;
+}
 
-int SaenaObject::Setup(SaenaMatrix* A, MPI_Comm comm) {
+int SaenaObject::Setup(SaenaMatrix* A) {
+    MPI_Comm comm = MPI_COMM_WORLD; // todo: fix this.
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     int i;
 
+    grids.resize(maxLevel+1);
 //    MPI_Barrier(comm); if(rank==1) printf("----------start of AMGSetup----------\n"); MPI_Barrier(comm);
     grids[0] = Grid(A, maxLevel, 0);
     for(i = 0; i < maxLevel; i++){
@@ -2106,7 +2118,8 @@ int SaenaObject::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>&
 }
 
 
-int SaenaObject::Solve(std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm){
+int SaenaObject::Solve(std::vector<double>& u, std::vector<double>& rhs){
+    MPI_Comm comm = MPI_COMM_WORLD; // todo: fix this
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -2129,7 +2142,7 @@ int SaenaObject::Solve(std::vector<double>& u, std::vector<double>& rhs, MPI_Com
         residual(grids[0].A, u, rhs, r, comm);
         dotProduct(r, r, &dot, comm);
         if(rank==0) printf("vcycle iteration = %ld, residual = %f \n\n", i, sqrt(dot));
-        if(dot/initial_dot < relTol)
+        if(dot/initial_dot < relative_tolerance)
             break;
     }
 
@@ -2146,7 +2159,7 @@ int SaenaObject::Solve(std::vector<double>& u, std::vector<double>& rhs, MPI_Com
 }
 
 
-int SaenaObject::writeMatrixToFileA(SaenaMatrix* A, string name, MPI_Comm comm){
+int SaenaObject::writeMatrixToFileA(SaenaMatrix* A, std::string name, MPI_Comm comm){
     // Create txt files with name Ac0.txt for processor 0, Ac1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat Ac0.txt Ac1.txt > Ac.txt
     // row and column indices of txt files should start from 1, not 0.
@@ -2242,7 +2255,7 @@ int SaenaObject::writeMatrixToFileA(SaenaMatrix* A, string name, MPI_Comm comm){
 }
 
 
-int SaenaObject::writeMatrixToFileP(prolongMatrix* P, string name, MPI_Comm comm) {
+int SaenaObject::writeMatrixToFileP(prolongMatrix* P, std::string name, MPI_Comm comm) {
     // Create txt files with name P0.txt for processor 0, P1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat P0.txt P1.txt > P.txt
     // row and column indices of txt files should start from 1, not 0.
@@ -2272,7 +2285,7 @@ int SaenaObject::writeMatrixToFileP(prolongMatrix* P, string name, MPI_Comm comm
 }
 
 
-int SaenaObject::writeMatrixToFileR(restrictMatrix* R, string name, MPI_Comm comm) {
+int SaenaObject::writeMatrixToFileR(restrictMatrix* R, std::string name, MPI_Comm comm) {
     // Create txt files with name R0.txt for processor 0, R1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat R0.txt R1.txt > R.txt
     // row and column indices of txt files should start from 1, not 0.
@@ -2302,8 +2315,8 @@ int SaenaObject::writeMatrixToFileR(restrictMatrix* R, string name, MPI_Comm com
 }
 
 //template <class T>
-//int SaenaObject::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm) {
-int SaenaObject::writeVectorToFiled(std::vector<double>& v, unsigned long vSize, string name, MPI_Comm comm) {
+//int SaenaObject::writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
+int SaenaObject::writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
 
     // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
@@ -2333,7 +2346,7 @@ int SaenaObject::writeVectorToFiled(std::vector<double>& v, unsigned long vSize,
 }
 
 
-int SaenaObject::writeVectorToFileul(std::vector<unsigned long>& v, unsigned long vSize, string name, MPI_Comm comm) {
+int SaenaObject::writeVectorToFileul(std::vector<unsigned long>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
 
     // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
@@ -2379,7 +2392,7 @@ int SaenaObject::changeAggregation(SaenaMatrix* A, std::vector<unsigned long>& a
     MPI_File fh;
     MPI_Offset offset;
 
-    string aggName = "/home/abaris/Dropbox/Projects/Saena/build/juliaAgg.bin";
+    std::string aggName = "/home/abaris/Dropbox/Projects/Saena/build/juliaAgg.bin";
     int mpiopen = MPI_File_open(comm, aggName.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
         if (rank==0) cout << "Unable to open the vector file!" << endl;
@@ -2399,7 +2412,7 @@ int SaenaObject::changeAggregation(SaenaMatrix* A, std::vector<unsigned long>& a
     MPI_File fh2;
     MPI_Offset offset2;
 
-    string aggName2 = "/home/abaris/Dropbox/Projects/Saena/build/juliaAggArray.bin";
+    std::string aggName2 = "/home/abaris/Dropbox/Projects/Saena/build/juliaAggArray.bin";
     int mpiopen2 = MPI_File_open(comm, aggName2.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh2);
     if(mpiopen2){
         if (rank==0) cout << "Unable to open the vector file!" << endl;

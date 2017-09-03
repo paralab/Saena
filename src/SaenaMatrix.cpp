@@ -1,9 +1,10 @@
 #include <fstream>
 #include <algorithm>
 #include <sys/stat.h>
-#include <string.h>
+#include <string>
 #include "mpi.h"
 #include <omp.h>
+#include <cstring>
 #include "SaenaMatrix.h"
 #include "auxFunctions.h"
 
@@ -94,6 +95,12 @@ SaenaMatrix::~SaenaMatrix() {
 //        printf("**********~SaenaMatrix!!!!!!! \n");
     }
 }
+
+
+//SaenaMatrix::set(char* Aname, unsigned int Mbig2, MPI_Comm comm){
+//    SaenaMatrix(Aname, Mbig2, comm);
+//    return 0;
+//}
 
 
 int SaenaMatrix::Destroy(){

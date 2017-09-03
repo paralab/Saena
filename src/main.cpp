@@ -2,14 +2,14 @@
 #include <algorithm>
 //#include <sys/stat.h>
 //#include <assert.h>
-#include <mpich/mpi.h>
-//#include "mpi.h"
+//#include <mpich/mpi.h>
+#include "mpi.h"
 
+#include "grid.h"
 #include "SaenaMatrix.h"
 #include "SaenaObject.h"
-#include "grid.h"
-//#include "auxFunctions.h"
-//#include "strengthmatrix.h"
+#include "saena.hpp"
+
 
 #define ITERATIONS 1
 
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]){
         if(rank == 0)
         {
 //            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <u_vec>" << endl;
-            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <number of columns of Matrix>" << endl;
+            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <number of rows of Matrix>" << endl;
             cout << "Matrix file should be in triples format." << endl;
         }
         MPI_Finalize();
@@ -43,20 +43,20 @@ int main(int argc, char* argv[]){
 //    struct stat vst;
 //    stat(Vname, &vst);
 //    unsigned int Mbig = vst.st_size/8;  // sizeof(double) = 8
-    unsigned int Mbig = stoul(argv[3]);
+    unsigned int num_of_rows_global = stoul(argv[3]);
 
     // *************************** Setup Phase: Initialize the matrix ****************************
 
-    char* Aname(argv[1]);
+    char* file_name(argv[1]);
 
     // timing the setup phase
 //    MPI_Barrier(comm);
 //    double t1 = MPI_Wtime();
 
-    SaenaMatrix A (Aname, Mbig, comm);
-    A.repartition(comm);
-    A.matrixSetup(comm);
+    saena::matrix A (file_name, num_of_rows_global, comm);
+    A.init(comm);
 
+    unsigned int num_local_row = A.get_num_local_rows();
 //    MPI_Barrier(comm);
 //    double t2 = MPI_Wtime();
 
@@ -78,12 +78,12 @@ int main(int argc, char* argv[]){
     }
 
     // define the size of v as the local number of rows on each process
-    std::vector <double> v(A.M);
+    std::vector <double> v(num_local_row);
     double* vp = &(*(v.begin()));
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A.split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh, offset, vp, A.M, MPI_DOUBLE, &status);
+    offset = A.get_internal_matrix()->split[rank] * 8; // value(double=8)
+    MPI_File_read_at(fh, offset, vp, num_local_row, MPI_DOUBLE, &status);
 
 //    int count;
 //    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
@@ -91,24 +91,24 @@ int main(int argc, char* argv[]){
     MPI_File_close(&fh);
 
     // set rhs
-    std::vector<double> rhs(A.M);
-    A.matvec(&*v.begin(), &*rhs.begin(), comm);
-//    rhs.assign(A.M, 0);
+    std::vector<double> rhs(num_local_row);
+    A.get_internal_matrix()->matvec(&*v.begin(), &*rhs.begin(), comm);
+//    rhs.assign(num_local_row, 0);
 //    if(rank==0)
 //        for(i = 0; i < rhs.size(); i++)
 //            cout << rhs[i] << endl;
 
-//    for(i=0; i<A.M; i++)
+//    for(i=0; i<num_local_row; i++)
 //        rhs[i] = i + 1 + A.split[rank];
 
-    // *************************** read the vector and set u0 ****************************
+    // *************************** set u0 ****************************
     // there are 3 options for u0:
     // 1- zero
     // 2- random
     // 3- flat from homg
 
-    std::vector<double> u(A.M);
-    u.assign(A.M, 0); // initial guess = 0
+    std::vector<double> u(num_local_row);
+    u.assign(num_local_row, 0); // initial guess = 0
     //    randomVector2(u); // initial guess = random
     //    if(rank==1) cout << "\ninitial guess u" << endl;
     //    if(rank==1)
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
     offset3 = A.split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh3, offset3, &*u.begin(), A.M, MPI_DOUBLE, &status3);
+    MPI_File_read_at(fh3, offset3, &*u.begin(), num_local_row, MPI_DOUBLE, &status3);
     MPI_File_close(&fh3);
 */
 
@@ -141,26 +141,25 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Setup ****************************
 
-    int maxLevel       = 2;
-    int vcycle_num     = 10;
-    double relTol      = 1e-6;
-    string relaxType   = "jacobi";
-    int preSmooth      = 3;
-    int postSmooth     = 3;
+    int max_level             = 2;
+    int vcycle_num            = 10;
+    double relative_tolerance = 1e-8;
+    std::string smoother      = "jacobi";
+    int preSmooth             = 2;
+    int postSmooth            = 2;
 
-    SaenaObject Saena1 (maxLevel, vcycle_num, relTol, relaxType, preSmooth, postSmooth);
-//    Grid grids[maxLevel+1];
-    Saena1.Setup(&A, comm);
+    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+    saena::amg solver(&A, max_level);
 
 //    MPI_Barrier(comm);
 //    for(int i=0; i<maxLevel; i++)
 //        if(rank==0) cout << "size = " << maxLevel << ", current level = " << grids[i].currentLevel << ", coarse level = " << grids[i].coarseGrid->currentLevel
-//                         << ", A.Mbig = " << grids[i].A->Mbig << ", A.M = " << grids[i].A->M << ", Ac.Mbig = " << grids[i].Ac.Mbig << ", Ac.M = " << grids[i].Ac.M << endl;
+//                         << ", num_local_rowbig = " << grids[i].A->Mbig << ", num_local_row = " << grids[i].A->M << ", Ac.Mbig = " << grids[i].Ac.Mbig << ", Ac.M = " << grids[i].Ac.M << endl;
 //    MPI_Barrier(comm);
 
     // *************************** AMG - Solve ****************************
 
-    Saena1.Solve(u, rhs, comm);
+    solver.solve(u, rhs, &opts);
 
 //    Saena1.writeMatrixToFileA(grids[1].A, "Ac", comm);
 //    Saena1.writeMatrixToFileP(&grids[0].P, "P", comm);
@@ -169,7 +168,7 @@ int main(int argc, char* argv[]){
     // *************************** Residual ****************************
 
 /*
-    std::vector<double> res(A.M);
+    std::vector<double> res(num_local_row);
     Saena1.residual(&A, u, rhs, res, comm);
     double dot;
     Saena1.dotProduct(res, res, &dot, comm);
@@ -185,20 +184,20 @@ int main(int argc, char* argv[]){
 
     // *************************** tests ****************************
 
-//    std::vector<double> res(A.M);
+//    std::vector<double> res(num_local_row);
 //    Saena1.residual(&A, u, rhs, res, comm);
-//    Saena1.writeVectorToFile(v, A.Mbig, "V", comm);
+//    Saena1.writeVectorToFile(v, num_local_rowbig, "V", comm);
 
     // write the solution of overall multigrid to file
-//    Saena1.writeVectorToFile(u, A.Mbig, "V", comm);
-//    int Saena1::writeVectorToFile(std::vector<T>& v, unsigned long vSize, string name, MPI_Comm comm) {
+//    Saena1.writeVectorToFile(u, num_local_rowbig, "V", comm);
+//    int Saena1::writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
 
     // write the solution of only jacobi to file
 //    std::vector<double> uu;
-//    uu.assign(A.M, 0);
+//    uu.assign(num_local_row, 0);
 //    for(i=0; i<10; i++)
 //        A.jacobi(uu, rhs, comm);
-//    Saena1.writeVectorToFile(uu, A.Mbig, "U", comm);
+//    Saena1.writeVectorToFile(uu, num_local_rowbig, "U", comm);
 
 //    std::vector<double> resCoarse(grids[1].A->M);
 //    grids[0].R.matvec(&*rhs.begin(), &*resCoarse.begin(), comm);
@@ -225,7 +224,7 @@ int main(int argc, char* argv[]){
 //    std::vector <float> v2;
 //    std::vector <double> v3;
     double dot;
-    std::vector<double> res(A.M);
+    std::vector<double> res(num_local_row);
     std::vector<double> res_norm;
 //    string name;
     for(i=0; i<10; i++){
@@ -236,7 +235,7 @@ int main(int argc, char* argv[]){
         Saena1.residual(&A, u, rhs, res, comm);
         Saena1.dotProduct(res, res, &dot, comm);
         res_norm.push_back(sqrt(dot));
-//        Saena1.writeVectorToFiled(u, A.Mbig, name, comm);
+//        Saena1.writeVectorToFiled(u, num_local_rowbig, name, comm);
 //        Saena1.test(v1);
     }
     Saena1.writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
@@ -245,7 +244,7 @@ int main(int argc, char* argv[]){
     // *************************** write residual or the solution to a file ****************************
 
 //    double dot;
-//    std::vector<double> res(A.M);
+//    std::vector<double> res(num_local_row);
 //    Saena1.residual(&A, u, rhs, res, comm);
 //    Saena1.dotProduct(res, res, &dot, comm);
 //    if(rank==0) cout << "initial residual = " << sqrt(dot) << endl;
@@ -268,19 +267,19 @@ int main(int argc, char* argv[]){
     MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
     offset2 = A.split[rank] * 8; // value(double=8)
     // write the solution
-    MPI_File_write_at(fh2, offset2, &*u.begin(), A.M, MPI_DOUBLE, &status2);
+    MPI_File_write_at(fh2, offset2, &*u.begin(), num_local_row, MPI_DOUBLE, &status2);
     // write the residual
-//    MPI_File_write_at(fh2, offset2, &*res.begin(), A.M, MPI_DOUBLE, &status2);
+//    MPI_File_write_at(fh2, offset2, &*res.begin(), num_local_row, MPI_DOUBLE, &status2);
     MPI_File_close(&fh2);
 */
 
     // *************************** use jacobi to find the answer x ****************************
 
 /*
-//    for(unsigned int i=0; i<A.M; i++)
+//    for(unsigned int i=0; i<num_local_row; i++)
 //        v[i] = i + 1 + A.split[rank];
 
-    std::vector<double> res(A.M);
+    std::vector<double> res(num_local_row);
     Saena1.residual(&A, u, rhs, res, comm);
     double dot;
     Saena1.dotProduct(res, res, &dot, comm);
@@ -288,9 +287,9 @@ int main(int argc, char* argv[]){
     if(rank==0) cout << "\ninitial norm(res) = " << initialNorm << endl;
 
     // initial x for Ax=b
-//    std::vector <double> x(A.M);
+//    std::vector <double> x(num_local_row);
 //    double* xp = &(*(x.begin()));
-//    x.assign(A.M, 0);
+//    x.assign(num_local_row, 0);
     // u first points to the initial guess, after doing jacobi it is the approximate answer for the system
     // vp points to the right-hand side
     int vv = 20;
@@ -323,9 +322,9 @@ int main(int argc, char* argv[]){
     MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
     offset2 = A.split[rank] * 8; // value(double=8)
     // write the solution
-    MPI_File_write_at(fh2, offset2, &*u.begin(), A.M, MPI_DOUBLE, &status2);
+    MPI_File_write_at(fh2, offset2, &*u.begin(), num_local_row, MPI_DOUBLE, &status2);
     // write the residual
-//    MPI_File_write_at(fh2, offset2, &*res.begin(), A.M, MPI_DOUBLE, &status2);
+//    MPI_File_write_at(fh2, offset2, &*res.begin(), num_local_row, MPI_DOUBLE, &status2);
 //    int count2;
 //    MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
     //printf("process %d wrote %d lines of triples\n", rank, count2);
@@ -335,21 +334,21 @@ int main(int argc, char* argv[]){
     // *************************** matvec ****************************
 
 /*
-    std::vector <double> w(A.M);
+    std::vector <double> w(num_local_row);
     double* wp = &(*(w.begin()));
     int time_num = 4; // 4 of them are used to time 3 phases in matvec. check the print section to see how they work.
     double time[time_num]; // array for timing matvec
     fill(&time[0], &time[time_num], 0);
     // warming up
     for(int i=0; i<ITERATIONS; i++){
-        A.matvec(vp, wp, time);
+        num_local_rowatvec(vp, wp, time);
         v = w;
     }
     fill(&time[0], &time[time_num], 0);
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i=0; i<ITERATIONS; i++){
-        A.matvec(vp, wp, time);
+        num_local_rowatvec(vp, wp, time);
         v = w;
 //        for(int j=0; j<time_num; j++)
 //            time[j] += time[j]/ITERATIONS;
@@ -376,7 +375,7 @@ int main(int argc, char* argv[]){
     MPI_Offset offset2;
     MPI_File_open(comm, outFileNameTxt, MPI_MODE_CREATE| MPI_MODE_WRONLY, MPI_INFO_NULL, &fh2);
     offset2 = A.split[rank] * 8; // value(double=8)
-    MPI_File_write_at(fh2, offset2, vp, A.M, MPI_UNSIGNED_LONG, &status2);
+    MPI_File_write_at(fh2, offset2, vp, num_local_row, MPI_UNSIGNED_LONG, &status2);
     int count2;
     MPI_Get_count(&status2, MPI_UNSIGNED_LONG, &count2);
     //printf("process %d wrote %d lines of triples\n", rank, count2);
@@ -386,8 +385,8 @@ int main(int argc, char* argv[]){
     // *************************** finalize ****************************
 
 //    MPI_Barrier(comm); cout << rank << "\t*******end*******" << endl;
-    A.Destroy();
-    Saena1.Destroy();
+    A.destroy();
+    solver.destroy();
     MPI_Finalize();
     return 0;
 }

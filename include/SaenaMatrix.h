@@ -94,6 +94,7 @@ public:
      * */
     SaenaMatrix(char* Aname, unsigned int Mbig, MPI_Comm comm);
     ~SaenaMatrix();
+//    int set(char* Aname, unsigned int Mbig, MPI_Comm comm);
     int repartition(MPI_Comm comm);
     int matrixSetup(MPI_Comm comm);
     int matvec(double* v, double* w, MPI_Comm comm);
