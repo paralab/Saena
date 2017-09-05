@@ -19,15 +19,15 @@ include_directories(${MPI_INCLUDE_PATH})
 
 include_directories(
         include
-        include/usort
+#        include/usort
 )
 
 set(SOURCE_FILES
         src/main.cpp
-        include/coomatrix.h
-        src/coomatrix.cpp
-        include/AMGClass.h
-        src/AMGClass.cpp
+        include/SaenaMatrix.h
+        src/SaenaMatrix.cpp
+        include/SaenaObject.h
+        src/SaenaObject.cpp
         include/strengthmatrix.h
         src/strengthmatrix.cpp
 #        src/usort/binUtils.cpp
@@ -40,6 +40,9 @@ set(SOURCE_FILES
         src/auxFunctions.cpp
         include/grid.h
         src/grid.cpp
+        include/saena.hpp
+        src/saena.cpp
+        src/pugixml.cpp
         )
 
 add_executable(Saena ${SOURCE_FILES})

@@ -5,6 +5,7 @@
 #include "saena.hpp"
 #include "SaenaMatrix.h"
 #include "SaenaObject.h"
+#include "pugixml.hpp"
 
 // ******************************* matrix *******************************
 
@@ -20,8 +21,8 @@ void saena::matrix::set(unsigned int row, unsigned int col, double val){
     // will add later.
 }
 
-void saena::matrix::set(unsigned int* row, unsigned int* col, double* val){
-    // will add later.
+void saena::matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int local_nnz, unsigned int num_rows_global){
+    m_pImpl->set(row, col, val, local_nnz, num_rows_global);
 }
 
 void saena::matrix::set(unsigned int row_offset, unsigned int col_offset, unsigned int block_size, double* values){
@@ -61,6 +62,32 @@ saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, in
 }
 
 saena::options::options(char* name){
+    pugi::xml_document doc;
+    if (!doc.load_file(name))
+        std::cout << "Could not find the xml file!" << std::endl;
+
+    pugi::xml_node opts = doc.child("SAENA").first_child();
+
+    pugi::xml_attribute attr = opts.first_attribute();
+    vcycle_num = stoi(attr.value());
+
+    attr = attr.next_attribute();
+    relative_tolerance = stod(attr.value());
+
+    attr = attr.next_attribute();
+    smoother = attr.value();
+
+    attr = attr.next_attribute();
+    preSmooth = stoi(attr.value());
+
+    attr = attr.next_attribute();
+    postSmooth = stoi(attr.value());
+
+//    for (pugi::xml_attribute attr2 = opts.first_attribute(); attr2; attr2 = attr2.next_attribute())
+//        std::cout << attr2.name() << " = " << attr2.value() << std::endl;
+
+//    std::cout << "vcycle_num = " << vcycle_num << ", relative_tolerance = " << relative_tolerance
+//              << ", smoother = " << smoother << ", preSmooth = " << preSmooth << ", postSmooth = " << postSmooth << std::endl;
 
 }
 

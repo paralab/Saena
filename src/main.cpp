@@ -6,8 +6,6 @@
 #include "mpi.h"
 
 #include "grid.h"
-#include "SaenaMatrix.h"
-#include "SaenaObject.h"
 #include "saena.hpp"
 
 
@@ -43,9 +41,9 @@ int main(int argc, char* argv[]){
 //    struct stat vst;
 //    stat(Vname, &vst);
 //    unsigned int Mbig = vst.st_size/8;  // sizeof(double) = 8
-    unsigned int num_of_rows_global = stoul(argv[3]);
+    unsigned int num_rows_global = stoul(argv[3]);
 
-    // *************************** Setup Phase: Initialize the matrix ****************************
+    // *************************** initialize the matrix ****************************
 
     char* file_name(argv[1]);
 
@@ -53,10 +51,29 @@ int main(int argc, char* argv[]){
 //    MPI_Barrier(comm);
 //    double t1 = MPI_Wtime();
 
-    saena::matrix A (file_name, num_of_rows_global, comm);
+    unsigned int nnz_g = 393;
+    unsigned int initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
+    if (rank == nprocs - 1)
+        initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
+
+    unsigned int* I = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
+    unsigned int* J = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
+    double* V       = (double*) malloc(sizeof(double) * initial_nnz_l);
+    setIJV(file_name, I, J, V, nnz_g, initial_nnz_l);
+
+//    if(rank==0)
+//        for(i=0; i<initial_nnz_l; i++)
+//            std::cout << I[i] << "\t" << J[i] << "\t" << V[i] << std::endl;
+
+    saena::matrix A;
+    A.set(I, J, V, initial_nnz_l, num_rows_global);
+//    saena::matrix A (file_name, num_rows_global, comm);
     A.init(comm);
 
+    free(I); free(J); free(V);
+
     unsigned int num_local_row = A.get_num_local_rows();
+
 //    MPI_Barrier(comm);
 //    double t2 = MPI_Wtime();
 
@@ -148,7 +165,8 @@ int main(int argc, char* argv[]){
     int preSmooth             = 2;
     int postSmooth            = 2;
 
-    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+//    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+    saena::options opts("options001.xml");
     saena::amg solver(&A, max_level);
 
 //    MPI_Barrier(comm);

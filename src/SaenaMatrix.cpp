@@ -37,7 +37,7 @@ SaenaMatrix::SaenaMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
     if (rank == nprocs - 1)
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
 
-    //    if(rank==0) cout << "nnz_g = " << nnz_g << ", initial_nnz_l = " << initial_nnz_l << endl;
+//    printf("\nrank = %d, nnz_g = %u, initial_nnz_l = %u\n", rank, nnz_g, initial_nnz_l);
 
     // todo: change data from vector to malloc. then free after repartitioning.
     data.resize(3 * initial_nnz_l); // 3 is for i and j and val
@@ -78,6 +78,23 @@ SaenaMatrix::SaenaMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
 } //SaenaMatrix::SaenaMatrix
 
 
+int SaenaMatrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int init_nnz_l, unsigned int num_rows_global){
+    Mbig = num_rows_global;
+    initial_nnz_l = init_nnz_l;
+
+    data.resize(3 * initial_nnz_l);
+    for(unsigned int i=0; i<initial_nnz_l; i++){
+        data[3*i]   = row[i];
+        data[3*i+1] = col[i];
+//        data[3*i+2] = val[i];
+        data[3*i+2] = reinterpret_cast<long&>(val[i]);
+    }
+
+    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED, MPI_SUM, MPI_COMM_WORLD);
+//    printf("Mbig = %u, nnz_g = %u, initial_nnz_l = %u \n", Mbig, nnz_g, initial_nnz_l);
+    return 0;
+}
+
 SaenaMatrix::~SaenaMatrix() {
     if(freeBoolean){
         free(vIndex);
@@ -95,12 +112,6 @@ SaenaMatrix::~SaenaMatrix() {
 //        printf("**********~SaenaMatrix!!!!!!! \n");
     }
 }
-
-
-//SaenaMatrix::set(char* Aname, unsigned int Mbig2, MPI_Comm comm){
-//    SaenaMatrix(Aname, Mbig2, comm);
-//    return 0;
-//}
 
 
 int SaenaMatrix::Destroy(){

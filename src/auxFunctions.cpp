@@ -203,3 +203,38 @@ double myNorm(std::vector<double>& v){
     return  norm;
 }
 */
+
+
+void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsigned int nnz_g, unsigned int initial_nnz_l){
+
+    int rank, nprocs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+    std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitioning.
+    data.resize(3 * initial_nnz_l); // 3 is for i and j and val
+    unsigned long* datap = &(*(data.begin()));
+
+    // *************************** read the matrix ****************************
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    int mpiopen = MPI_File_open(MPI_COMM_WORLD, file_name, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if (mpiopen) {
+        if (rank == 0) cout << "Unable to open the matrix file!" << endl;
+        MPI_Finalize();
+    }
+
+    offset = rank * (unsigned int) (floor(1.0 * nnz_g / nprocs)) * 24; // row index(long=8) + column index(long=8) + value(double=8) = 24
+    MPI_File_read_at(fh, offset, datap, 3 * initial_nnz_l, MPI_UNSIGNED_LONG, &status);
+    MPI_File_close(&fh);
+
+    for(unsigned int i = 0; i<initial_nnz_l; i++){
+        I[i] = data[3*i];
+        J[i] = data[3*i+1];
+        V[i] = reinterpret_cast<double&>(data[3*i+2]);
+    }
+}
+

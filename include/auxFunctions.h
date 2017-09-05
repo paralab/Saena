@@ -135,4 +135,7 @@ vector<size_t> sort_indices5(const vector<T> &v) {
 }
 */
 
+
+void setIJV(char* file_name, unsigned int* I,unsigned int* J, double* V, unsigned int nnz_g, unsigned int initial_nnz_l);
+
 #endif //SAENA_AUXFUNCTIONS_H

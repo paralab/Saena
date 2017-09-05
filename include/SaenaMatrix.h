@@ -93,6 +93,7 @@ public:
      * @param[in] Mbig Number of rows in the matrix
      * */
     SaenaMatrix(char* Aname, unsigned int Mbig, MPI_Comm comm);
+    int set(unsigned int* row, unsigned int* col, double* val, unsigned int initial_nnz_l, unsigned int num_rows_global);
     ~SaenaMatrix();
 //    int set(char* Aname, unsigned int Mbig, MPI_Comm comm);
     int repartition(MPI_Comm comm);
