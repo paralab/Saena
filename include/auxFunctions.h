@@ -2,15 +2,14 @@
 // Created by abaris on 4/28/17.
 //
 
+#ifndef SAENA_AUXFUNCTIONS_H
+#define SAENA_AUXFUNCTIONS_H
+
 #include <algorithm>
 #include <mpich/mpi.h>
 #include "strengthmatrix.h"
 
-using namespace std;
-
-#ifndef SAENA_AUXFUNCTIONS_H
-#define SAENA_AUXFUNCTIONS_H
-
+//using namespace std;
 
 // sort indices and store the ordering.
 class sort_indices
@@ -80,7 +79,11 @@ public:
 
         return datatype;
     }
+
 };
+
+
+std::ostream & operator<<(std::ostream & stream, const cooEntry & item);
 
 
 //template <class T>
