@@ -238,3 +238,8 @@ void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsign
     }
 }
 
+
+std::ostream & operator<<(std::ostream & stream, const cooEntry & item) {
+    stream << item.row << "\t" << item.col << "\t" << item.val;
+    return stream;
+}
