@@ -26,9 +26,6 @@ private:
     std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitioning.
 
 public:
-//    std::vector<unsigned long> row;
-//    std::vector<unsigned long> col;
-//    std::vector<double> values;
     std::vector<cooEntry> entry;
 
     unsigned int M;
@@ -106,15 +103,8 @@ public:
     int matvec(double* v, double* w, MPI_Comm comm);
     int jacobi(std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
     int inverseDiag(double* x, MPI_Comm comm);
-    int SaenaSetup();
-    int SaenaSolve();
     int print();
     int Destroy();
-
-    // for sparsifying:
-    //SaenaMatrix& newsize(int M, int N, int nnz);
-    //double& set(int i, int j);
-
 };
 
 #endif //SAENA_SaenaMatrix_H

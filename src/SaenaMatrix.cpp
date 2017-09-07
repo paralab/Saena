@@ -100,14 +100,6 @@ SaenaMatrix::~SaenaMatrix() {
 }
 
 
-//int SaenaMatrix::reserve(unsigned int init_nnz_l, unsigned int num_rows_global) {
-//    Mbig = num_rows_global;
-//    initial_nnz_l = init_nnz_l;
-//    data.resize(3 * initial_nnz_l);
-//    return 0;
-//}
-
-
 int SaenaMatrix::set(unsigned int row, unsigned int col, double val){
 
     cooEntry temp_old;
@@ -130,9 +122,6 @@ int SaenaMatrix::set(unsigned int row, unsigned int col, double val){
 
 
 int SaenaMatrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
-    int rank, nprocs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
     cooEntry temp_old, temp_new;
     std::pair<std::set<cooEntry>::iterator, bool> p;
@@ -157,10 +146,6 @@ int SaenaMatrix::set(unsigned int* row, unsigned int* col, double* val, unsigned
 
 
 int SaenaMatrix::setup_initial_data(MPI_Comm comm){
-
-    int rank, nprocs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
     initial_nnz_l = data_coo.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
@@ -901,15 +886,5 @@ int SaenaMatrix::print(){
     for(long i=0;i<nnz_l;i++) {
         cout << "(" << entry[i].row << " , " << entry[i].col << " , " << entry[i].val << ")" << endl;
     }
-    return 0;
-}
-
-
-int SaenaMatrix::SaenaSetup(){
-    return 0;
-}
-
-
-int SaenaMatrix::SaenaSolve(){
     return 0;
 }
