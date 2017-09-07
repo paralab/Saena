@@ -9,33 +9,43 @@
 
 // ******************************* matrix *******************************
 
-saena::matrix::matrix() {
-    m_pImpl = new SaenaMatrix();
+saena::matrix::matrix(unsigned int num_rows_global) {
+    m_pImpl = new SaenaMatrix(num_rows_global);
 }
 
 saena::matrix::matrix(char *name, unsigned int global_rows, MPI_Comm comm) {
     m_pImpl = new SaenaMatrix(name, global_rows, comm);
 }
 
-void saena::matrix::set(unsigned int row, unsigned int col, double val){
-    // will add later.
-}
+//int saena::matrix::reserve(unsigned int nnz_local){
+//    return 0;
+//}
 
-void saena::matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int local_nnz, unsigned int num_rows_global){
-    m_pImpl->set(row, col, val, local_nnz, num_rows_global);
-}
-
-void saena::matrix::set(unsigned int row_offset, unsigned int col_offset, unsigned int block_size, double* values){
+int saena::matrix::set(unsigned int row, unsigned int col, double val){
+    m_pImpl->set(row, col, val);
+    return 0;
 
 }
-void saena::matrix::set(unsigned int global_row_offset, unsigned int global_col_offset, unsigned int* local_row_offset,
+
+int saena::matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+    m_pImpl->set(row, col, val, nnz_local);
+    return 0;
+}
+
+int saena::matrix::set(unsigned int row_offset, unsigned int col_offset, unsigned int block_size, double* values){
+    return 0;
+}
+
+int saena::matrix::set(unsigned int global_row_offset, unsigned int global_col_offset, unsigned int* local_row_offset,
                         unsigned int* local_col_offset, double* values){
-
+    return 0;
 }
 
-void saena::matrix::init(MPI_Comm comm) {
+int saena::matrix::assembly(MPI_Comm comm) {
+    m_pImpl->setup_initial_data(comm);
     m_pImpl->repartition(comm);
     m_pImpl->matrixSetup(comm);
+    return 0;
 }
 
 unsigned int saena::matrix::get_num_local_rows() {

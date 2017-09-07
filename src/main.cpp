@@ -51,6 +51,7 @@ int main(int argc, char* argv[]){
 //    MPI_Barrier(comm);
 //    double t1 = MPI_Wtime();
 
+    // todo: set nnz_g for every example.
     unsigned int nnz_g = 393;
     unsigned int initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
     if (rank == nprocs - 1)
@@ -65,10 +66,10 @@ int main(int argc, char* argv[]){
 //        for(i=0; i<initial_nnz_l; i++)
 //            std::cout << I[i] << "\t" << J[i] << "\t" << V[i] << std::endl;
 
-    saena::matrix A;
-    A.set(I, J, V, initial_nnz_l, num_rows_global);
+    saena::matrix A(num_rows_global);
+    A.set(I, J, V, initial_nnz_l);
 //    saena::matrix A (file_name, num_rows_global, comm);
-    A.init(comm);
+    A.assembly(comm);
 
     free(I); free(J); free(V);
 
@@ -159,14 +160,14 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Setup ****************************
 
     int max_level             = 2;
-    int vcycle_num            = 10;
-    double relative_tolerance = 1e-8;
-    std::string smoother      = "jacobi";
-    int preSmooth             = 2;
-    int postSmooth            = 2;
+//    int vcycle_num            = 10;
+//    double relative_tolerance = 1e-8;
+//    std::string smoother      = "jacobi";
+//    int preSmooth             = 2;
+//    int postSmooth            = 2;
 
 //    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
-    saena::options opts("options001.xml");
+    saena::options opts((char*)"options001.xml");
     saena::amg solver(&A, max_level);
 
 //    MPI_Barrier(comm);

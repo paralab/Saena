@@ -3,7 +3,8 @@
 
 #include <iostream>
 #include <vector>
-#include <mpich/mpi.h>
+#include <set>
+#include <mpi.h>
 #include "auxFunctions.h"
 
 using namespace std;
@@ -21,6 +22,7 @@ class SaenaMatrix {
 private:
     unsigned int initial_nnz_l;
     bool freeBoolean = false; // use this parameter to know if deconstructor for SaenaMatrix class should free the variables or not.
+    std::set<cooEntry> data_coo;
     std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitioning.
 
 public:
@@ -88,14 +90,17 @@ public:
 
 
     SaenaMatrix();
+    SaenaMatrix(unsigned int num_rows_global);
     /**
      * @param[in] Aname is the pointer to the matrix
      * @param[in] Mbig Number of rows in the matrix
      * */
     SaenaMatrix(char* Aname, unsigned int Mbig, MPI_Comm comm);
-    int set(unsigned int* row, unsigned int* col, double* val, unsigned int initial_nnz_l, unsigned int num_rows_global);
     ~SaenaMatrix();
-//    int set(char* Aname, unsigned int Mbig, MPI_Comm comm);
+//    int reserve(unsigned int nnz_local, unsigned int num_rows_global);
+    int set(unsigned int row, unsigned int col, double val);
+    int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
+    int setup_initial_data(MPI_Comm comm);
     int repartition(MPI_Comm comm);
     int matrixSetup(MPI_Comm comm);
     int matvec(double* v, double* w, MPI_Comm comm);
