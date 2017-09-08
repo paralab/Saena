@@ -17,27 +17,39 @@ saena::matrix::matrix(char *name, unsigned int global_rows, MPI_Comm comm) {
     m_pImpl = new SaenaMatrix(name, global_rows, comm);
 }
 
-//int saena::matrix::reserve(unsigned int nnz_local){
-//    return 0;
-//}
-
-int saena::matrix::set(unsigned int row, unsigned int col, double val){
-    m_pImpl->set(row, col, val);
+// todo: add if(val[iter] != 0 ) for every set function! or even if(val[iter] > threshold )
+int saena::matrix::set(unsigned int i, unsigned int j, double val){
+    m_pImpl->set(i, j, val);
     return 0;
 
 }
 
+// todo: add if(val[iter] != 0 ) for every set function! or even if(val[iter] > threshold )
 int saena::matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
     m_pImpl->set(row, col, val, nnz_local);
     return 0;
 }
 
-int saena::matrix::set(unsigned int row_offset, unsigned int col_offset, unsigned int block_size, double* values){
+int saena::matrix::set(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val){
+// ordering of val should be first columns, then rows.
+    unsigned int ii, jj, iter;
+    iter = 0;
+    for(jj = 0; jj < size_y; jj++) {
+        for(ii = 0; ii < size_x; ii++) {
+            // todo: add if(val[iter] != 0 ) for every set function! or even if(val[iter] > threshold )
+            m_pImpl->set(i+ii, j+jj, val[iter]);
+            iter++;
+        }
+    }
     return 0;
 }
 
-int saena::matrix::set(unsigned int global_row_offset, unsigned int global_col_offset, unsigned int* local_row_offset,
-                        unsigned int* local_col_offset, double* values){
+// todo: add if(val[iter] != 0 ) for every set function! or even if(val[iter] > threshold )
+int saena::matrix::set(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local){
+    unsigned int ii;
+    for(ii = 0; ii < nnz_local; ii++) {
+        m_pImpl->set(i+di[ii], j+dj[ii], val[ii]);
+    }
     return 0;
 }
 
@@ -175,7 +187,7 @@ void saena::amg::save_to_file(char* name, unsigned int* agg){
 }
 
 unsigned int* saena::amg::load_from_file(char* name){
-    return 0;
+    return nullptr;
 }
 
 void saena::amg::destroy(){

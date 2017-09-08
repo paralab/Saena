@@ -9,11 +9,10 @@ namespace saena {
     public:
         matrix(unsigned int num_rows_global, MPI_Comm comm);
         matrix(char* name, unsigned int global_rows, MPI_Comm comm); // read from file
-        int set(unsigned int row, unsigned int col, double val);    // set individual value
+        int set(unsigned int i, unsigned int j, double val);    // set individual value
         int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local); // set multiple values
-        int set(unsigned int row_offset, unsigned int col_offset, unsigned int block_size, double* values); // set contiguous block
-        int set(unsigned int global_row_offset, unsigned int global_col_offset, unsigned int* local_row_offset,
-                 unsigned int* local_col_offset, double* values); // set generic block
+        int set(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
+        int set(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local); // set generic block
         int assemble();
         unsigned int get_num_local_rows();
         SaenaMatrix* get_internal_matrix();

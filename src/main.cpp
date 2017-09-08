@@ -66,9 +66,10 @@ int main(int argc, char* argv[]){
 //        for(i=0; i<initial_nnz_l; i++)
 //            std::cout << I[i] << "\t" << J[i] << "\t" << V[i] << std::endl;
 
+//    saena::matrix A (file_name, num_rows_global, comm);
+
     saena::matrix A(num_rows_global, comm);
     A.set(I, J, V, initial_nnz_l);
-//    saena::matrix A (file_name, num_rows_global, comm);
     A.assemble();
 
     free(I); free(J); free(V);
