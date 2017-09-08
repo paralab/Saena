@@ -53,23 +53,23 @@ int main(int argc, char* argv[]){
 
     // todo: set nnz_g for every example.
     unsigned int nnz_g = 393;
-    unsigned int initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
+    auto initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
     if (rank == nprocs - 1)
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
 
-    unsigned int* I = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
-    unsigned int* J = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
-    double* V       = (double*) malloc(sizeof(double) * initial_nnz_l);
+    auto* I = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
+    auto* J = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
+    auto* V       = (double*) malloc(sizeof(double) * initial_nnz_l);
     setIJV(file_name, I, J, V, nnz_g, initial_nnz_l);
 
 //    if(rank==0)
 //        for(i=0; i<initial_nnz_l; i++)
 //            std::cout << I[i] << "\t" << J[i] << "\t" << V[i] << std::endl;
 
-    saena::matrix A(num_rows_global);
+    saena::matrix A(num_rows_global, comm);
     A.set(I, J, V, initial_nnz_l);
 //    saena::matrix A (file_name, num_rows_global, comm);
-    A.assembly(comm);
+    A.assemble();
 
     free(I); free(J); free(V);
 
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]){
 
     // set rhs
     std::vector<double> rhs(num_local_row);
-    A.get_internal_matrix()->matvec(&*v.begin(), &*rhs.begin(), comm);
+    A.get_internal_matrix()->matvec(&*v.begin(), &*rhs.begin());
 //    rhs.assign(num_local_row, 0);
 //    if(rank==0)
 //        for(i = 0; i < rhs.size(); i++)

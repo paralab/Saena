@@ -37,10 +37,12 @@ T lower_bound2(T *left, T *right, T val) {
 }
 
 
-int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double* v, long m1, long m2, long m3, unsigned long* spl){
+int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double* v, long m1, long m2, long m3, unsigned long* spl, MPI_Comm com){
+
+    comm = com;
     int nprocs, rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
     M = m1;
     Mbig = m2;

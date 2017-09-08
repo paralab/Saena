@@ -7,7 +7,9 @@
 
 using namespace std;
 
-prolongMatrix::prolongMatrix(){
+prolongMatrix::prolongMatrix(){}
+
+prolongMatrix::prolongMatrix(MPI_Comm com){
     Mbig = 0;
     Nbig = 0;
     M = 0;
@@ -16,6 +18,7 @@ prolongMatrix::prolongMatrix(){
     nnz_l_local = 0;
     nnz_l_remote = 0;
     col_remote_size = 0;
+    comm = com;
 }
 
 
@@ -33,7 +36,7 @@ prolongMatrix::~prolongMatrix(){
 }
 
 
-int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
+int prolongMatrix::findLocalRemote(cooEntry* entry){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -311,7 +314,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry, MPI_Comm comm){
 }
 
 
-int prolongMatrix::matvec(double* v, double* w, MPI_Comm comm) {
+int prolongMatrix::matvec(double* v, double* w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

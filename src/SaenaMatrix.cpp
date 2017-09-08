@@ -8,19 +8,26 @@
 #include "SaenaMatrix.h"
 //#include "auxFunctions.h"
 
+SaenaMatrix::SaenaMatrix(){}
 
-SaenaMatrix::SaenaMatrix() {}
+
+//SaenaMatrix::SaenaMatrix(MPI_Comm com) {
+//    comm = com;
+//}
 
 
-SaenaMatrix::SaenaMatrix(unsigned int num_rows_global) {
+SaenaMatrix::SaenaMatrix(unsigned int num_rows_global, MPI_Comm com) {
     Mbig = num_rows_global;
+    comm = com;
 }
 
 
-SaenaMatrix::SaenaMatrix(char* Aname, unsigned int Mbig2, MPI_Comm comm) {
+SaenaMatrix::SaenaMatrix(char* Aname, unsigned int Mbig2, MPI_Comm com) {
     // the following variables of SaenaMatrix class will be set in this function:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
     // "data" is only required for repartition function.
+
+    comm = com;
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
@@ -145,7 +152,7 @@ int SaenaMatrix::set(unsigned int* row, unsigned int* col, double* val, unsigned
 }
 
 
-int SaenaMatrix::setup_initial_data(MPI_Comm comm){
+int SaenaMatrix::setup_initial_data(){
 
     initial_nnz_l = data_coo.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
@@ -171,12 +178,12 @@ int SaenaMatrix::setup_initial_data(MPI_Comm comm){
 }
 
 
-int SaenaMatrix::Destroy(){
+int SaenaMatrix::destroy(){
     return 0;
 }
 
 
-int SaenaMatrix::repartition(MPI_Comm comm){
+int SaenaMatrix::repartition(){
     // before using this function these variables of SaenaMatrix should be set:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
 
@@ -424,7 +431,7 @@ int SaenaMatrix::repartition(MPI_Comm comm){
 }
 
 
-int SaenaMatrix::matrixSetup(MPI_Comm comm){
+int SaenaMatrix::matrixSetup(){
     // before using this function these variables of SaenaMatrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
@@ -445,7 +452,7 @@ int SaenaMatrix::matrixSetup(MPI_Comm comm){
 
     invDiag.resize(M);
     double* invDiag_p = &(*(invDiag.begin()));
-    inverseDiag(invDiag_p, comm);
+    inverseDiag(invDiag_p);
 
 /*    if(rank==1){
         for(unsigned int i=0; i<M; i++)
@@ -751,7 +758,7 @@ int SaenaMatrix::matrixSetup(MPI_Comm comm){
 }
 
 
-int SaenaMatrix::matvec(double* v, double* w, MPI_Comm comm) {
+int SaenaMatrix::matvec(double* v, double* w) {
 // todo: to reduce the communication during matvec, consider reducing number of columns during coarsening,
 // todo: instead of reducing general non-zeros, since that is what is communicated for matvec.
 
@@ -844,7 +851,7 @@ int SaenaMatrix::matvec(double* v, double* w, MPI_Comm comm) {
 }
 
 
-int SaenaMatrix::inverseDiag(double* x, MPI_Comm comm) {
+int SaenaMatrix::inverseDiag(double* x) {
     int nprocs, rank;
 //    MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -857,7 +864,7 @@ int SaenaMatrix::inverseDiag(double* x, MPI_Comm comm) {
 }
 
 
-int SaenaMatrix::jacobi(std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm) {
+int SaenaMatrix::jacobi(std::vector<double>& u, std::vector<double>& rhs) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Ax - rhs)
@@ -870,21 +877,12 @@ int SaenaMatrix::jacobi(std::vector<double>& u, std::vector<double>& rhs, MPI_Co
     unsigned int i;
     // replace allocating and deallocating with a pre-allocated memory.
     double* temp = (double*)malloc(sizeof(double)*M);
-    matvec(&*u.begin(), temp, comm);
+    matvec(&*u.begin(), temp);
     for(i=0; i<M; i++){
         temp[i] -= rhs[i];
         temp[i] *= invDiag[i] * omega;
         u[i] -= temp[i];
     }
     free(temp);
-    return 0;
-}
-
-
-int SaenaMatrix::print(){
-    cout << endl << "triple:" << endl;
-    for(long i=0;i<nnz_l;i++) {
-        cout << "(" << entry[i].row << " , " << entry[i].col << " , " << entry[i].val << ")" << endl;
-    }
     return 0;
 }

@@ -59,8 +59,10 @@ public:
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
 
+    MPI_Comm comm;
+
 //    StrengthMatrix(){}
-    int StrengthMatrixSet(unsigned long* row, unsigned long* col, double* values, long M, long Mbig, long nnzl, unsigned long* split);
+    int StrengthMatrixSet(unsigned long* row, unsigned long* col, double* values, long M, long Mbig, long nnzl, unsigned long* split, MPI_Comm com);
     ~StrengthMatrix();
     void print(int rank);
 };

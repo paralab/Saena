@@ -10,12 +10,15 @@ using namespace std;
 restrictMatrix::restrictMatrix(){}
 
 
-int restrictMatrix::transposeP(prolongMatrix* P, MPI_Comm comm) {
+int restrictMatrix::transposeP(prolongMatrix* P) {
 
     // todo: this matrix is not sorted at the end.
+
+    comm = P->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
     unsigned long i, j;
 
     arrays_defined = true;
@@ -343,7 +346,7 @@ restrictMatrix::~restrictMatrix(){
 }
 
 
-int restrictMatrix::matvec(double* v, double* w, MPI_Comm comm) {
+int restrictMatrix::matvec(double* v, double* w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

@@ -54,20 +54,12 @@ public:
 
     bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
 
-//    std::vector<unsigned long> row;
-//    std::vector<unsigned long> col;
-//    std::vector<double> values;
-//    std::vector<unsigned long> row_local;
-//    std::vector<unsigned long> row_remote;
-//    std::vector<unsigned long> col_local;
-//    std::vector<unsigned long> col_remote;
-//    std::vector<double> values_local;
-//    std::vector<double> values_remote;
+    MPI_Comm comm;
 
     restrictMatrix();
-    int transposeP(prolongMatrix* P, MPI_Comm comm);
+    int transposeP(prolongMatrix* P);
     ~restrictMatrix();
-    int matvec(double* v, double* w, MPI_Comm comm);
+    int matvec(double* v, double* w);
 };
 
 #endif //SAENA_RESTRICTMATRIX_H

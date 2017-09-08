@@ -7,15 +7,14 @@ namespace saena {
 
     class matrix {
     public:
-        matrix(unsigned int num_rows_global);
+        matrix(unsigned int num_rows_global, MPI_Comm comm);
         matrix(char* name, unsigned int global_rows, MPI_Comm comm); // read from file
-//        int reserve(unsigned int nnz_local);
         int set(unsigned int row, unsigned int col, double val);    // set individual value
         int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local); // set multiple values
         int set(unsigned int row_offset, unsigned int col_offset, unsigned int block_size, double* values); // set contiguous block
         int set(unsigned int global_row_offset, unsigned int global_col_offset, unsigned int* local_row_offset,
                  unsigned int* local_col_offset, double* values); // set generic block
-        int assembly(MPI_Comm comm);
+        int assemble();
         unsigned int get_num_local_rows();
         SaenaMatrix* get_internal_matrix();
         void destroy();

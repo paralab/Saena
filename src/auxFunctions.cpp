@@ -2,6 +2,7 @@
 #include <random>
 #include <auxFunctions.h>
 #include <strengthmatrix.h>
+#include "SaenaMatrix.h"
 //#include <algorithm>
 
 using namespace std;
@@ -104,7 +105,6 @@ int randomVector2(std::vector<double>& V){
     return 0;
 }
 
-
 int randomVector3(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm) {
 
     int rank;
@@ -205,6 +205,12 @@ double myNorm(std::vector<double>& v){
 */
 
 
+std::ostream & operator<<(std::ostream & stream, const cooEntry & item) {
+    stream << item.row << "\t" << item.col << "\t" << item.val;
+    return stream;
+}
+
+
 void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsigned int nnz_g, unsigned int initial_nnz_l){
 
     int rank, nprocs;
@@ -239,7 +245,13 @@ void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsign
 }
 
 
-std::ostream & operator<<(std::ostream & stream, const cooEntry & item) {
-    stream << item.row << "\t" << item.col << "\t" << item.val;
-    return stream;
+int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm){
+
+    long i;
+    double dot_l = 0;
+    for(i=0; i<r.size(); i++)
+        dot_l += r[i] * s[i];
+    MPI_Allreduce(&dot_l, dot, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    return 0;
 }

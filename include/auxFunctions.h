@@ -6,8 +6,9 @@
 #define SAENA_AUXFUNCTIONS_H
 
 #include <algorithm>
-#include <mpich/mpi.h>
+#include <mpi.h>
 #include "strengthmatrix.h"
+//#include "SaenaMatrix.h"
 
 //using namespace std;
 
@@ -140,5 +141,11 @@ vector<size_t> sort_indices5(const vector<T> &v) {
 
 
 void setIJV(char* file_name, unsigned int* I,unsigned int* J, double* V, unsigned int nnz_g, unsigned int initial_nnz_l);
+
+
+int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm);
+
+
+
 
 #endif //SAENA_AUXFUNCTIONS_H

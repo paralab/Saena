@@ -85,26 +85,27 @@ public:
     std::vector<unsigned long> vElementRep_local;
     std::vector<unsigned long> vElementRep_remote;
 
+    MPI_Comm comm;
 
     SaenaMatrix();
-    SaenaMatrix(unsigned int num_rows_global);
+//    SaenaMatrix(MPI_Comm com);
+    SaenaMatrix(unsigned int num_rows_global, MPI_Comm com);
     /**
      * @param[in] Aname is the pointer to the matrix
      * @param[in] Mbig Number of rows in the matrix
      * */
-    SaenaMatrix(char* Aname, unsigned int Mbig, MPI_Comm comm);
+    SaenaMatrix(char* Aname, unsigned int Mbig, MPI_Comm com);
     ~SaenaMatrix();
 //    int reserve(unsigned int nnz_local, unsigned int num_rows_global);
     int set(unsigned int row, unsigned int col, double val);
     int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
-    int setup_initial_data(MPI_Comm comm);
-    int repartition(MPI_Comm comm);
-    int matrixSetup(MPI_Comm comm);
-    int matvec(double* v, double* w, MPI_Comm comm);
-    int jacobi(std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
-    int inverseDiag(double* x, MPI_Comm comm);
-    int print();
-    int Destroy();
+    int setup_initial_data();
+    int repartition();
+    int matrixSetup();
+    int matvec(double* v, double* w);
+    int jacobi(std::vector<double>& u, std::vector<double>& rhs);
+    int inverseDiag(double* x);
+    int destroy();
 };
 
 #endif //SAENA_SaenaMatrix_H

@@ -9,8 +9,8 @@
 
 // ******************************* matrix *******************************
 
-saena::matrix::matrix(unsigned int num_rows_global) {
-    m_pImpl = new SaenaMatrix(num_rows_global);
+saena::matrix::matrix(unsigned int num_rows_global, MPI_Comm comm) {
+    m_pImpl = new SaenaMatrix(num_rows_global, comm);
 }
 
 saena::matrix::matrix(char *name, unsigned int global_rows, MPI_Comm comm) {
@@ -41,10 +41,10 @@ int saena::matrix::set(unsigned int global_row_offset, unsigned int global_col_o
     return 0;
 }
 
-int saena::matrix::assembly(MPI_Comm comm) {
-    m_pImpl->setup_initial_data(comm);
-    m_pImpl->repartition(comm);
-    m_pImpl->matrixSetup(comm);
+int saena::matrix::assemble() {
+    m_pImpl->setup_initial_data();
+    m_pImpl->repartition();
+    m_pImpl->matrixSetup();
     return 0;
 }
 

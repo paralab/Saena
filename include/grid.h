@@ -16,6 +16,8 @@ public:
     int currentLevel, maxLevel;
     Grid* coarseGrid;
 
+    MPI_Comm comm;
+
     Grid();
     Grid(SaenaMatrix* A, int maxLevel, int currentLevel);
     ~Grid();

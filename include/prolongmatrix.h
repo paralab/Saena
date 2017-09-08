@@ -85,10 +85,13 @@ public:
     unsigned long* indicesP_local;
     unsigned long* indicesP_remote;
 
+    MPI_Comm comm;
+
     prolongMatrix();
+    prolongMatrix(MPI_Comm com);
     ~prolongMatrix();
-    int findLocalRemote(cooEntry* entry, MPI_Comm comm);
-    int matvec(double* v, double* w, MPI_Comm comm);
+    int findLocalRemote(cooEntry* entry);
+    int matvec(double* v, double* w);
 };
 
 
