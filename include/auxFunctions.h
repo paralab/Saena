@@ -7,7 +7,7 @@
 
 #include <algorithm>
 #include <mpi.h>
-#include "strengthmatrix.h"
+#include "strength_matrix.h"
 
 
 // sort indices and store the ordering.
@@ -26,11 +26,11 @@ template <class T>
 T lower_bound2(T *left, T *right, T val);
 
 
-int randomVector(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm);
+int randomVector(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm);
 
 int randomVector2(std::vector<double>& V);
 
-int randomVector3(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm);
+int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm);
 
 int randomVector4(std::vector<unsigned long>& V, long size);
 

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <random>
-#include <auxFunctions.h>
+#include <aux_functions.h>
 #include "saena_matrix.h"
 
 using namespace std;
@@ -26,7 +26,7 @@ T lower_bound2(T *left, T *right, T val){
 }
 
 
-int randomVector(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm) {
+int randomVector(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
 
     int rank;
     MPI_Comm_rank(comm, &rank);
@@ -103,7 +103,7 @@ int randomVector2(std::vector<double>& V){
     return 0;
 }
 
-int randomVector3(std::vector<unsigned long>& V, long size, StrengthMatrix* S, MPI_Comm comm) {
+int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
 
     int rank;
     MPI_Comm_rank(comm, &rank);

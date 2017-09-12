@@ -1,28 +1,21 @@
 #include <fstream>
 #include <algorithm>
 #include <sys/stat.h>
-#include <string>
+#include <cstring>
 #include "mpi.h"
 #include <omp.h>
-#include <cstring>
-#include "SaenaMatrix.h"
-//#include "auxFunctions.h"
+#include "saena_matrix.h"
 
-SaenaMatrix::SaenaMatrix(){}
+saena_matrix::saena_matrix(){}
 
 
-//SaenaMatrix::SaenaMatrix(MPI_Comm com) {
-//    comm = com;
-//}
-
-
-SaenaMatrix::SaenaMatrix(unsigned int num_rows_global, MPI_Comm com) {
+saena_matrix::saena_matrix(unsigned int num_rows_global, MPI_Comm com) {
     Mbig = num_rows_global;
     comm = com;
 }
 
 
-SaenaMatrix::SaenaMatrix(char* Aname, unsigned int Mbig2, MPI_Comm com) {
+saena_matrix::saena_matrix(char* Aname, unsigned int Mbig2, MPI_Comm com) {
     // the following variables of SaenaMatrix class will be set in this function:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
     // "data" is only required for repartition function.
@@ -61,7 +54,7 @@ SaenaMatrix::SaenaMatrix(char* Aname, unsigned int Mbig2, MPI_Comm com) {
 
     int mpiopen = MPI_File_open(comm, Aname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (mpiopen) {
-        if (rank == 0) cout << "Unable to open the matrix file!" << endl;
+        if (rank == 0) std::cout << "Unable to open the matrix file!" << std::endl;
         MPI_Finalize();
     }
 
@@ -88,7 +81,7 @@ SaenaMatrix::SaenaMatrix(char* Aname, unsigned int Mbig2, MPI_Comm com) {
 } //SaenaMatrix::SaenaMatrix
 
 
-SaenaMatrix::~SaenaMatrix() {
+saena_matrix::~saena_matrix() {
     if(freeBoolean){
         free(vIndex);
         free(vSend);
@@ -99,15 +92,11 @@ SaenaMatrix::~SaenaMatrix() {
         free(iter_remote_array);
         free(indicesP_local);
         free(indicesP_remote);
-//    free(vIndexCount);
-//    free(vIndexCount);
-//    free(indicesP);
-//        printf("**********~SaenaMatrix!!!!!!! \n");
     }
 }
 
 
-int SaenaMatrix::set(unsigned int row, unsigned int col, double val){
+int saena_matrix::set(unsigned int row, unsigned int col, double val){
 
     cooEntry temp_new = cooEntry(row, col, val);
     std::pair<std::set<cooEntry>::iterator, bool> p = data_coo.insert(temp_new);
@@ -123,7 +112,12 @@ int SaenaMatrix::set(unsigned int row, unsigned int col, double val){
 }
 
 
-int SaenaMatrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+int saena_matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+
+    if(nnz_local <= 0){
+        printf("size in the set function is either zero or negative!");
+        return 0;
+    }
 
     cooEntry temp_new;
     std::pair<std::set<cooEntry>::iterator, bool> p;
@@ -147,7 +141,7 @@ int SaenaMatrix::set(unsigned int* row, unsigned int* col, double* val, unsigned
 }
 
 
-int SaenaMatrix::set2(unsigned int row, unsigned int col, double val){
+int saena_matrix::set2(unsigned int row, unsigned int col, double val){
 
     cooEntry temp_old;
     cooEntry temp_new = cooEntry(row, col, val);
@@ -168,7 +162,12 @@ int SaenaMatrix::set2(unsigned int row, unsigned int col, double val){
 }
 
 
-int SaenaMatrix::set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+int saena_matrix::set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+
+    if(nnz_local <= 0){
+        printf("size in the set function is either zero or negative!");
+        return 0;
+    }
 
     cooEntry temp_old, temp_new;
     std::pair<std::set<cooEntry>::iterator, bool> p;
@@ -194,7 +193,7 @@ int SaenaMatrix::set2(unsigned int* row, unsigned int* col, double* val, unsigne
 }
 
 
-int SaenaMatrix::setup_initial_data(){
+int saena_matrix::setup_initial_data(){
 
     initial_nnz_l = data_coo.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
@@ -220,12 +219,12 @@ int SaenaMatrix::setup_initial_data(){
 }
 
 
-int SaenaMatrix::destroy(){
+int saena_matrix::destroy(){
     return 0;
 }
 
 
-int SaenaMatrix::repartition(){
+int saena_matrix::repartition(){
     // before using this function these variables of SaenaMatrix should be set:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
 
@@ -262,7 +261,7 @@ int SaenaMatrix::repartition(){
     } else{ // nprocs > Mbig
         // it may be better to set nprocs=Mbig and work only with the first Mbig processors.
         if(rank == 0)
-            cout << "number of tasks cannot be greater than the number of rows of the matrix." << endl;
+            std::cout << "number of tasks cannot be greater than the number of rows of the matrix." << std::endl;
         MPI_Finalize();
     }
 
@@ -306,7 +305,7 @@ int SaenaMatrix::repartition(){
     }*/
 
     long* H_l = (long*)malloc(sizeof(long)*n_buckets);
-    fill(&H_l[0], &H_l[n_buckets], 0);
+    std::fill(&H_l[0], &H_l[n_buckets], 0);
 
     for(unsigned int i=0; i<initial_nnz_l; i++)
         H_l[lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[3*i])]++;
@@ -374,7 +373,7 @@ int SaenaMatrix::repartition(){
     long tempIndex;
 //    int sendSizeArray[nprocs];
     int* sendSizeArray = (int*)malloc(sizeof(int)*nprocs);
-    fill(&sendSizeArray[0], &sendSizeArray[nprocs], 0);
+    std::fill(&sendSizeArray[0], &sendSizeArray[nprocs], 0);
     for (unsigned int i=0; i<initial_nnz_l; i++){
         tempIndex = lower_bound2(&split[0], &split[nprocs], data[3*i]);
         sendSizeArray[tempIndex]++;
@@ -424,7 +423,7 @@ int SaenaMatrix::repartition(){
     unsigned int bufTemp;
     cooEntry* sendBuf = (cooEntry*)malloc(sizeof(cooEntry)*initial_nnz_l);
     unsigned int* sIndex = (unsigned int*)malloc(sizeof(unsigned int)*nprocs);
-    fill(&sIndex[0], &sIndex[nprocs], 0);
+    std::fill(&sIndex[0], &sIndex[nprocs], 0);
 
     // memcpy(sendBuf, data.data(), initial_nnz_l*3*sizeof(unsigned long));
 
@@ -473,7 +472,7 @@ int SaenaMatrix::repartition(){
 }
 
 
-int SaenaMatrix::matrixSetup(){
+int saena_matrix::matrix_setup(){
     // before using this function these variables of SaenaMatrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
@@ -494,7 +493,7 @@ int SaenaMatrix::matrixSetup(){
 
     invDiag.resize(M);
     double* invDiag_p = &(*(invDiag.begin()));
-    inverseDiag(invDiag_p);
+    inverse_diag(invDiag_p);
 
 /*    if(rank==1){
         for(unsigned int i=0; i<M; i++)
@@ -800,7 +799,7 @@ int SaenaMatrix::matrixSetup(){
 }
 
 
-int SaenaMatrix::matvec(double* v, double* w) {
+int saena_matrix::matvec(double* v, double* w) {
 // todo: to reduce the communication during matvec, consider reducing number of columns during coarsening,
 // todo: instead of reducing general non-zeros, since that is what is communicated for matvec.
 
@@ -847,7 +846,7 @@ int SaenaMatrix::matvec(double* v, double* w) {
 
 //    double t11 = MPI_Wtime();
     // local loop
-    fill(&w[0], &w[M], 0);
+    std::fill(&w[0], &w[M], 0);
 #pragma omp parallel
     {
         long iter = iter_local_array[omp_get_thread_num()];
@@ -893,7 +892,7 @@ int SaenaMatrix::matvec(double* v, double* w) {
 }
 
 
-int SaenaMatrix::inverseDiag(double* x) {
+int saena_matrix::inverse_diag(double* x) {
     int nprocs, rank;
 //    MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -906,7 +905,7 @@ int SaenaMatrix::inverseDiag(double* x) {
 }
 
 
-int SaenaMatrix::jacobi(std::vector<double>& u, std::vector<double>& rhs) {
+int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Ax - rhs)
@@ -915,7 +914,7 @@ int SaenaMatrix::jacobi(std::vector<double>& u, std::vector<double>& rhs) {
 // 3. three = inverseDiag * two * omega
 // 4. four = u - three
 
-    float omega = float(2.0/3);
+    auto omega = float(2.0/3);
     unsigned int i;
     // replace allocating and deallocating with a pre-allocated memory.
     double* temp = (double*)malloc(sizeof(double)*M);

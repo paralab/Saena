@@ -9,22 +9,22 @@
 #include <set>
 #include <mpi.h>
 
-#include "SaenaObject.h"
+#include "saena_object.h"
 
-SaenaObject::SaenaObject(){
+saena_object::saena_object(){
 //    maxLevel = max_lev-1;
 } //SaenaObject
 
 
-SaenaObject::~SaenaObject(){}
+saena_object::~saena_object(){}
 
 
-int SaenaObject::destroy(){
+int saena_object::destroy(){
     return 0;
 }
 
 
-void SaenaObject::set_parameters(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
+void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
     vcycle_num = vcycle_n;
     relative_tolerance  = relT;
@@ -34,7 +34,7 @@ void SaenaObject::set_parameters(int vcycle_n, double relT, std::string sm, int 
 }
 
 
-int SaenaObject::setup(SaenaMatrix* A) {
+int saena_object::setup(saena_matrix* A) {
     MPI_Comm comm = MPI_COMM_WORLD; // todo: fix this.
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -46,7 +46,7 @@ int SaenaObject::setup(SaenaMatrix* A) {
     grids[0] = Grid(A, maxLevel, 0);
     for(i = 0; i < maxLevel; i++){
 //        MPI_Barrier(comm); if(rank==2) printf("\n\n----------111 AMGSetup----------\n"); MPI_Barrier(comm);
-        levelSetup(&grids[i]);
+        level_setup(&grids[i]);
         grids[i+1] = Grid(&grids[i].Ac, maxLevel, i+1);
         grids[i].coarseGrid = &grids[i+1];
     }
@@ -55,7 +55,7 @@ int SaenaObject::setup(SaenaMatrix* A) {
 }
 
 
-int SaenaObject::levelSetup(Grid* grid){
+int saena_object::level_setup(Grid* grid){
 
 //    int nprocs, rank;
 //    MPI_Comm_size(comm, &nprocs);
@@ -66,7 +66,7 @@ int SaenaObject::levelSetup(Grid* grid){
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
-    findAggregation(grid->A, aggregate, grid->P.splitNew);
+    find_aggregation(grid->A, aggregate, grid->P.splitNew);
 //    if(rank==0)
 //        for(auto i:aggregate)
 //            cout << i << endl;
@@ -104,7 +104,7 @@ int SaenaObject::levelSetup(Grid* grid){
             cout << i << "\t" << aggregate[i] << endl;
 */
 
-    createProlongation(grid->A, aggregate, &grid->P);
+    create_prolongation(grid->A, aggregate, &grid->P);
 //    MPI_Barrier(comm); if(rank==0) printf("----------2 createProlongation----------\n"); MPI_Barrier(comm);
     grid->R.transposeP(&grid->P);
 //    MPI_Barrier(comm); if(rank==0) printf("----------3 transposeP----------\n"); MPI_Barrier(comm);
@@ -232,13 +232,13 @@ if(R.Mbig < threshold1){
 */
 
 
-int SaenaObject::findAggregation(SaenaMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew){
+int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew){
 //    int nprocs, rank;
 //    MPI_Comm_size(comm, &nprocs);
 //    MPI_Comm_rank(comm, &rank);
 
-    StrengthMatrix S;
-    createStrengthMatrix(A, &S);
+    strength_matrix S;
+    create_strength_matrix(A, &S);
 //    S.print(0);
 
 //    unsigned long aggSize = 0;
@@ -254,7 +254,7 @@ int SaenaObject::findAggregation(SaenaMatrix* A, std::vector<unsigned long>& agg
 } // end of SaenaObject::findAggregation
 
 
-int SaenaObject::createStrengthMatrix(SaenaMatrix* A, StrengthMatrix* S){
+int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
@@ -268,7 +268,7 @@ int SaenaObject::createStrengthMatrix(SaenaMatrix* A, StrengthMatrix* S){
     unsigned int i;
 //    double maxPerRow[A->M];
     std::vector<double> maxPerRow(A->M);
-    fill(&maxPerRow[0], &maxPerRow[A->M], 0);
+    std::fill(&maxPerRow[0], &maxPerRow[A->M], 0);
     for(i=0; i<A->nnz_l; i++){
         if( A->entry[i].row != A->entry[i].col ){
             if(maxPerRow[A->entry[i].row - A->split[rank]] == 0) // use split to convert the index from global to local.
@@ -480,7 +480,7 @@ int SaenaObject::createStrengthMatrix(SaenaMatrix* A, StrengthMatrix* S){
 //        }
 
     // S indices are local on each process, which means it starts from 0 on each process.
-    S->StrengthMatrixSet(&(*(Si2.begin())), &(*(Sj2.begin())), &(*(Sval2.begin())), A->M, A->Mbig, Si2.size(), &(*(A->split.begin())), comm);
+    S->strength_matrix_set(&(*(Si2.begin())), &(*(Sj2.begin())), &(*(Sval2.begin())), A->M, A->Mbig, Si2.size(), &(*(A->split.begin())), comm);
 
     return 0;
 } // end of SaenaObject::createStrengthMatrix
@@ -488,7 +488,7 @@ int SaenaObject::createStrengthMatrix(SaenaMatrix* A, StrengthMatrix* S){
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
-int SaenaObject::aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew) {
+int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew) {
 
     // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
     // If there is not any root in distance-2, that node should become a root.
@@ -1040,8 +1040,8 @@ int SaenaObject::aggregation(StrengthMatrix* S, std::vector<unsigned long>& aggr
 //        cout << endl;}
 
     unsigned long procNum;
-    vector<unsigned long> aggregateRemote;
-    vector<unsigned long> recvProc;
+    std::vector<unsigned long> aggregateRemote;
+    std::vector<unsigned long> recvProc;
     int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
 
@@ -1264,7 +1264,7 @@ int SaenaObject::Aggregation(CSRMatrix* S){
  */
 
 
-int SaenaObject::createProlongation(SaenaMatrix* A, std::vector<unsigned long>& aggregate, prolongMatrix* P){
+int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){
     // formula for the prolongation matrix from Irad Yavneh's paper:
     // P = (I - 4/(3*rhoDA) * DA) * P_t
 
@@ -1373,7 +1373,7 @@ int SaenaObject::createProlongation(SaenaMatrix* A, std::vector<unsigned long>& 
 }// end of SaenaObject::createProlongation
 
 
-int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, SaenaMatrix* Ac){
+int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac){
 
     MPI_Comm comm = P->comm;
 
@@ -1382,7 +1382,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
     MPI_Comm_rank(comm, &rank);
 
     unsigned long i, j;
-    prolongMatrix RATemp(comm); // RATemp is being used to remove duplicates while pushing back to RA.
+    prolong_matrix RATemp(comm); // RATemp is being used to remove duplicates while pushing back to RA.
 
     // ************************************* RATemp - A local *************************************
     // Some local and remote elements of RATemp are computed here using local R and local A.
@@ -1394,7 +1394,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
     // todo: is this way better than using the previous Allreduce? reduce on processor 0, then broadcast to other processors.
 
     unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*AMaxM);
-    fill(&AnnzPerRow[0], &AnnzPerRow[A->M], 0);
+    std::fill(&AnnzPerRow[0], &AnnzPerRow[A->M], 0);
     for(i=0; i<A->nnz_l; i++)
         AnnzPerRow[A->entry[i].row - A->split[rank]]++;
 
@@ -1436,7 +1436,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
 
     // find the start and end of each block of R.
     unsigned int* RBlockStart = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
-    fill(RBlockStart, &RBlockStart[nprocs], 0);
+    std::fill(RBlockStart, &RBlockStart[nprocs], 0);
 
 
 //    MPI_Barrier(comm); printf("rank=%d here!!!!!!!! \n", rank); MPI_Barrier(comm);
@@ -1457,7 +1457,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
 //        if(rank==2) cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << endl;
     }
     RBlockStart[rank+1] = RBlockStart[rank]; // there is not any nonzero of R_remote on the local processor.
-    fill(&RBlockStart[procNum+1], &RBlockStart[nprocs+1], nnzIter);
+    std::fill(&RBlockStart[procNum+1], &RBlockStart[nprocs+1], nnzIter);
 
 //    if(rank==1){
 //        cout << "RBlockStart: " << endl;
@@ -1501,7 +1501,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
         // *************************** RATemp - A remote - multiplication ****************************
 
         ARecvM = A->split[left+1] - A->split[left];
-        fill(&AnnzPerRow[0], &AnnzPerRow[ARecvM], 0);
+        std::fill(&AnnzPerRow[0], &AnnzPerRow[ARecvM], 0);
         for(j=0; j<nnzRecv; j++){
             AnnzPerRow[Arecv[j].row - A->split[left]]++;
         }
@@ -1548,7 +1548,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
 //        for(j=0; j<RATemp.entry.size(); j++)
 //            cout << RATemp.entry[j].row << "\t" << RATemp.entry[j].col << "\t" << RATemp.entry[j].val << endl;
 
-    prolongMatrix RA(comm);
+    prolong_matrix RA(comm);
 
     // remove duplicates.
     for(i=0; i<RATemp.entry.size(); i++){
@@ -1573,14 +1573,14 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
     // ************************************* RAPTemp - P local *************************************
     // Some local and remote elements of RAPTemp are computed here.
 
-    prolongMatrix RAPTemp(comm); // RAPTemp is being used to remove duplicates while pushing back to RAP.
+    prolong_matrix RAPTemp(comm); // RAPTemp is being used to remove duplicates while pushing back to RAP.
     unsigned int PMaxNnz;
     MPI_Allreduce(&P->nnz_l, &PMaxNnz, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
 //    MPI_Barrier(comm); printf("rank=%d, PMaxNnz=%d \n", rank, PMaxNnz); MPI_Barrier(comm);
     // todo: is this way better than using the previous Allreduce? reduce on processor 0, then broadcast to other processors.
 
     unsigned int* PnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*PMaxNnz);
-    fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
+    std::fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
     for(i=0; i<P->nnz_l; i++){
         PnnzPerRow[P->entry[i].row]++;
     }
@@ -1598,7 +1598,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
 
     // find the start and end of each block of R.
     unsigned int* RABlockStart = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
-    fill(RABlockStart, &RABlockStart[nprocs+1], 0);
+    std::fill(RABlockStart, &RABlockStart[nprocs+1], 0);
     procNum = lower_bound2(&P->split[0], &P->split[nprocs], RA.entry[0].col);
     nnzIter = 1;
     for(i=1; i<RA.entry.size(); i++){
@@ -1610,7 +1610,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
 //        if(rank==2) cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << endl;
     }
 //    RABlockStart[rank+1] = RABlockStart[rank]; // there is not any nonzero of R_remote on the local processor.
-    fill(&RABlockStart[procNum+1], &RABlockStart[nprocs+1], nnzIter);
+    std::fill(&RABlockStart[procNum+1], &RABlockStart[nprocs+1], nnzIter);
 
 //    if(rank==1){
 //        cout << "RABlockStart: " << endl;
@@ -1674,7 +1674,7 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
         // *************************** RATemp - A remote - multiplication ****************************
 
         PrecvM = P->split[left+1] - P->split[left];
-        fill(&PnnzPerRow[0], &PnnzPerRow[PrecvM], 0);
+        std::fill(&PnnzPerRow[0], &PnnzPerRow[PrecvM], 0);
         for(j=0; j<nnzRecv; j++)
             PnnzPerRow[Precv[j].row]++;
 
@@ -1749,23 +1749,23 @@ int SaenaObject::coarsen(SaenaMatrix* A, prolongMatrix* P, restrictMatrix* R, Sa
 //        for(i=0; i<nprocs+1; i++)
 //            cout << Ac->split[i] << endl;
 
-    Ac->matrixSetup();
+    Ac->matrix_setup();
 
     return 0;
 } // end of SaenaObject::coarsen
 
 
-int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& u, std::vector<double>& rhs, int& maxIter, double& tol){
+int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs, int& maxIter, double& tol){
     // this is CG.
     // u is zero in the beginning. At the end, it is the solution.
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
     long i, j;
 
     // res = A*u - rhs
+    MPI_Comm_rank(comm, &rank);
     std::vector<double> res(A->M);
     residual(A, u, rhs, res);
 
@@ -1959,7 +1959,7 @@ int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vect
 */
 
 
-int SaenaObject::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm){
+int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -1978,7 +1978,7 @@ int SaenaObject::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>&
     double tol = 1e-12;
     if(grid->currentLevel == maxLevel){
 //        if(rank==0) cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << endl;
-        solveCoarsest(grid->A, u, rhs, maxIter, tol);
+        solve_coarsest(grid->A, u, rhs, maxIter, tol);
         return 0;
     }
 
@@ -2082,7 +2082,7 @@ int SaenaObject::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>&
 }
 
 
-int SaenaObject::solve(std::vector<double>& u, std::vector<double>& rhs){
+int saena_object::solve(std::vector<double>& u, std::vector<double>& rhs){
     MPI_Comm comm = MPI_COMM_WORLD; // todo: fix this
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -2115,15 +2115,17 @@ int SaenaObject::solve(std::vector<double>& u, std::vector<double>& rhs){
     if(i == vcycle_num)
         i--;
 
-    if(rank==0) cout << "******************************************************" << endl;
-    if(rank==0) printf("\nfinal:\niter = %ld, residual = %f \n\n", i, sqrt(dot));
-    if(rank==0) cout << "******************************************************" << endl;
+    if(rank==0){
+        std::cout << "******************************************************" << std::endl;
+        printf("\nfinal:\niter = %ld, residual = %f \n\n", i, sqrt(dot));
+        std::cout << "******************************************************" << std::endl;
+    }
 
     return 0;
 }
 
 
-int SaenaObject::residual(SaenaMatrix* A, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res){
+int saena_object::residual(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res){
     //    Vector res = A*u - rhs;
 
 //    int nprocs, rank;
@@ -2146,7 +2148,7 @@ int SaenaObject::residual(SaenaMatrix* A, std::vector<double>& u, std::vector<do
 }
 
 
-int SaenaObject::writeMatrixToFileA(SaenaMatrix* A, std::string name){
+int saena_object::writeMatrixToFileA(saena_matrix* A, std::string name){
     // Create txt files with name Ac0.txt for processor 0, Ac1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat Ac0.txt Ac1.txt > Ac.txt
     // row and column indices of txt files should start from 1, not 0.
@@ -2158,7 +2160,7 @@ int SaenaObject::writeMatrixToFileA(SaenaMatrix* A, std::string name){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    ofstream outFileTxt;
+    std::ofstream outFileTxt;
     std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
     outFileNameTxt += name;
     outFileNameTxt += std::to_string(rank);
@@ -2166,10 +2168,10 @@ int SaenaObject::writeMatrixToFileA(SaenaMatrix* A, std::string name){
     outFileTxt.open(outFileNameTxt);
 
     if(rank==0)
-        outFileTxt << A->Mbig << "\t" << A->Mbig << "\t" << A->nnz_g << endl;
+        outFileTxt << A->Mbig << "\t" << A->Mbig << "\t" << A->nnz_g << std::endl;
     for (long i = 0; i < A->nnz_l; i++) {
 //        cout       << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
-        outFileTxt << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
+        outFileTxt << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
     }
 
     outFileTxt.clear();
@@ -2243,7 +2245,7 @@ int SaenaObject::writeMatrixToFileA(SaenaMatrix* A, std::string name){
 }
 
 
-int SaenaObject::writeMatrixToFileP(prolongMatrix* P, std::string name) {
+int saena_object::writeMatrixToFileP(prolong_matrix* P, std::string name) {
     // Create txt files with name P0.txt for processor 0, P1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat P0.txt P1.txt > P.txt
     // row and column indices of txt files should start from 1, not 0.
@@ -2253,7 +2255,7 @@ int SaenaObject::writeMatrixToFileP(prolongMatrix* P, std::string name) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    ofstream outFileTxt;
+    std::ofstream outFileTxt;
     std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
     outFileNameTxt += name;
     outFileNameTxt += std::to_string(rank);
@@ -2261,10 +2263,10 @@ int SaenaObject::writeMatrixToFileP(prolongMatrix* P, std::string name) {
     outFileTxt.open(outFileNameTxt);
 
     if (rank == 0)
-        outFileTxt << P->Mbig << "\t" << P->Mbig << "\t" << P->nnz_g << endl;
+        outFileTxt << P->Mbig << "\t" << P->Mbig << "\t" << P->nnz_g << std::endl;
     for (long i = 0; i < P->nnz_l; i++) {
 //        cout       << P->entry[i].row + 1 + P->split[rank] << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << endl;
-        outFileTxt << P->entry[i].row + 1 + P->split[rank] << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << endl;
+        outFileTxt << P->entry[i].row + 1 + P->split[rank] << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << std::endl;
     }
 
     outFileTxt.clear();
@@ -2274,7 +2276,7 @@ int SaenaObject::writeMatrixToFileP(prolongMatrix* P, std::string name) {
 }
 
 
-int SaenaObject::writeMatrixToFileR(restrictMatrix* R, std::string name) {
+int saena_object::writeMatrixToFileR(restrict_matrix* R, std::string name) {
     // Create txt files with name R0.txt for processor 0, R1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat R0.txt R1.txt > R.txt
     // row and column indices of txt files should start from 1, not 0.
@@ -2284,7 +2286,7 @@ int SaenaObject::writeMatrixToFileR(restrictMatrix* R, std::string name) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    ofstream outFileTxt;
+    std::ofstream outFileTxt;
     std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
     outFileNameTxt += name;
     outFileNameTxt += std::to_string(rank);
@@ -2292,10 +2294,10 @@ int SaenaObject::writeMatrixToFileR(restrictMatrix* R, std::string name) {
     outFileTxt.open(outFileNameTxt);
 
     if (rank == 0)
-        outFileTxt << R->Mbig << "\t" << R->Mbig << "\t" << R->nnz_g << endl;
+        outFileTxt << R->Mbig << "\t" << R->Mbig << "\t" << R->nnz_g << std::endl;
     for (long i = 0; i < R->nnz_l; i++) {
 //        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
-        outFileTxt << R->entry[i].row + 1 +  R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
+        outFileTxt << R->entry[i].row + 1 +  R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
     }
 
     outFileTxt.clear();
@@ -2306,7 +2308,7 @@ int SaenaObject::writeMatrixToFileR(restrictMatrix* R, std::string name) {
 
 //template <class T>
 //int SaenaObject::writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
-int SaenaObject::writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
+int saena_object::writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
 
     // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
@@ -2315,7 +2317,7 @@ int SaenaObject::writeVectorToFiled(std::vector<double>& v, unsigned long vSize,
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    ofstream outFileTxt;
+    std::ofstream outFileTxt;
     std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
     outFileNameTxt += name;
     outFileNameTxt += std::to_string(rank);
@@ -2323,10 +2325,10 @@ int SaenaObject::writeVectorToFiled(std::vector<double>& v, unsigned long vSize,
     outFileTxt.open(outFileNameTxt);
 
     if (rank == 0)
-        outFileTxt << vSize << endl;
+        outFileTxt << vSize << std::endl;
     for (long i = 0; i < v.size(); i++) {
 //        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
-        outFileTxt << v[i] << endl;
+        outFileTxt << v[i] << std::endl;
     }
 
     outFileTxt.clear();
@@ -2336,7 +2338,7 @@ int SaenaObject::writeVectorToFiled(std::vector<double>& v, unsigned long vSize,
 }
 
 
-int SaenaObject::writeVectorToFileul(std::vector<unsigned long>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
+int saena_object::writeVectorToFileul(std::vector<unsigned long>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
 
     // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
@@ -2345,7 +2347,7 @@ int SaenaObject::writeVectorToFileul(std::vector<unsigned long>& v, unsigned lon
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    ofstream outFileTxt;
+    std::ofstream outFileTxt;
     std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
     outFileNameTxt += name;
     outFileNameTxt += std::to_string(rank);
@@ -2353,10 +2355,10 @@ int SaenaObject::writeVectorToFileul(std::vector<unsigned long>& v, unsigned lon
     outFileTxt.open(outFileNameTxt);
 
     if (rank == 0)
-        outFileTxt << vSize << endl;
+        outFileTxt << vSize << std::endl;
     for (long i = 0; i < v.size(); i++) {
 //        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
-        outFileTxt << v[i] << endl;
+        outFileTxt << v[i] << std::endl;
     }
 
     outFileTxt.clear();
@@ -2366,7 +2368,7 @@ int SaenaObject::writeVectorToFileul(std::vector<unsigned long>& v, unsigned lon
 }
 
 
-int SaenaObject::changeAggregation(SaenaMatrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew){
+int saena_object::change_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& splitNew){
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
@@ -2381,7 +2383,7 @@ int SaenaObject::changeAggregation(SaenaMatrix* A, std::vector<unsigned long>& a
     std::string aggName = "/home/abaris/Dropbox/Projects/Saena/build/juliaAgg.bin";
     int mpiopen = MPI_File_open(comm, aggName.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
-        if (rank==0) cout << "Unable to open the vector file!" << endl;
+        if (rank==0) std::cout << "Unable to open the vector file!" << std::endl;
         MPI_Finalize();
         return -1;
     }
@@ -2401,7 +2403,7 @@ int SaenaObject::changeAggregation(SaenaMatrix* A, std::vector<unsigned long>& a
     std::string aggName2 = "/home/abaris/Dropbox/Projects/Saena/build/juliaAggArray.bin";
     int mpiopen2 = MPI_File_open(comm, aggName2.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh2);
     if(mpiopen2){
-        if (rank==0) cout << "Unable to open the vector file!" << endl;
+        if (rank==0) std::cout << "Unable to open the vector file!" << std::endl;
         MPI_Finalize();
         return -1;
     }
