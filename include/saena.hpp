@@ -9,7 +9,7 @@ namespace saena {
     public:
         matrix(unsigned int num_rows_global, MPI_Comm comm);
         matrix(char* name, unsigned int global_rows, MPI_Comm comm); // read from file
-        int set(unsigned int i, unsigned int j, double val);    // set individual value
+        int set(unsigned int i, unsigned int j, double val); // set individual value
         int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local); // set multiple values
         int set(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
         int set(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local); // set generic block
@@ -51,7 +51,7 @@ namespace saena {
 
     class amg {
     public:
-        amg(saena::matrix* A, int max_level);
+        amg(saena::matrix* A);
         void save_to_file(char* name, unsigned int* agg); // to save aggregates to a file.
         unsigned int* load_from_file(char* name); // to load aggregates from a file.
         // before calling solve function, vector "u" is the initial guess.

@@ -11,8 +11,8 @@
 
 #include "SaenaObject.h"
 
-SaenaObject::SaenaObject(int max_lev){
-    maxLevel = max_lev-1;
+SaenaObject::SaenaObject(){
+//    maxLevel = max_lev-1;
 } //SaenaObject
 
 

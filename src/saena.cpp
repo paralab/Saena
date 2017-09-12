@@ -171,8 +171,8 @@ int saena::options::get_postSmooth(){
 
 // ******************************* amg *******************************
 
-saena::amg::amg(saena::matrix* A, int max_level){
-    m_pImpl = new SaenaObject(max_level);
+saena::amg::amg(saena::matrix* A){
+    m_pImpl = new SaenaObject();
     m_pImpl->setup(A->get_internal_matrix());
 }
 

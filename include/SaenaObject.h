@@ -10,7 +10,7 @@
 
 class SaenaObject {
 public:
-    int maxLevel;
+    int maxLevel = 1; // fine grid is level 0.
     int vcycle_num;
     double relative_tolerance;
     std::string smoother;
@@ -21,7 +21,7 @@ public:
     std::vector<Grid> grids;
 
 //    SaenaObject(int levels, int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
-    SaenaObject(int max_level);
+    SaenaObject();
     ~SaenaObject();
     int destroy();
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);

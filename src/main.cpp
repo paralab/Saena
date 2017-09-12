@@ -160,7 +160,7 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Setup ****************************
 
-    int max_level             = 2;
+//    int max_level             = 2;
 //    int vcycle_num            = 10;
 //    double relative_tolerance = 1e-8;
 //    std::string smoother      = "jacobi";
@@ -169,7 +169,7 @@ int main(int argc, char* argv[]){
 
 //    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
     saena::options opts((char*)"options001.xml");
-    saena::amg solver(&A, max_level);
+    saena::amg solver(&A);
 
 //    MPI_Barrier(comm);
 //    for(int i=0; i<maxLevel; i++)
