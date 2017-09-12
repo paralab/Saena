@@ -1,9 +1,7 @@
 #include <iostream>
 #include <random>
 #include <auxFunctions.h>
-#include <strengthmatrix.h>
-#include "SaenaMatrix.h"
-//#include <algorithm>
+#include "saena_matrix.h"
 
 using namespace std;
 

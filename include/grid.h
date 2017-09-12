@@ -1,7 +1,7 @@
 #ifndef SAENA_GRID_H
 #define SAENA_GRID_H
 
-#include "SaenaMatrix.h"
+#include "saena_matrix.h"
 #include "prolongmatrix.h"
 #include "restrictmatrix.h"
 
@@ -9,8 +9,8 @@ class Grid{
 private:
 
 public:
-    SaenaMatrix* A;
-    SaenaMatrix  Ac;
+    saena_matrix* A;
+    saena_matrix  Ac;
     prolongMatrix P;
     restrictMatrix R;
     int currentLevel, maxLevel;
@@ -19,7 +19,7 @@ public:
     MPI_Comm comm;
 
     Grid();
-    Grid(SaenaMatrix* A, int maxLevel, int currentLevel);
+    Grid(saena_matrix* A, int maxLevel, int currentLevel);
     ~Grid();
 };
 

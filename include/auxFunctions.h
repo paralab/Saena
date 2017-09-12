@@ -8,9 +8,7 @@
 #include <algorithm>
 #include <mpi.h>
 #include "strengthmatrix.h"
-//#include "SaenaMatrix.h"
 
-//using namespace std;
 
 // sort indices and store the ordering.
 class sort_indices

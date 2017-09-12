@@ -19,19 +19,16 @@ include_directories(${MPI_INCLUDE_PATH})
 
 include_directories(
         include
-#        include/usort
 )
 
 set(SOURCE_FILES
         src/main.cpp
-        include/SaenaMatrix.h
-        src/SaenaMatrix.cpp
-        include/SaenaObject.h
-        src/SaenaObject.cpp
+        include/saena_matrix.h
+        src/saena_matrix.cpp
+        include/saena_object.h
+        src/saena_object.cpp
         include/strengthmatrix.h
         src/strengthmatrix.cpp
-#        src/usort/binUtils.cpp
-#        src/usort/parUtils.cpp
         include/prolongmatrix.h
         src/prolongmatrix.cpp
         include/restrictmatrix.h

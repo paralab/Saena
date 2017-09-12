@@ -1,7 +1,7 @@
 #pragma once
 
-class SaenaMatrix;
-class SaenaObject;
+class saena_matrix;
+class saena_object;
 
 namespace saena {
 
@@ -24,11 +24,11 @@ namespace saena {
 
         int assemble();
         unsigned int get_num_local_rows();
-        SaenaMatrix* get_internal_matrix();
+        saena_matrix* get_internal_matrix();
         void destroy();
 
     protected:
-        SaenaMatrix* m_pImpl;
+        saena_matrix* m_pImpl;
     };
 
     class options {
@@ -69,6 +69,6 @@ namespace saena {
         void destroy();
 
     protected:
-        SaenaObject* m_pImpl;
+        saena_object* m_pImpl;
     };
 }

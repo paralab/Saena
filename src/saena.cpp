@@ -1,20 +1,21 @@
 #include <vector>
 #include <string>
+#include <cstring>
 #include <mpi.h>
 
 #include "saena.hpp"
-#include "SaenaMatrix.h"
-#include "SaenaObject.h"
+#include "saena_matrix.h"
+#include "saena_object.h"
 #include "pugixml.hpp"
 
 // ******************************* matrix *******************************
 
 saena::matrix::matrix(unsigned int num_rows_global, MPI_Comm comm) {
-    m_pImpl = new SaenaMatrix(num_rows_global, comm);
+    m_pImpl = new saena_matrix(num_rows_global, comm);
 }
 
 saena::matrix::matrix(char *name, unsigned int global_rows, MPI_Comm comm) {
-    m_pImpl = new SaenaMatrix(name, global_rows, comm);
+    m_pImpl = new saena_matrix(name, global_rows, comm);
 }
 
 
@@ -101,7 +102,7 @@ unsigned int saena::matrix::get_num_local_rows() {
     return m_pImpl->M;
 }
 
-SaenaMatrix* saena::matrix::get_internal_matrix(){
+saena_matrix* saena::matrix::get_internal_matrix(){
     return m_pImpl;
 }
 
@@ -127,19 +128,19 @@ saena::options::options(char* name){
     pugi::xml_node opts = doc.child("SAENA").first_child();
 
     pugi::xml_attribute attr = opts.first_attribute();
-    vcycle_num = stoi(attr.value());
+    vcycle_num = std::stoi(attr.value());
 
     attr = attr.next_attribute();
-    relative_tolerance = stod(attr.value());
+    relative_tolerance = std::stod(attr.value());
 
     attr = attr.next_attribute();
     smoother = attr.value();
 
     attr = attr.next_attribute();
-    preSmooth = stoi(attr.value());
+    preSmooth = std::stoi(attr.value());
 
     attr = attr.next_attribute();
-    postSmooth = stoi(attr.value());
+    postSmooth = std::stoi(attr.value());
 
 //    for (pugi::xml_attribute attr2 = opts.first_attribute(); attr2; attr2 = attr2.next_attribute())
 //        std::cout << attr2.name() << " = " << attr2.value() << std::endl;
@@ -205,7 +206,7 @@ int saena::options::get_postSmooth(){
 // ******************************* amg *******************************
 
 saena::amg::amg(saena::matrix* A){
-    m_pImpl = new SaenaObject();
+    m_pImpl = new saena_object();
     m_pImpl->setup(A->get_internal_matrix());
 }
 

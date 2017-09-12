@@ -1,15 +1,10 @@
 #include <iostream>
 #include <algorithm>
-//#include <sys/stat.h>
-//#include <assert.h>
-//#include <mpich/mpi.h>
 #include "mpi.h"
 
 #include "grid.h"
 #include "saena.hpp"
 
-
-#define ITERATIONS 1
 
 using namespace std;
 
@@ -28,7 +23,6 @@ int main(int argc, char* argv[]){
     {
         if(rank == 0)
         {
-//            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <u_vec>" << endl;
             cout << "Usage: ./Saena <MatrixA> <rhs_vec> <number of rows of Matrix>" << endl;
             cout << "Matrix file should be in triples format." << endl;
         }
