@@ -441,12 +441,12 @@ int SaenaMatrix::matrixSetup(){
 
     freeBoolean = true; // use this parameter to know if deconstructor for SaenaMatrix class should free the variables or not.
 
-    if (rank==0){
-        cout << endl << "split:" << endl;
-        for(unsigned int i=0; i<nprocs+1; i++)
-            cout << split[i] << endl;
-        cout << endl;
-    }
+//    if (rank==0){
+//        cout << endl << "split:" << endl;
+//        for(unsigned int i=0; i<nprocs+1; i++)
+//            cout << split[i] << endl;
+//        cout << endl;
+//    }
 
     // *************************** set the inverse of diagonal of A (for smoothers) ****************************
 

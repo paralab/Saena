@@ -1845,7 +1845,7 @@ int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& u, std::vect
 
         i++;
     }
-    if(rank==0) cout << endl;
+//    if(rank==0) cout << endl;
 
     return 0;
 }
@@ -1982,7 +1982,7 @@ int SaenaObject::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>&
         return 0;
     }
 
-    if(rank==0) cout << "******************************************************" << endl;
+//    if(rank==0) cout << "******************************************************" << endl;
 
     double dot;
     std::vector<double> r(grid->A->M);
@@ -2097,15 +2097,15 @@ int SaenaObject::solve(std::vector<double>& u, std::vector<double>& rhs){
     residual(grids[0].A, u, rhs, r);
     double initial_dot;
     dotProduct(r, r, &initial_dot, comm);
-    if(rank==0) cout << "******************************************************" << endl;
-    if(rank==0) cout << "\ninitial_norm = " << sqrt(initial_dot) << endl << endl;
+//    if(rank==0) cout << "******************************************************" << endl;
+//    if(rank==0) cout << "\ninitial_norm = " << sqrt(initial_dot) << endl << endl;
 
     double dot = initial_dot;
     for(i=0; i<vcycle_num; i++){
         vcycle(&grids[0], u, rhs, comm);
         residual(grids[0].A, u, rhs, r);
         dotProduct(r, r, &dot, comm);
-        if(rank==0) printf("vcycle iteration = %ld, residual = %f \n\n", i, sqrt(dot));
+//        if(rank==0) printf("vcycle iteration = %ld, residual = %f \n\n", i, sqrt(dot));
         if(dot/initial_dot < relative_tolerance)
             break;
     }
