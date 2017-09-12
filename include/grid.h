@@ -2,8 +2,8 @@
 #define SAENA_GRID_H
 
 #include "saena_matrix.h"
-#include "prolongmatrix.h"
-#include "restrictmatrix.h"
+#include "prolong_matrix.h"
+#include "restrict_matrix.h"
 
 class Grid{
 private:
@@ -11,8 +11,8 @@ private:
 public:
     saena_matrix* A;
     saena_matrix  Ac;
-    prolongMatrix P;
-    restrictMatrix R;
+    prolong_matrix P;
+    restrict_matrix R;
     int currentLevel, maxLevel;
     Grid* coarseGrid;
 

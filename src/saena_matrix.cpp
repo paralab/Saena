@@ -92,10 +92,6 @@ saena_matrix::~saena_matrix() {
         free(iter_remote_array);
         free(indicesP_local);
         free(indicesP_remote);
-//    free(vIndexCount);
-//    free(vIndexCount);
-//    free(indicesP);
-//        printf("**********~SaenaMatrix!!!!!!! \n");
     }
 }
 
@@ -476,7 +472,7 @@ int saena_matrix::repartition(){
 }
 
 
-int saena_matrix::matrixSetup(){
+int saena_matrix::matrix_setup(){
     // before using this function these variables of SaenaMatrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
@@ -497,7 +493,7 @@ int saena_matrix::matrixSetup(){
 
     invDiag.resize(M);
     double* invDiag_p = &(*(invDiag.begin()));
-    inverseDiag(invDiag_p);
+    inverse_diag(invDiag_p);
 
 /*    if(rank==1){
         for(unsigned int i=0; i<M; i++)
@@ -896,7 +892,7 @@ int saena_matrix::matvec(double* v, double* w) {
 }
 
 
-int saena_matrix::inverseDiag(double* x) {
+int saena_matrix::inverse_diag(double* x) {
     int nprocs, rank;
 //    MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -918,7 +914,7 @@ int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs) {
 // 3. three = inverseDiag * two * omega
 // 4. four = u - three
 
-    float omega = float(2.0/3);
+    auto omega = float(2.0/3);
     unsigned int i;
     // replace allocating and deallocating with a pre-allocated memory.
     double* temp = (double*)malloc(sizeof(double)*M);

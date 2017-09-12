@@ -27,14 +27,14 @@ set(SOURCE_FILES
         src/saena_matrix.cpp
         include/saena_object.h
         src/saena_object.cpp
-        include/strengthmatrix.h
-        src/strengthmatrix.cpp
-        include/prolongmatrix.h
-        src/prolongmatrix.cpp
-        include/restrictmatrix.h
-        src/restrictmatrix.cpp
-        include/auxFunctions.h
-        src/auxFunctions.cpp
+        include/strength_matrix.h
+        src/strength_matrix.cpp
+        include/prolong_matrix.h
+        src/prolong_matrix.cpp
+        include/restrict_matrix.h
+        src/restrict_matrix.cpp
+        include/aux_functions.h
+        src/aux_functions.cpp
         include/grid.h
         src/grid.cpp
         include/saena.hpp

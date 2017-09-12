@@ -5,7 +5,7 @@
 #include <vector>
 #include <set>
 #include <mpi.h>
-#include "auxFunctions.h"
+#include "aux_functions.h"
 
 /**
  * @author Majid
@@ -93,17 +93,17 @@ public:
     saena_matrix(char* Aname, unsigned int Mbig, MPI_Comm com);
     ~saena_matrix();
     // difference between set and set2 is that if there is a repetition, set will erase the previous one
-    // and add the new one, but in set2, the values of those entries will be added.
+    // and insert the new one, but in set2, the values of those entries will be added.
     int set(unsigned int row, unsigned int col, double val);
     int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
     int set2(unsigned int row, unsigned int col, double val);
     int set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
     int setup_initial_data();
     int repartition();
-    int matrixSetup();
+    int matrix_setup();
     int matvec(double* v, double* w);
     int jacobi(std::vector<double>& u, std::vector<double>& rhs);
-    int inverseDiag(double* x);
+    int inverse_diag(double* x);
     int destroy();
 };
 

@@ -94,7 +94,7 @@ int saena::matrix::set2(unsigned int i, unsigned int j, unsigned int* di, unsign
 int saena::matrix::assemble() {
     m_pImpl->setup_initial_data();
     m_pImpl->repartition();
-    m_pImpl->matrixSetup();
+    m_pImpl->matrix_setup();
     return 0;
 }
 

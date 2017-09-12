@@ -11,7 +11,7 @@ namespace saena {
         matrix(char* name, unsigned int global_rows, MPI_Comm comm); // read from file
 
         // difference between set and set2 is that if there is a repetition, set will erase the previous one
-        // and add the new one, but in set2, the values of those entries will be added.
+        // and insert the new one, but in set2, the values of those entries will be added.
         int set(unsigned int i, unsigned int j, double val); // set individual value
         int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local); // set multiple values
         int set(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
