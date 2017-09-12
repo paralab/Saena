@@ -9,10 +9,19 @@ namespace saena {
     public:
         matrix(unsigned int num_rows_global, MPI_Comm comm);
         matrix(char* name, unsigned int global_rows, MPI_Comm comm); // read from file
+
+        // difference between set and set2 is that if there is a repetition, set will erase the previous one
+        // and add the new one, but in set2, the values of those entries will be added.
         int set(unsigned int i, unsigned int j, double val); // set individual value
         int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local); // set multiple values
         int set(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
         int set(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local); // set generic block
+
+        int set2(unsigned int i, unsigned int j, double val); // set individual value
+        int set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local); // set multiple values
+        int set2(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
+        int set2(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local); // set generic block
+
         int assemble();
         unsigned int get_num_local_rows();
         SaenaMatrix* get_internal_matrix();

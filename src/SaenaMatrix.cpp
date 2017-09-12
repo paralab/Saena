@@ -109,6 +109,46 @@ SaenaMatrix::~SaenaMatrix() {
 
 int SaenaMatrix::set(unsigned int row, unsigned int col, double val){
 
+    cooEntry temp_new = cooEntry(row, col, val);
+    std::pair<std::set<cooEntry>::iterator, bool> p = data_coo.insert(temp_new);
+
+    if (!p.second){
+        std::set<cooEntry>::iterator hint = p.first;
+        hint++;
+        data_coo.erase(p.first);
+        data_coo.insert(hint, temp_new);
+    }
+
+    return 0;
+}
+
+
+int SaenaMatrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+
+    cooEntry temp_new;
+    std::pair<std::set<cooEntry>::iterator, bool> p;
+
+    for(unsigned int i=0; i<nnz_local; i++){
+        if(val[i] != 0){
+            temp_new = cooEntry(row[i], col[i], val[i]);
+            p = data_coo.insert(temp_new);
+
+            if (!p.second){
+
+                std::set<cooEntry>::iterator hint = p.first;
+                hint++;
+                data_coo.erase(p.first);
+                data_coo.insert(hint, temp_new);
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+int SaenaMatrix::set2(unsigned int row, unsigned int col, double val){
+
     cooEntry temp_old;
     cooEntry temp_new = cooEntry(row, col, val);
 
@@ -128,23 +168,25 @@ int SaenaMatrix::set(unsigned int row, unsigned int col, double val){
 }
 
 
-int SaenaMatrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+int SaenaMatrix::set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
 
     cooEntry temp_old, temp_new;
     std::pair<std::set<cooEntry>::iterator, bool> p;
 
     for(unsigned int i=0; i<nnz_local; i++){
-        temp_new = cooEntry(row[i], col[i], val[i]);
-        p = data_coo.insert(temp_new);
+        if(val[i] != 0){
+            temp_new = cooEntry(row[i], col[i], val[i]);
+            p = data_coo.insert(temp_new);
 
-        if (!p.second){
-            temp_old = *(p.first);
-            temp_new.val += temp_old.val;
+            if (!p.second){
+                temp_old = *(p.first);
+                temp_new.val += temp_old.val;
 
-            std::set<cooEntry>::iterator hint = p.first;
-            hint++;
-            data_coo.erase(p.first);
-            data_coo.insert(hint, temp_new);
+                std::set<cooEntry>::iterator hint = p.first;
+                hint++;
+                data_coo.erase(p.first);
+                data_coo.insert(hint, temp_new);
+            }
         }
     }
 

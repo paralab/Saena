@@ -96,9 +96,12 @@ public:
      * */
     SaenaMatrix(char* Aname, unsigned int Mbig, MPI_Comm com);
     ~SaenaMatrix();
-//    int reserve(unsigned int nnz_local, unsigned int num_rows_global);
+    // difference between set and set2 is that if there is a repetition, set will erase the previous one
+    // and add the new one, but in set2, the values of those entries will be added.
     int set(unsigned int row, unsigned int col, double val);
     int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
+    int set2(unsigned int row, unsigned int col, double val);
+    int set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
     int setup_initial_data();
     int repartition();
     int matrixSetup();

@@ -17,14 +17,13 @@ saena::matrix::matrix(char *name, unsigned int global_rows, MPI_Comm comm) {
     m_pImpl = new SaenaMatrix(name, global_rows, comm);
 }
 
-// todo: add if(val[iter] != 0 ) for every set function! or even if(val[iter] > threshold )
-int saena::matrix::set(unsigned int i, unsigned int j, double val){
-    m_pImpl->set(i, j, val);
-    return 0;
 
+int saena::matrix::set(unsigned int i, unsigned int j, double val){
+    if( val != 0)
+        m_pImpl->set(i, j, val);
+    return 0;
 }
 
-// todo: add if(val[iter] != 0 ) for every set function! or even if(val[iter] > threshold )
 int saena::matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
     m_pImpl->set(row, col, val, nnz_local);
     return 0;
@@ -36,22 +35,60 @@ int saena::matrix::set(unsigned int i, unsigned int j, unsigned int size_x, unsi
     iter = 0;
     for(jj = 0; jj < size_y; jj++) {
         for(ii = 0; ii < size_x; ii++) {
-            // todo: add if(val[iter] != 0 ) for every set function! or even if(val[iter] > threshold )
-            m_pImpl->set(i+ii, j+jj, val[iter]);
-            iter++;
+            if( val[iter] != 0){
+                m_pImpl->set(i+ii, j+jj, val[iter]);
+                iter++;
+            }
         }
     }
     return 0;
 }
 
-// todo: add if(val[iter] != 0 ) for every set function! or even if(val[iter] > threshold )
 int saena::matrix::set(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local){
     unsigned int ii;
     for(ii = 0; ii < nnz_local; ii++) {
-        m_pImpl->set(i+di[ii], j+dj[ii], val[ii]);
+        if(val[ii] != 0)
+            m_pImpl->set(i+di[ii], j+dj[ii], val[ii]);
     }
     return 0;
 }
+
+
+int saena::matrix::set2(unsigned int i, unsigned int j, double val){
+    if( val != 0)
+        m_pImpl->set2(i, j, val);
+    return 0;
+}
+
+int saena::matrix::set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+    m_pImpl->set2(row, col, val, nnz_local);
+    return 0;
+}
+
+int saena::matrix::set2(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val){
+// ordering of val should be first columns, then rows.
+    unsigned int ii, jj, iter;
+    iter = 0;
+    for(jj = 0; jj < size_y; jj++) {
+        for(ii = 0; ii < size_x; ii++) {
+            if( val[iter] != 0){
+                m_pImpl->set2(i+ii, j+jj, val[iter]);
+                iter++;
+            }
+        }
+    }
+    return 0;
+}
+
+int saena::matrix::set2(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local){
+    unsigned int ii;
+    for(ii = 0; ii < nnz_local; ii++) {
+        if(val[ii] != 0)
+            m_pImpl->set2(i+di[ii], j+dj[ii], val[ii]);
+    }
+    return 0;
+}
+
 
 int saena::matrix::assemble() {
     m_pImpl->setup_initial_data();
@@ -63,7 +100,6 @@ int saena::matrix::assemble() {
 unsigned int saena::matrix::get_num_local_rows() {
     return m_pImpl->M;
 }
-
 
 SaenaMatrix* saena::matrix::get_internal_matrix(){
     return m_pImpl;
@@ -146,10 +182,6 @@ void saena::options::set_postSmooth(int po){
 }
 
 
-//int saena::options::get_max_level(){
-//    return max_level;
-//}
-
 int saena::options::get_vcycle_num(){
     return vcycle_num;
 }
@@ -157,6 +189,7 @@ int saena::options::get_vcycle_num(){
 double saena::options::get_relative_tolerance(){
     return relative_tolerance;
 }
+
 std::string saena::options::get_smoother(){
     return smoother;
 }
