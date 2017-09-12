@@ -1,9 +1,9 @@
-#ifndef SAENA_RESTRICTMATRIX_H
-#define SAENA_RESTRICTMATRIX_H
+#ifndef SAENA_RESTRICT_MATRIX_H
+#define SAENA_RESTRICT_MATRIX_H
 
 #include <vector>
 
-class restrictMatrix {
+class restrict_matrix {
 // A matrix of this class is ordered first column-wise, then row-wise, using std:sort with cooEntry class "< operator".
 // It is sorted in restrictMatrix constructor function in restrictmatrix.cpp.
 private:
@@ -56,10 +56,10 @@ public:
 
     MPI_Comm comm;
 
-    restrictMatrix();
-    int transposeP(prolongMatrix* P);
-    ~restrictMatrix();
+    restrict_matrix();
+    int transposeP(prolong_matrix* P);
+    ~restrict_matrix();
     int matvec(double* v, double* w);
 };
 
-#endif //SAENA_RESTRICTMATRIX_H
+#endif //SAENA_RESTRICT_MATRIX_H

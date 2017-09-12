@@ -2,14 +2,14 @@
 #include <cstdlib>
 #include <algorithm>
 #include <iostream>
-#include "prolongmatrix.h"
-#include "auxFunctions.h"
+#include "prolong_matrix.h"
+#include "aux_functions.h"
 
 using namespace std;
 
-prolongMatrix::prolongMatrix(){}
+prolong_matrix::prolong_matrix(){}
 
-prolongMatrix::prolongMatrix(MPI_Comm com){
+prolong_matrix::prolong_matrix(MPI_Comm com){
     Mbig = 0;
     Nbig = 0;
     M = 0;
@@ -22,7 +22,7 @@ prolongMatrix::prolongMatrix(MPI_Comm com){
 }
 
 
-prolongMatrix::~prolongMatrix(){
+prolong_matrix::~prolong_matrix(){
     if(arrays_defined){
         free(vIndex);
         free(vSend);
@@ -36,7 +36,7 @@ prolongMatrix::~prolongMatrix(){
 }
 
 
-int prolongMatrix::findLocalRemote(cooEntry* entry){
+int prolong_matrix::findLocalRemote(cooEntry* entry){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -314,7 +314,7 @@ int prolongMatrix::findLocalRemote(cooEntry* entry){
 }
 
 
-int prolongMatrix::matvec(double* v, double* w) {
+int prolong_matrix::matvec(double* v, double* w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

@@ -1,11 +1,11 @@
-#ifndef SAENA_PROLONGMATRIX_H
-#define SAENA_PROLONGMATRIX_H
+#ifndef SAENA_PROLONG_MATRIX_H
+#define SAENA_PROLONG_MATRIX_H
 
 #include <vector>
-#include <mpich/mpi.h>
-#include "auxFunctions.h"
+#include <mpi.h>
+#include "aux_functions.h"
 
-class prolongMatrix {
+class prolong_matrix {
 // A matrix of this class is ordered <<ONLY>> if it is defined in createProlongation function in AMGClass.cpp.
 // Otherwise it can be ordered using the following line:
 //#include <algorithm>
@@ -87,12 +87,12 @@ public:
 
     MPI_Comm comm;
 
-    prolongMatrix();
-    prolongMatrix(MPI_Comm com);
-    ~prolongMatrix();
+    prolong_matrix();
+    prolong_matrix(MPI_Comm com);
+    ~prolong_matrix();
     int findLocalRemote(cooEntry* entry);
     int matvec(double* v, double* w);
 };
 
 
-#endif //SAENA_PROLONGMATRIX_H
+#endif //SAENA_PROLONG_MATRIX_H

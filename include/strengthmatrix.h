@@ -1,9 +1,9 @@
-#ifndef SAENA_STRENGTHMATRIX_H
-#define SAENA_STRENGTHMATRIX_H
+#ifndef SAENA_STRENGTH_MATRIX_H
+#define SAENA_STRENGTH_MATRIX_H
 
 #include <vector>
 
-class StrengthMatrix {
+class strength_matrix {
 public:
 //    std::vector<long>   rowIndex;
 //    std::vector<long>   col;
@@ -62,9 +62,9 @@ public:
     MPI_Comm comm;
 
 //    StrengthMatrix(){}
-    int StrengthMatrixSet(unsigned long* row, unsigned long* col, double* values, long M, long Mbig, long nnzl, unsigned long* split, MPI_Comm com);
-    ~StrengthMatrix();
+    int strength_matrix_set(unsigned long* row, unsigned long* col, double* values, long M, long Mbig, long nnzl, unsigned long* split, MPI_Comm com);
+    ~strength_matrix();
     void print(int rank);
 };
 
-#endif //SAENA_STRENGTHMATRIX_H
+#endif //SAENA_STRENGTH_MATRIX_H

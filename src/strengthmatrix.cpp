@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <mpi.h>
-#include "strengthmatrix.h"
+#include "strength_matrix.h"
 
 using namespace std;
 
@@ -37,7 +37,7 @@ T lower_bound2(T *left, T *right, T val) {
 }
 
 
-int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double* v, long m1, long m2, long m3, unsigned long* spl, MPI_Comm com){
+int strength_matrix::strength_matrix_set(unsigned long* r, unsigned long* c, double* v, long m1, long m2, long m3, unsigned long* spl, MPI_Comm com){
 
     comm = com;
     int nprocs, rank;
@@ -247,7 +247,7 @@ int StrengthMatrix::StrengthMatrixSet(unsigned long* r, unsigned long* c, double
     return 0;
 }
 
-StrengthMatrix::~StrengthMatrix(){
+strength_matrix::~strength_matrix(){
     free(vIndex);
     free(vSend);
 //    free(vSend2);
@@ -260,7 +260,7 @@ StrengthMatrix::~StrengthMatrix(){
 //    values.resize(0);
 }
 
-void StrengthMatrix::print(int r){
+void strength_matrix::print(int r){
 //    int rank;
 //    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 //

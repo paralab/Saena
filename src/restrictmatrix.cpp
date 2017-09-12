@@ -1,16 +1,16 @@
 #include <iostream>
 #include <algorithm>
 #include <mpi.h>
-#include <prolongmatrix.h>
-#include <restrictmatrix.h>
+#include <prolong_matrix.h>
+#include <restrict_matrix.h>
 //#include <dtypes.h>
 
 using namespace std;
 
-restrictMatrix::restrictMatrix(){}
+restrict_matrix::restrict_matrix(){}
 
 
-int restrictMatrix::transposeP(prolongMatrix* P) {
+int restrict_matrix::transposeP(prolong_matrix* P) {
 
     // todo: this matrix is not sorted at the end.
 
@@ -335,7 +335,7 @@ int restrictMatrix::transposeP(prolongMatrix* P) {
 } //end of restrictMatrix::transposeP
 
 
-restrictMatrix::~restrictMatrix(){
+restrict_matrix::~restrict_matrix(){
     if(arrays_defined){
         free(vIndex);
         free(vSend);
@@ -346,7 +346,7 @@ restrictMatrix::~restrictMatrix(){
 }
 
 
-int restrictMatrix::matvec(double* v, double* w) {
+int restrict_matrix::matvec(double* v, double* w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
