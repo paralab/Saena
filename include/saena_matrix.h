@@ -85,12 +85,12 @@ public:
 
     saena_matrix();
 //    SaenaMatrix(MPI_Comm com);
-    saena_matrix(unsigned int num_rows_global, MPI_Comm com);
+    saena_matrix(MPI_Comm com);
     /**
      * @param[in] Aname is the pointer to the matrix
      * @param[in] Mbig Number of rows in the matrix
      * */
-    saena_matrix(char* Aname, unsigned int Mbig, MPI_Comm com);
+    saena_matrix(char* Aname, MPI_Comm com);
     ~saena_matrix();
     // difference between set and set2 is that if there is a repetition, set will erase the previous one
     // and insert the new one, but in set2, the values of those entries will be added.

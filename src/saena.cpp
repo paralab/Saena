@@ -8,14 +8,15 @@
 #include "saena_object.h"
 #include "pugixml.hpp"
 
+
 // ******************************* matrix *******************************
 
-saena::matrix::matrix(unsigned int num_rows_global, MPI_Comm comm) {
-    m_pImpl = new saena_matrix(num_rows_global, comm);
+saena::matrix::matrix(MPI_Comm comm) {
+    m_pImpl = new saena_matrix(comm);
 }
 
-saena::matrix::matrix(char *name, unsigned int global_rows, MPI_Comm comm) {
-    m_pImpl = new saena_matrix(name, global_rows, comm);
+saena::matrix::matrix(char *name, MPI_Comm comm) {
+    m_pImpl = new saena_matrix(name, comm);
 }
 
 
@@ -110,6 +111,7 @@ void saena::matrix::destroy(){
     // will add later.
 }
 
+
 // ******************************* options *******************************
 
 saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
@@ -202,6 +204,7 @@ int saena::options::get_preSmooth(){
 int saena::options::get_postSmooth(){
     return postSmooth;
 }
+
 
 // ******************************* amg *******************************
 

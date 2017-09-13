@@ -19,11 +19,11 @@ int main(int argc, char* argv[]){
     unsigned long i;
 //    int assert1, assert2, assert3;
 
-    if(argc < 4)
+    if(argc != 3)
     {
         if(rank == 0)
         {
-            cout << "Usage: ./Saena <MatrixA> <rhs_vec> <number of rows of Matrix>" << endl;
+            cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << endl;
             cout << "Matrix file should be in triples format." << endl;
         }
         MPI_Finalize();
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
 //    struct stat vst;
 //    stat(Vname, &vst);
 //    unsigned int Mbig = vst.st_size/8;  // sizeof(double) = 8
-    unsigned int num_rows_global = stoul(argv[3]);
+//    unsigned int num_rows_global = stoul(argv[3]);
 
     // *************************** initialize the matrix ****************************
 
@@ -53,16 +53,16 @@ int main(int argc, char* argv[]){
 
     auto* I = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
     auto* J = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
-    auto* V       = (double*) malloc(sizeof(double) * initial_nnz_l);
-    setIJV(file_name, I, J, V, nnz_g, initial_nnz_l);
+    auto* V = (double*) malloc(sizeof(double) * initial_nnz_l);
+    setIJV(file_name, I, J, V, nnz_g, initial_nnz_l, comm);
 
 //    if(rank==0)
 //        for(i=0; i<initial_nnz_l; i++)
 //            std::cout << I[i] << "\t" << J[i] << "\t" << V[i] << std::endl;
 
-//    saena::matrix A (file_name, num_rows_global, comm);
+//    saena::matrix A (file_name, comm);
 
-    saena::matrix A(num_rows_global, comm);
+    saena::matrix A(comm);
     A.set(I, J, V, initial_nnz_l);
     A.assemble();
 

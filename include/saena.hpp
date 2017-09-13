@@ -7,8 +7,8 @@ namespace saena {
 
     class matrix {
     public:
-        matrix(unsigned int num_rows_global, MPI_Comm comm);
-        matrix(char* name, unsigned int global_rows, MPI_Comm comm); // read from file
+        matrix(MPI_Comm comm);
+        matrix(char* name, MPI_Comm comm); // read from file
 
         // difference between set and set2 is that if there is a repetition, set will erase the previous one
         // and insert the new one, but in set2, the values of those entries will be added.

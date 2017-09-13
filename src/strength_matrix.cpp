@@ -76,7 +76,7 @@ int strength_matrix::strength_matrix_set(unsigned long* r, unsigned long* c, dou
     for(i=0; i<M; i++)
         rowIndex[i+1] += rowIndex[i];
 
-    MPI_Allreduce(&nnz_l, &nnz_g, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&nnz_l, &nnz_g, 1, MPI_LONG, MPI_SUM, comm);
     average_sparsity = (1.0*nnz_g)/Mbig;
 */
     long procNum;
@@ -160,7 +160,7 @@ int strength_matrix::strength_matrix_set(unsigned long* r, unsigned long* c, dou
     } // for i
 
     int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, MPI_COMM_WORLD);
+    MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
 
     numRecvProc = 0;
     numSendProc = 0;
@@ -192,7 +192,7 @@ int strength_matrix::strength_matrix_set(unsigned long* r, unsigned long* c, dou
     recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
 
     vIndex = (unsigned long*)malloc(sizeof(unsigned long)*vIndexSize);
-    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_UNSIGNED_LONG, comm);
 
     free(vIndexCount);
     free(recvCount);
@@ -262,7 +262,7 @@ strength_matrix::~strength_matrix(){
 
 void strength_matrix::print(int r){
 //    int rank;
-//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//    MPI_Comm_rank(comm, &rank);
 //
 //    if(rank==r)
 //        for(unsigned int i=0; i<nnz_l; i++){

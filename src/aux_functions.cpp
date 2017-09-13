@@ -152,8 +152,8 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
 
 int randomVector4(std::vector<unsigned long>& V, long size) {
 
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//    int rank;
+//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 //    for (unsigned long i=0; i<V.size(); i++){
 //        srand (i);
@@ -209,11 +209,11 @@ std::ostream & operator<<(std::ostream & stream, const cooEntry & item) {
 }
 
 
-void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsigned int nnz_g, unsigned int initial_nnz_l){
+void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsigned int nnz_g, unsigned int initial_nnz_l, MPI_Comm comm){
 
     int rank, nprocs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
 
     std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitioning.
     data.resize(3 * initial_nnz_l); // 3 is for i and j and val
@@ -225,7 +225,7 @@ void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsign
     MPI_File fh;
     MPI_Offset offset;
 
-    int mpiopen = MPI_File_open(MPI_COMM_WORLD, file_name, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    int mpiopen = MPI_File_open(comm, file_name, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (mpiopen) {
         if (rank == 0) cout << "Unable to open the matrix file!" << endl;
         MPI_Finalize();

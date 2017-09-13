@@ -11,6 +11,7 @@
 
 #include "saena_object.h"
 
+
 saena_object::saena_object(){
 //    maxLevel = max_lev-1;
 } //SaenaObject
@@ -35,17 +36,15 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
 
 
 int saena_object::setup(saena_matrix* A) {
-    MPI_Comm comm = MPI_COMM_WORLD; // todo: fix this.
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+//    int nprocs, rank;
+//    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int i;
 
     grids.resize(maxLevel+1);
-//    MPI_Barrier(comm); if(rank==1) printf("----------start of AMGSetup----------\n"); MPI_Barrier(comm);
     grids[0] = Grid(A, maxLevel, 0);
+    grids[0].comm = A->comm;
     for(i = 0; i < maxLevel; i++){
-//        MPI_Barrier(comm); if(rank==2) printf("\n\n----------111 AMGSetup----------\n"); MPI_Barrier(comm);
         level_setup(&grids[i]);
         grids[i+1] = Grid(&grids[i].Ac, maxLevel, i+1);
         grids[i].coarseGrid = &grids[i+1];
@@ -60,9 +59,8 @@ int saena_object::level_setup(Grid* grid){
 //    int nprocs, rank;
 //    MPI_Comm_size(comm, &nprocs);
 //    MPI_Comm_rank(comm, &rank);
-    unsigned long i;
 
-//    MPI_Barrier(comm); if(rank==1) cout << endl << "current level = " << grid->currentLevel << endl; MPI_Barrier(comm);
+    unsigned long i;
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
@@ -71,45 +69,12 @@ int saena_object::level_setup(Grid* grid){
 //        for(auto i:aggregate)
 //            cout << i << endl;
 
-    // todo: delete this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*****************&&&&&&&&&&&&&&&&&&&&&&&&&&&$$$$$$$$$
+    // todo: delete this!!!!!!!!!!!
 //    changeAggregation(grid->A, aggregate, grid->P.splitNew, comm);
 
-//    if(rank==0) cout << "after changeAggregation" << endl;
-//    if(rank==0)
-//        for(i=0; i<aggregate.size(); i++)
-//            cout << i << "\t" << aggregate[i] << endl;
-
-//    MPI_Barrier(comm); if(rank==0) printf("----------1 aggregate----------\n"); MPI_Barrier(comm);
-
-/*
-    std::vector<long> aggregateSorted(A->M);
-//    long* aggregateSorted_p = &(*aggregateSorted.begin());
-    par::sampleSort(aggregate, aggregateSorted, comm);
-    if(rank==0) cout << "\nafter:" << endl;
-    if(rank==0)
-        for(long i=0; i<A->M; i++)
-            cout << i << "\t" << aggregate[i] << "\t" << aggregateSorted[i] << endl;
-    if(rank==1)
-        for(long i=0; i<A->M; i++)
-            cout << i << "\t" << aggregate[i] << "\t" << aggregateSorted[i] << endl;
-*/
-//    par::sampleSort(aggregate, comm);
-/*
-    if(rank==0) cout << "\nafter:" << endl;
-    if(rank==0)
-        for(long i=0; i<A->M; i++)
-            cout << i << "\t" << aggregate[i] << endl;
-    if(rank==1)
-        for(long i=0; i<A->M; i++)
-            cout << i << "\t" << aggregate[i] << endl;
-*/
-
     create_prolongation(grid->A, aggregate, &grid->P);
-//    MPI_Barrier(comm); if(rank==0) printf("----------2 createProlongation----------\n"); MPI_Barrier(comm);
     grid->R.transposeP(&grid->P);
-//    MPI_Barrier(comm); if(rank==0) printf("----------3 transposeP----------\n"); MPI_Barrier(comm);
     coarsen(grid->A, &grid->P, &grid->R, &grid->Ac);
-//    MPI_Barrier(comm); if(rank==0) printf("----------4 coarsen----------\n"); MPI_Barrier(comm);
     return 0;
 }
 
@@ -1755,7 +1720,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 } // end of SaenaObject::coarsen
 
 
-int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs, int& maxIter, double& tol){
+int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs){
     // this is CG.
     // u is zero in the beginning. At the end, it is the solution.
 
@@ -1783,8 +1748,8 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
     double initialNorm = sqrt(dot);
 //    if(rank==0) cout << "\nsolveCoarsest: initial norm(res) = " << initialNorm << endl;
 
-    if (dot < tol*tol)
-        maxIter = 0;
+    if (dot < CG_tol*CG_tol)
+        CG_max_iter = 0;
 
     std::vector<double> dir(A->M);
     dir = res;
@@ -1792,7 +1757,7 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
     double factor, dot_prev;
     std::vector<double> matvecTemp(A->M);
     i = 0;
-    while (i < maxIter) {
+    while (i < CG_max_iter) {
 //        if(rank==0) cout << "starting iteration of CG = " << i << endl;
         // factor = sq_norm/ (dir' * A * dir)
         A->matvec(&*dir.begin(), &*matvecTemp.begin());
@@ -1801,9 +1766,7 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
 //            for(auto i:matvecTemp)
 //                cout << i << endl;}
 
-//        factor = 0;
-//        for(j = 0; j < A->M; j++)
-//            factor += dir[j] * matvecTemp[j];
+
         dotProduct(dir, matvecTemp, &factor, comm);
         factor = dot / factor;
 //        if(rank==1) cout << "\nsolveCoarsest: factor = " << factor << endl;
@@ -1829,7 +1792,7 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
 //        if(rank==0) cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << endl;
 //        if(rank==0) cout << sqrt(dot)/initialNorm << endl;
 
-        if (dot < tol*tol)
+        if (dot < CG_tol*CG_tol)
             break;
 
         factor = dot / dot_prev;
@@ -1967,31 +1930,19 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
 //    printf("rank = %d, current level = %d here!!!!!!!!!! \n", rank, grid->currentLevel);
 
-//    % handle for the coarsest level
-//    if ( isempty( grid.Coarse ) )
-//        u = grid.K \ rhs;
-//    return;
-//    end
-
-    // todo: don't hard-code. receive them by another way.
-    int maxIter = 20;
-    double tol = 1e-12;
     if(grid->currentLevel == maxLevel){
 //        if(rank==0) cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << endl;
-        solve_coarsest(grid->A, u, rhs, maxIter, tol);
+        solve_coarsest(grid->A, u, rhs);
         return 0;
     }
 
-//    if(rank==0) cout << "******************************************************" << endl;
-
     double dot;
-    std::vector<double> r(grid->A->M);
-    residual(grid->A, u, rhs, r);
-    dotProduct(r, r, &dot, comm);
+    std::vector<double> res(grid->A->M);
+//    residual(grid->A, u, rhs, res);
+//    dotProduct(res, res, &dot, comm);
 //    if(rank==0) cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << endl;
 
     // **************************************** 1. pre-smooth ****************************************
-    // u = grid.smooth ( v1, rhs, u );
 
     for(i=0; i<preSmooth; i++)
         grid->A->jacobi(u, rhs);
@@ -2002,23 +1953,21 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //            cout << i << endl;
 
     // **************************************** 2. compute residual ****************************************
-    // res = grid.residual( rhs, u );
 
-    residual(grid->A, u, rhs, r);
+    residual(grid->A, u, rhs, res);
 
 //    if(rank==1) cout << "\n2. compute residual: res, currentLevel = " << grid->currentLevel << endl;
 //    if(rank==1)
-//        for(auto i:r)
+//        for(auto i:res)
 //            cout << i << endl;
 
-//    dotProduct(r, r, &dot, comm);
+//    dotProduct(res, res, &dot, comm);
 //    if(rank==0) cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << endl;
 
     // **************************************** 3. restrict ****************************************
-    // res_coarse = grid.R * res;
 
     std::vector<double> rCoarse(grid->Ac.M);
-    grid->R.matvec(&*r.begin(), &*rCoarse.begin());
+    grid->R.matvec(&*res.begin(), &*rCoarse.begin());
 
 //    if(rank==0){
 //        cout << "\n3. restriction: rCoarse = R*res, currentLevel = " << grid->currentLevel << endl;
@@ -2026,8 +1975,6 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //            cout << i << endl;}
 
     // **************************************** 4. recurse ****************************************
-    // u_corr_coarse = grid.Coarse.vcycle(v1, v2, res_coarse, zeros(size(res_coarse)));
-    // function u = vcycle(grid, v1, v2, rhs, u)
 
 //    if(rank==1) cout << "\n\n\nenter recursive vcycle = " << grid->currentLevel << endl;
     std::vector<double> uCorrCoarse(grid->Ac.M);
@@ -2040,7 +1987,6 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //            cout << i << endl;
 
     // **************************************** 5 & 6. prolong and correct ****************************************
-    // u = u - grid.P * u_corr_coarse;
 
     std::vector<double> uCorr(grid->A->M);
     grid->P.matvec(&*uCorrCoarse.begin(), &*uCorr.begin());
@@ -2057,13 +2003,11 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //        for(i=0; i<u.size(); i++)
 //            cout << u[i] << endl;
 
-    // todo: delete this part after debugging.
-//    residual(grid->A, u, rhs, r);
-//    dotProduct(r, r, &dot, comm);
+//    residual(grid->A, u, rhs, res);
+//    dotProduct(res, res, &dot, comm);
 //    if(rank==0) cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << endl;
 
     // **************************************** 7. post-smooth ****************************************
-    // u = grid.smooth ( v2, rhs, u );
 
     for(i=0; i<postSmooth; i++)
         grid->A->jacobi(u, rhs);
@@ -2073,9 +2017,8 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //        for(auto i:u)
 //            cout << i << endl;
 
-    // todo: delete this part after debugging.
-//    residual(grid->A, u, rhs, r);
-//    dotProduct(r, r, &dot, comm);
+//    residual(grid->A, u, rhs, res);
+//    dotProduct(res, res, &dot, comm);
 //    if(rank==0) cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << endl;
 
     return 0;
@@ -2083,7 +2026,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
 
 int saena_object::solve(std::vector<double>& u, std::vector<double>& rhs){
-    MPI_Comm comm = MPI_COMM_WORLD; // todo: fix this
+    MPI_Comm comm = grids[0].comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);

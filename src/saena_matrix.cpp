@@ -6,16 +6,16 @@
 #include <omp.h>
 #include "saena_matrix.h"
 
+
 saena_matrix::saena_matrix(){}
 
 
-saena_matrix::saena_matrix(unsigned int num_rows_global, MPI_Comm com) {
-    Mbig = num_rows_global;
+saena_matrix::saena_matrix(MPI_Comm com) {
     comm = com;
 }
 
 
-saena_matrix::saena_matrix(char* Aname, unsigned int Mbig2, MPI_Comm com) {
+saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
     // the following variables of SaenaMatrix class will be set in this function:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
     // "data" is only required for repartition function.
@@ -25,9 +25,6 @@ saena_matrix::saena_matrix(char* Aname, unsigned int Mbig2, MPI_Comm com) {
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
-    // set Mbig in the class
-    Mbig = Mbig2;
 
     // find number of general nonzeros of the input matrix
     struct stat st;
@@ -78,7 +75,7 @@ saena_matrix::saena_matrix(char* Aname, unsigned int Mbig2, MPI_Comm com) {
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
 
-} //SaenaMatrix::SaenaMatrix
+}
 
 
 saena_matrix::~saena_matrix() {
@@ -203,14 +200,30 @@ int saena_matrix::setup_initial_data(){
 
     std::set<cooEntry>::iterator it;
     unsigned int iter = 0;
+    unsigned int Mbig_local = 0;
     cooEntry temp;
     for(it=data_coo.begin(); it!=data_coo.end(); ++it, ++iter){
         temp = *it;
         data[3*iter]   = temp.row;
         data[3*iter+1] = temp.col;
-        data[3*iter+2] = reinterpret_cast<long&>(temp.val);
-//        if(rank==0) cout << temp << endl;
+        data[3*iter+2] = reinterpret_cast<unsigned long&>(temp.val);
+
+        if(temp.row > Mbig_local)
+            Mbig_local = temp.row;
+
     }
+
+    // Mbig is the size of the matrix, which is the maximum of rows and columns.
+    // up to here Mbig is the maximum of rows.
+    // data[3*iter+1] is the maximum of columns, since it is sorted based on columns.
+
+    iter--;
+    if(data[3*iter+1] > Mbig)
+        Mbig = data[3*iter+1];
+
+    MPI_Allreduce(&Mbig_local, &Mbig, 1, MPI_UNSIGNED, MPI_MAX, comm);
+    Mbig++; // since indices start from 0, not 1.
+//    std::cout << Mbig << std::endl;
 
     // todo: is this line required?
 //    data_coo.clear();
