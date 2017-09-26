@@ -41,10 +41,6 @@ int main(int argc, char* argv[]){
 
     char* file_name(argv[1]);
 
-    // timing the setup phase
-//    MPI_Barrier(comm);
-//    double t1 = MPI_Wtime();
-
     // todo: set nnz_g for every example.
     unsigned int nnz_g = 393;
     auto initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
@@ -60,21 +56,29 @@ int main(int argc, char* argv[]){
 //        for(i=0; i<initial_nnz_l; i++)
 //            std::cout << I[i] << "\t" << J[i] << "\t" << V[i] << std::endl;
 
+
+    // timing the setup phase
+    double t1 = MPI_Wtime();
+
 //    saena::matrix A (file_name, comm);
 
     saena::matrix A(comm);
     A.set(I, J, V, initial_nnz_l);
     A.assemble();
 
+    double t2 = MPI_Wtime();
+    double t_dif, average, min, max;
+    t_dif = t2 - t1;
+    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    average /= nprocs;
+    if (rank==0)
+        cout << "\nSetup phase:\nmin: " << min << "\nave: " << average << "\nmax: " << max << endl << endl;
+
     free(I); free(J); free(V);
 
     unsigned int num_local_row = A.get_num_local_rows();
-
-//    MPI_Barrier(comm);
-//    double t2 = MPI_Wtime();
-
-//    if (rank==0)
-//        cout << "\nMatrix setup in Saena took " << t2 - t1 << " seconds!" << endl << endl;
 
     // *************************** read the vector and set rhs ****************************
 
@@ -154,6 +158,8 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Setup ****************************
 
+    t1 = MPI_Wtime();
+
 //    int max_level             = 2;
 //    int vcycle_num            = 10;
 //    double relative_tolerance = 1e-8;
@@ -162,7 +168,8 @@ int main(int argc, char* argv[]){
 //    int postSmooth            = 2;
 
 //    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
-    saena::options opts((char*)"options001.xml");
+//    saena::options opts((char*)"options001.xml");
+    saena::options opts;
     saena::amg solver(&A);
 
 //    MPI_Barrier(comm);
@@ -175,9 +182,14 @@ int main(int argc, char* argv[]){
 
     solver.solve(u, rhs, &opts);
 
-//    Saena1.writeMatrixToFileA(grids[1].A, "Ac", comm);
-//    Saena1.writeMatrixToFileP(&grids[0].P, "P", comm);
-//    Saena1.writeMatrixToFileR(&grids[0].R, "R", comm);
+    t2 = MPI_Wtime();
+    t_dif = t2 - t1;
+    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    average /= nprocs;
+    if (rank==0)
+        cout << "\nSolve phase:\nmin: " << min << "\nave: " << average << "\nmax: " << max << endl << endl;
 
     // *************************** Residual ****************************
 
@@ -254,6 +266,10 @@ int main(int argc, char* argv[]){
     }
     Saena1.writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
 */
+
+//    Saena1.writeMatrixToFileA(grids[1].A, "Ac", comm);
+//    Saena1.writeMatrixToFileP(&grids[0].P, "P", comm);
+//    Saena1.writeMatrixToFileR(&grids[0].R, "R", comm);
 
     // *************************** write residual or the solution to a file ****************************
 

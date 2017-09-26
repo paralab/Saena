@@ -16,6 +16,7 @@ class saena_matrix {
 // A matrix of this class is ordered first column-wise, then row-wise.
 
 private:
+    bool read_from_file = false;
     unsigned int initial_nnz_l;
     bool freeBoolean = false; // use this parameter to know if deconstructor for SaenaMatrix class should free the variables or not.
     std::set<cooEntry> data_coo;
@@ -24,8 +25,8 @@ private:
 public:
     std::vector<cooEntry> entry;
 
-    unsigned int M;
-    unsigned int Mbig;
+    unsigned int M;    // local number of rows
+    unsigned int Mbig; // global number of rows
     unsigned int nnz_g;
     unsigned int nnz_l;
     std::vector<unsigned long> split;
@@ -40,7 +41,7 @@ public:
     std::vector<unsigned long> col_local;
     std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
     std::vector<unsigned long> col_remote2; //original col index
-    std::vector<unsigned int> nnzPerRow_local; // todo: this is used for openmp part of SaenaMatrix.cpp
+    std::vector<unsigned int> nnzPerRow_local; // todo: this is used for openmp part of saena_matrix.cpp
     std::vector<unsigned int> nnzPerCol_remote; // todo: replace this. nnz Per Column is expensive.
 //    std::vector<unsigned int> nnzPerRow;
 //    std::vector<unsigned int> nnzPerRow_remote;
@@ -92,8 +93,8 @@ public:
      * */
     saena_matrix(char* Aname, MPI_Comm com);
     ~saena_matrix();
-    // difference between set and set2 is that if there is a repetition, set will erase the previous one
-    // and insert the new one, but in set2, the values of those entries will be added.
+    // The difference between set and set2 is that if there is a repetition, set will erase the previous one
+    // and insert the new one, but in set2, the values of those entries will be added together.
     int set(unsigned int row, unsigned int col, double val);
     int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
     int set2(unsigned int row, unsigned int col, double val);

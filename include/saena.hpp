@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <mpi.h>
 class saena_matrix;
 class saena_object;
 
@@ -10,8 +12,8 @@ namespace saena {
         matrix(MPI_Comm comm);
         matrix(char* name, MPI_Comm comm); // read from file
 
-        // difference between set and set2 is that if there is a repetition, set will erase the previous one
-        // and insert the new one, but in set2, the values of those entries will be added.
+        // The difference between set and set2 is that if there is a repetition, set will erase the previous one
+        // and insert the new one, but in set2, the values of those entries will be added together.
         int set(unsigned int i, unsigned int j, double val); // set individual value
         int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local); // set multiple values
         int set(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
@@ -33,13 +35,14 @@ namespace saena {
 
     class options {
     private:
-        int vcycle_num;
-        double relative_tolerance;
-        std::string smoother;
-        int preSmooth;
-        int postSmooth;
+        int vcycle_num            = 20;
+        double relative_tolerance = 1e-8;
+        std::string smoother      = "jacobi";
+        int preSmooth             = 3;
+        int postSmooth            = 3;
 
     public:
+        options();
         options(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
         options(char* name); // to set parameters from an xml file
         ~options();

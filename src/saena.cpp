@@ -93,7 +93,6 @@ int saena::matrix::set2(unsigned int i, unsigned int j, unsigned int* di, unsign
 
 
 int saena::matrix::assemble() {
-    m_pImpl->setup_initial_data();
     m_pImpl->repartition();
     m_pImpl->matrix_setup();
     return 0;
@@ -113,6 +112,8 @@ void saena::matrix::destroy(){
 
 
 // ******************************* options *******************************
+
+saena::options::options(){}
 
 saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
     vcycle_num         = vcycle_n;

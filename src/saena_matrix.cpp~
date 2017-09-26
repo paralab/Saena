@@ -138,7 +138,6 @@ int saena_matrix::set(unsigned int* row, unsigned int* col, double* val, unsigne
     std::pair<std::set<cooEntry>::iterator, bool> p;
 
     for(unsigned int i=0; i<nnz_local; i++){
-        // todo: in the case of duplicate, if the new value is zero, remove that value from the matrix.
         if(val[i] != 0){
             temp_new = cooEntry(row[i], col[i], val[i]);
             p = data_coo.insert(temp_new);
