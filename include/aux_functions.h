@@ -64,6 +64,36 @@ public:
             return false;
     }
 
+    bool operator <= (const cooEntry& node2) const
+    {
+        if(col < node2.col)
+            return (true);
+        else if(col == node2.col)
+            return(row <= node2.row);
+        else
+            return false;
+    }
+
+    bool operator > (const cooEntry& node2) const
+    {
+        if(col > node2.col)
+            return (true);
+        else if(col == node2.col)
+            return(row > node2.row);
+        else
+            return false;
+    }
+
+    bool operator >= (const cooEntry& node2) const
+    {
+        if(col > node2.col)
+            return (true);
+        else if(col == node2.col)
+            return(row >= node2.row);
+        else
+            return false;
+    }
+
     static MPI_Datatype mpi_datatype()
     {
         static bool         first = true;
@@ -143,6 +173,7 @@ void setIJV(char* file_name, unsigned int* I,unsigned int* J, double* V, unsigne
 int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm);
 
 
+int print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
 
 
 #endif //SAENA_AUXFUNCTIONS_H

@@ -36,18 +36,44 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
 
 
 int saena_object::setup(saena_matrix* A) {
-//    int nprocs, rank;
+    MPI_Comm comm = A->comm;
+    int nprocs, rank;
 //    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int i;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    grids.resize(maxLevel+1);
-    grids[0] = Grid(A, maxLevel, 0);
-    grids[0].comm = A->comm;
-    for(i = 0; i < maxLevel; i++){
+    int i;
+    unsigned int M_current;
+    float row_reduction_local, row_reduction_min;
+
+    grids.resize(max_level+1);
+    grids[0] = Grid(A, max_level, 0);
+    grids[0].comm = comm;
+    for(i = 0; i < max_level; i++){
         level_setup(&grids[i]);
-        grids[i+1] = Grid(&grids[i].Ac, maxLevel, i+1);
+        grids[i+1] = Grid(&grids[i].Ac, max_level, i+1);
         grids[i].coarseGrid = &grids[i+1];
+        grids[i+1].comm = grids[i].Ac.comm;
+
+//        MPI_Barrier(comm); printf("in setup: rank = %d, P.M = %u, P.nnz = %lu\n", rank, grids[i].P.M, grids[i].P.nnz_l); MPI_Barrier(comm);
+//        MPI_Barrier(comm); printf("in setup: rank = %d, R.M = %u, R.nnz = %lu\n", rank, grids[i].R.M, grids[i].R.nnz_l); MPI_Barrier(comm);
+
+        //threshold to set maximum multigrid level
+        MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[0].comm);
+        row_reduction_local = grids[i].Ac.M / grids[i].A->M;
+        MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[0].comm);
+
+        // todo: talk to Hari about least_row_threshold and row_reduction.
+        if(M_current < least_row_threshold || row_reduction_min > 0.85){
+            if(row_reduction_min == 1){
+                max_level = grids[i].currentLevel;
+                grids.resize(max_level);
+            } else{
+                max_level = grids[i].currentLevel+1;
+                grids.resize(max_level);
+            }
+//            printf("\nset max level to %d\n", max_level);
+            break;
+        }
     }
 
     return 0;
@@ -56,25 +82,88 @@ int saena_object::setup(saena_matrix* A) {
 
 int saena_object::level_setup(Grid* grid){
 
-//    int nprocs, rank;
-//    MPI_Comm_size(comm, &nprocs);
-//    MPI_Comm_rank(comm, &rank);
+    MPI_Comm comm = grid->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
-    unsigned long i;
+//    std::cout << "here!!!!!!!!!!!!!!!! level = " << grid->currentLevel << std::endl;
+
+//    unsigned long i;
+    double t1, t2, t_dif;
+    double min, max, average;
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
+    t1 = MPI_Wtime();
     find_aggregation(grid->A, aggregate, grid->P.splitNew);
+    t2 = MPI_Wtime();
+
+    t_dif = t2 - t1;
+//    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+//    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+//    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+//    average /= nprocs;
+//    if (rank==0)
+//        std::cout << "\nAggregation:\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+
 //    if(rank==0)
 //        for(auto i:aggregate)
-//            cout << i << endl;
+//            std::cout << i << std::endl;
 
     // todo: delete this!!!!!!!!!!!
 //    changeAggregation(grid->A, aggregate, grid->P.splitNew, comm);
 
+    t1 = MPI_Wtime();
     create_prolongation(grid->A, aggregate, &grid->P);
+    t2 = MPI_Wtime();
+
+    t_dif = t2 - t1;
+//    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+//    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+//    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+//    average /= nprocs;
+//    if (rank==0)
+//        std::cout << "\nProlongation:\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+
+    t1 = MPI_Wtime();
     grid->R.transposeP(&grid->P);
+    t2 = MPI_Wtime();
+
+    t_dif = t2 - t1;
+//    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+//    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+//    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+//    average /= nprocs;
+//    if (rank==0)
+//        std::cout << "\nRestriction:\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+
+    t1 = MPI_Wtime();
     coarsen(grid->A, &grid->P, &grid->R, &grid->Ac);
+    t2 = MPI_Wtime();
+
+    t_dif = t2 - t1;
+//    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+//    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+//    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+//    average /= nprocs;
+//    if (rank==0)
+//        std::cout << "\nCoarsening:\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+
+//    std::cout << "here!!!!!!!!!!!!!!!! level = " << grid->currentLevel << "\tM = " << grid->Ac.M << "\t max = " << grid->maxLevel << std::endl;
+
+/*
+    // ******************************** threshold to set maximum multigrid level ********************************
+
+    unsigned int M_current;
+    MPI_Allreduce(&grid->Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, comm);
+    if(M_current < least_row_threshold){
+        if(rank==0) std::cout << "set max level to " << grid->currentLevel+1 << std::endl;
+        max_level = grid->currentLevel + 1;
+        grids.resize(max_level+1);
+    }
+*/
+
     return 0;
 }
 
@@ -127,9 +216,9 @@ if(R.Mbig < threshold1){
 
         nnzRecv = nnzNew - R.nnz_l;
 //            if(rank==0){
-//                cout << "rdispls:" << endl;
+//                std::cout << "rdispls:" << std::endl;
 //                for(i=0; i<3; i++)
-//                    cout << rdispls[i] << endl;
+//                    std::cout << rdispls[i] << std::endl;
 //            }
     }
 
@@ -147,9 +236,9 @@ if(R.Mbig < threshold1){
     }
 
 //        MPI_Barrier(comm2);
-//        if(rank2==2) cout << "sendData:" << endl;
+//        if(rank2==2) std::cout << "sendData:" << std::endl;
 //        for(i=0; i<R.entry_local.size()+R.entry_remote.size(); i++)
-//            if(rank2==2) cout << sendData[i].row << "\t" << sendData[i].col << "\t" << sendData[i].val << endl;
+//            if(rank2==2) std::cout << sendData[i].row << "\t" << sendData[i].col << "\t" << sendData[i].val << std::endl;
 
     cooEntry* recvData = NULL;
     if(active)
@@ -177,7 +266,7 @@ if(R.Mbig < threshold1){
 
 //        if(active)
 //            for(i=0; i<nnzRecv; i++)
-//                cout << i << "\t" << recvData[i].row << "\t" << recvData[i].col << "\t" << recvData[i].val << endl;
+//                std::cout << i << "\t" << recvData[i].row << "\t" << recvData[i].col << "\t" << recvData[i].val << std::endl;
 
     if(active)
         free(nnzGroup);
@@ -213,7 +302,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
 
 //    if(rank==0)
 //        for(long i=0; i<S.M; i++)
-//            cout << i << "\t" << aggregate[i] << endl;
+//            std::cout << i << "\t" << aggregate[i] << std::endl;
 
     return 0;
 } // end of SaenaObject::findAggregation
@@ -226,7 +315,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if(rank==0) cout << "M = " << A->M << ", nnz_l = " << A->nnz_l << endl;
+//    if(rank==0) std::cout << "M = " << A->M << ", nnz_l = " << A->nnz_l << std::endl;
 
     // ******************************** compute max per row ********************************
 
@@ -245,7 +334,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
 //    if(rank==0)
 //        for(i=0; i<A->M; i++)
-//            cout << i << "\t" << maxPerRow[i] << endl;
+//            std::cout << i << "\t" << maxPerRow[i] << std::endl;
 
     // ******************************** compute S ********************************
 
@@ -263,14 +352,14 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
             Si.push_back(A->entry[i].row);
             Sj.push_back(A->entry[i].col);
             Sval.push_back(  -A->entry[i].val / (maxPerRow[A->entry[i].row - A->split[rank]])  );
-//                if(rank==0) cout << "A.val = " << -A->values[i] << ", max = " << maxPerRow[A->row[i] - A->split[rank]] << ", divide = " << (-A->values[i] / (maxPerRow[A->row[i] - A->split[rank]])) << endl;
+//                if(rank==0) std::cout << "A.val = " << -A->values[i] << ", max = " << maxPerRow[A->row[i] - A->split[rank]] << ", divide = " << (-A->values[i] / (maxPerRow[A->row[i] - A->split[rank]])) << std::endl;
 //            }
         }
     }
 
 /*    if(rank==0)
         for (i=0; i<Si.size(); i++)
-            cout << "val = " << Sval[i] << endl;*/
+            std::cout << "val = " << Sval[i] << std::endl;*/
 
     // ******************************** compute max per column - version 1 - for general matrices ********************************
 
@@ -297,7 +386,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
 //    if(rank==0)
 //        for(i=0; i<A->Mbig; i++)
-//            cout << i << "\t" << maxPerCol[i] << endl;
+//            std::cout << i << "\t" << maxPerCol[i] << std::endl;
 
     // ******************************** compute ST - version 1 ********************************
 
@@ -321,7 +410,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
 //    if(rank==1)
 //        for(i=0; i<STi.size(); i++)
-//            cout << "ST: " << "[" << STi[i]+1 << "," << STj[i]+1 << "] = " << STval[i] << endl;
+//            std::cout << "ST: " << "[" << STi[i]+1 << "," << STj[i]+1 << "] = " << STval[i] << std::endl;
 
     // ******************************** compute max per column - version 2 - of A is symmetric matrices ********************************
 
@@ -410,7 +499,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
 //    if(rank==0)
 //        for(i=0; i<STi.size(); i++)
-//            cout << "ST: " << "[" << STi[i]+1 << "," << STj[i]+1 << "] = " << STval[i] << endl;
+//            std::cout << "ST: " << "[" << STi[i]+1 << "," << STj[i]+1 << "] = " << STval[i] << std::endl;
 */
 
     // *************************** make S symmetric and apply the connection strength parameter ****************************
@@ -441,7 +530,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
 //    if(rank==1)
 //        for(i=0; i<Si2.size(); i++){
-//            cout << "S:  " << "[" << (Si2[i] - A->split[rank]) << "," << Sj2[i] << "] = \t" << Sval2[i] << endl;
+//            std::cout << "S:  " << "[" << (Si2[i] - A->split[rank]) << "," << Sj2[i] << "] = \t" << Sval2[i] << std::endl;
 //        }
 
     // S indices are local on each process, which means it starts from 0 on each process.
@@ -485,10 +574,29 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //    randomVector3(initialWeight, S->Mbig, S, comm);
 //    randomVector4(initialWeight, S->Mbig);
 
-//    if(rank==1){
-//        cout << endl << "after initialization!" << endl;
-//        for (i = 0; i < size; ++i)
-//            cout << i << "\tinitialWeight = " << initialWeight[i] << endl;}
+/*
+    MPI_Barrier(comm);
+    if(rank==0){
+        std::cout << std::endl << "after initialization!" << std::endl;
+        for (i = 0; i < size; ++i)
+            std::cout << i << "\tinitialWeight = " << initialWeight[i] << std::endl;}
+    MPI_Barrier(comm);
+    if(rank==1){
+        std::cout << std::endl << "after initialization!" << std::endl;
+        for (i = 0; i < size; ++i)
+            std::cout << i << "\tinitialWeight = " << initialWeight[i] << std::endl;}
+    MPI_Barrier(comm);
+    if(rank==2){
+        std::cout << std::endl << "after initialization!" << std::endl;
+        for (i = 0; i < size; ++i)
+            std::cout << i << "\tinitialWeight = " << initialWeight[i] << std::endl;}
+    MPI_Barrier(comm);
+    if(rank==3){
+        std::cout << std::endl << "after initialization!" << std::endl;
+        for (i = 0; i < size; ++i)
+            std::cout << i << "\tinitialWeight = " << initialWeight[i] << std::endl;}
+    MPI_Barrier(comm);
+*/
 
     const int wOffset = 62;
     const unsigned long weightMax = (1UL<<wOffset) - 1;
@@ -519,26 +627,26 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
             weight[i] = ( 2UL<<wOffset | initialWeight[i] );
             root_distance[i] = 0;
             aggArray.push_back(aggregate[i]);
-//            if(rank==0) cout << "boundary: " << i+S->split[rank] << endl;
+//            if(rank==0) std::cout << "boundary: " << i+S->split[rank] << std::endl;
         }
         else{
             weight[i] = ( 1UL<<wOffset | initialWeight[i] ); // status of each node is initialized to 1 and its weight to initialWeight.
-//            if(rank==0) cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << endl;
+//            if(rank==0) std::cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << std::endl;
         }
     }
 
 //    if(rank==0){
-//        cout << "if(rank==0){" << endl;
+//        std::cout << "if(rank==0){" << std::endl;
 //        for(i=0; i<size; i++)
-//            cout << "V[" << i << "] = " << initialWeight[i] << ";" << endl;
-//        cout << "}" << endl;
+//            std::cout << "V[" << i << "] = " << initialWeight[i] << ";" << std::endl;
+//        std::cout << "}" << std::endl;
 //    }
 //    MPI_Barrier(comm);
 //    if(rank==1){
-//        cout << "if(rank==1){" << endl;
+//        std::cout << "if(rank==1){" << std::endl;
 //        for(i=0; i<size; i++)
-//            cout << "V[" << i << "] = " << initialWeight[i] << ";" << endl;
-//        cout << "}" << endl;
+//            std::cout << "V[" << i << "] = " << initialWeight[i] << ";" << std::endl;
+//        std::cout << "}" << std::endl;
 //    }
 //    MPI_Barrier(comm);
 
@@ -556,7 +664,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                 for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
                     col_index = S->col_local[S->indicesP_local[iter]] - S->split[rank];
                     if (weight[col_index] & ROOT) {
-//                        cout << "$$$$$$$$$$$$$$$$$$$$$$$$$" << i << "\t col_index = " << col_index << "\t weight[col_index] = " << (weight[col_index] & weightMax) << "\t aggregate = " << S->col_local[S->indicesP_local[iter]] << endl;
+//                        std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$" << i << "\t col_index = " << col_index << "\t weight[col_index] = " << (weight[col_index] & weightMax) << "\t aggregate = " << S->col_local[S->indicesP_local[iter]] << std::endl;
                         weight[i] = (0UL << wOffset | (weight[col_index] & weightMax));
                         aggregate[i] = S->col_local[S->indicesP_local[iter]];
                         root_distance[i] = 1;
@@ -572,7 +680,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         iter = 0;
         for (i = 0; i < size; ++i) {
             if(weight[i]&UNDECIDED) {
-//                if(i==25) cout << ">>>>>>>>>>>>>>>>>25 root ==================== " << root_distance[25] << "\taggregate = " << aggregate[25] << endl;
+//                if(i==25) std::cout << ">>>>>>>>>>>>>>>>>25 root ==================== " << root_distance[25] << "\taggregate = " << aggregate[25] << std::endl;
 //            if(weight[i]>>wOffset <= 1) {
                 root_distance[i] = 3; // initialization
                 dist1or2undecided[i] = false; // initialization
@@ -590,15 +698,15 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                         root_distance[i] = 1;
                         dist1or2undecided[i] = false;
 
-//                        if(rank==0) cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-1 local \t weight = " << weight[i] << endl;
+//                        if(rank==0) std::cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-1 local \t weight = " << weight[i] << std::endl;
 //                        break; todo: try to add this break. You can define nnzPerRowScan_local.
                     } else if( (weight[col_index] & UNDECIDED) && (initialWeight[col_index] >= weightTemp) ){
                         // if there is an UNDECIDED neighbor, and its weight is bigger than this node, this node should
                         // wait until the next round of the "while" loop to see if that neighbor becomes root or assigned.
-//                        if(rank==0) cout << i+S->split[rank] << "\t neighbor = " << S->col_local[S->indicesP_local[iter]] << endl;
+//                        if(rank==0) std::cout << i+S->split[rank] << "\t neighbor = " << S->col_local[S->indicesP_local[iter]] << std::endl;
 
                         if((initialWeight[col_index] > weightTemp) || ((initialWeight[col_index] == weightTemp) && (aggregate[col_index] > i+S->split[rank])) ){
-//                            if(rank==0 && i==10) cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << endl;
+//                            if(rank==0 && i==10) std::cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << std::endl;
                             weightTemp = (weight[col_index] & weightMax);
                             aggregateTemp = S->col_local[S->indicesP_local[iter]];
                             root_distance[i] = 1;
@@ -608,26 +716,26 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                 }
                 weight2[i]    = weightTemp;
                 aggregate2[i] = aggregateTemp;
-//                if(rank==1) cout << i+S->split[rank] << "," << aggregate2[i] << "\t\t";
+//                if(rank==1) std::cout << i+S->split[rank] << "," << aggregate2[i] << "\t\t";
             }else
                 iter += S->nnzPerRow_local[i];
         }
-//        if(rank==0) cout << "1>>>>>>>>>>>>>>>>>10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << endl;
+//        if(rank==0) std::cout << "1>>>>>>>>>>>>>>>>>10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << std::endl;
 
         // todo: for distance-1 it is probably safe to remove this for loop, and change weight2 to weight and aggregate2 to aggregate at the end of the previous for loop.
         for (i = 0; i < size; ++i) {
             if( (S->nnzPerRow_local[i]!=0) && (weight[i]&UNDECIDED) && (root_distance[i]==1)) {
                 weight[i] = (1UL << wOffset | weight2[i] & weightMax );
                 aggregate[i] = aggregate2[i];
-//                if(rank==0) cout << i+S->split[rank] << "\t" << aggregate[i] << "\t" << aggregate2[i] << endl;
+//                if(rank==0) std::cout << i+S->split[rank] << "\t" << aggregate[i] << "\t" << aggregate2[i] << std::endl;
             }
         }
-//        if(rank==0) cout << "2>>>>>>>>>>>>>>>>>10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << endl;
+//        if(rank==0) std::cout << "2>>>>>>>>>>>>>>>>>10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << std::endl;
 
         //    if(rank==0){
-        //        cout << endl << "after first max computation!" << endl;
+        //        std::cout << std::endl << "after first max computation!" << std::endl;
         //        for (i = 0; i < size; ++i)
-        //            cout << i << "\tweight = " << weight[i] << "\tindex = " << aggregate[i] << endl;
+        //            std::cout << i << "\tweight = " << weight[i] << "\tindex = " << aggregate[i] << std::endl;
         //    }
 
         // ******************************* exchange remote max values for the second round of max computation *******************************
@@ -643,21 +751,21 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //        if(rank==1)
 //            for (i = 0; i < S->col_remote_size; ++i)
 //                for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter){
-//                    cout << "row:" << S->row_remote[iter]+S->split[rank] << "\tneighbor(col) = " << S->col_remote2[iter]
+//                    std::cout << "row:" << S->row_remote[iter]+S->split[rank] << "\tneighbor(col) = " << S->col_remote2[iter]
 //                         << "\t weight of neighbor = "          << (S->vecValues[2*S->col_remote[iter]]&weightMax)
 //                         << "\t\t status of neighbor = "        << (S->vecValues[2*S->col_remote[iter]]>>wOffset)
 //                         << "\t root_distance of neighbor = " << (S->vecValues[2*S->col_remote[iter]+1]&weightMax)
 //                         << "\t status of agg = "               << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset)
-//                         << endl;
+//                         << std::endl;
 //                }
 
-//        if(rank==1) cout << endl << endl;
+//        if(rank==1) std::cout << std::endl << std::endl;
         for (i = 0; i < S->vIndexSize; i++){
 //            S->vSend[i] = weight[(S->vIndex[i])];
             S->vSend[2*i] = weight[S->vIndex[i]];
             aggStatusTemp = (unsigned long)root_distance[S->vIndex[i]]; // this is root_distance of the neighbor's aggregate.
             S->vSend[2*i+1] = ( (aggStatusTemp<<wOffset) | (aggregate[S->vIndex[i]]&weightMax) );
-//            if(rank==1) cout << "vsend: " << S->vIndex[i]+S->split[rank] << "\tw = " << (S->vSend[2*i]&weightMax) << "\tst = " << (S->vSend[2*i]>>wOffset) << "\tagg = " << (S->vSend[2*i+1]&weightMax) << "\t oneDis = " << (S->vSend[2*i+1]>>wOffset) << endl;
+//            if(rank==1) std::cout << "vsend: " << S->vIndex[i]+S->split[rank] << "\tw = " << (S->vSend[2*i]&weightMax) << "\tst = " << (S->vSend[2*i]>>wOffset) << "\tagg = " << (S->vSend[2*i+1]&weightMax) << "\t oneDis = " << (S->vSend[2*i+1]>>wOffset) << std::endl;
         }
 
         for (i = 0; i < S->numRecvProc; i++)
@@ -679,7 +787,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         // local part - distance-2 aggregate
         iter = 0;
         for (i = 0; i < size; ++i) {
-//            if(i==34) cout << ">>>>>>>>>>>>>>>>>34 root ==================== " << root_distance[34] << "\taggregate = " << aggregate[34] << endl;
+//            if(i==34) std::cout << ">>>>>>>>>>>>>>>>>34 root ==================== " << root_distance[34] << "\taggregate = " << aggregate[34] << std::endl;
             if( (weight[i]&UNDECIDED) && root_distance[i]!=1) { // root_distance cannot be 2 or 0 here.
 //                oneDistanceRoot[i] = false;
                 aggregateTemp = aggregate[i];
@@ -691,7 +799,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                         if( ((weight[col_index]&weightMax) > (weightTemp&weightMax)) ||
                                 ( ((weight[col_index]&weightMax) == (weightTemp&weightMax)) && (aggregate[col_index] > i+S->split[rank]) ) ){
 
-//                            if(rank==1 && i==2) cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << endl;
+//                            if(rank==1 && i==2) std::cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << std::endl;
                             aggregateTemp = aggregate[col_index];
                             weightTemp    = weight[col_index];
                             root_distance[i] = 2;
@@ -709,7 +817,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
             }else
                 iter += S->nnzPerRow_local[i];
         }
-//        if(rank==1) cout << "3>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
+//        if(rank==1) std::cout << "3>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << std::endl;
 
         for (i = 0; i < size; ++i) {
             if( (S->nnzPerRow_local[i]!=0) && (weight[i]&UNDECIDED) && (root_distance[i]==2) ) {
@@ -717,16 +825,16 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                 aggStatusTemp = (weight[i]>>wOffset);
 //                if (aggregate[i] < S->split[rank] || aggregate[i] >= S->split[rank+1]) // this is distance-2 to a remote root.
 //                    aggStatusTemp = 0;
-//                cout << "before: " << (weight[i]>>wOffset) << ",after: " << aggStatusTemp << endl;
+//                std::cout << "before: " << (weight[i]>>wOffset) << ",after: " << aggStatusTemp << std::endl;
                 weight[i] = (aggStatusTemp<<wOffset | (weight2[i]&weightMax) );
             }
         }
-//        if(rank==1) cout << "4>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
+//        if(rank==1) std::cout << "4>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << std::endl;
 
 //        if(rank==1){
-//            cout << endl << "after second max computation!" << endl;
+//            std::cout << std::endl << "after second max computation!" << std::endl;
 //            for (i = 0; i < size; ++i)
-//                cout << i << "\tweight = " << weight[i] << "\tindex = " << aggregate[i] << "\taggStatus = " << aggStatus[i] << endl;
+//                std::cout << i << "\tweight = " << weight[i] << "\tindex = " << aggregate[i] << "\taggStatus = " << aggStatus[i] << std::endl;
 //        }
 
         MPI_Waitall(S->numSendProc + S->numRecvProc, requests, statuses);
@@ -739,12 +847,12 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //        if(rank==1)
 //            for (i = 0; i < S->col_remote_size; ++i)
 //                for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter){
-//                    cout << "row:" << S->row_remote[iter]+S->split[rank] << "\tneighbor(col) = " << S->col_remote2[iter]
+//                    std::cout << "row:" << S->row_remote[iter]+S->split[rank] << "\tneighbor(col) = " << S->col_remote2[iter]
 //                         << "\tweight of neighbor = "          << (S->vecValues[2*S->col_remote[iter]]&weightMax)
 //                         << "\t\tstatus of neighbor = "        << (S->vecValues[2*S->col_remote[iter]]>>wOffset)
 //                         << "\t root_distance of neighbor = "  << (S->vecValues[2*S->col_remote[iter]+1]&weightMax)
 //                         << "\tstatus of agg = "               << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset)
-//                         << endl;
+//                         << std::endl;
 //                }
 //        MPI_Barrier(comm);
 
@@ -767,7 +875,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                         aggregate[i_remote] = (agg_remote & weightMax);
                         root_distance[i_remote] = 1;
                         dist1or2undecided[i_remote] = false;
-//                        if(rank==0) cout << i+S->split[rank] << "\t assigned to = " << aggregate[i_remote] << " distance-1 remote \t weight = " << weight[i_remote] << endl;
+//                        if(rank==0) std::cout << i+S->split[rank] << "\t assigned to = " << aggregate[i_remote] << " distance-1 remote \t weight = " << weight[i_remote] << std::endl;
                     } else if (weight_remote & UNDECIDED) {
 
                         if (root_distance[i_remote] == 1)
@@ -778,13 +886,13 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 
                         if ( ( (weight_remote & weightMax) > weightTemp) ||
                                 ( ( (weight_remote & weightMax) == weightTemp) && ( ((agg_remote & weightMax) > i_remote+S->split[rank]) )) ) {
-//                            if(rank==1) cout << "first  before\t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
+//                            if(rank==1) std::cout << "first  before\t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << std::endl;
                             weight2[i_remote] = (weight_remote & weightMax);
                             aggregate2[i_remote] = (agg_remote & weightMax);
                             root_distance[i_remote] = 1;
                             dist1or2undecided[i_remote] = true;
 //                            aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]] >> wOffset);
-//                            if(rank==1) cout << "first  after \t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\t\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << endl;
+//                            if(rank==1) std::cout << "first  after \t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\t\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << std::endl;
                         }
                     }
 
@@ -829,7 +937,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                 }
             }
         }
-//        if(rank==1) cout << "5>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
+//        if(rank==1) std::cout << "5>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << std::endl;
 
         // put weight2 in weight and aggregate2 in aggregate.
         // if a row does not have a remote element then (weight2[i]&weightMax) == (weight[i]&weightMax)
@@ -842,31 +950,31 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //                    weight[i] = (0UL<<wOffset | weight2[i]&weightMax);
             }
         }
-//        if(rank==1) cout << "6>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
+//        if(rank==1) std::cout << "6>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << std::endl;
 
         // ******************************* Update Status *******************************
         // "for" loop is of size "number of rows". it checks if a node is UNDECIDED.
         // If aggregate of a node equals its index, that's a root.
 
-//        if(rank==0) cout << "******************** Update Status ********************" << endl;
+//        if(rank==0) std::cout << "******************** Update Status ********************" << std::endl;
         for (i = 0; i < size; ++i) {
             if(weight[i]&UNDECIDED) {
-//                if(rank==0) cout << "checking " << i << "\taggregate[i] = " << aggregate[i] << endl;
+//                if(rank==0) std::cout << "checking " << i << "\taggregate[i] = " << aggregate[i] << std::endl;
                 // local
                 if (aggregate[i] >= S->split[rank] && aggregate[i] < S->split[rank+1]) {
-//                    if(rank==1) cout << "i = " << i << "\taggregate[i] = " << aggregate[i] << "\taggStatus[aggregate[i]] = " << aggStatus[aggregate[i]] << endl;
-//                    if(rank==1) cout << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>wOffset) << endl;
+//                    if(rank==1) std::cout << "i = " << i << "\taggregate[i] = " << aggregate[i] << "\taggStatus[aggregate[i]] = " << aggStatus[aggregate[i]] << std::endl;
+//                    if(rank==1) std::cout << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>wOffset) << std::endl;
                     if (aggregate[i] == i + S->split[rank]) { // this node is a root.
                         weight[i] = ( (2UL<<wOffset) | (weight[i]&weightMax) ); // change aggStatus of a root to 2.
                         root_distance[i] = 0;
                         aggArray.push_back(aggregate[i]);
 //                        (*aggSize)++;
-//                        if(rank==0) cout << "root " << "i = " << i+S->split[rank] << "\t weight = " << (weight[i]&weightMax) << endl;
+//                        if(rank==0) std::cout << "root " << "i = " << i+S->split[rank] << "\t weight = " << (weight[i]&weightMax) << std::endl;
                     } else if ( (root_distance[i] == 1 && (weight[aggregate[i] - S->split[rank]]&ROOT) && (!dist1or2undecided[i])) ||
                                 (root_distance[i] == 2 && !dist1or2undecided[i]) ) {
-//                        if(rank==0) cout << "assign " << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>wOffset) << endl;
+//                        if(rank==0) std::cout << "assign " << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>wOffset) << std::endl;
                         weight[i] = ( (0UL<<wOffset) | (weight[i]&weightMax) );
-//                        if(rank==0) cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-1 or 2 local final step, root_distance = " << root_distance[i] << "\t weight = " << weight[i]  << endl;
+//                        if(rank==0) std::cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-1 or 2 local final step, root_distance = " << root_distance[i] << "\t weight = " << weight[i]  << std::endl;
 //                        if (root_distance[aggregate[i] - S->split[rank]] == 0) root_distance[i] = 1; // todo: this is WRONG!
                     }
 
@@ -876,24 +984,24 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //                        continue;
                     if(root_distance[i] == 2 && !dist1or2undecided[i]){
                         weight[i] = (0UL<<wOffset | weight[i]&weightMax);
-//                        if(rank==0) cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-2 remote final step" << endl;
+//                        if(rank==0) std::cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-2 remote final step" << std::endl;
                     }
 //                    if(aggStatus2[i] != 1) // if it is 1, it should go to the next aggregation round.
 //                        weight[i] = (0UL<<wOffset | weight2[i]&weightMax);
                 }
             }
         }
-//        if(rank==1) cout << "7>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << endl;
+//        if(rank==1) std::cout << "7>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << std::endl;
 
 //        for(int k=0; k<nprocs; k++){
 //            MPI_Barrier(comm);
 //            if(rank==k){
-//                cout << "final aggregate! rank:" << rank << ", iter = " << whileiter << endl;
+//                std::cout << "final aggregate! rank:" << rank << ", iter = " << whileiter << std::endl;
 //                for (i = 0; i < size; ++i){
-//                    cout << "i = " << i+S->split[rank] << "\t\taggregate = " << aggregate[i] << "\t\taggStatus = "
+//                    std::cout << "i = " << i+S->split[rank] << "\t\taggregate = " << aggregate[i] << "\t\taggStatus = "
 //                         << (weight[i]>>wOffset) << "\t\tinitial weight = " << initialWeight[i]
 //                         << "\t\tcurrent weight = " << (weight[i]&weightMax) << "\t\taggStat2 = " << aggStatus2[i]
-//                         << "\t\toneDistanceRoot = " << oneDistanceRoot[i] << endl;
+//                         << "\t\toneDistanceRoot = " << oneDistanceRoot[i] << std::endl;
 //                }
 //            }
 //            MPI_Barrier(comm);
@@ -915,10 +1023,10 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         // check if every processor does not have any non-assigned node, otherwise all the processors should continue aggregating.
         MPI_Allreduce(&continueAggLocal, &continueAgg, 1, MPI_CXX_BOOL, MPI_LOR, comm);
 //        MPI_Barrier(comm);
-//        cout << rank << "\tcontinueAgg = " << continueAgg << endl;
+//        std::cout << rank << "\tcontinueAgg = " << continueAgg << std::endl;
 //        MPI_Barrier(comm);
 
-//        MPI_Barrier(comm); if(rank==0) cout << "UNDECIDED: " << whileiter << endl; MPI_Barrier(comm);
+//        MPI_Barrier(comm); if(rank==0) std::cout << "UNDECIDED: " << whileiter << std::endl; MPI_Barrier(comm);
         if(continueAgg){
             for (i = 0; i < size; ++i) {
 //                aggStatus2[i] = 1;
@@ -933,11 +1041,11 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     } //while(continueAgg)
 
 //    MPI_Barrier(comm);
-//    if(rank==nprocs-1) cout << "number of loops to find aggregation: " << whileiter << endl;
+//    if(rank==nprocs-1) std::cout << "number of loops to find aggregation: " << whileiter << std::endl;
 //    MPI_Barrier(comm);
 
 //    for(i=0; i<size;i++)
-//        if(rank==0) cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << endl;
+//        if(rank==0) std::cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << std::endl;
 
     free(root_distance);
     free(dist1or2undecided);
@@ -945,14 +1053,14 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     // *************************** update aggregate to new indices ****************************
 
 //    if(rank==2)
-//        cout << endl << "S.M = " << S->M << ", S.nnz_l = " << S->nnz_l << ", S.nnz_l_local = " << S->nnz_l_local
-//             << ", S.nnz_l_remote = " << S->nnz_l_remote << endl << endl;
+//        std::cout << std::endl << "S.M = " << S->M << ", S.nnz_l = " << S->nnz_l << ", S.nnz_l_local = " << S->nnz_l_local
+//             << ", S.nnz_l_remote = " << S->nnz_l_remote << std::endl << std::endl;
 
 //    if(rank==1){
-//        cout << "aggregate:" << endl;
+//        std::cout << "aggregate:" << std::endl;
 //        for(i=0; i<size; i++)
-//            cout << i+S->split[rank] << "\t" << aggregate[i] << endl;
-//        cout << endl;}
+//            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
+//        std::cout << std::endl;}
 
     // write the aggregate values of all the nodes to a file:
     // use this command to concatenate the output files:
@@ -967,10 +1075,10 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     sort(aggArray.begin(), aggArray.end());
 
 //    if(rank==1){
-//        cout << "aggArray:" << aggArray.size() << endl;
+//        std::cout << "aggArray:" << aggArray.size() << std::endl;
 //        for(auto i:aggArray)
-//            cout << i << endl;
-//        cout << endl;}
+//            std::cout << i << std::endl;
+//        std::cout << std::endl;}
 
     // write the aggregate nodes to a file:
     // use this command to concatenate the output files:
@@ -999,10 +1107,10 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     free(splitNewTemp);
 
 //    if(rank==0){
-//        cout << "splitNew:" << endl;
+//        std::cout << "splitNew:" << std::endl;
 //        for(i=0; i<nprocs+1; i++)
-//            cout << S->split[i] << "\t" << splitNew[i] << endl;
-//        cout << endl;}
+//            std::cout << S->split[i] << "\t" << splitNew[i] << std::endl;
+//        std::cout << std::endl;}
 
     unsigned long procNum;
     std::vector<unsigned long> aggregateRemote;
@@ -1010,13 +1118,13 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
 
-//    if(rank==1) cout << endl;
+//    if(rank==1) std::cout << std::endl;
     bool* isAggRemote = (bool*)malloc(sizeof(bool)*size);
     // local: aggregate update to new values.
     for(i=0; i<size; i++){
         if(aggregate[i] >= S->split[rank] && aggregate[i] < S->split[rank+1]){
             aggregate[i] = lower_bound2(&*aggArray.begin(), &*aggArray.end(), aggregate[i]) + splitNew[rank];
-//            if(rank==1) cout << aggregate[i] << endl;
+//            if(rank==1) std::cout << aggregate[i] << std::endl;
             isAggRemote[i] = false;
         }else{
             isAggRemote[i] = true;
@@ -1025,30 +1133,30 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     }
 
 //    set<unsigned long> aggregateRemote2(aggregateRemote.begin(), aggregateRemote.end());
-//    if(rank==1) cout << "i and procNum:" << endl;
+//    if(rank==1) std::cout << "i and procNum:" << std::endl;
 //    for(auto i:aggregateRemote2){
 //        procNum = lower_bound2(&S->split[0], &S->split[nprocs+1], i);
-//        if(rank==1) cout << i << "\t" << procNum << endl;
+//        if(rank==1) std::cout << i << "\t" << procNum << std::endl;
 //        recvCount[procNum]++;
 //    }
 
     sort(aggregateRemote.begin(), aggregateRemote.end());
     auto last = unique(aggregateRemote.begin(), aggregateRemote.end());
     aggregateRemote.erase(last, aggregateRemote.end());
-//    if(rank==1) cout << "i and procNum:" << endl;
+//    if(rank==1) std::cout << "i and procNum:" << std::endl;
     for(auto i:aggregateRemote){
         procNum = lower_bound2(&S->split[0], &S->split[nprocs], i);
         recvCount[procNum]++;
-//        if(rank==1) cout << i << "\t" << procNum << endl;
+//        if(rank==1) std::cout << i << "\t" << procNum << std::endl;
     }
 
     int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
     MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
 
 //    if(rank==0){
-//        cout << "vIndexCount:\t" << rank << endl;
+//        std::cout << "vIndexCount:\t" << rank << std::endl;
 //        for(i=0; i<nprocs; i++)
-//            cout << vIndexCount[i] << endl;
+//            std::cout << vIndexCount[i] << std::endl;
 //    }
 
     // this part is for isend and ireceive.
@@ -1092,10 +1200,10 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     unsigned long* aggSend = (unsigned long*)malloc(sizeof(unsigned long*) * vIndexSize);
     unsigned long* aggRecv = (unsigned long*)malloc(sizeof(unsigned long*) * recvSize);
 
-//    if(rank==0) cout << endl << "vSend:\trank:" << rank << endl;
+//    if(rank==0) std::cout << std::endl << "vSend:\trank:" << rank << std::endl;
     for(long i=0;i<vIndexSize;i++){
         aggSend[i] = aggregate[( vIndex[i]-S->split[rank] )];
-//        if(rank==0) cout << "vIndex = " << vIndex[i] << "\taggSend = " << aggSend[i] << endl;
+//        if(rank==0) std::cout << "vIndex = " << vIndex[i] << "\taggSend = " << aggSend[i] << std::endl;
     }
 
     // replace this alltoallv with isend and irecv.
@@ -1113,33 +1221,33 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 
     MPI_Waitall(numSendProc+numRecvProc, requests2, statuses2);
 
-//    if(rank==1) cout << "aggRemote received:" << endl;
+//    if(rank==1) std::cout << "aggRemote received:" << std::endl;
 //    set<unsigned long>::iterator it;
 //    for(i=0; i<size; i++){
 //        if(isAggRemote[i]){
 //            it = aggregateRemote2.find(aggregate[i]);
-//            if(rank==1) cout << aggRecv[ distance(aggregateRemote2.begin(), it) ] << endl;
+//            if(rank==1) std::cout << aggRecv[ distance(aggregateRemote2.begin(), it) ] << std::endl;
 //            aggregate[i] = aggRecv[ distance(aggregateRemote2.begin(), it) ];
 //        }
 //    }
-//    if(rank==1) cout << endl;
+//    if(rank==1) std::cout << std::endl;
 
-//    if(rank==1) cout << "aggRemote received:" << endl;
+//    if(rank==1) std::cout << "aggRemote received:" << std::endl;
     // remote
     for(i=0; i<size; i++){
         if(isAggRemote[i]){
             aggregate[i] = aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ];
-//            if(rank==1) cout << i << "\t" << aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ] << endl;
+//            if(rank==1) std::cout << i << "\t" << aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ] << std::endl;
         }
     }
-//    if(rank==1) cout << endl;
+//    if(rank==1) std::cout << std::endl;
 
 //    set<unsigned long> aggArray2(&aggregate[0], &aggregate[size]);
 //    if(rank==1){
-//        cout << "aggArray2:" << endl;
+//        std::cout << "aggArray2:" << std::endl;
 //        for(auto i:aggArray2)
-//            cout << i << endl;
-//        cout << endl;
+//            std::cout << i << std::endl;
+//        std::cout << std::endl;
 //    }
     // update aggregate to new indices
 //    set<unsigned long>::iterator it;
@@ -1258,7 +1366,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     // todo: the same question for vecValues and Isend and Ireceive.
     for(i=0; i<A->vIndexSize; i++){
         A->vSendULong[i] = aggregate[( A->vIndex[i] )];
-//        if(rank==1) cout <<  A->vIndex[i] << "\t" << A->vSend[i] << endl;
+//        if(rank==1) std::cout <<  A->vIndex[i] << "\t" << A->vSend[i] << std::endl;
     }
 
     MPI_Request* requests = new MPI_Request[A->numSendProc+A->numRecvProc];
@@ -1287,7 +1395,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
                                               aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
                                               -omega * A->values_local[A->indicesP_local[iter]] * A->invDiag[A->row_local[A->indicesP_local[iter]]]));
             }
-//            if(rank==1) cout << A->row_local[A->indicesP_local[iter]] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->invDiag[A->row_local[A->indicesP_local[iter]]] << endl;
+//            if(rank==1) std::cout << A->row_local[A->indicesP_local[iter]] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->invDiag[A->row_local[A->indicesP_local[iter]]] << std::endl;
         }
     }
 
@@ -1301,7 +1409,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
                                           A->vecValuesULong[A->col_remote[iter]],
                                           -omega * A->values_remote[iter] * A->invDiag[A->row_remote[iter]]));
 //            P->values.push_back(A->values_remote[iter]);
-//            if(rank==1) cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t" << A->values_remote[iter] * A->invDiag[A->row_remote[iter]] << endl;
+//            if(rank==1) std::cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t" << A->values_remote[iter] * A->invDiag[A->row_remote[iter]] << std::endl;
         }
     }
 
@@ -1309,7 +1417,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
 
 //    if(rank==1)
 //        for(i=0; i<PEntryTemp.size(); i++)
-//            cout << PEntryTemp[i].row << "\t" << PEntryTemp[i].col << "\t" << PEntryTemp[i].val << endl;
+//            std::cout << PEntryTemp[i].row << "\t" << PEntryTemp[i].col << "\t" << PEntryTemp[i].val << std::endl;
 
     // remove duplicates.
     for(i=0; i<PEntryTemp.size(); i++){
@@ -1322,7 +1430,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
 
 //    if(rank==1)
 //        for(i=0; i<P->entry.size(); i++)
-//            cout << P->entry[i].row << "\t" << P->entry[i].col << "\t" << P->entry[i].val << endl;
+//            std::cout << P->entry[i].row << "\t" << P->entry[i].col << "\t" << P->entry[i].val << std::endl;
 
     PEntryTemp.clear();
 
@@ -1365,7 +1473,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 
 //    if(rank==0)
 //        for(i=0; i<A->M; i++)
-//            cout << i << "\t" << AnnzPerRow[i] << endl;
+//            std::cout << i << "\t" << AnnzPerRow[i] << std::endl;
 
     unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(AMaxM+1));
     AnnzPerRowScan[0] = 0;
@@ -1383,8 +1491,8 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 
     for(i=0; i<R->nnz_l_local; i++){
         for(j = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]]; j < AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1]; j++){
-//            if(rank==0) cout << A->entry[indicesP[j]].row << "\t" << A->entry[indicesP[j]].col << "\t" << A->entry[indicesP[j]].val
-//                             << "\t" << R->entry_local[i].col << "\t" << R->entry_local[i].col - P->split[rank] << endl;
+//            if(rank==0) std::cout << A->entry[indicesP[j]].row << "\t" << A->entry[indicesP[j]].col << "\t" << A->entry[indicesP[j]].val
+//                             << "\t" << R->entry_local[i].col << "\t" << R->entry_local[i].col - P->split[rank] << std::endl;
             RATemp.entry.push_back(cooEntry(R->entry_local[i].row,
                                         A->entry[indicesP[j]].col,
                                         R->entry_local[i].val * A->entry[indicesP[j]].val));
@@ -1393,7 +1501,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 
 //    if(rank==1)
 //        for(i=0; i<RATemp.entry.size(); i++)
-//            cout << RATemp.entry[i].row << "\t" << RATemp.entry[i].col << "\t" << RATemp.entry[i].val << endl;
+//            std::cout << RATemp.entry[i].row << "\t" << RATemp.entry[i].col << "\t" << RATemp.entry[i].val << std::endl;
 
     free(indicesP);
 
@@ -1403,14 +1511,12 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     unsigned int* RBlockStart = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
     std::fill(RBlockStart, &RBlockStart[nprocs], 0);
 
-
 //    MPI_Barrier(comm); printf("rank=%d here!!!!!!!! \n", rank); MPI_Barrier(comm);
 //    MPI_Barrier(comm); printf("rank=%d entry = %ld \n", rank, R->entry_remote[0].col); MPI_Barrier(comm);
     long procNum = -1;
     if(R->entry_remote.size() > 0)
         procNum = lower_bound2(&*A->split.begin(), &*A->split.end(), R->entry_remote[0].col);
 //    MPI_Barrier(comm); printf("rank=%d procNum = %ld \n", rank, procNum); MPI_Barrier(comm);
-
 
     unsigned int nnzIter = 1;
     for(i=1; i<R->entry_remote.size(); i++){
@@ -1419,15 +1525,15 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
             RBlockStart[procNum+1] = nnzIter-1;
             procNum = lower_bound2(&*A->split.begin(), &*A->split.end(), R->entry_remote[i].col);
         }
-//        if(rank==2) cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << endl;
+//        if(rank==2) std::cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << std::endl;
     }
     RBlockStart[rank+1] = RBlockStart[rank]; // there is not any nonzero of R_remote on the local processor.
     std::fill(&RBlockStart[procNum+1], &RBlockStart[nprocs+1], nnzIter);
 
 //    if(rank==1){
-//        cout << "RBlockStart: " << endl;
+//        std::cout << "RBlockStart: " << std::endl;
 //        for(i=0; i<nprocs+1; i++)
-//            cout << RBlockStart[i] << endl;}
+//            std::cout << RBlockStart[i] << std::endl;}
 
     unsigned long* indicesPRecv = (unsigned long*)malloc(sizeof(unsigned long)*AMaxNnz);
 
@@ -1454,7 +1560,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //                         int recvcount, MPI_Datatype recvtype, int source, int recvtag, MPI_Comm comm, MPI_Status *status)
 //        if(rank==1) printf("i=%d, rank=%d, left=%d, right=%d \n", i, rank, left, right);
 
-//        if(rank==2) cout << "own A->nnz_l = " << A->nnz_l << "\tnnzRecv = " << nnzRecv << endl;
+//        if(rank==2) std::cout << "own A->nnz_l = " << A->nnz_l << "\tnnzRecv = " << nnzRecv << std::endl;
 
         // *************************** RATemp - A remote - sendrecv(A) ****************************
 
@@ -1473,7 +1579,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 
 //    if(rank==2)
 //        for(i=0; i<A->M; i++)
-//            cout << AnnzPerRow[i] << endl;
+//            std::cout << AnnzPerRow[i] << std::endl;
 
         AnnzPerRowScan[0] = 0;
         for(j=0; j<ARecvM; j++){
@@ -1486,11 +1592,11 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
             indicesPRecv[i] = i;
         std::sort(indicesPRecv, &indicesPRecv[nnzRecv], sort_indices2(Arecv));
 
-//        if(rank==1) cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << endl;
+//        if(rank==1) std::cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << std::endl;
         for(j=RBlockStart[left]; j<RBlockStart[left+1]; j++){
-//            if(rank==1) cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << endl;
+//            if(rank==1) std::cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << std::endl;
             for(unsigned long k = AnnzPerRowScan[R->entry_remote[j].col - P->split[left]]; k < AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1]; k++){
-//                if(rank==0) cout << Arecv[indicesPRecv[k]].row << "\t" << Arecv[indicesPRecv[k]].col << "\t" << Arecv[indicesPRecv[k]].val << endl;
+//                if(rank==0) std::cout << Arecv[indicesPRecv[k]].row << "\t" << Arecv[indicesPRecv[k]].col << "\t" << Arecv[indicesPRecv[k]].val << std::endl;
                 RATemp.entry.push_back(cooEntry(R->entry_remote[j].row,
                                             Arecv[indicesPRecv[k]].col,
                                             R->entry_remote[j].val * Arecv[indicesPRecv[k]].val));
@@ -1511,29 +1617,29 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 
 //    if(rank==1)
 //        for(j=0; j<RATemp.entry.size(); j++)
-//            cout << RATemp.entry[j].row << "\t" << RATemp.entry[j].col << "\t" << RATemp.entry[j].val << endl;
+//            std::cout << RATemp.entry[j].row << "\t" << RATemp.entry[j].col << "\t" << RATemp.entry[j].val << std::endl;
 
     prolong_matrix RA(comm);
 
     // remove duplicates.
     for(i=0; i<RATemp.entry.size(); i++){
         RA.entry.push_back(RATemp.entry[i]);
-//        if(rank==1) cout << endl << "start:" << endl << RATemp.entry[i].val << endl;
+//        if(rank==1) std::cout << std::endl << "start:" << std::endl << RATemp.entry[i].val << std::endl;
         while(i<RATemp.entry.size()-1 && RATemp.entry[i] == RATemp.entry[i+1]){ // values of entries with the same row and col should be added.
             RA.entry.back().val += RATemp.entry[i+1].val;
             i++;
-//            if(rank==1) cout << RATemp.entry[i+1].val << endl;
+//            if(rank==1) std::cout << RATemp.entry[i+1].val << std::endl;
         }
-//        if(rank==1) cout << endl << "final: " << endl << RA.entry[RA.entry.size()-1].val << endl;
+//        if(rank==1) std::cout << std::endl << "final: " << std::endl << RA.entry[RA.entry.size()-1].val << std::endl;
         // todo: pruning. don't hard code tol. it makes the matrix non-symmetric.
 //        if( abs(RA.entry.back().val) < 1e-6)
 //            RA.entry.pop_back();
-//        if(rank==1) cout << "final: " << endl << RA.entry.back().val << endl;
+//        if(rank==1) std::cout << "final: " << std::endl << RA.entry.back().val << std::endl;
     }
 
 //    if(rank==1)
 //        for(j=0; j<RA.entry.size(); j++)
-//            cout << RA.entry[j].row << "\t" << RA.entry[j].col << "\t" << RA.entry[j].val << endl;
+//            std::cout << RA.entry[j].row << "\t" << RA.entry[j].col << "\t" << RA.entry[j].val << std::endl;
 
     // ************************************* RAPTemp - P local *************************************
     // Some local and remote elements of RAPTemp are computed here.
@@ -1552,7 +1658,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 
 //    if(rank==1)
 //        for(i=0; i<P->M; i++)
-//            cout << PnnzPerRow[i] << endl;
+//            std::cout << PnnzPerRow[i] << std::endl;
 
     unsigned int* PnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(PMaxNnz+1));
     PnnzPerRowScan[0] = 0;
@@ -1572,15 +1678,15 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
             RABlockStart[procNum+1] = nnzIter-1;
             procNum = lower_bound2(&P->split[0], &P->split[nprocs], RA.entry[i].col);
         }
-//        if(rank==2) cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << endl;
+//        if(rank==2) std::cout << "procNum = " << procNum << "\tcol = " << R->entry_remote[i].col << "\tnnzIter = " << nnzIter << std::endl;
     }
 //    RABlockStart[rank+1] = RABlockStart[rank]; // there is not any nonzero of R_remote on the local processor.
     std::fill(&RABlockStart[procNum+1], &RABlockStart[nprocs+1], nnzIter);
 
 //    if(rank==1){
-//        cout << "RABlockStart: " << endl;
+//        std::cout << "RABlockStart: " << std::endl;
 //        for(i=0; i<nprocs+1; i++)
-//            cout << RABlockStart[i] << endl;}
+//            std::cout << RABlockStart[i] << std::endl;}
 
     // todo: combine indicesP_Prolong and indicesP_ProlongRecv together.
     // find row-wise ordering for A and save it in indicesP
@@ -1589,18 +1695,23 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
         indicesP_Prolong[i] = i;
     std::sort(indicesP_Prolong, &indicesP_Prolong[P->nnz_l], sort_indices2(&*P->entry.begin()));
 
+//    MPI_Barrier(comm); std::cout << "here111111111111111!!!!!!!" << std::endl; MPI_Barrier(comm);
+
     for(i=RABlockStart[rank]; i<RABlockStart[rank+1]; i++){
         for(j = PnnzPerRowScan[RA.entry[i].col - P->split[rank]]; j < PnnzPerRowScan[RA.entry[i].col - P->split[rank] + 1]; j++){
-//            if(rank==0) cout << P->entry[indicesP[j]].row << "\t" << P->entry[indicesP[j]].col << "\t" << P->entry[indicesP[j]].val << endl;
-            RAPTemp.entry.push_back(cooEntry(RA.entry[i].row + P->splitNew[rank],  // Ac.entry should have global indices at the end.
+
+//            if(rank==3) std::cout << RA.entry[i].row + P->splitNew[rank] << "\t" << P->entry[indicesP_Prolong[j]].col << "\t" << RA.entry[i].val * P->entry[indicesP_Prolong[j]].val << std::endl;
+
+            RAPTemp.entry.emplace_back(cooEntry(RA.entry[i].row + P->splitNew[rank],  // Ac.entry should have global indices at the end.
                                              P->entry[indicesP_Prolong[j]].col,
                                              RA.entry[i].val * P->entry[indicesP_Prolong[j]].val));
         }
     }
+//    MPI_Barrier(comm); std::cout << "here22222222222222!!!!!!!" << std::endl; MPI_Barrier(comm);
 
 //    if(rank==1)
 //        for(i=0; i<RAPTemp.entry.size(); i++)
-//            cout << RAPTemp.entry[i].row << "\t" << RAPTemp.entry[i].col << "\t" << RAPTemp.entry[i].val << endl;
+//            std::cout << RAPTemp.entry[i].row << "\t" << RAPTemp.entry[i].col << "\t" << RAPTemp.entry[i].val << std::endl;
 
     free(indicesP_Prolong);
 
@@ -1624,7 +1735,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf,
 //                         int recvcount, MPI_Datatype recvtype, int source, int recvtag, MPI_Comm comm, MPI_Status *status)
 
-//        if(rank==2) cout << "own P->nnz_l = " << P->nnz_l << "\tnnzRecv = " << nnzRecv << endl;
+//        if(rank==2) std::cout << "own P->nnz_l = " << P->nnz_l << "\tnnzRecv = " << nnzRecv << std::endl;
 
         // *************************** RATemp - A remote - sendrecv(P) ****************************
 
@@ -1643,11 +1754,11 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
         for(j=0; j<nnzRecv; j++)
             PnnzPerRow[Precv[j].row]++;
 
-//        if(rank==1) cout << "PrecvM = " << PrecvM << endl;
+//        if(rank==1) std::cout << "PrecvM = " << PrecvM << std::endl;
 
 //        if(rank==1)
 //            for(j=0; j<PrecvM; j++)
-//                cout << PnnzPerRow[i] << endl;
+//                std::cout << PnnzPerRow[i] << std::endl;
 
         PnnzPerRowScan[0] = 0;
         for(j=0; j<PrecvM; j++){
@@ -1660,11 +1771,11 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
             indicesP_ProlongRecv[i] = i;
         std::sort(indicesP_ProlongRecv, &indicesP_ProlongRecv[nnzRecv], sort_indices2(Precv));
 
-//        if(rank==1) cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << endl;
+//        if(rank==1) std::cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << std::endl;
         for(j=RABlockStart[left]; j<RABlockStart[left+1]; j++){
-//            if(rank==1) cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << endl;
+//            if(rank==1) std::cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << std::endl;
             for(unsigned long k = PnnzPerRowScan[RA.entry[j].col - P->split[left]]; k < PnnzPerRowScan[RA.entry[j].col - P->split[left] + 1]; k++){
-//                if(rank==0) cout << Precv[indicesP_ProlongRecv[k]].row << "\t" << Precv[indicesP_ProlongRecv[k]].col << "\t" << Precv[indicesP_ProlongRecv[k]].val << endl;
+//                if(rank==0) std::cout << Precv[indicesP_ProlongRecv[k]].row << "\t" << Precv[indicesP_ProlongRecv[k]].col << "\t" << Precv[indicesP_ProlongRecv[k]].val << std::endl;
                 RAPTemp.entry.push_back(cooEntry(RA.entry[j].row + P->splitNew[rank], // Ac.entry should have global indices at the end.
                                                 Precv[indicesP_ProlongRecv[k]].col,
                                                 RA.entry[j].val * Precv[indicesP_ProlongRecv[k]].val));
@@ -1683,7 +1794,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 
 //    if(rank==1)
 //        for(j=0; j<RAPTemp.entry.size(); j++)
-//            cout << RAPTemp.entry[j].row << "\t" << RAPTemp.entry[j].col << "\t" << RAPTemp.entry[j].val << endl;
+//            std::cout << RAPTemp.entry[j].row << "\t" << RAPTemp.entry[j].col << "\t" << RAPTemp.entry[j].val << std::endl;
 
     // remove duplicates.
     for(i=0; i<RAPTemp.entry.size(); i++){
@@ -1699,7 +1810,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 
 //    if(rank==1)
 //        for(j=0; j<Ac->entry.size(); j++)
-//            cout << Ac->entry[j].row << "\t" << Ac->entry[j].col << "\t" << Ac->entry[j].val << endl;
+//            std::cout << Ac->entry[j].row << "\t" << Ac->entry[j].col << "\t" << Ac->entry[j].val << std::endl;
 
     Ac->nnz_l = Ac->entry.size();
     MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
@@ -1712,7 +1823,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //    MPI_Barrier(comm);
 //    if(rank==1)
 //        for(i=0; i<nprocs+1; i++)
-//            cout << Ac->split[i] << endl;
+//            std::cout << Ac->split[i] << std::endl;
 
     Ac->matrix_setup();
 
@@ -1739,14 +1850,14 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
         res[i] = -res[i];
 
 //    if(rank==1){
-//        cout << "\nsolveCoarsest: initial res" << endl;
+//        std::cout << "\nsolveCoarsest: initial res" << std::endl;
 //        for(auto i:res)
-//            cout << i << endl;}
+//            std::cout << i << std::endl;}
 
     double dot;
     dotProduct(res, res, &dot, comm);
     double initialNorm = sqrt(dot);
-//    if(rank==0) cout << "\nsolveCoarsest: initial norm(res) = " << initialNorm << endl;
+//    if(rank==0) std::cout << "\nsolveCoarsest: initial norm(res) = " << initialNorm << std::endl;
 
     if (dot < CG_tol*CG_tol)
         CG_max_iter = 0;
@@ -1758,57 +1869,57 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
     std::vector<double> matvecTemp(A->M);
     i = 0;
     while (i < CG_max_iter) {
-//        if(rank==0) cout << "starting iteration of CG = " << i << endl;
+//        if(rank==0) std::cout << "starting iteration of CG = " << i << std::endl;
         // factor = sq_norm/ (dir' * A * dir)
         A->matvec(&*dir.begin(), &*matvecTemp.begin());
 //        if(rank==1){
-//            cout << "\nsolveCoarsest: A*dir" << endl;
+//            std::cout << "\nsolveCoarsest: A*dir" << std::endl;
 //            for(auto i:matvecTemp)
-//                cout << i << endl;}
+//                std::cout << i << std::endl;}
 
 
         dotProduct(dir, matvecTemp, &factor, comm);
         factor = dot / factor;
-//        if(rank==1) cout << "\nsolveCoarsest: factor = " << factor << endl;
+//        if(rank==1) std::cout << "\nsolveCoarsest: factor = " << factor << std::endl;
 
         for(j = 0; j < A->M; j++)
             u[j] += factor * dir[j];
 //        if(rank==1){
-//            cout << "\nsolveCoarsest: u" << endl;
+//            std::cout << "\nsolveCoarsest: u" << std::endl;
 //            for(auto i:u)
-//                cout << i << endl;}
+//                std::cout << i << std::endl;}
 
         // update residual
         for(j = 0; j < A->M; j++)
             res[j] -= factor * matvecTemp[j];
 //        if(rank==1){
-//            cout << "\nsolveCoarsest: update res" << endl;
+//            std::cout << "\nsolveCoarsest: update res" << std::endl;
 //            for(auto i:res)
-//                cout << i << endl;}
+//                std::cout << i << std::endl;}
 
         dot_prev = dot;
 
         dotProduct(res, res, &dot, comm);
-//        if(rank==0) cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << endl;
-//        if(rank==0) cout << sqrt(dot)/initialNorm << endl;
+//        if(rank==0) std::cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << std::endl;
+//        if(rank==0) std::cout << sqrt(dot)/initialNorm << std::endl;
 
         if (dot < CG_tol*CG_tol)
             break;
 
         factor = dot / dot_prev;
-//        if(rank==1) cout << "\nsolveCoarsest: update factor = " << factor << endl;
+//        if(rank==1) std::cout << "\nsolveCoarsest: update factor = " << factor << std::endl;
 
         // update direction
         for(j = 0; j < A->M; j++)
             dir[j] = res[j] + factor * dir[j];
 //        if(rank==1){
-//            cout << "\nsolveCoarsest: update dir" << endl;
+//            std::cout << "\nsolveCoarsest: update dir" << std::endl;
 //            for(auto i:dir)
-//                cout << i << endl;}
+//                std::cout << i << std::endl;}
 
         i++;
     }
-//    if(rank==0) cout << endl;
+//    if(rank==0) std::cout << std::endl;
 
     return 0;
 }
@@ -1829,14 +1940,14 @@ int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vect
         normb_l += b[i] * b[i];
     MPI_Allreduce(&normb_l, &normb, 1, MPI_DOUBLE, MPI_SUM, comm);
     normb = sqrt(normb);
-//    if(rank==1) cout << normb << endl;
+//    if(rank==1) std::cout << normb << std::endl;
 
 //    Vector r = b - A*x;
     std::vector<double> matvecTemp(A->M);
     A->matvec(&*x.begin(), &*matvecTemp.begin(), comm);
 //    if(rank==1)
 //        for(i=0; i<matvecTemp.size(); i++)
-//            cout << matvecTemp[i] << endl;
+//            std::cout << matvecTemp[i] << std::endl;
 
     std::vector<double> r(A->M);
     for(i=0; i<matvecTemp.size(); i++)
@@ -1928,10 +2039,13 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
     MPI_Comm_rank(comm, &rank);
     long i;
 
+    double t1, t2;
+    t1 = MPI_Wtime();
+
 //    printf("rank = %d, current level = %d here!!!!!!!!!! \n", rank, grid->currentLevel);
 
-    if(grid->currentLevel == maxLevel){
-//        if(rank==0) cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << endl;
+    if(grid->currentLevel == max_level){
+//        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << std::endl;
         solve_coarsest(grid->A, u, rhs);
         return 0;
     }
@@ -1940,29 +2054,29 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
     std::vector<double> res(grid->A->M);
 //    residual(grid->A, u, rhs, res);
 //    dotProduct(res, res, &dot, comm);
-//    if(rank==0) cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << endl;
+//    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << std::endl;
 
     // **************************************** 1. pre-smooth ****************************************
 
     for(i=0; i<preSmooth; i++)
         grid->A->jacobi(u, rhs);
 
-//    if(rank==1) cout << "\n1. pre-smooth: u, currentLevel = " << grid->currentLevel << endl;
+//    if(rank==1) std::cout << "\n1. pre-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
 //        for(auto i:u)
-//            cout << i << endl;
+//            std::cout << i << std::endl;
 
     // **************************************** 2. compute residual ****************************************
 
     residual(grid->A, u, rhs, res);
 
-//    if(rank==1) cout << "\n2. compute residual: res, currentLevel = " << grid->currentLevel << endl;
+//    if(rank==1) std::cout << "\n2. compute residual: res, currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
 //        for(auto i:res)
-//            cout << i << endl;
+//            std::cout << i << std::endl;
 
 //    dotProduct(res, res, &dot, comm);
-//    if(rank==0) cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << endl;
+//    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << std::endl;
 
     // **************************************** 3. restrict ****************************************
 
@@ -1970,56 +2084,60 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
     grid->R.matvec(&*res.begin(), &*rCoarse.begin());
 
 //    if(rank==0){
-//        cout << "\n3. restriction: rCoarse = R*res, currentLevel = " << grid->currentLevel << endl;
+//        std::cout << "\n3. restriction: rCoarse = R*res, currentLevel = " << grid->currentLevel << std::endl;
 //        for(auto i:rCoarse)
-//            cout << i << endl;}
+//            std::cout << i << std::endl;}
 
     // **************************************** 4. recurse ****************************************
 
-//    if(rank==1) cout << "\n\n\nenter recursive vcycle = " << grid->currentLevel << endl;
+//    if(rank==1) std::cout << "\n\n\nenter recursive vcycle = " << grid->currentLevel << std::endl;
     std::vector<double> uCorrCoarse(grid->Ac.M);
     uCorrCoarse.assign(grid->Ac.M, 0);
     vcycle(grid->coarseGrid, uCorrCoarse, rCoarse, comm);
 
-//    if(rank==1) cout << "\n4. uCorrCoarse, currentLevel = " << grid->currentLevel << endl;
+//    if(rank==1) std::cout << "\n4. uCorrCoarse, currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
 //        for(auto i:uCorrCoarse)
-//            cout << i << endl;
+//            std::cout << i << std::endl;
 
     // **************************************** 5 & 6. prolong and correct ****************************************
 
     std::vector<double> uCorr(grid->A->M);
     grid->P.matvec(&*uCorrCoarse.begin(), &*uCorr.begin());
-//    if(rank==1) cout << "\n5. prolongation: uCorr = P*uCorrCoarse , currentLevel = " << grid->currentLevel << endl;
+//    if(rank==1) std::cout << "\n5. prolongation: uCorr = P*uCorrCoarse , currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
 //        for(i=0; i<u.size(); i++)
-//            cout << uCorr[i] << endl;
+//            std::cout << uCorr[i] << std::endl;
 
     for(i=0; i<u.size(); i++)
         u[i] -= uCorr[i];
 
-//    if(rank==1) cout << "\n6. correct: u -= uCorr, currentLevel = " << grid->currentLevel << endl;
+//    if(rank==1) std::cout << "\n6. correct: u -= uCorr, currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
 //        for(i=0; i<u.size(); i++)
-//            cout << u[i] << endl;
+//            std::cout << u[i] << std::endl;
 
 //    residual(grid->A, u, rhs, res);
 //    dotProduct(res, res, &dot, comm);
-//    if(rank==0) cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << endl;
+//    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << std::endl;
 
     // **************************************** 7. post-smooth ****************************************
 
     for(i=0; i<postSmooth; i++)
         grid->A->jacobi(u, rhs);
 
-//    if(rank==1) cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << endl;
+//    if(rank==1) std::cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
 //        for(auto i:u)
-//            cout << i << endl;
+//            std::cout << i << std::endl;
 
 //    residual(grid->A, u, rhs, res);
 //    dotProduct(res, res, &dot, comm);
-//    if(rank==0) cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << endl;
+//    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
+
+    t2 = MPI_Wtime();
+    std::string func_name = "Vcycle: level " + std::to_string(grid->currentLevel);
+    print_time(t1, t2, func_name, comm);
 
     return 0;
 }
@@ -2034,14 +2152,14 @@ int saena_object::solve(std::vector<double>& u, std::vector<double>& rhs){
 
 //    double temp;
 //    dot(rhs, rhs, &temp, comm);
-//    if(rank==1) cout << "norm(rhs) = " << sqrt(temp) << endl;
+//    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
     std::vector<double> r(grids[0].A->M);
     residual(grids[0].A, u, rhs, r);
     double initial_dot;
     dotProduct(r, r, &initial_dot, comm);
-//    if(rank==0) cout << "******************************************************" << endl;
-//    if(rank==0) cout << "\ninitial_norm = " << sqrt(initial_dot) << endl << endl;
+    if(rank==0) std::cout << "******************************************************" << std::endl;
+    if(rank==0) std::cout << "\ninitial residual = " << sqrt(initial_dot) << std::endl << std::endl;
 
     double dot = initial_dot;
     for(i=0; i<vcycle_num; i++){
@@ -2079,13 +2197,13 @@ int saena_object::residual(saena_matrix* A, std::vector<double>& u, std::vector<
     A->matvec(&*u.begin(), &*matvecTemp.begin());
 //    if(rank==1)
 //        for(long i=0; i<matvecTemp.size(); i++)
-//            cout << matvecTemp[i] << endl;
+//            std::cout << matvecTemp[i] << std::endl;
 
     for(long i=0; i<A->M; i++)
         res[i] = matvecTemp[i] - rhs[i];
 //    if(rank==1)
 //        for(long i=0; i<res.size(); i++)
-//            cout << res[i] << endl;
+//            std::cout << res[i] << std::endl;
 
     return 0;
 }
@@ -2113,7 +2231,7 @@ int saena_object::writeMatrixToFileA(saena_matrix* A, std::string name){
     if(rank==0)
         outFileTxt << A->Mbig << "\t" << A->Mbig << "\t" << A->nnz_g << std::endl;
     for (long i = 0; i < A->nnz_l; i++) {
-//        cout       << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << endl;
+//        std::cout       << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
         outFileTxt << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
     }
 
@@ -2150,21 +2268,21 @@ int saena_object::writeMatrixToFileA(saena_matrix* A, std::string name){
 
     int mpierror = MPI_File_open(comm, fileName.c_str(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
     if (mpierror) {
-        if (rank == 0) cout << "Unable to open the matrix file!" << endl;
+        if (rank == 0) std::cout << "Unable to open the matrix file!" << std::endl;
         MPI_Finalize();
     }
 
 //    std::vector<unsigned int> nnzScan(nprocs);
 //    mpierror = MPI_Allgather(&A->nnz_l, 1, MPI_UNSIGNED, &nnzScan[1], 1, MPI_UNSIGNED, comm);
 //    if (mpierror) {
-//        if (rank == 0) cout << "Unable to gather!" << endl;
+//        if (rank == 0) std::cout << "Unable to gather!" << std::endl;
 //        MPI_Finalize();
 //    }
 
 //    nnzScan[0] = 0;
 //    for(unsigned long i=0; i<nprocs; i++){
 //        nnzScan[i+1] = nnzScan[i] + nnzScan[i+1];
-//        if(rank==1) cout << nnzScan[i] << endl;
+//        if(rank==1) std::cout << nnzScan[i] << std::endl;
 //    }
 //    offset = nnzScan[rank];
 //    MPI_File_write_at_all(fh, rank, &nnzScan[rank])
@@ -2174,7 +2292,7 @@ int saena_object::writeMatrixToFileA(saena_matrix* A, std::string name){
 //    MPI_File_write_at_all(fh, offset, &A->entry[0], A->nnz_l, cooEntry::mpi_datatype(), &status);
 //    MPI_File_write_at_all(fh, &A->entry[0], A->nnz_l, cooEntry::mpi_datatype(), &status);
 //    if (mpierror) {
-//        if (rank == 0) cout << "Unable to write to the matrix file!" << endl;
+//        if (rank == 0) std::cout << "Unable to write to the matrix file!" << std::endl;
 //        MPI_Finalize();
 //    }
 
@@ -2208,7 +2326,7 @@ int saena_object::writeMatrixToFileP(prolong_matrix* P, std::string name) {
     if (rank == 0)
         outFileTxt << P->Mbig << "\t" << P->Mbig << "\t" << P->nnz_g << std::endl;
     for (long i = 0; i < P->nnz_l; i++) {
-//        cout       << P->entry[i].row + 1 + P->split[rank] << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << endl;
+//        std::cout       << P->entry[i].row + 1 + P->split[rank] << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << std::endl;
         outFileTxt << P->entry[i].row + 1 + P->split[rank] << "\t" << P->entry[i].col + 1 << "\t" << P->entry[i].val << std::endl;
     }
 
@@ -2239,7 +2357,7 @@ int saena_object::writeMatrixToFileR(restrict_matrix* R, std::string name) {
     if (rank == 0)
         outFileTxt << R->Mbig << "\t" << R->Mbig << "\t" << R->nnz_g << std::endl;
     for (long i = 0; i < R->nnz_l; i++) {
-//        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
+//        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
         outFileTxt << R->entry[i].row + 1 +  R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
     }
 
@@ -2270,7 +2388,7 @@ int saena_object::writeVectorToFiled(std::vector<double>& v, unsigned long vSize
     if (rank == 0)
         outFileTxt << vSize << std::endl;
     for (long i = 0; i < v.size(); i++) {
-//        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
+//        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
         outFileTxt << v[i] << std::endl;
     }
 
@@ -2300,7 +2418,7 @@ int saena_object::writeVectorToFileul(std::vector<unsigned long>& v, unsigned lo
     if (rank == 0)
         outFileTxt << vSize << std::endl;
     for (long i = 0; i < v.size(); i++) {
-//        cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << endl;
+//        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
         outFileTxt << v[i] << std::endl;
     }
 
@@ -2337,7 +2455,7 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<unsigned long>
     MPI_File_close(&fh);
 
 //    for(auto i:aggregate)
-//        cout << i << endl;
+//        std::cout << i << std::endl;
 
     MPI_Status status2;
     MPI_File fh2;
@@ -2358,7 +2476,7 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<unsigned long>
     MPI_File_close(&fh2);
 
 //    for(auto i:aggArray)
-//        cout << i << endl;
+//        std::cout << i << std::endl;
 
     unsigned long newSize = 0;
     for(auto i:aggArray)
@@ -2366,7 +2484,7 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<unsigned long>
             newSize++;
 
 //    if(rank==0)
-//        cout << "newSize = " << newSize << endl;
+//        std::cout << "newSize = " << newSize << std::endl;
 
     // set splitNew
     fill(splitNew.begin(), splitNew.end(), 0);
@@ -2381,7 +2499,7 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<unsigned long>
         splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
 
 //    for(i=0; i<nprocs+1; i++)
-//        cout << splitNew[i] << endl;
+//        std::cout << splitNew[i] << std::endl;
 
     free(splitNewTemp);
 

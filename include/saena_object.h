@@ -10,16 +10,17 @@
 
 class saena_object {
 public:
-    int maxLevel = 1; // fine grid is level 0.
-    int vcycle_num;
-    double relative_tolerance;
-    std::string smoother;
-    int preSmooth;
-    int postSmooth;
+    int max_level = 10; // fine grid is level 0.
+    unsigned int least_row_threshold = 10; // coarsening will stop if the number of rows on one processor goes below 10.
+    int vcycle_num = 10;
+    double relative_tolerance = 1e-10;
+    std::string smoother = "jacobi";
+    int preSmooth  = 3;
+    int postSmooth = 3;
     float connStrength = 0.5; // connection strength parameter
     bool doSparsify = false;
     std::vector<Grid> grids;
-    int CG_max_iter = 30;
+    int CG_max_iter = 40;
     double CG_tol = 1e-12;
 
     saena_object();

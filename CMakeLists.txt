@@ -19,6 +19,7 @@ include_directories(${MPI_INCLUDE_PATH})
 
 include_directories(
         include
+        include/usort
 )
 
 set(SOURCE_FILES
@@ -40,6 +41,20 @@ set(SOURCE_FILES
         include/saena.hpp
         src/saena.cpp
         src/pugixml.cpp
+
+        include/usort/binUtils.h
+        include/usort/dtypes.h
+        include/usort/indexHolder.h
+        include/usort/ompUtils.h
+        include/usort/ompUtils.tcc
+        include/usort/parUtils.h
+        include/usort/parUtils.tcc
+        include/usort/seqUtils.h
+        include/usort/seqUtils.tcc
+        include/usort/sort_profiler.h
+        src/usort/binUtils.cpp
+        src/usort/parUtils.cpp
+        src/usort/sort_profiler.cpp
         )
 
 add_executable(Saena ${SOURCE_FILES})

@@ -41,8 +41,9 @@ int main(int argc, char* argv[]){
 
     char* file_name(argv[1]);
 
+/*
     // todo: set nnz_g for every example.
-    unsigned int nnz_g = 393;
+    unsigned int nnz_g = 63;
     auto initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
     if (rank == nprocs - 1)
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
@@ -51,32 +52,24 @@ int main(int argc, char* argv[]){
     auto* J = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
     auto* V = (double*) malloc(sizeof(double) * initial_nnz_l);
     setIJV(file_name, I, J, V, nnz_g, initial_nnz_l, comm);
+*/
 
 //    if(rank==0)
 //        for(i=0; i<initial_nnz_l; i++)
 //            std::cout << I[i] << "\t" << J[i] << "\t" << V[i] << std::endl;
 
-
-    // timing the setup phase
+    // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
-//    saena::matrix A (file_name, comm);
-
-    saena::matrix A(comm);
-    A.set(I, J, V, initial_nnz_l);
+    saena::matrix A (file_name, comm);
+//    saena::matrix A(comm);
+//    A.set(I, J, V, initial_nnz_l);
     A.assemble();
 
     double t2 = MPI_Wtime();
-    double t_dif, average, min, max;
-    t_dif = t2 - t1;
-    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-    average /= nprocs;
-    if (rank==0)
-        cout << "\nSetup phase:\nmin: " << min << "\nave: " << average << "\nmax: " << max << endl << endl;
+    print_time(t1, t2, "Matrix Assemble:", comm);
 
-    free(I); free(J); free(V);
+//    free(I); free(J); free(V);
 
     unsigned int num_local_row = A.get_num_local_rows();
 
@@ -161,16 +154,19 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2;
-//    int vcycle_num            = 10;
-//    double relative_tolerance = 1e-8;
-//    std::string smoother      = "jacobi";
-//    int preSmooth             = 2;
-//    int postSmooth            = 2;
+    int vcycle_num            = 1;
+    double relative_tolerance = 1e-10;
+    std::string smoother      = "jacobi";
+    int preSmooth             = 2;
+    int postSmooth            = 2;
 
-//    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");
-    saena::options opts;
+//    saena::options opts;
     saena::amg solver(&A);
+
+    t2 = MPI_Wtime();
+    print_time(t1, t2, "Setup:", comm);
 
 //    MPI_Barrier(comm);
 //    for(int i=0; i<maxLevel; i++)
@@ -180,16 +176,12 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Solve ****************************
 
+    t1 = MPI_Wtime();
+
     solver.solve(u, rhs, &opts);
 
     t2 = MPI_Wtime();
-    t_dif = t2 - t1;
-    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-    average /= nprocs;
-    if (rank==0)
-        cout << "\nSolve phase:\nmin: " << min << "\nave: " << average << "\nmax: " << max << endl << endl;
+    print_time(t1, t2, "Solve:", comm);
 
     // *************************** Residual ****************************
 

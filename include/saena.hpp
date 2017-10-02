@@ -35,8 +35,8 @@ namespace saena {
 
     class options {
     private:
-        int vcycle_num            = 20;
-        double relative_tolerance = 1e-8;
+        int vcycle_num            = 50;
+        double relative_tolerance = 1e-10;
         std::string smoother      = "jacobi";
         int preSmooth             = 3;
         int postSmooth            = 3;

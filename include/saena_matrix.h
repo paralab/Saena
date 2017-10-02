@@ -20,13 +20,14 @@ private:
     unsigned int initial_nnz_l;
     bool freeBoolean = false; // use this parameter to know if deconstructor for SaenaMatrix class should free the variables or not.
     std::set<cooEntry> data_coo;
+    std::vector<cooEntry> data_unsorted;
     std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitioning.
 
 public:
     std::vector<cooEntry> entry;
 
-    unsigned int M;    // local number of rows
-    unsigned int Mbig; // global number of rows
+    unsigned int M = 0;    // local number of rows
+    unsigned int Mbig = 0; // global number of rows
     unsigned int nnz_g;
     unsigned int nnz_l;
     std::vector<unsigned long> split;
