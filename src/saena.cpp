@@ -209,9 +209,13 @@ int saena::options::get_postSmooth(){
 
 // ******************************* amg *******************************
 
-saena::amg::amg(saena::matrix* A){
+saena::amg::amg(){
     m_pImpl = new saena_object();
+}
+
+int saena::amg::set_matrix(saena::matrix* A){
     m_pImpl->setup(A->get_internal_matrix());
+    return 0;
 }
 
 void saena::amg::solve(std::vector<double>& u, std::vector<double>& rhs, saena::options* opts){

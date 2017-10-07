@@ -233,8 +233,9 @@ int main(int argc, char* argv[]){
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");
 //    saena::options opts;
-    saena::amg solver(&A);
+    saena::amg solver;
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
+    solver.set_matrix(&A);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);

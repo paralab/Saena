@@ -104,6 +104,7 @@ int saena_object::level_setup(Grid* grid){
     MPI_Comm_rank(comm, &rank);
 //    bool verbose = false;
 
+
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
     double t1 = MPI_Wtime();
