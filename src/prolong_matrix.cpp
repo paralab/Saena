@@ -3,9 +3,8 @@
 #include <algorithm>
 #include <iostream>
 #include "prolong_matrix.h"
-#include "aux_functions.h"
+//#include "aux_functions.h"
 
-using namespace std;
 
 prolong_matrix::prolong_matrix(){}
 
@@ -357,7 +356,7 @@ int prolong_matrix::matvec(double* v, double* w) {
 
 //    double t11 = MPI_Wtime();
     // local loop
-    fill(&w[0], &w[M], 0);
+    std::fill(&w[0], &w[M], 0);
 //#pragma omp parallel        todo: check this openmp part.
 //    {
 //        long iter = iter_local_array[omp_get_thread_num()];

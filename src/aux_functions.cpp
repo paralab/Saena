@@ -2,29 +2,9 @@
 #include <random>
 #include <aux_functions.h>
 #include "saena_matrix.h"
+#include "strength_matrix.h"
 
-using namespace std;
-
-// binary search tree using the lower bound
-template <class T>
-T lower_bound2(T *left, T *right, T val){
-    T* first = left;
-    while (left < right) {
-        T *middle = left + (right - left) / 2;
-        if (*middle < val){
-            left = middle + 1;
-        }
-        else{
-            right = middle;
-        }
-    }
-    if(val == *left){
-        return distance(first, left);
-    }
-    else
-        return distance(first, left-1);
-}
-
+class saena_matrix;
 
 int randomVector(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
 
@@ -227,7 +207,7 @@ void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsign
 
     int mpiopen = MPI_File_open(comm, file_name, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if (mpiopen) {
-        if (rank == 0) cout << "Unable to open the matrix file!" << endl;
+        if (rank == 0) std::cout << "Unable to open the matrix file!" << std::endl;
         MPI_Finalize();
     }
 

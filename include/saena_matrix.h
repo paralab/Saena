@@ -12,6 +12,12 @@
  * @breif Contains the basic structure to define coo matrices
  *
  * */
+
+//template <class T>
+//T lower_bound2(T *left, T *right, T val);
+
+//class cooEntry;
+
 class saena_matrix {
 // A matrix of this class is ordered first column-wise, then row-wise.
 

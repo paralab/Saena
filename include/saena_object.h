@@ -1,17 +1,19 @@
 #ifndef SAENA_SAENA_OBJECT_H
 #define SAENA_SAENA_OBJECT_H
 
-#include "saena_matrix.h"
-#include "strength_matrix.h"
-#include "prolong_matrix.h"
-#include "restrict_matrix.h"
-#include "aux_functions.h"
-#include "grid.h"
+class strength_matrix;
+class saena_matrix;
+class prolong_matrix;
+class restrict_matrix;
+class Grid;
 
 class saena_object {
 public:
-    int max_level = 10; // fine grid is level 0.
-    unsigned int least_row_threshold = 10; // coarsening will stop if the number of rows on one processor goes below 10.
+    int max_level = 14; // fine grid is level 0.
+    // coarsening will stop if the number of rows on one processor goes below 10.
+    unsigned int least_row_threshold = 10;
+    // coarsening will stop if the number of rows of last level divided by previous level is lower this value.
+    double row_reduction_threshold = 0.90;
     int vcycle_num = 10;
     double relative_tolerance = 1e-10;
     std::string smoother = "jacobi";
@@ -22,6 +24,7 @@ public:
     std::vector<Grid> grids;
     int CG_max_iter = 40;
     double CG_tol = 1e-12;
+    bool verbose = false;
 
     saena_object();
     ~saena_object();

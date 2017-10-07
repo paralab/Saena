@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 #include "mpi.h"
 
 #include "grid.h"
@@ -18,6 +19,9 @@ int main(int argc, char* argv[]){
 
     unsigned long i;
 //    int assert1, assert2, assert3;
+    bool verbose = false;
+
+    if(verbose) if(rank==0) std::cout << "number of processes = " << nprocs << std::endl;
 
     if(argc != 3)
     {
@@ -29,6 +33,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+
     // *************************** get number of rows ****************************
 
 //    char* Vname(argv[2]);
@@ -39,11 +44,27 @@ int main(int argc, char* argv[]){
 
     // *************************** initialize the matrix ****************************
 
+/*
     char* file_name(argv[1]);
 
+    // ******** 1- initialize the matrix: read from file *************
+
+    // timing the matrix setup phase
+    double t1 = MPI_Wtime();
+
+    saena::matrix A (file_name, comm);
+    A.assemble();
+
+    double t2 = MPI_Wtime();
+    if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
+
+    // ******** 2- initialize the matrix: use setIJV *************
+
 /*
+    char* file_name(argv[1]);
     // todo: set nnz_g for every example.
-    unsigned int nnz_g = 63;
+    unsigned int nnz_g = 393;
     auto initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
     if (rank == nprocs - 1)
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
@@ -52,29 +73,60 @@ int main(int argc, char* argv[]){
     auto* J = (unsigned int*) malloc(sizeof(unsigned int) * initial_nnz_l);
     auto* V = (double*) malloc(sizeof(double) * initial_nnz_l);
     setIJV(file_name, I, J, V, nnz_g, initial_nnz_l, comm);
-*/
-
-//    if(rank==0)
-//        for(i=0; i<initial_nnz_l; i++)
-//            std::cout << I[i] << "\t" << J[i] << "\t" << V[i] << std::endl;
 
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
-    saena::matrix A (file_name, comm);
-//    saena::matrix A(comm);
-//    A.set(I, J, V, initial_nnz_l);
+    saena::matrix A(comm);
+    A.set(I, J, V, initial_nnz_l);
     A.assemble();
 
     double t2 = MPI_Wtime();
-    print_time(t1, t2, "Matrix Assemble:", comm);
+    if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 
-//    free(I); free(J); free(V);
+    free(I); free(J); free(V);
+*/
+
+    // ******** 3- initialize the matrix: laplacian *************
+
+    // timing the matrix setup phase
+    double t1 = MPI_Wtime();
+
+    saena::matrix A(comm);
+    laplacian2D(&A, 32, comm); // second argument is dof on each processor
+//    laplacian3D(&A, 256, comm); // second argument is dof on each processor
+    A.assemble();
+
+    double t2 = MPI_Wtime();
+    if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+
+    // ******** write the matrix to file *************
+
+/*
+    saena_matrix* B = A.get_internal_matrix();
+    std::ofstream outfile;
+    std::string file_name = "laplacian";
+    file_name += "3D";
+    file_name += std::to_string(B->Mbig);
+    file_name += "_";
+    file_name += std::to_string(rank);
+    file_name += ".txt";
+    outfile.open(file_name);
+    if(rank==0)
+        outfile << B->Mbig << "\t" << B->Mbig << "\t" << B->nnz_g << std::endl;
+    for(unsigned int i = 0; i < B->nnz_l; i++)
+        outfile << B->entry[i].row+1 << "\t" << B->entry[i].col+1 << "\t" << B->entry[i].val << std::endl;
+    outfile.close();
+*/
+
+    // *************************** set rhs ****************************
 
     unsigned int num_local_row = A.get_num_local_rows();
+    std::vector<double> rhs(num_local_row);
 
-    // *************************** read the vector and set rhs ****************************
+    // ********** 1- set rhs: read from file **********
 
+/*
     MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
@@ -101,15 +153,26 @@ int main(int argc, char* argv[]){
     MPI_File_close(&fh);
 
     // set rhs
-    std::vector<double> rhs(num_local_row);
     A.get_internal_matrix()->matvec(&*v.begin(), &*rhs.begin());
-//    rhs.assign(num_local_row, 0);
-//    if(rank==0)
-//        for(i = 0; i < rhs.size(); i++)
-//            cout << rhs[i] << endl;
+*/
+
+    // ********** 2- set rhs: use the assign function **********
+
+//    rhs.assign(num_local_row, 1);
+
+    // ********** 3- set rhs: set one by one **********
+
+    for(i=0; i<num_local_row; i++)
+        rhs[i] = i + 1;
 
 //    for(i=0; i<num_local_row; i++)
 //        rhs[i] = i + 1 + A.split[rank];
+
+    // ********** print rhs **********
+
+//    if(rank==0)
+//        for(i = 0; i < rhs.size(); i++)
+//            cout << rhs[i] << endl;
 
     // *************************** set u0 ****************************
     // there are 3 options for u0:
@@ -118,12 +181,17 @@ int main(int argc, char* argv[]){
     // 3- flat from homg
 
     std::vector<double> u(num_local_row);
+
+    // ********* 1- set u0: use eigenvalues *********
+
     u.assign(num_local_row, 0); // initial guess = 0
+
+    // ********* 2- set u0: random *********
+
     //    randomVector2(u); // initial guess = random
     //    if(rank==1) cout << "\ninitial guess u" << endl;
-    //    if(rank==1)
-    //        for(auto i:u)
-    //            cout << i << endl;
+
+    // ********* 3- set u0: use eigenvalues *********
 
 /*
     // u0 is generated as flat from homg: u0 = eigenvalues*ones. check homg010_u0flat.m file
@@ -145,6 +213,8 @@ int main(int argc, char* argv[]){
     MPI_File_close(&fh3);
 */
 
+    // ********** print u **********
+
 //    if(rank==0)
 //        for(i = 0; i < u.size(); i++)
 //            cout << u[i] << endl;
@@ -153,9 +223,9 @@ int main(int argc, char* argv[]){
 
     t1 = MPI_Wtime();
 
-//    int max_level             = 2;
-    int vcycle_num            = 1;
-    double relative_tolerance = 1e-10;
+//    int max_level             = 2; // this one is moved to saena_object.
+    int vcycle_num            = 20;
+    double relative_tolerance = 1e-8;
     std::string smoother      = "jacobi";
     int preSmooth             = 2;
     int postSmooth            = 2;
@@ -164,9 +234,10 @@ int main(int argc, char* argv[]){
 //    saena::options opts((char*)"options001.xml");
 //    saena::options opts;
     saena::amg solver(&A);
+    solver.verbose = verbose; // set verbose at the beginning of the main function.
 
     t2 = MPI_Wtime();
-    print_time(t1, t2, "Setup:", comm);
+    if(solver.verbose) print_time(t1, t2, "Setup:", comm);
 
 //    MPI_Barrier(comm);
 //    for(int i=0; i<maxLevel; i++)
@@ -181,7 +252,11 @@ int main(int argc, char* argv[]){
     solver.solve(u, rhs, &opts);
 
     t2 = MPI_Wtime();
-    print_time(t1, t2, "Solve:", comm);
+    if(solver.verbose) print_time(t1, t2, "Solve:", comm);
+
+//    if(rank==0)
+//        for(i = 0; i < u.size(); i++)
+//            cout << u[i] << endl;
 
     // *************************** Residual ****************************
 

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <mpi.h>
+
 class saena_matrix;
 class saena_object;
 
@@ -71,7 +72,14 @@ namespace saena {
         void solve(std::vector<double>& u, std::vector<double>& rhs, saena::options* opts);
         void destroy();
 
+        bool verbose = false;
+        int set_verbose();
+
     protected:
         saena_object* m_pImpl;
     };
+
+    // second argument is dof on each processor
+    int laplacian2D(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
+    int laplacian3D(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
 }

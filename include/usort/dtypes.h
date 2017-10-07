@@ -3,7 +3,7 @@
 
 #include <mpi.h>
 #include <complex>
-//#include "aux_functions.h"
+#include "aux_functions.h"
 
 /** 
   @file	dtypes.h

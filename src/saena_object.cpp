@@ -10,6 +10,12 @@
 #include <mpi.h>
 
 #include "saena_object.h"
+#include "saena_matrix.h"
+#include "strength_matrix.h"
+#include "prolong_matrix.h"
+#include "restrict_matrix.h"
+#include "aux_functions.h"
+#include "grid.h"
 
 
 saena_object::saena_object(){
@@ -45,6 +51,9 @@ int saena_object::setup(saena_matrix* A) {
     unsigned int M_current;
     float row_reduction_local, row_reduction_min;
 
+    if(verbose) if(rank==0) std::cout << "_____________________________\n\n" << "size of matrix level 0: " << A->Mbig
+                          << "\nnnz level 0: " << A->nnz_g << std::endl;
+
     grids.resize(max_level+1);
     grids[0] = Grid(A, max_level, 0);
     grids[0].comm = comm;
@@ -54,8 +63,9 @@ int saena_object::setup(saena_matrix* A) {
         grids[i].coarseGrid = &grids[i+1];
         grids[i+1].comm = grids[i].Ac.comm;
 
-//        MPI_Barrier(comm); printf("in setup: rank = %d, P.M = %u, P.nnz = %lu\n", rank, grids[i].P.M, grids[i].P.nnz_l); MPI_Barrier(comm);
-//        MPI_Barrier(comm); printf("in setup: rank = %d, R.M = %u, R.nnz = %lu\n", rank, grids[i].R.M, grids[i].R.nnz_l); MPI_Barrier(comm);
+        if(verbose) if(rank==0) std::cout << "_____________________________\n\n" << "size of matrix level "
+                              << grids[i+1].currentLevel << ": " << grids[i+1].A->Mbig
+                              << "\nnnz level " << grids[i+1].currentLevel << ": " << grids[i+1].A->nnz_g << std::endl;
 
         //threshold to set maximum multigrid level
         MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[0].comm);
@@ -63,15 +73,21 @@ int saena_object::setup(saena_matrix* A) {
         MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[0].comm);
 
         // todo: talk to Hari about least_row_threshold and row_reduction.
-        if(M_current < least_row_threshold || row_reduction_min > 0.85){
+        if(M_current < least_row_threshold || row_reduction_min > row_reduction_threshold){
             if(row_reduction_min == 1){
                 max_level = grids[i].currentLevel;
-                grids.resize(max_level);
             } else{
                 max_level = grids[i].currentLevel+1;
-                grids.resize(max_level);
             }
-//            printf("\nset max level to %d\n", max_level);
+            grids.resize(max_level);
+
+//            if(rank==0){
+//                printf("\nset max level to %d\n", max_level);
+//                if(M_current < least_row_threshold)
+//                    printf("\nstop coarsening: M_current = %d, least_row_threshold = %d \n\n", M_current, least_row_threshold);
+//                if(row_reduction_min > row_reduction_threshold)
+//                    printf("\nstop coarsening: row_reduction_min = %f, row_reduction_threshold = %f \n\n", row_reduction_min, row_reduction_threshold);
+//            }
             break;
         }
     }
@@ -86,26 +102,14 @@ int saena_object::level_setup(Grid* grid){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
-//    std::cout << "here!!!!!!!!!!!!!!!! level = " << grid->currentLevel << std::endl;
-
-//    unsigned long i;
-    double t1, t2, t_dif;
-    double min, max, average;
+    bool verbose = false;
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
-    t1 = MPI_Wtime();
+    double t1 = MPI_Wtime();
     find_aggregation(grid->A, aggregate, grid->P.splitNew);
-    t2 = MPI_Wtime();
-
-    t_dif = t2 - t1;
-//    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-//    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-//    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-//    average /= nprocs;
-//    if (rank==0)
-//        std::cout << "\nAggregation:\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+    double t2 = MPI_Wtime();
+    if(verbose) print_time(t1, t2, "Aggregation: level "+std::to_string(grid->currentLevel), comm);
 
 //    if(rank==0)
 //        for(auto i:aggregate)
@@ -117,52 +121,17 @@ int saena_object::level_setup(Grid* grid){
     t1 = MPI_Wtime();
     create_prolongation(grid->A, aggregate, &grid->P);
     t2 = MPI_Wtime();
-
-    t_dif = t2 - t1;
-//    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-//    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-//    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-//    average /= nprocs;
-//    if (rank==0)
-//        std::cout << "\nProlongation:\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+    if(verbose) print_time(t1, t2, "Prolongation: level "+std::to_string(grid->currentLevel), comm);
 
     t1 = MPI_Wtime();
     grid->R.transposeP(&grid->P);
     t2 = MPI_Wtime();
-
-    t_dif = t2 - t1;
-//    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-//    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-//    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-//    average /= nprocs;
-//    if (rank==0)
-//        std::cout << "\nRestriction:\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+    if(verbose) print_time(t1, t2, "Restriction: level "+std::to_string(grid->currentLevel), comm);
 
     t1 = MPI_Wtime();
     coarsen(grid->A, &grid->P, &grid->R, &grid->Ac);
     t2 = MPI_Wtime();
-
-    t_dif = t2 - t1;
-//    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-//    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-//    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-//    average /= nprocs;
-//    if (rank==0)
-//        std::cout << "\nCoarsening:\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
-
-//    std::cout << "here!!!!!!!!!!!!!!!! level = " << grid->currentLevel << "\tM = " << grid->Ac.M << "\t max = " << grid->maxLevel << std::endl;
-
-/*
-    // ******************************** threshold to set maximum multigrid level ********************************
-
-    unsigned int M_current;
-    MPI_Allreduce(&grid->Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, comm);
-    if(M_current < least_row_threshold){
-        if(rank==0) std::cout << "set max level to " << grid->currentLevel+1 << std::endl;
-        max_level = grid->currentLevel + 1;
-        grids.resize(max_level+1);
-    }
-*/
+    if(verbose) print_time(t1, t2, "Coarsening: level "+std::to_string(grid->currentLevel), comm);
 
     return 0;
 }
@@ -2038,6 +2007,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     long i;
+    bool verbose = false;
 
     double t1, t2;
     t1 = MPI_Wtime();
@@ -2137,7 +2107,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
     t2 = MPI_Wtime();
     std::string func_name = "Vcycle: level " + std::to_string(grid->currentLevel);
-    print_time(t1, t2, func_name, comm);
+    if(verbose) print_time(t1, t2, func_name, comm);
 
     return 0;
 }
@@ -2178,7 +2148,7 @@ int saena_object::solve(std::vector<double>& u, std::vector<double>& rhs){
 
     if(rank==0){
         std::cout << "******************************************************" << std::endl;
-        printf("\nfinal:\niter = %ld, residual = %f \n\n", i, sqrt(dot));
+        printf("\nfinal:\niter = %ld, residual = %10f \n\n", i, sqrt(dot));
         std::cout << "******************************************************" << std::endl;
     }
 
