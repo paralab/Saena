@@ -232,8 +232,9 @@ void saena::amg::destroy(){
     // will add later.
 }
 
-int saena::amg::set_verbose() {
-    m_pImpl->verbose = verbose;
+int saena::amg::set_verbose(bool verb) {
+    m_pImpl->verbose = verb;
+    verbose = verb;
     return 0;
 }
 

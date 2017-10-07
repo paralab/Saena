@@ -73,7 +73,7 @@ namespace saena {
         void destroy();
 
         bool verbose = false;
-        int set_verbose();
+        int set_verbose(bool verb);
 
     protected:
         saena_object* m_pImpl;

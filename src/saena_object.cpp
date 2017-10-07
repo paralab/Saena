@@ -102,7 +102,7 @@ int saena_object::level_setup(Grid* grid){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-    bool verbose = false;
+//    bool verbose = false;
 
     // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
@@ -2007,16 +2007,20 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     long i;
-    bool verbose = false;
-
     double t1, t2;
-    t1 = MPI_Wtime();
+    std::string func_name;
 
 //    printf("rank = %d, current level = %d here!!!!!!!!!! \n", rank, grid->currentLevel);
 
     if(grid->currentLevel == max_level){
 //        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << std::endl;
+        t1 = MPI_Wtime();
+
         solve_coarsest(grid->A, u, rhs);
+
+        t2 = MPI_Wtime();
+        func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
+        if(verbose) print_time(t1, t2, func_name, comm);
         return 0;
     }
 
@@ -2028,8 +2032,14 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
     // **************************************** 1. pre-smooth ****************************************
 
+    t1 = MPI_Wtime();
+
     for(i=0; i<preSmooth; i++)
         grid->A->jacobi(u, rhs);
+
+    t2 = MPI_Wtime();
+    func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": pre";
+    if(verbose) print_time(t1, t2, func_name, comm);
 
 //    if(rank==1) std::cout << "\n1. pre-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
@@ -2050,8 +2060,14 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
     // **************************************** 3. restrict ****************************************
 
+    t1 = MPI_Wtime();
+
     std::vector<double> rCoarse(grid->Ac.M);
     grid->R.matvec(&*res.begin(), &*rCoarse.begin());
+
+    t2 = MPI_Wtime();
+    func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": restriction";
+    if(verbose) print_time(t1, t2, func_name, comm);
 
 //    if(rank==0){
 //        std::cout << "\n3. restriction: rCoarse = R*res, currentLevel = " << grid->currentLevel << std::endl;
@@ -2072,8 +2088,15 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
     // **************************************** 5 & 6. prolong and correct ****************************************
 
+    t1 = MPI_Wtime();
+
     std::vector<double> uCorr(grid->A->M);
     grid->P.matvec(&*uCorrCoarse.begin(), &*uCorr.begin());
+
+    t2 = MPI_Wtime();
+    func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": prolongation";
+    if(verbose) print_time(t1, t2, func_name, comm);
+
 //    if(rank==1) std::cout << "\n5. prolongation: uCorr = P*uCorrCoarse , currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
 //        for(i=0; i<u.size(); i++)
@@ -2093,8 +2116,14 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
     // **************************************** 7. post-smooth ****************************************
 
+    t1 = MPI_Wtime();
+
     for(i=0; i<postSmooth; i++)
         grid->A->jacobi(u, rhs);
+
+    t2 = MPI_Wtime();
+    func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": post";
+    if(verbose) print_time(t1, t2, func_name, comm);
 
 //    if(rank==1) std::cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
 //    if(rank==1)
@@ -2104,10 +2133,6 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //    residual(grid->A, u, rhs, res);
 //    dotProduct(res, res, &dot, comm);
 //    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
-
-    t2 = MPI_Wtime();
-    std::string func_name = "Vcycle: level " + std::to_string(grid->currentLevel);
-    if(verbose) print_time(t1, t2, func_name, comm);
 
     return 0;
 }

@@ -19,9 +19,9 @@ int main(int argc, char* argv[]){
 
     unsigned long i;
 //    int assert1, assert2, assert3;
-    bool verbose = false;
+    bool verbose = true;
 
-    if(verbose) if(rank==0) std::cout << "number of processes = " << nprocs << std::endl;
+    if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
     if(argc != 3)
     {
@@ -224,8 +224,8 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this one is moved to saena_object.
-    int vcycle_num            = 20;
-    double relative_tolerance = 1e-8;
+    int vcycle_num            = 1;
+    double relative_tolerance = 1e-10;
     std::string smoother      = "jacobi";
     int preSmooth             = 2;
     int postSmooth            = 2;
@@ -234,7 +234,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts((char*)"options001.xml");
 //    saena::options opts;
     saena::amg solver(&A);
-    solver.verbose = verbose; // set verbose at the beginning of the main function.
+    solver.set_verbose(verbose); // set verbose at the beginning of the main function.
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
