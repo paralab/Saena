@@ -44,7 +44,6 @@ int main(int argc, char* argv[]){
 
     // *************************** initialize the matrix ****************************
 
-/*
     char* file_name(argv[1]);
 
     // ******** 1- initialize the matrix: read from file *************
@@ -57,7 +56,6 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** 2- initialize the matrix: use setIJV *************
 
@@ -89,16 +87,18 @@ int main(int argc, char* argv[]){
 
     // ******** 3- initialize the matrix: laplacian *************
 
+/*
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
     saena::matrix A(comm);
-    laplacian2D(&A, 32, comm); // second argument is dof on each processor
+    laplacian2D(&A, 16, comm); // second argument is dof on each processor
 //    laplacian3D(&A, 256, comm); // second argument is dof on each processor
     A.assemble();
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
 
     // ******** write the matrix to file *************
 
@@ -223,7 +223,7 @@ int main(int argc, char* argv[]){
 
     t1 = MPI_Wtime();
 
-//    int max_level             = 2; // this one is moved to saena_object.
+//    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 1;
     double relative_tolerance = 1e-10;
     std::string smoother      = "jacobi";

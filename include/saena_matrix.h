@@ -91,6 +91,9 @@ public:
 
     MPI_Comm comm;
 
+    bool active = true;
+    float cpu_shrink_threshold = 0.5;
+
     saena_matrix();
 //    SaenaMatrix(MPI_Comm com);
     saena_matrix(MPI_Comm com);
