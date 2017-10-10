@@ -1,0 +1,74 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1.2in]{geometry}
+\usepackage[affil-it]{authblk} 
+
+\newcommand*{\TitleFont}{%
+      \usefont{\encodingdefault}{\rmdefault}{b}{n}%
+      \fontsize{12}{20}%
+      \selectfont}
+      
+\title{\TitleFont\textbf{IMPROVING THE PARALLEL SCALABILITY OF SMOOTHED AGGREGATION ALGEBRAIC MULTIGRID}}
+\author{Majid Rasouli, Hari Sundar}
+\affil{School of Computing, Univeristy of Utah}
+
+\begin{document}
+
+\maketitle
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT
+%----------------------------------------------------------------------------------------
+
+\begin{abstract}
+Algebraic multigrid (AMG) has been a popular method for solving linear systems of elliptic partial differential equations, especially for large sparse systems. This work introduces an algebraic multigrid solver, Saena, in which the sparsity of the matrix is being exploited in a new way to reduce the amount of communication required for sparse matrix-vector multiplication (SpMV) and sparse matrix-matrix multiplication.
+Furthermore, another reduction in communication has been applied during creating the aggregation in the coarsening procedure. Numerical comparisons of Saena with GAMG (PETSc) demonstrate the scalability and efficiency of this method.
+\end{abstract}
+
+\small{ {\bf Keywords:} Algebraic Multigrid, SpMV}
+
+%----------------------------------------------------------------------------------------
+%	INTRODUCTION
+%----------------------------------------------------------------------------------------
+
+\section{ \textbf{Introduction} }
+
+
+\vfill
+
+%----------------------------------------------------------------------------------------
+%	Algebraic Multigrid
+%----------------------------------------------------------------------------------------
+
+\section{ \textbf{Algebraic Multigrid} }
+
+
+\vfill
+
+%----------------------------------------------------------------------------------------
+%	Experiments and Results
+%----------------------------------------------------------------------------------------
+
+\section{ \textbf{Experiments and Results} }
+
+
+\vfill
+
+%----------------------------------------------------------------------------------------
+%	Future Work
+%----------------------------------------------------------------------------------------
+
+\section{ \textbf{Future Work} }
+
+
+\vfill
+
+%----------------------------------------------------------------------------------------
+%	REFERENCES
+%----------------------------------------------------------------------------------------
+
+\nocite{*} % Print all references regardless of whether they were cited in the poster or not
+\bibliographystyle{plain} % Plain referencing style
+\bibliography{ref} % Use the example bibliography file sample.bib
+
+\end{document}
