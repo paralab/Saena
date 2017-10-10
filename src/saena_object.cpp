@@ -1796,7 +1796,6 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        for(i=0; i<nprocs+1; i++)
 //            std::cout << Ac->split[i] << std::endl;
 
-
     // ********** check for cpu shrinking **********
     // if number of rows on Ac < threshold*number of rows on A, then shrink.
     // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
@@ -2111,7 +2110,7 @@ int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vect
 */
 
 
-int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm){
+int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rh, MPI_Comm comm){
 
     if(grid->A->active) {
         int nprocs, rank;
@@ -2127,7 +2126,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
             if(rank==0) std::cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << std::endl;
             t1 = MPI_Wtime();
 
-            solve_coarsest(grid->A, u, rhs);
+            solve_coarsest(grid->A, u, grid->rhs);
 
             t2 = MPI_Wtime();
             func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
@@ -2146,7 +2145,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         t1 = MPI_Wtime();
 
         for (i = 0; i < preSmooth; i++)
-            grid->A->jacobi(u, rhs);
+            grid->A->jacobi(u, grid->rhs);
 
         t2 = MPI_Wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": pre";
@@ -2159,7 +2158,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
         // **************************************** 2. compute residual ****************************************
 
-        residual(grid->A, u, rhs, res);
+        residual(grid->A, u, grid->rhs, res);
 
         //    if(rank==1) std::cout << "\n2. compute residual: res, currentLevel = " << grid->currentLevel << std::endl;
         //    if(rank==1)
@@ -2230,7 +2229,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         t1 = MPI_Wtime();
 
         for (i = 0; i < postSmooth; i++)
-            grid->A->jacobi(u, rhs);
+            grid->A->jacobi(u, grid->rhs);
 
         t2 = MPI_Wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": post";
@@ -2250,7 +2249,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 }
 
 
-int saena_object::solve(std::vector<double>& u, std::vector<double>& rhs){
+int saena_object::solve(std::vector<double>& u){
     MPI_Comm comm = grids[0].comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -2262,7 +2261,7 @@ int saena_object::solve(std::vector<double>& u, std::vector<double>& rhs){
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
     std::vector<double> r(grids[0].A->M);
-    residual(grids[0].A, u, rhs, r);
+    residual(grids[0].A, u, grids[0].rhs, r);
     double initial_dot;
     dotProduct(r, r, &initial_dot, comm);
     if(rank==0) std::cout << "******************************************************" << std::endl;
@@ -2270,8 +2269,8 @@ int saena_object::solve(std::vector<double>& u, std::vector<double>& rhs){
 
     double dot = initial_dot;
     for(i=0; i<vcycle_num; i++){
-        vcycle(&grids[0], u, rhs, comm);
-        residual(grids[0].A, u, rhs, r);
+        vcycle(&grids[0], u, grids[0].rhs, comm);
+        residual(grids[0].A, u, grids[0].rhs, r);
         dotProduct(r, r, &dot, comm);
 //        if(rank==0) printf("vcycle iteration = %ld, residual = %f \n\n", i, sqrt(dot));
         if(dot/initial_dot < relative_tolerance)
@@ -2609,6 +2608,85 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<unsigned long>
 //        std::cout << splitNew[i] << std::endl;
 
     free(splitNewTemp);
+
+    return 0;
+}
+
+
+int saena_object::set_rhs(std::vector<double> rhs0){
+    int rank;
+    MPI_Comm_rank(grids[0].comm, &rank);
+    unsigned int i;
+    unsigned int rhs_size_temp;
+    unsigned int rhs_recv_size = 0;
+    std::vector<double> rhs_recv;
+    int neigbor_rank = 0;
+
+    // todo: read about "move semantics" to change this part.
+    // todo: or pass by reference, instead of passing by value.
+    // todo: check if this "move" is ok.
+
+    grids[0].rhs = std::move(rhs0);
+    if(max_level == 0)
+        return 0;
+
+    for(i = 1; i <= max_level; i++){
+        if(grids[i].comm != grids[i-1].comm){
+
+            // 1 - create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
+            MPI_Comm_rank(grids[i-1].comm, &rank);
+            int color = rank / 4;
+            MPI_Comm comm4k;
+            MPI_Comm_split(grids[i-1].comm, color, rank, &comm4k);
+
+            int rank4k, nprocs4k;
+            MPI_Comm_size(comm4k, &nprocs4k);
+            MPI_Comm_rank(comm4k, &rank4k);
+
+            if(rank4k == 0)
+                grids[i].rhs = grids[i-1].rhs;
+
+            for(neigbor_rank = 1; neigbor_rank < 4; neigbor_rank++){
+
+                // 3 - send and receive size of rhs, then resize rhs_recv.
+                if(rank4k == 0)
+                    MPI_Recv(&rhs_recv_size, 1, MPI_UNSIGNED, neigbor_rank, 0, comm4k, MPI_STATUS_IGNORE);
+
+                if(rank4k != 0){
+                    rhs_size_temp = grids[i-1].rhs.size();
+                    MPI_Send(&rhs_size_temp , 1, MPI_UNSIGNED, 0, 0, comm4k);
+                }
+
+                if(rank4k == 0)
+                    rhs_recv.resize(rhs_recv_size);
+
+                // 4 - send and receive rhs. then, push back to rhs on 4k.
+                if(rank4k == 0)
+                    MPI_Recv(&*rhs_recv.begin(), rhs_recv_size, MPI_DOUBLE, neigbor_rank, 0, comm4k, MPI_STATUS_IGNORE);
+
+                if(rank4k == neigbor_rank)
+                    MPI_Send(&*grids[i-1].rhs.begin(), grids[i-1].rhs.size(), MPI_DOUBLE, 0, 0, comm4k);
+
+                if(rank4k == 0) {
+                    for (i = 0; i < rhs_recv_size; i++)
+                        grids[i].rhs.push_back(rhs_recv[i]);
+                }
+            }
+        }else{
+            // todo: instead of copying, try to point to the previous level's rhs.
+            grids[i].rhs = grids[i-1].rhs;
+        }
+    }
+
+    if(rank==0){
+        for(i=0; i<=max_level; i++){
+            if(grids[i].A->active){
+                printf("rhs: level %d, size = %lu\n", i, grids[i].rhs.size());
+                for(unsigned int j=0; j<grids[i].rhs.size(); j++)
+                    std::cout << grids[i].rhs[j] << std::endl;
+            }
+        }
+    }
 
     return 0;
 }

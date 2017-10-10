@@ -236,6 +236,7 @@ int main(int argc, char* argv[]){
     saena::amg solver;
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
     solver.set_matrix(&A);
+    solver.set_rhs(rhs);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
@@ -250,7 +251,7 @@ int main(int argc, char* argv[]){
 
     t1 = MPI_Wtime();
 
-    solver.solve(u, rhs, &opts);
+    solver.solve(u, &opts);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);

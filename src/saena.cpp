@@ -218,10 +218,17 @@ int saena::amg::set_matrix(saena::matrix* A){
     return 0;
 }
 
-void saena::amg::solve(std::vector<double>& u, std::vector<double>& rhs, saena::options* opts){
+int saena::amg::set_rhs(std::vector<double> rhs){
+    m_pImpl->set_rhs(rhs);
+    return 0;
+}
+
+
+int saena::amg::solve(std::vector<double>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
-    m_pImpl->solve(u, rhs);
+    m_pImpl->solve(u);
+    return 0;
 }
 
 void saena::amg::save_to_file(char* name, unsigned int* agg){

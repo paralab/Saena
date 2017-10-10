@@ -39,8 +39,9 @@ public:
     int coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
     int solve_coarsest(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs);
     int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
-    int solve(std::vector<double>& u, std::vector<double>& rhs);
+    int solve(std::vector<double>& u);
     int residual(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
+    int set_rhs(std::vector<double> rhs);
 
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);
