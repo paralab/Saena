@@ -16,6 +16,10 @@ public:
     std::vector<double> rhs;
     int currentLevel, maxLevel;
     Grid* coarseGrid;
+    std::vector<int> rcount;
+    std::vector<int> scount;
+//    std::vector<unsigned long> rhs_init_partition;
+//    std::vector<unsigned int> rhs_final_partition; // this is grids[0].A.split
 
     MPI_Comm comm;
 

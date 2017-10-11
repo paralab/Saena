@@ -19,7 +19,7 @@ int main(int argc, char* argv[]){
 
     unsigned long i;
 //    int assert1, assert2, assert3;
-    bool verbose = true;
+    bool verbose = false;
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]){
 
     char* file_name(argv[1]);
 
-    // ******** 1- initialize the matrix: read from file *************
+    // ******** 1 - initialize the matrix: read from file *************
 
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
@@ -57,12 +57,13 @@ int main(int argc, char* argv[]){
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 
-    // ******** 2- initialize the matrix: use setIJV *************
+    // ******** 2 - initialize the matrix: use setIJV *************
 
 /*
-    char* file_name(argv[1]);
-    // todo: set nnz_g for every example.
+    // set nnz_g for every example.
     unsigned int nnz_g = 393;
+
+    char* file_name(argv[1]);
     auto initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
     if (rank == nprocs - 1)
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
@@ -85,7 +86,7 @@ int main(int argc, char* argv[]){
     free(I); free(J); free(V);
 */
 
-    // ******** 3- initialize the matrix: laplacian *************
+    // ******** 3 - initialize the matrix: laplacian *************
 
 /*
     // timing the matrix setup phase
@@ -165,6 +166,13 @@ int main(int argc, char* argv[]){
     for(i=0; i<num_local_row; i++)
         rhs[i] = i + 1;
 
+//    if(rank==1) rhs.pop_back();
+//    if(rank==1) rhs.pop_back();
+//    if(rank==2) rhs.pop_back();
+//    if(rank==3) rhs.push_back(1.8);
+//    if(rank==3) rhs.push_back(8.4);
+//    if(rank==3) rhs.push_back(22.9);
+
 //    for(i=0; i<num_local_row; i++)
 //        rhs[i] = i + 1 + A.split[rank];
 
@@ -185,6 +193,13 @@ int main(int argc, char* argv[]){
     // ********* 1- set u0: use eigenvalues *********
 
     u.assign(num_local_row, 0); // initial guess = 0
+
+//    if(rank==1) u.pop_back();
+//    if(rank==1) u.pop_back();
+//    if(rank==2) u.pop_back();
+//    if(rank==3) u.push_back(0);
+//    if(rank==3) u.push_back(0);
+//    if(rank==3) u.push_back(0);
 
     // ********* 2- set u0: random *********
 
@@ -215,16 +230,18 @@ int main(int argc, char* argv[]){
 
     // ********** print u **********
 
-//    if(rank==0)
+//    if(rank==1){
+//        printf("rank = %d \tu.size() = %lu\n", rank, u.size());
 //        for(i = 0; i < u.size(); i++)
 //            cout << u[i] << endl;
+//    }
 
     // *************************** AMG - Setup ****************************
 
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 1;
+    int vcycle_num            = 10;
     double relative_tolerance = 1e-10;
     std::string smoother      = "jacobi";
     int preSmooth             = 2;
@@ -256,9 +273,11 @@ int main(int argc, char* argv[]){
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
 
-//    if(rank==0)
+//    if(rank==1){
+//        printf("rank = %d \tu.size() = %lu \n", rank, u.size());
 //        for(i = 0; i < u.size(); i++)
 //            cout << u[i] << endl;
+//    }
 
     // *************************** Residual ****************************
 
@@ -483,7 +502,6 @@ int main(int argc, char* argv[]){
 
     // *************************** finalize ****************************
 
-//    MPI_Barrier(comm); cout << rank << "\t*******end*******" << endl;
     A.destroy();
     solver.destroy();
     MPI_Finalize();
