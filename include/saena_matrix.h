@@ -24,10 +24,10 @@ class saena_matrix {
 private:
     bool read_from_file = false;
     unsigned int initial_nnz_l;
-    bool freeBoolean = false; // use this parameter to know if deconstructor for SaenaMatrix class should free the variables or not.
+    bool freeBoolean = false; // use this parameter to know if destructor for SaenaMatrix class should free the variables or not.
     std::set<cooEntry> data_coo;
     std::vector<cooEntry> data_unsorted;
-    std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitioning.
+    std::vector<unsigned long> data;
 
 public:
     std::vector<cooEntry> entry;
@@ -59,7 +59,7 @@ public:
 //    std::vector<unsigned int> nnz_row_remote;
 
     std::vector<double> invDiag;
-    double norm1, normInf, rhoDA;
+//    double norm1, normInf, rhoDA;
 
     int vIndexSize;
     long *vIndex;

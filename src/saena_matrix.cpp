@@ -318,9 +318,12 @@ int saena_matrix::setup_initial_data(){
             Mbig_local = temp.row;
     }
 
+    // todo: free memory for data_coo. consider move semantics. check if the following idea is correct.
     // clear data_coo and free memory.
+    // Using move semantics, the address of data_coo is swapped with data_temp. So data_coo will be empty
+    // and data_temp will be deleted when this function is finished.
+    std::set<cooEntry> data_temp = std::move(data_coo);
     // since shrink_to_fit() does not work for std::set, set.erase() is being used, not sure if it frees memory.
-    // todo: free memory for data_coo
 //    data_coo.erase(data_coo.begin(), data_coo.end());
 //    data_coo.clear();
 
@@ -719,7 +722,7 @@ int saena_matrix::matrix_setup(){
         MPI_Comm_rank(comm, &rank);
 //        MPI_Barrier(comm); printf("in matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l); MPI_Barrier(comm);
 
-        freeBoolean = true; // use this parameter to know if deconstructor for SaenaMatrix class should free the variables or not.
+        freeBoolean = true; // use this parameter to know if destructor for SaenaMatrix class should free the variables or not.
 
         //    if (rank==0){
         //        std::cout << std::endl << "split:" << std::endl;
@@ -851,14 +854,11 @@ int saena_matrix::matrix_setup(){
         // don't receive anything from yourself
         recvCount[rank] = 0;
 
-        /*
-            MPI_Barrier(comm);
-            if (rank==1){
-                std::cout << "recvCount: rank=" << rank << std::endl;
-                for(int i=0; i<nprocs; i++)
-                    std::cout << i << "= " << recvCount[i] << std::endl;
-            }
-        */
+//        MPI_Barrier(comm);
+//        if (rank==0){
+//            std::cout << "recvCount: rank = " << rank << std::endl;
+//            for(int i=0; i<nprocs; i++)
+//                std::cout << i << "= " << recvCount[i] << std::endl;}
 
         int *vIndexCount = (int *) malloc(sizeof(int) * nprocs);
         MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);

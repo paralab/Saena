@@ -48,7 +48,6 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: read from file *************
 
-/*
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
@@ -57,9 +56,9 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** 2 - initialize the matrix: use setIJV *************
+/*
 
     // set nnz_g for every example.
     unsigned int nnz_g = 393;
@@ -85,6 +84,7 @@ int main(int argc, char* argv[]){
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 
     free(I); free(J); free(V);
+*/
 
     // ******** 3 - initialize the matrix: laplacian *************
 
