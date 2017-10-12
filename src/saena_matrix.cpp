@@ -109,10 +109,16 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
         data_size++;
     }
 
+    double val_temp;
     if(data_sorted.size()>1){
         for(unsigned int i=1; i<data_sorted.size(); i++){
-            if(data_sorted[i] == data_sorted[i-1])
-                i++;
+            if(data_sorted[i] == data_sorted[i-1]){
+                if(add_duplicates){
+                    data.pop_back();
+                    val_temp = data_sorted[i-1].val + data_sorted[i].val;
+                    data.push_back(reinterpret_cast<unsigned long&>(val_temp));
+                }
+            }
             else{
                 data.push_back(data_sorted[i].row);
                 data.push_back(data_sorted[i].col);
@@ -363,11 +369,16 @@ int saena_matrix::setup_initial_data(){
         data_size++;
     }
 
+    double val_temp;
     if(data_sorted.size()>1){
         for(unsigned int i=1; i<data_sorted.size(); i++){
-            if(data_sorted[i] == data_sorted[i-1])
-                i++;
-            else{
+            if(data_sorted[i] == data_sorted[i-1]){
+                if(add_duplicates){
+                    data.pop_back();
+                    val_temp = data_sorted[i-1].val + data_sorted[i].val;
+                    data.push_back(reinterpret_cast<unsigned long&>(val_temp));
+                }
+            }else{
                 data.push_back(data_sorted[i].row);
                 data.push_back(data_sorted[i].col);
                 data.push_back(reinterpret_cast<unsigned long&>(data_sorted[i].val));
@@ -706,7 +717,7 @@ int saena_matrix::matrix_setup(){
         int nprocs, rank;
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
-        //    MPI_Barrier(comm); printf("in matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l); MPI_Barrier(comm);
+//        MPI_Barrier(comm); printf("in matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l); MPI_Barrier(comm);
 
         freeBoolean = true; // use this parameter to know if deconstructor for SaenaMatrix class should free the variables or not.
 

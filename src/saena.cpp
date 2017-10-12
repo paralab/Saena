@@ -21,13 +21,25 @@ saena::matrix::matrix(char *name, MPI_Comm comm) {
 
 
 int saena::matrix::set(unsigned int i, unsigned int j, double val){
-    if( val != 0)
-        m_pImpl->set(i, j, val);
+
+    if( val != 0){
+        if(!add_dup)
+            m_pImpl->set(i, j, val);
+        else
+            m_pImpl->set2(i, j, val);
+    }
+
     return 0;
 }
 
 int saena::matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
-    m_pImpl->set(row, col, val, nnz_local);
+
+    if(!add_dup){
+        m_pImpl->set(row, col, val, nnz_local);
+    } else{
+        m_pImpl->set2(row, col, val, nnz_local);
+    }
+
     return 0;
 }
 
@@ -35,59 +47,35 @@ int saena::matrix::set(unsigned int i, unsigned int j, unsigned int size_x, unsi
 // ordering of val should be first columns, then rows.
     unsigned int ii, jj, iter;
     iter = 0;
+
     for(jj = 0; jj < size_y; jj++) {
         for(ii = 0; ii < size_x; ii++) {
             if( val[iter] != 0){
-                m_pImpl->set(i+ii, j+jj, val[iter]);
+                if(!add_dup)
+                    m_pImpl->set(i+ii, j+jj, val[iter]);
+                else
+                    m_pImpl->set2(i+ii, j+jj, val[iter]);
+
                 iter++;
             }
         }
     }
+
     return 0;
 }
 
 int saena::matrix::set(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local){
     unsigned int ii;
+
     for(ii = 0; ii < nnz_local; ii++) {
-        if(val[ii] != 0)
-            m_pImpl->set(i+di[ii], j+dj[ii], val[ii]);
-    }
-    return 0;
-}
-
-
-int saena::matrix::set2(unsigned int i, unsigned int j, double val){
-    if( val != 0)
-        m_pImpl->set2(i, j, val);
-    return 0;
-}
-
-int saena::matrix::set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
-    m_pImpl->set2(row, col, val, nnz_local);
-    return 0;
-}
-
-int saena::matrix::set2(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val){
-// ordering of val should be first columns, then rows.
-    unsigned int ii, jj, iter;
-    iter = 0;
-    for(jj = 0; jj < size_y; jj++) {
-        for(ii = 0; ii < size_x; ii++) {
-            if( val[iter] != 0){
-                m_pImpl->set2(i+ii, j+jj, val[iter]);
-                iter++;
-            }
+        if(val[ii] != 0){
+            if(!add_dup)
+                m_pImpl->set(i+di[ii], j+dj[ii], val[ii]);
+            else
+                m_pImpl->set2(i+di[ii], j+dj[ii], val[ii]);
         }
     }
-    return 0;
-}
 
-int saena::matrix::set2(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local){
-    unsigned int ii;
-    for(ii = 0; ii < nnz_local; ii++) {
-        if(val[ii] != 0)
-            m_pImpl->set2(i+di[ii], j+dj[ii], val[ii]);
-    }
     return 0;
 }
 
@@ -108,6 +96,18 @@ saena_matrix* saena::matrix::get_internal_matrix(){
 
 void saena::matrix::destroy(){
     // will add later.
+}
+
+int saena::matrix::add_duplicates(bool add) {
+    if(add){
+        add_dup = true;
+        m_pImpl->add_duplicates = true;
+    }
+    else{
+        add_dup = false;
+        m_pImpl->add_duplicates = false;
+    }
+    return 0;
 }
 
 

@@ -48,6 +48,7 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: read from file *************
 
+/*
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
@@ -56,14 +57,13 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
 
     // ******** 2 - initialize the matrix: use setIJV *************
 
-/*
     // set nnz_g for every example.
     unsigned int nnz_g = 393;
 
-    char* file_name(argv[1]);
     auto initial_nnz_l = (unsigned int) (floor(1.0 * nnz_g / nprocs)); // initial local nnz
     if (rank == nprocs - 1)
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
@@ -77,6 +77,7 @@ int main(int argc, char* argv[]){
     double t1 = MPI_Wtime();
 
     saena::matrix A(comm);
+    A.add_duplicates(true);
     A.set(I, J, V, initial_nnz_l);
     A.assemble();
 
@@ -84,7 +85,6 @@ int main(int argc, char* argv[]){
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 
     free(I); free(J); free(V);
-*/
 
     // ******** 3 - initialize the matrix: laplacian *************
 
@@ -163,8 +163,9 @@ int main(int argc, char* argv[]){
 
     // ********** 3- set rhs: set one by one **********
 
+    saena_matrix* B = A.get_internal_matrix();
     for(i=0; i<num_local_row; i++)
-        rhs[i] = i + 1;
+        rhs[i] = i + 1 + B->split[rank];
 
 //    if(rank==1) rhs.pop_back();
 //    if(rank==1) rhs.pop_back();
@@ -172,9 +173,6 @@ int main(int argc, char* argv[]){
 //    if(rank==3) rhs.push_back(1.8);
 //    if(rank==3) rhs.push_back(8.4);
 //    if(rank==3) rhs.push_back(22.9);
-
-//    for(i=0; i<num_local_row; i++)
-//        rhs[i] = i + 1 + A.split[rank];
 
     // ********** print rhs **********
 
@@ -241,7 +239,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 10;
+    int vcycle_num            = 5;
     double relative_tolerance = 1e-10;
     std::string smoother      = "jacobi";
     int preSmooth             = 2;

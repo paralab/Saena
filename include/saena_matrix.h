@@ -91,6 +91,8 @@ public:
 
     MPI_Comm comm;
 
+    bool add_duplicates = false;
+
     bool active = true;
     float cpu_shrink_thre1 = 0.1;
     float cpu_shrink_thre2 = 15;
