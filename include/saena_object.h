@@ -9,7 +9,7 @@ class Grid;
 
 class saena_object {
 public:
-    int max_level = 14; // fine grid is level 0.
+    int max_level = 1; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 10;
     // coarsening will stop if the number of rows of last level divided by previous level is lower this value.
@@ -25,6 +25,7 @@ public:
     int CG_max_iter = 40;
     double CG_tol = 1e-12;
     bool verbose = false;
+    bool repartition = true;
 
     saena_object();
     ~saena_object();
@@ -38,18 +39,16 @@ public:
     int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
     int coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
     int solve_coarsest(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs);
-    int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs, MPI_Comm comm);
+    int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs);
     int solve(std::vector<double>& u);
-    int residual(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
     int set_rhs(std::vector<double>& rhs);
-    int set_u(std::vector<double>& u);
+    int repartition_u(std::vector<double>& u);
     int repartition_back_u(std::vector<double>& u);
     int cpu_shrink(saena_matrix* Ac, std::vector<unsigned long>& P_splitNew);
 
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);
     int writeMatrixToFileR(restrict_matrix* R, std::string name);
-    int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm);
     int writeVectorToFileul(std::vector<unsigned long>& v, unsigned long vSize, std::string name, MPI_Comm comm);
 //    template <class T>
 //    int writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm);

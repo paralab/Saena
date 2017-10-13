@@ -37,6 +37,7 @@ public:
     unsigned int nnz_g;
     unsigned int nnz_l;
     std::vector<unsigned long> split;
+    std::vector<unsigned long> split_old;
 
     unsigned int nnz_l_local;
     unsigned int nnz_l_remote;
@@ -90,12 +91,14 @@ public:
     std::vector<unsigned long> vElementRep_remote;
 
     MPI_Comm comm;
+    MPI_Comm comm_horizontal;
+    MPI_Comm comm_old;
 
     bool add_duplicates = false;
 
     bool active = true;
     float cpu_shrink_thre1 = 0.1;
-    float cpu_shrink_thre2 = 15;
+    int cpu_shrink_thre2 = 4;
 
     saena_matrix();
 //    SaenaMatrix(MPI_Comm com);
@@ -115,7 +118,8 @@ public:
     int setup_initial_data();
     int repartition();
     int matrix_setup();
-    int matvec(double* v, double* w);
+    int matvec(std::vector<double>& v, std::vector<double>& w);
+    int residual(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
     int jacobi(std::vector<double>& u, std::vector<double>& rhs);
     int inverse_diag(double* x);
     int destroy();

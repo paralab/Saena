@@ -313,7 +313,7 @@ int prolong_matrix::findLocalRemote(cooEntry* entry){
 }
 
 
-int prolong_matrix::matvec(double* v, double* w) {
+int prolong_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

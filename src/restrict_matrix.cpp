@@ -346,7 +346,7 @@ restrict_matrix::~restrict_matrix(){
 }
 
 
-int restrict_matrix::matvec(double* v, double* w) {
+int restrict_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

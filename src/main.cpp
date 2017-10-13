@@ -48,6 +48,7 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: read from file *************
 
+/*
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
@@ -56,9 +57,9 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
 
     // ******** 2 - initialize the matrix: use setIJV *************
-/*
 
     // set nnz_g for every example.
     unsigned int nnz_g = 393;
@@ -84,7 +85,6 @@ int main(int argc, char* argv[]){
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 
     free(I); free(J); free(V);
-*/
 
     // ******** 3 - initialize the matrix: laplacian *************
 
@@ -127,7 +127,6 @@ int main(int argc, char* argv[]){
 
     // ********** 1- set rhs: read from file **********
 
-/*
     MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
@@ -154,7 +153,43 @@ int main(int argc, char* argv[]){
     MPI_File_close(&fh);
 
     // set rhs
-    A.get_internal_matrix()->matvec(&*v.begin(), &*rhs.begin());
+    A.get_internal_matrix()->matvec(v, rhs);
+//    rhs = v;
+
+    // ********** repartition checking part **********
+
+    // this part is for testing repartition functionality of set_rhs and also set_u and repartition_back_u functions.
+/*
+//    std::vector<double> rhs;
+ //    std::vector<double> u(num_local_row, 0);
+//    printf("num_loc_row = %d \n", num_local_row);
+    if(rank==0){
+        for(i = 0; i < v.size()-3; i++)
+            rhs.push_back(v[i]);
+    }
+    if(rank==1){
+        rhs.push_back( (double)(-144.135) );
+        rhs.push_back( (double)7862.14 );
+        rhs.push_back( (double)45087.3 );
+        for(i = 0; i < v.size(); i++)
+            rhs.push_back(v[i]);
+        rhs.push_back( (double)74109.6 );
+        rhs.push_back( (double)(-8738.59) );
+        rhs.push_back( (double)29545.4 );
+    }
+    if(rank==2){
+        for(i = 3; i < v.size(); i++)
+            rhs.push_back(v[i]);
+    }
+    printf("rank = %d, rhs = %lu \n", rank, rhs.size());
+
+    std::vector<double> u;
+    if(rank==0)
+        u.assign(5,0);
+    if(rank==1)
+        u.assign(11,0);
+    if(rank==2)
+        u.assign(9,0);
 */
 
     // ********** 2- set rhs: use the assign function **********
@@ -163,16 +198,14 @@ int main(int argc, char* argv[]){
 
     // ********** 3- set rhs: set one by one **********
 
+/*
     saena_matrix* B = A.get_internal_matrix();
     for(i=0; i<num_local_row; i++)
         rhs[i] = i + 1 + B->split[rank];
+*/
 
-//    if(rank==1) rhs.pop_back();
-//    if(rank==1) rhs.pop_back();
-//    if(rank==2) rhs.pop_back();
-//    if(rank==3) rhs.push_back(1.8);
-//    if(rank==3) rhs.push_back(8.4);
-//    if(rank==3) rhs.push_back(22.9);
+//    for(i=0; i<num_local_row; i++)
+//        rhs[i] = 0;
 
     // ********** print rhs **********
 
@@ -192,17 +225,10 @@ int main(int argc, char* argv[]){
 
     u.assign(num_local_row, 0); // initial guess = 0
 
-//    if(rank==1) u.pop_back();
-//    if(rank==1) u.pop_back();
-//    if(rank==2) u.pop_back();
-//    if(rank==3) u.push_back(0);
-//    if(rank==3) u.push_back(0);
-//    if(rank==3) u.push_back(0);
-
     // ********* 2- set u0: random *********
 
-    //    randomVector2(u); // initial guess = random
-    //    if(rank==1) cout << "\ninitial guess u" << endl;
+//    randomVector2(u); // initial guess = random
+//    if(rank==1) cout << "\ninitial guess u" << endl;
 
     // ********* 3- set u0: use eigenvalues *********
 
@@ -239,8 +265,8 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 5;
-    double relative_tolerance = 1e-10;
+    int vcycle_num            = 1;
+    double relative_tolerance = 1e-8;
     std::string smoother      = "jacobi";
     int preSmooth             = 2;
     int postSmooth            = 2;
@@ -274,8 +300,7 @@ int main(int argc, char* argv[]){
 //    if(rank==1){
 //        printf("rank = %d \tu.size() = %lu \n", rank, u.size());
 //        for(i = 0; i < u.size(); i++)
-//            cout << u[i] << endl;
-//    }
+//            cout << u[i] << endl;}
 
     // *************************** Residual ****************************
 
@@ -330,27 +355,19 @@ int main(int argc, char* argv[]){
 //        for(i=0; i<u.size(); i++)
 //            cout << u[i] << endl;
 
+    // *********** write norm of residual for mutiple solve iterations ***********
 /*
-    // write norm of residual for mutile solve iterations
-//    std::vector <long> v1;
-//    std::vector <float> v2;
-//    std::vector <double> v3;
     double dot;
     std::vector<double> res(num_local_row);
     std::vector<double> res_norm;
-//    string name;
+//    saena_matrix* B = A.get_internal_matrix();
     for(i=0; i<10; i++){
-//        name = "V";
-//        name += std::to_string(i);
-//        name += "_";
-        Saena1.AMGSolve(grids, u, rhs, comm);
-        Saena1.residual(&A, u, rhs, res, comm);
-        Saena1.dotProduct(res, res, &dot, comm);
+        solver.solve(u, &opts);
+        B->residual(u, rhs, res);
+        dotProduct(res, res, &dot, comm);
         res_norm.push_back(sqrt(dot));
-//        Saena1.writeVectorToFiled(u, num_local_rowbig, name, comm);
-//        Saena1.test(v1);
     }
-    Saena1.writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
+    writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
 */
 
 //    Saena1.writeMatrixToFileA(grids[1].A, "Ac", comm);

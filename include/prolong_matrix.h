@@ -91,7 +91,7 @@ public:
     prolong_matrix(MPI_Comm com);
     ~prolong_matrix();
     int findLocalRemote(cooEntry* entry);
-    int matvec(double* v, double* w);
+    int matvec(std::vector<double>& v, std::vector<double>& w);
 };
 
 

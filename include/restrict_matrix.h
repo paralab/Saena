@@ -61,7 +61,7 @@ public:
     restrict_matrix();
     int transposeP(prolong_matrix* P);
     ~restrict_matrix();
-    int matvec(double* v, double* w);
+    int matvec(std::vector<double>& v, std::vector<double>& w);
 };
 
 #endif //SAENA_RESTRICT_MATRIX_H

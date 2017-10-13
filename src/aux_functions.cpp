@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <fstream>
 #include <aux_functions.h>
 #include "saena_matrix.h"
 #include "strength_matrix.h"
@@ -84,6 +85,11 @@ int randomVector2(std::vector<double>& V){
 }
 
 int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
+    // This function DOES NOT generate a random vector. It computes the maximum degree of all the nodes.
+    // (degree of node i = number of nonzeros on row i)
+    // Then assign to a higher degree, a lower weight ( weghit(node i) = max_degree - degree(node i) )
+    // This method is similar to Yavneh's paper, in which nodes with lower degrees become coarse nodes first,
+    // then nodes with higher degrees.
 
     int rank;
     MPI_Comm_rank(comm, &rank);
@@ -106,13 +112,13 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
 //    printf("rank = %d, max degree local = %lu, max degree = %lu \n", rank, max_degree_local, max_degree);
 
     //Type of random number distribution
-    std::uniform_real_distribution<double> dist(-1.0,1.0); //(min, max)
+//    std::uniform_real_distribution<double> dist(-1.0,1.0); //(min, max)
 
     //Mersenne Twister: Good quality random number generator
-    std::mt19937 rng;
+//    std::mt19937 rng;
 
     //Initialize with non-deterministic seeds
-    rng.seed(std::random_device{}());
+//    rng.seed(std::random_device{}());
 
     std::vector<double> rand(S->M);
     for (i = 0; i < V.size(); i++){
@@ -121,11 +127,11 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
     }
 //        rand[i] = dist(rng);
 
-    // to have one node with the highest weight possible, so that node will be a root and consequently P and R won't be zero matrices.
-    // the median index is being chosen here.
+    // to have one node with the highest weight possible, so that node will be a root and
+    // consequently P and R won't be zero matrices. the median index is being chosen here.
     // todo: fix this later. doing this as follows will affect the aggregation in a bad way.
-    if (V.size() != 0)
-        V[ floor(V.size()/2) ] = size + 1;
+//    if (V.size() != 0)
+//        V[ floor(V.size()/2) ] = size + 1;
 
     return 0;
 }
@@ -251,6 +257,38 @@ int print_time(double t1, double t2, std::string function_name, MPI_Comm comm){
 
     if (rank==0)
         std::cout << std::endl << function_name << "\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+
+    return 0;
+}
+
+
+//template <class T>
+//int SaenaObject::writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
+int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
+
+    // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    std::ofstream outFileTxt;
+    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
+    outFileNameTxt += name;
+    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".txt";
+    outFileTxt.open(outFileNameTxt);
+
+    if (rank == 0)
+        outFileTxt << vSize << std::endl;
+    for (long i = 0; i < v.size(); i++) {
+//        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
+        outFileTxt << v[i] << std::endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
 
     return 0;
 }
