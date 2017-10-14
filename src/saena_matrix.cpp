@@ -467,6 +467,8 @@ int saena_matrix::repartition(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    last_M_shrink = Mbig;
+
     // *************************** find splitters ****************************
     // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
 

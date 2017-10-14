@@ -19,7 +19,7 @@ int main(int argc, char* argv[]){
 
     unsigned long i;
 //    int assert1, assert2, assert3;
-    bool verbose = false;
+    bool verbose = true;
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
@@ -61,6 +61,7 @@ int main(int argc, char* argv[]){
 
     // ******** 2 - initialize the matrix: use setIJV *************
 
+/*
     // set nnz_g for every example.
     unsigned int nnz_g = 393;
 
@@ -85,10 +86,10 @@ int main(int argc, char* argv[]){
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 
     free(I); free(J); free(V);
+*/
 
     // ******** 3 - initialize the matrix: laplacian *************
 
-/*
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
@@ -99,7 +100,6 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** write the matrix to file *************
 
@@ -268,8 +268,8 @@ int main(int argc, char* argv[]){
     int vcycle_num            = 1;
     double relative_tolerance = 1e-8;
     std::string smoother      = "jacobi";
-    int preSmooth             = 2;
-    int postSmooth            = 2;
+    int preSmooth             = 1;
+    int postSmooth            = 1;
 
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");

@@ -219,7 +219,7 @@ int saena::amg::set_matrix(saena::matrix* A){
 }
 
 int saena::amg::set_rhs(std::vector<double> rhs){
-    m_pImpl->set_rhs(rhs);
+    m_pImpl->set_repartition_rhs(rhs);
     return 0;
 }
 

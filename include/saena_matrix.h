@@ -97,11 +97,11 @@ public:
     bool add_duplicates = false;
 
     bool active = true;
-    float cpu_shrink_thre1 = 0.1;
-    int cpu_shrink_thre2 = 4;
+    int cpu_shrink_thre1 = 4;
+    int cpu_shrink_thre2 = 2;
+    unsigned int last_M_shrink;
 
     saena_matrix();
-//    SaenaMatrix(MPI_Comm com);
     saena_matrix(MPI_Comm com);
     /**
      * @param[in] Aname is the pointer to the matrix
