@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
+#include <sys/stat.h>
 #include "mpi.h"
 
 #include "grid.h"
@@ -23,16 +24,26 @@ int main(int argc, char* argv[]){
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
-    if(argc != 3)
+    if(argc != 4)
     {
         if(rank == 0)
         {
-            cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << endl;
-            cout << "Matrix file should be in triples format." << endl;
+            cout << "Usage: ./Saena <2 or 3 for 2d or 3d laplacian> <dof on each proc> <rhs_vector address>" << endl;
         }
         MPI_Finalize();
         return -1;
     }
+
+//    if(argc != 3)
+//    {
+//        if(rank == 0)
+//        {
+//            cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << endl;
+//            cout << "Matrix file should be in triples format." << endl;
+//        }
+//        MPI_Finalize();
+//        return -1;
+//    }
 
     // *************************** get number of rows ****************************
 
@@ -44,11 +55,11 @@ int main(int argc, char* argv[]){
 
     // *************************** initialize the matrix ****************************
 
-    char* file_name(argv[1]);
 
     // ******** 1 - initialize the matrix: read from file *************
 
 /*
+    char* file_name(argv[1]);
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
@@ -62,6 +73,8 @@ int main(int argc, char* argv[]){
     // ******** 2 - initialize the matrix: use setIJV *************
 
 /*
+    char* file_name(argv[1]);
+
     // set nnz_g for every example.
     unsigned int nnz_g = 393;
 
@@ -90,11 +103,15 @@ int main(int argc, char* argv[]){
 
     // ******** 3 - initialize the matrix: laplacian *************
 
+    int dimension( stoi(argv[1]) );
+    unsigned int matrix_size( stoi(argv[2]) );
+    if(verbose) if(rank==0) printf("%dD Laplacian: dof on each proc = %u \n", dimension, matrix_size);
+
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
     saena::matrix A(comm);
-    laplacian2D(&A, 16, comm); // second argument is dof on each processor
+    laplacian2D(&A, matrix_size, comm); // second argument is dof on each processor
 //    laplacian3D(&A, 256, comm); // second argument is dof on each processor
     A.assemble();
 
@@ -125,13 +142,26 @@ int main(int argc, char* argv[]){
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs(num_local_row);
 
-    // ********** 1- set rhs: read from file **********
+    // ********** 1 - set rhs: read from file **********
+
+    char* Vname(argv[3]);
+
+    // check if the size of rhs match the number of rows of A
+    struct stat st;
+    stat(Vname, &st);
+    unsigned int rhs_size = st.st_size / sizeof(double);
+    if(rhs_size != A.get_internal_matrix()->Mbig){
+        if(rank==0) printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
+        if(rank==0) printf("Number of rows of LHS = %d\n", A.get_internal_matrix()->Mbig);
+        if(rank==0) printf("Size of RHS = %d\n", rhs_size);
+        MPI_Finalize();
+        return -1;
+    }
 
     MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
 
-    char* Vname(argv[2]);
     int mpiopen = MPI_File_open(comm, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
         if (rank==0) cout << "Unable to open the rhs vector file!" << endl;

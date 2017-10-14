@@ -292,3 +292,9 @@ int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string 
 
     return 0;
 }
+
+
+int generate_rhs(unsigned int size){
+
+    return 0;
+}
