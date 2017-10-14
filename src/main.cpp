@@ -360,7 +360,13 @@ int main(int argc, char* argv[]){
     double dot;
     std::vector<double> res(num_local_row);
     std::vector<double> res_norm;
-//    saena_matrix* B = A.get_internal_matrix();
+    saena_matrix* B = A.get_internal_matrix();
+
+    // add initial res
+    B->residual(u, rhs, res);
+    dotProduct(res, res, &dot, comm);
+    res_norm.push_back(sqrt(dot));
+
     for(i=0; i<10; i++){
         solver.solve(u, &opts);
         B->residual(u, rhs, res);

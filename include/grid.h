@@ -18,7 +18,6 @@ public:
     Grid* coarseGrid;
     std::vector<int> rcount;
     std::vector<int> scount;
-
     MPI_Comm comm;
 
     Grid();
