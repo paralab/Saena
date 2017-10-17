@@ -29,51 +29,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     // set the number of rows for each process
     M = splitNew[rank+1] - splitNew[rank];
-//    if(rank==1) cout << "transposeP: " << Mbig << ", " << Nbig << ", " << M << endl;
-
-    // *********************** check for shrinking ************************
-    /*
-    bool shrinkLocal;
-    bool shrinkGlobal = false;
-
-    double temp1 = 0;
-    for(i=1; i<nprocs+1; i++){
-        temp1 += ((double)initialNumberOfRows[i] / P->splitNew[i]);
-    }
-    temp1 /= nprocs;
-
-//    cout << rank << "\t" << temp1 << endl;
-
-    if(temp1 >= 3){ // todo: decide about this later.
-        // todo: don't forget to update initialNumberOfRows after shrinking.
-        MPI_Group currentGroup;
-        MPI_Comm_group(comm, &currentGroup);
-
-        int newGroupSize = nprocs/4;
-        int* newGroupRanks = (int*)malloc(sizeof(int)*newGroupSize);
-        for(int i=0; i<newGroupSize; i++)
-            newGroupRanks[i] = 4*i;
-
-        MPI_Group newGroup;
-        MPI_Group_incl(currentGroup, newGroupSize, newGroupRanks, &newGroup);
-
-        MPI_Comm newComm;
-        MPI_Comm_create_group(comm, newGroup, 0, &newComm);
-
-        int newRank = -1;
-        int newSize = -1;
-        if (newComm != MPI_COMM_NULL) {
-            MPI_Comm_rank(newComm, &newRank);
-            MPI_Comm_size(newComm, &newSize);
-//            cout << "rank = " << newRank << ", size = " << newSize << endl;
-        }
-
-        MPI_Group_free(&currentGroup);
-        MPI_Group_free(&newGroup);
-        if (newComm != MPI_COMM_NULL) MPI_Comm_free(&newComm);
-        free(newGroupRanks);
-    }
-*/
+//    printf("\nrank = %d, R.Mbig = %u, R.nBig = %u, M = %u \n", rank, Mbig, Nbig, M);
 
     // *********************** send remote part of restriction ************************
 
@@ -143,7 +99,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     nnz_l = entry.size();
     MPI_Allreduce(&nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
     // todo: check why is R so imbalanced for 289 size matrix on 8 processors. use the following print function.
-//    printf("rank=%d \t R.nnz_l=%lu \t R.nnz_g=%lu \n", rank, nnz_l, nnz_g);
+//    printf("\nrank = %d, R.Mbig = %u, R.Nbig = %u, M = %u, R.nnz_l = %lu, R.nnz_g = %lu \n", rank, Mbig, Nbig, M, nnz_l, nnz_g);
 
     // *********************** setup matvec ************************
 

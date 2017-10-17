@@ -197,7 +197,7 @@ int print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
 int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm);
 
 
-int generate_rhs(unsigned int size);
+int generate_rhs(std::vector<double>& rhs, unsigned int size);
 
 
 #endif //SAENA_AUXFUNCTIONS_H

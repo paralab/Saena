@@ -156,6 +156,21 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
         }
     }
 
+    // if duplicates should be added together and last_element == first_element_neighbor
+    // then send only the value of last_element to the right neighbor and add it to the last elements' value.
+    // this has the reverse communication of the previous part.
+    double left_neighbor_last_val;
+    if((last_element == first_element_neighbor) && add_duplicates ){
+
+        if(rank != 0)
+            MPI_Recv(&left_neighbor_last_val, 1, MPI_DOUBLE, rank-1, 0, comm, MPI_STATUS_IGNORE);
+
+        if(rank!= nprocs-1)
+            MPI_Send(&last_element.val, 1, MPI_DOUBLE, rank+1, 0, comm);
+
+        data[2] += left_neighbor_last_val;
+    }
+
 //    if(rank==ran) std::cout << "after  sorting\n" << "data size = " << data.size() << std::endl;
 //    for(int i=0; i<data.size(); i++)
 //        if(rank==ran) std::cout << data[3*i] << "\t" << data[3*i+1] << "\t" << data[3*i+2] << std::endl;
@@ -205,11 +220,17 @@ int saena_matrix::set(unsigned int row, unsigned int col, double val){
     std::pair<std::set<cooEntry>::iterator, bool> p = data_coo.insert(temp_new);
 
     if (!p.second){
-        std::set<cooEntry>::iterator hint = p.first;
+        auto hint = p.first; // hint is std::set<cooEntry>::iterator
         hint++;
         data_coo.erase(p.first);
-        data_coo.insert(hint, temp_new);
+        // in the case of duplicate, if the new value is zero, remove the older one and don't insert the zero.
+        if(val != 0)
+            data_coo.insert(hint, temp_new);
     }
+
+    // if the entry is zero and it was not a duplicate, just erase it.
+    if(p.second && val == 0)
+        data_coo.erase(p.first);
 
     return 0;
 }
@@ -226,19 +247,22 @@ int saena_matrix::set(unsigned int* row, unsigned int* col, double* val, unsigne
     std::pair<std::set<cooEntry>::iterator, bool> p;
 
     for(unsigned int i=0; i<nnz_local; i++){
-        // todo: in the case of duplicate, if the new value is zero, remove that value from the matrix.
-        if(val[i] != 0){
-            temp_new = cooEntry(row[i], col[i], val[i]);
-            p = data_coo.insert(temp_new);
 
-            if (!p.second){
+        temp_new = cooEntry(row[i], col[i], val[i]);
+        p = data_coo.insert(temp_new);
 
-                std::set<cooEntry>::iterator hint = p.first;
-                hint++;
-                data_coo.erase(p.first);
+        if (!p.second){
+            auto hint = p.first; // hint is std::set<cooEntry>::iterator
+            hint++;
+            data_coo.erase(p.first);
+            // if the entry is zero and it was not a duplicate, just erase it.
+            if(val[i] != 0)
                 data_coo.insert(hint, temp_new);
-            }
         }
+
+        // if the entry is zero, erase it.
+        if(p.second && val[i] == 0)
+            data_coo.erase(p.first);
     }
 
     return 0;
@@ -246,6 +270,9 @@ int saena_matrix::set(unsigned int* row, unsigned int* col, double* val, unsigne
 
 
 int saena_matrix::set2(unsigned int row, unsigned int col, double val){
+
+    // todo: if there are duplicates with different values on two different processors, what should happen?
+    // todo: which one should be removed?
 
     cooEntry temp_old;
     cooEntry temp_new = cooEntry(row, col, val);
@@ -704,10 +731,17 @@ int saena_matrix::repartition(){
     free(rOffset);
     free(sendBuf);
 
-//    if (rank==1){
-//        std::cout << "nnz_l = " << nnz_l << std::endl;
+//    MPI_Barrier(comm);
+//    if (rank==0){
+//        std::cout << "\nrank = " << rank << ", nnz_l = " << nnz_l << std::endl;
 //        for (int i=0; i<nnz_l; i++)
 //            std::cout << "i=" << i << "\t" << entry[i].row << "\t" << entry[i].col << "\t" << entry[i].val << std::endl;}
+//    MPI_Barrier(comm);
+//    if (rank==1){
+//        std::cout << "\nrank = " << rank << ", nnz_l = " << nnz_l << std::endl;
+//        for (int i=0; i<nnz_l; i++)
+//            std::cout << "i=" << i << "\t" << entry[i].row << "\t" << entry[i].col << "\t" << entry[i].val << std::endl;}
+//    MPI_Barrier(comm);
 
 //    MPI_Barrier(comm); printf("repartition: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l); MPI_Barrier(comm);
 
@@ -1061,7 +1095,7 @@ int saena_matrix::matrix_setup(){
 }
 
 
-int saena_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
+int saena_matrix::matvec(const std::vector<double>& v, std::vector<double>& w) {
 // todo: to reduce the communication during matvec, consider reducing number of columns during coarsening,
 // todo: instead of reducing general non-zeros, since that is what is communicated for matvec.
 
@@ -1136,17 +1170,27 @@ int saena_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
     }*/
 
     // remote loop
+    // todo: data race happens during "omp for" here, since the "for" loop splits based on the remote columns, but
+    // todo: w[row] are being computed in every iteration , which means different threads may access the same w[row].
+
 //    double t12 = MPI_Wtime();
-#pragma omp parallel
-    {
+//#pragma omp parallel
+//    {
         unsigned int iter = iter_remote_array[omp_get_thread_num()];
-#pragma omp for
+//#pragma omp for
         for (unsigned int i = 0; i < col_remote_size; ++i) {
             for (unsigned int j = 0; j < nnzPerCol_remote[i]; ++j, ++iter) {
+
+//                if(rank==0 && omp_get_thread_num()==0){
+//                    printf("thread = %d\n", omp_get_thread_num());
+//                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
+//                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
+//                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+
                 w[row_remote[indicesP_remote[iter]]] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
             }
         }
-    }
+//    }
 
 //    double t22 = MPI_Wtime();
 //    time[2] += (t22-t12);
@@ -1186,14 +1230,23 @@ int saena_matrix::inverse_diag(double* x) {
     MPI_Comm_rank(comm, &rank);
 
     for(unsigned int i=0; i<nnz_l; i++){
-        if(entry[i].row == entry[i].col)
-            x[entry[i].row-split[rank]] = 1/entry[i].val;
+//        std::cout << i << "\t" << entry[i] << "\t" << nnz_l << std::endl;
+        if(entry[i].row == entry[i].col){
+            if(entry[i].val != 0)
+                x[entry[i].row-split[rank]] = 1/entry[i].val;
+            else{
+                // there is no zero entry in the matrix (sparse), but just to be sure this part is added.
+                if(rank==0) printf("Error: there is a zero diagonal element (at row index = %lu)\n", entry[i].row);
+                MPI_Finalize();
+                return -1;
+            }
+        }
     }
     return 0;
 }
 
 
-int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs) {
+int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Ax - rhs)
@@ -1202,9 +1255,11 @@ int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs) {
 // 3. three = inverseDiag * two * omega
 // 4. four = u - three
 
+//    int rank;
+//    MPI_Comm_rank(comm, &rank);
+
     auto omega = float(2.0/3);
     unsigned int i;
-    std::vector<double> temp(M);
     matvec(u, temp);
     for(i=0; i<M; i++){
         temp[i] -= rhs[i];

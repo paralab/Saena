@@ -256,11 +256,11 @@ int saena::laplacian2D(saena::matrix* A, unsigned int n_matrix_local, MPI_Comm c
     MPI_Comm_rank(comm, &rank);
 
     unsigned int n_matrix = nprocs * n_matrix_local;
-    unsigned int n_grid = sqrt(n_matrix); // number of rows (or columns) of the matrix
-//    if(rank==0) std::cout << "n_matrix = " << n_matrix << ", n_grid = " << n_grid << std::endl;
+    unsigned int n_grid = floor(sqrt(n_matrix)); // number of rows (or columns) of the matrix
+//    if(rank==0) std::cout << "n_matrix = " << n_matrix << ", n_grid = " << n_grid << ", != " << (n_matrix != n_grid * n_grid) << std::endl;
 
     if(n_matrix != n_grid * n_grid){
-        if(rank==0) printf("\nerror: (dof_local * nprocs) should be a squared number!\n\n");
+        if(rank==0) printf("\nerror: (dof_local * nprocs = %u) should be a squared number!\n\n", nprocs * n_matrix_local);
         MPI_Finalize();
         return -1;
     }

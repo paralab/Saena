@@ -130,8 +130,10 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
     // to have one node with the highest weight possible, so that node will be a root and
     // consequently P and R won't be zero matrices. the median index is being chosen here.
     // todo: fix this later. doing this as follows will affect the aggregation in a bad way.
-//    if (V.size() != 0)
+//    if (V.size() >= 2)
 //        V[ floor(V.size()/2) ] = size + 1;
+//    else if(V.size() == 1)
+//        V[0] = size + 1;
 
     return 0;
 }
@@ -294,7 +296,20 @@ int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string 
 }
 
 
-int generate_rhs(unsigned int size){
+int generate_rhs(std::vector<double> &rhs, unsigned int size){
+
+    //Type of random number distribution
+    std::uniform_real_distribution<double> dist(0, 1); //(min, max)
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    for (long i=0; i<size; i++){
+//        rhs[i] = dist(rng);
+        rhs[i] = (double)(i+1) /100;
+//        std::cout << i << "\t" << rhs[i] << std::endl;
+    }
 
     return 0;
 }

@@ -97,8 +97,8 @@ public:
     bool add_duplicates = false;
 
     bool active = true;
-    int cpu_shrink_thre1 = 4;
-    int cpu_shrink_thre2 = 2;
+    int cpu_shrink_thre1 = 1; // Ac->last_M_shrink <= (Ac->Mbig * A->cpu_shrink_thre1)
+    int cpu_shrink_thre2 = 1;
     unsigned int last_M_shrink;
 
     saena_matrix();
@@ -118,9 +118,9 @@ public:
     int setup_initial_data();
     int repartition();
     int matrix_setup();
-    int matvec(std::vector<double>& v, std::vector<double>& w);
+    int matvec(const std::vector<double>& v, std::vector<double>& w);
     int residual(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
-    int jacobi(std::vector<double>& u, std::vector<double>& rhs);
+    int jacobi(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp);
     int inverse_diag(double* x);
     int destroy();
 };
