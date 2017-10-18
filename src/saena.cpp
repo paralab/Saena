@@ -282,10 +282,26 @@ int saena::laplacian2D(saena::matrix* A, unsigned int n_matrix_local, MPI_Comm c
 
         if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) ){ // k is not a boundary node
             A->set(node, node, 4);
-            A->set(node, node+1, -1);
-            A->set(node, node-1, -1);
-            A->set(node, node-n_grid, -1);
-            A->set(node, node+n_grid, -1);
+
+            modulo = (node+1) % n_grid;
+            division = (unsigned int)floor( (node+1) / n_grid);
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) )// k+1 is not a boundary node
+                A->set(node, node+1, -1);
+
+            modulo = (node-1) % n_grid;
+            division = (unsigned int)floor( (node-1) / n_grid);
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) )// k-1 is not a boundary node
+                A->set(node, node-1, -1);
+
+            modulo = (node-n_grid) % n_grid;
+            division = (unsigned int)floor( (node-n_grid) / n_grid);
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) )// k-n_grid is not a boundary node
+                A->set(node, node-n_grid, -1);
+
+            modulo = (node+n_grid) % n_grid;
+            division = (unsigned int)floor( (node+n_grid) / n_grid);
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) )// k+n_grid is not a boundary node
+                A->set(node, node+n_grid, -1);
         }
     }
 
@@ -337,11 +353,48 @@ int saena::laplacian3D(saena::matrix* A, unsigned int n_matrix_local, MPI_Comm c
 
         if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) ){ // k is not a boundary node
             A->set(node, node, 6);
+
+//            A->set(node, node+1, -1);
+//            A->set(node, node-1, -1);
+//            A->set(node, node-n_grid, -1);
+//            A->set(node, node+n_grid, -1);
+//            A->set(node, node - (n_grid * n_grid), -1);
+//            A->set(node, node + (n_grid * n_grid), -1);
+
+            modulo = (node+1) % n_grid;
+            division = (unsigned int)floor( (node+1) / n_grid);
+            division_sq = (unsigned int)floor( (node+1) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k+1 is not a boundary node
             A->set(node, node+1, -1);
+
+            modulo = (node-1) % n_grid;
+            division = (unsigned int)floor( (node-1) / n_grid);
+            division_sq = (unsigned int)floor( (node-1) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k-1 is not a boundary node
             A->set(node, node-1, -1);
+
+            modulo = (node-n_grid) % n_grid;
+            division = (unsigned int)floor( (node-n_grid) / n_grid);
+            division_sq = (unsigned int)floor( (node-n_grid) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k-n_grid is not a boundary node
             A->set(node, node-n_grid, -1);
+
+            modulo = (node+n_grid) % n_grid;
+            division = (unsigned int)floor( (node+n_grid) / n_grid);
+            division_sq = (unsigned int)floor( (node+n_grid) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k+n_grid is not a boundary node
             A->set(node, node+n_grid, -1);
+
+            modulo = (node - (n_grid * n_grid)) % n_grid;
+            division = (unsigned int)floor( (node - (n_grid * n_grid)) / n_grid);
+            division_sq = (unsigned int)floor( (node - (n_grid * n_grid)) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k - (n_grid * n_grid) is not a boundary node
             A->set(node, node - (n_grid * n_grid), -1);
+
+            modulo = (node + (n_grid * n_grid)) % n_grid;
+            division = (unsigned int)floor( (node + (n_grid * n_grid)) / n_grid);
+            division_sq = (unsigned int)floor( (node + (n_grid * n_grid)) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k + (n_grid * n_grid) is not a boundary node
             A->set(node, node + (n_grid * n_grid), -1);
         }
     }

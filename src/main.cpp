@@ -24,7 +24,6 @@ int main(int argc, char* argv[]){
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
-/*
     if(argc != 3)
     {
         if(rank == 0)
@@ -35,8 +34,8 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-*/
 
+/*
     if(argc != 3)
     {
         if(rank == 0)
@@ -47,7 +46,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-
+*/
     // *************************** get number of rows ****************************
 
 //    char* Vname(argv[2]);
@@ -60,6 +59,7 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: read from file *************
 
+/*
     char* file_name(argv[1]);
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
@@ -69,6 +69,7 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
 
     // ******** 2 - initialize the matrix: use setIJV *************
 
@@ -109,7 +110,6 @@ int main(int argc, char* argv[]){
 
     // ******** 3 - initialize the matrix: laplacian *************
 
-/*
     int dimension( stoi(argv[1]) );
     unsigned int matrix_size( stoi(argv[2]) );
     MPI_Barrier(comm);
@@ -135,7 +135,6 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** write the matrix to file *************
 
@@ -163,11 +162,9 @@ int main(int argc, char* argv[]){
 
     // ********** 1 - set rhs: use generate_rhs **********
 
-/*
     std::vector<double> v(num_local_row);
     generate_rhs(v, num_local_row);
     A.get_internal_matrix()->matvec(v, rhs);
-*/
 
 //    if(rank==0)
 //        for(i=0; i<rhs.size(); i++)
@@ -175,8 +172,9 @@ int main(int argc, char* argv[]){
 
     // ********** 2 - set rhs: read from file **********
 
-    char* Vname(argv[2]);
-//    char* Vname(argv[3]);
+/*
+//    char* Vname(argv[2]);
+    char* Vname(argv[3]);
 
     // check if the size of rhs match the number of rows of A
     struct stat st;
@@ -217,12 +215,7 @@ int main(int argc, char* argv[]){
     // set rhs
     A.get_internal_matrix()->matvec(v, rhs);
 //    rhs = v;
-
-    // print values
-//    if(rank==0){
-//        std::cout << "matrix A:" << std::endl;
-//        for(auto i:A.get_internal_matrix()->entry)
-//            std::cout << i << std::endl;}
+*/
 
     // ********** repartition checking part **********
 
@@ -333,11 +326,11 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 10;
+    int vcycle_num            = 1;
     double relative_tolerance = 1e-8;
     std::string smoother      = "jacobi";
-    int preSmooth             = 3;
-    int postSmooth            = 3;
+    int preSmooth             = 1;
+    int postSmooth            = 1;
 
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");
@@ -445,7 +438,7 @@ int main(int argc, char* argv[]){
 //            cout << u[i] << endl;
 
     // *********** write norm of residual for mutiple solve iterations ***********
-/*
+    /*
     double dot;
     std::vector<double> res(num_local_row);
     std::vector<double> res_norm;
@@ -456,15 +449,15 @@ int main(int argc, char* argv[]){
     dotProduct(res, res, &dot, comm);
     res_norm.push_back(sqrt(dot));
 
-    for(i=0; i<10; i++){
+    for(i=0; i<20; i++){
         solver.solve(u, &opts);
         B->residual(u, rhs, res);
         dotProduct(res, res, &dot, comm);
         res_norm.push_back(sqrt(dot));
     }
-    writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
+    if(rank==0) writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
 */
-
+    
 //    Saena1.writeMatrixToFileA(grids[1].A, "Ac", comm);
 //    Saena1.writeMatrixToFileP(&grids[0].P, "P", comm);
 //    Saena1.writeMatrixToFileR(&grids[0].R, "R", comm);

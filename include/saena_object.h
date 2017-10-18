@@ -9,12 +9,12 @@ class Grid;
 
 class saena_object {
 public:
-    int max_level = 1; // fine grid is level 0.
+    int max_level = 15; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 10;
     // coarsening will stop if the number of rows of last level divided by previous level is lower this value.
     double row_reduction_threshold = 0.90;
-    int vcycle_num = 30;
+    int vcycle_num = 40;
     double relative_tolerance = 1e-8;
     std::string smoother = "jacobi";
     int preSmooth  = 3;

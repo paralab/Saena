@@ -1261,6 +1261,7 @@ int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs, std::
     auto omega = float(2.0/3);
     unsigned int i;
     matvec(u, temp);
+#pragma omp parallel for
     for(i=0; i<M; i++){
         temp[i] -= rhs[i];
         temp[i] *= invDiag[i] * omega;

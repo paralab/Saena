@@ -1438,10 +1438,14 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    MPI_Barrier(comm);
-//    printf("rank = %d, nprocs: %d, A->M = %u, A.nnz_l = %u, A.nnz_g = %u, P.nnz_l = %lu, P.nnz_g = %lu, R.nnz_l = %lu,"
-//           " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n", rank, nprocs, A->M, A->nnz_l,
-//           A->nnz_g, P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
+    bool verbose_coarsen = false;
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm);
+        printf("rank = %d, nprocs: %d, A->M = %u, A.nnz_l = %u, A.nnz_g = %u, P.nnz_l = %lu, P.nnz_g = %lu, R.nnz_l = %lu,"
+                       " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n", rank, nprocs, A->M, A->nnz_l,
+               A->nnz_g, P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
+    }
 
     unsigned long i, j;
     prolong_matrix RA_temp(comm); // RA_temp is being used to remove duplicates while pushing back to RA.
@@ -1476,6 +1480,9 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        if(rank==1) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i+A->split[rank], AnnzPerRow[i], AnnzPerRowScan[i+1]);
     }
 
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here1111111111111!!!!!!!" << std::endl; MPI_Barrier(comm);}
+
     // todo: combine indicesP and indicesPRecv together.
     // find row-wise ordering for A and save it in indicesP
     unsigned long* indicesP = (unsigned long*)malloc(sizeof(unsigned long)*A->nnz_l);
@@ -1505,6 +1512,9 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        for(i=0; i<RA_temp.entry.size(); i++)
 //            std::cout << RA_temp.entry[i].row + R->splitNew[rank] << "\t" << RA_temp.entry[i].col << "\t" << RA_temp.entry[i].val << std::endl;}
 
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here222222222222!!!!!!!" << std::endl; MPI_Barrier(comm);}
+
     // ************************************* RA_temp - A remote *************************************
 
     // find the start and end nnz iterator of each block of R.
@@ -1533,6 +1543,9 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     left_block_nnz_scan[0] = 0;
     for(i = 0; i < nprocs; i++)
         left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here333333333333!!!!!!!" << std::endl; MPI_Barrier(comm);}
 
 //    MPI_Barrier(comm);
 //    if(rank==0){
@@ -1686,6 +1699,9 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //    free(R_block_nnz);
 //    free(R_block_nnz_scan);
 
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here444444444444!!!!!!!" << std::endl; MPI_Barrier(comm);}
+
     // todo: check this: since entries of RA_temp with these row indices only exist on this processor,
     // todo: duplicates happen only on this processor, so sorting should be done locally.
     std::sort(RA_temp.entry.begin(), RA_temp.entry.end());
@@ -1781,13 +1797,15 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
                                                  RA.entry[i].val * P->entry[indicesP_Prolong[j]].val));
         }
     }
-//    MPI_Barrier(comm); std::cout << "here22222222222222!!!!!!!" << std::endl; MPI_Barrier(comm);
 
 //    if(rank==1)
 //        for(i=0; i<RAP_temp.entry.size(); i++)
 //            std::cout << RAP_temp.entry[i].row << "\t" << RAP_temp.entry[i].col << "\t" << RAP_temp.entry[i].val << std::endl;
 
     free(indicesP_Prolong);
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here555555555555!!!!!!!" << std::endl; MPI_Barrier(comm);}
 
     // ************************************* RAP_temp - P remote *************************************
 
@@ -1798,8 +1816,6 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     cooEntry* Precv = (cooEntry*)malloc(sizeof(cooEntry)*PMaxNnz);
     long PrecvM;
 
-//    MPI_Barrier(comm); printf("rank=%d here44444444444444444!!!!!!!! \n", rank); MPI_Barrier(comm);
-//
     for(int i = 1; i < nprocs; i++) {
         // send P to the right processor, receive P from the left processor. "left" decreases by one in each iteration. "right" increases by one.
         right = (rank + i) % nprocs;
@@ -1867,7 +1883,9 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
         }
 
     } //for i
-//    MPI_Barrier(comm); printf("rank=%d here55555555555555!!!!!!!! \n", rank); MPI_Barrier(comm);
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here66666666666!!!!!!!" << std::endl; MPI_Barrier(comm);}
 
     free(indicesP_ProlongRecv);
     free(PnnzPerRow);
@@ -1916,7 +1934,12 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     Ac->last_M_shrink = A->last_M_shrink;
     Ac->comm = P->comm;
     Ac->comm_old = P->comm;
-//    printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %u, Ac->nnz_g = %u \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);
+
+    if(verbose_coarsen){
+        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %u, Ac->nnz_g = %u \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here77777777777!!!!!!!" << std::endl; MPI_Barrier(comm);}
 
 //    MPI_Barrier(comm);
 //    if(rank==0){
@@ -1957,6 +1980,14 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        printf("Ac->last_M_shrink = %u, Ac->Mbig = %u, Ac->Mbig * A->cpu_shrink_thre1 = %d \n",
 //               Ac->last_M_shrink, Ac->Mbig, Ac->Mbig * A->cpu_shrink_thre1);
 
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here8888888888!!!!!!!" << std::endl; MPI_Barrier(comm);}
+
+
+//    MPI_Barrier(comm);
+//    if(rank==0) std::cout << "Ac->last_M_shrink = " << Ac->last_M_shrink << ", Ac->Mbig = " << Ac->Mbig
+//                          << ", mult = " << Ac->Mbig * A->cpu_shrink_thre1 << std::endl;
+//    MPI_Barrier(comm);
     if( (nprocs >= Ac->cpu_shrink_thre2) && (Ac->last_M_shrink <= (Ac->Mbig * A->cpu_shrink_thre1)) )
         shrink_cpu_A(Ac, P->splitNew);
 
@@ -1965,7 +1996,13 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //    MPI_Barrier(comm); printf("rank = %d, before Ac->matrix_setup()!!! \n", rank); MPI_Barrier(comm);
 //    MPI_Barrier(comm); printf("rank=%d here777777777777777!!!!!!!! \n", rank); MPI_Barrier(comm);
 
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "here999999999999!!!!!!!" << std::endl; MPI_Barrier(comm);}
+
     Ac->matrix_setup();
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); std::cout << "enddddddddddddddd!!!!!!!" << std::endl; MPI_Barrier(comm);}
 
 //    MPI_Barrier(comm); printf("rank = %d, after  Ac->matrix_setup()!!! \n", rank); MPI_Barrier(comm);
 
