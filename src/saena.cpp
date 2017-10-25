@@ -8,7 +8,6 @@
 #include "saena_object.h"
 #include "pugixml.hpp"
 
-
 // ******************************* matrix *******************************
 
 saena::matrix::matrix(MPI_Comm comm) {

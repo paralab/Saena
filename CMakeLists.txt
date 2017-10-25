@@ -19,51 +19,37 @@ include_directories(${MPI_INCLUDE_PATH})
 
 include_directories(
         include
-        include/usort
+        external/usort/include
 )
 
 add_subdirectory(external/Elemental-0.87.7)
 include_directories("${PROJECT_BINARY_DIR}/external/El/include")
 include_directories(${MPI_CXX_INCLUDE_PATH})
 
-include_directories("/home/abaris/Dropbox/Projects/Saena/build/install/include")
-include_directories("/home/abaris/Dropbox/Projects/Saena/build/external/Elemental-0.87.7/include")
-include_directories("/home/abaris/Dropbox/Projects/Saena/external/Elemental-0.87.7/include")
-include_directories("/home/abaris/Dropbox/Projects/Saena/external/Elemental-0.87.7/external/suite_sparse/include")
+include_directories("build/install/include")
+include_directories("build/external/Elemental-0.87.7/include")
+include_directories("external/Elemental-0.87.7/include")
+include_directories("external/Elemental-0.87.7/external/suite_sparse/include")
+
+include_directories("external/pugixml/include")
+include_directories("external/usort/include")
 
 set(SOURCE_FILES
         src/main.cpp
-        include/saena_matrix.h
         src/saena_matrix.cpp
-        include/saena_object.h
         src/saena_object.cpp
-        include/strength_matrix.h
         src/strength_matrix.cpp
-        include/prolong_matrix.h
         src/prolong_matrix.cpp
-        include/restrict_matrix.h
         src/restrict_matrix.cpp
-        include/aux_functions.h
         src/aux_functions.cpp
-        include/grid.h
         src/grid.cpp
-        include/saena.hpp
         src/saena.cpp
-        src/pugixml.cpp
 
-        include/usort/binUtils.h
-        include/usort/dtypes.h
-        include/usort/indexHolder.h
-        include/usort/ompUtils.h
-        include/usort/ompUtils.tcc
-        include/usort/parUtils.h
-        include/usort/parUtils.tcc
-        include/usort/seqUtils.h
-        include/usort/seqUtils.tcc
-        include/usort/sort_profiler.h
-        src/usort/binUtils.cpp
-        src/usort/parUtils.cpp
-        src/usort/sort_profiler.cpp
+        external/pugixml/src/pugixml.cpp
+
+        external/usort/src/binUtils.cpp
+        external/usort/src/parUtils.cpp
+        external/usort/src/sort_profiler.cpp
         )
 
 add_executable(Saena ${SOURCE_FILES})

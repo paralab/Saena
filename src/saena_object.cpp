@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <set>
 #include <mpi.h>
-#include <usort/parUtils.h>
+#include <parUtils.h>
 
 #include "saena_object.h"
 #include "saena_matrix.h"
