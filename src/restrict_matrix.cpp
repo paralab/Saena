@@ -304,21 +304,33 @@ restrict_matrix::~restrict_matrix(){
 
 int restrict_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
 
+//    printf("R matvec: start\n");
+
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+//    MPI_Barrier(comm);
+//    printf("R matvec: after comm\n");
+//    MPI_Barrier(comm);
+
 //    totalTime = 0;
 //    double t10 = MPI_Wtime();
 
+//    MPI_Barrier(comm);
+//    printf("vIndexSize = %u \n", vIndexSize);
+//    MPI_Barrier(comm);
+
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
-    for(unsigned int i=0;i<vIndexSize;i++)
+    for(unsigned int i=0;i<vIndexSize;i++){
+//        printf("%u, vIndex[i] = %lu \n", i, vIndex[i]);
         vSend[i] = v[( vIndex[i] )];
+    }
 //    double t20 = MPI_Wtime();
 //    time[0] += (t20-t10);
 
-//    if (rank==1){
+//    if (rank==0){
 //        cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << endl;
 //        for(int i=0; i<vIndexSize; i++)
 //            cout << vSend[i] << endl;}

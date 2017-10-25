@@ -6,7 +6,7 @@
 
 #include "grid.h"
 #include "saena.hpp"
-
+#include <El.hpp>
 
 using namespace std;
 
@@ -18,8 +18,8 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    unsigned long i;
 //    int assert1, assert2, assert3;
+//    unsigned long i;
     bool verbose = false;
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
@@ -173,8 +173,8 @@ int main(int argc, char* argv[]){
     // ********** 2 - set rhs: read from file **********
 
 /*
-//    char* Vname(argv[2]);
-    char* Vname(argv[3]);
+    char* Vname(argv[2]);
+//    char* Vname(argv[3]);
 
     // check if the size of rhs match the number of rows of A
     struct stat st;
@@ -338,6 +338,7 @@ int main(int argc, char* argv[]){
     saena::amg solver;
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
     solver.set_matrix(&A);
+//    printf("\nrank = %d, main: after setup\n", rank);
     solver.set_rhs(rhs);
 
     t2 = MPI_Wtime();
@@ -457,7 +458,7 @@ int main(int argc, char* argv[]){
     }
     if(rank==0) writeVectorToFiled(res_norm, res_norm.size(), "res_norm", comm);
 */
-    
+
 //    Saena1.writeMatrixToFileA(grids[1].A, "Ac", comm);
 //    Saena1.writeMatrixToFileP(&grids[0].P, "P", comm);
 //    Saena1.writeMatrixToFileR(&grids[0].R, "R", comm);

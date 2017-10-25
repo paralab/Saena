@@ -93,13 +93,17 @@ public:
     MPI_Comm comm;
     MPI_Comm comm_horizontal;
     MPI_Comm comm_old;
+    bool shrinked = false;
 
     bool add_duplicates = false;
 
     bool active = true;
-    int cpu_shrink_thre1 = 1; // Ac->last_M_shrink <= (Ac->Mbig * A->cpu_shrink_thre1)
-    int cpu_shrink_thre2 = 1;
+    bool active_old_comm = false; // this is used for prolong and post-smooth
+    int cpu_shrink_thre1 = 2; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
+    int cpu_shrink_thre2 = 2;
     unsigned int last_M_shrink;
+
+    float jacobi_omega = float(2.0/3);
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
@@ -121,7 +125,7 @@ public:
     int matvec(const std::vector<double>& v, std::vector<double>& w);
     int residual(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
     int jacobi(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp);
-    int inverse_diag(double* x);
+    int inverse_diag(std::vector<double>& x);
     int destroy();
 };
 

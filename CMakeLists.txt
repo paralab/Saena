@@ -22,6 +22,15 @@ include_directories(
         include/usort
 )
 
+add_subdirectory(external/Elemental-0.87.7)
+include_directories("${PROJECT_BINARY_DIR}/external/El/include")
+include_directories(${MPI_CXX_INCLUDE_PATH})
+
+include_directories("/home/abaris/Dropbox/Projects/Saena/build/install/include")
+include_directories("/home/abaris/Dropbox/Projects/Saena/build/external/Elemental-0.87.7/include")
+include_directories("/home/abaris/Dropbox/Projects/Saena/external/Elemental-0.87.7/include")
+include_directories("/home/abaris/Dropbox/Projects/Saena/external/Elemental-0.87.7/external/suite_sparse/include")
+
 set(SOURCE_FILES
         src/main.cpp
         include/saena_matrix.h
@@ -69,4 +78,4 @@ if(MPI_LINK_FLAGS)
             LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif()
 
-target_link_libraries(Saena ${MPI_LIBRARIES})
+target_link_libraries(Saena ${MPI_LIBRARIES} El)
