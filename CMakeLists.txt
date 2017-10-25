@@ -5,7 +5,6 @@ cmake_minimum_required(VERSION 2.8)
 project(Saena)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
 #set(CMAKE_CXX_STANDARD 11)
 
 find_package(OpenMP)
@@ -20,19 +19,17 @@ include_directories(${MPI_INCLUDE_PATH})
 include_directories(
         include
         external/usort/include
+        external/pugixml/include
+
+        build/install/include
+        build/external/Elemental-0.87.7/include
+        external/Elemental-0.87.7/include
+        external/Elemental-0.87.7/external/suite_sparse/include
 )
 
 add_subdirectory(external/Elemental-0.87.7)
 include_directories("${PROJECT_BINARY_DIR}/external/El/include")
 include_directories(${MPI_CXX_INCLUDE_PATH})
-
-include_directories("build/install/include")
-include_directories("build/external/Elemental-0.87.7/include")
-include_directories("external/Elemental-0.87.7/include")
-include_directories("external/Elemental-0.87.7/external/suite_sparse/include")
-
-include_directories("external/pugixml/include")
-include_directories("external/usort/include")
 
 set(SOURCE_FILES
         src/main.cpp
