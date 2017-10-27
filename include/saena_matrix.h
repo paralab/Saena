@@ -104,6 +104,7 @@ public:
     unsigned int last_M_shrink;
 
     float jacobi_omega = float(2.0/3);
+    double eig_max_diagxA;
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
@@ -124,8 +125,10 @@ public:
     int matrix_setup();
     int matvec(const std::vector<double>& v, std::vector<double>& w);
     int residual(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
-    int jacobi(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp);
     int inverse_diag(std::vector<double>& x);
+    int jacobi(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp);
+    int chebyshev(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp, std::vector<double>& temp2);
+    int find_eig();
     int destroy();
 };
 

@@ -6,6 +6,7 @@
 #include <omp.h>
 #include "saena_matrix.h"
 #include "parUtils.h"
+#include "El.hpp"
 
 
 saena_matrix::saena_matrix(){}
@@ -749,7 +750,7 @@ int saena_matrix::repartition(){
 }
 
 
-int saena_matrix::matrix_setup(){
+int saena_matrix::matrix_setup() {
     // before using this function these variables of SaenaMatrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
@@ -1168,6 +1169,9 @@ int saena_matrix::matrix_setup(){
             MPI_Barrier(comm);
         }
 
+        // set eig_max here
+        find_eig();
+
     } // end of if(active)
 
 
@@ -1329,7 +1333,7 @@ int saena_matrix::inverse_diag(std::vector<double>& x) {
 }
 
 
-int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp) {
+int saena_matrix::jacobi(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Ax - rhs)
@@ -1338,13 +1342,17 @@ int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs, std::
 // 3. three = inverseDiag * two * omega
 // 4. four = u - three
 
+    unsigned int i, j;
+
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
 
+    for(j = 0; j < iter; j++){
+//        printf("jacobi iter = %u \n", j);
 //    MPI_Barrier(comm);
 //    double t1 = MPI_Wtime();
 
-    matvec(u, temp);
+        matvec(u, temp);
 
 //    double t2 = MPI_Wtime();
 //    print_time(t1, t2, "jacobi matvec time:", comm);
@@ -1353,14 +1361,118 @@ int saena_matrix::jacobi(std::vector<double>& u, std::vector<double>& rhs, std::
 //    t1 = MPI_Wtime();
 
 #pragma omp parallel for
-    for(unsigned int i=0; i<M; i++){
-        temp[i] -= rhs[i];
-        temp[i] *= invDiag[i] * jacobi_omega;
-        u[i] -= temp[i];
-    }
+        for(i=0; i<M; i++){
+            temp[i] -= rhs[i];
+            temp[i] *= invDiag[i] * jacobi_omega;
+            u[i] -= temp[i];
+        }
 
 //    t2 = MPI_Wtime();
 //    print_time(t1, t2, "jacobi forloop time:", comm);
+    }
+
+    return 0;
+}
+
+
+int saena_matrix::find_eig() {
+
+    int argc = 0;
+    char** argv = {NULL};
+    El::Environment env( argc, argv );
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    const El::Int n = Mbig;
+
+    El::Matrix<double> A(n,n);
+    for(unsigned long i = 0; i<nnz_l; i++)
+        A(entry[i].row, entry[i].col) = entry[i].val * invDiag[entry[i].row];
+
+//    El::Print( A, "\nElemental matrix made for finding eigenvalues:\n" );
+
+    El::Matrix<El::Complex<double>> w(n,1);
+    El::SchurCtrl<double> schurCtrl;
+    schurCtrl.time = false;
+//    schurCtrl.hessSchurCtrl.progress = true;
+//    El::Schur( A, w, V, schurCtrl ); //  eigenvectors will be saved in V.
+    El::Schur( A, w, schurCtrl ); // eigenvalues will be saved in w.
+//    El::Print( w, "eigenvalues:" );
+
+    eig_max_diagxA = w.Get(0,0).real();
+    for(unsigned long i = 1; i < n; i++)
+        if(w.Get(i,0).real() > eig_max_diagxA)
+            eig_max_diagxA = w.Get(i,0).real();
+
+//    if(rank==0) printf("eig_max = %f \n", eig_max_diagxA);
+
+/*
+    // parallel
+    const El::Grid grid(comm, nprocs);
+//    printf("rank = %d, Row = %d, Col = %d \n", rank, grid.Row(), grid.Col());
+
+    El::DistMatrix<double> A(grid);
+    A.Resize( n, n );
+    El::Zero( A );
+
+    const El::Int localHeight = A.LocalHeight();
+    const El::Int localWidth  = A.LocalWidth();
+    auto& ALoc = A.Matrix();
+
+    long iter = 0;
+    for( El::Int jLoc=0; jLoc<localWidth; ++jLoc )
+        for( El::Int iLoc=0; iLoc<localHeight; ++iLoc ){
+            ALoc(iLoc,jLoc) = rank*1000 + iter;
+            iter++;
+//            ALoc(iLoc,jLoc) = iLoc+split[rank] + jLoc * localHeight;
+        }
+
+//    for(unsigned long i = 0; i<nnz_l; i++)
+//        ALoc(entry[i].row, entry[i].col) = entry[i].val;
+
+    El::Print( ALoc, "\nElemental matrix made for finding eigenvalues:\n" );
+*/
+
+    return 0;
+}
+
+
+int saena_matrix::chebyshev(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res, std::vector<double>& d){
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    unsigned long i;
+    double alpha = 0.25 * eig_max_diagxA;
+    double beta = eig_max_diagxA;
+    double delta = (beta - alpha)/2;
+    double theta = (beta + alpha)/2;
+    double s1 = theta/delta;
+    double rhok = 1/s1;
+    double rhokp1, d1, d2, dot;
+
+    // first loop
+    residual(u, rhs, res);
+    for(i = 0; i < u.size(); i++){
+        d[i] = (-res[i] * invDiag[i]) / theta;
+        u[i] += d[i];
+//        if(rank==0) printf("u[%lu] = %f \n", i, u[i]);
+    }
+
+    for( i = 1; i < iter; i++){
+        rhokp1 = 1 / (2*s1 - rhok);
+        d1     = rhokp1 * rhok;
+        d2     = 2*rhokp1 / delta;
+        rhok   = rhokp1;
+        residual(u, rhs, res);
+        for(unsigned long j = 0; j < u.size(); j++){
+            d[j] = ( d1 * d[j] ) + ( d2 * (-res[j]) * invDiag[j] );
+            u[j] += d[j];
+//        if(rank==0) printf("u[%lu] = %f \n", j, u[j]);
+        }
+    }
 
     return 0;
 }

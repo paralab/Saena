@@ -2305,13 +2305,27 @@ int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vect
 */
 
 
+int saena_object::smooth(Grid* grid, std::string smoother, std::vector<double>& u, std::vector<double>& rhs, int iter){
+    std::vector<double> temp1(u.size());
+    std::vector<double> temp2(u.size());
+
+    if(smoother == "jacobi"){
+        grid->A->jacobi(iter, u, rhs, temp1);
+    }else if(smoother == "chebyshev"){
+        grid->A->chebyshev(iter, u, rhs, temp1, temp2);
+    }else{
+        printf("error: Unknown smoother");
+        MPI_Finalize();
+        return -1;
+    }
+
+    return 0;
+}
+
+
 int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs){
 
-    // ********** shrink rhs and u  **********
-    // shrink rhs and u for the whole level, in each vcycle iteration
-    // check if shrinking is required.
-
-//    printf("rank = %d, u.size = %lu, rhs.size = %lu, current level = %d \n", rank, u.size(), rhs.size(), grid->currentLevel);
+//    printf("u.size = %lu, rhs.size = %lu, current level = %d \n", u.size(), rhs.size(), grid->currentLevel);
 //    MPI_Barrier(grid->A->comm_old);
 
     double t1, t2;
@@ -2363,13 +2377,13 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         //    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << std::endl;
 
         // **************************************** 1. pre-smooth ****************************************
-//        MPI_Barrier(grid->A->comm); printf("rank = %d \n", rank); MPI_Barrier(grid->A->comm);
 
         MPI_Barrier(grid->A->comm);
         t1 = MPI_Wtime();
 
-        for (i = 0; i < preSmooth; i++)
-            grid->A->jacobi(u, rhs, temp);
+        smooth(grid, smoother, u, rhs, preSmooth);
+//        for (i = 0; i < preSmooth; i++)
+//            grid->A->jacobi(u, rhs, temp);
 
         t2 = MPI_Wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": pre";
@@ -2486,8 +2500,9 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         MPI_Barrier(grid->A->comm);
         t1 = MPI_Wtime();
 
-        for (i = 0; i < postSmooth; i++)
-            grid->A->jacobi(u, rhs, temp);
+        smooth(grid, smoother, u, rhs, postSmooth);
+//        for (i = 0; i < postSmooth; i++)
+//            grid->A->jacobi(u, rhs, temp);
 
         t2 = MPI_Wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": post";

@@ -39,6 +39,7 @@ public:
     int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
     int coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
     int solve_coarsest(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs);
+    int smooth(Grid* grid, std::string smoother, std::vector<double>& u, std::vector<double>& rhs, int iter);
     int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs);
     int solve(std::vector<double>& u);
     int set_repartition_rhs(std::vector<double>& rhs);
