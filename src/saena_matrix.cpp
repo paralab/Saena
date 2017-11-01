@@ -195,7 +195,7 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
     MPI_Allreduce(&Mbig_local, &Mbig, 1, MPI_UNSIGNED, MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
 //    std::cout << Mbig << std::endl;
-//    MPI_Barrier(comm); printf("rank = %d, Mbig = %u, nnz_g = %u, initial_nnz_l = %u \n", rank, Mbig, nnz_g, initial_nnz_l); MPI_Barrier(comm);
+//    printf("rank = %d, Mbig = %u, nnz_g = %u, initial_nnz_l = %u \n", rank, Mbig, nnz_g, initial_nnz_l);
 
 }
 
@@ -247,6 +247,7 @@ int saena_matrix::set(unsigned int* row, unsigned int* col, double* val, unsigne
     cooEntry temp_new;
     std::pair<std::set<cooEntry>::iterator, bool> p;
 
+    // todo: isn't it faster to allocate memory for nnz_local, then assign, instead of inserting one by one.
     for(unsigned int i=0; i<nnz_local; i++){
 
         temp_new = cooEntry(row[i], col[i], val[i]);
@@ -758,9 +759,9 @@ int saena_matrix::matrix_setup() {
         int nprocs, rank;
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
-        bool verbose_matrx_setup = false;
+        bool verbose_matrix_setup = false;
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l);
             MPI_Barrier(comm);
@@ -810,7 +811,7 @@ int saena_matrix::matrix_setup() {
 
         // *************************** set the inverse of diagonal of A (for smoothers) ****************************
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, invDiag \n", rank);
             MPI_Barrier(comm);
@@ -847,7 +848,7 @@ int saena_matrix::matrix_setup() {
         // local elements are elements that correspond to vector elements which are local to this process,
         // and, remote elements correspond to vector elements which should be received from another processes
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote1 \n", rank);
             MPI_Barrier(comm);
@@ -942,7 +943,7 @@ int saena_matrix::matrix_setup() {
             } // for i
         }
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote2 \n", rank);
             MPI_Barrier(comm);
@@ -986,7 +987,7 @@ int saena_matrix::matrix_setup() {
 
         //    if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << std::endl;
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote3 \n", rank);
             MPI_Barrier(comm);
@@ -1016,7 +1017,7 @@ int saena_matrix::matrix_setup() {
 //            for(int i=0; i<vIndexSize; i++)
 //                std::cout << vIndex[i] << std::endl;}
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote4 \n", rank);
             MPI_Barrier(comm);
@@ -1044,7 +1045,7 @@ int saena_matrix::matrix_setup() {
         // *************************** find start and end of each thread for matvec ****************************
         // also, find nnz per row for local and remote matvec
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, thread1 \n", rank);
             MPI_Barrier(comm);
@@ -1115,7 +1116,7 @@ int saena_matrix::matrix_setup() {
                     }*/
         }
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, thread2 \n", rank);
             MPI_Barrier(comm);
@@ -1163,14 +1164,15 @@ int saena_matrix::matrix_setup() {
         //        indicesP[i] = i;
         //    std::sort(indicesP, &indicesP[nnz_l], sort_indices2(&*entry.begin()));
 
-        if(verbose_matrx_setup) {
+        if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, done \n", rank);
             MPI_Barrier(comm);
         }
 
         // set eig_max here
-        find_eig();
+        // todo: execute this line only if the smoother is set to chebyshev.
+//        find_eig();
 
     } // end of if(active)
 
@@ -1376,7 +1378,6 @@ int saena_matrix::jacobi(int iter, std::vector<double>& u, std::vector<double>& 
 
 
 int saena_matrix::find_eig() {
-
     int argc = 0;
     char** argv = {NULL};
     El::Environment env( argc, argv );
@@ -1387,52 +1388,99 @@ int saena_matrix::find_eig() {
 
     const El::Int n = Mbig;
 
+    // *************************** serial ***************************
+/*
     El::Matrix<double> A(n,n);
+    El::Zero( A );
     for(unsigned long i = 0; i<nnz_l; i++)
         A(entry[i].row, entry[i].col) = entry[i].val * invDiag[entry[i].row];
 
-//    El::Print( A, "\nElemental matrix made for finding eigenvalues:\n" );
+//    El::Print( A, "\nGlobal Elemental matrix (serial):\n" );
 
     El::Matrix<El::Complex<double>> w(n,1);
+*/
+    // *************************** parallel ***************************
+
+    El::DistMatrix<double> A(n,n);
+    El::Zero( A );
+    A.Reserve(nnz_l);
+    for(unsigned long i = 0; i < nnz_l; i++){
+//        if(rank==1) std::cout << entry[i].row << "\t" << entry[i].col << "\t" << entry[i].val << std::endl;
+        A.QueueUpdate(entry[i].row, entry[i].col, entry[i].val * invDiag[entry[i].row - split[rank]]);
+    }
+    A.ProcessQueues();
+//    El::Print( A, "\nGlobal Elemental matrix:\n" );
+
+    El::DistMatrix<El::Complex<double>> w(n,1);
+
+    // *************************** common part between serial and parallel ***************************
+
     El::SchurCtrl<double> schurCtrl;
     schurCtrl.time = false;
 //    schurCtrl.hessSchurCtrl.progress = true;
 //    El::Schur( A, w, V, schurCtrl ); //  eigenvectors will be saved in V.
     El::Schur( A, w, schurCtrl ); // eigenvalues will be saved in w.
-//    El::Print( w, "eigenvalues:" );
+//    MPI_Barrier(comm); El::Print( w, "eigenvalues:" ); MPI_Barrier(comm);
 
     eig_max_diagxA = w.Get(0,0).real();
     for(unsigned long i = 1; i < n; i++)
         if(w.Get(i,0).real() > eig_max_diagxA)
             eig_max_diagxA = w.Get(i,0).real();
 
-//    if(rank==0) printf("eig_max = %f \n", eig_max_diagxA);
+    if(rank==0) printf("eig_max = %f \n", eig_max_diagxA);
+
 
 /*
-    // parallel
+    // parallel (draft)
     const El::Grid grid(comm, nprocs);
+//    const El::Grid grid(comm, nprocs, El::ROW_MAJOR);
 //    printf("rank = %d, Row = %d, Col = %d \n", rank, grid.Row(), grid.Col());
 
-    El::DistMatrix<double> A(grid);
-    A.Resize( n, n );
-    El::Zero( A );
 
-    const El::Int localHeight = A.LocalHeight();
-    const El::Int localWidth  = A.LocalWidth();
-    auto& ALoc = A.Matrix();
+//    El::DistMatrix<double> A(n, n, grid);
+//    El::Zero( A );
+    El::SetDefaultBlockHeight(M);
+    El::SetDefaultBlockWidth(Mbig);
+    El::DistMatrix<double,El::VC, El::STAR, El::BLOCK> B(n, n, grid);
 
-    long iter = 0;
-    for( El::Int jLoc=0; jLoc<localWidth; ++jLoc )
-        for( El::Int iLoc=0; iLoc<localHeight; ++iLoc ){
-            ALoc(iLoc,jLoc) = rank*1000 + iter;
-            iter++;
+//    printf("rank = %d, BlockHeight = %d, BlockWidth = %d, ColCut = %d, RowCut = %d \n", rank, B.BlockHeight(), B.BlockWidth(), B.ColCut(), B.RowCut());
+//    printf("rank = %d, LocalRowOffset[1] = %d, GlobalRow[1] = %d, GlobalCol[40] = %d, DefaultBlockHeight = %d \n", rank, B.LocalRowOffset(1), B.GlobalRow(1), B.GlobalCol(40), El::DefaultBlockHeight());
+
+//    bool colMajor = true;
+//    const El::GridOrder order = ( colMajor ? El::COLUMN_MAJOR : ROW_MAJOR );
+
+    auto& C = B.Matrix();
+    C.Resize( M, Mbig ); // change the submatrices' sizes to Saena's sizes.
+    El::Zero( C );
+//    printf("rank = %d, C.Height() = %d, C.Width() = %d, B.LocalRowOffset(5) = %d \n", rank, C.Height(), C.Width(), B.LocalRowOffset(5));
+//    El::Matrix<double> C(M, Mbig);
+
+//    const El::Int localHeight = A.LocalHeight();
+//    const El::Int localWidth  = A.LocalWidth();
+//    printf("rank = %d, localHeight = %d, localWidth = %d \n", rank, localHeight, localWidth);
+
+//    long iter = 0;
+//    for( El::Int jLoc=0; jLoc<localWidth; ++jLoc )
+//        for( El::Int iLoc=0; iLoc<localHeight; ++iLoc ){
+//            if(rank==1) ALoc(iLoc,jLoc) = rank*1000 + iter;
+//            A.Set(iLoc, jLoc, rank*1000 + iter);
+//            iter++;
 //            ALoc(iLoc,jLoc) = iLoc+split[rank] + jLoc * localHeight;
-        }
+//        }
 
-//    for(unsigned long i = 0; i<nnz_l; i++)
-//        ALoc(entry[i].row, entry[i].col) = entry[i].val;
+//    for(unsigned long i = 0; i<nnz_l; i++){
+//        if(rank==1) std::cout << entry[i].row - split[rank] << "\t" << entry[i].col << "\t" << entry[i].val << std::endl;
+//        C(entry[i].row - split[rank], entry[i].col) = entry[i].val;
+//    }
 
-    El::Print( ALoc, "\nElemental matrix made for finding eigenvalues:\n" );
+//    MPI_Barrier(comm);
+//    if(rank==0) El::Print( C, "\nLocal Elemental matrix:\n" );
+//    MPI_Barrier(comm);
+//    if(rank==1) El::Print( C, "\nLocal Elemental matrix:\n" );
+
+//    El::DistMatrix<double> E(B);
+//    MPI_Barrier(comm);
+//    El::Print( E, "\nGlobal Elemental matrix:\n" );
 */
 
     return 0;
@@ -1455,6 +1503,7 @@ int saena_matrix::chebyshev(int iter, std::vector<double>& u, std::vector<double
 
     // first loop
     residual(u, rhs, res);
+#pragma omp parallel for
     for(i = 0; i < u.size(); i++){
         d[i] = (-res[i] * invDiag[i]) / theta;
         u[i] += d[i];
@@ -1467,6 +1516,7 @@ int saena_matrix::chebyshev(int iter, std::vector<double>& u, std::vector<double
         d2     = 2*rhokp1 / delta;
         rhok   = rhokp1;
         residual(u, rhs, res);
+#pragma omp parallel for
         for(unsigned long j = 0; j < u.size(); j++){
             d[j] = ( d1 * d[j] ) + ( d2 * (-res[j]) * invDiag[j] );
             u[j] += d[j];

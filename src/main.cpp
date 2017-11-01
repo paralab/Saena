@@ -327,11 +327,11 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 1;
+    int vcycle_num            = 20;
     double relative_tolerance = 1e-8;
-    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
-    int preSmooth             = 1;
-    int postSmooth            = 1;
+    std::string smoother      = "jacobi"; // choices: "jacobi", "chebyshev"
+    int preSmooth             = 3;
+    int postSmooth            = 3;
 
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");
@@ -436,18 +436,23 @@ int main(int argc, char* argv[]){
 //        for(i=0; i<u.size(); i++)
 //            cout << u[i] << endl;
 
+    //jacobi
+//    std::vector<double> temp(num_local_row);
+//    saena_matrix* B = A.get_internal_matrix();
+//    for (int i = 0; i < postSmooth; i++)
+//        B->jacobi(postSmooth, u, rhs, temp);
 
 /*
     //chebyshev
-//    saena_matrix* B = A.get_internal_matrix();
+    saena_matrix* B = A.get_internal_matrix();
     std::vector<double> uu(num_local_row, 0);
     std::vector<double> temp1(num_local_row);
     std::vector<double> temp2(num_local_row);
-    B->chebyshev(10, uu, rhs, temp1, temp2);
+    B->chebyshev(1, uu, rhs, temp1, temp2);
 
-    if(rank==0)
-        for(long i=0; i<uu.size(); i++)
-            cout << i << "\t" << uu[i] << endl;
+//    if(rank==0)
+//        for(long i=0; i<uu.size(); i++)
+//            cout << i << "\t" << uu[i] << endl;
 */
 
     // *********** write norm of residual for mutiple solve iterations ***********

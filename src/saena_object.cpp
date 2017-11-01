@@ -527,7 +527,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     //            aggregation process, it becomes the weight of the node's aggregate.
 
     // todo: idea: the fine matrix is divided in a way for the sake of work-balance. consider finding almost
-    // todo: the same number of aggregates on different processors to keep it work-balanced for also coarse matrices.
+    // todo: the same number of aggregates on different processors to keep it work-balanced for coarse matrices too.
 
     MPI_Comm comm = S->comm;
 
@@ -561,8 +561,8 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         for (i = 0; i < size; ++i)
             std::cout << i << "\tinitialWeight = " << initialWeight[i] << std::endl;}
     MPI_Barrier(comm);
-
 */
+
     const int wOffset = 62;
     const unsigned long weightMax = (1UL<<wOffset) - 1;
     const unsigned long UNDECIDED = 1UL<<wOffset;
@@ -629,7 +629,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                 for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
                     col_index = S->col_local[S->indicesP_local[iter]] - S->split[rank];
                     if (weight[col_index] & ROOT) {
-//                        std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$" << i << "\t col_index = " << col_index << "\t weight[col_index] = " << (weight[col_index] & weightMax) << "\t aggregate = " << S->col_local[S->indicesP_local[iter]] << std::endl;
+//                        std::cout << i << "\t col_index = " << col_index << "\t weight[col_index] = " << (weight[col_index] & weightMax) << "\t aggregate = " << S->col_local[S->indicesP_local[iter]] << std::endl;
                         weight[i] = (0UL << wOffset | (weight[col_index] & weightMax));
                         aggregate[i] = S->col_local[S->indicesP_local[iter]];
                         root_distance[i] = 1;
@@ -644,8 +644,8 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         iter = 0;
         for (i = 0; i < size; ++i) {
             if(weight[i]&UNDECIDED) {
-//                if(i==25) std::cout << ">>>>>>>>>>>>>>>>>25 root ==================== " << root_distance[25] << "\taggregate = " << aggregate[25] << std::endl;
-//            if(weight[i]>>wOffset <= 1) {
+//                if(i==25) std::cout << "25 root ==================== " << root_distance[25] << "\taggregate = " << aggregate[25] << std::endl;
+//                if(weight[i]>>wOffset <= 1) {
                 root_distance[i] = 3; // initialization
                 dist1or2undecided[i] = false; // initialization
                 aggregateTemp = aggregate[i];
@@ -684,9 +684,10 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
             }else
                 iter += S->nnzPerRow_local[i];
         }
-//        if(rank==0) std::cout << "1>>>>>>>>>>>>>>>>>10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << std::endl;
+//        if(rank==0) std::cout << "10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << std::endl;
 
         // todo: for distance-1 it is probably safe to remove this for loop, and change weight2 to weight and aggregate2 to aggregate at the end of the previous for loop.
+#pragma omp parallel for
         for (i = 0; i < size; ++i) {
             if( (S->nnzPerRow_local[i]!=0) && (weight[i]&UNDECIDED) && (root_distance[i]==1)) {
                 weight[i] = (1UL << wOffset | weight2[i] & weightMax );
@@ -694,7 +695,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //                if(rank==0) std::cout << i+S->split[rank] << "\t" << aggregate[i] << "\t" << aggregate2[i] << std::endl;
             }
         }
-//        if(rank==0) std::cout << "2>>>>>>>>>>>>>>>>>10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << std::endl;
+//        if(rank==0) std::cout << "10 root ==================== " << root_distance[10] << "\taggregate = " << aggregate[10] << std::endl;
 
         //    if(rank==0){
         //        std::cout << std::endl << "after first max computation!" << std::endl;
@@ -702,6 +703,13 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         //            std::cout << i << "\tweight = " << weight[i] << "\tindex = " << aggregate[i] << std::endl;
         //    }
 
+
+
+
+
+
+
+/*
         // ******************************* exchange remote max values for the second round of max computation *******************************
 
         // vSend[2*i]:   the first right 62 bits of vSend is maxPerCol for remote elements that should be sent to other processes.
@@ -724,6 +732,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //                }
 
 //        if(rank==1) std::cout << std::endl << std::endl;
+#pragma omp parallel for
         for (i = 0; i < S->vIndexSize; i++){
 //            S->vSend[i] = weight[(S->vIndex[i])];
             S->vSend[2*i] = weight[S->vIndex[i]];
@@ -783,6 +792,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         }
 //        if(rank==1) std::cout << "3>>>>>>>>>>>>>>>>>2 root ==================== " << root_distance[2] << "\taggregate = " << aggregate[2] << std::endl;
 
+#pragma omp parallel for
         for (i = 0; i < size; ++i) {
             if( (S->nnzPerRow_local[i]!=0) && (weight[i]&UNDECIDED) && (root_distance[i]==2) ) {
                 aggregate[i] = aggregate2[i];
@@ -980,6 +990,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                 break;
             }
         }
+*/
 
 //        whileiter++;
 //        if(whileiter==15) continueAggLocal = false;
@@ -1004,7 +1015,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 
     } //while(continueAgg)
 
-//    MPI_Barrier(comm);
+ //    MPI_Barrier(comm);
 //    if(rank==nprocs-1) std::cout << "number of loops to find aggregation: " << whileiter << std::endl;
 //    MPI_Barrier(comm);
 
@@ -1571,7 +1582,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     }
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 1: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 1: rank = %d \n", rank); MPI_Barrier(comm);}
 
     // todo: combine indicesP and indicesPRecv together.
     // find row-wise ordering for A and save it in indicesP
@@ -1603,7 +1614,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //            std::cout << RA_temp.entry[i].row + R->splitNew[rank] << "\t" << RA_temp.entry[i].col << "\t" << RA_temp.entry[i].val << std::endl;}
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 2: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 2: rank = %d \n", rank); MPI_Barrier(comm);}
 
     // ************************************* RA_temp - A remote *************************************
 
@@ -1635,7 +1646,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
         left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 3: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 3: rank = %d \n", rank); MPI_Barrier(comm);}
 
 //    MPI_Barrier(comm);
 //    if(rank==0){
@@ -1774,7 +1785,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //    free(R_block_nnz_scan);
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 4: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 4: rank = %d \n", rank); MPI_Barrier(comm);}
 
     // todo: check this: since entries of RA_temp with these row indices only exist on this processor,
     // todo: duplicates happen only on this processor, so sorting should be done locally.
@@ -1879,7 +1890,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     free(indicesP_Prolong);
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d \n", rank); MPI_Barrier(comm);}
 
     // ************************************* RAP_temp - P remote *************************************
 
@@ -1959,7 +1970,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     } //for i
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 6: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 6: rank = %d \n", rank); MPI_Barrier(comm);}
 
     free(indicesP_ProlongRecv);
     free(PnnzPerRow);
@@ -2015,7 +2026,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %u, Ac->nnz_g = %u \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 7: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 7: rank = %d \n", rank); MPI_Barrier(comm);}
 
 //    MPI_Barrier(comm);
 //    if(rank==0){
@@ -2090,13 +2101,13 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     // ********** setup matrix **********
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 8: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 8: rank = %d \n", rank); MPI_Barrier(comm);}
 
     if(Ac->active) // there is another if(active) in matrix_setup().
         Ac->matrix_setup();
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("end of coarsen: step 9: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("end of coarsen: step 9: rank = %d \n", rank); MPI_Barrier(comm);}
 
     return 0;
 } // end of SaenaObject::coarsen
@@ -2341,6 +2352,8 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
     std::vector<double> uCorr;
     std::vector<double> temp;
 
+    double dot;
+
     if(grid->A->active) {
         MPI_Comm_size(grid->A->comm, &nprocs);
         MPI_Comm_rank(grid->A->comm, &rank);
@@ -2372,9 +2385,9 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         uCorrCoarse.resize(grid->Ac.M);
         temp.resize(grid->A->M);
 
-        //    residual(grid->A, u, rhs, res);
-        //    dotProduct(res, res, &dot, comm);
-        //    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << std::endl;
+        grid->A->residual(u, rhs, res);
+        dotProduct(res, res, &dot, grid->A->comm);
+        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << std::endl;
 
         // **************************************** 1. pre-smooth ****************************************
 
@@ -2383,7 +2396,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
         smooth(grid, smoother, u, rhs, preSmooth);
 //        for (i = 0; i < preSmooth; i++)
-//            grid->A->jacobi(u, rhs, temp);
+//            grid->A->jacobi(preSmooth, u, rhs, temp);
 
         t2 = MPI_Wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": pre";
@@ -2404,8 +2417,8 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         //        for(auto i:res)
         //            std::cout << i << std::endl;
 
-        //    dotProduct(res, res, &dot, comm);
-        //    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << std::endl;
+        dotProduct(res, res, &dot, grid->A->comm);
+        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << std::endl;
 
         // **************************************** 3. restrict ****************************************
 
@@ -2482,7 +2495,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //                std::cout << uCorr[i] << std::endl;
 //         }
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (i = 0; i < u.size(); i++)
             u[i] -= uCorr[i];
 
@@ -2491,9 +2504,9 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         //        for(i=0; i<u.size(); i++)
         //            std::cout << u[i] << std::endl;
 
-        //    residual(grid->A, u, rhs, res);
-        //    dotProduct(res, res, &dot, comm);
-        //    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << std::endl;
+        grid->A->residual(u, rhs, res);
+        dotProduct(res, res, &dot, grid->A->comm);
+        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << std::endl;
 
         // **************************************** 7. post-smooth ****************************************
 
@@ -2502,7 +2515,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
         smooth(grid, smoother, u, rhs, postSmooth);
 //        for (i = 0; i < postSmooth; i++)
-//            grid->A->jacobi(u, rhs, temp);
+//            grid->A->jacobi(postSmooth, u, rhs, temp);
 
         t2 = MPI_Wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": post";
@@ -2513,9 +2526,9 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         //        for(auto i:u)
         //            std::cout << i << std::endl;
 
-        //    residual(grid->A, u, rhs, res);
-        //    dotProduct(res, res, &dot, comm);
-        //    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
+        grid->A->residual(u, rhs, res);
+        dotProduct(res, res, &dot, grid->A->comm);
+        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
 
     } // end of if(active)
 

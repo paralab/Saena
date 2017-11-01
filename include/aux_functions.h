@@ -53,6 +53,7 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
 int randomVector4(std::vector<unsigned long>& V, long size);
 
 
+// the order of this class is called "Column-major order"
 class cooEntry{
 public:
     unsigned long row;
