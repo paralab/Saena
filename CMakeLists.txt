@@ -32,6 +32,15 @@ include_directories("${PROJECT_BINARY_DIR}/external/El/include")
 include_directories(${MPI_CXX_INCLUDE_PATH})
 
 set(SOURCE_FILES
+        include/saena.hpp
+        include/saena_matrix.h
+        include/saena_object.h
+        include/strength_matrix.h
+        include/prolong_matrix.h
+        include/restrict_matrix.h
+        include/aux_functions.h
+        include/grid.h
+
         src/main.cpp
         src/saena_matrix.cpp
         src/saena_object.cpp
@@ -44,6 +53,16 @@ set(SOURCE_FILES
 
         external/pugixml/src/pugixml.cpp
 
+        external/usort/include/binUtils.h
+        external/usort/include/dtypes.h
+        external/usort/include/indexHolder.h
+        external/usort/include/ompUtils.h
+        external/usort/include/ompUtils.tcc
+        external/usort/include/parUtils.h
+        external/usort/include/parUtils.tcc
+        external/usort/include/seqUtils.h
+        external/usort/include/seqUtils.tcc
+        external/usort/include/sort_profiler.h
         external/usort/src/binUtils.cpp
         external/usort/src/parUtils.cpp
         external/usort/src/sort_profiler.cpp

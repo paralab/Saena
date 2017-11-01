@@ -1172,7 +1172,7 @@ int saena_matrix::matrix_setup() {
 
         // set eig_max here
         // todo: execute this line only if the smoother is set to chebyshev.
-//        find_eig();
+        find_eig();
 
     } // end of if(active)
 
@@ -1399,6 +1399,7 @@ int saena_matrix::find_eig() {
 
     El::Matrix<El::Complex<double>> w(n,1);
 */
+
     // *************************** parallel ***************************
 
     El::DistMatrix<double> A(n,n);
@@ -1427,8 +1428,7 @@ int saena_matrix::find_eig() {
         if(w.Get(i,0).real() > eig_max_diagxA)
             eig_max_diagxA = w.Get(i,0).real();
 
-    if(rank==0) printf("eig_max = %f \n", eig_max_diagxA);
-
+//    if(rank==0) printf("eig_max = %f \n", eig_max_diagxA);
 
 /*
     // parallel (draft)
