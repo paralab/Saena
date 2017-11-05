@@ -21,7 +21,7 @@ include_directories(
         external/usort/include
         external/pugixml/include
 
-        build/install/include
+        build/elemental_install/include
         build/external/Elemental-0.87.7/include
         external/Elemental-0.87.7/include
         external/Elemental-0.87.7/external/suite_sparse/include
