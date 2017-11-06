@@ -14,15 +14,15 @@ public:
     unsigned int least_row_threshold = 10;
     // coarsening will stop if the number of rows of last level divided by previous level is lower this value.
     double row_reduction_threshold = 0.90;
-    int vcycle_num = 100;
+    int vcycle_num = 200;
     double relative_tolerance = 1e-8;
-    std::string smoother = "jacobi";
+    std::string smoother = "chebyshev";
     int preSmooth  = 3;
     int postSmooth = 3;
     float connStrength = 0.5; // connection strength parameter
     bool doSparsify = false;
     std::vector<Grid> grids;
-    int CG_max_iter = 100;
+    int CG_max_iter = 2000;
     double CG_tol = 1e-12;
     bool verbose = false;
     bool repartition = true;

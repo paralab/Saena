@@ -256,6 +256,11 @@ int saena::amg::set_verbose(bool verb) {
     return 0;
 }
 
+int saena::amg::set_multigrid_max_level(int max){
+    m_pImpl->max_level = max;
+    return 0;
+}
+
 int saena::laplacian2D(saena::matrix* A, unsigned int n_matrix_local, MPI_Comm comm){
 
     int rank, nprocs;

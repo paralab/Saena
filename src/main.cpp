@@ -20,10 +20,11 @@ int main(int argc, char* argv[]){
 
 //    int assert1, assert2, assert3;
 //    unsigned long i;
-    bool verbose = false;
+    bool verbose = true;
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
+/*
     if(argc != 3)
     {
         if(rank == 0)
@@ -34,8 +35,8 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+*/
 
-/*
     if(argc != 3)
     {
         if(rank == 0)
@@ -46,7 +47,6 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-*/
 
     // *************************** get number of rows ****************************
 
@@ -60,7 +60,6 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: read from file *************
 
-/*
     char* file_name(argv[1]);
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
@@ -70,7 +69,6 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** 2 - initialize the matrix: use setIJV *************
 
@@ -111,6 +109,7 @@ int main(int argc, char* argv[]){
 
     // ******** 3 - initialize the matrix: laplacian *************
 
+/*
     int dimension( stoi(argv[1]) );
     unsigned int matrix_size( stoi(argv[2]) );
 
@@ -138,6 +137,7 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
 
     // ******** write the matrix to file *************
 
@@ -330,7 +330,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 20;
+    int vcycle_num            = 100;
     double relative_tolerance = 1e-8;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;
@@ -341,6 +341,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
     saena::amg solver;
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
+//    solver.set_multigrid_max_level(0); // 0 means only use direct solver, so no multigrid will be used.
     solver.set_matrix(&A);
     solver.set_rhs(rhs);
 

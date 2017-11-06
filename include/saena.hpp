@@ -31,9 +31,9 @@ namespace saena {
 
     class options {
     private:
-        int vcycle_num            = 50;
+        int vcycle_num            = 200;
         double relative_tolerance = 1e-10;
-        std::string smoother      = "jacobi";
+        std::string smoother      = "chebyshev";
         int preSmooth             = 3;
         int postSmooth            = 3;
 
@@ -72,6 +72,8 @@ namespace saena {
 
         bool verbose = false;
         int set_verbose(bool verb);
+
+        int set_multigrid_max_level(int max); // 0 means only use direct solver, so no multigrid will be used.
 
     protected:
         saena_object* m_pImpl;

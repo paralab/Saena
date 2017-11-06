@@ -2106,6 +2106,8 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
     // this is CG.
     // u is zero in the beginning. At the end, it is the solution.
 
+//    printf("start of solve_coarsest()\n");
+
     MPI_Comm comm = A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -2125,11 +2127,11 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
 //        for(auto i:res)
 //            std::cout << i << std::endl;}
 
-    double dot;
-    dotProduct(res, res, &dot, comm);
-//    double initialNorm = sqrt(dot);
-//    if(rank==0) std::cout << "\nsolveCoarsest: initial norm(res) = " << initialNorm << std::endl;
+    double initial_dot;
+    dotProduct(res, res, &initial_dot, comm);
+//    if(rank==0) std::cout << "\nsolveCoarsest: initial norm(res) = " << sqrt(initial_dot) << std::endl;
 
+    double dot = initial_dot;
     int max_iter = CG_max_iter;
     if (dot < CG_tol*CG_tol)
         max_iter = 0;
@@ -2175,7 +2177,7 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
 //        if(rank==0) std::cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << std::endl;
 //        if(rank==0) std::cout << sqrt(dot)/initialNorm << std::endl;
 
-        if (dot < CG_tol*CG_tol)
+        if (dot/initial_dot < CG_tol*CG_tol)
             break;
 
         factor = dot / dot_prev;
@@ -2191,6 +2193,8 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
 
         i++;
     }
+
+//    printf("CG iterations = %lu\n \n", --i);
 //    if(rank==0) std::cout << "end of solve_coarsest!" << std::endl;
 
     return 0;
@@ -2561,6 +2565,25 @@ int saena_object::solve_pcg(std::vector<double>& u){
     if(rank==0) std::cout << "******************************************************" << std::endl;
     if(rank==0) printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
 
+    // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
+    if(max_level == 0){
+
+        vcycle(&grids[0], u, grids[0].rhs);
+        grids[0].A->residual(u, grids[0].rhs, r);
+        dotProduct(r, r, &current_dot, comm);
+
+        if(rank==0){
+            std::cout << "******************************************************" << std::endl;
+            printf("\nfinal:\nonly using the direct solver! \nfinal absolute residual = %e"
+                           "\nrelative residual       = %e \n\n", sqrt(current_dot), sqrt(current_dot/initial_dot));
+            std::cout << "******************************************************" << std::endl;
+        }
+
+        // repartition u back
+        repartition_back_u(u);
+        return 0;
+    }
+
     std::vector<double> rho(grids[0].A->M, 0);
     vcycle(&grids[0], rho, r);
 
@@ -2621,11 +2644,12 @@ int saena_object::solve_pcg(std::vector<double>& u){
 
 
 int saena_object::solve(std::vector<double>& u){
+
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-    long i;
+    unsigned long i;
 
     // ************** check u size **************
 
@@ -2650,16 +2674,20 @@ int saena_object::solve(std::vector<double>& u){
 
     std::vector<double> r(grids[0].A->M);
     grids[0].A->residual(u, grids[0].rhs, r);
-    double initial_dot;
+    double initial_dot, current_dot;
     dotProduct(r, r, &initial_dot, comm);
     if(rank==0) std::cout << "******************************************************" << std::endl;
     if(rank==0) printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
 
-    double current_dot;
+    // if max_level==0, it means only direct solver is being used.
+    if(max_level == 0)
+        printf("\nonly using the direct solver! \n");
+
     for(i=0; i<vcycle_num; i++){
         vcycle(&grids[0], u, grids[0].rhs);
         grids[0].A->residual(u, grids[0].rhs, r);
         dotProduct(r, r, &current_dot, comm);
+
 //        if(rank==0) printf("vcycle iteration = %ld, residual = %f \n\n", i, sqrt(current_dot));
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
