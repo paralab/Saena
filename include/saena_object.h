@@ -9,7 +9,7 @@ class Grid;
 
 class saena_object {
 public:
-    int max_level = 15; // fine grid is level 0.
+    int max_level = 20; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 10;
     // coarsening will stop if the number of rows of last level divided by previous level is lower this value.
@@ -42,6 +42,7 @@ public:
     int smooth(Grid* grid, std::string smoother, std::vector<double>& u, std::vector<double>& rhs, int iter);
     int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs);
     int solve(std::vector<double>& u);
+    int solve_pcg(std::vector<double>& u);
     int set_repartition_rhs(std::vector<double>& rhs);
     int repartition_u(std::vector<double>& u);
     int repartition_back_u(std::vector<double>& u);

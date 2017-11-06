@@ -230,6 +230,14 @@ int saena::amg::solve(std::vector<double>& u, saena::options* opts){
     return 0;
 }
 
+
+int saena::amg::solve_pcg(std::vector<double>& u, saena::options* opts){
+    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->solve_pcg(u);
+    return 0;
+}
+
 void saena::amg::save_to_file(char* name, unsigned int* agg){
 
 }

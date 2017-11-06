@@ -99,8 +99,8 @@ public:
 
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
-    int cpu_shrink_thre1 = 2; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
-    int cpu_shrink_thre2 = 2;
+    int cpu_shrink_thre1 = 4; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
+    int cpu_shrink_thre2 = 4;
     unsigned int last_M_shrink;
 
     float jacobi_omega = float(2.0/3);

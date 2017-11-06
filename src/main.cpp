@@ -24,7 +24,6 @@ int main(int argc, char* argv[]){
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
-    /*
     if(argc != 3)
     {
         if(rank == 0)
@@ -35,8 +34,8 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-*/
 
+/*
     if(argc != 3)
     {
         if(rank == 0)
@@ -47,6 +46,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+*/
 
     // *************************** get number of rows ****************************
 
@@ -60,6 +60,7 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: read from file *************
 
+/*
     char* file_name(argv[1]);
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
@@ -69,6 +70,7 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
 
     // ******** 2 - initialize the matrix: use setIJV *************
 
@@ -109,11 +111,13 @@ int main(int argc, char* argv[]){
 
     // ******** 3 - initialize the matrix: laplacian *************
 
-/*
     int dimension( stoi(argv[1]) );
     unsigned int matrix_size( stoi(argv[2]) );
-    MPI_Barrier(comm);
-    if(verbose) if(rank==0) printf("%dD Laplacian: dof on each proc = %u \n", dimension, matrix_size);
+
+    if(verbose){
+        MPI_Barrier(comm);
+        if(rank==0) printf("%dD Laplacian: dof on each proc = %u \n", dimension, matrix_size);
+        MPI_Barrier(comm);}
 
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
@@ -125,8 +129,7 @@ int main(int argc, char* argv[]){
     else if(dimension == 3)
         laplacian3D(&A, matrix_size, comm); // second argument is dof on each processor
     else{
-        if(rank==0)
-            printf("Error: Enter 2 or 3 for the dimension!\n");
+        if(rank==0) printf("Error: Enter 2 or 3 for the dimension!\n");
         MPI_Finalize();
         return -1;
     }
@@ -135,7 +138,6 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** write the matrix to file *************
 
@@ -163,11 +165,10 @@ int main(int argc, char* argv[]){
 
     // ********** 1 - set rhs: use generate_rhs **********
 
-/*
     std::vector<double> v(num_local_row);
     generate_rhs(v, num_local_row);
+    //todo: comment out this line after the matvec experiment
     A.get_internal_matrix()->matvec(v, rhs);
-*/
 
 //    if(rank==0)
 //        for(unsigned long i=0; i<rhs.size(); i++)
@@ -175,6 +176,7 @@ int main(int argc, char* argv[]){
 
     // ********** 2 - set rhs: read from file **********
 
+/*
     char* Vname(argv[2]);
 //    char* Vname(argv[3]);
 
@@ -217,6 +219,7 @@ int main(int argc, char* argv[]){
     // set rhs
     A.get_internal_matrix()->matvec(v, rhs);
 //    rhs = v;
+*/
 
     // ********** repartition checking part **********
 
@@ -354,7 +357,8 @@ int main(int argc, char* argv[]){
 
     t1 = MPI_Wtime();
 
-    solver.solve(u, &opts);
+//    solver.solve(u, &opts);
+    solver.solve_pcg(u, &opts);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
@@ -370,7 +374,6 @@ int main(int argc, char* argv[]){
 //    MPI_Barrier(comm);
 
 
-
 //    MPI_Barrier(comm);
 //    if(rank==0){
 //        printf("\nrank = %d \tu.size() = %lu \n", rank, u.size());
@@ -382,6 +385,69 @@ int main(int argc, char* argv[]){
 //        for(i = 0; i < u.size(); i++)
 //            cout << i << "\t" << u[i] << endl;}
 //    MPI_Barrier(comm);
+
+    // *************************** Matvec Expermient ****************************
+/*
+    // Saena Matvec
+    // ------------
+
+    int matvec_iter = 100;
+
+    saena_matrix* B = A.get_internal_matrix();
+    t1 = MPI_Wtime();
+
+    for(int i = 0; i < matvec_iter ; i++)
+        B->matvec(v, rhs);
+
+    t2 = MPI_Wtime();
+    print_time_average(t1, t2, "Saena Matvec:", matvec_iter, comm);
+
+//    if(rank==0){
+//        std::cout << "Saena matvec:" << std::endl;
+//        for(unsigned long i = 0; i < num_local_row; i++)
+//            std::cout << i << "\t" << rhs[i] << std::endl;}
+
+    // Elemental Matvec
+    // ----------------
+
+    El::Initialize( argc, argv );
+
+    const El::Int n = B->Mbig;
+
+    El::DistMatrix<double> C(n,n);
+    El::Zero( C );
+    C.Reserve(B->nnz_l);
+    for(unsigned long i = 0; i < B->nnz_l; i++){
+//        if(rank==1) std::cout << entry[i].row << "\t" << entry[i].col << "\t" << entry[i].val << std::endl;
+        C.QueueUpdate(B->entry[i].row, B->entry[i].col, B->entry[i].val);
+    }
+    C.ProcessQueues();
+
+    El::DistMatrix<double> w(n,1), y(n,1);
+    w.Reserve(num_local_row);
+    for(unsigned long i = 0; i < num_local_row; i++){
+//        if(rank==0) std::cout << i+B->split[rank] << "\t" << 1 << "\t" << v[i] << std::endl;
+        w.QueueUpdate(i+B->split[rank], 0, v[i]);
+    }
+    w.ProcessQueues();
+
+    const char uploChar = 'L';
+    const El::UpperOrLower uplo = El::CharToUpperOrLower( uploChar );
+    double alpha = 1;
+    double beta = 0;
+
+    t1 = MPI_Wtime();
+
+    for(int i = 0; i < matvec_iter ; i++)
+        El::Symv( uplo, alpha, C, w, beta, y);
+
+    t2 = MPI_Wtime();
+    print_time_average(t1, t2, "Elemental Matvec:", matvec_iter, comm);
+
+//    El::Print(y, "Elemental matvec: ");
+
+    El::Finalize();
+*/
 
     // *************************** Residual ****************************
 

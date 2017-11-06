@@ -67,6 +67,7 @@ namespace saena {
         // before calling solve function, vector "u" is the initial guess.
         // After calling solve, it will be the solution.
         int solve(std::vector<double>& u, saena::options* opts);
+        int solve_pcg(std::vector<double>& u, saena::options* opts);
         void destroy();
 
         bool verbose = false;

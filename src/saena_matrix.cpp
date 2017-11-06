@@ -1380,7 +1380,8 @@ int saena_matrix::jacobi(int iter, std::vector<double>& u, std::vector<double>& 
 int saena_matrix::find_eig() {
     int argc = 0;
     char** argv = {NULL};
-    El::Environment env( argc, argv );
+//    El::Environment env( argc, argv );
+    El::Initialize( argc, argv );
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -1483,6 +1484,7 @@ int saena_matrix::find_eig() {
 //    El::Print( E, "\nGlobal Elemental matrix:\n" );
 */
 
+    El::Finalize();
     return 0;
 }
 
@@ -1507,7 +1509,8 @@ int saena_matrix::chebyshev(int iter, std::vector<double>& u, std::vector<double
     for(i = 0; i < u.size(); i++){
         d[i] = (-res[i] * invDiag[i]) / theta;
         u[i] += d[i];
-//        if(rank==0) printf("u[%lu] = %f \n", i, u[i]);
+//        if(rank==0) printf("invDiag[%lu] = %f, \tres[%lu] = %f, \td[%lu] = %f, \tu[%lu] = %f \n",
+//                           i, invDiag[i], i, res[i], i, d[i], i, u[i]);
     }
 
     for( i = 1; i < iter; i++){

@@ -195,6 +195,9 @@ int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_
 int print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
 
 
+int print_time_average(double t1, double t2, std::string function_name, int iter, MPI_Comm comm);
+
+
 int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm);
 
 
