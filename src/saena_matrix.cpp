@@ -775,32 +775,8 @@ int saena_matrix::matrix_setup() {
 //        if(rank==0){
 //            printf("\nrank = %d\n", rank);
 //            for(unsigned int i=0; i<nnz_l; i++)
-//                printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
-//        }
+//                printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);}
 //        MPI_Barrier(comm);
-//        if(rank==1){
-//            printf("\nrank = %d\n", rank);
-//            for(unsigned int i=0; i<nnz_l; i++)
-//                printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
-//        }
-//        MPI_Barrier(comm);
-//        if(rank==2){
-//            printf("\nrank = %d\n", rank);
-//            for(unsigned int i=0; i<nnz_l; i++)
-//                printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
-//        }
-//        MPI_Barrier(comm);
-//        if(rank==3){
-//            printf("\nrank = %d\n", rank);
-//            for(unsigned int i=0; i<nnz_l; i++)
-//                printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
-//        }
-//        MPI_Barrier(comm);
-//        if(rank==4){
-//            printf("\nrank = %d\n", rank);
-//            for(unsigned int i=0; i<nnz_l; i++)
-//                printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
-//        }
 
 //        if (rank==0){
 //            std::cout << std::endl << "split:" << std::endl;
@@ -949,8 +925,6 @@ int saena_matrix::matrix_setup() {
             MPI_Barrier(comm);
         }
 
-//        MPI_Barrier(comm); printf("rank = %d yyyyyyyyyyyyyyy\n", rank);MPI_Barrier(comm);
-
         // don't receive anything from yourself
         recvCount[rank] = 0;
 
@@ -985,7 +959,7 @@ int saena_matrix::matrix_setup() {
 
         }
 
-        //    if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << std::endl;
+//    if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << std::endl;
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
@@ -1170,13 +1144,11 @@ int saena_matrix::matrix_setup() {
             MPI_Barrier(comm);
         }
 
-        // set eig_max here
         // todo: execute this line only if the smoother is set to chebyshev.
+        // set eig_max here
         find_eig();
 
     } // end of if(active)
-
-
     return 0;
 }
 
@@ -1184,8 +1156,6 @@ int saena_matrix::matrix_setup() {
 int saena_matrix::matvec(const std::vector<double>& v, std::vector<double>& w) {
 // todo: to reduce the communication during matvec, consider reducing number of columns during coarsening,
 // todo: instead of reducing general non-zeros, since that is what is communicated for matvec.
-
-//    printf("matvec\n");
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

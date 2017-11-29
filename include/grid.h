@@ -10,6 +10,7 @@
 class Grid{
 public:
     saena_matrix* A;
+    saena_matrix* A_new; // for solve_pcg_update() experiment
     saena_matrix  Ac;
     prolong_matrix P;
     restrict_matrix R;

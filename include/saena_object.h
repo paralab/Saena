@@ -43,6 +43,7 @@ public:
     int vcycle(Grid* grid, std::vector<double>& u, std::vector<double>& rhs);
     int solve(std::vector<double>& u);
     int solve_pcg(std::vector<double>& u);
+    int solve_pcg_update(std::vector<double>& u, saena_matrix* A_new);
     int set_repartition_rhs(std::vector<double>& rhs);
     int repartition_u(std::vector<double>& u);
     int repartition_back_u(std::vector<double>& u);

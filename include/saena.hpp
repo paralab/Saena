@@ -68,6 +68,7 @@ namespace saena {
         // After calling solve, it will be the solution.
         int solve(std::vector<double>& u, saena::options* opts);
         int solve_pcg(std::vector<double>& u, saena::options* opts);
+        int solve_pcg_update(std::vector<double>& u, saena::options* opts, saena::matrix* A_new);
         void destroy();
 
         bool verbose = false;
@@ -81,5 +82,6 @@ namespace saena {
 
     // second argument is dof on each processor
     int laplacian2D(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
+    int laplacian3D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
     int laplacian3D(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
 }
