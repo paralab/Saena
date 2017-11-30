@@ -401,7 +401,8 @@ int main(int argc, char* argv[]){
     saena::matrix A_new (file_name2, comm);
     A_new.assemble();
 
-    solver.solve_pcg_update(u, &opts, &A_new);
+//    solver.solve_pcg_update(u, &opts, &A_new);
+    solver.solve_pcg_update2(u, &opts, &A_new);
 
     // *************************** Matvec Expermient ****************************
 
