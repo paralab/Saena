@@ -86,6 +86,6 @@ namespace saena {
 
     // second argument is dof on each processor
     int laplacian2D(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
+    int laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
     int laplacian3D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
-    int laplacian3D(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
 }

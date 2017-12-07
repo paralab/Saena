@@ -8,7 +8,7 @@
 #include "saena.hpp"
 #include <El.hpp>
 
-using namespace std;
+//using namespace std;
 
 int main(int argc, char* argv[]){
 
@@ -20,22 +20,17 @@ int main(int argc, char* argv[]){
 
 //    int assert1, assert2, assert3;
 //    unsigned long i;
-    bool verbose = false;
+    bool verbose = true;
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
-/*
-    if(argc != 3)
+    if(argc != 4)
     {
         if(rank == 0)
-        {
-            cout << "Usage: ./Saena <2 or 3 for 2d or 3d laplacian> <dof on each proc>" << endl;
-//            cout << "Usage: ./Saena <2 or 3 for 2d or 3d laplacian> <dof on each proc> <rhs_vector>" << endl;
-        }
+            std::cout << "Usage to make a 3D Laplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
         MPI_Finalize();
         return -1;
     }
-*/
 /*
     if(argc != 3)
     {
@@ -48,7 +43,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 */
-
+ /*
     if(argc != 4)
     {
         if(rank == 0)
@@ -59,7 +54,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-
+*/
     // *************************** get number of rows ****************************
 
 //    char* Vname(argv[2]);
@@ -72,38 +67,29 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: laplacian *************
 
-/*
-    int dimension( stoi(argv[1]) );
-    unsigned int matrix_size( stoi(argv[2]) );
+    int mx(std::stoi(argv[1]));
+    int my(std::stoi(argv[2]));
+    int mz(std::stoi(argv[3]));
 
     if(verbose){
         MPI_Barrier(comm);
-        if(rank==0) printf("%dD Laplacian: dof on each proc = %u \n", dimension, matrix_size);
+        if(rank==0) printf("3D Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
         MPI_Barrier(comm);}
 
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
     saena::matrix A(comm);
-
-    if(dimension == 2)
-        laplacian2D(&A, matrix_size, comm); // second argument is dof on each processor
-    else if(dimension == 3)
-        laplacian3D(&A, matrix_size, comm); // second argument is dof on each processor
-    else{
-        if(rank==0) printf("Error: Enter 2 or 3 for the dimension!\n");
-        MPI_Finalize();
-        return -1;
-    }
-
+//    saena::laplacian2D(&A, 4, comm);
+    saena::laplacian3D(&A, mx, my, mz, comm);
     A.assemble();
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** 2 - initialize the matrix: read from file *************
 
+/*
     char* file_name(argv[1]);
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
@@ -113,6 +99,7 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
 
     // ******** 3 - initialize the matrix: use setIJV *************
 
@@ -174,17 +161,17 @@ int main(int argc, char* argv[]){
     std::vector<double> rhs(num_local_row);
 
     // ********** 1 - set rhs: use generate_rhs **********
-/*
+
     std::vector<double> v(num_local_row);
     generate_rhs(v, num_local_row);
     A.get_internal_matrix()->matvec(v, rhs);
-*/
+
 //    if(rank==0)
 //        for(unsigned long i=0; i<rhs.size(); i++)
 //            std::cout << rhs[i] << std::endl;
 
     // ********** 2 - set rhs: read from file **********
-
+/*
     char* Vname(argv[2]);
 //    char* Vname(argv[3]);
 
@@ -206,7 +193,7 @@ int main(int argc, char* argv[]){
 
     int mpiopen = MPI_File_open(comm, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
-        if (rank==0) cout << "Unable to open the rhs vector file!" << endl;
+        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
         MPI_Finalize();
         return -1;
     }
@@ -227,7 +214,7 @@ int main(int argc, char* argv[]){
     // set rhs
 //    A.get_internal_matrix()->matvec(v, rhs);W
     rhs = v;
-
+*/
     // ********** repartition checking part **********
 
     // this part is for testing repartition functionality of set_rhs and also set_u and repartition_back_u functions.
@@ -396,14 +383,14 @@ int main(int argc, char* argv[]){
 //    MPI_Barrier(comm);
 
     // *************************** LHS update Experiment ****************************
-
+/*
     char* file_name2(argv[3]);
     saena::matrix A_new (file_name2, comm);
     A_new.assemble();
 
 //    solver.solve_pcg_update(u, &opts, &A_new);
     solver.solve_pcg_update2(u, &opts, &A_new);
-
+*/
     // *************************** Matvec Expermient ****************************
 
     // Saena Matvec
@@ -712,7 +699,7 @@ int main(int argc, char* argv[]){
     // *************************** finalize ****************************
 
     A.destroy();
-    A_new.destroy();
+//    A_new.destroy();
     solver.destroy();
     MPI_Finalize();
     return 0;

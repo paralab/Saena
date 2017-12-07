@@ -112,6 +112,12 @@ int saena_object::setup(saena_matrix* A) {
 
     MPI_Bcast(&max_level, 1, MPI_INT, 0, grids[0].A->comm);
     grids.resize(max_level);
+
+    if(verbose) if(rank==0){
+            printf("_____________________________\n\n");
+            printf("number of levels = %d, (the finest level is 0)\n", max_level);
+        }
+
 //    printf("\nrank = %d, end of setup() \n", rank);
     return 0;
 }
