@@ -2112,15 +2112,16 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
     // this is CG.
     // u is zero in the beginning. At the end, it is the solution.
 
-//    printf("start of solve_coarsest()\n");
-
     MPI_Comm comm = A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
     long i, j;
+    bool verbose_solve_coarse = false;
+
+    if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest()\n");
 
     // res = A*u - rhs
-    MPI_Comm_rank(comm, &rank);
     std::vector<double> res(A->M);
     A->residual(u, rhs, res);
 
@@ -2166,8 +2167,8 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
             u[j] += factor * dir[j];
 //        if(rank==1){
 //            std::cout << "\nsolveCoarsest: u" << std::endl;
-//            for(auto i:u)
-//                std::cout << i << std::endl;}
+//            for(i = 0; i < u.size(); i++)
+//                printf("%.9f\n", u[i]);}
 
         // update residual
         for(j = 0; j < A->M; j++)
@@ -2183,6 +2184,7 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
 //        if(rank==0) std::cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << std::endl;
 //        if(rank==0) std::cout << sqrt(dot)/initialNorm << std::endl;
 
+        if(verbose_solve_coarse && rank==0) std::cout << "sqrt(dot)/sqrt(initial_dot) = " << sqrt(dot)/sqrt(initial_dot) << "  \tCG_tol = " << CG_tol << std::endl;
         if (dot/initial_dot < CG_tol*CG_tol)
             break;
 
@@ -2200,8 +2202,7 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
         i++;
     }
 
-//    printf("CG iterations = %lu\n \n", --i);
-//    if(rank==0) std::cout << "end of solve_coarsest!" << std::endl;
+    if(verbose_solve_coarse && rank==0) printf("end of solve_coarsest! it took CG iterations = %ld\n \n", --i);
 
     return 0;
 }
@@ -2542,6 +2543,7 @@ int saena_object::solve_pcg(std::vector<double>& u){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     unsigned long i, j;
+    bool solve_verbose = false;
 
     // ************** check u size **************
 
@@ -2554,9 +2556,13 @@ int saena_object::solve_pcg(std::vector<double>& u){
         return -1;
     }
 
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: check u size!\n");
+
     // ************** repartition u **************
 
     repartition_u(u);
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: repartition u!\n");
 
     // ************** solve **************
 
@@ -2593,6 +2599,8 @@ int saena_object::solve_pcg(std::vector<double>& u){
     std::vector<double> rho(grids[0].A->M, 0);
     vcycle(&grids[0], rho, r);
 
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: first vcycle!\n");
+
 //    for(i = 0; i < r.size(); i++)
 //        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
 
@@ -2618,6 +2626,7 @@ int saena_object::solve_pcg(std::vector<double>& u){
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
 
+        if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i);
         rho.assign(rho.size(), 0);
         vcycle(&grids[0], rho, r);
         dotProduct(r, rho, &beta, comm);
@@ -2641,9 +2650,13 @@ int saena_object::solve_pcg(std::vector<double>& u){
         std::cout << "******************************************************" << std::endl;
     }
 
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: solve!\n");
+
     // ************** repartition u back **************
 
     repartition_back_u(u);
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: repartition back u!\n");
 
     return 0;
 }
@@ -2943,6 +2956,7 @@ int saena_object::solve(std::vector<double>& u){
         printf("\nonly using the direct solver! \n");
 
     for(i=0; i<vcycle_num; i++){
+        if(rank==0) printf("Vcycle %lu \n", i);
         vcycle(&grids[0], u, grids[0].rhs);
         grids[0].A->residual(u, grids[0].rhs, r);
         dotProduct(r, r, &current_dot, comm);
@@ -3268,7 +3282,7 @@ int saena_object::repartition_u(std::vector<double>& u0){
 //    int ran = 3;
 
     if(repartition){
-        // make a copy of u0 to be used in Alltoall as sendbuf. u0 itself will be recvbuf there.
+        // make a copy of u0 to be used in Alltoallv as sendbuf. u0 itself will be recvbuf there.
         std::vector<double> u_temp = u0;
 
         // ************** repartition u, based on A.split **************
@@ -3276,12 +3290,11 @@ int saena_object::repartition_u(std::vector<double>& u0){
         std::vector<int> rdispls(nprocs);
         rdispls[0] = 0;
         for(i = 1; i < nprocs; i++)
-            rdispls[i] = grids[0].rcount[i-1] + rdispls[i-1];
+            rdispls[i] = rdispls[i-1] + grids[0].rcount[i-1];
 
 //    if(rank==ran) printf("\n");
 //    for(i = 0; i < nprocs; i++)
 //        if(rank==0) printf("%lu \t rdispls[i] = %d\n", i, rdispls[i]);
-
 
         std::vector<int> sdispls(nprocs);
         sdispls[0] = 0;

@@ -345,6 +345,7 @@ int saena::laplacian2D(saena::matrix* A, unsigned int n_matrix_local, MPI_Comm c
         if(modulo == 0 || modulo == (n_grid-1) || division == 0 || division == (n_grid-1) )
             A->set(node, node, 1);
     }
+    A->assemble();
 
     return 0;
 }
@@ -364,31 +365,31 @@ int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsig
     Hx      = 1.0 / (double)(mx);
     Hy      = 1.0 / (double)(my);
     Hz      = 1.0 / (double)(mz);
-//    printf("\nSaena:\nmx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", mx, my, mz, Hx, Hy, Hz);
+    printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
 
     HyHzdHx = Hy*Hz/Hx;
     HxHzdHy = Hx*Hz/Hy;
     HxHydHz = Hx*Hy/Hz;
 
-    // split the 3D grid by only the z axis. So put the whole x and y grids on processors, by split z by the number of processors.
+    // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
     xs = 0;
     xm = mx;
     ys = 0;
     ym = my;
     zm = (int)floor(mz / nprocs);
     zs = rank * zm;
-
     if(rank == nprocs - 1)
         zm = mz - ( (nprocs - 1) * zm);
-//    printf("corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", xs, ys, zs, xm, ym, zm);
+    printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
 
     for (k=zs; k<zs+zm; k++) {
         for (j=ys; j<ys+ym; j++) {
             for (i=xs; i<xs+xm; i++) {
                 node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
-//                printf("node = %u\n", node);
+//                if(rank==0) printf("node = %u\n", node);
 
                 if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+//                    if(rank==0) printf("boundary!\n");
                     num = 0; numi=0; numj=0; numk=0;
                     if (k!=0) {
                         v[num]     = -HxHydHz;
@@ -442,10 +443,14 @@ int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsig
 //                    col[num].i = i;   col[num].j = j;   col[num].k = k;
                     col_index[num] = node;
                     num++;
-                    for(int l = 0; l < num; l++)
+                    for(int l = 0; l < num; l++){
+//                        printf("%d \t%u \t%u \t%f \n", l, node, col_index[l], v[l]);
                         A->set(node, col_index[l], v[l]);
+                    }
 
                 } else {
+//                    if(rank==0) printf("not boundary!\n");
+
 //                    col[0].i = i;   col[0].j = j;   col[0].k = k-1;
                     v[0] = -HxHydHz;
                     col_index[0] = node - (mx * my);
@@ -480,11 +485,16 @@ int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsig
                     v[6] = -HxHydHz;
                     col_index[6] = node + (mx * my);
                     A->set(node, col_index[6], v[6]);
+
+//                    for(int l = 0; l < 7; l++)
+//                        printf("%d \t%u \t%u \t%f \n", l, node, col_index[l], v[l]);
                 }
             }
         }
     }
-//    A->assemble();
+//    printf("here\n");
+    A->assemble();
+//    printf("after\n");
 
     return 0;
 }

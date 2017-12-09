@@ -4,6 +4,7 @@
 #include <aux_functions.h>
 #include "saena_matrix.h"
 #include "strength_matrix.h"
+#include <math.h>
 
 class saena_matrix;
 
@@ -317,7 +318,76 @@ int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string 
 }
 
 
-int generate_rhs(std::vector<double> &rhs, unsigned int size){
+int generate_rhs(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm) {
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    bool verbose_gen_rhs = true;
+
+    if(verbose_gen_rhs){
+        MPI_Barrier(comm);
+        printf("rank = %d, generate_rhs: start \n", rank);
+        MPI_Barrier(comm);}
+
+    int       i,j,k,xm,ym,zm,xs,ys,zs;
+    double    Hx,Hy,Hz;
+//    double    ***array;
+    unsigned int node;
+
+#define PETSC_PI 3.14159265358979323846
+
+    Hx   = 1.0 / (double)(mx);
+    Hy   = 1.0 / (double)(my);
+    Hz   = 1.0 / (double)(mz);
+
+    // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+    xs = 0;
+    xm = mx;
+    ys = 0;
+    ym = my;
+    zm = (int)floor(mz / nprocs);
+    zs = rank * zm;
+    if(rank == nprocs - 1)
+        zm = mz - ( (nprocs - 1) * zm);
+
+
+    if(verbose_gen_rhs){
+        MPI_Barrier(comm);
+        printf("rank = %d, corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+        MPI_Barrier(comm);}
+
+    double val;
+    for (k=zs; k<zs+zm; k++) {
+        for (j=ys; j<ys+ym; j++) {
+            for (i=xs; i<xs+xm; i++) {
+                node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
+                if(rank==0) printf("node = %u\n", node);
+                val = 12 * PETSC_PI * PETSC_PI
+                                 * cos(2*PETSC_PI*(((double)i+0.5)*Hx))
+                                 * cos(2*PETSC_PI*(((double)j+0.5)*Hy))
+                                 * cos(2*PETSC_PI*(((double)k+0.5)*Hz))
+                                 * Hx * Hy * Hz;
+                rhs.push_back(val);
+            }
+        }
+    }
+
+
+
+    if(verbose_gen_rhs){
+        MPI_Barrier(comm);
+        printf("rank = %d, generate_rhs: end \n", rank);
+        MPI_Barrier(comm);}
+
+    return 0;
+}
+
+
+int generate_rhs_old(std::vector<double> &rhs){
+
+    unsigned long size = rhs.size();
 
     //Type of random number distribution
     std::uniform_real_distribution<double> dist(0, 1); //(min, max)

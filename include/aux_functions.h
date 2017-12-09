@@ -201,7 +201,9 @@ int print_time_average(double t1, double t2, std::string function_name, int iter
 int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm);
 
 
-int generate_rhs(std::vector<double>& rhs, unsigned int size);
+int generate_rhs(std::vector<double>& rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
 
+
+int generate_rhs_old(std::vector<double>& rhs);
 
 #endif //SAENA_AUXFUNCTIONS_H
