@@ -481,6 +481,22 @@ int saena_matrix::destroy(){
 }
 
 
+int saena_matrix::erase(){
+//    data.clear();
+//    data.shrink_to_fit();
+    entry.clear();
+    // todo: is it better to free the memory or it is good to keep the memory saved for performance?
+    entry.shrink_to_fit();
+
+    M = 0;
+    Mbig = 0;
+    nnz_g = 0;
+    nnz_l = 0;
+    
+    return 0;
+}
+
+
 int saena_matrix::repartition(){
     // before using this function these variables of SaenaMatrix should be set:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
@@ -775,7 +791,7 @@ int saena_matrix::matrix_setup() {
         int nprocs, rank;
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
-        bool verbose_matrix_setup = true;
+        bool verbose_matrix_setup = false;
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
@@ -1191,7 +1207,7 @@ int saena_matrix::matvec(const std::vector<double>& v, std::vector<double>& w) {
 
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
-    for(unsigned int i=0;i<vIndexSize;i++)
+    for(unsigned int i = 0; i < vIndexSize; i++)
         vSend[i] = v[( vIndex[i] )];
 //    double t20 = MPI_Wtime();
 //    time[0] += (t20-t10);
@@ -1225,12 +1241,13 @@ int saena_matrix::matvec(const std::vector<double>& v, std::vector<double>& w) {
 
 //    double t11 = MPI_Wtime();
     // local loop
-    std::fill(&*w.begin(), &*w.end(), 0);
+//    std::fill(&*w.begin(), &*w.end(), 0);
 #pragma omp parallel
     {
         long iter = iter_local_array[omp_get_thread_num()];
 #pragma omp for
         for (unsigned int i = 0; i < M; ++i) {
+            w[i] = 0;
             for (unsigned int j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
                 w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
             }

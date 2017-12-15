@@ -129,6 +129,7 @@ public:
     int jacobi(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp);
     int chebyshev(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp, std::vector<double>& temp2);
     int find_eig();
+    int erase();
     int destroy();
 };
 

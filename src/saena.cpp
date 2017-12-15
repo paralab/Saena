@@ -97,6 +97,11 @@ void saena::matrix::destroy(){
     // will add later.
 }
 
+int saena::matrix::erase(){
+    m_pImpl->erase();
+    return 0;
+}
+
 int saena::matrix::add_duplicates(bool add) {
     if(add){
         add_dup = true;
@@ -365,7 +370,7 @@ int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsig
     Hx      = 1.0 / (double)(mx);
     Hy      = 1.0 / (double)(my);
     Hz      = 1.0 / (double)(mz);
-    printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+//    printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
 
     HyHzdHx = Hy*Hz/Hx;
     HxHzdHy = Hx*Hz/Hy;
@@ -380,7 +385,7 @@ int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsig
     zs = rank * zm;
     if(rank == nprocs - 1)
         zm = mz - ( (nprocs - 1) * zm);
-    printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+//    printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
 
     for (k=zs; k<zs+zm; k++) {
         for (j=ys; j<ys+ym; j++) {

@@ -2626,7 +2626,7 @@ int saena_object::solve_pcg(std::vector<double>& u){
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
 
-        if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i);
+        if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i+1);
         rho.assign(rho.size(), 0);
         vcycle(&grids[0], rho, r);
         dotProduct(r, rho, &beta, comm);
@@ -2703,10 +2703,10 @@ int saena_object::solve_pcg_update(std::vector<double>& u, saena_matrix* A_new){
 //    dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
-    std::vector<double> r(grids[0].A->M);
-    grids[0].A_new->residual(u, grids[0].rhs, r);
+    std::vector<double> res(grids[0].A->M);
+    grids[0].A_new->residual(u, grids[0].rhs, res);
     double initial_dot, current_dot;
-    dotProduct(r, r, &initial_dot, comm);
+    dotProduct(res, res, &initial_dot, comm);
     if(rank==0) std::cout << "******************************************************" << std::endl;
     if(rank==0) printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
 
@@ -2714,8 +2714,8 @@ int saena_object::solve_pcg_update(std::vector<double>& u, saena_matrix* A_new){
     if(max_level == 0){
 
         vcycle(&grids[0], u, grids[0].rhs);
-        grids[0].A_new->residual(u, grids[0].rhs, r);
-        dotProduct(r, r, &current_dot, comm);
+        grids[0].A_new->residual(u, grids[0].rhs, res);
+        dotProduct(res, res, &current_dot, comm);
 
         if(rank==0){
             std::cout << "******************************************************" << std::endl;
@@ -2730,12 +2730,12 @@ int saena_object::solve_pcg_update(std::vector<double>& u, saena_matrix* A_new){
     }
 
     std::vector<double> rho(grids[0].A->M, 0);
-    vcycle(&grids[0], rho, r);
+    vcycle(&grids[0], rho, res);
 
     if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: first vcycle!\n");
 
-//    for(i = 0; i < r.size(); i++)
-//        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
+//    for(i = 0; i < res.size(); i++)
+//        printf("rho[%lu] = %f,\t res[%lu] = %f \n", i, rho[i], i, res[i]);
 
     std::vector<double> h(grids[0].A->M);
     std::vector<double> p(grids[0].A->M);
@@ -2744,7 +2744,7 @@ int saena_object::solve_pcg_update(std::vector<double>& u, saena_matrix* A_new){
     double rho_res, pdoth, alpha, beta;
     for(i=0; i<vcycle_num; i++){
         grids[0].A_new->matvec(p, h);
-        dotProduct(r, rho, &rho_res, comm);
+        dotProduct(res, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
         alpha = rho_res / pdoth;
 //        printf("rho_res = %e, pdoth = %e, alpha = %f \n", rho_res, pdoth, alpha);
@@ -2752,16 +2752,16 @@ int saena_object::solve_pcg_update(std::vector<double>& u, saena_matrix* A_new){
 #pragma omp parallel for
         for(j = 0; j < u.size(); j++){
             u[j] -= alpha * p[j];
-            r[j] -= alpha * h[j];
+            res[j] -= alpha * h[j];
         }
 
-        dotProduct(r, r, &current_dot, comm);
+        dotProduct(res, res, &current_dot, comm);
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
 
         rho.assign(rho.size(), 0);
-        vcycle(&grids[0], rho, r);
-        dotProduct(r, rho, &beta, comm);
+        vcycle(&grids[0], rho, res);
+        dotProduct(res, rho, &beta, comm);
         beta /= rho_res;
 
 #pragma omp parallel for
