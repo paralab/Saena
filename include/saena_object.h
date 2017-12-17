@@ -45,6 +45,7 @@ public:
     int solve_pcg(std::vector<double>& u);
     int solve_pcg_update(std::vector<double>& u, saena_matrix* A_new);
     int solve_pcg_update2(std::vector<double>& u, saena_matrix* A_new);
+    int solve_pcg_update3(std::vector<double>& u, saena_matrix* A_new);
     int set_repartition_rhs(std::vector<double>& rhs);
     int repartition_u(std::vector<double>& u);
     int repartition_back_u(std::vector<double>& u);

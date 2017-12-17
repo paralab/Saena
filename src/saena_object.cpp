@@ -2003,8 +2003,6 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //            std::cout << Ac->entry[j] << std::endl;
 //    }
 
-
-
     Ac->nnz_l = Ac->entry.size();
     MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
     Ac->Mbig = P->Nbig;
@@ -2910,6 +2908,139 @@ int saena_object::solve_pcg_update2(std::vector<double>& u, saena_matrix* A_new)
     // ************** repartition u back **************
 
     repartition_back_u(u);
+
+    return 0;
+}
+
+
+int saena_object::solve_pcg_update3(std::vector<double>& u, saena_matrix* A_new){
+
+    MPI_Comm comm = grids[0].A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    unsigned long i, j;
+    bool solve_verbose = false;
+
+    // ************** update grids[i].A for all levels i **************
+
+    grids[0].A = A_new;
+    for(i = 0; i < max_level-1; i++){
+        coarsen(grids[i].A, &grids[i].P, &grids[i].R, &grids[i+1].Ac);
+    }
+
+    // ************** check u size **************
+
+    unsigned int u_size_local = u.size();
+    unsigned int u_size_total;
+    MPI_Allreduce(&u_size_local, &u_size_total, 1, MPI_UNSIGNED, MPI_SUM, grids[0].A->comm);
+    if(grids[0].A->Mbig != u_size_total){
+        if(rank==0) printf("Error: size of LHS (=%u) and the solution vector u (=%u) are not equal!\n", grids[0].A->Mbig, u_size_total);
+        MPI_Finalize();
+        return -1;
+    }
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: check u size!\n");
+
+    // ************** repartition u **************
+
+    repartition_u(u);
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: repartition u!\n");
+
+    // ************** solve **************
+
+//    double temp;
+//    dot(rhs, rhs, &temp, comm);
+//    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
+
+    std::vector<double> r(grids[0].A->M);
+    grids[0].A->residual(u, grids[0].rhs, r);
+    double initial_dot, current_dot;
+    dotProduct(r, r, &initial_dot, comm);
+    if(rank==0) std::cout << "******************************************************" << std::endl;
+    if(rank==0) printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
+
+    // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
+    if(max_level == 0){
+
+        vcycle(&grids[0], u, grids[0].rhs);
+        grids[0].A->residual(u, grids[0].rhs, r);
+        dotProduct(r, r, &current_dot, comm);
+
+        if(rank==0){
+            std::cout << "******************************************************" << std::endl;
+            printf("\nfinal:\nonly using the direct solver! \nfinal absolute residual = %e"
+                           "\nrelative residual       = %e \n\n", sqrt(current_dot), sqrt(current_dot/initial_dot));
+            std::cout << "******************************************************" << std::endl;
+        }
+
+        // repartition u back
+        repartition_back_u(u);
+        return 0;
+    }
+
+    std::vector<double> rho(grids[0].A->M, 0);
+    vcycle(&grids[0], rho, r);
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: first vcycle!\n");
+
+//    for(i = 0; i < r.size(); i++)
+//        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
+
+    std::vector<double> h(grids[0].A->M);
+    std::vector<double> p(grids[0].A->M);
+    p = rho;
+
+    double rho_res, pdoth, alpha, beta;
+    for(i=0; i<vcycle_num; i++){
+        grids[0].A->matvec(p, h);
+        dotProduct(r, rho, &rho_res, comm);
+        dotProduct(p, h, &pdoth, comm);
+        alpha = rho_res / pdoth;
+//        printf("rho_res = %e, pdoth = %e, alpha = %f \n", rho_res, pdoth, alpha);
+
+#pragma omp parallel for
+        for(j = 0; j < u.size(); j++){
+            u[j] -= alpha * p[j];
+            r[j] -= alpha * h[j];
+        }
+
+        dotProduct(r, r, &current_dot, comm);
+        if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
+            break;
+
+        if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i+1);
+        rho.assign(rho.size(), 0);
+        vcycle(&grids[0], rho, r);
+        dotProduct(r, rho, &beta, comm);
+        beta /= rho_res;
+
+#pragma omp parallel for
+        for(j = 0; j < u.size(); j++)
+            p[j] = rho[j] + beta * p[j];
+//        printf("beta = %e \n", beta);
+    }
+
+    // set number of iterations that took to find the solution
+    // only do the following if the end of the previous for loop was reached.
+    if(i == vcycle_num)
+        i--;
+
+    if(rank==0){
+        std::cout << "******************************************************" << std::endl;
+        printf("\nfinal:\nstopped at iteration    = %ld \nfinal absolute residual = %e"
+                       "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot/initial_dot));
+        std::cout << "******************************************************" << std::endl;
+    }
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: solve!\n");
+
+    // ************** repartition u back **************
+
+    repartition_back_u(u);
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: repartition back u!\n");
 
     return 0;
 }

@@ -453,13 +453,6 @@ int main(int argc, char* argv[]){
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
 
-
-    printf("before: nnz = %d \n", A.get_internal_matrix()->nnz_g);
-    A.erase();
-    printf("after:  nnz = %d \n", A.get_internal_matrix()->nnz_g);
-
-
-
     // print A*u
 //    std::vector<double> temp1(num_local_row);
 //    A.get_internal_matrix()->matvec(u, temp1);
@@ -488,18 +481,22 @@ int main(int argc, char* argv[]){
     // try this: ./Saena ./data/25o1s4.bin ./data/vectors/v25.bin ./data/25o1s4_2.bin
     // or:       ./Saena ./data/2DMed_sorted.bin ./data/vectors/v961.bin ./data/2DMed_sorted2.bin
     // or:
-/*
+
     char* file_name2(argv[3]);
     saena::matrix A_new (file_name2, comm);
     A_new.assemble();
 
-    solver.solve_pcg_update(u, &opts, &A_new);
+//    solver.solve_pcg_update(u, &opts, &A_new);
 //    solver.solve_pcg_update2(u, &opts, &A_new);
+    solver.solve_pcg_update3(u, &opts, &A_new);
 
-    printf("\nprint u:\n");
-    for(long i = 0; i < num_local_row; i++)
-        printf("%f\n", u[i]);
-*/
+//    printf("\nprint u:\n");
+//    for(long i = 0; i < num_local_row; i++)
+//        printf("%f\n", u[i]);
+
+//    printf("before: nnz = %d \n", A.get_internal_matrix()->nnz_g);
+//    A.erase();
+//    printf("after:  nnz = %d \n", A.get_internal_matrix()->nnz_g);
 
     // *************************** Matvec Expermient ****************************
 

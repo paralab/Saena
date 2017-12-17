@@ -11,8 +11,10 @@ namespace saena {
     class matrix {
     public:
         matrix(MPI_Comm comm);
+        matrix();
         matrix(char* name, MPI_Comm comm); // read from file
 
+        void set_comm(MPI_Comm comm);
         int set(unsigned int i, unsigned int j, double val); // set individual value
         int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local); // set multiple values
         int set(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
@@ -72,8 +74,10 @@ namespace saena {
         // if solver is made based of a matrix, let's call it A, and there is an updated version of A, let's call it B,
         // and one wants to solve B*x = rhs instead of A*x = rhs, then solve_pcg_update can be used and B can be passed as the third argument.
         int solve_pcg_update(std::vector<double>& u, saena::options* opts, saena::matrix* A_new);
-        // similar to solve_pcg_update, but update the LHS with A_new.
+        // similar to solve_pcg_update, but updates the LHS with A_new.
         int solve_pcg_update2(std::vector<double>& u, saena::options* opts, saena::matrix* A_new);
+        // similar to solve_pcg_update, but updates grids[i].A for all levels, wusing the previously made grids[i].P and R.
+        int solve_pcg_update3(std::vector<double>& u, saena::options* opts, saena::matrix* A_new);
         void destroy();
 
         bool verbose = false;

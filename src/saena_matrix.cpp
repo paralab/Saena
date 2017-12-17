@@ -270,6 +270,10 @@ int saena_matrix::set(unsigned int* row, unsigned int* col, double* val, unsigne
     return 0;
 }
 
+void saena_matrix::set_comm(MPI_Comm com){
+    comm = com;
+    comm_old = com;
+}
 
 int saena_matrix::set2(unsigned int row, unsigned int col, double val){
 
@@ -484,15 +488,63 @@ int saena_matrix::destroy(){
 int saena_matrix::erase(){
 //    data.clear();
 //    data.shrink_to_fit();
+
     entry.clear();
+    split.clear();
+    split_old.clear();
+    values_local.clear();
+    row_local.clear();
+    row_remote.clear();
+    col_local.clear();
+    col_remote.clear();
+    col_remote2.clear();
+    nnzPerRow_local.clear();
+    nnzPerCol_remote.clear();
+    invDiag.clear();
+    vdispls.clear();
+    rdispls.clear();
+    recvProcRank.clear();
+    recvProcCount.clear();
+    sendProcRank.clear();
+    sendProcCount.clear();
+    sendProcCount.clear();
+    vElementRep_local.clear();
+    vElementRep_remote.clear();
+
     // todo: is it better to free the memory or it is good to keep the memory saved for performance?
     entry.shrink_to_fit();
+    split.shrink_to_fit();
+    split_old.shrink_to_fit();
+    values_local.shrink_to_fit();
+    row_local.shrink_to_fit();
+    row_remote.shrink_to_fit();
+    col_local.shrink_to_fit();
+    col_remote.shrink_to_fit();
+    col_remote2.shrink_to_fit();
+    nnzPerRow_local.shrink_to_fit();
+    nnzPerCol_remote.shrink_to_fit();
+    invDiag.shrink_to_fit();
+    vdispls.shrink_to_fit();
+    rdispls.shrink_to_fit();
+    recvProcRank.shrink_to_fit();
+    recvProcCount.shrink_to_fit();
+    sendProcRank.shrink_to_fit();
+    sendProcCount.shrink_to_fit();
+    sendProcCount.shrink_to_fit();
+    vElementRep_local.shrink_to_fit();
+    vElementRep_remote.shrink_to_fit();
 
     M = 0;
     Mbig = 0;
     nnz_g = 0;
     nnz_l = 0;
-    
+    nnz_l_local = 0;
+    nnz_l_remote = 0;
+    col_remote_size = 0;
+    recvSize = 0;
+    numRecvProc = 0;
+    numSendProc = 0;
+
     return 0;
 }
 
