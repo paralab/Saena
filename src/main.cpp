@@ -448,7 +448,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
-//    solver.solve_pcg(u, &opts);
+    solver.solve_pcg(u, &opts);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
@@ -467,8 +467,8 @@ int main(int argc, char* argv[]){
 //    MPI_Barrier(comm);
 //    if(rank==0){
 //        printf("\nrank = %d \tu.size() = %lu \n", rank, u.size());
-//        for(i = 0; i < u.size(); i++)
-//            cout << i << "\t" << u[i] << endl;}
+//        for(long i = 0; i < u.size(); i++)
+//            std::cout << u[i] << std::endl;}
 //    MPI_Barrier(comm);
 //    if(rank==1){
 //        printf("\nrank = %d \tu.size() = %lu \n", rank, u.size());
@@ -479,12 +479,14 @@ int main(int argc, char* argv[]){
     // *************************** LHS update Experiment ****************************
 
     // try this: ./Saena ./data/25o1s4.bin ./data/vectors/v25.bin ./data/25o1s4_2.bin
-    // or:       ./Saena ./data/2DMed_sorted.bin ./data/vectors/v961.bin ./data/2DMed_sorted2.bin
-    // or:
+    // or:       ./Saena ./data/81s4x8o1mu1.bin ./data/vectors/v81.bin ./data/81s4x8o1mu1_2.bin
+    // or:       ./Saena ./data/2DMed_sorted.bin ./data/vectors/v961.bin ./data/2DMed_sorted_2.bin
 
     char* file_name2(argv[3]);
     saena::matrix A_new (file_name2, comm);
     A_new.assemble();
+
+    u.assign(num_local_row, 0);
 
 //    solver.solve_pcg_update(u, &opts, &A_new);
 //    solver.solve_pcg_update2(u, &opts, &A_new);

@@ -2925,8 +2925,13 @@ int saena_object::solve_pcg_update3(std::vector<double>& u, saena_matrix* A_new)
     // ************** update grids[i].A for all levels i **************
 
     grids[0].A = A_new;
-    for(i = 0; i < max_level-1; i++){
-        coarsen(grids[i].A, &grids[i].P, &grids[i].R, &grids[i+1].Ac);
+    for(i = 0; i < max_level; i++){
+        if(grids[i].A->active) {
+            grids[i].Ac.erase();
+            coarsen(grids[i].A, &grids[i].P, &grids[i].R, &grids[i].Ac);
+            grids[i + 1].A = &grids[i].Ac;
+//            Grid(&grids[i].Ac, max_level, i + 1);
+        }
     }
 
     // ************** check u size **************
