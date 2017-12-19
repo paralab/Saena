@@ -617,6 +617,7 @@ int saena_matrix::erase(){
     recvSize = 0;
     numRecvProc = 0;
     numSendProc = 0;
+    assembled = false;
 
     return 0;
 }
