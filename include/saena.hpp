@@ -13,6 +13,7 @@ namespace saena {
         matrix(MPI_Comm comm);
         matrix();
         matrix(char* name, MPI_Comm comm); // read from file
+        ~matrix();
 
         void set_comm(MPI_Comm comm);
         int set(unsigned int i, unsigned int j, double val); // set individual value

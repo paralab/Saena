@@ -482,6 +482,7 @@ int main(int argc, char* argv[]){
     // or:       ./Saena ./data/81s4x8o1mu1.bin ./data/vectors/v81.bin ./data/81s4x8o1mu1_2.bin
     // or:       ./Saena ./data/2DMed_sorted.bin ./data/vectors/v961.bin ./data/2DMed_sorted_2.bin
 
+/*
     char* file_name2(argv[3]);
     saena::matrix A_new (file_name2, comm);
     A_new.assemble();
@@ -495,10 +496,7 @@ int main(int argc, char* argv[]){
 //    printf("\nprint u:\n");
 //    for(long i = 0; i < num_local_row; i++)
 //        printf("%f\n", u[i]);
-
-//    printf("before: nnz = %d \n", A.get_internal_matrix()->nnz_g);
-//    A.erase();
-//    printf("after:  nnz = %d \n", A.get_internal_matrix()->nnz_g);
+*/
 
     // *************************** Matvec Expermient ****************************
 

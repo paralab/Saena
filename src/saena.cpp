@@ -27,6 +27,12 @@ saena::matrix::matrix(char *name, MPI_Comm comm) {
 }
 
 
+saena::matrix::~matrix(){
+    m_pImpl->erase();
+//    delete m_pImpl;
+}
+
+
 int saena::matrix::set(unsigned int i, unsigned int j, double val){
 
     if( val != 0){
@@ -101,13 +107,14 @@ saena_matrix* saena::matrix::get_internal_matrix(){
     return m_pImpl;
 }
 
-void saena::matrix::destroy(){
-    // will add later.
-}
-
 int saena::matrix::erase(){
     m_pImpl->erase();
     return 0;
+}
+
+void saena::matrix::destroy(){
+    m_pImpl->erase();
+//    m_pImpl->~matrix();
 }
 
 int saena::matrix::add_duplicates(bool add) {
