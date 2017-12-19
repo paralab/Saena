@@ -21,7 +21,7 @@ namespace saena {
         int set(unsigned int i, unsigned int j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
         int set(unsigned int i, unsigned int j, unsigned int* di, unsigned int* dj, double* val, unsigned int nnz_local); // set generic block
 
-        bool add_dup = false;
+        bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
         int assemble();
         unsigned int get_num_local_rows();

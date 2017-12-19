@@ -34,18 +34,17 @@ int main(int argc, char* argv[]){
         return -1;
     }
 */
-/*
     if(argc != 3)
     {
         if(rank == 0)
         {
-            cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << endl;
-            cout << "Matrix file should be in triples format." << endl;
+            std::cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << std::endl;
+            std::cout << "Matrix file should be in triples format." << std::endl;
         }
         MPI_Finalize();
         return -1;
     }
-*/
+/*
     if(argc != 4)
     {
         if(rank == 0)
@@ -56,7 +55,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-
+*/
     // *************************** get number of rows ****************************
 
 //    char* Vname(argv[2]);
@@ -475,6 +474,15 @@ int main(int argc, char* argv[]){
 //        for(i = 0; i < u.size(); i++)
 //            cout << i << "\t" << u[i] << endl;}
 //    MPI_Barrier(comm);
+
+    // *************************** test set3() ****************************
+
+//    A.add_duplicates(true);
+//    A.set(8, 7, 100);
+//    unsigned int row[3] = {9,   8,   20};
+//    unsigned int col[3] = {8,   7,   18};
+//    double val[3]       = {100.111, 200.222, 300.333};
+//    A.set(row, col, val, 3);
 
     // *************************** LHS update Experiment ****************************
 

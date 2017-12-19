@@ -35,11 +35,15 @@ saena::matrix::~matrix(){
 
 int saena::matrix::set(unsigned int i, unsigned int j, double val){
 
-    if( val != 0){
-        if(!add_dup)
-            m_pImpl->set(i, j, val);
-        else
-            m_pImpl->set2(i, j, val);
+    if( val != 0) {
+        if (!m_pImpl->assembled) {
+            if (!add_dup)
+                m_pImpl->set(i, j, val);
+            else
+                m_pImpl->set2(i, j, val);
+        } else {
+            m_pImpl->set3(i, j, val);
+        }
     }
 
     return 0;
@@ -47,10 +51,14 @@ int saena::matrix::set(unsigned int i, unsigned int j, double val){
 
 int saena::matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
 
-    if(!add_dup){
-        m_pImpl->set(row, col, val, nnz_local);
-    } else{
-        m_pImpl->set2(row, col, val, nnz_local);
+    if (!m_pImpl->assembled) {
+        if (!add_dup) {
+            m_pImpl->set(row, col, val, nnz_local);
+        } else {
+            m_pImpl->set2(row, col, val, nnz_local);
+        }
+    }else{
+        m_pImpl->set3(row, col, val, nnz_local);
     }
 
     return 0;

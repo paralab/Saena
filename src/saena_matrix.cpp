@@ -330,6 +330,79 @@ int saena_matrix::set2(unsigned int* row, unsigned int* col, double* val, unsign
 }
 
 
+int saena_matrix::set3(unsigned int row, unsigned int col, double val){
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    auto proc_num = lower_bound2(&*split.begin(), &*split.end(), (unsigned long)row);
+//    printf("proc_num = %ld\n", proc_num);
+
+    cooEntry recv_buf;
+    cooEntry send_buf(row, col, val);
+
+//    if(rank == proc_num)
+//        MPI_Recv(&send_buf, 1, cooEntry::mpi_datatype(), , 0, comm, NULL);
+//    if(rank != )
+//        MPI_Send(&recv_buf, 1, cooEntry::mpi_datatype(), proc_num, 0, comm);
+
+    //todo: change send_buf to recv_buf after completing the communication for the parallel version.
+    auto position = lower_bound2(&*entry.begin(), &*entry.end(), send_buf);
+//    printf("position = %lu \n", position);
+//    printf("%lu \t%lu \t%f \n", entry[position].row, entry[position].col, entry[position].val);
+
+    if(send_buf == entry[position]){
+        if(add_duplicates){
+            entry[position].val += send_buf.val;
+        }else{
+            entry[position].val = send_buf.val;
+        }
+    }else{
+        entry.push_back(send_buf);
+        std::sort(&*entry.begin(), &*entry.end());
+    }
+
+    printf("\nentry:\n");
+    for(long i = 0; i < nnz_l; i++)
+        std::cout << entry[i] << std::endl;
+
+    return 0;
+}
+
+
+int saena_matrix::set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
+
+    if(nnz_local <= 0){
+        printf("size in the set function is either zero or negative!");
+        return 0;
+    }
+
+    cooEntry temp;
+    long position;
+    for(unsigned int i = 0; i < nnz_local; i++){
+        temp = cooEntry(row[i], col[i], val[i]);
+        position = lower_bound2(&*entry.begin(), &*entry.end(), temp);
+        if(temp == entry[position]){
+            if(add_duplicates){
+                entry[position].val += temp.val;
+            }else{
+                entry[position].val  = temp.val;
+            }
+        }else{
+            entry.push_back(temp);
+            std::sort(&*entry.begin(), &*entry.end());
+        }
+    }
+
+    printf("\nentry:\n");
+    for(long i = 0; i < nnz_l; i++)
+        std::cout << entry[i] << std::endl;
+
+    return 0;
+}
+
+
 int saena_matrix::setup_initial_data(){
 
     int nprocs, rank;
@@ -851,6 +924,7 @@ int saena_matrix::matrix_setup() {
             MPI_Barrier(comm);
         }
 
+        assembled = true;
         freeBoolean = true; // use this parameter to know if destructor for SaenaMatrix class should free the variables or not.
 
 //        MPI_Barrier(comm);

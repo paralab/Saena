@@ -96,6 +96,7 @@ public:
     bool shrinked = false;
 
     bool add_duplicates = false;
+    bool assembled = false; // use this parameter to determine which matrix.set() function to use.
 
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
@@ -114,13 +115,18 @@ public:
      * */
     saena_matrix(char* Aname, MPI_Comm com);
     ~saena_matrix();
+
+    void set_comm(MPI_Comm com);
+
     // The difference between set and set2 is that if there is a repetition, set will erase the previous one
     // and insert the new one, but in set2, the values of those entries will be added together.
-    void set_comm(MPI_Comm com);
     int set(unsigned int row, unsigned int col, double val);
     int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
     int set2(unsigned int row, unsigned int col, double val);
     int set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
+    int set3(unsigned int row, unsigned int col, double val);
+    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
+
     int setup_initial_data();
     int repartition();
     int matrix_setup();
@@ -130,6 +136,7 @@ public:
     int jacobi(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp);
     int chebyshev(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp, std::vector<double>& temp2);
     int find_eig();
+
     int erase();
     int destroy();
 };
