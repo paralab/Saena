@@ -1425,6 +1425,278 @@ int saena_matrix::matvec(const std::vector<double>& v, std::vector<double>& w) {
 }
 
 
+int saena_matrix::matvec_timing(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time) {
+// todo: to reduce the communication during matvec, consider reducing number of columns during coarsening,
+// todo: instead of reducing general non-zeros, since that is what is communicated for matvec.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    if( v.size() != M ){
+//        printf("A.M != v.size() in matvec!!!\n");}
+
+    double t0_start = omp_get_wtime();
+    // put the values of the vector in vSend, for sending to other processors
+#pragma omp parallel for
+    for(unsigned int i=0;i<vIndexSize;i++)
+        vSend[i] = v[( vIndex[i] )];
+    double t0_end = omp_get_wtime();// try this: rdtsc for timing
+
+/*    if (rank==0){
+        std::cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << std::endl;
+        for(int i=0; i<vIndexSize; i++)
+            std::cout << vSend[i] << std::endl;
+    }*/
+
+    double t3_start = omp_get_wtime();
+    // iSend your data, and iRecv from others
+    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
+    MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
+
+    //First place all recv requests. Do not recv from self.
+    for(int i = 0; i < numRecvProc; i++) {
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+    }
+
+    //Next send the messages. Do not send to self.
+    for(int i = 0; i < numSendProc; i++) {
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+    }
+
+/*    if (rank==0){
+        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
+        for(int i=0; i<recvSize; i++)
+            std::cout << vecValues[i] << std::endl;
+    }*/
+
+    double t1_start = omp_get_wtime();
+    // local loop
+//    std::fill(&*w.begin(), &*w.end(), 0);
+#pragma omp parallel
+    {
+        long iter = iter_local_array[omp_get_thread_num()];
+#pragma omp for
+        for (unsigned int i = 0; i < M; ++i) {
+            w[i] = 0;
+            for (unsigned int j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
+            }
+        }
+    }
+
+    double t1_end = omp_get_wtime();
+
+    // Wait for the communication to finish.
+    double t4_start = omp_get_wtime();
+    MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
+    double t4_end = omp_get_wtime();
+
+/*    if (rank==1){
+        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
+        for(int i=0; i<recvSize; i++)
+            std::cout << vecValues[i] << std::endl;
+    }*/
+
+    // remote loop
+    // todo: data race happens during "omp for" here, since the "for" loop splits based on the remote columns, but
+    // todo: w[row] are being computed in every iteration , which means different threads may access the same w[row].
+
+    double t2_start = omp_get_wtime();
+//#pragma omp parallel
+//    {
+    unsigned int iter = iter_remote_array[omp_get_thread_num()];
+//#pragma omp for
+    for (unsigned int i = 0; i < col_remote_size; ++i) {
+        for (unsigned int j = 0; j < nnzPerCol_remote[i]; ++j, ++iter) {
+
+//                if(rank==0 && omp_get_thread_num()==0){
+//                    printf("thread = %d\n", omp_get_thread_num());
+//                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
+//                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
+//                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+
+            w[row_remote[indicesP_remote[iter]]] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
+        }
+    }
+//    }
+
+    double t2_end = omp_get_wtime();
+    double t3_end = omp_get_wtime();
+
+    double time0_local = t0_end-t0_start;
+    double time0;
+    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    double time1_local = t1_end-t1_start;
+    double time1;
+    MPI_Allreduce(&time1_local, &time1, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    double time2_local = t2_end-t2_start;
+    double time2;
+    MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    double time3_local = t3_end-t3_start;
+    double time3;
+    MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    double time4_local = t4_end-t4_start;
+    double time4;
+    MPI_Allreduce(&time4_local, &time4, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+//    time[0] += time0/nprocs;
+//    time[1] += time1/nprocs;
+//    time[2] += time2/nprocs;
+//    time[3] += time3/nprocs;
+//    time[4] += time4/nprocs;
+
+    time[0] += time0_local;
+    time[1] += time1_local;
+    time[2] += time2_local;
+    time[3] += time3_local;
+    time[4] += time4_local;
+
+    return 0;
+}
+
+
+int saena_matrix::matvec_timing2(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time) {
+// todo: to reduce the communication during matvec, consider reducing number of columns during coarsening,
+// todo: instead of reducing general non-zeros, since that is what is communicated for matvec.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    if( v.size() != M ){
+//        printf("A.M != v.size() in matvec!!!\n");}
+
+    double t0_start = omp_get_wtime();
+    // put the values of the vector in vSend, for sending to other processors
+#pragma omp parallel for
+    for(unsigned int i=0;i<vIndexSize;i++)
+        vSend[i] = v[( vIndex[i] )];
+    double t0_end = omp_get_wtime();// try this: rdtsc for timing
+
+/*    if (rank==0){
+        std::cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << std::endl;
+        for(int i=0; i<vIndexSize; i++)
+            std::cout << vSend[i] << std::endl;
+    }*/
+
+    double t3_start = omp_get_wtime();
+    // iSend your data, and iRecv from others
+//    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
+//    MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
+
+    //First place all recv requests. Do not recv from self.
+    for(int i = 0; i < numRecvProc; i++) {
+//        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+        MPI_Recv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, NULL);
+    }
+
+    //Next send the messages. Do not send to self.
+    for(int i = 0; i < numSendProc; i++) {
+//        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+        MPI_Send(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm);
+    }
+
+/*    if (rank==0){
+        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
+        for(int i=0; i<recvSize; i++)
+            std::cout << vecValues[i] << std::endl;
+    }*/
+
+    double t1_start = omp_get_wtime();
+    // local loop
+//    std::fill(&*w.begin(), &*w.end(), 0);
+#pragma omp parallel
+    {
+        long iter = iter_local_array[omp_get_thread_num()];
+#pragma omp for
+        for (unsigned int i = 0; i < M; ++i) {
+            w[i] = 0;
+            for (unsigned int j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
+            }
+        }
+    }
+
+    double t1_end = omp_get_wtime();
+
+    // Wait for comm to finish.
+//    double t4_start = omp_get_wtime();
+//    MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
+//    double t4_end = omp_get_wtime();
+
+/*    if (rank==1){
+        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
+        for(int i=0; i<recvSize; i++)
+            std::cout << vecValues[i] << std::endl;
+    }*/
+
+    // remote loop
+    // todo: data race happens during "omp for" here, since the "for" loop splits based on the remote columns, but
+    // todo: w[row] are being computed in every iteration , which means different threads may access the same w[row].
+
+    double t2_start = omp_get_wtime();
+//#pragma omp parallel
+//    {
+    unsigned int iter = iter_remote_array[omp_get_thread_num()];
+//#pragma omp for
+    for (unsigned int i = 0; i < col_remote_size; ++i) {
+        for (unsigned int j = 0; j < nnzPerCol_remote[i]; ++j, ++iter) {
+
+//                if(rank==0 && omp_get_thread_num()==0){
+//                    printf("thread = %d\n", omp_get_thread_num());
+//                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
+//                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
+//                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+
+            w[row_remote[indicesP_remote[iter]]] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
+        }
+    }
+//    }
+
+    double t2_end = omp_get_wtime();
+    double t3_end = omp_get_wtime();
+
+    double time0_local = t0_end-t0_start;
+    double time0;
+    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    double time1_local = t1_end-t1_start;
+    double time1;
+    MPI_Allreduce(&time1_local, &time1, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    double time2_local = t2_end-t2_start;
+    double time2;
+    MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    double time3_local = t3_end-t3_start;
+    double time3;
+    MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+//    double time4_local = t4_end-t4_start;
+//    double time4;
+//    MPI_Allreduce(&time4_local, &time4, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+    time[0] += time0/nprocs;
+    time[1] += time1/nprocs;
+    time[2] += time2/nprocs;
+    time[3] += time3/nprocs;
+//    time[4] += time4/nprocs;
+
+//    time[0] += time0_local;
+//    time[1] += time1_local;
+//    time[2] += time2_local;
+//    time[3] += time3_local;
+//    time[4] += time4_local;
+
+    return 0;
+}
+
+
 int saena_matrix::residual(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res){
     // Vector res = A*u - rhs;
 

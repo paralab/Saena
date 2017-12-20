@@ -447,7 +447,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
-    solver.solve_pcg(u, &opts);
+//    solver.solve_pcg(u, &opts);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
