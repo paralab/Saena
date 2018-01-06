@@ -2920,7 +2920,7 @@ int saena_object::solve_pcg_update3(std::vector<double>& u, saena_matrix* A_new)
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     unsigned long i, j;
-    bool solve_verbose = true;
+    bool solve_verbose = false;
 
     // ************** update grids[i].A for all levels i **************
 

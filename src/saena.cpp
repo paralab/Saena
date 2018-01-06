@@ -36,14 +36,10 @@ saena::matrix::~matrix(){
 int saena::matrix::set(unsigned int i, unsigned int j, double val){
 
     if( val != 0) {
-        if (!m_pImpl->assembled) {
-            if (!add_dup)
-                m_pImpl->set(i, j, val);
-            else
-                m_pImpl->set2(i, j, val);
-        } else {
-            m_pImpl->set3(i, j, val);
-        }
+        if (!add_dup)
+            m_pImpl->set(i, j, val);
+        else
+            m_pImpl->set2(i, j, val);
     }
 
     return 0;
@@ -51,15 +47,10 @@ int saena::matrix::set(unsigned int i, unsigned int j, double val){
 
 int saena::matrix::set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
 
-    if (!m_pImpl->assembled) {
-        if (!add_dup) {
-            m_pImpl->set(row, col, val, nnz_local);
-        } else {
-            m_pImpl->set2(row, col, val, nnz_local);
-        }
-    }else{
-        m_pImpl->set3(row, col, val, nnz_local);
-    }
+    if (!add_dup)
+        m_pImpl->set(row, col, val, nnz_local);
+    else
+        m_pImpl->set2(row, col, val, nnz_local);
 
     return 0;
 }
@@ -103,8 +94,16 @@ int saena::matrix::set(unsigned int i, unsigned int j, unsigned int* di, unsigne
 
 
 int saena::matrix::assemble() {
-    m_pImpl->repartition();
-    m_pImpl->matrix_setup();
+
+    if(!m_pImpl->assembled){
+        m_pImpl->repartition();
+        m_pImpl->matrix_setup();
+    }else{
+        m_pImpl->setup_initial_data2();
+        m_pImpl->repartition2();
+        m_pImpl->matrix_setup2();
+    }
+
     return 0;
 }
 
@@ -114,11 +113,6 @@ unsigned int saena::matrix::get_num_local_rows() {
 
 saena_matrix* saena::matrix::get_internal_matrix(){
     return m_pImpl;
-}
-
-int saena::matrix::set_zero(){
-    m_pImpl->set_zero();
-    return 0;
 }
 
 int saena::matrix::erase(){
@@ -140,11 +134,6 @@ int saena::matrix::add_duplicates(bool add) {
         add_dup = false;
         m_pImpl->add_duplicates = false;
     }
-    return 0;
-}
-
-int saena::matrix::finish_update() {
-    m_pImpl->finish_update();
     return 0;
 }
 

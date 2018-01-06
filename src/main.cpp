@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 */
-
+/*
     if(argc != 3)
     {
         if(rank == 0)
@@ -45,8 +45,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-
-/*
+*/
     if(argc != 4)
     {
         if(rank == 0)
@@ -57,7 +56,6 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-*/
 
     // *************************** get number of rows ****************************
 
@@ -493,7 +491,7 @@ int main(int argc, char* argv[]){
     // try this: ./Saena ./data/25o1s4.bin ./data/vectors/v25.bin ./data/25o1s4_2.bin
     // or:       ./Saena ./data/81s4x8o1mu1.bin ./data/vectors/v81.bin ./data/81s4x8o1mu1_2.bin
     // or:       ./Saena ./data/2DMed_sorted.bin ./data/vectors/v961.bin ./data/2DMed_sorted_2.bin
-/*
+
     char* file_name2(argv[3]);
     saena::matrix A_new (file_name2, comm);
     A_new.assemble();
@@ -503,7 +501,6 @@ int main(int argc, char* argv[]){
 //    solver.solve_pcg_update(u, &opts, &A_new);
 //    solver.solve_pcg_update2(u, &opts, &A_new);
     solver.solve_pcg_update3(u, &opts, &A_new);
-*/
 
 //    printf("\nprint u:\n");
 //    for(long i = 0; i < num_local_row; i++)

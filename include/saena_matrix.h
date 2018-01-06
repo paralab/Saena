@@ -131,6 +131,11 @@ public:
     int repartition();
     int matrix_setup();
 
+    // these versions are used after matrix is assembled and needs to be updated again.
+    int setup_initial_data2();
+    int repartition2();
+    int matrix_setup2();
+
     int matvec(const std::vector<double>& v, std::vector<double>& w);
     int matvec_timing(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
     int matvec_timing2(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
@@ -141,7 +146,6 @@ public:
     int chebyshev(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp, std::vector<double>& temp2);
     int find_eig();
 
-    int finish_update();
     int set_zero();
     int erase();
     int destroy();
