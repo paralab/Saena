@@ -32,11 +32,11 @@ private:
 public:
     std::vector<cooEntry> entry;
 
-    unsigned int M = 0;    // local number of rows
-    unsigned int Mbig = 0; // global number of rows
-    unsigned int nnz_g;
-    unsigned int nnz_l;
-    std::vector<unsigned long> split;
+    unsigned int M     = 0; // local number of rows
+    unsigned int Mbig  = 0; // global number of rows
+    unsigned int nnz_g = 0; // global nnz
+    unsigned int nnz_l = 0; // local nnz
+    std::vector<unsigned long> split; // (row-wise) partition of the matrix between processes
     std::vector<unsigned long> split_old;
 
     unsigned int nnz_l_local;
@@ -141,10 +141,10 @@ public:
     int chebyshev(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp, std::vector<double>& temp2);
     int find_eig();
 
+    int finish_update();
+    int set_zero();
     int erase();
     int destroy();
 };
 
 #endif //SAENA_SAENA_MATRIX_H
-
-

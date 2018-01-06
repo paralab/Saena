@@ -336,6 +336,12 @@ int saena_matrix::set3(unsigned int row, unsigned int col, double val){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    // update the matrix size if required.
+//    if(row >= Mbig)
+//        Mbig = row + 1; // "+ 1" is there since row starts from 0, not 1.
+//    if(col >= Mbig)
+//        Mbig = col + 1;
+
 //    auto proc_num = lower_bound2(&*split.begin(), &*split.end(), (unsigned long)row);
 //    printf("proc_num = %ld\n", proc_num);
 
@@ -359,13 +365,16 @@ int saena_matrix::set3(unsigned int row, unsigned int col, double val){
             entry[position].val = send_buf.val;
         }
     }else{
+        printf("\nAttention: the structure of the matrix is being changed, so matrix.assemble() is required to call after being done calling matrix.set()!\n\n");
         entry.push_back(send_buf);
         std::sort(&*entry.begin(), &*entry.end());
+        nnz_g++;
+        nnz_l++;
     }
 
-    printf("\nentry:\n");
-    for(long i = 0; i < nnz_l; i++)
-        std::cout << entry[i] << std::endl;
+//    printf("\nentry:\n");
+//    for(long i = 0; i < nnz_l; i++)
+//        std::cout << entry[i] << std::endl;
 
     return 0;
 }
@@ -390,14 +399,17 @@ int saena_matrix::set3(unsigned int* row, unsigned int* col, double* val, unsign
                 entry[position].val  = temp.val;
             }
         }else{
+            printf("\nAttention: the structure of the matrix is being changed, so matrix.assemble() is required to call after being done calling matrix.set()!\n\n");
             entry.push_back(temp);
             std::sort(&*entry.begin(), &*entry.end());
+            nnz_g++;
+            nnz_l++;
         }
     }
 
-    printf("\nentry:\n");
-    for(long i = 0; i < nnz_l; i++)
-        std::cout << entry[i] << std::endl;
+//    printf("\nentry:\n");
+//    for(long i = 0; i < nnz_l; i++)
+//        std::cout << entry[i] << std::endl;
 
     return 0;
 }
@@ -618,6 +630,66 @@ int saena_matrix::erase(){
     numRecvProc = 0;
     numSendProc = 0;
     assembled = false;
+
+    return 0;
+}
+
+
+int saena_matrix::finish_update() {
+// update values_local, values_remote and invDiag.
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    if(!entry.empty()){
+        if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
+            values_local.push_back(entry[0].val);
+//            row_local.push_back(entry[0].row);
+//            col_local.push_back(entry[0].col);
+        } else {
+            values_remote.push_back(entry[0].val);
+//            row_remote.push_back(entry[0].row);
+//            col_remote.push_back(col_remote_size - 1);
+//            col_remote2.push_back(entry[0].col);
+        }
+    }
+
+    if(entry.size() >= 2){
+        for (long i = 1; i < nnz_l; i++) {
+            if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
+                values_local.push_back(entry[i].val);
+//                row_local.push_back(entry[i].row);
+//                col_local.push_back(entry[i].col);
+            } else {
+                values_remote.push_back(entry[i].val);
+//                row_remote.push_back(entry[i].row);
+                // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
+//                col_remote2.push_back(entry[i].col);
+                // the original col values are not being used. the ordering starts from 0, and goes up by 1.
+//                col_remote.push_back(col_remote_size - 1);
+            }
+        }
+    }
+
+    inverse_diag(invDiag);
+
+    // update eig_max here
+    //todo: is this line required?
+//    find_eig();
+
+    return 0;
+}
+
+
+int saena_matrix::set_zero(){
+
+    // todo: add openmp
+    for(unsigned long i = 0; i < nnz_l; i++)
+        entry[i].val = 0;
+
+    values_local.clear();
+    values_remote.clear();
 
     return 0;
 }

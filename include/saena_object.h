@@ -22,7 +22,7 @@ public:
     float connStrength = 0.5; // connection strength parameter
     bool doSparsify = false;
     std::vector<Grid> grids;
-    int CG_max_iter = 2000;
+    int CG_max_iter = 400;
     double CG_tol = 1e-10;
     bool verbose = false;
     bool repartition = true;

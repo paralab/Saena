@@ -34,6 +34,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 */
+
     if(argc != 3)
     {
         if(rank == 0)
@@ -44,6 +45,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+
 /*
     if(argc != 4)
     {
@@ -56,6 +58,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 */
+
     // *************************** get number of rows ****************************
 
 //    char* Vname(argv[2]);
@@ -447,7 +450,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
-//    solver.solve_pcg(u, &opts);
+    solver.solve_pcg(u, &opts);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
@@ -462,34 +465,34 @@ int main(int argc, char* argv[]){
 //            cout << i << "\t" << u[i] << endl;}
 //    MPI_Barrier(comm);
 
-
-//    MPI_Barrier(comm);
-//    if(rank==0){
-//        printf("\nrank = %d \tu.size() = %lu \n", rank, u.size());
-//        for(long i = 0; i < u.size(); i++)
-//            std::cout << u[i] << std::endl;}
-//    MPI_Barrier(comm);
-//    if(rank==1){
-//        printf("\nrank = %d \tu.size() = %lu \n", rank, u.size());
-//        for(i = 0; i < u.size(); i++)
-//            cout << i << "\t" << u[i] << endl;}
-//    MPI_Barrier(comm);
-
     // *************************** test set3() ****************************
+/*
+    saena_matrix *B = A.get_internal_matrix();
+//    for(long i = 0; i < B->nnz_l; i++)
+//        std::cout << B->entry[i] << std::endl;
 
-//    A.add_duplicates(true);
+    A.add_duplicates(true);
 //    A.set(8, 7, 100);
-//    unsigned int row[3] = {9,   8,   20};
-//    unsigned int col[3] = {8,   7,   18};
-//    double val[3]       = {100.111, 200.222, 300.333};
-//    A.set(row, col, val, 3);
+    A.set(2, 1, 100);
+
+    A.set_zero();
+//    for(long i = 0; i < B->nnz_l; i++)
+//        std::cout << B->entry[i] << std::endl;
+
+    unsigned int row[3] = {9,   8,   20};
+    unsigned int col[3] = {8,   7,   18};
+    double val[3]       = {100.111, 200.222, 300.333};
+    A.set(row, col, val, 3);
+*/
+//    saena_matrix *B = A.get_internal_matrix();
+//    for(long i = 0; i < B->nnz_l; i++)
+//        std::cout << B->entry[i] << std::endl;
 
     // *************************** LHS update Experiment ****************************
 
     // try this: ./Saena ./data/25o1s4.bin ./data/vectors/v25.bin ./data/25o1s4_2.bin
     // or:       ./Saena ./data/81s4x8o1mu1.bin ./data/vectors/v81.bin ./data/81s4x8o1mu1_2.bin
     // or:       ./Saena ./data/2DMed_sorted.bin ./data/vectors/v961.bin ./data/2DMed_sorted_2.bin
-
 /*
     char* file_name2(argv[3]);
     saena::matrix A_new (file_name2, comm);
@@ -500,11 +503,11 @@ int main(int argc, char* argv[]){
 //    solver.solve_pcg_update(u, &opts, &A_new);
 //    solver.solve_pcg_update2(u, &opts, &A_new);
     solver.solve_pcg_update3(u, &opts, &A_new);
+*/
 
 //    printf("\nprint u:\n");
 //    for(long i = 0; i < num_local_row; i++)
 //        printf("%f\n", u[i]);
-*/
 
     // *************************** Matvec Expermient ****************************
 

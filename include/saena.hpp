@@ -26,6 +26,8 @@ namespace saena {
         int assemble();
         unsigned int get_num_local_rows();
         saena_matrix* get_internal_matrix();
+        int set_zero();
+        int finish_update();
         int erase();
         void destroy();
 

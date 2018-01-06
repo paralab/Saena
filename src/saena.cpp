@@ -69,6 +69,7 @@ int saena::matrix::set(unsigned int i, unsigned int j, unsigned int size_x, unsi
     unsigned int ii, jj, iter;
     iter = 0;
 
+    //todo: add openmp
     for(jj = 0; jj < size_y; jj++) {
         for(ii = 0; ii < size_x; ii++) {
             if( val[iter] != 0){
@@ -115,6 +116,11 @@ saena_matrix* saena::matrix::get_internal_matrix(){
     return m_pImpl;
 }
 
+int saena::matrix::set_zero(){
+    m_pImpl->set_zero();
+    return 0;
+}
+
 int saena::matrix::erase(){
     m_pImpl->erase();
     return 0;
@@ -134,6 +140,11 @@ int saena::matrix::add_duplicates(bool add) {
         add_dup = false;
         m_pImpl->add_duplicates = false;
     }
+    return 0;
+}
+
+int saena::matrix::finish_update() {
+    m_pImpl->finish_update();
     return 0;
 }
 
