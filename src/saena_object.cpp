@@ -2788,12 +2788,12 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //                for(i = 0; i < u.size(); i++)
 //                    printf("%.10f \n", u[i]);}
 
-            std::vector<double> rhs_matvec(u.size(), 0);
-            grid->A->matvec(u, rhs_matvec);
-            if(rank==0){
-                printf("\nA*u - rhs:\n");
-                for(i = 0; i < rhs_matvec.size(); i++)
-                    printf("%.10f \n", rhs_matvec[i] - rhs[i]);}
+//            std::vector<double> rhs_matvec(u.size(), 0);
+//            grid->A->matvec(u, rhs_matvec);
+//            if(rank==0){
+//                printf("\nA*u - rhs:\n");
+//                for(i = 0; i < rhs_matvec.size(); i++)
+//                    printf("%.10f \n", rhs_matvec[i] - rhs[i]);}
 
             return 0;
         }
