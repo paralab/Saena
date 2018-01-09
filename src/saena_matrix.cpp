@@ -325,7 +325,7 @@ int saena_matrix::set2(unsigned int* row, unsigned int* col, double* val, unsign
     return 0;
 }
 
-
+/*
 int saena_matrix::set3(unsigned int row, unsigned int col, double val){
 
     int nprocs, rank;
@@ -375,7 +375,6 @@ int saena_matrix::set3(unsigned int row, unsigned int col, double val){
     return 0;
 }
 
-
 int saena_matrix::set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local){
 
     if(nnz_local <= 0){
@@ -409,7 +408,7 @@ int saena_matrix::set3(unsigned int* row, unsigned int* col, double* val, unsign
 
     return 0;
 }
-
+*/
 
 void saena_matrix::set_comm(MPI_Comm com){
     comm = com;
@@ -665,9 +664,9 @@ int saena_matrix::setup_initial_data2(){
 //    MPI_Barrier(comm); printf("rank = %d\t setup_initial 6666666666666666666\n", rank);  MPI_Barrier(comm);
 
     initial_nnz_l = data_size;
-    unsigned long nnz_g_temp;
-    MPI_Allreduce(&initial_nnz_l, &nnz_g_temp, 1, MPI_UNSIGNED, MPI_SUM, comm);
-    if(rank == 0 && nnz_g_temp != nnz_g) printf("error: number of nonzeros is changed during the matrix update!\n");
+    unsigned long nnz_g_temp = nnz_g;
+    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
+    if(rank == 0 && (nnz_g_temp != nnz_g) ) printf("error: number of global nonzeros is changed during the matrix update!\n");
 
     return 0;
 }
@@ -687,6 +686,7 @@ int saena_matrix::erase(){
     split_old.clear();
     values_local.clear();
     row_local.clear();
+    values_remote.clear();
     row_remote.clear();
     col_local.clear();
     col_remote.clear();
@@ -709,6 +709,7 @@ int saena_matrix::erase(){
     split.shrink_to_fit();
     split_old.shrink_to_fit();
     values_local.shrink_to_fit();
+    values_remote.shrink_to_fit();
     row_local.shrink_to_fit();
     row_remote.shrink_to_fit();
     col_local.shrink_to_fit();
@@ -726,6 +727,78 @@ int saena_matrix::erase(){
     sendProcCount.shrink_to_fit();
     vElementRep_local.shrink_to_fit();
     vElementRep_remote.shrink_to_fit();
+
+    M = 0;
+    Mbig = 0;
+    nnz_g = 0;
+    nnz_l = 0;
+    nnz_l_local = 0;
+    nnz_l_remote = 0;
+    col_remote_size = 0;
+    recvSize = 0;
+    numRecvProc = 0;
+    numSendProc = 0;
+    assembled = false;
+
+    return 0;
+}
+
+
+int saena_matrix::erase_keep_remote(){
+
+    entry.clear();
+
+    // push back the remote part
+    for(unsigned long i = 0; i < row_remote.size(); i++)
+        entry.emplace_back(cooEntry(row_remote[i], col_remote2[i], values_remote[i]));
+
+    split.clear();
+    split_old.clear();
+    values_local.clear();
+    values_remote.clear();
+    row_local.clear();
+    row_remote.clear();
+    col_local.clear();
+    col_remote.clear();
+    col_remote2.clear();
+    nnzPerRow_local.clear();
+    nnzPerCol_remote.clear();
+    invDiag.clear();
+    vdispls.clear();
+    rdispls.clear();
+    recvProcRank.clear();
+    recvProcCount.clear();
+    sendProcRank.clear();
+    sendProcCount.clear();
+    sendProcCount.clear();
+    vElementRep_local.clear();
+    vElementRep_remote.clear();
+
+    // erase_keep_remote() is used in coarsen2(), so keep the memory reserved for performance.
+/*
+    entry.shrink_to_fit();
+    split.shrink_to_fit();
+    split_old.shrink_to_fit();
+    values_local.shrink_to_fit();
+    values_remote.shrink_to_fit();
+    row_local.shrink_to_fit();
+    row_remote.shrink_to_fit();
+    col_local.shrink_to_fit();
+    col_remote.shrink_to_fit();
+    col_remote2.shrink_to_fit();
+    nnzPerRow_local.shrink_to_fit();
+    nnzPerCol_remote.shrink_to_fit();
+    invDiag.shrink_to_fit();
+    vdispls.shrink_to_fit();
+    rdispls.shrink_to_fit();
+    recvProcRank.shrink_to_fit();
+    recvProcCount.shrink_to_fit();
+    sendProcRank.shrink_to_fit();
+    sendProcCount.shrink_to_fit();
+    sendProcCount.shrink_to_fit();
+    vElementRep_local.shrink_to_fit();
+    vElementRep_remote.shrink_to_fit();
+*/
 
     M = 0;
     Mbig = 0;
@@ -1598,6 +1671,11 @@ int saena_matrix::matrix_setup2() {
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
+//    assembled = true;
+
+    values_local.clear();
+    values_remote.clear();
+
     if(!entry.empty()){
         if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
             values_local.push_back(entry[0].val);
@@ -1632,7 +1710,7 @@ int saena_matrix::matrix_setup2() {
 
     // update eig_max here
     //todo: is this line required?
-//    find_eig();
+    find_eig();
 
     return 0;
 }

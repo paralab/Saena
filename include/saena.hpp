@@ -77,8 +77,10 @@ namespace saena {
         int solve_pcg_update(std::vector<double>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update, but updates the LHS with A_new.
         int solve_pcg_update2(std::vector<double>& u, saena::options* opts, saena::matrix* A_new);
-        // similar to solve_pcg_update, but updates grids[i].A for all levels, wusing the previously made grids[i].P and R.
+        // similar to solve_pcg_update, but updates grids[i].A for all levels, using the previously made grids[i].P and R.
         int solve_pcg_update3(std::vector<double>& u, saena::options* opts, saena::matrix* A_new);
+        // similar to solve_pcg_update3, but does R*A*P only for the local (diagonal blocks).
+        int solve_pcg_update4(std::vector<double>& u, saena::options* opts, saena::matrix* A_new);
         void destroy();
 
         bool verbose = false;

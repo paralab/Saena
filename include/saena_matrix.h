@@ -124,8 +124,8 @@ public:
     int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
     int set2(unsigned int row, unsigned int col, double val);
     int set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
-    int set3(unsigned int row, unsigned int col, double val);
-    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
+//    int set3(unsigned int row, unsigned int col, double val);
+//    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
 
     int setup_initial_data();
     int repartition();
@@ -148,6 +148,7 @@ public:
 
     int set_zero();
     int erase();
+    int erase_keep_remote(); // use this for coarsen2()
     int destroy();
 };
 

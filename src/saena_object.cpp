@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <set>
 #include <mpi.h>
-#include <parUtils.h>
 
+#include <parUtils.h>
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
@@ -17,6 +17,7 @@
 #include "restrict_matrix.h"
 #include "aux_functions.h"
 #include "grid.h"
+#include "El.hpp"
 
 
 saena_object::saena_object(){
@@ -2106,7 +2107,342 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 } // end of SaenaObject::coarsen
 
 
-int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs){
+int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac){
+    // this function is similar to the coarsen(), but does R*A*P for only local (diagonal) blocks.
+
+    // todo: to improve the performance of this function, consider using the arrays used for RA also for RAP.
+    // todo: this way allocating and freeing memory will be halved.
+
+    MPI_Comm comm = A->comm;
+//    Ac->active_old_comm = true;
+
+//    int rank1, nprocs1;
+//    MPI_Comm_size(comm, &nprocs1);
+//    MPI_Comm_rank(comm, &rank1);
+//    if(A->active_old_comm)
+//        printf("rank = %d, nprocs = %d active\n", rank1, nprocs1);
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    bool verbose_coarsen = false;
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm);
+        printf("start of coarsen: rank = %d, nprocs: %d, A->M = %u, A.nnz_l = %u, A.nnz_g = %u, P.nnz_l = %lu, P.nnz_g = %lu, R.nnz_l = %lu,"
+                       " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n", rank, nprocs, A->M, A->nnz_l,
+               A->nnz_g, P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
+    }
+
+    unsigned long i, j;
+    prolong_matrix RA_temp(comm); // RA_temp is being used to remove duplicates while pushing back to RA.
+
+    // ************************************* RA_temp - A local *************************************
+    // Some local and remote elements of RA_temp are computed here using local R and local A.
+
+    unsigned int AMaxNnz, AMaxM;
+    MPI_Allreduce(&A->nnz_l, &AMaxNnz, 1, MPI_UNSIGNED, MPI_MAX, comm);
+    MPI_Allreduce(&A->M, &AMaxM, 1, MPI_UNSIGNED, MPI_MAX, comm);
+//    MPI_Barrier(comm); printf("\nrank=%d, AMaxNnz=%d, AMaxM = %d \n", rank, AMaxNnz, AMaxM); MPI_Barrier(comm);
+    // todo: is this way better than using the previous Allreduce? reduce on processor 0, then broadcast to other processors.
+
+    // alloacted memory for AMaxM, instead of A.M to avoid reallocation of memory for when receiving data from other procs.
+    unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*AMaxM);
+    std::fill(&AnnzPerRow[0], &AnnzPerRow[AMaxM], 0);
+    for(i=0; i<A->nnz_l; i++)
+        AnnzPerRow[A->entry[i].row - A->split[rank]]++;
+
+//    MPI_Barrier(A->comm);
+//    if(rank==0){
+//        printf("rank = %d, AnnzPerRow: \n", rank);
+//        for(i=0; i<A->M; i++)
+//            printf("%lu \t%u \n", i, AnnzPerRow[i]);
+//    }
+
+    // alloacted memory for AMaxM+1, instead of A.M+1 to avoid reallocation of memory for when receiving data from other procs.
+    unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(AMaxM+1));
+    AnnzPerRowScan[0] = 0;
+    for(i=0; i<A->M; i++){
+        AnnzPerRowScan[i+1] = AnnzPerRowScan[i] + AnnzPerRow[i];
+//        if(rank==1) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i+A->split[rank], AnnzPerRow[i], AnnzPerRowScan[i+1]);
+    }
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 1: rank = %d", rank); MPI_Barrier(comm);}
+
+    // todo: combine indicesP and indicesPRecv together.
+    // find row-wise ordering for A and save it in indicesP
+    unsigned long* indicesP = (unsigned long*)malloc(sizeof(unsigned long)*A->nnz_l);
+    for(unsigned long i=0; i<A->nnz_l; i++)
+        indicesP[i] = i;
+    std::sort(indicesP, &indicesP[A->nnz_l], sort_indices2(&*A->entry.begin()));
+
+    unsigned long jstart, jend;
+    if(!R->entry_local.empty()) {
+        for (i = 0; i < R->nnz_l_local; i++) {
+            jstart = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]];
+            jend   = AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1];
+            if(jend - jstart == 0) continue;
+            for (j = jstart; j < jend; j++) {
+//            if(rank==0) std::cout << A->entry[indicesP[j]].row << "\t" << A->entry[indicesP[j]].col << "\t" << A->entry[indicesP[j]].val
+//                             << "\t" << R->entry_local[i].col << "\t" << R->entry_local[i].col - P->split[rank] << std::endl;
+                RA_temp.entry.push_back(cooEntry(R->entry_local[i].row,
+                                                 A->entry[indicesP[j]].col,
+                                                 R->entry_local[i].val * A->entry[indicesP[j]].val));
+            }
+        }
+    }
+    free(indicesP);
+
+//    if(rank==0){
+//        std::cout << "\nRA_temp.entry.size = " << RA_temp.entry.size() << std::endl;
+//        for(i=0; i<RA_temp.entry.size(); i++)
+//            std::cout << RA_temp.entry[i].row + R->splitNew[rank] << "\t" << RA_temp.entry[i].col << "\t" << RA_temp.entry[i].val << std::endl;}
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 2: rank = %d", rank); MPI_Barrier(comm);}
+
+    // todo: check this: since entries of RA_temp with these row indices only exist on this processor,
+    // todo: duplicates happen only on this processor, so sorting should be done locally.
+    std::sort(RA_temp.entry.begin(), RA_temp.entry.end());
+
+//    MPI_Barrier(A->comm);
+//    if(rank==1)
+//        for(j=0; j<RA_temp.entry.size(); j++)
+//            std::cout << RA_temp.entry[j].row + P->splitNew[rank] << "\t" << RA_temp.entry[j].col << "\t" << RA_temp.entry[j].val << std::endl;
+
+    prolong_matrix RA(comm);
+
+    // remove duplicates.
+    for(i=0; i<RA_temp.entry.size(); i++){
+        RA.entry.push_back(RA_temp.entry[i]);
+//        if(rank==1) std::cout << std::endl << "start:" << std::endl << RA_temp.entry[i].val << std::endl;
+        while(i<RA_temp.entry.size()-1 && RA_temp.entry[i] == RA_temp.entry[i+1]){ // values of entries with the same row and col should be added.
+            RA.entry.back().val += RA_temp.entry[i+1].val;
+            i++;
+//            if(rank==1) std::cout << RA_temp.entry[i+1].val << std::endl;
+        }
+//        if(rank==1) std::cout << std::endl << "final: " << std::endl << RA.entry[RA.entry.size()-1].val << std::endl;
+        // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
+//        if( abs(RA.entry.back().val) < 1e-6)
+//            RA.entry.pop_back();
+//        if(rank==1) std::cout << "final: " << std::endl << RA.entry.back().val << std::endl;
+    }
+
+//    MPI_Barrier(comm);
+//    if(rank==0){
+//        std::cout << "RA.entry.size = " << RA.entry.size() << std::endl;
+//        for(j=0; j<RA.entry.size(); j++)
+//            std::cout << RA.entry[j].row + P->splitNew[rank] << "\t" << RA.entry[j].col << "\t" << RA.entry[j].val << std::endl;}
+//    MPI_Barrier(comm);
+
+    // find the start and end nnz iterator of each block of R.
+    // use A.split for this part to find each block corresponding to each processor's A.
+    unsigned int* left_block_nnz = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs));
+    std::fill(left_block_nnz, &left_block_nnz[nprocs], 0);
+
+//    MPI_Barrier(comm); printf("rank=%d entry = %ld \n", rank, R->entry_remote[0].col); MPI_Barrier(comm);
+
+    // find the owner of the first R.remote element.
+    long procNum = 0;
+//    unsigned int nnzIter = 0;
+    if(!R->entry_remote.empty()){
+        for (i = 0; i < R->entry_remote.size(); i++) {
+            procNum = lower_bound2(&*A->split.begin(), &*A->split.end(), R->entry_remote[i].col);
+            left_block_nnz[procNum]++;
+//        if(rank==1) printf("rank=%d, col = %lu, procNum = %ld \n", rank, R->entry_remote[0].col, procNum);
+//        if(rank==1) std::cout << "\nprocNum = " << procNum << "   \tcol = " << R->entry_remote[0].col
+//                              << "  \tnnzIter = " << nnzIter << "\t first" << std::endl;
+//        nnzIter++;
+        }
+    }
+
+    unsigned int* left_block_nnz_scan = (unsigned int*)malloc(sizeof(unsigned int)*(nprocs+1));
+//    std::fill(R_block_nnz_scan, &R_block_nnz_scan[nprocs+1], 0);
+    left_block_nnz_scan[0] = 0;
+    for(i = 0; i < nprocs; i++)
+        left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
+
+    // ************************************* RAP_temp - P local *************************************
+    // Some local and remote elements of RAP_temp are computed here.
+
+    prolong_matrix RAP_temp(comm); // RAP_temp is being used to remove duplicates while pushing back to RAP.
+    unsigned int P_max_M;
+    MPI_Allreduce(&P->M, &P_max_M, 1, MPI_UNSIGNED, MPI_MAX, comm);
+//    MPI_Barrier(comm); printf("rank=%d, PMaxNnz=%d \n", rank, PMaxNnz); MPI_Barrier(comm);
+    // todo: is this way better than using the previous Allreduce? reduce on processor 0, then broadcast to other processors.
+
+    unsigned int* PnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*P_max_M);
+    std::fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
+    for(i=0; i<P->nnz_l; i++){
+        PnnzPerRow[P->entry[i].row]++;
+    }
+
+//    if(rank==1)
+//        for(i=0; i<P->M; i++)
+//            std::cout << PnnzPerRow[i] << std::endl;
+
+    unsigned int* PnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(P_max_M+1));
+    PnnzPerRowScan[0] = 0;
+    for(i = 0; i < P->M; i++){
+        PnnzPerRowScan[i+1] = PnnzPerRowScan[i] + PnnzPerRow[i];
+//        if(rank==2) printf("i=%lu, PnnzPerRow=%d, PnnzPerRowScan = %d\n", i, PnnzPerRow[i], PnnzPerRowScan[i]);
+    }
+
+    std::fill(left_block_nnz, &left_block_nnz[nprocs], 0);
+    if(!RA.entry.empty()){
+        for (i = 0; i < RA.entry.size(); i++) {
+            procNum = lower_bound2(&P->split[0], &P->split[nprocs], RA.entry[i].col);
+            left_block_nnz[procNum]++;
+//        if(rank==1) printf("rank=%d, col = %lu, procNum = %ld \n", rank, R->entry_remote[0].col, procNum);
+        }
+    }
+
+    left_block_nnz_scan[0] = 0;
+    for(i = 0; i < nprocs; i++)
+        left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
+
+//    if(rank==1){
+//        std::cout << "RABlockStart: " << std::endl;
+//        for(i=0; i<nprocs+1; i++)
+//            std::cout << R_block_nnz_scan[i] << std::endl;}
+
+    // todo: combine indicesP_Prolong and indicesP_ProlongRecv together.
+    // find row-wise ordering for A and save it in indicesP
+    unsigned long* indicesP_Prolong = (unsigned long*)malloc(sizeof(unsigned long)*P->nnz_l);
+    for(unsigned long i=0; i<P->nnz_l; i++)
+        indicesP_Prolong[i] = i;
+    std::sort(indicesP_Prolong, &indicesP_Prolong[P->nnz_l], sort_indices2(&*P->entry.begin()));
+
+    for(i=left_block_nnz_scan[rank]; i<left_block_nnz_scan[rank+1]; i++){
+        for(j = PnnzPerRowScan[RA.entry[i].col - P->split[rank]]; j < PnnzPerRowScan[RA.entry[i].col - P->split[rank] + 1]; j++){
+
+//            if(rank==3) std::cout << RA.entry[i].row + P->splitNew[rank] << "\t" << P->entry[indicesP_Prolong[j]].col << "\t" << RA.entry[i].val * P->entry[indicesP_Prolong[j]].val << std::endl;
+
+            RAP_temp.entry.emplace_back(cooEntry(RA.entry[i].row + P->splitNew[rank],  // Ac.entry should have global indices at the end.
+                                                 P->entry[indicesP_Prolong[j]].col,
+                                                 RA.entry[i].val * P->entry[indicesP_Prolong[j]].val));
+        }
+    }
+
+//    if(rank==1)
+//        for(i=0; i<RAP_temp.entry.size(); i++)
+//            std::cout << RAP_temp.entry[i].row << "\t" << RAP_temp.entry[i].col << "\t" << RAP_temp.entry[i].val << std::endl;
+
+    free(indicesP_Prolong);
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 3: rank = %d", rank); MPI_Barrier(comm);}
+
+    free(PnnzPerRow);
+    free(PnnzPerRowScan);
+    free(left_block_nnz);
+    free(left_block_nnz_scan);
+
+    std::sort(RAP_temp.entry.begin(), RAP_temp.entry.end());
+
+//    if(rank==2)
+//        for(j=0; j<RAP_temp.entry.size(); j++)
+//            std::cout << RAP_temp.entry[j].row << "\t" << RAP_temp.entry[j].col << "\t" << RAP_temp.entry[j].val << std::endl;
+
+    // remove duplicates.
+//    std::vector<cooEntry> Ac_temp;
+    for(i=0; i<RAP_temp.entry.size(); i++){
+        Ac->entry.push_back(RAP_temp.entry[i]);
+        while(i<RAP_temp.entry.size()-1 && RAP_temp.entry[i] == RAP_temp.entry[i+1]){ // values of entries with the same row and col should be added.
+            Ac->entry.back().val += RAP_temp.entry[i+1].val;
+            i++;
+        }
+        // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
+//        if( abs(Ac->entry.back().val) < 1e-6)
+//            Ac->entry.pop_back();
+    }
+//    MPI_Barrier(comm); printf("rank=%d here6666666666666!!!!!!!! \n", rank); MPI_Barrier(comm);
+
+//    par::sampleSort(Ac_temp, Ac->entry, comm);
+//    Ac->entry = Ac_temp;
+
+//    if(rank==1){
+//        std::cout << "after sort:" << std::endl;
+//        for(j=0; j<Ac->entry.size(); j++)
+//            std::cout << Ac->entry[j] << std::endl;
+//    }
+
+    Ac->nnz_l = Ac->entry.size();
+    MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
+    Ac->Mbig = P->Nbig;
+    Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
+    Ac->split = P->splitNew;
+    Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1;
+    Ac->last_M_shrink = A->last_M_shrink;
+    Ac->comm = A->comm;
+    Ac->comm_old = A->comm;
+    Ac->active_old_comm = true;
+//    printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %u, Ac->nnz_g = %u \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);
+
+//    if(verbose_coarsen){
+//        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %u, Ac->nnz_g = %u \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 4: rank = %d", rank); MPI_Barrier(comm);}
+
+//    MPI_Barrier(comm);
+//    if(rank==0){
+//        for(i = 0; i < Ac->nnz_l; i++)
+//            std::cout << i << "\t" << Ac->entry[i] << std::endl;
+//        std::cout << std::endl;}
+//    MPI_Barrier(comm);
+//    if(rank==1){
+//        for(i = 0; i < Ac->nnz_l; i++)
+//            std::cout << i << "\t" << Ac->entry[i] << std::endl;
+//        std::cout << std::endl;}
+//    MPI_Barrier(comm);
+//    if(rank==2){
+//        for(i = 0; i < Ac->nnz_l; i++)
+//            std::cout << i << "\t" << Ac->entry[i] << std::endl;
+//        std::cout << std::endl;}
+//    MPI_Barrier(comm);
+
+//    printf("rank=%d \tA: Mbig=%u, nnz_g = %u, nnz_l = %u, M = %u \tAc: Mbig=%u, nnz_g = %u, nnz_l = %u, M = %u \n",
+//            rank, A->Mbig, A->nnz_g, A->nnz_l, A->M, Ac->Mbig, Ac->nnz_g, Ac->nnz_l, Ac->M);
+//    MPI_Barrier(comm);
+//    if(rank==1)
+//        for(i=0; i<nprocs+1; i++)
+//            std::cout << Ac->split[i] << std::endl;
+
+
+    // ********** check for cpu shrinking **********
+    // if number of rows on Ac < threshold*number of rows on A, then shrink.
+    // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
+
+    // todo: is this part required for coarsen2()?
+    if( (nprocs >= Ac->cpu_shrink_thre2) && (Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)) ){
+
+        shrink_cpu_A(Ac, P->splitNew);
+
+//        MPI_Barrier(comm);
+//        if(rank==0) std::cout << "\nafter shrink: Ac->last_M_shrink = " << Ac->last_M_shrink << ", Ac->Mbig = " << Ac->Mbig
+//                              << ", mult = " << Ac->Mbig * A->cpu_shrink_thre1 << std::endl;
+//        MPI_Barrier(comm);
+    }
+
+    // ********** setup matrix **********
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d", rank); MPI_Barrier(comm);}
+
+    if(Ac->active) // there is another if(active) in matrix_setup().
+        Ac->matrix_setup();
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("end of coarsen: step 6: rank = %d", rank); MPI_Barrier(comm);}
+
+    return 0;
+} // end of SaenaObject::coarsen
+
+
+int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<double>& u, std::vector<double>& rhs){
     // this is CG.
     // u is zero in the beginning. At the end, it is the solution.
 
@@ -2117,7 +2453,7 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
     long i, j;
     bool verbose_solve_coarse = false;
 
-    if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest()\n");
+    if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest_CG()\n");
 
     // res = A*u - rhs
     std::vector<double> res(A->M);
@@ -2146,7 +2482,7 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
 
     double factor, dot_prev;
     std::vector<double> matvecTemp(A->M);
-    i = 0;
+    i = 1;
     while (i < max_iter) {
 //        if(rank==0) std::cout << "starting iteration of CG = " << i << std::endl;
         // factor = sq_norm/ (dir' * A * dir)
@@ -2200,11 +2536,89 @@ int saena_object::solve_coarsest(saena_matrix* A, std::vector<double>& u, std::v
         i++;
     }
 
-    if(verbose_solve_coarse && rank==0) printf("end of solve_coarsest! it took CG iterations = %ld\n \n", --i);
+    if(i == max_iter && max_iter != 0)
+        i--;
+
+    if(verbose_solve_coarse && rank==0) printf("end of solve_coarsest! it took CG iterations = %ld\n \n", i);
+//    if(rank==0) printf("end of solve_coarsest! it took CG iterations = %ld\n \n", i);
 
     return 0;
 }
 
+
+int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<double> &u, std::vector<double> &rhs){
+
+    int argc = 0;
+    char** argv = {NULL};
+//    El::Environment env( argc, argv );
+    El::Initialize( argc, argv );
+
+    int rank, nprocs;
+    MPI_Comm_rank(A_S->comm, &rank);
+    MPI_Comm_size(A_S->comm, &nprocs);
+
+//    printf("solve_coarsest_Elemental!\n");
+
+    const El::Int n = A_S->Mbig;
+//    printf("size = %d\n", n);
+
+    // set the matrix
+    // --------------
+    El::DistMatrix<double> A(n,n);
+    El::Zero( A );
+    A.Reserve(A_S->nnz_l);
+    for(unsigned long i = 0; i < A_S->nnz_l; i++){
+//        if(rank==1) printf("%lu \t%lu \t%f \n", A_S->entry[i].row, A_S->entry[i].col, A_S->entry[i].val);
+        A.QueueUpdate(A_S->entry[i].row, A_S->entry[i].col, A_S->entry[i].val);
+    }
+    A.ProcessQueues();
+//    El::Print( A, "\nGlobal Elemental matrix:\n" );
+
+    // set the rhs
+    // --------------
+    El::DistMatrix<double> w(n,1);
+    w.Reserve(n);
+    for(unsigned long i = 0; i < rhs.size(); i++){
+//        if(rank==1) printf("%lu \t%f \n", i+A_S->split[rank], rhs[i]);
+        w.QueueUpdate(i+A_S->split[rank], 0, rhs[i]);
+    }
+    w.ProcessQueues();
+//    El::Print( w, "\nrhs (w):\n" );
+
+    // solve the system
+    // --------------
+    // w is the rhs. after calling the solve function, it will be the solution.
+//    El::DistMatrix<double> C(n,n);
+//    El::SymmetricSolve(El::LOWER, El::NORMAL, &A, &);
+    El::LinearSolve(A, w);
+//    El::Print( w, "\nsolution (w):\n" );
+/*
+    double temp;
+//    if(rank==1) printf("w solution:\n");
+    for(unsigned long i = A_S->split[rank]; i < A_S->split[rank+1]; i++){
+//        if(rank==1) printf("before: %lu \t%f \n", i, w.Get(i,0));
+        temp = w.Get(i,0);
+//        u[i-A_S->split[rank]] = temp;
+//        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, u[i-A_S->split[rank]]);
+//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, u[i-A_S->split[rank]]);
+        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
+        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
+    }
+*/
+
+    std::vector<double> temp(n);
+    for(unsigned long i = 0; i < n; i++){
+        temp[i] = w.Get(i,0);
+//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
+    }
+
+    for(unsigned long i = A_S->split[rank]; i < A_S->split[rank+1]; i++) {
+        u[i-A_S->split[rank]] = temp[i];
+    }
+
+    El::Finalize();
+    return 0;
+}
 
 // int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vector<double>& b, int& max_iter, double& tol, MPI_Comm comm){
 /*
@@ -2362,11 +2776,24 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //                std::cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << std::endl;
             t1 = MPI_Wtime();
 
-            solve_coarsest(grid->A, u, rhs);
+//            solve_coarsest_CG(grid->A, u, rhs);
+            solve_coarsest_Elemental(grid->A, u, rhs);
 
             t2 = MPI_Wtime();
             func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
             if (verbose) print_time(t1, t2, func_name, grid->A->comm);
+
+//            if(rank==0){
+//                printf("\nsolution from the direct solver:\n");
+//                for(i = 0; i < u.size(); i++)
+//                    printf("%.10f \n", u[i]);}
+
+            std::vector<double> rhs_matvec(u.size(), 0);
+            grid->A->matvec(u, rhs_matvec);
+            if(rank==0){
+                printf("\nA*u - rhs:\n");
+                for(i = 0; i < rhs_matvec.size(); i++)
+                    printf("%.10f \n", rhs_matvec[i] - rhs[i]);}
 
             return 0;
         }
@@ -2524,9 +2951,9 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         //        for(auto i:u)
         //            std::cout << i << std::endl;
 
-        //    residual(grid->A, u, rhs, res);
-        //    dotProduct(res, res, &dot, comm);
-        //    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
+//        residual(grid->A, u, rhs, res);
+//        dotProduct(res, res, &dot, comm);
+//        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
 
     } // end of if(active)
 
@@ -2570,7 +2997,7 @@ int saena_object::solve_pcg(std::vector<double>& u){
 
     std::vector<double> r(grids[0].A->M);
     grids[0].A->residual(u, grids[0].rhs, r);
-    double initial_dot, current_dot;
+    double initial_dot, current_dot, previous_dot;
     dotProduct(r, r, &initial_dot, comm);
     if(rank==0) std::cout << "******************************************************" << std::endl;
     if(rank==0) printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
@@ -2606,6 +3033,8 @@ int saena_object::solve_pcg(std::vector<double>& u){
     std::vector<double> p(grids[0].A->M);
     p = rho;
 
+    previous_dot = initial_dot;
+    current_dot  = initial_dot;
     double rho_res, pdoth, alpha, beta;
     for(i=0; i<vcycle_num; i++){
         grids[0].A->matvec(p, h);
@@ -2620,7 +3049,11 @@ int saena_object::solve_pcg(std::vector<double>& u){
             r[j] -= alpha * h[j];
         }
 
+        previous_dot = current_dot;
         dotProduct(r, r, &current_dot, comm);
+        // this prints the "absolute residual" and the "convergence factor":
+        if(rank==0) printf("Vcycle %lu: %.10f \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
+//        if(rank==0) printf("Vcycle %lu: aboslute residual = %.10f \n", i+1, sqrt(current_dot));
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
 
@@ -2644,7 +3077,7 @@ int saena_object::solve_pcg(std::vector<double>& u){
     if(rank==0){
         std::cout << "******************************************************" << std::endl;
         printf("\nfinal:\nstopped at iteration    = %ld \nfinal absolute residual = %e"
-                       "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot/initial_dot));
+                       "\nrelative residual       = %e \n\n", i+1, sqrt(current_dot), sqrt(current_dot/initial_dot));
         std::cout << "******************************************************" << std::endl;
     }
 
@@ -2961,6 +3394,159 @@ int saena_object::solve_pcg_update3(std::vector<double>& u, saena_matrix* A_new)
 
     std::vector<double> r(grids[0].A->M);
     grids[0].A->residual(u, grids[0].rhs, r);
+    double initial_dot, current_dot, previous_dot;
+    dotProduct(r, r, &initial_dot, comm);
+    if(rank==0) std::cout << "******************************************************" << std::endl;
+    if(rank==0) printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
+
+    // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
+    if(max_level == 0){
+
+        vcycle(&grids[0], u, grids[0].rhs);
+        grids[0].A->residual(u, grids[0].rhs, r);
+        dotProduct(r, r, &current_dot, comm);
+
+        if(rank==0){
+            std::cout << "******************************************************" << std::endl;
+            printf("\nfinal:\nonly using the direct solver! \nfinal absolute residual = %e"
+                           "\nrelative residual       = %e \n\n", sqrt(current_dot), sqrt(current_dot/initial_dot));
+            std::cout << "******************************************************" << std::endl;
+        }
+
+        // repartition u back
+        repartition_back_u(u);
+        return 0;
+    }
+
+    std::vector<double> rho(grids[0].A->M, 0);
+    vcycle(&grids[0], rho, r);
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: first vcycle!\n");
+
+//    for(i = 0; i < r.size(); i++)
+//        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
+
+    std::vector<double> h(grids[0].A->M);
+    std::vector<double> p(grids[0].A->M);
+    p = rho;
+
+    previous_dot = initial_dot;
+    current_dot  = initial_dot;
+    double rho_res, pdoth, alpha, beta;
+    for(i=0; i<vcycle_num; i++){
+        grids[0].A->matvec(p, h);
+        dotProduct(r, rho, &rho_res, comm);
+        dotProduct(p, h, &pdoth, comm);
+        alpha = rho_res / pdoth;
+//        printf("rho_res = %e, pdoth = %e, alpha = %f \n", rho_res, pdoth, alpha);
+
+#pragma omp parallel for
+        for(j = 0; j < u.size(); j++){
+            u[j] -= alpha * p[j];
+            r[j] -= alpha * h[j];
+        }
+
+        previous_dot = current_dot;
+        dotProduct(r, r, &current_dot, comm);
+        if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
+            break;
+
+        if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i+1);
+        // this prints the "absolute residual" and the "convergence factor":
+//        if(rank==0) printf("%.10f \t%.10f \n", sqrt(current_dot), sqrt(current_dot/previous_dot));
+        rho.assign(rho.size(), 0);
+        vcycle(&grids[0], rho, r);
+        dotProduct(r, rho, &beta, comm);
+        beta /= rho_res;
+
+#pragma omp parallel for
+        for(j = 0; j < u.size(); j++)
+            p[j] = rho[j] + beta * p[j];
+//        printf("beta = %e \n", beta);
+    }
+
+    // set number of iterations that took to find the solution
+    // only do the following if the end of the previous for loop was reached.
+    if(i == vcycle_num)
+        i--;
+
+    if(rank==0){
+        std::cout << "******************************************************" << std::endl;
+        printf("\nfinal:\nstopped at iteration    = %ld \nfinal absolute residual = %e"
+                       "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot/initial_dot));
+        std::cout << "******************************************************" << std::endl;
+    }
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: solve!\n");
+
+    // ************** repartition u back **************
+
+    repartition_back_u(u);
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: repartition back u!\n");
+
+    return 0;
+}
+
+
+int saena_object::solve_pcg_update4(std::vector<double>& u, saena_matrix* A_new){
+
+    MPI_Comm comm = grids[0].A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    unsigned long i, j;
+    bool solve_verbose = true;
+
+    // ************** update grids[i].A for all levels i **************
+
+    grids[0].A = A_new;
+    for(i = 0; i < max_level; i++){
+        if(grids[i].A->active) {
+//            grids[i].Ac.erase();
+//            coarsen(grids[i].A, &grids[i].P, &grids[i].R, &grids[i].Ac);
+            grids[i].Ac.erase_keep_remote();
+            coarsen2(grids[i].A, &grids[i].P, &grids[i].R, &grids[i].Ac);
+            grids[i + 1].A = &grids[i].Ac;
+//            Grid(&grids[i].Ac, max_level, i + 1);
+        }
+    }
+
+
+
+//    saena_matrix* B = grids[0].Ac->get_internal_matrix();
+//    if(rank==0){
+//        printf("\n", );
+//    }
+
+
+    // ************** check u size **************
+
+    unsigned int u_size_local = u.size();
+    unsigned int u_size_total;
+    MPI_Allreduce(&u_size_local, &u_size_total, 1, MPI_UNSIGNED, MPI_SUM, grids[0].A->comm);
+    if(grids[0].A->Mbig != u_size_total){
+        if(rank==0) printf("Error: size of LHS (=%u) and the solution vector u (=%u) are not equal!\n", grids[0].A->Mbig, u_size_total);
+        MPI_Finalize();
+        return -1;
+    }
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: check u size!\n");
+
+    // ************** repartition u **************
+
+    repartition_u(u);
+
+    if(solve_verbose) if(rank == 0) printf("verbose: solve_pcg_update: repartition u!\n");
+
+    // ************** solve **************
+
+//    double temp;
+//    dot(rhs, rhs, &temp, comm);
+//    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
+
+    std::vector<double> r(grids[0].A->M);
+    grids[0].A->residual(u, grids[0].rhs, r);
     double initial_dot, current_dot;
     dotProduct(r, r, &initial_dot, comm);
     if(rank==0) std::cout << "******************************************************" << std::endl;
@@ -3015,7 +3601,7 @@ int saena_object::solve_pcg_update3(std::vector<double>& u, saena_matrix* A_new)
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
 
-        if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i+1);
+        if(verbose || solve_verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i+1);
         rho.assign(rho.size(), 0);
         vcycle(&grids[0], rho, r);
         dotProduct(r, rho, &beta, comm);
@@ -3164,20 +3750,20 @@ int saena_object::set_repartition_rhs(std::vector<double>& rhs0){
     unsigned long i;
     int ran = 0;
 
-//    MPI_Barrier(grids[0].comm);
+//    MPI_Barrier(grids[0].A->comm);
 //    if(rank==0){
 //        printf("\nThis is how RHS is received from Nektar++: \n");
 //        printf("\nrank = %d \trhs.size = %lu\n", rank, rhs0.size());
 //        for(i = 0; i < rhs0.size(); i++)
 //            printf("%lu \t%f\n", i, rhs0[i]);
 //    }
-//    MPI_Barrier(grids[0].comm);
+//    MPI_Barrier(grids[0].A->comm);
 //    if(rank==1){
 //        printf("\nrank = %d \trhs.size = %lu\n", rank, rhs0.size());
 //        for(i = 0; i < rhs0.size(); i++)
 //            printf("%lu \t%f\n", i+grids[0].A->split[rank], rhs0[i]);
 //    }
-//    MPI_Barrier(grids[0].comm);
+//    MPI_Barrier(grids[0].A->comm);
 //    if(rank==2){
 //        printf("\nrank = %d \trhs.size = %lu\n", rank, rhs0.size());
 //        for(i = 0; i < rhs0.size(); i++)

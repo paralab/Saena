@@ -129,8 +129,7 @@ int saena::matrix::add_duplicates(bool add) {
     if(add){
         add_dup = true;
         m_pImpl->add_duplicates = true;
-    }
-    else{
+    } else{
         add_dup = false;
         m_pImpl->add_duplicates = false;
     }
@@ -289,6 +288,15 @@ int saena::amg::solve_pcg_update3(std::vector<double>& u, saena::options* opts, 
     m_pImpl->solve_pcg_update3(u, A_new->get_internal_matrix());
     return 0;
 }
+
+
+int saena::amg::solve_pcg_update4(std::vector<double>& u, saena::options* opts, saena::matrix* A_new){
+    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->solve_pcg_update4(u, A_new->get_internal_matrix());
+    return 0;
+}
+
 
 
 void saena::amg::save_to_file(char* name, unsigned int* agg){

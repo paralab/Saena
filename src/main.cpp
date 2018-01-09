@@ -34,7 +34,6 @@ int main(int argc, char* argv[]){
         return -1;
     }
 */
-/*
     if(argc != 3)
     {
         if(rank == 0)
@@ -45,7 +44,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-*/
+/*
     if(argc != 4)
     {
         if(rank == 0)
@@ -56,6 +55,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+*/
 
     // *************************** get number of rows ****************************
 
@@ -464,23 +464,23 @@ int main(int argc, char* argv[]){
 //    MPI_Barrier(comm);
 
     // *************************** test set3() ****************************
-/*
-    saena_matrix *B = A.get_internal_matrix();
+
+//    saena_matrix *B = A.get_internal_matrix();
 //    for(long i = 0; i < B->nnz_l; i++)
 //        std::cout << B->entry[i] << std::endl;
 
-    A.add_duplicates(true);
+//    A.add_duplicates(true);
 //    A.set(8, 7, 100);
-    A.set(2, 1, 100);
+//    A.set(2, 1, 100);
 
-    A.set_zero();
 //    for(long i = 0; i < B->nnz_l; i++)
 //        std::cout << B->entry[i] << std::endl;
-
+/*
     unsigned int row[3] = {9,   8,   20};
     unsigned int col[3] = {8,   7,   18};
     double val[3]       = {100.111, 200.222, 300.333};
     A.set(row, col, val, 3);
+    A.assemble();
 */
 //    saena_matrix *B = A.get_internal_matrix();
 //    for(long i = 0; i < B->nnz_l; i++)
@@ -491,16 +491,40 @@ int main(int argc, char* argv[]){
     // try this: ./Saena ./data/25o1s4.bin ./data/vectors/v25.bin ./data/25o1s4_2.bin
     // or:       ./Saena ./data/81s4x8o1mu1.bin ./data/vectors/v81.bin ./data/81s4x8o1mu1_2.bin
     // or:       ./Saena ./data/2DMed_sorted.bin ./data/vectors/v961.bin ./data/2DMed_sorted_2.bin
-
+/*
     char* file_name2(argv[3]);
     saena::matrix A_new (file_name2, comm);
     A_new.assemble();
+*/
 
-    u.assign(num_local_row, 0);
+/*
+    saena_matrix *B = A_new.get_internal_matrix();
+//    printf("A_new:\n%u \t%u \t%u \t%u \n", B->Mbig, B->M, B->nnz_g, B->nnz_l);
+//    printf("A before: rank %d \n%u \t%u \t%u \t%u \n", rank, B->Mbig, B->M, B->nnz_g, B->nnz_l);
+    for (long i = 0; i < B->nnz_l; i++)
+        A.set(B->entry[i].row, B->entry[i].col, B->entry[i].val);
+    A.assemble();
+//    printf("A after: rank %d \n%u \t%u \t%u \t%u \n", rank, B->Mbig, B->M, B->nnz_g, B->nnz_l);
+*/
 
+//    if(rank==0) printf("A after nnz: \n");
+//    saena_matrix *C = A.get_internal_matrix();
+//    if(rank==0) printf("nnz_l_local = %d \tnnz_l_remote = %d \tvalues_local = %lu \tvalues_remote = %lu \n",
+//                       C->nnz_l_local, C->nnz_l_remote, C->values_local.size(), C->values_remote.size());
+
+//    printf("A_new:\n");
+//    for(long i = 0; i < B->nnz_l_remote; i++)
+//        printf("%lu \t%lu \t%f \n", B->row_local[i], B->col_local[i], B->values_local[i]);
+
+//    printf("\nA:\n");
+//    for(long i = 0; i < C->nnz_l_remote; i++)
+//        printf("%lu \t%lu \t%f \n", C->row_local[i], C->col_local[i], C->values_local[i]);
+
+//    u.assign(num_local_row, 0);
 //    solver.solve_pcg_update(u, &opts, &A_new);
 //    solver.solve_pcg_update2(u, &opts, &A_new);
-    solver.solve_pcg_update3(u, &opts, &A_new);
+//    solver.solve_pcg_update3(u, &opts, &A_new);
+//    solver.solve_pcg_update4(u, &opts, &A_new);
 
 //    printf("\nprint u:\n");
 //    for(long i = 0; i < num_local_row; i++)
