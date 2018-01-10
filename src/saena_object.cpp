@@ -48,15 +48,13 @@ int saena_object::setup(saena_matrix* A) {
 //    MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
     A->active_old_comm = true;
-
-//    if(A->active_old_comm)
-//        printf("rank = %d, nprocs = %d active\n", rank, nprocs);
+    bool verbose_setup = true;
 
     int i;
     unsigned int M_current;
     float row_reduction_local, row_reduction_min;
 
-    if(verbose)
+    if(verbose_setup)
         if(rank==0) std::cout << "_____________________________\n\n" << "size of matrix level 0: " << A->Mbig
                               << "\nnnz level 0: " << A->nnz_g << std::endl;
 
@@ -73,7 +71,7 @@ int saena_object::setup(saena_matrix* A) {
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
 //            if (grids[i + 1].A->active) MPI_Comm_dup(grids[i + 1].A->comm, &grids[i + 1].comm);
 
-            if (verbose)
+            if (verbose_setup)
                 if (rank == 0)
                     std::cout << "_____________________________\n\n" << "size of matrix level "
                               << grids[i + 1].currentLevel << ": " << grids[i + 1].A->Mbig
@@ -114,9 +112,9 @@ int saena_object::setup(saena_matrix* A) {
     MPI_Bcast(&max_level, 1, MPI_INT, 0, grids[0].A->comm);
     grids.resize(max_level);
 
-    if(verbose) if(rank==0){
+    if(verbose_setup) if(rank==0){
             printf("_____________________________\n\n");
-            printf("number of levels = %d, (the finest level is 0)\n", max_level);
+            printf("number of levels = %d (the finest level is 0)\n\n", max_level);
         }
 
 //    printf("\nrank = %d, end of setup() \n", rank);
@@ -2577,9 +2575,10 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<double
     // set the rhs
     // --------------
     El::DistMatrix<double> w(n,1);
+    El::Zero( w );
     w.Reserve(n);
     for(unsigned long i = 0; i < rhs.size(); i++){
-//        if(rank==1) printf("%lu \t%f \n", i+A_S->split[rank], rhs[i]);
+//        if(rank==0) printf("%lu \t%f \n", i+A_S->split[rank], rhs[i]);
         w.QueueUpdate(i+A_S->split[rank], 0, rhs[i]);
     }
     w.ProcessQueues();
@@ -2592,6 +2591,7 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<double
 //    El::SymmetricSolve(El::LOWER, El::NORMAL, &A, &);
     El::LinearSolve(A, w);
 //    El::Print( w, "\nsolution (w):\n" );
+
 /*
     double temp;
 //    if(rank==1) printf("w solution:\n");
@@ -2783,17 +2783,23 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
             func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
             if (verbose) print_time(t1, t2, func_name, grid->A->comm);
 
+            // print the solution
+            // ------------------
 //            if(rank==0){
 //                printf("\nsolution from the direct solver:\n");
 //                for(i = 0; i < u.size(); i++)
 //                    printf("%.10f \n", u[i]);}
 
+            // check if the solution is correct
+            // --------------------------------
 //            std::vector<double> rhs_matvec(u.size(), 0);
 //            grid->A->matvec(u, rhs_matvec);
 //            if(rank==0){
 //                printf("\nA*u - rhs:\n");
-//                for(i = 0; i < rhs_matvec.size(); i++)
-//                    printf("%.10f \n", rhs_matvec[i] - rhs[i]);}
+//                for(i = 0; i < rhs_matvec.size(); i++){
+//                    if(rhs_matvec[i] - rhs[i] > 1e-6)
+//                        printf("%lu \t%f - %f = \t%f \n", i, rhs_matvec[i], rhs[i], rhs_matvec[i] - rhs[i]);}
+//                printf("-----------------------\n");}
 
             return 0;
         }

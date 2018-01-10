@@ -274,7 +274,7 @@ int saena_matrix::set(unsigned int* row, unsigned int* col, double* val, unsigne
 int saena_matrix::set2(unsigned int row, unsigned int col, double val){
 
     // todo: if there are duplicates with different values on two different processors, what should happen?
-    // todo: which one should be removed?
+    // todo: which one should be removed? Hari said "do it randomly".
 
     cooEntry temp_old;
     cooEntry temp_new = cooEntry(row, col, val);

@@ -530,6 +530,7 @@ int main(int argc, char* argv[]){
 //    for(long i = 0; i < num_local_row; i++)
 //        printf("%f\n", u[i]);
 
+
     // *************************** Matvec Expermient ****************************
 
     // Saena Matvec
