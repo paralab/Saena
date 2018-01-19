@@ -1563,7 +1563,7 @@ int saena_matrix::matrix_setup() {
                 }
                 iend++;
             }
-//            if(rank==0) printf("thread id = %d, istart = %u, iend = %u \n", thread_id, istart, iend);
+            if(rank==0) printf("thread id = %d, istart = %u, iend = %u \n", thread_id, istart, iend);
 
             iter_local = 0;
             for (unsigned int i = istart; i < iend; ++i)
@@ -1616,17 +1616,15 @@ int saena_matrix::matrix_setup() {
         for (int i = 1; i < num_threads + 1; i++)
             iter_remote_array[i] += iter_remote_array[i - 1];
 
-        /*    if (rank==0){
-                std::cout << "iter_local_array:" << std::endl;
-                for(int i=0; i<num_threads+1; i++)
-                    std::cout << iter_local_array[i] << std::endl;
-            }*/
+//        if (rank==0){
+//            std::cout << "iter_local_array:" << std::endl;
+//            for(int i=0; i<num_threads+1; i++)
+//                std::cout << iter_local_array[i] << std::endl;}
 
-        /*    if (rank==0){
-                std::cout << "iter_remote_array:" << std::endl;
-                for(int i=0; i<num_threads+1; i++)
-                    std::cout << iter_remote_array[i] << std::endl;
-            }*/
+//        if (rank==0){
+//            std::cout << "iter_remote_array:" << std::endl;
+//            for(int i=0; i<num_threads+1; i++)
+//                std::cout << iter_remote_array[i] << std::endl;}
 
         // setup variables for another matvec implementation
         // -------------------------------------------------
@@ -1637,26 +1635,23 @@ int saena_matrix::matrix_setup() {
 //            iter_remote_array2[0] = 0;
 
         nnzPerRow_local2.resize(M);
-#pragma omp parallel for
-        for(unsigned int i = 0; i < M; i++)
-            nnzPerRow_local2[i] = nnzPerRow_local[i];
-
 #pragma omp parallel
         {
+
+#pragma omp for
+            for(unsigned int i = 0; i < M; i++)
+                nnzPerRow_local2[i] = nnzPerRow_local[i];
+
             const int thread_id = omp_get_thread_num();
             iter_local_array2[thread_id] = iter_local_array[thread_id]; // the default value
 
-            unsigned int starting_row = row_local[iter_local_array[thread_id]];
-
+            unsigned int iter = iter_local_array[thread_id];
+            unsigned long starting_row = row_local[iter];
             if(thread_id != 0){
-                unsigned int iter = iter_local_array[thread_id];
                 unsigned int left_over = 0;
                 while(left_over < nnzPerRow_local[starting_row]){
-//                    if(rank ==0 && thread_id == 1) printf("%lu \t%u \n", col_local[iter], iter_local_array[thread_id]);
-//                    if(starting_row != row_local[iter])
-//                        break;
-
-                    if(col_local[iter] >= iter_local_array[thread_id]){
+//                    if(rank ==0 && thread_id == 1) printf("%lu \t%lu  \n", col_local[iter], row_local[iter_local_array[thread_id]]);
+                    if(col_local[iter] >= row_local[iter_local_array[thread_id]]){
                         iter_local_array2[thread_id] = iter;
                         nnzPerRow_local2[row_local[iter]] -= left_over;
                         break;
@@ -1668,7 +1663,7 @@ int saena_matrix::matrix_setup() {
         }
 
         if(rank==0){
-            printf("\niter_remote_array and iter_remote_array2: \n");
+            printf("\niter_local_array and iter_local_array2: \n");
             for(int i = 0; i < num_threads+1; i++)
                 printf("%u \t%u \n", iter_local_array[i], iter_local_array2[i]);
         }
@@ -1964,6 +1959,130 @@ int saena_matrix::matvec2(const std::vector<double>& v, std::vector<double>& w) 
 
     // remote loop
     // -----------
+    // todo: data race happens during "omp for" here, since the "for" loop splits based on the remote columns, but
+    // todo: w[row] are being computed in every iteration , which means different threads may access the same w[row].
+
+//    double t12 = MPI_Wtime();
+//#pragma omp parallel
+//    {
+    unsigned int iter = iter_remote_array[omp_get_thread_num()];
+//#pragma omp for
+    for (unsigned int i = 0; i < col_remote_size; ++i) {
+        for (unsigned int j = 0; j < nnzPerCol_remote[i]; ++j, ++iter) {
+
+//                if(rank==0 && omp_get_thread_num()==0){
+//                    printf("thread = %d\n", omp_get_thread_num());
+//                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
+//                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
+//                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+
+            w[row_remote[indicesP_remote[iter]]] += values_remote[indicesP_remote[iter]] * vecValues[col_remote[indicesP_remote[iter]]];
+        }
+    }
+//    }
+
+//    double t22 = MPI_Wtime();
+//    time[2] += (t22-t12);
+//    double t23 = MPI_Wtime();
+//    time[3] += (t23-t13);
+
+    return 0;
+}
+
+
+int saena_matrix::matvec3(const std::vector<double>& v, std::vector<double>& w) {
+// todo: to reduce the communication during matvec, consider reducing number of columns during coarsening,
+// todo: instead of reducing general non-zeros, since that is what is communicated for matvec.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    if( v.size() != M ){
+//        printf("A.M != v.size() in matvec!!!\n");}
+
+//    totalTime = 0;
+//    double t10 = MPI_Wtime();
+
+    // put the values of the vector in vSend, for sending to other processors
+#pragma omp parallel for
+    for(unsigned int i = 0; i < vIndexSize; i++)
+        vSend[i] = v[( vIndex[i] )];
+//    double t20 = MPI_Wtime();
+//    time[0] += (t20-t10);
+
+/*    if (rank==0){
+        std::cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << std::endl;
+        for(int i=0; i<vIndexSize; i++)
+            std::cout << vSend[i] << std::endl;
+    }*/
+
+//    double t13 = MPI_Wtime();
+    // iSend your data, and iRecv from others
+    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
+    MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
+
+    //First place all recv requests. Do not recv from self.
+    for(int i = 0; i < numRecvProc; i++) {
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+    }
+
+    //Next send the messages. Do not send to self.
+    for(int i = 0; i < numSendProc; i++) {
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+    }
+
+/*    if (rank==0){
+        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
+        for(int i=0; i<recvSize; i++)
+            std::cout << vecValues[i] << std::endl;
+    }*/
+
+//    double t11 = MPI_Wtime();
+    // local loop
+//    std::fill(&*w.begin(), &*w.end(), 0);
+    /*
+#pragma omp parallel
+    {
+        // by using iter, openmp will have full rows completely on a thread, instead of half rows.
+        long iter = iter_local_array[omp_get_thread_num()];
+#pragma omp for
+        for (unsigned int i = 0; i < M; ++i) {
+            w[i] = 0;
+            for (unsigned int j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
+            }
+        }
+    }
+*/
+
+    w.assign(w.size(), 0);
+
+#pragma omp parallel{
+        std::vector<double> w_local(w.size());
+
+        #pragma omp for
+
+
+    }
+
+    for (unsigned int i = 0; i < nnz_l_local; ++i)
+        w[row_local[i]] += values_local[i] * v[col_local[i] - split[rank]];
+
+
+//    double t21 = MPI_Wtime();
+//    time[1] += (t21-t11);
+
+    // Wait for comm to finish.
+    MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
+
+/*    if (rank==1){
+        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
+        for(int i=0; i<recvSize; i++)
+            std::cout << vecValues[i] << std::endl;
+    }*/
+
+    // remote loop
     // todo: data race happens during "omp for" here, since the "for" loop splits based on the remote columns, but
     // todo: w[row] are being computed in every iteration , which means different threads may access the same w[row].
 

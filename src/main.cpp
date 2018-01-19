@@ -26,15 +26,14 @@ int main(int argc, char* argv[]){
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
-/*
     if(argc != 4)
     {
         if(rank == 0)
-            std::cout << "Usage to make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
+            std::cout << "This is how to make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
         MPI_Finalize();
         return -1;
     }
-*/
+/*
     if(argc != 3)
     {
         if(rank == 0)
@@ -45,6 +44,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+*/
 /*
     if(argc != 4)
     {
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
 
     // ******** 1 - initialize the matrix: laplacian *************
-/*
+
     unsigned int mx(std::stoi(argv[1]));
     unsigned int my(std::stoi(argv[2]));
     unsigned int mz(std::stoi(argv[3]));
@@ -84,14 +84,14 @@ int main(int argc, char* argv[]){
 
     saena::matrix A(comm);
 //    saena::laplacian2D(&A, 4, comm);
-    saena::laplacian3D(&A, mx, my, mz, comm);
+//    saena::laplacian3D(&A, mx, my, mz, comm);
+    saena::laplacian2D_old(&A, mx, comm);
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** 2 - initialize the matrix: read from file *************
-
+/*
     char* file_name(argv[1]);
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-
+*/
     // ******** 3 - initialize the matrix: use setIJV *************
 
 /*
@@ -173,12 +173,12 @@ int main(int argc, char* argv[]){
 //    std::vector<double> rhs;
 
     // ********** 1 - set rhs: use generate_rhs **********
-/*
+
     std::vector<double> v(num_local_row);
     generate_rhs_old(v);
     A.get_internal_matrix()->matvec(v, rhs);
-*/
-//    generate_rhs(rhs, mx, my, mz, comm);
+
+ //    generate_rhs(rhs, mx, my, mz, comm);
 
 //    if(rank==0)
 //        for(unsigned long i=0; i<rhs.size(); i++)
@@ -270,7 +270,7 @@ int main(int argc, char* argv[]){
 */
 
     // ********** 2 - set rhs: read from file **********
-
+/*
     char* Vname(argv[2]);
 //    char* Vname(argv[3]);
 
@@ -313,7 +313,7 @@ int main(int argc, char* argv[]){
     // set rhs
 //    A.get_internal_matrix()->matvec(v, rhs);W
     rhs = v;
-
+*/
     // ********** repartition checking part **********
 
     // this part is for testing repartition functionality of set_rhs and also set_u and repartition_back_u functions.
@@ -449,7 +449,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
-    solver.solve_pcg(u, &opts);
+//    solver.solve_pcg(u, &opts);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
