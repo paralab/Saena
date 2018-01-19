@@ -66,6 +66,7 @@ namespace saena {
         amg();
         int set_matrix(saena::matrix* A);
         int set_rhs(std::vector<double> rhs);
+        saena_object* get_object();
         void save_to_file(char* name, unsigned int* agg); // to save aggregates to a file.
         unsigned int* load_from_file(char* name); // to load aggregates from a file.
         // before calling solve function, vector "u" is the initial guess.
@@ -93,7 +94,7 @@ namespace saena {
     };
 
     // second argument is dof on each processor
-    int laplacian2D(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
+    int laplacian2D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
     int laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
     int laplacian3D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
 }

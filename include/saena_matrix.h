@@ -50,6 +50,7 @@ public:
     std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
     std::vector<unsigned long> col_remote2; //original col index
     std::vector<unsigned int> nnzPerRow_local; // todo: this is used for openmp part of saena_matrix.cpp
+    std::vector<unsigned int> nnzPerRow_local2; // todo: this is used for openmp part of saena_matrix.cpp
     std::vector<unsigned int> nnzPerCol_remote; // todo: replace this. nnz Per Column is expensive.
 //    std::vector<unsigned int> nnzPerRow;
 //    std::vector<unsigned int> nnzPerRow_remote;
@@ -83,9 +84,13 @@ public:
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
 
-    unsigned long num_threads;
-    unsigned int* iter_local_array;
-    unsigned int* iter_remote_array;
+    unsigned int num_threads;
+//    unsigned int* iter_local_array;
+//    unsigned int* iter_remote_array;
+    std::vector<unsigned int> iter_local_array;
+    std::vector<unsigned int> iter_remote_array;
+    std::vector<unsigned int> iter_local_array2;
+    std::vector<unsigned int> iter_remote_array2;
     std::vector<unsigned long> vElement_remote;
     std::vector<unsigned long> vElementRep_local;
     std::vector<unsigned long> vElementRep_remote;
@@ -105,7 +110,7 @@ public:
     unsigned int last_M_shrink;
 
     float jacobi_omega = float(2.0/3);
-    double eig_max_diagxA;
+    double eig_max_diagxA = 1.978148;
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
@@ -137,6 +142,9 @@ public:
     int matrix_setup2();
 
     int matvec(const std::vector<double>& v, std::vector<double>& w);
+    int matvec2(const std::vector<double>& v, std::vector<double>& w);
+    int matvec3(const std::vector<double>& v, std::vector<double>& w);
+    int matvec4(const std::vector<double>& v, std::vector<double>& w);
     int matvec_timing(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
     int matvec_timing2(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
 

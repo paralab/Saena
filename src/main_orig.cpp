@@ -3,14 +3,12 @@
 #include <fstream>
 #include <sys/stat.h>
 #include "mpi.h"
-#include <vector>
 
 #include "grid.h"
 #include "saena.hpp"
-#include <El.hpp>
-#include <saena_object.h>
+//#include <El.hpp>
 
-//using namespace std;
+using namespace std;
 
 int main(int argc, char* argv[]){
 
@@ -25,12 +23,14 @@ int main(int argc, char* argv[]){
     bool verbose = false;
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
-
 /*
-    if(argc != 4)
+    if(argc != 3)
     {
         if(rank == 0)
-            std::cout << "Usage to make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
+        {
+            cout << "Usage: ./Saena <2 or 3 for 2d or 3d laplacian> <dof on each proc>" << endl;
+//            cout << "Usage: ./Saena <2 or 3 for 2d or 3d laplacian> <dof on each proc> <rhs_vector>" << endl;
+        }
         MPI_Finalize();
         return -1;
     }
@@ -39,24 +39,12 @@ int main(int argc, char* argv[]){
     {
         if(rank == 0)
         {
-            std::cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << std::endl;
-            std::cout << "Matrix file should be in triples format." << std::endl;
+            cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << endl;
+            cout << "Matrix file should be in triples format." << endl;
         }
         MPI_Finalize();
         return -1;
     }
-/*
-    if(argc != 4)
-    {
-        if(rank == 0)
-        {
-            std::cout << "Usage: ./Saena <MatrixA> <rhs_vec> <MatrixA_new>" << std::endl;
-            std::cout << "Matrix file should be in triples format." << std::endl;
-        }
-        MPI_Finalize();
-        return -1;
-    }
-*/
 
     // *************************** get number of rows ****************************
 
@@ -70,26 +58,34 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: laplacian *************
 /*
-    unsigned int mx(std::stoi(argv[1]));
-    unsigned int my(std::stoi(argv[2]));
-    unsigned int mz(std::stoi(argv[3]));
+    int dimension( stoi(argv[1]) );
+    unsigned int matrix_size( stoi(argv[2]) );
 
     if(verbose){
         MPI_Barrier(comm);
-        if(rank==0) printf("3D Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
+        if(rank==0) printf("%dD Laplacian: dof on each proc = %u \n", dimension, matrix_size);
         MPI_Barrier(comm);}
 
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
     saena::matrix A(comm);
-//    saena::laplacian2D(&A, 4, comm);
-    saena::laplacian3D(&A, mx, my, mz, comm);
+
+    if(dimension == 2)
+        laplacian2D(&A, matrix_size, comm); // second argument is dof on each processor
+    else if(dimension == 3)
+        laplacian3D(&A, matrix_size, comm); // second argument is dof on each processor
+    else{
+        if(rank==0) printf("Error: Enter 2 or 3 for the dimension!\n");
+        MPI_Finalize();
+        return -1;
+    }
+
+    A.assemble();
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 */
-
     // ******** 2 - initialize the matrix: read from file *************
 
     char* file_name(argv[1]);
@@ -161,116 +157,19 @@ int main(int argc, char* argv[]){
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs(num_local_row);
 
-//    MPI_Barrier(comm);
-//    saena_matrix* B = A.get_internal_matrix();
-//    if(rank==0){
-//        printf("split_old:\n");
-//        for(int i=0; i<nprocs+1; i++)
-//            printf("%lu \n", B->split[i]);
-//    }
-//    MPI_Barrier(comm);
-
-//    std::vector<double> rhs;
-
     // ********** 1 - set rhs: use generate_rhs **********
-/*
+
     std::vector<double> v(num_local_row);
-    generate_rhs_old(v);
+    generate_rhs(v, num_local_row);
     A.get_internal_matrix()->matvec(v, rhs);
-*/
-//    generate_rhs(rhs, mx, my, mz, comm);
 
 //    if(rank==0)
 //        for(unsigned long i=0; i<rhs.size(); i++)
-//            std::cout << i << "\t" << rhs[i] << std::endl;
-
-    // repartition rhs to have the same partition as the matrix A
-    // ----------------------------------------------------------
-/*
-    saena_matrix *B = A.get_internal_matrix();
-
-    std::vector<double> rhs_temp = rhs;
-//    rhs.swap(rhs_temp);
-
-//    if(rank==0)
-//        for(unsigned long i=0; i<rhs.size(); i++)
-//            std::cout << i << "\t" << rhs_temp[i] << std::endl;
-
-//    int recv_size = B->split[rank+1] - B->split[rank];
-//    MPI_Barrier(comm); printf("\nrank = %d, recv_size = %u\n", rank, recv_size); MPI_Barrier(comm);
-
-    std::vector<int> recv_size_array(nprocs);
-    for(unsigned int i = 0; i < nprocs; i++)
-        recv_size_array[i] = B->split[i+1] - B->split[i];
-
-    if(rank==0){
-        printf("\nrecv_size_array:\n");
-        for(int i = 0; i < nprocs; i++)
-            printf("%d \t %u\n", i, recv_size_array[i]);}
-
-    // rdispls is just B->split
-    std::vector<int> rdispls(nprocs);
-    rdispls[0] = 0;
-    for(unsigned int i = 1; i < nprocs; i++)
-        rdispls[i] = rdispls[i-1] + recv_size_array[i-1];
-
-    if(rank==0){
-        printf("\nrdispls:\n");
-        for(int i = 0; i < nprocs; i++)
-            printf("%d \t %d\n", i, rdispls[i]);}
-
-    int send_size = rhs.size();
-    MPI_Barrier(comm); printf("\nrank = %d, send_size = %d\n", rank, send_size); MPI_Barrier(comm);
-
-    std::vector<int> send_size_array(nprocs);
-    MPI_Allgather(&send_size, 1, MPI_INT, &*send_size_array.begin(), 1, MPI_INT, comm);
-
-    if(rank==0){
-        printf("\nsend_size_array:\n");
-        for(int i = 0; i < nprocs; i++)
-            printf("%d \t %u\n", i, send_size_array[i]);}
-
-    std::vector<int> sdispls(nprocs);
-    sdispls[0] = 0;
-    for(unsigned int i = 1; i < nprocs; i++)
-        sdispls[i] = sdispls[i-1] + send_size_array[i-1];
-
-    if(rank==0){
-        printf("\nsdispls:\n");
-        for(int i = 0; i < nprocs; i++)
-            printf("%d \t %d\n", i, sdispls[i]);}
-
-
-
-    MPI_Barrier(comm); printf("\nrank = %d, rhs.resize = %lu\n", rank, B->split[rank+1] - B->split[rank]); MPI_Barrier(comm);
-
-
-
-    rhs.clear();
-    rhs.resize(B->split[rank+1] - B->split[rank]);
-
-    MPI_Alltoallv(&*rhs_temp.begin(), &send_size_array[0], &sdispls[0], MPI_DOUBLE,
-                  &*rhs.begin(), &recv_size_array[0], &rdispls[0], MPI_DOUBLE, comm);
-
-    std::cout << rhs[0] << std::endl;
-
-    return 0;
-
-    if(rhs.size() != num_local_row){
-        printf("error: rhs on process %d has not the correct length!\n", rank);
-        printf("rhs size on process %d = %lu, but it should be of size %d  \n", rank, rhs.size(), num_local_row);
-        A.destroy();
-        MPI_Finalize();
-        return -1;
-    }
-
-    if(rank==0)
-        for(unsigned long i=0; i<rhs.size(); i++)
-            std::cout << i << "\t" << rhs[i] << std::endl;
-*/
+//            std::cout << rhs[i] << std::endl;
 
     // ********** 2 - set rhs: read from file **********
 
+/*
     char* Vname(argv[2]);
 //    char* Vname(argv[3]);
 
@@ -292,7 +191,7 @@ int main(int argc, char* argv[]){
 
     int mpiopen = MPI_File_open(comm, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
-        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
+        if (rank==0) cout << "Unable to open the rhs vector file!" << endl;
         MPI_Finalize();
         return -1;
     }
@@ -311,8 +210,9 @@ int main(int argc, char* argv[]){
     MPI_File_close(&fh);
 
     // set rhs
-//    A.get_internal_matrix()->matvec(v, rhs);W
-    rhs = v;
+    A.get_internal_matrix()->matvec(v, rhs);
+//    rhs = v;
+*/
 
     // ********** repartition checking part **********
 
@@ -373,11 +273,15 @@ int main(int argc, char* argv[]){
 
     // *************************** set u0 ****************************
     // there are 3 options for u0:
-    // 1- default is zero
+    // 1- zero
     // 2- random
     // 3- flat from homg
 
-    std::vector<double> u(num_local_row, 0);
+    std::vector<double> u(num_local_row);
+
+    // ********* 1- set u0: use eigenvalues *********
+
+    u.assign(num_local_row, 0); // initial guess = 0
 
     // ********* 2- set u0: random *********
 
@@ -420,7 +324,7 @@ int main(int argc, char* argv[]){
 
 //    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 100;
-    double relative_tolerance = 1e-12;
+    double relative_tolerance = 1e-8;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;
     int postSmooth            = 3;
@@ -431,7 +335,6 @@ int main(int argc, char* argv[]){
     saena::amg solver;
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
 //    solver.set_multigrid_max_level(0); // 0 means only use direct solver, so no multigrid will be used.
-
     solver.set_matrix(&A);
     solver.set_rhs(rhs);
 
@@ -464,122 +367,43 @@ int main(int argc, char* argv[]){
 //            cout << i << "\t" << u[i] << endl;}
 //    MPI_Barrier(comm);
 
-    // *************************** print A and rhs ****************************
-/*
-    saena_matrix *B = A.get_internal_matrix();
-    if(rank==0)
-        for(long i = 0; i < B->nnz_l; i++)
-            std::cout << B->entry[i] << std::endl;
 
-    MPI_Barrier(comm);
-    if(rank==1)
-        for(long i = 0; i < B->nnz_l; i++)
-            std::cout << B->entry[i] << std::endl;
-*/
-/*
-    saena_object* AA = solver.get_object();
-    if(rank==0)
-        for(long i = 0; i < AA->grids[0].rhs.size(); i++)
-            std::cout << AA->grids[0].rhs[i] << std::endl;
-
-    MPI_Barrier(comm);
-    if(rank==1)
-        for(long i = 0; i < AA->grids[0].rhs.size(); i++)
-            std::cout << AA->grids[0].rhs[i] << std::endl;
-*/
-    // *************************** test set3() ****************************
-
-//    A.add_duplicates(true);
-//    A.set(8, 7, 100);
-//    A.set(2, 1, 100);
-
-//    for(long i = 0; i < B->nnz_l; i++)
-//        std::cout << B->entry[i] << std::endl;
-/*
-    unsigned int row[3] = {9,   8,   20};
-    unsigned int col[3] = {8,   7,   18};
-    double val[3]       = {100.111, 200.222, 300.333};
-    A.set(row, col, val, 3);
-    A.assemble();
-*/
-//    saena_matrix *B = A.get_internal_matrix();
-//    for(long i = 0; i < B->nnz_l; i++)
-//        std::cout << B->entry[i] << std::endl;
-
-    // *************************** LHS update Experiment ****************************
-
-    // try this: ./Saena ./data/25o1s4.bin ./data/vectors/v25.bin ./data/25o1s4_2.bin
-    // or:       ./Saena ./data/81s4x8o1mu1.bin ./data/vectors/v81.bin ./data/81s4x8o1mu1_2.bin
-    // or:       ./Saena ./data/2DMed_sorted.bin ./data/vectors/v961.bin ./data/2DMed_sorted_2.bin
-/*
-    char* file_name2(argv[3]);
-    saena::matrix A_new (file_name2, comm);
-    A_new.assemble();
-*/
-
-/*
-    saena_matrix *B = A_new.get_internal_matrix();
-//    printf("A_new:\n%u \t%u \t%u \t%u \n", B->Mbig, B->M, B->nnz_g, B->nnz_l);
-//    printf("A before: rank %d \n%u \t%u \t%u \t%u \n", rank, B->Mbig, B->M, B->nnz_g, B->nnz_l);
-    for (long i = 0; i < B->nnz_l; i++)
-        A.set(B->entry[i].row, B->entry[i].col, B->entry[i].val);
-    A.assemble();
-//    printf("A after: rank %d \n%u \t%u \t%u \t%u \n", rank, B->Mbig, B->M, B->nnz_g, B->nnz_l);
-*/
-
-//    if(rank==0) printf("A after nnz: \n");
-//    saena_matrix *C = A.get_internal_matrix();
-//    if(rank==0) printf("nnz_l_local = %d \tnnz_l_remote = %d \tvalues_local = %lu \tvalues_remote = %lu \n",
-//                       C->nnz_l_local, C->nnz_l_remote, C->values_local.size(), C->values_remote.size());
-
-//    printf("A_new:\n");
-//    for(long i = 0; i < B->nnz_l_remote; i++)
-//        printf("%lu \t%lu \t%f \n", B->row_local[i], B->col_local[i], B->values_local[i]);
-
-//    printf("\nA:\n");
-//    for(long i = 0; i < C->nnz_l_remote; i++)
-//        printf("%lu \t%lu \t%f \n", C->row_local[i], C->col_local[i], C->values_local[i]);
-
-//    u.assign(num_local_row, 0);
-//    solver.solve_pcg_update(u, &opts, &A_new);
-//    solver.solve_pcg_update2(u, &opts, &A_new);
-//    solver.solve_pcg_update3(u, &opts, &A_new);
-//    solver.solve_pcg_update4(u, &opts, &A_new);
-
-//    printf("\nprint u:\n");
-//    for(long i = 0; i < num_local_row; i++)
-//        printf("%f\n", u[i]);
-
+//    MPI_Barrier(comm);
+//    if(rank==0){
+//        printf("\nrank = %d \tu.size() = %lu \n", rank, u.size());
+//        for(i = 0; i < u.size(); i++)
+//            cout << i << "\t" << u[i] << endl;}
+//    MPI_Barrier(comm);
+//    if(rank==1){
+//        printf("\nrank = %d \tu.size() = %lu \n", rank, u.size());
+//        for(i = 0; i < u.size(); i++)
+//            cout << i << "\t" << u[i] << endl;}
+//    MPI_Barrier(comm);
 
     // *************************** Matvec Expermient ****************************
-
+/*
     // Saena Matvec
     // ------------
-/*
-    int matvec_iter = 3;
-    std::vector<double> Av(num_local_row);
+
+    int matvec_iter = 100;
 
     saena_matrix* B = A.get_internal_matrix();
     t1 = MPI_Wtime();
 
-    for(int i = 0; i < matvec_iter ; i++){
-        B->matvec(rhs, Av);
-        for(int j = 0; j < num_local_row ; j++)
-            rhs[j] = Av[j];
-    }
+    for(int i = 0; i < matvec_iter ; i++)
+        B->matvec(v, rhs);
 
     t2 = MPI_Wtime();
     print_time_average(t1, t2, "Saena Matvec:", matvec_iter, comm);
 
-    if(rank==2){
-        std::cout << "Saena matvec:" << std::endl;
-        for(unsigned long i = 0; i < num_local_row; i++)
-            std::cout << i + B->split[rank] << "\t" << Av[i] << std::endl;}
-*/
+//    if(rank==0){
+//        std::cout << "Saena matvec:" << std::endl;
+//        for(unsigned long i = 0; i < num_local_row; i++)
+//            std::cout << i << "\t" << rhs[i] << std::endl;}
 
     // Elemental Matvec
     // ----------------
-/*
+
     El::Initialize( argc, argv );
 
     const El::Int n = B->Mbig;
@@ -618,6 +442,7 @@ int main(int argc, char* argv[]){
 
     El::Finalize();
 */
+
     // *************************** Residual ****************************
 
 /*
@@ -859,7 +684,6 @@ int main(int argc, char* argv[]){
     // *************************** finalize ****************************
 
     A.destroy();
-//    A_new.destroy();
     solver.destroy();
     MPI_Finalize();
     return 0;
