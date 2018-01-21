@@ -9,6 +9,11 @@
 #include "El.hpp"
 
 
+#pragma omp declare reduction(vec_double_plus : std::vector<double> : \
+                              std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus<double>())) \
+                    initializer(omp_priv = omp_orig)
+
+
 saena_matrix::saena_matrix(){}
 
 
@@ -1628,6 +1633,7 @@ int saena_matrix::matrix_setup() {
 
         // setup variables for another matvec implementation
         // -------------------------------------------------
+/*
         iter_local_array2.resize(num_threads+1);
         iter_local_array2[0] = 0;
         iter_local_array2[num_threads] = iter_local_array[num_threads];
@@ -1667,7 +1673,7 @@ int saena_matrix::matrix_setup() {
             for(int i = 0; i < num_threads+1; i++)
                 printf("%u \t%u \n", iter_local_array[i], iter_local_array2[i]);
         }
-
+*/
         // *************************** find sortings ****************************
         //find the sorting on rows on both local and remote data to be used in matvec
 
@@ -2041,34 +2047,28 @@ int saena_matrix::matvec3(const std::vector<double>& v, std::vector<double>& w) 
 //    double t11 = MPI_Wtime();
     // local loop
 //    std::fill(&*w.begin(), &*w.end(), 0);
-    /*
+
+    w.assign(w.size(), 0);
+//    for (unsigned int i = 0; i < nnz_l_local; ++i)
+//        w[row_local[i]] += values_local[i] * v[col_local[i] - split[rank]];
+
+/*
 #pragma omp parallel
     {
-        // by using iter, openmp will have full rows completely on a thread, instead of half rows.
-        long iter = iter_local_array[omp_get_thread_num()];
+        std::vector<double> w_local(w.size(), 0);
+
 #pragma omp for
-        for (unsigned int i = 0; i < M; ++i) {
-            w[i] = 0;
-            for (unsigned int j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
-                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
-            }
-        }
+        for (unsigned int i = 0; i < nnz_l_local; ++i)
+            w_local[row_local[i]] += values_local[i] * v[col_local[i] - split[rank]];
     }
 */
 
-    w.assign(w.size(), 0);
-
-#pragma omp parallel{
-        std::vector<double> w_local(w.size());
-
-        #pragma omp for
-
-
-    }
-
-    for (unsigned int i = 0; i < nnz_l_local; ++i)
-        w[row_local[i]] += values_local[i] * v[col_local[i] - split[rank]];
-
+    // openmp reduction
+    // ----------------
+    unsigned int i;
+#pragma omp parallel for default(shared) private(i) reduction(vec_double_plus:w)
+        for (i = 0; i < nnz_l_local; ++i)
+            w[row_local[i]] += values_local[i] * v[col_local[i] - split[rank]];
 
 //    double t21 = MPI_Wtime();
 //    time[1] += (t21-t11);

@@ -26,6 +26,7 @@ int main(int argc, char* argv[]){
 
     if(verbose) if(rank==0) std::cout << "\nnumber of processes = " << nprocs << std::endl;
 
+/*
     if(argc != 4)
     {
         if(rank == 0)
@@ -33,7 +34,7 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-/*
+*/
     if(argc != 3)
     {
         if(rank == 0)
@@ -44,7 +45,6 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
-*/
 /*
     if(argc != 4)
     {
@@ -70,6 +70,7 @@ int main(int argc, char* argv[]){
 
     // ******** 1 - initialize the matrix: laplacian *************
 
+/*
     unsigned int mx(std::stoi(argv[1]));
     unsigned int my(std::stoi(argv[2]));
     unsigned int mz(std::stoi(argv[3]));
@@ -89,9 +90,10 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+*/
 
     // ******** 2 - initialize the matrix: read from file *************
-/*
+
     char* file_name(argv[1]);
     // timing the matrix setup phase
     double t1 = MPI_Wtime();
@@ -101,7 +103,7 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
+
     // ******** 3 - initialize the matrix: use setIJV *************
 
 /*
