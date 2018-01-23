@@ -146,6 +146,7 @@ public:
     int matvec3(const std::vector<double>& v, std::vector<double>& w);
     int matvec_timing(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
     int matvec_timing2(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
+    int matvec_timing3(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
 
     int residual(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
     int inverse_diag(std::vector<double>& x);
