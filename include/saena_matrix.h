@@ -94,6 +94,7 @@ public:
     std::vector<unsigned long> vElement_remote;
     std::vector<unsigned long> vElementRep_local;
     std::vector<unsigned long> vElementRep_remote;
+    double * w_buff; // for matvec3()
 
     MPI_Comm comm;
     MPI_Comm comm_horizontal;
@@ -141,12 +142,14 @@ public:
     int repartition2();
     int matrix_setup2();
 
-    int matvec(const std::vector<double>& v, std::vector<double>& w);
-    int matvec2(const std::vector<double>& v, std::vector<double>& w);
-    int matvec3(const std::vector<double>& v, std::vector<double>& w);
-    int matvec_timing(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
-    int matvec_timing2(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
-    int matvec_timing3(const std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
+    int matvec(std::vector<double>& v, std::vector<double>& w);
+    int matvec2(std::vector<double>& v, std::vector<double>& w);
+    int matvec3(std::vector<double>& v, std::vector<double>& w);
+    int matvec4(std::vector<double>& v, std::vector<double>& w);
+    int matvec_timing(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
+    int matvec_timing2(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
+    int matvec_timing3(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
+    int matvec_timing4(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
 
     int residual(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
     int inverse_diag(std::vector<double>& x);
