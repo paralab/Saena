@@ -17,7 +17,7 @@
 #include "restrict_matrix.h"
 #include "aux_functions.h"
 #include "grid.h"
-#include "El.hpp"
+//#include "El.hpp"
 
 
 saena_object::saena_object(){
@@ -152,21 +152,6 @@ int saena_object::level_setup(Grid* grid){
 //        for(long i=0; i<grid->A->M; i++)
 //            std::cout << i+grid->A->split[rank] << "\t" << aggregate[i] << std::endl;}
 //    MPI_Barrier(grid->A->comm);
-//    if(rank==2){
-//        std::cout << "\naggregates: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->A->M; i++)
-//            std::cout << i << "\t" << aggregate[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==3){
-//        std::cout << "\naggregates: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->A->M; i++)
-//            std::cout << i+grid->A->split[rank] << "\t" << aggregate[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==4){
-//        std::cout << "\naggregates: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->A->M; i++)
-//            std::cout << i << "\t" << aggregate[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
 
     // **************************** changeAggregation ****************************
 
@@ -192,22 +177,6 @@ int saena_object::level_setup(Grid* grid){
 //            std::cout << i + grid->A->split[rank] << "\t" << grid->P.entry[i].row + grid->A->split[rank]
 //                      << "\t" << grid->P.entry[i].col << "\t" << grid->P.entry[i].val << std::endl;}
 //    MPI_Barrier(grid->A->comm);
-//    if(rank==2){
-//        std::cout << "\nprolongation: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->P.nnz_l; i++)
-//            std::cout << i << "\t" << grid->P.entry[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==3){
-//        std::cout << "\nprolongation: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->P.nnz_l; i++)
-//            std::cout << i + grid->A->split[rank] << "\t" << grid->P.entry[i].row + grid->A->split[rank]
-//                      << "\t" << grid->P.entry[i].col << "\t" << grid->P.entry[i].val << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==4){
-//        std::cout << "\nprolongation: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->P.nnz_l; i++)
-//            std::cout << i << "\t" << grid->P.entry[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
 
     // **************************** restriction ****************************
 
@@ -215,10 +184,6 @@ int saena_object::level_setup(Grid* grid){
     grid->R.transposeP(&grid->P);
     t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Restriction: level "+std::to_string(grid->currentLevel), grid->A->comm);
-
-//    MPI_Barrier(grid->A->comm);
-//    printf("rank = %d, restriction done \n", rank);
-//    MPI_Barrier(grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm);
 //    if(rank==0){
@@ -231,11 +196,6 @@ int saena_object::level_setup(Grid* grid){
 //        for(long i=0; i<grid->R.nnz_l; i++)
 //            std::cout << i + grid->R.splitNew[rank] << "\t" << grid->R.entry[i].row + grid->R.splitNew[rank]
 //                      << "\t" << grid->R.entry[i].col << "\t" << grid->R.entry[i].val << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==4){
-//        std::cout << "\nrestriction: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->R.nnz_l; i++)
-//            std::cout << grid->R.entry[i] << std::endl;}
 //    MPI_Barrier(grid->A->comm);
 
     // **************************** coarsen ****************************
@@ -1542,7 +1502,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     if(verbose_coarsen){
         MPI_Barrier(comm);
         printf("start of coarsen: rank = %d, nprocs: %d, A->M = %u, A.nnz_l = %u, A.nnz_g = %u, P.nnz_l = %lu, P.nnz_g = %lu, R.nnz_l = %lu,"
-                       " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n", rank, nprocs, A->M, A->nnz_l,
+                       " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n\n", rank, nprocs, A->M, A->nnz_l,
                A->nnz_g, P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
     }
 
@@ -1580,7 +1540,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     }
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 1: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 1: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // todo: combine indicesP and indicesPRecv together.
     // find row-wise ordering for A and save it in indicesP
@@ -1612,7 +1572,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //            std::cout << RA_temp.entry[i].row + R->splitNew[rank] << "\t" << RA_temp.entry[i].col << "\t" << RA_temp.entry[i].val << std::endl;}
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 2: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // ************************************* RA_temp - A remote *************************************
 
@@ -1644,7 +1604,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
         left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 3: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
 
 //    MPI_Barrier(comm);
 //    if(rank==0){
@@ -1783,7 +1743,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //    free(R_block_nnz_scan);
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 4: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // todo: check this: since entries of RA_temp with these row indices only exist on this processor,
     // todo: duplicates happen only on this processor, so sorting should be done locally.
@@ -1888,7 +1848,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     free(indicesP_Prolong);
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // ************************************* RAP_temp - P remote *************************************
 
@@ -1968,7 +1928,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     } //for i
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 6: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
 
     free(indicesP_ProlongRecv);
     free(PnnzPerRow);
@@ -2022,7 +1982,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %u, Ac->nnz_g = %u \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 7: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
 
 //    MPI_Barrier(comm);
 //    if(rank==0){
@@ -2040,12 +2000,6 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //            std::cout << i << "\t" << Ac->entry[i] << std::endl;
 //        std::cout << std::endl;}
 //    MPI_Barrier(comm);
-//    if(rank==3){
-//        for(i = 0; i < Ac->nnz_l; i++)
-//            std::cout << i << "\t" << Ac->entry[i] << std::endl;
-//        std::cout << std::endl;}
-//    MPI_Barrier(comm);
-
 
 //    printf("rank=%d \tA: Mbig=%u, nnz_g = %u, nnz_l = %u, M = %u \tAc: Mbig=%u, nnz_g = %u, nnz_l = %u, M = %u \n",
 //            rank, A->Mbig, A->nnz_g, A->nnz_l, A->M, Ac->Mbig, Ac->nnz_g, Ac->nnz_l, Ac->M);
@@ -2053,7 +2007,6 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //    if(rank==1)
 //        for(i=0; i<nprocs+1; i++)
 //            std::cout << Ac->split[i] << std::endl;
-
 
     // ********** check for cpu shrinking **********
     // if number of rows on Ac < threshold*number of rows on A, then shrink.
@@ -2097,13 +2050,13 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     // ********** setup matrix **********
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 8: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
 
     if(Ac->active) // there is another if(active) in matrix_setup().
         Ac->matrix_setup();
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("end of coarsen: step 9: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("end of coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
     return 0;
 } // end of SaenaObject::coarsen
@@ -2133,7 +2086,7 @@ int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* 
     if(verbose_coarsen){
         MPI_Barrier(comm);
         printf("start of coarsen: rank = %d, nprocs: %d, A->M = %u, A.nnz_l = %u, A.nnz_g = %u, P.nnz_l = %lu, P.nnz_g = %lu, R.nnz_l = %lu,"
-                       " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n", rank, nprocs, A->M, A->nnz_l,
+                       " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n\n", rank, nprocs, A->M, A->nnz_l,
                A->nnz_g, P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
     }
 
@@ -2549,7 +2502,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<double>& u, std
 
 
 int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<double> &u, std::vector<double> &rhs){
-
+/*
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -2596,19 +2549,19 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<double
     El::LinearSolve(A, w);
 //    El::Print( w, "\nsolution (w):\n" );
 
-/*
-    double temp;
+
+//    double temp;
 //    if(rank==1) printf("w solution:\n");
-    for(unsigned long i = A_S->split[rank]; i < A_S->split[rank+1]; i++){
+//    for(unsigned long i = A_S->split[rank]; i < A_S->split[rank+1]; i++){
 //        if(rank==1) printf("before: %lu \t%f \n", i, w.Get(i,0));
-        temp = w.Get(i,0);
+//        temp = w.Get(i,0);
 //        u[i-A_S->split[rank]] = temp;
 //        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, u[i-A_S->split[rank]]);
 //        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, u[i-A_S->split[rank]]);
-        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
-        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
-    }
-*/
+//        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
+//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
+//    }
+
 
     std::vector<double> temp(n);
     for(unsigned long i = 0; i < n; i++){
@@ -2621,6 +2574,7 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<double
     }
 
     El::Finalize();
+    */
     return 0;
 }
 

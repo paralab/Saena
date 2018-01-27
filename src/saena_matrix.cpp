@@ -6,7 +6,7 @@
 #include <omp.h>
 #include "saena_matrix.h"
 #include "parUtils.h"
-#include "El.hpp"
+//#include "El.hpp"
 
 
 #pragma omp declare reduction(vec_double_plus : std::vector<double> : \
@@ -1591,7 +1591,7 @@ int saena_matrix::matrix_setup() {
                 }
                 iend++;
             }
-//            if(rank==0) printf("thread id = %d, istart = %u, iend = %u \n", thread_id, istart, iend);
+            if(rank==0) printf("thread id = %d, istart = %u, iend = %u \n", thread_id, istart, iend);
 
             iter_local = 0;
             for (unsigned int i = istart; i < iend; ++i)
@@ -1628,7 +1628,7 @@ int saena_matrix::matrix_setup() {
                         std::cout << "iend=" << iend << std::endl;
                         std::cout  << "nnz_l=" << nnz_l << ", iter_remote=" << iter_remote << ", iter_local=" << iter_local << std::endl;
                     }*/
-        }
+        } // end of omp parallel
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
@@ -1637,8 +1637,10 @@ int saena_matrix::matrix_setup() {
         }
 
         //scan of iter_local_array
-        for (int i = 1; i < num_threads + 1; i++)
+        for (int i = 1; i < num_threads + 1; i++){
+            if(rank==0) printf("iter_local_array = %d \n", iter_local_array[i - 1]);
             iter_local_array[i] += iter_local_array[i - 1];
+        }
 
         //scan of iter_remote_array
         for (int i = 1; i < num_threads + 1; i++)
@@ -1659,8 +1661,8 @@ int saena_matrix::matrix_setup() {
         iter_local_array2.resize(num_threads+1);
         iter_local_array2[0] = 0;
         iter_local_array2[num_threads] = iter_local_array[num_threads];
-//            iter_remote_array2.resize(num_threads+1);
-//            iter_remote_array2[0] = 0;
+//        iter_remote_array2.resize(num_threads+1);
+//        iter_remote_array2[0] = 0;
 
         nnzPerRow_local2.resize(M);
 #pragma omp parallel
@@ -1673,25 +1675,34 @@ int saena_matrix::matrix_setup() {
                 nnzPerRow_local2[i] = nnzPerRow_local[i];
 
             unsigned int iter = iter_local_array[thread_id];
-            unsigned long starting_row = row_local[indicesP_local[iter]];
+//            if(rank==0) printf("thread %d \titer = %d \tindices = %lu \n", thread_id, iter, indicesP_local[iter]);
+//            if(rank==0) printf("thread %d \titer = %d \tindices = %lu \trow = %lu \n", thread_id, iter, indicesP_local[iter], row_local[indicesP_local[iter]]);
+//#pragma omp barrier
+
+            unsigned long starting_row;
+
+            if(iter < nnz_l){
+                starting_row = row_local[indicesP_local[iter]];
 //            if(rank==0) printf("thread %d: starting_row = %lu \tstarting nnz = %u \n", thread_id, starting_row, iter);
 
 //            for(long i = iter_local_array[thread_id]; i < iter_local_array[thread_id]+100; i++)
 //                if(rank ==0 && thread_id == 1) std::cout << entry[indicesP_local[i]] << std::endl;
 
-            if(thread_id != 0){
-                unsigned int left_over = 0;
-                while(left_over < nnzPerRow_local[starting_row]){
+                if(thread_id != 0){
+                    unsigned int left_over = 0;
+                    while(left_over < nnzPerRow_local[starting_row]){
 //                    if(rank == 1 && thread_id == 1) printf("%lu \t%lu \t%lu  \n",row_local[indicesP_local[iter]], col_local[indicesP_local[iter]] - split[rank], starting_row);
-                    if(col_local[indicesP_local[iter]] - split[rank] >= starting_row){
-                        iter_local_array2[thread_id] = iter;
-                        nnzPerRow_local2[row_local[indicesP_local[iter]]] -= left_over;
-                        break;
+                        if(col_local[indicesP_local[iter]] - split[rank] >= starting_row){
+                            iter_local_array2[thread_id] = iter;
+                            nnzPerRow_local2[row_local[indicesP_local[iter]]] -= left_over;
+                            break;
+                        }
+                        iter++;
+                        left_over++;
                     }
-                    iter++;
-                    left_over++;
                 }
             }
+
         }
 
 //        if(rank==0){
@@ -1773,7 +1784,7 @@ int saena_matrix::matrix_setup2() {
 
     // update eig_max here
     //todo: is this line required?
-    find_eig();
+//    find_eig();
 
     return 0;
 }
@@ -2064,25 +2075,38 @@ int saena_matrix::matvec3(std::vector<double>& v, std::vector<double>& w) {
 //    for (unsigned int i = 0; i < nnz_l_local; ++i)
 //        w[row_local[i]] += values_local[i] * v[col_local[i] - split[rank]];
 //    std::vector< std::vector<double> > w_local( w.size(), std::vector<double>(w.size()) );
-    w.assign(M, 0);
-    std::fill(&w_buff[0], &w_buff[num_threads*M], 0);
 
     double* v_p = &v[0] - split[rank];
-    unsigned int i, j;
-#pragma omp parallel default(shared) private(j)
+    unsigned int i, k;
+#pragma omp parallel default(shared) private(i, k)
     {
         int thread_id = omp_get_thread_num();
         double *w_local = w_buff + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+
+        std::fill(&w_local[0], &w_local[M], 0);
 
 #pragma omp for
         for (i = 0; i < nnz_l_local; ++i)
             w_local[row_local[i]] += values_local[i] * v_p[col_local[i]];
 
-#pragma omp for
-        for (i = 0; i < M; ++i)
-            for(j = 0; j < num_threads; j++)
-                w[i] += w_buff[j*M+i];
+        for (k = 0; k < (int) log2(num_threads); k++) {
+            for (i = 0; i < M; i++) {
+                if (thread_id % int(pow(2, k+1)) == 0) {
+//                    if(thread_id + int(pow(2, k)) >= num_threads)
+//                        break;
+                    w_local[i] += w_buff[(thread_id + int(pow(2, k))) * M + i];
+                }
+            }
+#pragma omp barrier
+        }
     }
+
+// #pragma omp for
+//    for (i = 0; i < M; ++i)
+//        for(j = 0; j < num_threads; j++)
+//            w[i] += w_buff[j*M+i];
 
 //    double t21 = MPI_Wtime();
 //    time[1] += (t21-t11);
@@ -2563,26 +2587,92 @@ int saena_matrix::matvec_timing3(std::vector<double>& v, std::vector<double>& w,
 
     // local loop
     // ----------
-    w.assign(M, 0);
-    std::fill(&w_buff[0], &w_buff[num_threads*M], 0);
-
+//    w.assign(M, 0);
     double* v_p = &v[0] - split[rank];
-    unsigned int i, j;
-#pragma omp parallel default(shared) private(j)
+    unsigned int i, k, l, idx;
+#pragma omp parallel default(shared) private(i, k, idx, l)
     {
         int thread_id = omp_get_thread_num();
         double *w_local = w_buff + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+
+        std::fill(&w_local[0], &w_local[M], 0);
 
 #pragma omp for
         for (i = 0; i < nnz_l_local; ++i)
             w_local[row_local[i]] += values_local[i] * v_p[col_local[i]];
 
+/*
 #pragma omp for
         for (i = 0; i < M; ++i)
-            for(j = 0; j < num_threads; j++)
-                w[i] += w_buff[j*M+i];
+            for(k = 0; k < num_threads; k++)
+                w[i] += w_buff[k*M+i];
+*/
+
+        int thread_partner;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (thread_id % int(pow(2, l+1)) == 0) {
+                thread_partner = thread_id + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    for (i = 0; i < M; i++)
+                        w_local[i] += w_buff[thread_partner * M + i];
+                }
+            }
+#pragma omp barrier
+        }
+
+/*
+        idx = 0;
+#pragma omp for
+        for(k = 0; k < num_threads; k++) {
+            for (i = 0; i < M; ++i)
+                w[i] += w_buff[idx++];
+        }
+*/
+/*
+        idx = 0;
+        for(k = 0; k < num_threads; k++) {
+#pragma omp for
+            for (i = 0; i < M; ++i)
+                w[i] += w_buff[idx++];
+        }
+*/
+    } // end of openmp
+
+/*
+    unsigned idx1, idx2, thread_per_level;
+    int levels = (int)ceil(log2(num_threads));
+//    printf("levels = %d \n", (int)log2(num_threads));
+    for (l = 0; l < levels; l++){
+        thread_per_level = (unsigned)ceil(num_threads/pow(2, l+1));
+        for(k = 0; k < thread_per_level; k++){
+            idx1 = (k*int(pow(2, l+1))) * M;
+            idx2 = idx1 + int(pow(2, l)) * M;
+            if(idx2 >= M*num_threads)
+                break;
+//            printf("l = %u, k = %u, t = %d, t_partner = %d \n", l, k, idx1/M, idx2/M);
+#pragma omp parallel for
+            for (i = 0; i < M; ++i)
+                w_buff[ idx1 + i ] += w_buff[ idx2 + i ];
+        }
     }
 
+    //todo: improve this part
+#pragma omp parallel for
+    for (i = 0; i < M; ++i)
+        w[i] = w_buff[i];
+*/
+
+/*
+    unsigned idx = 0;
+    for(k = 0; k < num_threads; k++) {
+        for (i = 0; i < M; ++i)
+            w[i] += w_buff[idx++];
+    }
+*/
     double t1_end = omp_get_wtime();
 
     // Wait for the communication to finish.
@@ -2880,6 +2970,8 @@ int saena_matrix::jacobi(int iter, std::vector<double>& u, std::vector<double>& 
 
 
 int saena_matrix::find_eig() {
+
+/*
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -2892,16 +2984,15 @@ int saena_matrix::find_eig() {
     const El::Int n = Mbig;
 
     // *************************** serial ***************************
-/*
-    El::Matrix<double> A(n,n);
-    El::Zero( A );
-    for(unsigned long i = 0; i<nnz_l; i++)
-        A(entry[i].row, entry[i].col) = entry[i].val * invDiag[entry[i].row];
+
+//    El::Matrix<double> A(n,n);
+//    El::Zero( A );
+//    for(unsigned long i = 0; i<nnz_l; i++)
+//        A(entry[i].row, entry[i].col) = entry[i].val * invDiag[entry[i].row];
 
 //    El::Print( A, "\nGlobal Elemental matrix (serial):\n" );
 
-    El::Matrix<El::Complex<double>> w(n,1);
-*/
+//    El::Matrix<El::Complex<double>> w(n,1);
 
     // *************************** parallel ***************************
 
@@ -2933,6 +3024,9 @@ int saena_matrix::find_eig() {
     for(unsigned long i = 1; i < n; i++)
         if(w.Get(i,0).real() > eig_max_diagxA)
             eig_max_diagxA = w.Get(i,0).real();
+*/
+
+
 
 //    if(rank==0) printf("eig_max = %f \n", eig_max_diagxA);
 
@@ -2989,7 +3083,7 @@ int saena_matrix::find_eig() {
 //    El::Print( E, "\nGlobal Elemental matrix:\n" );
 */
 
-    El::Finalize();
+//    El::Finalize();
     return 0;
 }
 

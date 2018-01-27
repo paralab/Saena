@@ -1,3 +1,9 @@
+# ccmake -D CMAKE_INSTALL_PREFIX="./elemental_install" -D CMAKE_BUILD_TYPE="Release" ..
+# or
+# ccmake -D CMAKE_INSTALL_PREFIX="./elemental_install" -D CMAKE_BUILD_TYPE="Release" -D GFORTRAN_LIB="/usr/lib64/libgfortran.so.3" ..
+# or
+# ccmake -D CMAKE_INSTALL_PREFIX="./elemental_install" -D CMAKE_BUILD_TYPE="Debug" -D GFORTRAN_LIB="/usr/lib64/libgfortran.so.3" ..
+
 #SET(CMAKE_CXX_COMPILER mpicxx)
 #SET(CMAKE_C_COMPILER mpicc)
 
@@ -28,7 +34,8 @@ include_directories(
 )
 
 add_subdirectory(external/Elemental-0.87.7)
-include_directories("${PROJECT_BINARY_DIR}/external/El/include")
+include_directories("${PROJECT_BINARY_DIR}/external/Elemental-0.87.7/elemental_install/include")
+#include_directories("${PROJECT_BINARY_DIR}/external/El/include")
 include_directories(${MPI_CXX_INCLUDE_PATH})
 
 set(SOURCE_FILES
