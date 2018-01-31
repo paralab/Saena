@@ -80,27 +80,31 @@ int saena_object::setup(saena_matrix* A) {
 
             // decide if next level for multigrid is required or not.
             // threshold to set maximum multigrid level
-            if(grids[i].Ac.active) {
-                MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
-                row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
+            if(dynamic_levels){
+                if(grids[i].Ac.active) {
+                    MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
+                    row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
 
 //                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
 //                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
 
 //                if(rank==0) printf("row_reduction_min = %f, row_reduction_threshold = %f \n", row_reduction_min, row_reduction_threshold);
 //                if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
-                // todo: talk to Hari about least_row_threshold and row_reduction.
-                if ((M_current < least_row_threshold) || (row_reduction_min > row_reduction_threshold) || (grids[i].Ac.Mbig*300 < grids[0].A->Mbig) ) {
-                    max_level = grids[i].currentLevel + 1;
-                    grids.resize(max_level);
+                    // todo: talk to Hari about least_row_threshold and row_reduction.
+//                if ((M_current < least_row_threshold) || (row_reduction_min > row_reduction_threshold) || (grids[i].Ac.Mbig*300 < grids[0].A->Mbig) ) {
+//                    if ((M_current < least_row_threshold) || (row_reduction_min > row_reduction_threshold) ) {
+                    if ( (row_reduction_min > row_reduction_threshold) ){
+                        max_level = grids[i].currentLevel + 1;
+                        grids.resize(max_level);
 
-                    // delete the coarsest level, if the size is not resuced much.
-                    if (row_reduction_min > row_reduction_threshold || (grids[i].Ac.Mbig*300 < grids[0].A->Mbig) ) {
-                        grids.pop_back();
-                        max_level--;
-                        // todo: when destroy() is written, delete P and R by that.
+                        // delete the coarsest level, if the size is not resuced much.
+                        if (row_reduction_min > row_reduction_threshold || (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig) ) {
+                            grids.pop_back();
+                            max_level--;
+                            // todo: when destroy() is written, delete P and R by that.
 //                        grids[i].P.destroy(); // destructor
 //                        grids[i].R.destroy(); // destructor
+                        }
                     }
                 }
             }
@@ -1755,22 +1759,30 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //            std::cout << RA_temp.entry[j].row + P->splitNew[rank] << "\t" << RA_temp.entry[j].col << "\t" << RA_temp.entry[j].val << std::endl;
 
     prolong_matrix RA(comm);
+    RA.entry.resize(RA_temp.entry.size());
 
     // remove duplicates.
+    unsigned long entry_size = 0;
     for(i=0; i<RA_temp.entry.size(); i++){
-        RA.entry.push_back(RA_temp.entry[i]);
+//        RA.entry.push_back(RA_temp.entry[i]);
+        RA.entry[entry_size] = RA_temp.entry[i];
 //        if(rank==1) std::cout << std::endl << "start:" << std::endl << RA_temp.entry[i].val << std::endl;
         while(i<RA_temp.entry.size()-1 && RA_temp.entry[i] == RA_temp.entry[i+1]){ // values of entries with the same row and col should be added.
-            RA.entry.back().val += RA_temp.entry[i+1].val;
+//            RA.entry.back().val += RA_temp.entry[i+1].val;
+            RA.entry[entry_size].val += RA_temp.entry[i+1].val;
             i++;
 //            if(rank==1) std::cout << RA_temp.entry[i+1].val << std::endl;
         }
 //        if(rank==1) std::cout << std::endl << "final: " << std::endl << RA.entry[RA.entry.size()-1].val << std::endl;
+        entry_size++;
         // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
 //        if( abs(RA.entry.back().val) < 1e-6)
 //            RA.entry.pop_back();
 //        if(rank==1) std::cout << "final: " << std::endl << RA.entry.back().val << std::endl;
     }
+
+    RA.entry.resize(entry_size);
+    RA.entry.shrink_to_fit();
 
 //    MPI_Barrier(comm);
 //    if(rank==0){
@@ -1828,6 +1840,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     unsigned long* indicesP_Prolong = (unsigned long*)malloc(sizeof(unsigned long)*P->nnz_l);
     for(unsigned long i=0; i<P->nnz_l; i++)
         indicesP_Prolong[i] = i;
+
     std::sort(indicesP_Prolong, &indicesP_Prolong[P->nnz_l], sort_indices2(&*P->entry.begin()));
 
     for(i=left_block_nnz_scan[rank]; i<left_block_nnz_scan[rank+1]; i++){
@@ -1908,6 +1921,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
         // find row-wise ordering for Arecv and save it in indicesPRecv
         for(unsigned long i=0; i<nnzRecv; i++)
             indicesP_ProlongRecv[i] = i;
+
         std::sort(indicesP_ProlongRecv, &indicesP_ProlongRecv[nnzRecv], sort_indices2(Precv));
 
 //        if(rank==1) std::cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << std::endl;
@@ -1943,18 +1957,28 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        for(j=0; j<RAP_temp.entry.size(); j++)
 //            std::cout << RAP_temp.entry[j].row << "\t" << RAP_temp.entry[j].col << "\t" << RAP_temp.entry[j].val << std::endl;
 
+    Ac->entry.resize(RAP_temp.entry.size());
+
     // remove duplicates.
 //    std::vector<cooEntry> Ac_temp;
+    entry_size = 0;
     for(i=0; i<RAP_temp.entry.size(); i++){
-        Ac->entry.push_back(RAP_temp.entry[i]);
+//        Ac->entry.push_back(RAP_temp.entry[i]);
+        Ac->entry[entry_size] = RAP_temp.entry[i];
         while(i<RAP_temp.entry.size()-1 && RAP_temp.entry[i] == RAP_temp.entry[i+1]){ // values of entries with the same row and col should be added.
-            Ac->entry.back().val += RAP_temp.entry[i+1].val;
+//            Ac->entry.back().val += RAP_temp.entry[i+1].val;
+            Ac->entry[entry_size].val += RAP_temp.entry[i+1].val;
             i++;
         }
+        entry_size++;
         // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
 //        if( abs(Ac->entry.back().val) < 1e-6)
 //            Ac->entry.pop_back();
     }
+
+    Ac->entry.resize(entry_size);
+    Ac->entry.shrink_to_fit();
+
 //    MPI_Barrier(comm); printf("rank=%d here6666666666666!!!!!!!! \n", rank); MPI_Barrier(comm);
 
 //    par::sampleSort(Ac_temp, Ac->entry, comm);
@@ -1966,7 +1990,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //            std::cout << Ac->entry[j] << std::endl;
 //    }
 
-    Ac->nnz_l = Ac->entry.size();
+    Ac->nnz_l = entry_size;
     MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
     Ac->Mbig = P->Nbig;
     Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
@@ -1976,7 +2000,6 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     Ac->comm = A->comm;
     Ac->comm_old = A->comm;
     Ac->active_old_comm = true;
-//    printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %u, Ac->nnz_g = %u \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);
 
 //    if(verbose_coarsen){
 //        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %u, Ac->nnz_g = %u \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
@@ -2023,15 +2046,16 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //                          << ", division = " << (Ac->last_M_shrink / Ac->Mbig) << ", thre1 = " << A->cpu_shrink_thre1 << std::endl;
 //    MPI_Barrier(comm);
 
-    if( (nprocs >= Ac->cpu_shrink_thre2) && (Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)) ){
+    if(shrink_cpu){
+        if( (nprocs >= Ac->cpu_shrink_thre2) && (Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)) ){
 
-        shrink_cpu_A(Ac, P->splitNew);
-
-//        MPI_Barrier(comm);
-//        if(rank==0) std::cout << "\nafter shrink: Ac->last_M_shrink = " << Ac->last_M_shrink << ", Ac->Mbig = " << Ac->Mbig
-//                              << ", mult = " << Ac->Mbig * A->cpu_shrink_thre1 << std::endl;
-//        MPI_Barrier(comm);
+            shrink_cpu_A(Ac, P->splitNew);
+//        MPI_Barrier(comm); if(rank==0) std::cout << "\nafter shrink: Ac->last_M_shrink = " << Ac->last_M_shrink << ", Ac->Mbig = " << Ac->Mbig
+//                              << ", mult = " << Ac->Mbig * A->cpu_shrink_thre1 << std::endl; MPI_Barrier(comm);
+        }
     }
+
+    Ac->repartition3();
 
 //    if(Ac->active) {
 //        int rankkk;
@@ -4092,7 +4116,7 @@ int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_s
 //    }
 //    MPI_Barrier(comm);
 
-    // assume cpu_shrink_thre2 is 4, just for easier description
+    // assume cpu_shrink_thre2 is 4 (it is simpler to explain)
     // 1 - create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
     int color = rank / Ac->cpu_shrink_thre2;
     MPI_Comm_split(comm, color, rank, &Ac->comm_horizontal);
@@ -4122,8 +4146,8 @@ int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_s
 //    printf("last_root_cpu = %u\n", last_root_cpu);
 
     int neigbor_rank;
-    unsigned int A_recv_nnz = 0;
-    unsigned long offset = Ac->nnz_l;
+    unsigned int A_recv_nnz = 0; // set to 0 just to avoid "not initialized" warning
+    unsigned long offset = Ac->nnz_l; // put the data on root from its neighbors at the end of entry[] which is of size nnz_l
     if(nprocs_new > 1) { // if there is no neighbor, skip.
         for (neigbor_rank = 1; neigbor_rank < Ac->cpu_shrink_thre2; neigbor_rank++) {
 
@@ -4208,9 +4232,10 @@ int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_s
     MPI_Group bigger_group;
     MPI_Comm_group(comm, &bigger_group);
     auto total_active_procs = (unsigned int)ceil((double)nprocs / Ac->cpu_shrink_thre2); // note: this is ceiling, not floor.
-    std::vector<int> ranks;
+    std::vector<int> ranks(total_active_procs);
     for(unsigned int i = 0; i < total_active_procs; i++)
-        ranks.push_back(Ac->cpu_shrink_thre2 * i);
+        ranks[i] = Ac->cpu_shrink_thre2 * i;
+//        ranks.push_back(Ac->cpu_shrink_thre2 * i);
 
 //    printf("total_active_procs = %u \n", total_active_procs);
 //    for(i=0; i<ranks.size(); i++)
