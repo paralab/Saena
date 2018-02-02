@@ -15,15 +15,15 @@ class prolong_matrix {
 private:
 
 public:
-    unsigned int Mbig;
-    unsigned int Nbig;
-    unsigned int M;
-    unsigned long nnz_g;
-    unsigned long nnz_l;
+    unsigned int Mbig = 0;
+    unsigned int Nbig = 0;
+    unsigned int M = 0;
+    unsigned long nnz_g = 0;
+    unsigned long nnz_l = 0;
 
-    unsigned int nnz_l_local;
-    unsigned int nnz_l_remote;
-    unsigned long col_remote_size; // this is the same as vElement_remote.size()
+    unsigned int nnz_l_local = 0;
+    unsigned int nnz_l_remote = 0;
+    unsigned long col_remote_size = 0; // this is the same as vElement_remote.size()
 
     std::vector<unsigned long> split;
     std::vector<unsigned long> splitNew;
