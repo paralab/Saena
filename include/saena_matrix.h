@@ -32,8 +32,8 @@ private:
 public:
     std::vector<cooEntry> entry;
 
-    unsigned int M     = 0; // local number of rows
     unsigned int Mbig  = 0; // global number of rows
+    unsigned int M     = 0; // local number of rows
     unsigned int nnz_g = 0; // global nnz
     unsigned int nnz_l = 0; // local nnz
     std::vector<unsigned long> split; // (row-wise) partition of the matrix between processes

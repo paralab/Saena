@@ -6,12 +6,12 @@
 #include "aux_functions.h"
 
 class prolong_matrix {
-// A matrix of this class is ordered <<ONLY>> if it is defined in createProlongation function in AMGClass.cpp.
+// A matrix of this class is ordered <<ONLY>> if it is defined in createProlongation function in saena_object.cpp.
 // Otherwise it can be ordered using the following line:
 //#include <algorithm>
 //std::sort(P->entry.begin(), P->entry.end());
 // It is ordered first column-wise, then row-wise, using std:sort with cooEntry class "< operator".
-// duplicates are removed in createProlongation function in AMGClass.cpp.
+// Duplicates are removed in createProlongation function in saena_object.cpp.
 private:
 
 public:
@@ -55,11 +55,16 @@ public:
     bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
     int vIndexSize;
     int vIndexSize_t;
-    unsigned long* vIndex;
-    double* vSend;
-    cooEntry* vSend_t;
-    double* vecValues;
-    cooEntry* vecValues_t;
+    std::vector<unsigned long> vIndex;
+//    double* vSend;
+    std::vector<double> vSend;
+
+//    cooEntry* vSend_t;
+    std::vector<cooEntry> vSend_t;
+//    double* vecValues;
+    std::vector<double> vecValues;
+//    cooEntry* vecValues_t;
+    std::vector<cooEntry> vecValues_t;
 //    int* vecValues2;
 //    unsigned long* recvIndex_t;
 
@@ -82,15 +87,17 @@ public:
     int numSendProc;
     int numSendProc_t;
 
-    unsigned long* indicesP_local;
-    unsigned long* indicesP_remote;
+//    unsigned long* indicesP_local;
+    std::vector<unsigned long> indicesP_local;
+//    unsigned long* indicesP_remote;
+    std::vector<unsigned long> indicesP_remote;
 
     MPI_Comm comm;
 
     prolong_matrix();
     prolong_matrix(MPI_Comm com);
     ~prolong_matrix();
-    int findLocalRemote(cooEntry* entry);
+    int findLocalRemote();
     int matvec(std::vector<double>& v, std::vector<double>& w);
 };
 
