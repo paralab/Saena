@@ -244,7 +244,7 @@ int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_
 }
 
 
-int print_time(double t1, double t2, std::string function_name, MPI_Comm comm){
+double print_time(double t1, double t2, std::string function_name, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -261,7 +261,7 @@ int print_time(double t1, double t2, std::string function_name, MPI_Comm comm){
     if (rank==0)
         std::cout << std::endl << function_name << "\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
 
-    return 0;
+    return average;
 }
 
 

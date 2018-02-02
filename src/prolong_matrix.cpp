@@ -22,20 +22,20 @@ prolong_matrix::prolong_matrix(MPI_Comm com){
 
 
 prolong_matrix::~prolong_matrix(){
-    if(arrays_defined){
-        free(vIndex);
-        free(vSend);
-        free(vecValues);
-        free(indicesP_local);
-        free(indicesP_remote);
-        free(vSend_t);
-        free(vecValues_t);
+//    if(arrays_defined){
+//        free(vIndex);
+//        free(vSend);
+//        free(vecValues);
+//        free(indicesP_local);
+//        free(indicesP_remote);
+//        free(vSend_t);
+//        free(vecValues_t);
 //       free(recvIndex_t); // recvIndex_t is equivalent of vIndex.
-    }
+//    }
 }
 
 
-int prolong_matrix::findLocalRemote(cooEntry* entry){
+int prolong_matrix::findLocalRemote(){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -61,7 +61,17 @@ int prolong_matrix::findLocalRemote(cooEntry* entry){
 //    int* recvCount_t = (int*)malloc(sizeof(int)*nprocs);
 //    std::fill(recvCount_t, recvCount_t + nprocs, 0);
     nnzPerRow_local.assign(M,0);
-    nnzPerRowScan_local.assign(M+1, 0);
+
+    entry_local.clear();
+    entry_remote.clear();
+    row_local.clear();
+    row_remote.clear();
+    col_remote.clear();
+    vElementRep_local.clear();
+    vElement_remote.clear();
+    vElement_remote_t.clear();
+    vElementRep_remote.clear();
+    nnzPerCol_remote.clear();
 
     int* vIndexCount_t = (int*)malloc(sizeof(int)*nprocs);
     std::fill(vIndexCount_t, vIndexCount_t + nprocs, 0);
@@ -149,6 +159,7 @@ int prolong_matrix::findLocalRemote(cooEntry* entry){
 
 //    MPI_Barrier(comm); printf("rank=%d, P.nnz_l=%lu, P.nnz_l_local=%u, P.nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
 
+    nnzPerRowScan_local.assign(M+1, 0);
     for(i=0; i<M; i++){
         nnzPerRowScan_local[i+1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
 //        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
@@ -167,6 +178,11 @@ int prolong_matrix::findLocalRemote(cooEntry* entry){
 //        if(rank==1) cout << "send to proc      " << i << "\tvIndexCount = " << vIndexCount[i] << "\t\tvIndexCount_t = " << vIndexCount_t[i] << endl;
 //    }
 //    MPI_Barrier(comm);
+
+    recvProcRank.clear();
+    recvProcCount.clear();
+    sendProcRank.clear();
+    sendProcCount.clear();
 
     numRecvProc = 0;
     numSendProc = 0;
@@ -207,15 +223,20 @@ int prolong_matrix::findLocalRemote(cooEntry* entry){
 //        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
 
     // vIndex is the set of indices of elements that should be sent.
-    vIndex = (unsigned long*)malloc(sizeof(unsigned long)*vIndexSize);
-    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &(*(vdispls.begin())), MPI_UNSIGNED_LONG, comm);
+    vIndex.resize(vIndexSize);
+    MPI_Alltoallv(&(*(vElement_remote.begin())), recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, &vIndex[0], vIndexCount, &(*(vdispls.begin())), MPI_UNSIGNED_LONG, comm);
 
     free(vIndexCount);
     free(recvCount);
 
+    recvProcRank_t.clear();
+    recvProcCount_t.clear();
+    sendProcRank_t.clear();
+    sendProcCount_t.clear();
+
     numRecvProc_t = 0;
     numSendProc_t = 0;
-    for(int i=0; i<nprocs; i++){
+    for(int i = 0; i < nprocs; i++){
         if(recvCount_t[i]!=0){
             numRecvProc_t++;
             recvProcRank_t.push_back(i);
@@ -272,18 +293,23 @@ int prolong_matrix::findLocalRemote(cooEntry* entry){
     // vSend = vector values to send to other procs
     // vecValues = vector values that received from other procs
     // These will be used in matvec and they are set here to reduce the time of matvec.
-    vSend     = (double*)malloc(sizeof(double) * vIndexSize);
-    vecValues = (double*)malloc(sizeof(double) * recvSize);
+//    vSend     = (double*)malloc(sizeof(double) * vIndexSize);
+//    vecValues = (double*)malloc(sizeof(double) * recvSize);
+    vSend.resize(vIndexSize);
+    vecValues.resize(recvSize);
 
-    vSend_t     = (cooEntry*)malloc(sizeof(cooEntry) * vIndexSize_t); // todo: check datatype here.
-    vecValues_t = (cooEntry*)malloc(sizeof(cooEntry) * recvSize_t);
+//    vSend_t     = (cooEntry*)malloc(sizeof(cooEntry) * vIndexSize_t); // todo: check datatype here.
+//    vecValues_t = (cooEntry*)malloc(sizeof(cooEntry) * recvSize_t);
+    vSend_t.resize(vIndexSize_t);
+    vecValues_t.resize(recvSize_t);
 
     // todo: change the following two parts the same as indicesP for A in coarsen, which is using entry, instead of row_local and row_remote.
-    indicesP_local = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_local);
+//    indicesP_local = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_local);
+    indicesP_local.resize(nnz_l_local);
     for(i=0; i<nnz_l_local; i++)
         indicesP_local[i] = i;
     unsigned long* row_localP = &*row_local.begin();
-    std::sort(indicesP_local, &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
+    std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
     row_local.clear();
 
 //    long start;
@@ -294,11 +320,12 @@ int prolong_matrix::findLocalRemote(cooEntry* entry){
 //        }
 //    }
 
-    indicesP_remote = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_remote);
+//    indicesP_remote = (unsigned long*)malloc(sizeof(unsigned long)*nnz_l_remote);
+    indicesP_remote.resize(nnz_l_remote);
     for(i=0; i<nnz_l_remote; i++)
         indicesP_remote[i] = i;
     unsigned long* row_remoteP = &*row_remote.begin();
-    std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
+    std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
 
 //    MPI_Barrier(comm);
 //    if(rank==1) cout << "nnz_l_remote = " << nnz_l_remote << "\t\trecvSize_t = " << recvSize_t << "\t\tvIndexSize_t = " << vIndexSize_t << endl;
@@ -375,7 +402,7 @@ int prolong_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
 //    time[1] += (t21-t11);
 
     // Wait for comm to finish.
-    MPI_Waitall(numSendProc+numRecvProc, requests, statuses);
+    MPI_Waitall(numRecvProc, requests, statuses);
 
 //    if (rank==1){
 //        cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << endl;
@@ -395,6 +422,10 @@ int prolong_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
             }
         }
 //    }
+
+    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
+    delete [] requests;
+    delete [] statuses;
 
 //    double t22 = MPI_Wtime();
 //    time[2] += (t22-t12);
