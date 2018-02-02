@@ -32,8 +32,8 @@ private:
 public:
     std::vector<cooEntry> entry;
 
-    unsigned int Mbig  = 0; // global number of rows
     unsigned int M     = 0; // local number of rows
+    unsigned int Mbig  = 0; // global number of rows
     unsigned int nnz_g = 0; // global nnz
     unsigned int nnz_l = 0; // local nnz
     std::vector<unsigned long> split; // (row-wise) partition of the matrix between processes
@@ -79,10 +79,6 @@ public:
     int recvSize;
     int numRecvProc;
     int numSendProc;
-    std::vector<int> recvCount;
-    std::vector<int> recvCountScan;
-    std::vector<int> sendCount;
-    std::vector<int> sendCountScan;
     std::vector<int> recvProcRank;
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
@@ -146,14 +142,11 @@ public:
     int repartition2();
     int matrix_setup2();
 
-    int repartition3(); // use this for repartitioning A's after they are created.
-
     int matvec(std::vector<double>& v, std::vector<double>& w);
     int matvec2(std::vector<double>& v, std::vector<double>& w);
     int matvec3(std::vector<double>& v, std::vector<double>& w);
     int matvec4(std::vector<double>& v, std::vector<double>& w);
     int matvec_timing(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
-    int matvec_timing_alltoall(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
     int matvec_timing2(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
     int matvec_timing3(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
     int matvec_timing4(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);

@@ -191,7 +191,7 @@ void setIJV(char* file_name, unsigned int* I,unsigned int* J, double* V, unsigne
 int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm);
 
 
-double print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
+int print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
 
 
 int print_time_average(double t1, double t2, std::string function_name, int iter, MPI_Comm comm);

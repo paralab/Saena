@@ -29,9 +29,9 @@ public:
     std::vector<unsigned long> split;
     std::vector<unsigned long> splitNew;
 
-    std::vector<unsigned long> vIndex;
-    std::vector<double> vSend;
-    std::vector<double> vecValues;
+    unsigned long* vIndex;
+    double* vSend;
+    double* vecValues;
 
     unsigned long col_remote_size; // number of remote columns. this is the same as vElement_remote.size()
     std::vector<unsigned int> nnzPerRow_local;
@@ -51,16 +51,16 @@ public:
     int numRecvProc;
     int numSendProc;
 
-    std::vector<unsigned long> indicesP_local;
-    std::vector<unsigned long> indicesP_remote;
+    unsigned long* indicesP_local;
+    unsigned long* indicesP_remote;
 
     bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
 
     MPI_Comm comm;
 
     restrict_matrix();
-    ~restrict_matrix();
     int transposeP(prolong_matrix* P);
+    ~restrict_matrix();
     int matvec(std::vector<double>& v, std::vector<double>& w);
 };
 
