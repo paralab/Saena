@@ -776,9 +776,6 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 
         MPI_Waitall(S->numRecvProc, requests, statuses);
 
-//        delete requests; // todo: delete requests and statuses in whole project, if it is required.
-//        delete statuses;
-
 //        MPI_Barrier(comm);
 //        iter = 0;
 //        if(rank==1)
@@ -979,9 +976,6 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 
     } //while(continueAgg)
 
-    delete [] requests;
-    delete [] statuses;
-
 //    MPI_Barrier(comm);
 //    if(rank==nprocs-1) std::cout << "number of loops to find aggregation: " << whileiter << std::endl;
 //    MPI_Barrier(comm);
@@ -989,6 +983,8 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //    for(i=0; i<size;i++)
 //        if(rank==0) std::cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << std::endl;
 
+    delete [] requests;
+    delete [] statuses;
     free(root_distance);
     free(dist1or2undecided);
 
@@ -1021,54 +1017,13 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
 //        std::cout << std::endl;}
 //    MPI_Barrier(comm);
-//    if(rank==4){
-//        std::cout << "aggregate:" << std::endl;
-//        for(i=0; i<size; i++)
-//            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
-//        std::cout << std::endl;}
-//    MPI_Barrier(comm);
-
 
     // keep at least one root node on east proc
-    if(aggArray.empty()){
+//    if(aggArray.empty()){
 //        printf("aggArray push back rank = %d \n", rank);
-        aggArray.push_back(0+S->split[rank]);
-        aggregate[0] = 0+S->split[rank];
-    }
-
-
-//    MPI_Barrier(comm);
-//    if(rank==0){
-//        std::cout << "aggregate:" << std::endl;
-//        for(i=0; i<size; i++)
-//            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
-//        std::cout << std::endl;}
-//    MPI_Barrier(comm);
-//    if(rank==1){
-//        std::cout << "aggregate:" << std::endl;
-//        for(i=0; i<size; i++)
-//            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
-//        std::cout << std::endl;}
-//    MPI_Barrier(comm);
-//    if(rank==2){
-//        std::cout << "aggregate:" << std::endl;
-//        for(i=0; i<size; i++)
-//            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
-//        std::cout << std::endl;}
-//    MPI_Barrier(comm);
-//    if(rank==3){
-//        std::cout << "aggregate:" << std::endl;
-//        for(i=0; i<size; i++)
-//            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
-//        std::cout << std::endl;}
-//    MPI_Barrier(comm);
-//    if(rank==4){
-//        std::cout << "aggregate:" << std::endl;
-//        for(i=0; i<size; i++)
-//            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
-//        std::cout << std::endl;}
-//    MPI_Barrier(comm);
-
+//        aggArray.push_back(0+S->split[rank]);
+//        aggregate[0] = 0+S->split[rank];
+//    }
 
     // *************************** update aggregate to new indices ****************************
 
@@ -1268,13 +1223,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         }
     }
 
-    MPI_Waitall(numSendProc, numRecvProc+requests2, numRecvProc+statuses2);
-    delete [] requests2;
-    delete [] statuses2;
-
-//    if(rank==1) std::cout << std::endl;
-
-//    set<unsigned long> aggArray2(&aggregate[0], &aggregate[size]);
+    //    set<unsigned long> aggArray2(&aggregate[0], &aggregate[size]);
 //    if(rank==1){
 //        std::cout << "aggArray2:" << std::endl;
 //        for(auto i:aggArray2)
@@ -1288,6 +1237,9 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //        aggregate[i] = distance(aggArray.begin(), it) + splitNew[rank];
 //    }
 
+    MPI_Waitall(numSendProc, numRecvProc+requests2, numRecvProc+statuses2);
+    delete [] requests2;
+    delete [] statuses2;
     free(aggSend);
     free(aggRecv);
     free(isAggRemote);
