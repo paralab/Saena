@@ -36,6 +36,10 @@ long lower_bound2(T *left, T *right, T val){
         }
     }
     if(val == *left){
+        // when using on split, some procs have equal split value (M=0), so go to the next proc until M != 0.
+//        while(*left == *(left+1))
+//            left++;
+
         return std::distance(first, left);
     }
     else
@@ -130,6 +134,9 @@ public:
 
 
 std::ostream & operator<<(std::ostream & stream, const cooEntry & item);
+
+
+bool row_major (const cooEntry& node1, const cooEntry& node2);
 
 
 //template <class T>

@@ -108,41 +108,47 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
     // todo: "data" vector can completely be avoided. function repartition should be changed to use a vector of cooEntry
     // todo: (which is "data_unsorted" here), instead of "data" (which is a vector of unsigned long of size 3*nnz).
 
-    unsigned int data_size = 0;
+    // size of data may be smaller because of duplicates. In that case its size will be reduced after finding the exact size.
+    data.resize(data_sorted.size());
+
     // put the first element of data_unsorted to data.
+    unsigned int data_size = 0;
     if(!data_sorted.empty()){
-        data.push_back(data_sorted[0].row);
-        data.push_back(data_sorted[0].col);
-        data.push_back(reinterpret_cast<unsigned long&>(data_sorted[0].val));
+        data[0] = data_sorted[0];
+//        data.push_back(data_sorted[0].row);
+//        data.push_back(data_sorted[0].col);
+//        data.push_back(reinterpret_cast<unsigned long&>(data_sorted[0].val));
         data_size++;
     }
 
-    double val_temp;
-    if(data_sorted.size()>1){
-        for(unsigned int i=1; i<data_sorted.size(); i++){
-            if(data_sorted[i] == data_sorted[i-1]){
-                if(add_duplicates){
-                    data.pop_back();
-                    val_temp = data_sorted[i-1].val + data_sorted[i].val;
-                    data.push_back(reinterpret_cast<unsigned long&>(val_temp));
-                }
+//    double val_temp;
+    for(unsigned int i=1; i<data_sorted.size(); i++){
+        if(data_sorted[i] == data_sorted[i-1]){
+            if(add_duplicates){
+                data[data_size-1].val += data_sorted[i].val;
+//                data.pop_back();
+//                val_temp = data_sorted[i-1].val + data_sorted[i].val;
+//                data.push_back(reinterpret_cast<unsigned long&>(val_temp));
+            }else{
+                data[data_size-1] = data_sorted[i];
             }
-            else{
-                data.push_back(data_sorted[i].row);
-                data.push_back(data_sorted[i].col);
-                data.push_back(reinterpret_cast<unsigned long&>(data_sorted[i].val));
-                data_size++;
-            }
+        }else{
+            data[data_size] = data_sorted[i];
+//            data.push_back(data_sorted[i].row);
+//            data.push_back(data_sorted[i].col);
+//            data.push_back(reinterpret_cast<unsigned long&>(data_sorted[i].val));
+            data_size++;
         }
     }
 
-    if(data.size() < 2)
-        std::cout << "error: data has no elements on at least one process!" << std::endl;
+    data.resize(data_size);
+    data.shrink_to_fit();
 
-//    printf("rank = %d, data_size = %u, data.size() = %lu \n", rank, data_size , data.size());
-//    data.resize(data_size);
+    if(data.empty()) {
+        printf("error: data has no element on process %d! \n", rank);
+        MPI_Finalize();}
 
-    cooEntry first_element = cooEntry(data[0], data[1], data[2]);
+//    cooEntry first_element = data[0];
     cooEntry first_element_neighbor;
 
     // send last element to the left neighbor and check if it is equal to the last element of the left neighbor.
@@ -150,38 +156,35 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
         MPI_Recv(&first_element_neighbor, 1, cooEntry::mpi_datatype(), rank+1, 0, comm, MPI_STATUS_IGNORE);
 
     if(rank!= 0)
-        MPI_Send(&first_element, 1, cooEntry::mpi_datatype(), rank-1, 0, comm);
+        MPI_Send(&data[0], 1, cooEntry::mpi_datatype(), rank-1, 0, comm);
 
-    cooEntry last_element = cooEntry(data[3*(data_size-1)], data[3*(data_size-1)+1], data[3*(data_size-1)+2]);
+    cooEntry last_element = data.back();
     if(rank != nprocs-1){
-        if(last_element == first_element_neighbor){
+        if(last_element == first_element_neighbor) {
 //            if(rank==0) std::cout << "remove!" << std::endl;
-            data.pop_back();
-            data.pop_back();
             data.pop_back();
         }
     }
 
     // if duplicates should be added together and last_element == first_element_neighbor
-    // then send only the value of last_element to the right neighbor and add it to the last elements' value.
+    // then send only the value of last_element to the right neighbor and add it to the last element's value.
     // this has the reverse communication of the previous part.
     double left_neighbor_last_val;
     if((last_element == first_element_neighbor) && add_duplicates ){
-
         if(rank != 0)
             MPI_Recv(&left_neighbor_last_val, 1, MPI_DOUBLE, rank-1, 0, comm, MPI_STATUS_IGNORE);
 
         if(rank!= nprocs-1)
             MPI_Send(&last_element.val, 1, MPI_DOUBLE, rank+1, 0, comm);
 
-        data[2] += left_neighbor_last_val;
+        data[0].val += left_neighbor_last_val;
     }
 
 //    if(rank==ran) std::cout << "after  sorting\n" << "data size = " << data.size() << std::endl;
 //    for(int i=0; i<data.size(); i++)
 //        if(rank==ran) std::cout << data[3*i] << "\t" << data[3*i+1] << "\t" << data[3*i+2] << std::endl;
 
-    initial_nnz_l = data.size()/3;
+    initial_nnz_l = data.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
 
     // *************************** find Mbig (global number of rows) ****************************
@@ -190,18 +193,22 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
 
     unsigned int Mbig_local = 0;
     for(unsigned long i=0; i<initial_nnz_l; i++){
-        if(data[3*i] > Mbig_local)
-            Mbig_local = data[3*i];
+        if(data[i].row > Mbig_local)
+            Mbig_local = data[i].row;
     }
 
-    if(data[3*(initial_nnz_l-1)+1] > Mbig_local)
-        Mbig_local = data[3*(initial_nnz_l-1)+1];
+    last_element = data.back();
+    if(last_element.col > Mbig_local)
+        Mbig_local = last_element.col;
 
     MPI_Allreduce(&Mbig_local, &Mbig, 1, MPI_UNSIGNED, MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
-//    std::cout << Mbig << std::endl;
+
 //    printf("rank = %d, Mbig = %u, nnz_g = %u, initial_nnz_l = %u \n", rank, Mbig, nnz_g, initial_nnz_l);
 
+//    if(rank==0){
+//        for(unsigned long i = 0; i < initial_nnz_l; i++)
+//            std::cout << data[i] << std::endl;}
 }
 
 
@@ -495,32 +502,42 @@ int saena_matrix::setup_initial_data(){
     // todo: "data" vector can completely be avoided. function repartition should be changed to use a vector of cooEntry
     // todo: (which is "data_sorted" here), instead of "data" (which is a vector of unsigned long of size 3*nnz).
 
+    // size of data may be smaller because of duplicates. In that case its size will be reduced after finding the exact size.
+    data.resize(data_sorted.size());
+
     // put the first element of data_unsorted to data.
     unsigned int data_size = 0;
     if(!data_sorted.empty()){
-        data.push_back(data_sorted[0].row);
-        data.push_back(data_sorted[0].col);
-        data.push_back(reinterpret_cast<unsigned long&>(data_sorted[0].val));
+        data[0] = data_sorted[0];
+//        data.push_back(data_sorted[0].row);
+//        data.push_back(data_sorted[0].col);
+//        data.push_back(reinterpret_cast<unsigned long&>(data_sorted[0].val));
         data_size++;
     }
 
-    double val_temp;
-    if(data_sorted.size()>1){
-        for(unsigned int i=1; i<data_sorted.size(); i++){
-            if(data_sorted[i] == data_sorted[i-1]){
-                if(add_duplicates){
-                    data.pop_back();
-                    val_temp = data_sorted[i-1].val + data_sorted[i].val;
-                    data.push_back(reinterpret_cast<unsigned long&>(val_temp));
-                }
+//    double val_temp;
+    for(unsigned int i=1; i<data_sorted.size(); i++){
+        if(data_sorted[i] == data_sorted[i-1]){
+            if(add_duplicates){
+                data[data_size-1].val += data_sorted[i].val;
+//                data.pop_back();
+//                val_temp = data_sorted[i-1].val + data_sorted[i].val;
+//                data.push_back(reinterpret_cast<unsigned long&>(val_temp));
             }else{
-                data.push_back(data_sorted[i].row);
-                data.push_back(data_sorted[i].col);
-                data.push_back(reinterpret_cast<unsigned long&>(data_sorted[i].val));
-                data_size++;
+                data[data_size-1] = data_sorted[i];
             }
+        }else{
+            data[data_size] = data_sorted[i];
+//            data.push_back(data_sorted[i].row);
+//            data.push_back(data_sorted[i].col);
+//            data.push_back(reinterpret_cast<unsigned long&>(data_sorted[i].val));
+            data_size++;
         }
     }
+
+    data.resize(data_size);
+    data.shrink_to_fit();
+
 //    MPI_Barrier(comm); printf("rank = %d, data_size = %u, size of data = %lu\n", rank, data_size, data.size());
 
 //    std::vector<cooEntry>::iterator iterator;
@@ -539,11 +556,12 @@ int saena_matrix::setup_initial_data(){
 //        iter1++;
 //    }
 
-    if(data.size() < 2)
-        std::cout << "error: data has no elements on at least one process!" << std::endl;
+    if(data.empty()) {
+        printf("error: data has no element on process %d! \n", rank);
+        MPI_Finalize();
+        return -1;}
 
-    cooEntry first_element;
-    first_element = cooEntry(data[0], data[1], data[2]);
+//    cooEntry first_element = data[0];
     cooEntry first_element_neighbor;
 
     // send last element to the left neighbor and check if it is equal to the last element of the left neighbor.
@@ -551,25 +569,39 @@ int saena_matrix::setup_initial_data(){
         MPI_Recv(&first_element_neighbor, 1, cooEntry::mpi_datatype(), rank+1, 0, comm, MPI_STATUS_IGNORE);
 
     if(rank!= 0)
-        MPI_Send(&first_element, 1, cooEntry::mpi_datatype(), rank-1, 0, comm);
+        MPI_Send(&data[0], 1, cooEntry::mpi_datatype(), rank-1, 0, comm);
 
 //    MPI_Barrier(comm); printf("rank = %d\t setup_initial 5555555555555555555\n", rank);  MPI_Barrier(comm);
 //    MPI_Barrier(comm); printf("rank = %d\t data.size() = %lu, data_size = %u, last = %u \n", rank, data.size(), data_size, 3*(data_size-1)+2);  MPI_Barrier(comm);
 
-    cooEntry last_element = cooEntry(data[3*(data_size-1)], data[3*(data_size-1)+1], data[3*(data_size-1)+2]);
+//    cooEntry last_element = cooEntry(data[3*(data_size-1)], data[3*(data_size-1)+1], data[3*(data_size-1)+2]);
 //    MPI_Barrier(comm); if(rank==0) std::cout << "rank = " << rank << "\t first_element = " << first_element_neighbor << ", last element = " << last_element << std::endl;  MPI_Barrier(comm);
 
+    cooEntry last_element = data.back();
     if(rank != nprocs-1){
         if(last_element == first_element_neighbor) {
 //            if(rank==0) std::cout << "remove!" << std::endl;
             data.pop_back();
-            data.pop_back();
-            data.pop_back();
         }
     }
+
+    // if duplicates should be added together and last_element == first_element_neighbor
+    // then send only the value of last_element to the right neighbor and add it to the last element's value.
+    // this has the reverse communication of the previous part.
+    double left_neighbor_last_val;
+    if((last_element == first_element_neighbor) && add_duplicates ){
+        if(rank != 0)
+            MPI_Recv(&left_neighbor_last_val, 1, MPI_DOUBLE, rank-1, 0, comm, MPI_STATUS_IGNORE);
+
+        if(rank!= nprocs-1)
+            MPI_Send(&last_element.val, 1, MPI_DOUBLE, rank+1, 0, comm);
+
+        data[0].val += left_neighbor_last_val;
+    }
+
 //    MPI_Barrier(comm); printf("rank = %d\t setup_initial 6666666666666666666\n", rank);  MPI_Barrier(comm);
 
-    initial_nnz_l = data_size;
+    initial_nnz_l = data.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
 //    MPI_Barrier(comm); printf("rank = %d, Mbig = %u, nnz_g = %u, initial_nnz_l = %u \n", rank, Mbig, nnz_g, initial_nnz_l); MPI_Barrier(comm);
 
@@ -587,8 +619,6 @@ int saena_matrix::setup_initial_data2(){
 
     std::set<cooEntry>::iterator it;
     unsigned int iter = 0;
-    unsigned int Mbig_local = 0;
-    cooEntry temp;
 
     data_unsorted.resize(data_coo.size());
     for(it=data_coo.begin(); it!=data_coo.end(); ++it){
@@ -618,36 +648,60 @@ int saena_matrix::setup_initial_data2(){
     // put the first element of data_unsorted to data.
     unsigned int data_size = 0;
     if(!data_sorted.empty()){
-        data.push_back(data_sorted[0].row);
-        data.push_back(data_sorted[0].col);
-        data.push_back(reinterpret_cast<unsigned long&>(data_sorted[0].val));
+        data[0] = data_sorted[0];
+//        data.push_back(data_sorted[0].row);
+//        data.push_back(data_sorted[0].col);
+//        data.push_back(reinterpret_cast<unsigned long&>(data_sorted[0].val));
         data_size++;
     }
 
-    double val_temp;
-    if(data_sorted.size()>1){
-        for(unsigned int i=1; i<data_sorted.size(); i++){
-            if(data_sorted[i] == data_sorted[i-1]){
-                if(add_duplicates){
-                    data.pop_back();
-                    val_temp = data_sorted[i-1].val + data_sorted[i].val;
-                    data.push_back(reinterpret_cast<unsigned long&>(val_temp));
-                }
+//    double val_temp;
+    for(unsigned int i=1; i<data_sorted.size(); i++){
+        if(data_sorted[i] == data_sorted[i-1]){
+            if(add_duplicates){
+                data[data_size-1].val += data_sorted[i].val;
+//                data.pop_back();
+//                val_temp = data_sorted[i-1].val + data_sorted[i].val;
+//                data.push_back(reinterpret_cast<unsigned long&>(val_temp));
             }else{
-                data.push_back(data_sorted[i].row);
-                data.push_back(data_sorted[i].col);
-                data.push_back(reinterpret_cast<unsigned long&>(data_sorted[i].val));
-                data_size++;
+                data[data_size-1] = data_sorted[i];
             }
+        }else{
+            data[data_size] = data_sorted[i];
+//            data.push_back(data_sorted[i].row);
+//            data.push_back(data_sorted[i].col);
+//            data.push_back(reinterpret_cast<unsigned long&>(data_sorted[i].val));
+            data_size++;
         }
     }
+
+    data.resize(data_size);
+    data.shrink_to_fit();
+
 //    MPI_Barrier(comm); printf("rank = %d, data_size = %u, size of data = %lu\n", rank, data_size, data.size());
 
-    if(data.size() < 2)
-        std::cout << "error: data has no elements on at least one process!" << std::endl;
+//    std::vector<cooEntry>::iterator iterator;
+//    for(iterator = data_unsorted.begin(); iterator != data_unsorted.end(); iterator++){
+//        if(*iterator == *(iterator+1))
+//            data_unsorted.erase(iterator);
+//    }
+//
+//    initial_nnz_l = data_unsorted.size();
+//    data.resize(3 * initial_nnz_l);
+//    unsigned int iter1 = 0;
+//    for(auto &i:data_unsorted){
+//        data[3*iter1]   = i.row;
+//        data[3*iter1+1] = i.col;
+//        data[3*iter1+2] = reinterpret_cast<unsigned long&>(i.val);
+//        iter1++;
+//    }
 
-    cooEntry first_element;
-    first_element = cooEntry(data[0], data[1], data[2]);
+    if(data.empty()) {
+        printf("error: data has no element on process %d! \n", rank);
+        MPI_Finalize();
+        return -1;}
+
+//    cooEntry first_element = data[0];
     cooEntry first_element_neighbor;
 
     // send last element to the left neighbor and check if it is equal to the last element of the left neighbor.
@@ -655,25 +709,39 @@ int saena_matrix::setup_initial_data2(){
         MPI_Recv(&first_element_neighbor, 1, cooEntry::mpi_datatype(), rank+1, 0, comm, MPI_STATUS_IGNORE);
 
     if(rank!= 0)
-        MPI_Send(&first_element, 1, cooEntry::mpi_datatype(), rank-1, 0, comm);
+        MPI_Send(&data[0], 1, cooEntry::mpi_datatype(), rank-1, 0, comm);
 
 //    MPI_Barrier(comm); printf("rank = %d\t setup_initial 5555555555555555555\n", rank);  MPI_Barrier(comm);
 //    MPI_Barrier(comm); printf("rank = %d\t data.size() = %lu, data_size = %u, last = %u \n", rank, data.size(), data_size, 3*(data_size-1)+2);  MPI_Barrier(comm);
 
-    cooEntry last_element = cooEntry(data[3*(data_size-1)], data[3*(data_size-1)+1], data[3*(data_size-1)+2]);
+//    cooEntry last_element = cooEntry(data[3*(data_size-1)], data[3*(data_size-1)+1], data[3*(data_size-1)+2]);
 //    MPI_Barrier(comm); if(rank==0) std::cout << "rank = " << rank << "\t first_element = " << first_element_neighbor << ", last element = " << last_element << std::endl;  MPI_Barrier(comm);
 
+    cooEntry last_element = data.back();
     if(rank != nprocs-1){
         if(last_element == first_element_neighbor) {
 //            if(rank==0) std::cout << "remove!" << std::endl;
             data.pop_back();
-            data.pop_back();
-            data.pop_back();
         }
     }
+
+    // if duplicates should be added together and last_element == first_element_neighbor
+    // then send only the value of last_element to the right neighbor and add it to the last element's value.
+    // this has the reverse communication of the previous part.
+    double left_neighbor_last_val;
+    if((last_element == first_element_neighbor) && add_duplicates ){
+        if(rank != 0)
+            MPI_Recv(&left_neighbor_last_val, 1, MPI_DOUBLE, rank-1, 0, comm, MPI_STATUS_IGNORE);
+
+        if(rank!= nprocs-1)
+            MPI_Send(&last_element.val, 1, MPI_DOUBLE, rank+1, 0, comm);
+
+        data[0].val += left_neighbor_last_val;
+    }
+
 //    MPI_Barrier(comm); printf("rank = %d\t setup_initial 6666666666666666666\n", rank);  MPI_Barrier(comm);
 
-    initial_nnz_l = data_size;
+    initial_nnz_l = data.size();
     unsigned long nnz_g_temp = nnz_g;
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED, MPI_SUM, comm);
     if(rank == 0 && (nnz_g_temp != nnz_g) ) printf("error: number of global nonzeros is changed during the matrix update!\n");
@@ -846,8 +914,8 @@ int saena_matrix::repartition(){
     // the following variables of SaenaMatrix class will be set in this function:
     // "nnz_l", "M", "split", "entry"
 
-    // summary: number of buckets are computed based of the number fo rows and nuber of processors.
-    // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix which almost equal number of rows.
+    // summary: number of buckets are computed based of the number fo rows and number of processors.
+    // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix with almost equal number of rows.
     // then the buckets (firsSplit) are combined to have almost the same number of nonzeros. This is split[].
 
     bool repartition_verbose = false;
@@ -929,23 +997,28 @@ int saena_matrix::repartition(){
     splitOffset.clear();
     splitOffset.shrink_to_fit();
 
-/*    if (rank==0){
-        std::cout << "firstSplit:" << std::endl;
-        for(long i=0; i<n_buckets+1; i++)
-            std::cout << firstSplit[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "firstSplit:" << std::endl;
+//        for(long i=0; i<n_buckets+1; i++)
+//            std::cout << firstSplit[i] << std::endl;}
+
+//    std::sort(entry.begin(), entry.end(), row_major);
+
+//    if (rank==0){
+//        std::cout << "entry row-major: nnz = " << initial_nnz_l << std::endl;
+//        for(unsigned int i=0; i<n_buckets; i++)
+//            std::cout << entry[i] << std::endl;}
 
     // H_l is the histogram of (local) nnz of buckets
     std::vector<long> H_l(n_buckets, 0);
     for(unsigned int i=0; i<initial_nnz_l; i++)
-        H_l[lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[3*i])]++;
+        H_l[lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[i].row)]++;
 
-/*    if (rank==0){
-        std::cout << "initial_nnz_l = " << initial_nnz_l << std::endl;
-        std::cout << "local histogram:" << std::endl;
-        for(unsigned int i=0; i<n_buckets; i++)
-            std::cout << H_l[i] << std::endl;
-    }*/
+//    if (rank==1){
+//        std::cout << "initial_nnz_l = " << initial_nnz_l << std::endl;
+//        std::cout << "local histogram:" << std::endl;
+//        for(unsigned int i=0; i<n_buckets; i++)
+//            std::cout << H_l[i] << std::endl;}
 
     // H_g is the histogram of (global) nnz per bucket
     std::vector<long> H_g(n_buckets);
@@ -954,12 +1027,10 @@ int saena_matrix::repartition(){
     H_l.clear();
     H_l.shrink_to_fit();
 
-/*    if (rank==1){
-        std::cout << "global histogram:" << std::endl;
-        for(unsigned int i=0; i<n_buckets; i++){
-            std::cout << H_g[i] << std::endl;
-        }
-    }*/
+//    if (rank==1){
+//        std::cout << "global histogram:" << std::endl;
+//        for(unsigned int i=0; i<n_buckets; i++){
+//            std::cout << H_g[i] << std::endl;}}
 
     std::vector<long> H_g_scan(n_buckets);
     H_g_scan[0] = H_g[0];
@@ -998,8 +1069,7 @@ int saena_matrix::repartition(){
 //        std::cout << std::endl << "split:" << std::endl;
 //        for(unsigned int i=0; i<nprocs+1; i++)
 //            std::cout << split[i] << std::endl;
-//        std::cout << std::endl;
-//    }
+//        std::cout << std::endl;}
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
@@ -1012,19 +1082,17 @@ int saena_matrix::repartition(){
     // *************************** exchange data ****************************
 
     long tempIndex;
-//    int sendSizeArray[nprocs];
     int* sendSizeArray = (int*)malloc(sizeof(int)*nprocs);
     std::fill(&sendSizeArray[0], &sendSizeArray[nprocs], 0);
     for (unsigned int i=0; i<initial_nnz_l; i++){
-        tempIndex = lower_bound2(&split[0], &split[nprocs], data[3*i]);
+        tempIndex = lower_bound2(&split[0], &split[nprocs], data[i].row);
         sendSizeArray[tempIndex]++;
     }
 
-/*    if (rank==0){
-        std::cout << "sendSizeArray:" << std::endl;
-        for(long i=0;i<nprocs;i++)
-            std::cout << sendSizeArray[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "sendSizeArray:" << std::endl;
+//        for(long i=0;i<nprocs;i++)
+//            std::cout << sendSizeArray[i] << std::endl;}
 
 //    int recvSizeArray[nprocs];
     int* recvSizeArray = (int*)malloc(sizeof(int)*nprocs);
@@ -1072,9 +1140,9 @@ int saena_matrix::repartition(){
 
     // todo: try to avoid this for loop.
     for (long i=0; i<initial_nnz_l; i++){
-        procOwner = lower_bound2(&split[0], &split[nprocs], data[3*i]);
+        procOwner = lower_bound2(&split[0], &split[nprocs], data[i].row);
         bufTemp = sOffset[procOwner]+sIndex[procOwner];
-        memcpy(sendBuf+bufTemp, data.data() + 3*i, sizeof(cooEntry));
+        memcpy(sendBuf+bufTemp, data.data() + i, sizeof(cooEntry));
         // todo: the above line is better than the following three lines. think why it works.
 //        sendBuf[bufTemp].row = data[3*i];
 //        sendBuf[bufTemp].col = data[3*i+1];
@@ -1154,7 +1222,7 @@ int saena_matrix::repartition2(){
     int* sendSizeArray = (int*)malloc(sizeof(int)*nprocs);
     std::fill(&sendSizeArray[0], &sendSizeArray[nprocs], 0);
     for (unsigned int i=0; i<initial_nnz_l; i++){
-        tempIndex = lower_bound2(&split[0], &split[nprocs], data[3*i]);
+        tempIndex = lower_bound2(&split[0], &split[nprocs], data[i].row);
         sendSizeArray[tempIndex]++;
     }
 
@@ -1210,9 +1278,9 @@ int saena_matrix::repartition2(){
 
     // todo: try to avoid this for loop.
     for (long i=0; i<initial_nnz_l; i++){
-        procOwner = lower_bound2(&split[0], &split[nprocs], data[3*i]);
+        procOwner = lower_bound2(&split[0], &split[nprocs], data[i].row);
         bufTemp = sOffset[procOwner]+sIndex[procOwner];
-        memcpy(sendBuf+bufTemp, data.data() + 3*i, sizeof(cooEntry));
+        memcpy(sendBuf+bufTemp, data.data() + i, sizeof(cooEntry));
         // todo: the above line is better than the following three lines. think why it works.
 //        sendBuf[bufTemp].row = data[3*i];
 //        sendBuf[bufTemp].col = data[3*i+1];
@@ -1271,11 +1339,12 @@ int saena_matrix::repartition2(){
     return 0;
 }
 
-
+// this version of repartition3() is WITHOUT cpu shrinking.
+/*
 int saena_matrix::repartition3(){
 
-    // summary: number of buckets are computed based of the number fo rows and nuber of processors.
-    // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix which almost equal number of rows.
+    // summary: number of buckets are computed based of the number fo rows and number of processors.
+    // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix with almost equal number of rows.
     // then the buckets (firsSplit) are combined to have almost the same number of nonzeros. This is split[].
 
     int nprocs, rank;
@@ -1294,14 +1363,14 @@ int saena_matrix::repartition3(){
     // definition of buckets: bucket[i] = [ firstSplit[i] , firstSplit[i+1] ). Number of buckets = n_buckets
     int n_buckets = 0;
 
-/*    if (Mbig > nprocs*nprocs){
-        if (nprocs < 1000)
-            n_buckets = nprocs*nprocs;
-        else
-            n_buckets = 1000*nprocs;
-    }
-    else
-        n_buckets = Mbig;*/
+//    if (Mbig > nprocs*nprocs){
+//        if (nprocs < 1000)
+//            n_buckets = nprocs*nprocs;
+//        else
+//            n_buckets = 1000*nprocs;
+//    }
+//    else
+//        n_buckets = Mbig;
 
     if (Mbig > nprocs*nprocs){
         if (nprocs < 1000)
@@ -1335,11 +1404,10 @@ int saena_matrix::repartition3(){
         }
     }
 
-/*    if (rank==0){
-        std::cout << "splitOffset:" << std::endl;
-        for(long i=0; i<n_buckets; i++)
-            std::cout << splitOffset[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "splitOffset:" << std::endl;
+//        for(long i=0; i<n_buckets; i++)
+//            std::cout << splitOffset[i] << std::endl;}
 
     if(repartition_verbose && rank==0) printf("repartition - step 2!\n");
 
@@ -1394,11 +1462,10 @@ int saena_matrix::repartition3(){
     H_g.clear();
     H_g.shrink_to_fit();
 
-/*    if (rank==0){
-        std::cout << "scan of global histogram:" << std::endl;
-        for(unsigned int i=0; i<n_buckets; i++)
-            std::cout << H_g_scan[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "scan of global histogram:" << std::endl;
+//        for(unsigned int i=0; i<n_buckets; i++)
+//            std::cout << H_g_scan[i] << std::endl;}
 
     if(repartition_verbose && rank==0) printf("repartition - step 3!\n");
 
@@ -1409,11 +1476,10 @@ int saena_matrix::repartition3(){
 //        std::cout << std::endl;}
 
     long procNum = 0;
-//    split.resize(nprocs+1);
-//    split[0]=0;
+    // determine number of rows on each proc based on having almost the same number of nonzeros per proc.
+    // -------------------------------------------
     for (unsigned int i=1; i<n_buckets; i++){
-        //if (rank==0) std::cout << "(procNum+1)*nnz_g/nprocs = " << (procNum+1)*nnz_g/nprocs << std::endl;
-        if (H_g_scan[i] > ((procNum+1)*nnz_g/nprocs)){
+        if (H_g_scan[i] > (procNum+1)*nnz_g/nprocs){
             procNum++;
             split[procNum] = firstSplit[i];
         }
@@ -1472,11 +1538,10 @@ int saena_matrix::repartition3(){
     for (int i=1; i<nprocs; i++)
         sOffset[i] = sendSizeArray[i-1] + sOffset[i-1];
 
-/*    if (rank==0){
-        std::cout << "sOffset:" << std::endl;
-        for(long i=0;i<nprocs;i++)
-            std::cout << sOffset[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "sOffset:" << std::endl;
+//        for(long i=0;i<nprocs;i++)
+//            std::cout << sOffset[i] << std::endl;}
 
 //    int rOffset[nprocs];
     int* rOffset = (int*)malloc(sizeof(int)*nprocs);
@@ -1484,11 +1549,10 @@ int saena_matrix::repartition3(){
     for (int i=1; i<nprocs; i++)
         rOffset[i] = recvSizeArray[i-1] + rOffset[i-1];
 
-/*    if (rank==0){
-        std::cout << "rOffset:" << std::endl;
-        for(long i=0;i<nprocs;i++)
-            std::cout << rOffset[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "rOffset:" << std::endl;
+//        for(long i=0;i<nprocs;i++)
+//            std::cout << rOffset[i] << std::endl;}
 
     if(repartition_verbose && rank==0) printf("repartition - step 5!\n");
 
@@ -1573,6 +1637,748 @@ int saena_matrix::repartition3(){
 
     return 0;
 }
+*/
+
+
+int saena_matrix::repartition3(){
+
+    // summary: number of buckets are computed based of the number fo rows and number of processors.
+    // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix with almost equal number of rows.
+    // then the buckets (firsSplit) are combined to have almost the same number of nonzeros. This is split[].
+    // note: this version of repartition3() is WITH cpu shrinking.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    bool repartition_verbose = false;
+
+    if(repartition_verbose && rank==0) printf("repartition3 - step 1!\n");
+
+    MPI_Barrier(comm);
+    printf("repartition3 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n",
+           rank, Mbig, M, nnz_g, nnz_l);
+    MPI_Barrier(comm);
+
+//    last_M_shrink = Mbig;
+
+    // *************************** find splitters ****************************
+    // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
+
+    // definition of buckets: bucket[i] = [ firstSplit[i] , firstSplit[i+1] ). Number of buckets = n_buckets
+    int n_buckets = 0;
+
+//    if (Mbig > nprocs*nprocs){
+//        if (nprocs < 1000)
+//            n_buckets = nprocs*nprocs;
+//        else
+//            n_buckets = 1000*nprocs;
+//    }
+//    else
+//        n_buckets = Mbig;
+
+    if (Mbig > nprocs*nprocs){
+        if (nprocs < 1000)
+            n_buckets = nprocs*nprocs;
+        else
+            n_buckets = 1000*nprocs;
+    }
+    else if(nprocs < Mbig){
+        n_buckets = Mbig;
+    } else{ // nprocs > Mbig
+        // it may be better to set nprocs=Mbig and work only with the first Mbig processors.
+        if(rank == 0)
+            std::cout << "number of MPI tasks cannot be greater than the number of rows of the matrix." << std::endl;
+        MPI_Finalize();
+    }
+
+//    if (rank==0) std::cout << "n_buckets = " << n_buckets << ", Mbig = " << Mbig << std::endl;
+
+    std::vector<int> splitOffset(n_buckets);
+    auto baseOffset = int(floor(1.0*Mbig/n_buckets));
+    float offsetRes = float(1.0*Mbig/n_buckets) - baseOffset;
+//    if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
+    float offsetResSum = 0;
+    splitOffset[0] = 0;
+    for(unsigned int i=1; i<n_buckets; i++){
+        splitOffset[i] = baseOffset;
+        offsetResSum += offsetRes;
+        if (offsetResSum >= 1){
+            splitOffset[i]++;
+            offsetResSum -= 1;
+        }
+    }
+
+//    if (rank==0){
+//        std::cout << "splitOffset:" << std::endl;
+//        for(long i=0; i<n_buckets; i++)
+//            std::cout << splitOffset[i] << std::endl;}
+
+    if(repartition_verbose && rank==0) printf("repartition3 - step 2!\n");
+
+    std::vector<unsigned long> firstSplit(n_buckets+1);
+    firstSplit[0] = 0;
+    for(unsigned int i=1; i<n_buckets; i++){
+        firstSplit[i] = firstSplit[i-1] + splitOffset[i];
+    }
+    firstSplit[n_buckets] = Mbig;
+
+    splitOffset.clear();
+    splitOffset.shrink_to_fit();
+
+//    if (rank==0){
+//        std::cout << "\nfirstSplit:" << std::endl;
+//        for(long i=0; i<n_buckets+1; i++)
+//            std::cout << firstSplit[i] << std::endl;
+//    }
+
+    initial_nnz_l = nnz_l;
+    // H_l is the histogram of (local) nnz per bucket
+    std::vector<long> H_l(n_buckets, 0);
+    for(unsigned int i=0; i<initial_nnz_l; i++)
+        H_l[lower_bound2(&firstSplit[0], &firstSplit[n_buckets], entry[i].row)]++;
+
+//    if (rank==0){
+//        std::cout << "\ninitial_nnz_l = " << initial_nnz_l << std::endl;
+//        std::cout << "local histogram:" << std::endl;
+//        for(unsigned int i=0; i<n_buckets; i++)
+//            std::cout << H_l[i] << std::endl;
+//    }
+
+    // H_g is the histogram of (global) nnz per bucket
+    std::vector<long> H_g(n_buckets);
+    MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, MPI_LONG, MPI_SUM, comm);
+
+    H_l.clear();
+    H_l.shrink_to_fit();
+
+//    if (rank==1){
+//        std::cout << "global histogram:" << std::endl;
+//        for(unsigned int i=0; i<n_buckets; i++){
+//            std::cout << H_g[i] << std::endl;
+//        }
+//    }
+
+    std::vector<long> H_g_scan(n_buckets);
+    H_g_scan[0] = H_g[0];
+    for (unsigned int i=1; i<n_buckets; i++)
+        H_g_scan[i] = H_g[i] + H_g_scan[i-1];
+
+    H_g.clear();
+    H_g.shrink_to_fit();
+
+//    if (rank==0){
+//        std::cout << "scan of global histogram:" << std::endl;
+//        for(unsigned int i=0; i<n_buckets; i++)
+//            std::cout << H_g_scan[i] << std::endl;}
+
+    if(repartition_verbose && rank==0) printf("repartition3 - step 3!\n");
+
+//    if (rank==0){
+//        std::cout << std::endl << "split old:" << std::endl;
+//        for(unsigned int i=0; i<nprocs+1; i++)
+//            std::cout << split[i] << std::endl;
+//        std::cout << std::endl;}
+
+    long procNum = 0;
+    // determine number of rows on each proc based on having almost the same number of nonzeros per proc.
+    // -------------------------------------------
+    for (unsigned int i = 1; i < n_buckets; i++){
+        if (H_g_scan[i] > (procNum+1)*nnz_g/nprocs){
+            procNum++;
+            split[procNum] = firstSplit[i];
+        }
+    }
+    split[nprocs] = Mbig;
+    split_old = split;
+
+//    if (rank==0){
+//        std::cout << std::endl << "split:" << std::endl;
+//        for(unsigned int i=0; i<nprocs+1; i++)
+//            std::cout << split[i] << std::endl;
+//        std::cout << std::endl;}
+
+    H_g_scan.clear();
+    H_g_scan.shrink_to_fit();
+    firstSplit.clear();
+    firstSplit.shrink_to_fit();
+
+    // set the number of rows for each process
+    M = split[rank+1] - split[rank];
+
+    if(repartition_verbose && rank==0) printf("repartition3 - step 4!\n");
+
+//    unsigned int M_min_global;
+//    MPI_Allreduce(&M, &M_min_global, 1, MPI_UNSIGNED, MPI_MIN, comm);
+
+    // *************************** exchange data ****************************
+
+    long tempIndex;
+    int* sendSizeArray = (int*)malloc(sizeof(int)*nprocs);
+    std::fill(&sendSizeArray[0], &sendSizeArray[nprocs], 0);
+    for (unsigned int i=0; i<initial_nnz_l; i++){
+        tempIndex = lower_bound2(&split[0], &split[nprocs], entry[i].row);
+        sendSizeArray[tempIndex]++;
+//        if(rank==5)
+//            printf("%ld \t%ld \n", entry[i].row, tempIndex);
+    }
+
+//    if (rank==4){
+//        std::cout << "sendSizeArray:" << std::endl;
+//        for(long i=0;i<nprocs;i++)
+//            std::cout << sendSizeArray[i] << std::endl;}
+
+    int* recvSizeArray = (int*)malloc(sizeof(int)*nprocs);
+    MPI_Alltoall(sendSizeArray, 1, MPI_INT, recvSizeArray, 1, MPI_INT, comm);
+
+//    if (rank==0){
+//        std::cout << "recvSizeArray:" << std::endl;
+//        for(long i=0;i<nprocs;i++)
+//            std::cout << recvSizeArray[i] << std::endl;}
+
+//    int sOffset[nprocs];
+    int* sOffset = (int*)malloc(sizeof(int)*nprocs);
+    sOffset[0] = 0;
+    for (int i=1; i<nprocs; i++)
+        sOffset[i] = sendSizeArray[i-1] + sOffset[i-1];
+
+//    if (rank==0){
+//        std::cout << "sOffset:" << std::endl;
+//        for(long i=0;i<nprocs;i++)
+//            std::cout << sOffset[i] << std::endl;}
+
+//    int rOffset[nprocs];
+    int* rOffset = (int*)malloc(sizeof(int)*nprocs);
+    rOffset[0] = 0;
+    for (int i=1; i<nprocs; i++)
+        rOffset[i] = recvSizeArray[i-1] + rOffset[i-1];
+
+//    if (rank==0){
+//        std::cout << "rOffset:" << std::endl;
+//        for(long i=0;i<nprocs;i++)
+//            std::cout << rOffset[i] << std::endl;}
+
+    if(repartition_verbose && rank==0) printf("repartition3 - step 5!\n");
+
+    long procOwner;
+    unsigned int bufTemp;
+    cooEntry* sendBuf = (cooEntry*)malloc(sizeof(cooEntry)*initial_nnz_l);
+    unsigned int* sIndex = (unsigned int*)malloc(sizeof(unsigned int)*nprocs);
+    std::fill(&sIndex[0], &sIndex[nprocs], 0);
+
+    // todo: try to avoid this for loop.
+    // todo: if the order is changed to row-major order, then sendBuf is already ready and also
+    // set up sendBuf for alltoallv
+    for (long i=0; i<initial_nnz_l; i++){
+        procOwner = lower_bound2(&split[0], &split[nprocs], entry[i].row);
+        bufTemp = sOffset[procOwner]+sIndex[procOwner];
+        memcpy(sendBuf+bufTemp, entry.data() + i, sizeof(cooEntry));
+        // todo: the above line is better than the following three lines. think why it works.
+//        sendBuf[bufTemp].row = data[3*i];
+//        sendBuf[bufTemp].col = data[3*i+1];
+//        sendBuf[bufTemp].val = data[3*i+2];
+//        if(rank==1) std::cout << sendBuf[bufTemp].row << "\t" << sendBuf[bufTemp].col << "\t" << sendBuf[bufTemp].val << std::endl;
+        sIndex[procOwner]++;
+    }
+
+    free(sIndex);
+
+    // clear data and free memory.
+//    data.clear();
+//    data.shrink_to_fit();
+
+//    if (rank==1){
+//        std::cout << "sendBuf:" << std::endl;
+//        for (long i=0; i<initial_nnz_l; i++)
+//            std::cout << sendBuf[i] << "\t" << entry[i] << std::endl;
+//    }
+
+//    MPI_Barrier(comm);
+//    if (rank==2){
+//        std::cout << "\nrank = " << rank << ", nnz_l = " << nnz_l << std::endl;
+//        for (int i=0; i<nnz_l; i++)
+//            std::cout << i << "\t" << entry[i] << std::endl;}
+//    MPI_Barrier(comm);
+
+    nnz_l = rOffset[nprocs-1] + recvSizeArray[nprocs-1];
+//    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
+
+//    cooEntry* entry = (cooEntry*)malloc(sizeof(cooEntry)*nnz_l);
+//    cooEntry* entryP = &entry[0];
+
+    if(repartition_verbose && rank==0) printf("repartition3 - step 6!\n");
+
+    entry.clear();
+    entry.resize(nnz_l);
+    entry.shrink_to_fit();
+
+    MPI_Alltoallv(sendBuf, sendSizeArray, sOffset, cooEntry::mpi_datatype(), &entry[0], recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
+
+    free(sendSizeArray);
+    free(recvSizeArray);
+    free(sOffset);
+    free(rOffset);
+    free(sendBuf);
+
+    std::sort(entry.begin(), entry.end());
+
+//    MPI_Barrier(comm);
+//    if (rank==2){
+//        std::cout << "\nrank = " << rank << ", nnz_l = " << nnz_l << std::endl;
+//        for (int i=0; i<nnz_l; i++)
+//            std::cout << i << "\t" << entry[i] << std::endl;}
+//    MPI_Barrier(comm);
+//    if (rank==1){
+//        std::cout << "\nrank = " << rank << ", nnz_l = " << nnz_l << std::endl;
+//        for (int i=0; i<nnz_l; i++)
+//            std::cout << "i=" << i << "\t" << entry[i].row << "\t" << entry[i].col << "\t" << entry[i].val << std::endl;}
+//    MPI_Barrier(comm);
+
+    if(repartition_verbose) {
+        MPI_Barrier(comm);
+        printf("repartition3 - step 7! rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n",
+               rank, Mbig, M, nnz_g, nnz_l);
+        MPI_Barrier(comm);
+    }
+
+    MPI_Barrier(comm);
+    printf("repartition3 - step 7! rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n",
+           rank, Mbig, M, nnz_g, nnz_l);
+    MPI_Barrier(comm);
+
+//    if(shrinked)
+//        shrink_cpu();
+
+    if(repartition_verbose && rank==0) printf("repartition3 - done!\n");
+
+    return 0;
+}
+
+
+/*
+int saena_matrix::shrink_cpu(){
+
+    // if number of rows on Ac < threshold*number of rows on A, then shrink.
+    // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
+//    MPI_Comm comm = comm;
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    unsigned long i;
+    bool verbose_shrink = true;
+
+    MPI_Barrier(comm);
+    if(rank==0) printf("\n****************************\n");
+    if(rank==0) printf("***********SHRINK***********\n");
+    if(rank==0) printf("****************************\n\n");
+    MPI_Barrier(comm);
+
+//    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, Ac->nnz_l); MPI_Barrier(comm);
+
+//    MPI_Barrier(comm);
+//    if(rank == 0){
+//        std::cout << "\nbefore shrinking!!!" <<std::endl;
+//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
+//        for(i=0; i < Ac->entry.size(); i++)
+//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
+//    }
+//    MPI_Barrier(comm);
+//    if(rank == 1){
+//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
+//        for(i=0; i < Ac->entry.size(); i++)
+//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
+//    }
+//    MPI_Barrier(comm);
+//    if(rank == 2){
+//        std::cout << "\nbefore shrinking!!!" <<std::endl;
+//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
+//        for(i=0; i < Ac->entry.size(); i++)
+//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
+//    }
+//    MPI_Barrier(comm);
+
+    // assume cpu_shrink_thre2 is 4 (it is simpler to explain)
+    // 1 - create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
+    int color = rank / cpu_shrink_thre2;
+    MPI_Comm_split(comm, color, rank, &comm_horizontal);
+
+    int rank_new, nprocs_new;
+    MPI_Comm_size( comm_horizontal, &nprocs_new);
+    MPI_Comm_rank( comm_horizontal, &rank_new);
+
+//    MPI_Barrier(Ac->comm_horizontal);
+//    printf("rank = %d, rank_new = %d on Ac->comm_horizontal \n", rank, rank_new);
+
+    // 2 - update the number of rows on process 4k, and resize "entry".
+    unsigned int Ac_M_neighbors_total = 0;
+    unsigned int Ac_nnz_neighbors_total = 0;
+    MPI_Reduce(& M, &Ac_M_neighbors_total, 1, MPI_UNSIGNED, MPI_SUM, 0,  comm_horizontal);
+    MPI_Reduce(&nnz_l, &Ac_nnz_neighbors_total, 1, MPI_UNSIGNED, MPI_SUM, 0,  comm_horizontal);
+
+    if(rank_new == 0){
+         M = Ac_M_neighbors_total;
+         entry.resize(Ac_nnz_neighbors_total);
+        printf("rank = %d, Ac_M_neighbors = %d \n", rank, Ac_M_neighbors_total);
+        printf("rank = %d, Ac_nnz_neighbors = %d \n", rank, Ac_nnz_neighbors_total);
+    }
+
+    // last cpu that its right neighbors are going be shrinked to.
+    auto last_root_cpu = (unsigned int)floor(nprocs/ cpu_shrink_thre2) *  cpu_shrink_thre2;
+    printf("last_root_cpu = %u\n", last_root_cpu);
+    MPI_Barrier(comm);
+
+
+    int neigbor_rank;
+    unsigned int A_recv_nnz = 0; // set to 0 just to avoid "not initialized" warning
+    unsigned long offset =  nnz_l; // put the data on root from its neighbors at the end of entry[] which is of size nnz_l
+    if(nprocs_new > 1) { // if there is no neighbor, skip.
+        for (neigbor_rank = 1; neigbor_rank <  cpu_shrink_thre2; neigbor_rank++) {
+
+//            if( rank == last_root_cpu && (rank + neigbor_rank >= nprocs) )
+//                stop_forloop = true;
+            // last row of cpus should stop to avoid passing the last neighbor cpu.
+//            if( rank >= last_root_cpu){
+//                MPI_Bcast(&stop_forloop, 1, MPI_CXX_BOOL, 0, Ac->comm_horizontal);
+//                printf("rank = %d, neigbor_rank = %d, stop_forloop = %d \n", rank, neigbor_rank, stop_forloop);
+//                if (stop_forloop)
+//                    break;}
+
+            if( rank == last_root_cpu && (rank + neigbor_rank >= nprocs) )
+                break;
+
+            // 3 - send and receive size of Ac.
+            if (rank_new == 0)
+                MPI_Recv(&A_recv_nnz, 1, MPI_UNSIGNED, neigbor_rank, 0,  comm_horizontal, MPI_STATUS_IGNORE);
+
+            if (rank_new == neigbor_rank)
+                MPI_Send(&nnz_l, 1, MPI_UNSIGNED, 0, 0,  comm_horizontal);
+
+            // 4 - send and receive Ac.
+            if (rank_new == 0) {
+//                printf("rank = %d, neigbor_rank = %d, recv size = %u, offset = %lu \n", rank, neigbor_rank, A_recv_nnz, offset);
+                MPI_Recv(&*( entry.begin() + offset), A_recv_nnz, cooEntry::mpi_datatype(), neigbor_rank, 1,
+                          comm_horizontal, MPI_STATUS_IGNORE);
+                offset += A_recv_nnz; // set offset for the next iteration
+            }
+
+            if (rank_new == neigbor_rank) {
+//                printf("rank = %d, neigbor_rank = %d, send size = %u, offset = %lu \n", rank, neigbor_rank, Ac->nnz_l, offset);
+                MPI_Send(&*entry.begin(),  nnz_l, cooEntry::mpi_datatype(), 0, 1,  comm_horizontal);
+            }
+
+            // update local index for rows
+//        if(rank_new == 0)
+//            for(i=0; i < A_recv_nnz; i++)
+//                Ac->entry[offset + i].row += Ac->split[rank + neigbor_rank] - Ac->split[rank];
+        }
+    }
+
+    // even though the entries are sorted before shrinking, after shrinking they still need to be sorted locally,
+    // because remote elements damage sorting after shrinking.
+    std::sort( entry.begin(),  entry.end());
+
+//    MPI_Barrier(comm); MPI_Barrier(Ac->comm_horizontal);
+//    if(rank == 2){
+//        std::cout << "\nafter shrinking: rank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
+//        for(i=0; i < Ac->entry.size(); i++)
+//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;}
+//    MPI_Barrier(comm); MPI_Barrier(Ac->comm_horizontal);
+
+     active = false;
+//    Ac->active_old_comm = true; // this is used for prolong and post-smooth
+    if(rank_new == 0){
+         active = true;
+//        printf("active: rank = %d, rank_new = %d \n", rank, rank_new);
+    }
+
+    // 5 - create a new comm including only processes with 4k rank.
+    MPI_Group bigger_group;
+    MPI_Comm_group(comm, &bigger_group);
+    auto total_active_procs = (unsigned int)ceil((double)nprocs /  cpu_shrink_thre2); // note: this is ceiling, not floor.
+    std::vector<int> ranks(total_active_procs);
+    for(unsigned int i = 0; i < total_active_procs; i++)
+        ranks[i] =  cpu_shrink_thre2 * i;
+//        ranks.push_back(Ac->cpu_shrink_thre2 * i);
+
+//    printf("total_active_procs = %u \n", total_active_procs);
+//    for(i=0; i<ranks.size(); i++)
+//        if(rank==0) std::cout << ranks[i] << std::endl;
+
+    MPI_Group group_new;
+    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
+    MPI_Comm_create_group(comm, group_new, 0, & comm);
+
+//    if(Ac->active) {
+//        int rankkk;
+//        MPI_Comm_rank(Ac->comm, &rankkk);
+//        MPI_Barrier(Ac->comm);
+//        if (rankkk == 4) {
+//                std::cout << "\ninside cpu_shrink, after shrinking" << std::endl;
+//            std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() << std::endl;
+//            for (i = 0; i < Ac->entry.size(); i++)
+//                std::cout << i << "\t" << Ac->entry[i] << std::endl;}
+//        MPI_Barrier(Ac->comm);
+//    }
+
+    // 6 - update 4k.nnz_l and split. nnz_g stays the same, so no need to update.
+    split.clear();
+    if(active){
+        nnz_l =  entry.size();
+        split_old =  split; // save the old split for shrinking rhs and u
+        split.resize(total_active_procs+1);
+        split.shrink_to_fit();
+        split[0] = 0;
+        split[total_active_procs] = Mbig;
+        for(unsigned int i = 1; i < total_active_procs; i++){
+//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
+            split[i] = split_old[ranks[i]];
+        }
+    }
+
+    // 7 - update 4k.nnz_g
+//    if(Ac->active)
+//        MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, Ac->comm);
+
+//    if(Ac->active){
+//        MPI_Comm_size(Ac->comm, &nprocs);
+//        MPI_Comm_rank(Ac->comm, &rank);
+//        printf("\n\nrank = %d, nprocs = %d, M = %u, nnz_l = %u, nnz_g = %u, Ac->split[rank+1] = %lu, Ac->split[rank] = %lu \n",
+//               rank, nprocs, Ac->M, Ac->nnz_l, Ac->nnz_g, Ac->split[rank+1], Ac->split[rank]);
+//    }
+
+    // todo: how should these be freed?
+//    free(&bigger_group);
+//    free(&group_new);
+//    free(&comm_new2);
+
+     last_M_shrink =  Mbig;
+     shrinked = true;
+    return 0;
+}
+*/
+
+
+int saena_matrix::shrink_cpu(){
+
+    // if number of rows on Ac < threshold*number of rows on A, then shrink.
+    // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+//    unsigned long i;
+    bool verbose_shrink = false;
+
+    MPI_Barrier(comm);
+    if(rank==0) printf("\n****************************\n");
+    if(rank==0) printf("***********SHRINK***********\n");
+    if(rank==0) printf("****************************\n\n");
+    MPI_Barrier(comm);
+
+//    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, nnz_l); MPI_Barrier(comm);
+
+//    MPI_Barrier(comm);
+//    if(rank == 0){
+//        std::cout << "\nbefore shrinking!!!" <<std::endl;
+//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
+//        for(i=0; i < Ac->entry.size(); i++)
+//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
+//    }
+//    MPI_Barrier(comm);
+//    if(rank == 1){
+//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
+//        for(i=0; i < Ac->entry.size(); i++)
+//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
+//    }
+//    MPI_Barrier(comm);
+//    if(rank == 2){
+//        std::cout << "\nbefore shrinking!!!" <<std::endl;
+//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
+//        for(i=0; i < Ac->entry.size(); i++)
+//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
+//    }
+//    MPI_Barrier(comm);
+
+    // assume cpu_shrink_thre2 is 4 (it is simpler to explain)
+    // 1 - create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
+    int color = rank / cpu_shrink_thre2;
+    MPI_Comm_split(comm, color, rank, &comm_horizontal);
+
+    int rank_new, nprocs_new;
+    MPI_Comm_size(comm_horizontal, &nprocs_new);
+    MPI_Comm_rank(comm_horizontal, &rank_new);
+
+    MPI_Barrier(comm_horizontal);
+    printf("rank = %d, rank_new = %d on Ac->comm_horizontal \n", rank, rank_new);
+/*
+    // 2 - update the number of rows on process 4k, and resize "entry".
+    unsigned int Ac_M_neighbors_total = 0;
+    unsigned int Ac_nnz_neighbors_total = 0;
+    MPI_Reduce(&M, &Ac_M_neighbors_total, 1, MPI_UNSIGNED, MPI_SUM, 0, comm_horizontal);
+    MPI_Reduce(&nnz_l, &Ac_nnz_neighbors_total, 1, MPI_UNSIGNED, MPI_SUM, 0, comm_horizontal);
+
+    if(rank_new == 0){
+        M = Ac_M_neighbors_total;
+        entry.resize(Ac_nnz_neighbors_total);
+//        printf("rank = %d, Ac_M_neighbors = %d \n", rank, Ac_M_neighbors_total);
+//        printf("rank = %d, Ac_nnz_neighbors = %d \n", rank, Ac_nnz_neighbors_total);
+    }
+
+    // last cpu that its right neighbors are going be shrinked to.
+    auto last_root_cpu = (unsigned int)floor(nprocs/cpu_shrink_thre2) * cpu_shrink_thre2;
+//    printf("last_root_cpu = %u\n", last_root_cpu);
+
+    int neigbor_rank;
+    unsigned int A_recv_nnz = 0; // set to 0 just to avoid "not initialized" warning
+    unsigned long offset = nnz_l; // put the data on root from its neighbors at the end of entry[] which is of size nnz_l
+    if(nprocs_new > 1) { // if there is no neighbor, skip.
+        for (neigbor_rank = 1; neigbor_rank < cpu_shrink_thre2; neigbor_rank++) {
+
+//            if( rank == last_root_cpu && (rank + neigbor_rank >= nprocs) )
+//                stop_forloop = true;
+            // last row of cpus should stop to avoid passing the last neighbor cpu.
+//            if( rank >= last_root_cpu){
+//                MPI_Bcast(&stop_forloop, 1, MPI_CXX_BOOL, 0, Ac->comm_horizontal);
+//                printf("rank = %d, neigbor_rank = %d, stop_forloop = %d \n", rank, neigbor_rank, stop_forloop);
+//                if (stop_forloop)
+//                    break;}
+
+            if( rank == last_root_cpu && (rank + neigbor_rank >= nprocs) )
+                break;
+
+            // 3 - send and receive size of Ac.
+            if (rank_new == 0)
+                MPI_Recv(&A_recv_nnz, 1, MPI_UNSIGNED, neigbor_rank, 0, comm_horizontal, MPI_STATUS_IGNORE);
+
+            if (rank_new == neigbor_rank)
+                MPI_Send(&nnz_l, 1, MPI_UNSIGNED, 0, 0, comm_horizontal);
+
+            // 4 - send and receive Ac.
+            if (rank_new == 0) {
+//                printf("rank = %d, neigbor_rank = %d, recv size = %u, offset = %lu \n", rank, neigbor_rank, A_recv_nnz, offset);
+                MPI_Recv(&*(entry.begin() + offset), A_recv_nnz, cooEntry::mpi_datatype(), neigbor_rank, 1,
+                         comm_horizontal, MPI_STATUS_IGNORE);
+                offset += A_recv_nnz; // set offset for the next iteration
+            }
+
+            if (rank_new == neigbor_rank) {
+//                printf("rank = %d, neigbor_rank = %d, send size = %u, offset = %lu \n", rank, neigbor_rank, Ac->nnz_l, offset);
+                MPI_Send(&*entry.begin(), nnz_l, cooEntry::mpi_datatype(), 0, 1, comm_horizontal);
+            }
+
+            // update local index for rows
+//        if(rank_new == 0)
+//            for(i=0; i < A_recv_nnz; i++)
+//                Ac->entry[offset + i].row += Ac->split[rank + neigbor_rank] - Ac->split[rank];
+        }
+    }
+
+    // even though the entries are sorted before shrinking, after shrinking they still need to be sorted locally,
+    // because remote elements damage sorting after shrinking.
+    std::sort(entry.begin(), entry.end());
+*/
+//    MPI_Barrier(comm); MPI_Barrier(Ac->comm_horizontal);
+//    if(rank == 2){
+//        std::cout << "\nafter shrinking: rank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
+//        for(i=0; i < Ac->entry.size(); i++)
+//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;}
+//    MPI_Barrier(comm); MPI_Barrier(Ac->comm_horizontal);
+
+    active = false;
+//    Ac->active_old_comm = true; // this is used for prolong and post-smooth
+    if(rank_new == 0){
+        active = true;
+        printf("active: rank = %d, rank_new = %d \n", rank, rank_new);
+    }
+/*
+    // 5 - update 4k.nnz_l and split. nnz_g stays the same, so no need to update.
+    if(active){
+        nnz_l = entry.size();
+        split_old = split; // save the old split for shrinking rhs and u
+        split.clear();
+        for(i = 0; i < nprocs+1; i++){
+//            if(rank==0) printf("P->splitNew[i] = %lu\n", P_splitNew[i]);
+            if( i % cpu_shrink_thre2 == 0){
+                split.push_back( P_splitNew[i] );
+            }
+        }
+        split.push_back( P_splitNew[nprocs] );
+        // assert M == split[rank+1] - split[rank]
+
+//        if(rank==0) {
+//            printf("Ac split after shrinking: \n");
+//            for (int i = 0; i < Ac->split.size(); i++)
+//                printf("%lu \n", Ac->split[i]);}
+    }
+*/
+    // 6 - create a new comm including only processes with 4k rank.
+    MPI_Group bigger_group;
+    MPI_Comm_group(comm, &bigger_group);
+    auto total_active_procs = (unsigned int)ceil((double)nprocs / cpu_shrink_thre2); // note: this is ceiling, not floor.
+    std::vector<int> ranks(total_active_procs);
+    for(unsigned int i = 0; i < total_active_procs; i++)
+        ranks[i] = cpu_shrink_thre2 * i;
+//        ranks.push_back(Ac->cpu_shrink_thre2 * i);
+
+//    MPI_Barrier(comm);
+//    printf("total_active_procs = %u \n", total_active_procs);
+//    for(i=0; i<ranks.size(); i++)
+//        if(rank==0) std::cout << ranks[i] << std::endl;
+
+    MPI_Group group_new;
+    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
+    MPI_Comm_create_group(comm, group_new, 0, &comm);
+
+//    if(Ac->active) {
+//        int rankkk;
+//        MPI_Comm_rank(Ac->comm, &rankkk);
+//        MPI_Barrier(Ac->comm);
+//        if (rankkk == 4) {
+//                std::cout << "\ninside cpu_shrink, after shrinking" << std::endl;
+//            std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() << std::endl;
+//            for (i = 0; i < Ac->entry.size(); i++)
+//                std::cout << i << "\t" << Ac->entry[i] << std::endl;}
+//        MPI_Barrier(Ac->comm);
+//    }
+
+    split.clear();
+    if(active){
+        split.resize(total_active_procs+1);
+        split.shrink_to_fit();
+        split[0] = 0;
+        split[total_active_procs] = Mbig;
+        for(unsigned int i = 1; i < total_active_procs; i++){
+            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
+            split[i] = split_old[ranks[i]];
+        }
+    }
+
+    MPI_Barrier(comm);
+    if(rank==0) {
+        printf("\nsplit:\n");
+        for (long i = 0; i < total_active_procs + 1; i++)
+            printf("%lu \n", split[i]);
+    }
+
+    // 7 - update 4k.nnz_g
+//    if(Ac->active)
+//        MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, Ac->comm);
+
+//    if(Ac->active){
+//        MPI_Comm_size(Ac->comm, &nprocs);
+//        MPI_Comm_rank(Ac->comm, &rank);
+//        printf("\n\nrank = %d, nprocs = %d, M = %u, nnz_l = %u, nnz_g = %u, Ac->split[rank+1] = %lu, Ac->split[rank] = %lu \n",
+//               rank, nprocs, Ac->M, Ac->nnz_l, Ac->nnz_g, Ac->split[rank+1], Ac->split[rank]);
+//    }
+
+    // todo: how should I free these?
+//    free(&bigger_group);
+//    free(&group_new);
+//    free(&comm_new2);
+
+    last_M_shrink = Mbig;
+//    shrinked = true;
+    return 0;
+}
 
 
 int saena_matrix::matrix_setup() {
@@ -1590,7 +2396,7 @@ int saena_matrix::matrix_setup() {
             printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l);
             MPI_Barrier(comm);
         }
-//        MPI_Barrier(comm); printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l);
+        MPI_Barrier(comm); printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l);
 
         assembled = true;
         freeBoolean = true; // use this parameter to know if destructor for SaenaMatrix class should free the variables or not.
@@ -2583,14 +3389,23 @@ int saena_matrix::matvec_timing(std::vector<double>& v, std::vector<double>& w, 
     MPI_Comm_rank(comm, &rank);
 
 //    if( v.size() != M ){
-//        printf("A.M != v.size() in matvec!!!\n");}
+//        printf("A.M != v.size() in matvec!!!\n");
+//        MPI_Finalize();
+//        return -1;}
+
+    MPI_Barrier(comm);
+    printf("rank %d: matvec step0! vIndexSize = %d \n", rank, vIndexSize);
 
     double t0_start = omp_get_wtime();
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
-    for(unsigned int i=0;i<vIndexSize;i++)
+    for(unsigned int i=0;i<vIndexSize;i++){
+//        if (rank == 0) printf("%u \t%lu  \t%f\n", i, vIndex[i], v[( vIndex[i] )]);
         vSend[i] = v[( vIndex[i] )];
+    }
     double t0_end = omp_get_wtime();// try this: rdtsc for timing
+
+//    printf("rank %d: matvec step1! \n", rank);
 
 /*    if (rank==0){
         std::cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << std::endl;
@@ -2613,7 +3428,7 @@ int saena_matrix::matvec_timing(std::vector<double>& v, std::vector<double>& w, 
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
     }
 
-//    MPI_Alltoallv(vSend, );
+//    printf("rank %d: matvec step2! \n", rank);
 
 /*    if (rank==0){
         std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
@@ -2638,6 +3453,8 @@ int saena_matrix::matvec_timing(std::vector<double>& v, std::vector<double>& w, 
     }
 
     double t1_end = omp_get_wtime();
+
+//    printf("rank %d: matvec step3! \n", rank);
 
     // Wait for the communication to finish.
 //    double t4_start = omp_get_wtime();
@@ -2673,6 +3490,8 @@ int saena_matrix::matvec_timing(std::vector<double>& v, std::vector<double>& w, 
         }
     }
 //    }
+
+//    printf("rank %d: matvec step4! \n", rank);
 
     double t2_end = omp_get_wtime();
 
@@ -2726,8 +3545,8 @@ int saena_matrix::matvec_timing_alltoall(std::vector<double>& v, std::vector<dou
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if( v.size() != M ){
-//        printf("A.M != v.size() in matvec!!!\n");}
+    if( v.size() != M ){
+        printf("A.M != v.size() in matvec!!!\n");}
 
     double t0_start = omp_get_wtime();
     // put the values of the vector in vSend, for sending to other processors
@@ -2742,22 +3561,8 @@ int saena_matrix::matvec_timing_alltoall(std::vector<double>& v, std::vector<dou
             std::cout << vSend[i] << std::endl;
     }*/
 
-    double t3_start = omp_get_wtime();
-    // iSend your data, and iRecv from others
-//    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
-//    MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
+//    double t3_start = omp_get_wtime();
 
-/*
-    //First place all recv requests. Do not recv from self.
-    for(int i = 0; i < numRecvProc; i++) {
-        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
-    }
-
-    //Next send the messages. Do not send to self.
-    for(int i = 0; i < numSendProc; i++) {
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
-    }
-*/
     double t4_start = omp_get_wtime();
     MPI_Alltoallv(&vSend[0], &sendCount[0], &sendCountScan[0], MPI_INT, &vecValues[0], &recvCount[0], &recvCountScan[0], MPI_INT, comm);
     double t4_end = omp_get_wtime();
@@ -2820,11 +3625,8 @@ int saena_matrix::matvec_timing_alltoall(std::vector<double>& v, std::vector<dou
         }
     }
 //    }
-
     double t2_end = omp_get_wtime();
-
-//    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
-    double t3_end = omp_get_wtime();
+//    double t3_end = omp_get_wtime();
 
     double time0_local = t0_end-t0_start;
     double time0;
@@ -2838,9 +3640,9 @@ int saena_matrix::matvec_timing_alltoall(std::vector<double>& v, std::vector<dou
     double time2;
     MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
 
-    double time3_local = t3_end-t3_start;
-    double time3;
-    MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
+//    double time3_local = t3_end-t3_start;
+//    double time3;
+//    MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
 
     double time4_local = t4_end-t4_start;
     double time4;
@@ -2849,7 +3651,7 @@ int saena_matrix::matvec_timing_alltoall(std::vector<double>& v, std::vector<dou
     time[0] += time0/nprocs;
     time[1] += time1/nprocs;
     time[2] += time2/nprocs;
-    time[3] += time3/nprocs;
+//    time[3] += time3/nprocs;
     time[4] += time4/nprocs;
 
 //    time[0] += time0_local;

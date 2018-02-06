@@ -27,7 +27,7 @@ private:
     bool freeBoolean = false; // use this parameter to know if destructor for SaenaMatrix class should free the variables or not.
     std::set<cooEntry> data_coo;
     std::vector<cooEntry> data_unsorted;
-    std::vector<unsigned long> data;
+    std::vector<cooEntry> data;
 
 public:
     std::vector<cooEntry> entry;
@@ -111,7 +111,7 @@ public:
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
     int cpu_shrink_thre1 = 60; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
-    int cpu_shrink_thre2 = 15;
+    int cpu_shrink_thre2 = 4;
     unsigned int last_M_shrink;
 
     float jacobi_omega = float(2.0/3);
@@ -147,6 +147,7 @@ public:
     int matrix_setup2();
 
     int repartition3(); // use this for repartitioning A's after they are created.
+    int shrink_cpu();
 
     int matvec(std::vector<double>& v, std::vector<double>& w);
     int matvec2(std::vector<double>& v, std::vector<double>& w);

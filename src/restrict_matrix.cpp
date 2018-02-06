@@ -33,7 +33,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     if(verbose_transposeP){
         MPI_Barrier(comm);
-        printf("rank = %d, R.Mbig = %u, R.nBig = %u, M = %u \n", rank, Mbig, Nbig, M);
+        printf("rank = %d, R.Mbig = %u, R.NBig = %u, M = %u \n", rank, Mbig, Nbig, M);
         MPI_Barrier(comm);
         printf("rank %d: transposeP part1\n", rank);
     }
@@ -92,19 +92,17 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //                cout << entry[iter].row << "\t" << entry[iter].col << "\t" << entry[iter].val << endl;}
 //    MPI_Barrier(comm);
 
+    // todo: try to add this.
+//    entry.shrink_to_fit();
+
     if(verbose_transposeP){
         MPI_Barrier(comm);
-        printf("rank %d: transposeP part3\n", rank);
+        printf("rank %d: transposeP part3-1\n", rank);
     }
 
     // *********************** assign remote part of restriction ************************
 
     MPI_Waitall(P->numRecvProc_t, requests, statuses);
-
-    if(verbose_transposeP){
-        MPI_Barrier(comm);
-        printf("rank %d: transposeP part4-1\n", rank);
-    }
 
 //    MPI_Barrier(comm);
 //    if(rank==1) cout << "vecValues_t:" << endl;
@@ -120,7 +118,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     if(verbose_transposeP){
         MPI_Barrier(comm);
-        printf("rank %d: transposeP part4-2\n", rank);
+        printf("rank %d: transposeP part3-2\n", rank);
     }
 
     MPI_Waitall(P->numSendProc_t, P->numRecvProc_t+requests, P->numRecvProc_t+statuses);
@@ -174,9 +172,6 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     row_local.clear();
     row_remote.clear();
     col_remote.clear();
-
-//    split;
-//    splitNew;
 
     // todo: sometimes nnz_l is 0. check if everything is fine.
     if(entry.size() != 0){

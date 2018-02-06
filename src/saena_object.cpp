@@ -1019,11 +1019,10 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //    MPI_Barrier(comm);
 
     // keep at least one root node on east proc
-//    if(aggArray.empty()){
+    if(aggArray.empty()){
 //        printf("aggArray push back rank = %d \n", rank);
-//        aggArray.push_back(0+S->split[rank]);
-//        aggregate[0] = 0+S->split[rank];
-//    }
+        aggArray.push_back(0+S->split[rank]);
+        aggregate[0] = 0+S->split[rank];}
 
     // *************************** update aggregate to new indices ****************************
 
@@ -2020,6 +2019,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //                          << ", division = " << (Ac->last_M_shrink / Ac->Mbig) << ", thre1 = " << A->cpu_shrink_thre1 << std::endl;
 //    MPI_Barrier(comm);
 
+/*
     if(shrink_cpu){
         if( (nprocs >= Ac->cpu_shrink_thre2) && (Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)) ){
 
@@ -2028,6 +2028,7 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //                              << ", mult = " << Ac->Mbig * A->cpu_shrink_thre1 << std::endl; MPI_Barrier(comm);
         }
     }
+*/
 
 //    if(Ac->active) {
 //        int rankkk;
@@ -2048,19 +2049,26 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
 
-    if(Ac->active) { // there is another if(active) in matrix_setup().
-        Ac->repartition3();
-        Ac->matrix_setup();
-        P->splitNew = Ac->split;
-        P->findLocalRemote();
-        R->transposeP(P);
-    }
+//    MPI_Barrier(comm); printf("coarsen: step 8-2: rank = %d\n", rank);
+//    if(Ac->active) { // there is another if(active) in matrix_setup().
+//        Ac->matrix_setup();
+//        MPI_Barrier(comm); printf("coarsen: step 8-3: rank = %d\n", rank);
+//    }
+
+//    Ac->repartition3();
+    Ac->matrix_setup();
+//    P->splitNew = Ac->split;
+//    P->findLocalRemote();
+//    R->transposeP(P);
+
+//    if(nprocs >= Ac->cpu_shrink_thre2)
+//        Ac->shrink_cpu();
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("end of coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
     return 0;
-} // end of SaenaObject::coarsen
+} // end of coarsen()
 
 
 int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac){
