@@ -408,10 +408,10 @@ int generate_rhs_old(std::vector<double> &rhs){
 
 bool row_major (const cooEntry& node1, const cooEntry& node2)
 {
-    if(node1.row > node2.row)
+    if(node1.row < node2.row)
         return (true);
     else if(node1.row == node2.row)
-        return(node1.col >= node2.col);
+        return(node1.col <= node2.col);
     else
         return false;
 }

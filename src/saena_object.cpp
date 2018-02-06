@@ -2055,11 +2055,11 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //        MPI_Barrier(comm); printf("coarsen: step 8-3: rank = %d\n", rank);
 //    }
 
-//    Ac->repartition3();
+    Ac->repartition3();
     Ac->matrix_setup();
-//    P->splitNew = Ac->split;
-//    P->findLocalRemote();
-//    R->transposeP(P);
+    P->splitNew = Ac->split;
+    P->findLocalRemote();
+    R->transposeP(P);
 
 //    if(nprocs >= Ac->cpu_shrink_thre2)
 //        Ac->shrink_cpu();
