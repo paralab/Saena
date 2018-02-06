@@ -1209,6 +1209,8 @@ int saena_matrix::repartition(){
     data.clear();
     data.shrink_to_fit();
 
+    std::sort(entry.begin(), entry.end());
+
     free(sendSizeArray);
     free(recvSizeArray);
     free(sOffset);
@@ -1355,8 +1357,11 @@ int saena_matrix::repartition2(){
 
     entry.clear();
     entry.resize(nnz_l_temp);
-    MPI_Alltoallv(&data[0], sendSizeArray, sOffset, cooEntry::mpi_datatype(), &entry[0], recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
     entry.shrink_to_fit();
+
+    MPI_Alltoallv(&data[0], sendSizeArray, sOffset, cooEntry::mpi_datatype(), &entry[0], recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
+
+    std::sort(entry.begin(), entry.end());
 
     // clear data and free memory.
     data.clear();
@@ -1703,10 +1708,10 @@ int saena_matrix::repartition3(){
 
     if(repartition_verbose && rank==0) printf("repartition3 - step 1!\n");
 
-//    MPI_Barrier(comm);
-//    printf("repartition3 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n",
-//           rank, Mbig, M, nnz_g, nnz_l);
-//    MPI_Barrier(comm);
+    MPI_Barrier(comm);
+    printf("repartition3 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n",
+           rank, Mbig, M, nnz_g, nnz_l);
+    MPI_Barrier(comm);
 
 //    last_M_shrink = Mbig;
 
@@ -1859,11 +1864,11 @@ int saena_matrix::repartition3(){
     split[nprocs] = Mbig;
     split_old = split;
 
-    if (rank==0){
-        std::cout << std::endl << "split:" << std::endl;
-        for(unsigned int i=0; i<nprocs+1; i++)
-            std::cout << split[i] << std::endl;
-        std::cout << std::endl;}
+//    if (rank==0){
+//        std::cout << std::endl << "split:" << std::endl;
+//        for(unsigned int i=0; i<nprocs+1; i++)
+//            std::cout << split[i] << std::endl;
+//        std::cout << std::endl;}
 
     H_g_scan.clear();
     H_g_scan.shrink_to_fit();
@@ -1900,8 +1905,55 @@ int saena_matrix::repartition3(){
         sendSizeArray[least_proc]++;
     }
 
-//    if (rank==4){
-//        std::cout << "sendSizeArray:" << std::endl;
+//    if (rank==5){
+//        std::cout << "sendSizeArray: " << rank << std::endl;
+//        for(long i=0;i<nprocs;i++)
+//            std::cout << sendSizeArray[i] << std::endl;}
+
+    // this part is for cpu shrinking. assign all the rows on non-root procs to their roots.
+    // ---------------------------------
+//    if( (nprocs >= cpu_shrink_thre2) && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) )
+    if(nprocs >= cpu_shrink_thre2){
+        shrinked = true;
+        double remainder;
+        int root_cpu = nprocs;
+        for(int proc = nprocs-1; proc > 0; proc--){
+            remainder = proc % cpu_shrink_thre2;
+//        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
+            if(remainder == 0)
+                root_cpu = proc;
+            else{
+                split[proc] = split[root_cpu];
+//                sendSizeArray[root_cpu] += sendSizeArray[proc];
+//                sendSizeArray[proc] = 0;
+            }
+        }
+        M = split[rank+1] - split[rank];
+    }
+
+//    if (rank==0){
+//        std::cout << std::endl << "split:" << std::endl;
+//        for(unsigned int i=0; i<nprocs+1; i++)
+//            std::cout << split[i] << std::endl;
+//        std::cout << std::endl;}
+
+    if(nprocs >= cpu_shrink_thre2){
+        double remainder;
+        int root_cpu = 0;
+        for(int proc = 0; proc < nprocs; proc++){
+            remainder = proc % cpu_shrink_thre2;
+//        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
+            if(remainder == 0)
+                root_cpu = proc;
+            else{
+                sendSizeArray[root_cpu] += sendSizeArray[proc];
+                sendSizeArray[proc] = 0;
+            }
+        }
+    }
+
+//    if (rank==5){
+//        std::cout << "sendSizeArray: " << rank << std::endl;
 //        for(long i=0;i<nprocs;i++)
 //            std::cout << sendSizeArray[i] << std::endl;}
 
