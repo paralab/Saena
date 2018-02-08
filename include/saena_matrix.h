@@ -100,18 +100,20 @@ public:
     std::vector<unsigned long> vElementRep_remote;
     double * w_buff; // for matvec3()
 
-    MPI_Comm comm;
-    MPI_Comm comm_horizontal;
-    MPI_Comm comm_old;
-    bool shrinked = false;
-
     bool add_duplicates = false;
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
 
+    MPI_Comm comm;
+    MPI_Comm comm_horizontal;
+    MPI_Comm comm_old;
+
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
-    int cpu_shrink_thre1 = 60; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
-    int cpu_shrink_thre2 = 4;
+
+    bool enable_shrink = true;
+    bool shrinked = false;
+    int cpu_shrink_thre1 = 2; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
+    int cpu_shrink_thre2 = 2;
     unsigned int last_M_shrink;
 
     float jacobi_omega = float(2.0/3);

@@ -33,15 +33,15 @@ int prolong_matrix::findLocalRemote(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     unsigned long i;
-
     arrays_defined = true;
 
-//    for(unsigned int i=0; i<nnz_l; i++){
-//        if(rank==0) cout << r[indices_p[i]] << "\t" << c[indices_p[i]] << "\t\t" << v[indices_p[i]] << endl;
-//        if(rank==0) cout << r[i] << "\t" << c[i] << "\t\t" << v[i] << "\t\t\t" << r[indices_p[i]] << "\t" << c[indices_p[i]] << "\t\t" << v[indices_p[i]] << endl;
-//    }
-
 //    printf("rank=%d \t P.nnz_l=%lu \t P.nnz_g=%lu \n", rank, nnz_l, nnz_g);
+
+//    MPI_Barrier(comm);
+//    if(rank==0)
+//        for(i=0; i<nnz_l; i++)
+//            std::cout << entry[i] << std::endl;
+//    MPI_Barrier(comm);
 
     long procNum;
     col_remote_size = 0; // number of remote columns

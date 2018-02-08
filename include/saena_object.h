@@ -9,7 +9,7 @@ class Grid;
 
 class saena_object {
 public:
-    int max_level = 1; // fine grid is level 0.
+    int max_level = 10; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 10;
     // coarsening will stop if the number of rows of last level divided by previous level is lower this value.
@@ -55,9 +55,10 @@ public:
     int set_repartition_rhs(std::vector<double>& rhs);
     int repartition_u(std::vector<double>& u);
     int repartition_back_u(std::vector<double>& u);
-    int shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_splitNew);
+//    int shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_splitNew);
     int shrink_rhs_u(Grid* grid, std::vector<double>& u, std::vector<double>& rhs);
     int unshrink_u(Grid* grid, std::vector<double>& u);
+    bool active(int l);
 
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);

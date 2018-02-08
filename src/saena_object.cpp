@@ -45,7 +45,7 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
 
 int saena_object::setup(saena_matrix* A) {
     int nprocs, rank;
-//    MPI_Comm_size(A->comm, &nprocs);
+    MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
     A->active_old_comm = true;
     bool verbose_setup = true;
@@ -55,28 +55,28 @@ int saena_object::setup(saena_matrix* A) {
     float row_reduction_local, row_reduction_min;
 
     if(verbose_setup)
-        if(rank==0) std::cout << "_____________________________\n\n" << "size of matrix level 0: " << A->Mbig
-                              << "\nnnz level 0: " << A->nnz_g << std::endl;
+        if(rank==0){
+            printf("_____________________________\n\n");
+            printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %d \n",
+                   nprocs, A->Mbig, A->nnz_g);}
 
     grids.resize(max_level+1);
     grids[0] = Grid(A, max_level, 0); // pass A to grids[0]
-//    MPI_Comm_dup(A->comm, &grids[0].comm);
     for(i = 0; i < max_level; i++){
 //        MPI_Barrier(grids[0].A->comm); printf("rank = %d, level setup; before if\n", rank); MPI_Barrier(grids[0].A->comm);
         if(grids[i].A->active) {
-//            MPI_Barrier(grids[i].A->comm); printf("before level setup\n"); MPI_Barrier(grids[i].A->comm);
+//            MPI_Barrier(grids[i].A->comm); printf("rank %d before level setup\n", rank); MPI_Barrier(grids[i].A->comm);
             level_setup(&grids[i]); // create P, R and Ac for grid[i]
 //            MPI_Barrier(grids[i].A->comm); printf("after level setup\n"); MPI_Barrier(grids[i].A->comm);
             grids[i + 1] = Grid(&grids[i].Ac, max_level, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i])
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
-//            if (grids[i + 1].A->active) MPI_Comm_dup(grids[i + 1].A->comm, &grids[i + 1].comm);
 
             if (verbose_setup)
-                if (rank == 0)
-                    std::cout << "_____________________________\n\n" << "size of matrix level "
-                              << grids[i + 1].currentLevel << ": " << grids[i + 1].A->Mbig
-                              << "\nnnz level " << grids[i + 1].currentLevel << ": " << grids[i + 1].A->nnz_g
-                              << std::endl;
+                if (rank == 0){
+                    MPI_Comm_size(grids[i].Ac.comm, &nprocs);
+                    printf("_____________________________\n\n");
+                    printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %d \n",
+                           grids[i + 1].currentLevel, nprocs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g);}
 
             // decide if next level for multigrid is required or not.
             // threshold to set maximum multigrid level
@@ -84,7 +84,6 @@ int saena_object::setup(saena_matrix* A) {
                 if(grids[i].Ac.active) {
                     MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
                     row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
-
 //                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
 //                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
 
@@ -92,13 +91,13 @@ int saena_object::setup(saena_matrix* A) {
 //                if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
                     // todo: talk to Hari about least_row_threshold and row_reduction.
 //                if ((M_current < least_row_threshold) || (row_reduction_min > row_reduction_threshold) || (grids[i].Ac.Mbig*300 < grids[0].A->Mbig) ) {
-//                    if ((M_current < least_row_threshold) || (row_reduction_min > row_reduction_threshold) ) {
-                    if ( (row_reduction_min > row_reduction_threshold) ){
+                    if ((M_current < least_row_threshold) || (row_reduction_min > row_reduction_threshold) ) {
+//                    if ( (row_reduction_min > row_reduction_threshold) ){
                         max_level = grids[i].currentLevel + 1;
                         grids.resize(max_level);
 
                         // delete the coarsest level, if the size is not resuced much.
-                        if (row_reduction_min > row_reduction_threshold || (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig) ) {
+                        if (row_reduction_min > row_reduction_threshold) {
                             grids.pop_back();
                             max_level--;
                             // todo: when destroy() is written, delete P and R by that.
@@ -119,7 +118,7 @@ int saena_object::setup(saena_matrix* A) {
 
     if(verbose_setup) if(rank==0){
             printf("_____________________________\n\n");
-            printf("number of levels = %d (the finest level is 0)\n", max_level);
+            printf("number of levels = << %d >> (the finest level is 0)\n", max_level);
             printf("\n******************************************************\n");
         }
 
@@ -138,7 +137,6 @@ int saena_object::level_setup(Grid* grid){
 
     // **************************** find_aggregation ****************************
 
-    // todo: think about a parameter for making the aggregation less or more aggressive.
     std::vector<unsigned long> aggregate(grid->A->M);
     double t1 = MPI_Wtime();
     find_aggregation(grid->A, aggregate, grid->P.splitNew);
@@ -258,7 +256,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if(rank==0) std::cout << "M = " << A->M << ", nnz_l = " << A->nnz_l << std::endl;
+//    printf("inside strength: rank %d: A->M = %d \tA->nnz_l = %d \n", rank, A->M, A->nnz_l);
 
     // ******************************** compute max per row ********************************
 
@@ -471,13 +469,12 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
         }
     }
 
-//    if(rank==1)
+//    if(rank==0){
 //        for(i=0; i<Si2.size(); i++){
-//            std::cout << "S:  " << "[" << (Si2[i] - A->split[rank]) << "," << Sj2[i] << "] = \t" << Sval2[i] << std::endl;
-//        }
+//            std::cout << "S[" << (Si2[i] - A->split[rank]) << "," << Sj2[i] << "] = \t" << Sval2[i] << std::endl;}}
 
     // S indices are local on each process, which means it starts from 0 on each process.
-    S->strength_matrix_set(&(*(Si2.begin())), &(*(Sj2.begin())), &(*(Sval2.begin())), A->M, A->Mbig, Si2.size(), &(*(A->split.begin())), comm);
+    S->strength_matrix_set(&*Si2.begin(), &*Sj2.begin(), &*Sval2.begin(), A->M, A->Mbig, Si2.size(), &*A->split.begin(), comm);
 
     return 0;
 } // end of SaenaObject::createStrengthMatrix
@@ -532,13 +529,13 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         for (i = 0; i < size; ++i)
             std::cout << i << "\tinitialWeight = " << initialWeight[i] << std::endl;}
     MPI_Barrier(comm);
-
 */
+
     const int wOffset = 62;
     const unsigned long weightMax = (1UL<<wOffset) - 1;
     const unsigned long UNDECIDED = 1UL<<wOffset;
     const unsigned long ROOT = 1UL<<(wOffset+1);
-    const unsigned long UNDECIDED_OR_ROOT = 3UL<<wOffset;
+//    const unsigned long UNDECIDED_OR_ROOT = 3UL<<wOffset;
     unsigned long weightTemp, aggregateTemp, aggStatusTemp;
     int* root_distance = (int*)malloc(sizeof(int)*size);
     // root_distance is initialized to 3(11). root = 0 (00), 1-distance root = 1 (01), 2-distance root = 2 (10).
@@ -895,7 +892,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //        if(rank==0) std::cout << "******************** Update Status ********************" << std::endl;
         for (i = 0; i < size; ++i) {
             if(weight[i]&UNDECIDED) {
-//                if(rank==0) std::cout << "checking " << i << "\taggregate[i] = " << aggregate[i] << std::endl;
+//                if(rank==1) std::cout << "checking " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << std::endl;
                 // local
                 if (aggregate[i] >= S->split[rank] && aggregate[i] < S->split[rank+1]) {
 //                    if(rank==1) std::cout << "i = " << i << "\taggregate[i] = " << aggregate[i] << "\taggStatus[aggregate[i]] = " << aggStatus[aggregate[i]] << std::endl;
@@ -1018,6 +1015,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //        std::cout << std::endl;}
 //    MPI_Barrier(comm);
 
+    // todo: remove this.
     // keep at least one root node on east proc
     if(aggArray.empty()){
 //        printf("aggArray push back rank = %d \n", rank);
@@ -1026,7 +1024,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 
     // *************************** update aggregate to new indices ****************************
 
-//    if(rank==2)
+//    if(rank==0)
 //        std::cout << std::endl << "S.M = " << S->M << ", S.nnz_l = " << S->nnz_l << ", S.nnz_l_local = " << S->nnz_l_local
 //             << ", S.nnz_l_remote = " << S->nnz_l_remote << std::endl << std::endl;
 
@@ -2056,10 +2054,15 @@ int saena_object::coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R
 //    }
 
     Ac->repartition3();
-    Ac->matrix_setup();
     P->splitNew = Ac->split;
     P->findLocalRemote();
     R->transposeP(P);
+    if(Ac->shrinked){
+        Ac->shrink_cpu();
+    }
+
+    if(Ac->active)
+        Ac->matrix_setup();
 
 //    if(nprocs >= Ac->cpu_shrink_thre2)
 //        Ac->shrink_cpu();
@@ -2379,7 +2382,7 @@ int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* 
     // ********** check for cpu shrinking **********
     // if number of rows on Ac < threshold*number of rows on A, then shrink.
     // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
-
+/*
     // todo: is this part required for coarsen2()?
     if( (nprocs >= Ac->cpu_shrink_thre2) && (Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)) ){
 
@@ -2390,7 +2393,7 @@ int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* 
 //                              << ", mult = " << Ac->Mbig * A->cpu_shrink_thre1 << std::endl;
 //        MPI_Barrier(comm);
     }
-
+*/
     // ********** setup matrix **********
 
     if(verbose_coarsen){
@@ -2787,7 +2790,7 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
         // **************************************** 1. pre-smooth ****************************************
 
-        MPI_Barrier(grid->A->comm);
+//        MPI_Barrier(grid->A->comm);
         t1 = MPI_Wtime();
 
         if(preSmooth)
@@ -2895,7 +2898,8 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
         for (i = 0; i < u.size(); i++)
             u[i] -= uCorr[i];
 
-        //    if(rank==1) std::cout << "\n6. correct: u -= uCorr, currentLevel = " << grid->currentLevel << std::endl;
+//        MPI_Barrier(grid->A->comm);
+//        if(rank==1) std::cout << "\n6. correct: u -= uCorr, currentLevel = " << grid->currentLevel << std::endl;
         //    if(rank==1)
         //        for(i=0; i<u.size(); i++)
         //            std::cout << u[i] << std::endl;
@@ -2906,7 +2910,8 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 
         // **************************************** 7. post-smooth ****************************************
 
-        MPI_Barrier(grid->A->comm);
+//        MPI_Barrier(grid->A->comm); printf("start post!!!!!!!!!!!!!!!!!!!!\n"); MPI_Barrier(grid->A->comm);
+
         t1 = MPI_Wtime();
 
         if(postSmooth)
@@ -3046,7 +3051,7 @@ int saena_object::solve_pcg(std::vector<double>& u){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     unsigned long i, j;
-    bool solve_verbose = false;
+    bool solve_verbose = true;
 
     // ************** check u size **************
 
@@ -4059,7 +4064,7 @@ int saena_object::repartition_back_u(std::vector<double>& u0){
     return 0;
 }
 
-
+/*
 int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_splitNew){
 
     // if number of rows on Ac < threshold*number of rows on A, then shrink.
@@ -4262,7 +4267,7 @@ int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_s
     Ac->shrinked = true;
     return 0;
 }
-
+*/
 
 int saena_object::shrink_rhs_u(Grid* grid, std::vector<double>& u, std::vector<double>& rhs){
 
@@ -4741,3 +4746,7 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<unsigned long>
     return 0;
 }
 
+
+bool saena_object::active(int l){
+    return grids[l].A->active;
+}
