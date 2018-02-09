@@ -4383,6 +4383,7 @@ int saena_matrix::find_eig() {
     MPI_Comm_size(comm, &nprocs);
 
     const El::Int n = Mbig;
+*/
 
     // *************************** serial ***************************
 
@@ -4396,7 +4397,7 @@ int saena_matrix::find_eig() {
 //    El::Matrix<El::Complex<double>> w(n,1);
 
     // *************************** parallel ***************************
-
+/*
     El::DistMatrix<double> A(n,n);
     El::Zero( A );
     A.Reserve(nnz_l);
@@ -4426,8 +4427,6 @@ int saena_matrix::find_eig() {
         if(w.Get(i,0).real() > eig_max_diagxA)
             eig_max_diagxA = w.Get(i,0).real();
 */
-
-
 
 //    if(rank==0) printf("eig_max = %f \n", eig_max_diagxA);
 

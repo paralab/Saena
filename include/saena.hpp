@@ -24,8 +24,12 @@ namespace saena {
         bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
         int assemble();
-        unsigned int get_num_local_rows();
         saena_matrix* get_internal_matrix();
+        unsigned int get_num_rows();
+        unsigned int get_num_local_rows();
+        unsigned long get_nnz();
+        unsigned long get_local_nnz();
+
         int erase();
         void destroy();
 

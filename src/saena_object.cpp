@@ -1,7 +1,3 @@
-//
-// Created by abaris on 3/14/17.
-//
-
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -2590,7 +2586,6 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<double
     return 0;
 }
 
-// int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vector<double>& b, int& max_iter, double& tol, MPI_Comm comm){
 /*
 int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vector<double>& b, int& max_iter, double& tol, MPI_Comm comm){
     int nprocs, rank;
@@ -2746,8 +2741,10 @@ int saena_object::vcycle(Grid* grid, std::vector<double>& u, std::vector<double>
 //                std::cout << "current level = " << grid->currentLevel << ", Solving the coarsest level!" << std::endl;
             t1 = MPI_Wtime();
 
-            solve_coarsest_CG(grid->A, u, rhs);
-//            solve_coarsest_Elemental(grid->A, u, rhs);
+            if(direct_solver == "CG")
+                solve_coarsest_CG(grid->A, u, rhs);
+            else if(direct_solver == "Elemental")
+                solve_coarsest_Elemental(grid->A, u, rhs);
 
             t2 = MPI_Wtime();
             func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";

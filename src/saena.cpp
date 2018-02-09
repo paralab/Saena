@@ -107,13 +107,27 @@ int saena::matrix::assemble() {
     return 0;
 }
 
-unsigned int saena::matrix::get_num_local_rows() {
-    return m_pImpl->M;
-}
 
 saena_matrix* saena::matrix::get_internal_matrix(){
     return m_pImpl;
 }
+
+unsigned int saena::matrix::get_num_rows(){
+    return m_pImpl->Mbig;
+}
+
+unsigned int saena::matrix::get_num_local_rows() {
+    return m_pImpl->M;
+}
+
+unsigned long saena::matrix::get_nnz(){
+    return m_pImpl->nnz_g;
+}
+
+unsigned long saena::matrix::get_local_nnz(){
+    return m_pImpl->nnz_l;
+}
+
 
 int saena::matrix::erase(){
     m_pImpl->erase();
@@ -135,7 +149,6 @@ int saena::matrix::add_duplicates(bool add) {
     }
     return 0;
 }
-
 
 // ******************************* options *******************************
 

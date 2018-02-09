@@ -19,6 +19,7 @@ public:
     std::string smoother = "chebyshev";
     int preSmooth  = 3;
     int postSmooth = 3;
+    std::string direct_solver = "CG"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
     float connStrength = 0.7; // connection strength parameter
     bool doSparsify = false;
     std::vector<Grid> grids;
