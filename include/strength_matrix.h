@@ -3,6 +3,9 @@
 
 #include <vector>
 
+//typedef unsigned int index_t;
+//typedef unsigned long nnz_t;
+
 class strength_matrix {
 public:
 //    std::vector<long>   rowIndex;

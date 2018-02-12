@@ -110,7 +110,7 @@ public:
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
-    bool enable_shrink = true;
+    bool enable_shrink = false;
     bool shrinked = false;
     int cpu_shrink_thre1 = 2; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
     int cpu_shrink_thre2 = 2;

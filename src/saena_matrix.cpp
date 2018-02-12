@@ -3035,11 +3035,10 @@ int saena_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
     for(unsigned int i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i] )];
 
-/*    if (rank==0){
-        std::cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << std::endl;
-        for(int i=0; i<vIndexSize; i++)
-            std::cout << vSend[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "\nvIndexSize=" << vIndexSize << ", vSend: rank=" << rank << std::endl;
+//        for(int i=0; i<vIndexSize; i++)
+//            std::cout << vSend[i] << std::endl;}
 
     // iSend your data, and iRecv from others
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
@@ -3055,14 +3054,8 @@ int saena_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
     }
 
-/*    if (rank==0){
-        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
-        for(int i=0; i<recvSize; i++)
-            std::cout << vecValues[i] << std::endl;
-    }*/
-
-    double* v_p = &v[0] - split[rank];
     // local loop
+    double* v_p = &v[0] - split[rank];
 //    std::fill(&*w.begin(), &*w.end(), 0);
 #pragma omp parallel
     {
@@ -3079,11 +3072,10 @@ int saena_matrix::matvec(std::vector<double>& v, std::vector<double>& w) {
     // Wait for the communication to finish.
     MPI_Waitall(numRecvProc, requests, statuses);
 
-/*    if (rank==1){
-        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
-        for(int i=0; i<recvSize; i++)
-            std::cout << vecValues[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
+//        for(int i=0; i<recvSize; i++)
+//            std::cout << vecValues[i] << std::endl;}
 
     // remote loop
     // todo: data race happens during "omp for" here, since the "for" loop splits based on the remote columns, but
