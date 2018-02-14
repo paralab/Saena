@@ -5,6 +5,10 @@
 #include <mpi.h>
 #include "aux_functions.h"
 
+typedef unsigned int index_t;
+typedef unsigned long nnz_t;
+typedef double value_t;
+
 class prolong_matrix {
 // A matrix of this class is ordered <<ONLY>> if it is defined in createProlongation function in saena_object.cpp.
 // Otherwise it can be ordered using the following line:
@@ -15,18 +19,18 @@ class prolong_matrix {
 private:
 
 public:
-    unsigned int Mbig = 0;
-    unsigned int Nbig = 0;
-    unsigned int M = 0;
-    unsigned long nnz_g = 0;
-    unsigned long nnz_l = 0;
+    index_t Mbig = 0;
+    index_t Nbig = 0;
+    index_t M = 0;
+    nnz_t nnz_g = 0;
+    nnz_t nnz_l = 0;
 
-    unsigned int nnz_l_local = 0;
-    unsigned int nnz_l_remote = 0;
-    unsigned long col_remote_size = 0; // this is the same as vElement_remote.size()
+    nnz_t nnz_l_local  = 0;
+    nnz_t nnz_l_remote = 0;
+    index_t col_remote_size = 0; // this is the same as vElement_remote.size()
 
-    std::vector<unsigned long> split;
-    std::vector<unsigned long> splitNew;
+    std::vector<index_t > split;
+    std::vector<index_t > splitNew;
 
 //    std::vector<unsigned long> row;
 //    std::vector<unsigned long> col;
@@ -35,38 +39,31 @@ public:
     std::vector<cooEntry> entry;
     std::vector<cooEntry> entry_local;
     std::vector<cooEntry> entry_remote;
-    std::vector<unsigned long> row_local;
-    std::vector<unsigned long> row_remote;
-    std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
+    std::vector<index_t> row_local;
+    std::vector<index_t> row_remote;
+    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
 //    std::vector<unsigned long> col_remote2; //original col index
 //    std::vector<double> values_local;
 //    std::vector<double> values_remote;
 //    std::vector<unsigned long> col_local;
 
-    std::vector<unsigned int> nnzPerRow_local;
-    std::vector<unsigned int> nnzPerRowScan_local;
-    std::vector<unsigned int> nnzPerCol_remote; //todo: number of columns is large!
-    std::vector<unsigned long> vElement_remote;
-    std::vector<unsigned long> vElement_remote_t;
-    std::vector<unsigned long> vElementRep_local;
-    std::vector<unsigned long> vElementRep_remote;
+    std::vector<index_t> nnzPerRow_local;
+    std::vector<index_t> nnzPerRowScan_local;
+    std::vector<index_t> nnzPerCol_remote; //todo: number of columns is large!
+    std::vector<index_t> vElement_remote;
+    std::vector<index_t> vElement_remote_t;
+    std::vector<index_t> vElementRep_local;
+    std::vector<index_t> vElementRep_remote;
 //    std::vector<unsigned int> nnz_row_remote;
 
     bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
     int vIndexSize;
     int vIndexSize_t;
-    std::vector<unsigned long> vIndex;
-//    double* vSend;
-    std::vector<double> vSend;
-
-//    cooEntry* vSend_t;
+    std::vector<index_t> vIndex;
+    std::vector<value_t> vSend;
     std::vector<cooEntry> vSend_t;
-//    double* vecValues;
-    std::vector<double> vecValues;
-//    cooEntry* vecValues_t;
+    std::vector<value_t> vecValues;
     std::vector<cooEntry> vecValues_t;
-//    int* vecValues2;
-//    unsigned long* recvIndex_t;
 
     std::vector<int> vdispls;
     std::vector<int> vdispls_t;
@@ -87,10 +84,8 @@ public:
     int numSendProc;
     int numSendProc_t;
 
-//    unsigned long* indicesP_local;
-    std::vector<unsigned long> indicesP_local;
-//    unsigned long* indicesP_remote;
-    std::vector<unsigned long> indicesP_remote;
+    std::vector<nnz_t> indicesP_local;
+    std::vector<nnz_t> indicesP_remote;
 
     MPI_Comm comm;
 
@@ -98,7 +93,7 @@ public:
     prolong_matrix(MPI_Comm com);
     ~prolong_matrix();
     int findLocalRemote();
-    int matvec(std::vector<double>& v, std::vector<double>& w);
+    int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
 };
 
 

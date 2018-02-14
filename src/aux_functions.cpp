@@ -198,13 +198,17 @@ std::ostream & operator<<(std::ostream & stream, const cooEntry & item) {
 }
 
 
-void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsigned int nnz_g, unsigned int initial_nnz_l, MPI_Comm comm){
+void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nnz_t initial_nnz_l, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
-    std::vector<unsigned long> data; // todo: change data from vector to malloc. then free it, when you are done repartitioning.
+    if(rank==0) printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    if(rank==0) printf("ERROR: change datatypes for function setIJV!!!");
+    if(rank==0) printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+    std::vector<unsigned long> data;
     data.resize(3 * initial_nnz_l); // 3 is for i and j and val
     unsigned long* datap = &(*(data.begin()));
 
@@ -232,11 +236,10 @@ void setIJV(char* file_name, unsigned int* I, unsigned int* J, double* V, unsign
 }
 
 
-int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm){
+int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, double* dot, MPI_Comm comm){
 
-    long i;
     double dot_l = 0;
-    for(i=0; i<r.size(); i++)
+    for(index_t i=0; i<r.size(); i++)
         dot_l += r[i] * s[i];
     MPI_Allreduce(&dot_l, dot, 1, MPI_DOUBLE, MPI_SUM, comm);
 
@@ -288,7 +291,7 @@ int print_time_average(double t1, double t2, std::string function_name, int iter
 
 //template <class T>
 //int SaenaObject::writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
-int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
+int writeVectorToFiled(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {
 
     // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
@@ -318,13 +321,14 @@ int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string 
 }
 
 
-int generate_rhs(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm) {
+int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm) {
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
     bool verbose_gen_rhs = true;
+
+    if(rank==0) printf("change datatypes for function generate_rhs!!!");
 
     if(verbose_gen_rhs){
         MPI_Barrier(comm);
@@ -385,20 +389,20 @@ int generate_rhs(std::vector<double> &rhs, unsigned int mx, unsigned int my, uns
 }
 
 
-int generate_rhs_old(std::vector<double> &rhs){
+int generate_rhs_old(std::vector<value_t>& rhs){
 
-    unsigned long size = rhs.size();
+    index_t size = rhs.size();
 
     //Type of random number distribution
-    std::uniform_real_distribution<double> dist(0, 1); //(min, max)
+    std::uniform_real_distribution<value_t> dist(0, 1); //(min, max)
     //Mersenne Twister: Good quality random number generator
     std::mt19937 rng;
     //Initialize with non-deterministic seeds
     rng.seed(std::random_device{}());
 
-    for (long i=0; i<size; i++){
+    for (index_t i=0; i<size; i++){
 //        rhs[i] = dist(rng);
-        rhs[i] = (double)(i+1) /100;
+        rhs[i] = (value_t)(i+1) /100;
 //        std::cout << i << "\t" << rhs[i] << std::endl;
     }
 

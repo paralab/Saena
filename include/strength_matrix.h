@@ -3,60 +3,56 @@
 
 #include <vector>
 
-//typedef unsigned int index_t;
-//typedef unsigned long nnz_t;
+typedef unsigned int index_t;
+typedef unsigned long nnz_t;
+typedef double value_t;
 
 class strength_matrix {
+
 public:
 //    std::vector<long>   rowIndex;
 //    std::vector<long>   col;
 //    std::vector<double> values;
 
-//    long*   rowIndex;
-//    long*   col;
-//    double* values;
-
-    unsigned long* split;
-
-    long M;
-    long Mbig;
-    long nnz_l;
+    index_t M    = 0;
+    index_t Mbig = 0;
+    nnz_t nnz_l  = 0;
 //    long nnz_g;
 //    double average_sparsity;
 
-    unsigned int nnz_l_local;
-    unsigned int nnz_l_remote;
-    unsigned long col_remote_size; // this is the same as vElement_remote.size()
+    nnz_t nnz_l_local  = 0;
+    nnz_t nnz_l_remote = 0;
+    index_t col_remote_size = 0; // this is the same as vElement_remote.size()
 
-    int vIndexSize;
-    unsigned long* vSend;
-//    int* vSend2;
-    unsigned long* vIndex;
-    unsigned long* vecValues;
-//    int* vecValues2;
-    std::vector<double> values_local;
-    std::vector<double> values_remote;
-    std::vector<unsigned long> row_local;
-    std::vector<unsigned long> row_remote;
-    std::vector<unsigned long> col_local;
-    std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
-    std::vector<unsigned long> col_remote2; //original col index
-    std::vector<unsigned int> nnzPerRow;
-    std::vector<unsigned int> nnzPerRow_local;
+    index_t vIndexSize = 0;
+    std::vector<index_t> vIndex;
+    std::vector<unsigned long> vSend;
+    std::vector<unsigned long> vecValues;
+
+    std::vector<index_t> split;
+
+    std::vector<value_t> values_local;
+    std::vector<value_t> values_remote;
+    std::vector<index_t> row_local;
+    std::vector<index_t> row_remote;
+    std::vector<index_t> col_local;
+    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
+    std::vector<index_t> col_remote2; //original col index
+    std::vector<nnz_t> nnzPerRow;
+    std::vector<nnz_t> nnzPerRow_local;
 //    std::vector<unsigned int> nnzPerRow_remote;
-    std::vector<unsigned int> nnz_col_remote;
-    std::vector<unsigned long> vElement_remote;
-    std::vector<unsigned long> vElementRep_local;
-    std::vector<unsigned long> vElementRep_remote;
-    unsigned long* indicesP_local;
-    unsigned long* indicesP_remote;
+    std::vector<nnz_t> nnz_col_remote;
+    std::vector<index_t> vElement_remote;
+    std::vector<index_t> vElementRep_local;
+    std::vector<index_t> vElementRep_remote;
+    std::vector<index_t> indicesP_local;
+    std::vector<index_t> indicesP_remote;
 
-//    std::vector<int> splitOffset;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
-    int recvSize;
-    int numRecvProc;
-    int numSendProc;
+    nnz_t recvSize = 0;
+    int numRecvProc = 0;
+    int numSendProc = 0;
     std::vector<int> recvProcRank;
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
@@ -64,8 +60,9 @@ public:
 
     MPI_Comm comm;
 
-//    StrengthMatrix(){}
-    int strength_matrix_set(unsigned long* row, unsigned long* col, double* values, long M, long Mbig, long nnzl, unsigned long* split, MPI_Comm com);
+//    strength_matrix(){}
+    int strength_matrix_set(std::vector<index_t>& row, std::vector<index_t>& col, std::vector<value_t >& values,
+                            index_t M, index_t Mbig, nnz_t nnzl, std::vector<index_t>& split, MPI_Comm com);
     ~strength_matrix();
     void print(int rank);
 };

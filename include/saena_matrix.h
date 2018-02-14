@@ -9,49 +9,53 @@
 
 /**
  * @author Majid
- * @breif Contains the basic structure to define coo matrices
+ * @breif Contains the basic structure for the Saena matrix calss (saena_matrix).
  *
  * */
 
-//template <class T>
-//T lower_bound2(T *left, T *right, T val);
-
-//class cooEntry;
+typedef unsigned int index_t;
+typedef unsigned long nnz_t;
+typedef double value_t;
 
 class saena_matrix {
 // A matrix of this class is ordered first column-wise, then row-wise.
 
 private:
-    bool read_from_file = false;
-    unsigned int initial_nnz_l;
-    bool freeBoolean = false; // use this parameter to know if destructor for SaenaMatrix class should free the variables or not.
     std::set<cooEntry> data_coo;
     std::vector<cooEntry> data_unsorted;
     std::vector<cooEntry> data;
 
+    nnz_t initial_nnz_l;
+    bool read_from_file = false;
+    bool freeBoolean = false; // use this parameter to know if destructor for SaenaMatrix class should free the variables or not.
+
+    bool verbose_saena_matrix = false;
+    bool repartition_verbose  = false;
+    bool verbose_matrix_setup = false;
+
 public:
     std::vector<cooEntry> entry;
 
-    unsigned int Mbig  = 0; // global number of rows
-    unsigned int M     = 0; // local number of rows
-    unsigned int nnz_g = 0; // global nnz
-    unsigned int nnz_l = 0; // local nnz
-    std::vector<unsigned long> split; // (row-wise) partition of the matrix between processes
-    std::vector<unsigned long> split_old;
+    index_t Mbig = 0; // global number of rows
+    index_t M    = 0; // local number of rows
+    nnz_t nnz_g  = 0; // global nnz
+    nnz_t nnz_l  = 0; // local nnz
+    std::vector<index_t> split; // (row-wise) partition of the matrix between processes
+    std::vector<index_t> split_old;
 
-    unsigned int nnz_l_local;
-    unsigned int nnz_l_remote;
-    unsigned long col_remote_size; // number of remote columns
-    std::vector<double> values_local;
-    std::vector<double> values_remote;
-    std::vector<unsigned long> row_local;
-    std::vector<unsigned long> row_remote;
-    std::vector<unsigned long> col_local;
-    std::vector<unsigned long> col_remote; // index starting from 0, instead of the original column index
-    std::vector<unsigned long> col_remote2; //original col index
-    std::vector<unsigned int> nnzPerRow_local; // todo: this is used for openmp part of saena_matrix.cpp
-    std::vector<unsigned int> nnzPerRow_local2; // todo: this is used for openmp part of saena_matrix.cpp
-    std::vector<unsigned int> nnzPerCol_remote; // todo: replace this. nnz Per Column is expensive.
+    nnz_t nnz_l_local;
+    nnz_t nnz_l_remote;
+    index_t col_remote_size; // number of remote columns
+    std::vector<value_t> values_local;
+    std::vector<value_t> values_remote;
+    std::vector<index_t> row_local;
+    std::vector<index_t> row_remote;
+    std::vector<index_t> col_local;
+    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
+    std::vector<index_t> col_remote2; //original col index
+    std::vector<nnz_t> nnzPerRow_local; // todo: this is used for openmp part of saena_matrix.cpp
+    std::vector<nnz_t> nnzPerRow_local2; // todo: this is used for openmp part of saena_matrix.cpp
+    std::vector<nnz_t> nnzPerCol_remote; // todo: replace this. nnz Per Column is expensive.
 //    std::vector<unsigned int> nnzPerRow;
 //    std::vector<unsigned int> nnzPerRow_remote;
 //    std::vector<unsigned int> nnzPerRowScan_local;
@@ -60,25 +64,24 @@ public:
 //    std::vector<unsigned int> nnzPerColScan_local;
 //    std::vector<unsigned int> nnz_row_remote;
 
-    std::vector<double> invDiag;
+    std::vector<value_t> invDiag;
 //    double norm1, normInf, rhoDA;
 
-    int vIndexSize;
-    long *vIndex;
-    double *vSend;
-    unsigned long *vSendULong;
-    double* vecValues;
-    unsigned long* vecValuesULong;
+    index_t vIndexSize;
+    std::vector<index_t> vIndex;
+    std::vector<value_t> vSend;
+    std::vector<value_t> vecValues;
+    std::vector<unsigned long> vSendULong;
+    std::vector<unsigned long> vecValuesULong;
 
-//    unsigned long* indicesP;
-    unsigned long* indicesP_local;
-    unsigned long* indicesP_remote;
+    std::vector<nnz_t> indicesP_local;
+    std::vector<nnz_t> indicesP_remote;
 
-    std::vector<int> vdispls;
-    std::vector<int> rdispls;
     int recvSize;
     int numRecvProc;
     int numSendProc;
+    std::vector<int> vdispls;
+    std::vector<int> rdispls;
     std::vector<int> recvCount;
     std::vector<int> recvCountScan;
     std::vector<int> sendCount;
@@ -89,16 +92,14 @@ public:
     std::vector<int> sendProcCount;
 
     unsigned int num_threads;
-//    unsigned int* iter_local_array;
-//    unsigned int* iter_remote_array;
-    std::vector<unsigned int> iter_local_array;
-    std::vector<unsigned int> iter_remote_array;
-    std::vector<unsigned int> iter_local_array2;
-    std::vector<unsigned int> iter_remote_array2;
-    std::vector<unsigned long> vElement_remote;
-    std::vector<unsigned long> vElementRep_local;
-    std::vector<unsigned long> vElementRep_remote;
-    double * w_buff; // for matvec3()
+    std::vector<nnz_t> iter_local_array;
+    std::vector<nnz_t> iter_remote_array;
+    std::vector<nnz_t> iter_local_array2;
+    std::vector<nnz_t> iter_remote_array2;
+    std::vector<index_t> vElement_remote;
+    std::vector<index_t> vElementRep_local;
+    std::vector<index_t> vElementRep_remote;
+    value_t *w_buff; // for matvec3()
 
     bool add_duplicates = false;
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
@@ -114,10 +115,10 @@ public:
     bool shrinked = false;
     int cpu_shrink_thre1 = 2; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
     int cpu_shrink_thre2 = 2;
-    unsigned int last_M_shrink;
+    index_t last_M_shrink;
 
     float jacobi_omega = float(2.0/3);
-    double eig_max_diagxA = 1.978148;
+    float eig_max_diagxA = 1.978148;
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
@@ -132,10 +133,10 @@ public:
 
     // The difference between set and set2 is that if there is a repetition, set will erase the previous one
     // and insert the new one, but in set2, the values of those entries will be added together.
-    int set(unsigned int row, unsigned int col, double val);
-    int set(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
-    int set2(unsigned int row, unsigned int col, double val);
-    int set2(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
+    int set(index_t row, index_t col, value_t val);
+    int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);
+    int set2(index_t row, index_t col, value_t val);
+    int set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);
 //    int set3(unsigned int row, unsigned int col, double val);
 //    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
 
@@ -151,20 +152,23 @@ public:
     int repartition3(); // use this for repartitioning A's after they are created.
     int shrink_cpu();
 
-    int matvec(std::vector<double>& v, std::vector<double>& w);
-    int matvec2(std::vector<double>& v, std::vector<double>& w);
-    int matvec3(std::vector<double>& v, std::vector<double>& w);
-    int matvec4(std::vector<double>& v, std::vector<double>& w);
-    int matvec_timing(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
-    int matvec_timing_alltoall(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
-    int matvec_timing2(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
-    int matvec_timing3(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
-    int matvec_timing4(std::vector<double>& v, std::vector<double>& w, std::vector<double>& time);
+    int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec2(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec3(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec4(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec5(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_timing(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+    int matvec_timing_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+    int matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+    int matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+    int matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+    int matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+    int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
 
-    int residual(std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& res);
-    int inverse_diag(std::vector<double>& x);
-    int jacobi(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp);
-    int chebyshev(int iter, std::vector<double>& u, std::vector<double>& rhs, std::vector<double>& temp, std::vector<double>& temp2);
+    int residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res);
+    int inverse_diag(std::vector<value_t>& x);
+    int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
+    int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
     int find_eig();
 
     int set_zero();

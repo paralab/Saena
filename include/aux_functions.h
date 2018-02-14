@@ -5,8 +5,13 @@
 #ifndef SAENA_AUXFUNCTIONS_H
 #define SAENA_AUXFUNCTIONS_H
 
+#include <iostream>
 #include <algorithm>
 #include <mpi.h>
+
+typedef unsigned int index_t;
+typedef unsigned long nnz_t;
+typedef double value_t;
 
 class strength_matrix;
 class saena_matrix;
@@ -15,10 +20,10 @@ class saena_matrix;
 class sort_indices
 {
 private:
-    unsigned long* mparr;
+    index_t *mparr;
 public:
-    sort_indices(unsigned long* parr) : mparr(parr) {}
-    bool operator()(unsigned long i, unsigned long j) const { return mparr[i]<mparr[j]; }
+    sort_indices(index_t *parr) : mparr(parr) {}
+    bool operator()(index_t i, index_t j) const { return mparr[i]<mparr[j]; }
 };
 
 
@@ -28,13 +33,13 @@ long lower_bound2(T *left, T *right, T val){
     T* first = left;
     while (left < right) {
         T *middle = left + (right - left) / 2;
-        if (*middle < val){
+
+        if (*middle < val)
             left = middle + 1;
-        }
-        else{
+        else
             right = middle;
-        }
     }
+
     if(val == *left){
         // when using on split, some procs have equal split value (M=0), so go to the next proc until M != 0.
 //        while(*left == *(left+1))
@@ -59,13 +64,13 @@ int randomVector4(std::vector<unsigned long>& V, long size);
 // the order of this class is called "Column-major order"
 class cooEntry{
 public:
-    unsigned long row;
-    unsigned long col;
-    double val;
+    index_t row;
+    index_t col;
+    value_t val;
 
     cooEntry(){}
 
-    cooEntry(unsigned long i, unsigned long j, double v){
+    cooEntry(index_t i, index_t j, value_t v){
         row = i;
         col = j;
         val = v;
@@ -142,13 +147,13 @@ bool row_major (const cooEntry& node1, const cooEntry& node2);
 // the order of this class is called "Row-major order"
 class cooEntry_row{
 public:
-    unsigned long row;
-    unsigned long col;
-    double val;
+    index_t row;
+    index_t col;
+    value_t val;
 
     cooEntry_row(){}
 
-    cooEntry_row(unsigned long i, unsigned long j, double v){
+    cooEntry_row(index_t i, index_t j, value_t v){
         row = i;
         col = j;
         val = v;
@@ -245,7 +250,7 @@ private:
     cooEntry* mparr;
 public:
     sort_indices2(cooEntry* parr) : mparr(parr) {}
-    bool operator()(unsigned long i, unsigned long j) const { return mparr[i].row < mparr[j].row; }
+    bool operator()(index_t i, index_t j) const { return mparr[i].row < mparr[j].row; }
 };
 
 
@@ -268,10 +273,10 @@ vector<size_t> sort_indices5(const vector<T> &v) {
 */
 
 
-void setIJV(char* file_name, unsigned int* I,unsigned int* J, double* V, unsigned int nnz_g, unsigned int initial_nnz_l, MPI_Comm comm);
+void setIJV(char* file_name, index_t* I,index_t* J, value_t* V, nnz_t nnz_g, nnz_t initial_nnz_l, MPI_Comm comm);
 
 
-int dotProduct(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm);
+int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, double* dot, MPI_Comm comm);
 
 
 double print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
@@ -280,12 +285,12 @@ double print_time(double t1, double t2, std::string function_name, MPI_Comm comm
 int print_time_average(double t1, double t2, std::string function_name, int iter, MPI_Comm comm);
 
 
-int writeVectorToFiled(std::vector<double>& v, unsigned long vSize, std::string name, MPI_Comm comm);
+int writeVectorToFiled(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm);
 
 
-int generate_rhs(std::vector<double>& rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
+int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm);
 
 
-int generate_rhs_old(std::vector<double>& rhs);
+int generate_rhs_old(std::vector<value_t>& rhs);
 
 #endif //SAENA_AUXFUNCTIONS_H
