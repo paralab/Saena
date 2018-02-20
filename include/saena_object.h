@@ -73,6 +73,7 @@ public:
     int shrink_rhs_u(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int unshrink_u(Grid* grid, std::vector<value_t>& u);
     bool active(int l);
+    int find_eig_Elemental(saena_matrix& A);
 
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);

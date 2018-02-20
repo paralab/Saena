@@ -118,7 +118,7 @@ public:
     index_t last_M_shrink;
 
     float jacobi_omega = float(2.0/3);
-    float eig_max_diagxA = 1.978148;
+    double eig_max_of_invdiagXA = 0; // the biggest eigenvalue of (A * invDiag(A)) to be used in chebyshev smoother
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
@@ -169,7 +169,6 @@ public:
     int inverse_diag(std::vector<value_t>& x);
     int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
     int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
-    int find_eig();
 
     int set_zero();
     int erase();

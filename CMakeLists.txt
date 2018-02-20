@@ -7,14 +7,14 @@
 #SET(CMAKE_CXX_COMPILER mpicxx)
 #SET(CMAKE_C_COMPILER mpicc)
 
-cmake_minimum_required(VERSION 2.8)
-project(Saena)
+cmake_minimum_required(VERSION 3.3)
+project(matvec003)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 #set(CMAKE_CXX_STANDARD 11)
 
 find_package(OpenMP)
-if (OPENMP_FOUND)
+if(OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
@@ -24,6 +24,7 @@ include_directories(${MPI_INCLUDE_PATH})
 
 include_directories(
         include
+        external/ietl
         external/usort/include
         external/pugixml/include
 
@@ -35,7 +36,7 @@ include_directories(
 
 add_subdirectory(external/Elemental-0.87.7)
 include_directories("${PROJECT_BINARY_DIR}/external/Elemental-0.87.7/elemental_install/include")
-#include_directories("${PROJECT_BINARY_DIR}/external/El/include")
+include_directories("${PROJECT_BINARY_DIR}/external/El/include")
 include_directories(${MPI_CXX_INCLUDE_PATH})
 
 set(SOURCE_FILES
@@ -73,18 +74,19 @@ set(SOURCE_FILES
         external/usort/src/binUtils.cpp
         external/usort/src/parUtils.cpp
         external/usort/src/sort_profiler.cpp
-        )
+        include/ietl_saena.h)
 
-add_executable(Saena ${SOURCE_FILES})
+add_executable(matvec003 ${SOURCE_FILES})
 
 if(MPI_COMPILE_FLAGS)
-    set_target_properties(Saena PROPERTIES
+    set_target_properties(matvec003 PROPERTIES
             COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 
 if(MPI_LINK_FLAGS)
-    set_target_properties(Saena PROPERTIES
+    set_target_properties(matvec003 PROPERTIES
             LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif()
 
-target_link_libraries(Saena ${MPI_LIBRARIES} El)
+target_link_libraries(matvec003 ${MPI_LIBRARIES} El lapack blas)
+#target_link_libraries(matvec003 ${MPI_LIBRARIES} lapack blas)

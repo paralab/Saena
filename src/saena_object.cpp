@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <set>
 #include <mpi.h>
+#include <cmath>
 
 #include <parUtils.h>
 #include "saena_object.h"
@@ -13,8 +14,8 @@
 #include "restrict_matrix.h"
 #include "aux_functions.h"
 #include "grid.h"
-//#include "El.hpp"
-
+#include "ietl_saena.h"
+#include "El.hpp"
 
 saena_object::saena_object(){
 //    maxLevel = max_lev-1;
@@ -55,16 +56,24 @@ int saena_object::setup(saena_matrix* A) {
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \n",
                    nprocs, A->Mbig, A->nnz_g);}
 
+    if(smoother=="chebyshev"){
+        saena_matrix& A_address = *A;
+        find_eig_Elemental(A_address);
+        find_eig(A_address);
+    }
+
     grids.resize(max_level+1);
     grids[0] = Grid(A, max_level, 0); // pass A to grids[0]
     for(i = 0; i < max_level; i++){
 //        MPI_Barrier(grids[0].A->comm); printf("rank = %d, level setup; before if\n", rank); MPI_Barrier(grids[0].A->comm);
         if(grids[i].A->active) {
-//            MPI_Barrier(grids[i].A->comm); printf("rank %d before level setup\n", rank); MPI_Barrier(grids[i].A->comm);
             level_setup(&grids[i]); // create P, R and Ac for grid[i]
-//            MPI_Barrier(grids[i].A->comm); printf("after level setup\n"); MPI_Barrier(grids[i].A->comm);
             grids[i + 1] = Grid(&grids[i].Ac, max_level, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i])
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
+            if(smoother=="chebyshev"){
+                find_eig_Elemental(grids[i].Ac);
+                find_eig(grids[i].Ac);
+            }
 
             if (verbose_setup)
                 if (rank == 0){
@@ -4751,4 +4760,72 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<index_t>& aggr
 
 bool saena_object::active(int l){
     return grids[l].A->active;
+}
+
+
+int saena_object::find_eig_Elemental(saena_matrix& A) {
+
+    int argc = 0;
+    char** argv = {NULL};
+//    El::Environment env( argc, argv );
+    El::Initialize( argc, argv );
+
+    int rank, nprocs;
+    MPI_Comm_rank(A.comm, &rank);
+    MPI_Comm_size(A.comm, &nprocs);
+
+    const El::Int n = A.Mbig;
+
+    // *************************** serial ***************************
+
+//    El::Matrix<double> A(n,n);
+//    El::Zero( A );
+//    for(unsigned long i = 0; i<nnz_l; i++)
+//        A(entry[i].row, entry[i].col) = entry[i].val * invDiag[entry[i].row];
+
+//    El::Print( A, "\nGlobal Elemental matrix (serial):\n" );
+
+//    El::Matrix<El::Complex<double>> w(n,1);
+
+    // *************************** parallel ***************************
+
+    El::DistMatrix<value_t> B(n,n);
+    El::Zero( B );
+    B.Reserve(A.nnz_l);
+    for(nnz_t i = 0; i < A.nnz_l; i++){
+//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \telemental\n",
+//                           i, entry[i].row, entry[i].val, invDiag[entry[i].row - split[rank]], entry[i].val*invDiag[entry[i].row - split[rank]]);
+//        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val * A.invDiag[A.entry[i].row - A.split[rank]]); // this is not A! each entry is multiplied by the same-row diagonal value.
+        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val);
+    }
+    B.ProcessQueues();
+//    El::Print( A, "\nGlobal Elemental matrix:\n" );
+
+    El::DistMatrix<El::Complex<value_t>> w(n,1);
+
+    // *************************** common part between serial and parallel ***************************
+
+    El::SchurCtrl<double> schurCtrl;
+    schurCtrl.time = false;
+//    schurCtrl.hessSchurCtrl.progress = true;
+//    El::Schur( A, w, V, schurCtrl ); //  eigenvectors will be saved in V.
+
+//    printf("before Schur!\n");
+    El::Schur( B, w, schurCtrl ); // eigenvalues will be saved in w.
+//    printf("after Schur!\n");
+//    MPI_Barrier(comm); El::Print( w, "eigenvalues:" ); MPI_Barrier(comm);
+
+    // todo: if the matrix is not symmetric, the eigenvalue will be a complex number.
+    A.eig_max_of_invdiagXA = fabs(w.Get(0,0).real());
+    for(index_t i = 1; i < n; i++) {
+//        std::cout << i << "\t" << w.Get(i, 0) << std::endl;
+        if (fabs(w.Get(i, 0).real()) > A.eig_max_of_invdiagXA)
+            A.eig_max_of_invdiagXA = fabs(w.Get(i, 0).real());
+    }
+
+    if(rank==0) printf("\nthe biggest eigenvalue is %f (Elemental) \n", A.eig_max_of_invdiagXA);
+
+    El::Finalize();
+
+    return 0;
 }
