@@ -262,7 +262,9 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
     create_strength_matrix(A, &S);
 //    S.print(0);
 
-    aggregation(&S, aggregate, splitNew);
+    std::vector<unsigned long> aggArray; // vector of root nodes.
+    aggregation(&S, aggregate, aggArray, splitNew);
+    aggregate_index_update(&S, aggregate, aggArray, splitNew);
 //    updateAggregation(aggregate, &aggSize);
 
     return 0;
@@ -499,7 +501,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
-int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew) {
+int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew) {
 
     // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
     // If there is not any root in distance-2, that node should become a root.
@@ -520,7 +522,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     unsigned long i, j;
     unsigned long size = S->M;
 
-    std::vector<unsigned long> aggArray; // vector of root nodes.
+//    std::vector<unsigned long> aggArray; // vector of root nodes.
     std::vector<unsigned long> aggregate2(size);
 //    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
     std::vector<unsigned long> weight(size);
@@ -1059,11 +1061,25 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //            std::cout << S->split[i] << "\t" << splitNew[i] << std::endl;
 //        std::cout << std::endl;}
 
+    return 0;
+}
+
+
+int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew){
     // ************* update aggregates' indices *************
     // check each node to see if it is assigned to a local or remote node.
     // if it is local then aggreagte [i] will be to the root's new index,
     // and if it is remote, then it will be add to aggregateRemote to communicate the new index for its root.
     // **********************************************************
+
+    MPI_Comm comm = S->comm;
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    unsigned long i, j;
+    unsigned long size = S->M;
 
     unsigned long procNum;
     std::vector<unsigned long> aggregateRemote;
@@ -1241,7 +1257,6 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     free(vIndex);
     return 0;
 }
-
 
 // Decoupled Aggregation - not complete
 /*
