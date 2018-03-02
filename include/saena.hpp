@@ -72,7 +72,7 @@ namespace saena {
     class amg {
     public:
         amg();
-        int set_matrix(saena::matrix* A);
+        int set_matrix(saena::matrix* A, saena::options* opts);
         int set_rhs(std::vector<value_t> rhs);
         saena_object* get_object();
         void save_to_file(char* name, unsigned long* agg); // to save aggregates to a file.

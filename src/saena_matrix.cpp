@@ -1938,7 +1938,8 @@ int saena_matrix::repartition3(){
     entry.resize(nnz_l);
     entry.shrink_to_fit();
 
-    MPI_Alltoallv(&entry_old[0], sendSizeArray, sOffset, cooEntry::mpi_datatype(), &entry[0], recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
+    MPI_Alltoallv(&entry_old[0], sendSizeArray, sOffset, cooEntry::mpi_datatype(),
+                  &entry[0],     recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
 
     free(sendSizeArray);
     free(recvSizeArray);
@@ -2396,6 +2397,7 @@ int saena_matrix::matrix_setup() {
     // before using this function these variables of saena_matrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
+    // todo: here: check if you can remove here. check if there is another if(active) before calling this function.
     if(active) {
         int nprocs, rank;
         MPI_Comm_size(comm, &nprocs);
@@ -2856,6 +2858,23 @@ int saena_matrix::matrix_setup() {
 
         w_buff = new value_t[num_threads*M];
 
+/*
+        nnz_t total_nnz_l_local;
+        nnz_t total_nnz_l_remote;
+        MPI_Allreduce(&nnz_l_local,  &total_nnz_l_local,  1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+        MPI_Allreduce(&nnz_l_remote, &total_nnz_l_remote, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+        if(rank==0) printf("\nMbig = %u, nnz_g = %lu, total_nnz_l_local = %lu (%% %.2f), total_nnz_l_remote = %lu (%% %.2f) \n",
+                           Mbig, nnz_g, total_nnz_l_local, ((float)total_nnz_l_local/(float)nnz_g), total_nnz_l_remote, ((float)total_nnz_l_remote/(float)nnz_g));
+
+//        printf("rank %d: col_remote_size = %u \n", rank, col_remote_size);
+        index_t col_remote_size_min, col_remote_size_ave, col_remote_size_max;
+        MPI_Allreduce(&col_remote_size,  &col_remote_size_min,  1, MPI_UNSIGNED, MPI_MIN, comm);
+        MPI_Allreduce(&col_remote_size,  &col_remote_size_ave,  1, MPI_UNSIGNED, MPI_SUM, comm);
+        MPI_Allreduce(&col_remote_size,  &col_remote_size_max,  1, MPI_UNSIGNED, MPI_MAX, comm);
+        if(rank==0) printf("\nremote_min = %u, remote_ave = %u, remote_max = %u \n",
+                           col_remote_size_min, (col_remote_size_ave/nprocs), col_remote_size_max);
+*/
+
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, done \n", rank);
@@ -3028,13 +3047,13 @@ int saena_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
 //        printf("A.M != v.size() in matvec!!!\n");}
 
 //    totalTime = 0;
-//    double t10 = MPI_Wtime();
+//    double t10 = omp_get_wtime();
 
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
     for(unsigned int i = 0; i < vIndexSize; i++)
         vSend[i] = v[( vIndex[i] )];
-//    double t20 = MPI_Wtime();
+//    double t20 = omp_get_wtime();
 //    time[0] += (t20-t10);
 
 /*    if (rank==0){
@@ -3043,7 +3062,7 @@ int saena_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
             std::cout << vSend[i] << std::endl;
     }*/
 
-//    double t13 = MPI_Wtime();
+//    double t13 = omp_get_wtime();
     // iSend your data, and iRecv from others
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
     MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
@@ -3065,7 +3084,7 @@ int saena_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
     }*/
 
 
-//    double t11 = MPI_Wtime();
+//    double t11 = omp_get_wtime();
     // local loop
     // ----------
     value_t* v_p = &v[0] - split[rank];
@@ -3085,7 +3104,7 @@ int saena_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
             w[row_local[indicesP_local[iter]]] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
     }
 
-//    double t21 = MPI_Wtime();
+//    double t21 = omp_get_wtime();
 //    time[1] += (t21-t11);
 
     // Wait for comm to finish
@@ -3101,7 +3120,7 @@ int saena_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
     // remote loop
     // -----------
 
-//    double t12 = MPI_Wtime();
+//    double t12 = omp_get_wtime();
 //#pragma omp parallel
 //    {
     unsigned int iter = iter_remote_array[omp_get_thread_num()];
@@ -3124,9 +3143,9 @@ int saena_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
     delete [] requests;
     delete [] statuses;
 
-//    double t22 = MPI_Wtime();
+//    double t22 = omp_get_wtime();
 //    time[2] += (t22-t12);
-//    double t23 = MPI_Wtime();
+//    double t23 = omp_get_wtime();
 //    time[3] += (t23-t13);
 
     return 0;
@@ -3143,13 +3162,13 @@ int saena_matrix::matvec3(std::vector<value_t>& v, std::vector<value_t>& w) {
 //        printf("A.M != v.size() in matvec!!!\n");}
 
 //    totalTime = 0;
-//    double t10 = MPI_Wtime();
+//    double t10 = omp_get_wtime();
 
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
     for(unsigned int i = 0; i < vIndexSize; i++)
         vSend[i] = v[( vIndex[i] )];
-//    double t20 = MPI_Wtime();
+//    double t20 = omp_get_wtime();
 //    time[0] += (t20-t10);
 
 /*    if (rank==0){
@@ -3158,7 +3177,7 @@ int saena_matrix::matvec3(std::vector<value_t>& v, std::vector<value_t>& w) {
             std::cout << vSend[i] << std::endl;
     }*/
 
-//    double t13 = MPI_Wtime();
+//    double t13 = omp_get_wtime();
     // iSend your data, and iRecv from others
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
     MPI_Status* statuses  = new MPI_Status[numSendProc+numRecvProc];
@@ -3179,7 +3198,7 @@ int saena_matrix::matvec3(std::vector<value_t>& v, std::vector<value_t>& w) {
             std::cout << vecValues[i] << std::endl;
     }*/
 
-//    double t11 = MPI_Wtime();
+//    double t11 = omp_get_wtime();
 
     // local loop
     value_t* v_p = &v[0] - split[rank];
@@ -3195,7 +3214,7 @@ int saena_matrix::matvec3(std::vector<value_t>& v, std::vector<value_t>& w) {
         }
     }
 
-//    double t21 = MPI_Wtime();
+//    double t21 = omp_get_wtime();
 //    time[1] += (t21-t11);
 
     // Wait for comm to finish.
@@ -3209,7 +3228,7 @@ int saena_matrix::matvec3(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     // remote loop
 
-//    double t12 = MPI_Wtime();
+//    double t12 = omp_get_wtime();
 //#pragma omp parallel
 //    {
     unsigned int iter = iter_remote_array[omp_get_thread_num()];
@@ -3232,9 +3251,9 @@ int saena_matrix::matvec3(std::vector<value_t>& v, std::vector<value_t>& w) {
     delete [] requests;
     delete [] statuses;
 
-//    double t22 = MPI_Wtime();
+//    double t22 = omp_get_wtime();
 //    time[2] += (t22-t12);
-//    double t23 = MPI_Wtime();
+//    double t23 = omp_get_wtime();
 //    time[3] += (t23-t13);
 
     return 0;
@@ -3251,13 +3270,13 @@ int saena_matrix::matvec4(std::vector<value_t>& v, std::vector<value_t>& w) {
 //        printf("A.M != v.size() in matvec!!!\n");}
 
 //    totalTime = 0;
-//    double t10 = MPI_Wtime();
+//    double t10 = omp_get_wtime();
 
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
     for(unsigned int i = 0; i < vIndexSize; i++)
         vSend[i] = v[( vIndex[i] )];
-//    double t20 = MPI_Wtime();
+//    double t20 = omp_get_wtime();
 //    time[0] += (t20-t10);
 
 //    if (rank==0){
@@ -3265,7 +3284,7 @@ int saena_matrix::matvec4(std::vector<value_t>& v, std::vector<value_t>& w) {
 //        for(int i=0; i<vIndexSize; i++)
 //            std::cout << vSend[i] << std::endl;}
 
-//    double t13 = MPI_Wtime();
+//    double t13 = omp_get_wtime();
     // iSend your data, and iRecv from others
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
     MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
@@ -3283,7 +3302,7 @@ int saena_matrix::matvec4(std::vector<value_t>& v, std::vector<value_t>& w) {
 //        for(int i=0; i<recvSize; i++)
 //            std::cout << vecValues[i] << std::endl;}
 
-//    double t11 = MPI_Wtime();
+//    double t11 = omp_get_wtime();
     // local loop
     w.assign(w.size(), 0);
     value_t* v_p = &v[0] - split[rank];
@@ -3292,7 +3311,7 @@ int saena_matrix::matvec4(std::vector<value_t>& v, std::vector<value_t>& w) {
     for (i = 0; i < nnz_l_local; ++i)
         w[row_local[i]] += values_local[i] * v_p[col_local[i]];
 
-//    double t21 = MPI_Wtime();
+//    double t21 = omp_get_wtime();
 //    time[1] += (t21-t11);
 
     // Wait for comm to finish.
@@ -3306,7 +3325,7 @@ int saena_matrix::matvec4(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     // remote loop
 
-//    double t12 = MPI_Wtime();
+//    double t12 = omp_get_wtime();
 //#pragma omp parallel
 //    {
     unsigned int iter = iter_remote_array[omp_get_thread_num()];
@@ -3329,9 +3348,9 @@ int saena_matrix::matvec4(std::vector<value_t>& v, std::vector<value_t>& w) {
     delete [] requests;
     delete [] statuses;
 
-//    double t22 = MPI_Wtime();
+//    double t22 = omp_get_wtime();
 //    time[2] += (t22-t12);
-//    double t23 = MPI_Wtime();
+//    double t23 = omp_get_wtime();
 //    time[3] += (t23-t13);
 */
     return 0;
@@ -4486,7 +4505,7 @@ int saena_matrix::inverse_diag(std::vector<value_t>& x) {
 int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp) {
 
 // Ax = rhs
-// u = u - (D^(-1))(Ax - rhs)
+// u = u - (D^(-1))(Au - rhs)
 // 1. B.matvec(u, one) --> put the value of matvec in one.
 // 2. two = one - rhs
 // 3. three = inverseDiag * two * omega
@@ -4496,17 +4515,7 @@ int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>
 //    MPI_Comm_rank(comm, &rank);
 
     for(int j = 0; j < iter; j++){
-//        printf("jacobi iter = %u \n", j);
-//    MPI_Barrier(comm);
-//    double t1 = MPI_Wtime();
-
         matvec(u, temp);
-
-//    double t2 = MPI_Wtime();
-//    print_time(t1, t2, "jacobi matvec time:", comm);
-
-//    MPI_Barrier(comm);
-//    t1 = MPI_Wtime();
 
 #pragma omp parallel for
         for(index_t i = 0; i < M; i++){
@@ -4514,9 +4523,6 @@ int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>
             temp[i] *= invDiag[i] * jacobi_omega;
             u[i]    -= temp[i];
         }
-
-//    t2 = MPI_Wtime();
-//    print_time(t1, t2, "jacobi forloop time:", comm);
     }
 
     return 0;

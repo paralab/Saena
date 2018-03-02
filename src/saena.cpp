@@ -252,7 +252,9 @@ saena::amg::amg(){
     m_pImpl = new saena_object();
 }
 
-int saena::amg::set_matrix(saena::matrix* A){
+int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
+    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->setup(A->get_internal_matrix());
     return 0;
 }

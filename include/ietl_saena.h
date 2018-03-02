@@ -22,6 +22,10 @@ int find_eig(Matrix& A){
     MPI_Comm_size(A.comm, &nprocs);
     MPI_Comm_rank(A.comm, &rank);
 
+    MPI_Barrier(A.comm);
+    if(rank==0) printf("\nstart of find_eig()\n");
+    MPI_Barrier(A.comm);
+
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++) {
 //        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], (A.values_local[i]*A.invDiag[A.row_local[i]] - A.entry[i].val * A.invDiag[A.entry[i].row - A.split[rank]]));
@@ -46,7 +50,7 @@ int find_eig(Matrix& A){
     ietl::lanczos<Matrix,Vecspace> lanczos(A,vec);
 
     // Creation of an iteration object:
-    int max_iter = 8*N;
+    int max_iter = 20; // default was 10*N
     double rel_tol = 500*std::numeric_limits<double>::epsilon();
     double abs_tol = std::pow(std::numeric_limits<double>::epsilon(),2./3);
     int n_highest_eigenval = 1;
@@ -94,6 +98,10 @@ int find_eig(Matrix& A){
 //
 //    for(unsigned long i = 0; i < A.nnz_l_remote; i++)
 //        A.values_remote[i] /= A.invDiag[A.row_remote[i]];
+
+    MPI_Barrier(A.comm);
+    if(rank==0) printf("end of find_eig()\n");
+    MPI_Barrier(A.comm);
 
     return 0;
 }
