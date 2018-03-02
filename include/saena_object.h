@@ -25,12 +25,12 @@ public:
     int preSmooth  = 3;
     int postSmooth = 3;
     std::string direct_solver = "CG"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
-    float connStrength = 0.7; // connection strength parameter: control coarsening aggressiveness
+    float connStrength = 0.4; // connection strength parameter: control coarsening aggressiveness
     bool doSparsify = false;
     std::vector<Grid> grids;
     int CG_max_iter = 200;
     double CG_tol = 1e-10;
-    bool repartition = true;
+    bool repartition = false;
     bool shrink_cpu = false;
     bool dynamic_levels = true;
 
@@ -51,7 +51,7 @@ public:
     int setup(saena_matrix* A);
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
-    int aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
+    int aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
     int coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);

@@ -21,11 +21,13 @@ int find_eig(Matrix& A){
     int nprocs, rank;
     MPI_Comm_size(A.comm, &nprocs);
     MPI_Comm_rank(A.comm, &rank);
+    bool verbose_eig = false;
 
-    MPI_Barrier(A.comm);
-    if(rank==0) printf("\nstart of find_eig()\n");
-    MPI_Barrier(A.comm);
-
+    if(verbose_eig) {
+        MPI_Barrier(A.comm);
+        if(rank==0) printf("\nstart of find_eig()\n");
+        MPI_Barrier(A.comm);
+    }
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++) {
 //        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], (A.values_local[i]*A.invDiag[A.row_local[i]] - A.entry[i].val * A.invDiag[A.entry[i].row - A.split[rank]]));
@@ -69,7 +71,11 @@ int find_eig(Matrix& A){
         eigen = lanczos.eigenvalues();
         err = lanczos.errors();
         multiplicity = lanczos.multiplicities();
-        if(rank==0) std::cout<<"\nnumber of iterations to compute the biggest eigenvalue: "<<iter.iterations()<<"\n";
+        if(verbose_eig) {
+            MPI_Barrier(A.comm);
+            if(rank==0) std::cout<<"\nnumber of iterations to compute the biggest eigenvalue: "<<iter.iterations()<<"\n";
+            MPI_Barrier(A.comm);
+        }
     }
     catch (std::runtime_error& e) {
         std::cout << e.what() << "\n";
@@ -87,8 +93,11 @@ int find_eig(Matrix& A){
 //            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
 //                      << multiplicity[i] << "\n";}
 
-    if(rank==0)
-        printf("the biggest eigenvalue is %f (IETL) \n", eigen.back());
+    if(verbose_eig) {
+        MPI_Barrier(A.comm);
+        if(rank==0) printf("the biggest eigenvalue is %f (IETL) \n", eigen.back());
+        MPI_Barrier(A.comm);
+    }
 
     A.eig_max_of_invdiagXA = eigen.back();
 
@@ -99,9 +108,11 @@ int find_eig(Matrix& A){
 //    for(unsigned long i = 0; i < A.nnz_l_remote; i++)
 //        A.values_remote[i] /= A.invDiag[A.row_remote[i]];
 
-    MPI_Barrier(A.comm);
-    if(rank==0) printf("end of find_eig()\n");
-    MPI_Barrier(A.comm);
+    if(verbose_eig) {
+        MPI_Barrier(A.comm);
+        if(rank==0) printf("end of find_eig()\n");
+        MPI_Barrier(A.comm);
+    }
 
     return 0;
 }

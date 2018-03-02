@@ -10,10 +10,8 @@ typedef double value_t;
 class strength_matrix {
 
 public:
-//    std::vector<long>   rowIndex;
-//    std::vector<long>   col;
-//    std::vector<double> values;
 
+//    MPI_Comm comm = MPI_COMM_WORLD;
     index_t M    = 0;
     index_t Mbig = 0;
     nnz_t nnz_l  = 0;
@@ -64,6 +62,7 @@ public:
     int strength_matrix_set(std::vector<index_t>& row, std::vector<index_t>& col, std::vector<value_t >& values,
                             index_t M, index_t Mbig, nnz_t nnzl, std::vector<index_t>& split, MPI_Comm com);
     ~strength_matrix();
+    int erase();
     void print(int rank);
 };
 

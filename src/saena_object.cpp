@@ -15,7 +15,7 @@
 #include "aux_functions.h"
 #include "grid.h"
 #include "ietl_saena.h"
-//#include "El.hpp"
+#include "El.hpp"
 
 
 saena_object::saena_object(){
@@ -58,12 +58,11 @@ int saena_object::setup(saena_matrix* A) {
                    nprocs, A->Mbig, A->nnz_g);}
 
     if(smoother=="chebyshev"){
-        if(rank==0) printf("compute eigenvalue!\n");
         saena_matrix& A_address = *A;
 
 //        double t1 = omp_get_wtime();
-//        find_eig_Elemental(A_address);
-        find_eig(A_address);
+        find_eig_Elemental(A_address);
+//        find_eig(A_address);
 //        double t2 = omp_get_wtime();
 //        if(verbose_level_setup) print_time(t1, t2, "find_eig() level 0: ", A->comm);
     }
@@ -78,8 +77,8 @@ int saena_object::setup(saena_matrix* A) {
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
             if(smoother=="chebyshev"){
 //                double t1 = omp_get_wtime();
-//                find_eig_Elemental(grids[i].Ac);
-                find_eig(grids[i].Ac);
+                find_eig_Elemental(grids[i].Ac);
+//                find_eig(grids[i].Ac);
 //                double t2 = omp_get_wtime();
 //                if(verbose_level_setup) print_time(t1, t2, "find_eig(): ", A->comm);
             }
@@ -99,9 +98,9 @@ int saena_object::setup(saena_matrix* A) {
                     row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
                     total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
 //                    if(rank==0) printf("row_reduction_min = %f, total_row_reduction = %f\n", row_reduction_min, total_row_reduction);
+//                    if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
 //                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
 //                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
-                    if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
 //                if(rank==0) printf("row_reduction_min = %f, row_reduction_threshold = %f \n", row_reduction_min, row_reduction_threshold);
 //                if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
                     // todo: talk to Hari about least_row_threshold and row_reduction.
@@ -148,13 +147,13 @@ int saena_object::level_setup(Grid* grid){
     MPI_Comm_size(grid->A->comm, &nprocs);
     MPI_Comm_rank(grid->A->comm, &rank);
 
-    if(verbose_level_setup){
-        MPI_Barrier(grid->A->comm);
-        printf("\n");
-        MPI_Barrier(grid->A->comm);
-        printf("rank = %d, start of level_setup: level = %d \n", rank, grid->currentLevel);
-        MPI_Barrier(grid->A->comm);
-    }
+//    if(verbose_level_setup){
+//        MPI_Barrier(grid->A->comm);
+//        printf("\n");
+//        MPI_Barrier(grid->A->comm);
+//        printf("rank = %d, start of level_setup: level = %d \n", rank, grid->currentLevel);
+//        MPI_Barrier(grid->A->comm);
+//    }
 
     // **************************** find_aggregation ****************************
 
@@ -254,16 +253,56 @@ int saena_object::level_setup(Grid* grid){
 
 
 int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew){
-//    int nprocs, rank;
+    // finding aggregation is written in an adaptive way. An aggregation is being created first. If it is too small,
+    // or too big it will be recreated until an aggregation with size within the acceptable range is produced.
+
+    int nprocs, rank;
 //    MPI_Comm_size(A->comm, &nprocs);
-//    MPI_Comm_rank(A->comm, &rank);
+    MPI_Comm_rank(A->comm, &rank);
 
     strength_matrix S;
     create_strength_matrix(A, &S);
 //    S.print(0);
 
+    float connStrength_temp = connStrength;
     std::vector<unsigned long> aggArray; // vector of root nodes.
-    aggregation(&S, aggregate, aggArray, splitNew);
+    bool continue_agg = true;
+    // new_size is the size of the new coarse matrix.
+    unsigned int new_size_local, new_size, division;
+
+    while(continue_agg){
+        aggregation(&S, aggregate, aggArray);
+        continue_agg = false;
+
+        new_size_local = aggArray.size();
+        MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, A->comm);
+        division = A->Mbig / new_size;
+        if(rank==0) printf("connStrength = %f, current size = %u, new size = %u,  division = %d\n",
+               connStrength, A->Mbig, new_size, division);
+
+        if( division > 6 ){
+            connStrength += 0.05;
+            if(connStrength > 0.95)
+                continue_agg = false;
+            else{
+                aggArray.clear();
+                continue_agg = true;
+                S.erase();
+                create_strength_matrix(A, &S);
+            }
+        } else if( division < 2 ){
+            connStrength -= 0.05;
+            if(connStrength < 0.2)
+                continue_agg = false;
+            else{
+                aggArray.clear();
+                continue_agg = true;
+                S.erase();
+                create_strength_matrix(A, &S);
+            }
+        }
+    }
+    connStrength = connStrength_temp;
     aggregate_index_update(&S, aggregate, aggArray, splitNew);
 //    updateAggregation(aggregate, &aggSize);
 
@@ -501,7 +540,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
-int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew) {
+int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray) {
 
     // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
     // If there is not any root in distance-2, that node should become a root.
@@ -1042,25 +1081,6 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //    for(i=0; i<aggArray.size(); i++)
 //        aggArray[i]--;
 
-    // ************* compute splitNew *************
-
-    splitNew.assign(nprocs+1, 0);
-    splitNew[rank] = aggArray.size();
-
-    std::vector<index_t> splitNewTemp(nprocs);
-    MPI_Allreduce(&splitNew[0], &splitNewTemp[0], nprocs, MPI_UNSIGNED, MPI_SUM, comm);
-
-    // do scan on splitNew
-    splitNew[0] = 0;
-    for(i=1; i<nprocs+1; i++)
-        splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
-
-//    if(rank==0){
-//        std::cout << "split and splitNew:" << std::endl;
-//        for(i=0; i<nprocs+1; i++)
-//            std::cout << S->split[i] << "\t" << splitNew[i] << std::endl;
-//        std::cout << std::endl;}
-
     return 0;
 }
 
@@ -1085,7 +1105,26 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
     std::vector<unsigned long> aggregateRemote;
     std::vector<unsigned int> recvProc;
 
-    // local
+    // ************* compute splitNew *************
+
+    splitNew.assign(nprocs+1, 0);
+    splitNew[rank] = aggArray.size();
+
+    std::vector<index_t> splitNewTemp(nprocs);
+    MPI_Allreduce(&splitNew[0], &splitNewTemp[0], nprocs, MPI_UNSIGNED, MPI_SUM, comm);
+
+    // do scan on splitNew
+    splitNew[0] = 0;
+    for(i=1; i<nprocs+1; i++)
+        splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
+
+//    if(rank==0){
+//        std::cout << "split and splitNew:" << std::endl;
+//        for(i=0; i<nprocs+1; i++)
+//            std::cout << S->split[i] << "\t" << splitNew[i] << std::endl;
+//        std::cout << std::endl;}
+
+    // local update
     // --------------
     bool* isAggRemote = (bool*)malloc(sizeof(bool)*size);
     for(i=0; i<size; i++){
@@ -1107,7 +1146,7 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 //        recvCount[procNum]++;
 //    }
 
-    // remote
+    // remote update
     // ------------
     int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
@@ -4749,7 +4788,7 @@ bool saena_object::active(int l){
 
 
 int saena_object::find_eig_Elemental(saena_matrix& A) {
-/*
+
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -4780,8 +4819,8 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
     for(nnz_t i = 0; i < A.nnz_l; i++){
 //        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \telemental\n",
 //                           i, entry[i].row, entry[i].val, invDiag[entry[i].row - split[rank]], entry[i].val*invDiag[entry[i].row - split[rank]]);
-//        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val * A.invDiag[A.entry[i].row - A.split[rank]]); // this is not A! each entry is multiplied by the same-row diagonal value.
-        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val);
+        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val * A.invDiag[A.entry[i].row - A.split[rank]]); // this is not A! each entry is multiplied by the same-row diagonal value.
+//        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val);
     }
     B.ProcessQueues();
 //    El::Print( A, "\nGlobal Elemental matrix:\n" );
@@ -4811,6 +4850,6 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
     if(rank==0) printf("\nthe biggest eigenvalue is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
-*/
+
     return 0;
 }

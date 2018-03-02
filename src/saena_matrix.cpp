@@ -38,7 +38,6 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
     struct stat st;
     stat(Aname, &st);
     nnz_g = st.st_size / (2*sizeof(index_t) + sizeof(value_t));
-//    nnz_g = st.st_size / 24;
 
     // find initial local nonzero
     initial_nnz_l = nnz_t(floor(1.0 * nnz_g / nprocs)); // initial local nnz
@@ -958,7 +957,7 @@ int saena_matrix::repartition(){
         else
             n_buckets = 1000*nprocs;
     }
-    else if(nprocs < Mbig){
+    else if(nprocs <= Mbig){
         n_buckets = Mbig;
     } else{ // nprocs > Mbig
         // it may be better to set nprocs=Mbig and work only with the first Mbig processors.
@@ -1658,29 +1657,20 @@ int saena_matrix::repartition3(){
 
     // *************************** find splitters ****************************
     // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
-
     // definition of buckets: bucket[i] = [ firstSplit[i] , firstSplit[i+1] ). Number of buckets = n_buckets
+    // ***********************************************************************
+
     int n_buckets = 0;
-
-//    if (Mbig > nprocs*nprocs){
-//        if (nprocs < 1000)
-//            n_buckets = nprocs*nprocs;
-//        else
-//            n_buckets = 1000*nprocs;
-//    }
-//    else
-//        n_buckets = Mbig;
-
     if (Mbig > nprocs*nprocs){
         if (nprocs < 1000)
             n_buckets = nprocs*nprocs;
         else
             n_buckets = 1000*nprocs;
     }
-    else if(nprocs < Mbig){
+    else if(nprocs <= Mbig){
         n_buckets = Mbig;
     } else{ // nprocs > Mbig
-        // it may be better to set nprocs=Mbig and work only with the first Mbig processors.
+        // todo: it may be better to set nprocs=Mbig and work with only the first Mbig processors.
         if(rank == 0)
             std::cout << "number of MPI tasks cannot be greater than the number of rows of the matrix." << std::endl;
         MPI_Finalize();

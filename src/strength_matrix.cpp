@@ -216,6 +216,7 @@ int strength_matrix::strength_matrix_set(std::vector<index_t> &r, std::vector<in
     return 0;
 }
 
+
 strength_matrix::~strength_matrix(){
 //    free(vIndex);
 //    free(vSend);
@@ -226,6 +227,48 @@ strength_matrix::~strength_matrix(){
 //    col.resize(0);
 //    values.resize(0);
 }
+
+
+int strength_matrix::erase(){
+    M    = 0;
+    Mbig = 0;
+    nnz_l  = 0;
+    nnz_l_local  = 0;
+    nnz_l_remote = 0;
+    col_remote_size = 0;
+    vIndexSize = 0;
+    recvSize = 0;
+    numRecvProc = 0;
+    numSendProc = 0;
+
+    vIndex.clear();
+    vSend.clear();
+    vecValues.clear();
+    split.clear();
+    values_local.clear();
+    values_remote.clear();
+    row_local.clear();
+    row_remote.clear();
+    col_local.clear();
+    col_remote.clear();
+    col_remote2.clear();
+    nnzPerRow.clear();
+    nnzPerRow_local.clear();
+    nnz_col_remote.clear();
+    vElement_remote.clear();
+    vElementRep_local.clear();
+    vElementRep_remote.clear();
+    indicesP_local.clear();
+    indicesP_remote.clear();
+    vdispls.clear();
+    rdispls.clear();
+    recvProcRank.clear();
+    recvProcCount.clear();
+    sendProcRank.clear();
+    sendProcCount.clear();
+    return 0;
+}
+
 
 void strength_matrix::print(int r){
 //    int rank;
