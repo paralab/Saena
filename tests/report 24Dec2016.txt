@@ -1,9 +1,0 @@
-This is a report, since we have talked:
-
-1- I checked to have the latest version of CombBLAS, and I have done these experments with the latest one. I also checked the number of processors that I can use for CombBLAS for this version. It still should be a squared number. To make sure that I am using CombBLAS correctly, I checked a sample code for SpMV that they have in the library, and I followed that to do all experiments. I used the same one for previous experiments that I sent you.
-
-2- I generated 47 matrices in homg, both 2D and 3D with different sizes and orders to have a good collection of matrices for tests for now and also for future. I have their info in one text file, including: dimension, grid order and size, matrix size and nnz.
-
-3- I have tested my code using diferent numbers for number of tasks, to see if it works with all possible numbers. Some of them gave error. I found the bug and fixed it. I tested again for lots of different numbers. None errors so far. 
-
-4- I have done the experiments you asked me.
