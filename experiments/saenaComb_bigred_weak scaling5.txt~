@@ -1,0 +1,499 @@
+second chart:
+2D
+o1
+
+s:128x128
+16641x16641
+144153
+node:1
+ppn:32
+N:2 (number of processing elements on each node)
+d:16 (depth: number of threads on each processing element)
+
+aprun -n 32 -N 32 -d 1 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/16641s128x128o1.bin ~/majid/saenaComb/vectors/v16641.bin
+aprun -n 2 -N 2 -d 16 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/16641s128x128o1.bin ~/majid/saenaComb/vectors/v16641.bin
+aprun -n 1 -N 1 -d 32 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/16641s128x128o1.bin ~/majid/saenaComb/vectors/v16641.bin
+
+first one is 1 openmp thread, 32 processes
+second one is 16 openmp thread, 2 processes
+first one is 32 openmp thread, 1 process
+
+jobid:
+1546473
+
+number of procs=32, number of threads=1
+Setup in Saena took 0.162361 seconds!
+Saena matvec time: 0.000145352
+phase 0: 2.12669e-06
+phase 1: 4.77314e-06
+phase 2: 0.000138452
+
+1546474
+
+number of procs=2, number of threads=16
+Setup in Saena took 0.0819879 seconds!
+Saena matvec time: 0.000317698
+phase 0: 4.06599e-05
+phase 1: 3.71695e-06
+phase 2: 0.000273321
+
+1546476
+
+number of procs=1, number of threads=32
+Setup in Saena took 0.160809 seconds!
+Saena matvec time: 0.000508585
+phase 0: 7.45344e-05
+phase 1: 8.63075e-07
+phase 2: 0.000433187
+
+
+second time:
+1558120
+
+number of procs = 32, number of threads = 1
+Setup in Saena took 0.151162 seconds!
+Saena matvec time: 2.62499e-05
+phase 0: 1.0999e-06
+phase 1: 2.70844e-06
+phase 2: 2.24415e-05
+
+1558121
+
+number of procs = 2, number of threads = 16
+Setup in Saena took 0.089596 seconds!
+Saena matvec time: 0.000181783
+phase 0: 4.227e-05
+phase 1: 2.97387e-06
+phase 2: 0.000136539
+
+1558122
+exit
+1558635
+error
+
+----------------------------------------
+s:128x256
+33153x33153
+289945
+node:2
+ppn:32
+N:2 (number of processing elements on each node)
+d:16 (depth: number of threads on each processing element)
+-np:4 (number of MPI tasks)
+
+aprun -n 64 -N 32 -d 1 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/33153s128x256o1.bin ~/majid/saenaComb/vectors/v33153.bin
+aprun -n 4 -N 2 -d 16 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/33153s128x256o1.bin ~/majid/saenaComb/vectors/v33153.bin
+aprun -n 2 -N 1 -d 32 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/33153s128x256o1.bin ~/majid/saenaComb/vectors/v33153.bin
+
+jobid:
+1546556
+
+number of procs=64, number of threads=1
+Setup in Saena took 0.198411 seconds!
+Saena matvec time: 0.000145192
+phase 0: 2.11477e-06
+phase 1: 6.02007e-06
+phase 2: 0.000137057
+
+1546515
+
+number of procs=4, number of threads=16
+Setup in Saena took 0.102229 seconds!
+Saena matvec time: 0.00035634
+phase 0: 4.05192e-05
+phase 1: 4.33683e-05
+phase 2: 0.000272453
+
+1546516
+
+number of procs=2, number of threads=32
+Setup in Saena took 0.165282 seconds!
+Saena matvec time: 0.000518312
+phase 0: 7.58219e-05
+phase 1: 4.41074e-06
+phase 2: 0.00043808
+
+
+second time:
+1558636
+number of procs = 64, number of threads = 1
+Setup in Saena took 0.166705 seconds!
+Saena matvec time: 2.69222e-05
+phase 0: 1.20004e-06
+phase 1: 2.88645e-06
+phase 2: 2.28357e-05
+
+1558526
+
+number of procs = 4, number of threads = 16
+Setup in Saena took 0.166035 seconds!
+Saena matvec time: 0.000187241
+phase 0: 4.05057e-05
+phase 1: 1.31098e-05
+phase 2: 0.000133626
+
+1558527
+
+number of procs = 2, number of threads = 32
+Setup in Saena took 0.106991 seconds!
+Saena matvec time: 0.000356811
+phase 0: 7.49826e-05
+phase 1: 4.0706e-06
+phase 2: 0.000277758
+
+----------------------------------------
+s:256x256
+66049x66049
+583193
+node:4
+ppn:32
+N:2 (number of processing elements on each node)
+d:16 (depth: number of threads on each processing element)
+-np:8 (number of MPI tasks)
+
+aprun -n 128 -N 32 -d 1 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/66049s256x256o1.bin ~/majid/saenaComb/vectors/v66049.bin
+aprun -n 8 -N 2 -d 16 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/66049s256x256o1.bin ~/majid/saenaComb/vectors/v66049.bin
+aprun -n 4 -N 1 -d 32 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/66049s256x256o1.bin ~/majid/saenaComb/vectors/v66049.bin
+
+jobid:
+1546553
+
+number of procs=64, number of threads=1
+Setup in Saena took 0.214087 seconds!
+Saena matvec time: 0.000296688
+phase 0: 3.27587e-06
+phase 1: 2.11477e-05
+phase 2: 0.000272264
+
+1546554
+
+number of procs=8, number of threads=16
+Setup in Saena took 0.101137 seconds!
+Saena matvec time: 0.000326235
+phase 0: 4.39119e-05
+phase 1: 1.42622e-05
+phase 2: 0.000268061
+
+1546555
+
+number of procs=4, number of threads=32
+Setup in Saena took 0.203317 seconds!
+Saena matvec time: 0.000562279
+phase 0: 7.4389e-05
+phase 1: 5.18537e-05
+phase 2: 0.000436037
+
+
+second time:
+
+1558529
+
+number of procs = 128, number of threads = 1
+Setup in Saena took 0.225339 seconds!
+Saena matvec time: 3.13409e-05
+phase 0: 1.47978e-06
+phase 1: 9.29991e-06
+phase 2: 2.05612e-05
+
+1558530
+
+number of procs = 8, number of threads = 16
+Setup in Saena took 0.0700941 seconds!
+Saena matvec time: 0.000180739
+phase 0: 4.09301e-05
+phase 1: 4.64439e-06
+phase 2: 0.000135164
+
+1558531
+
+number of procs = 4, number of threads = 32
+Setup in Saena took 0.0367348 seconds!
+Saena matvec time: 0.000362337
+phase 0: 7.20119e-05
+phase 1: 1.03792e-05
+phase 2: 0.000279946
+
+
+third time:
+
+1558637
+number of procs = 128, number of threads = 1
+Setup in Saena took 0.181231 seconds!
+Saena matvec time: 2.99756e-05
+phase 0: 1.33197e-06
+phase 1: 5.49157e-06
+phase 2: 2.3152e-05
+
+1558638
+number of procs = 8, number of threads = 16
+Setup in Saena took 0.0234568 seconds!
+Saena matvec time: 0.000181991
+phase 0: 4.15293e-05
+phase 1: 4.15007e-06
+phase 2: 0.000136312
+
+1558639
+number of procs = 4, number of threads = 32
+Setup in Saena took 0.037266 seconds!
+Saena matvec time: 0.000365326
+phase 0: 7.40925e-05
+phase 1: 1.07272e-05
+phase 2: 0.000280506
+
+----------------------------------------
+s:2
+56x512
+131841x131841
+1169689
+node:8
+ppn:32
+N:2 (number of processing elements on each node)
+d:16 (depth: number of threads on each processing element)
+-np:16 (number of MPI tasks)
+
+aprun -n 256 -N 32 -d 1 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/131841s256x512o1.bin ~/majid/saenaComb/vectors/v131841.bin
+aprun -n 16 -N 2 -d 16 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/131841s256x512o1.bin ~/majid/saenaComb/vectors/v131841.bin
+aprun -n 8 -N 1 -d 32 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/131841s256x512o1.bin ~/majid/saenaComb/vectors/v131841.bin
+
+jobid:
+1558114
+
+
+1546558
+
+number of procs=16, number of threads=16
+Setup in Saena took 0.030302 seconds!
+Saena matvec time: 0.000201178
+phase 0: 4.10938e-05
+phase 1: 1.27888e-05
+phase 2: 0.000147295
+
+1546559
+
+number of procs=8, number of threads=32
+Setup in Saena took 0.060813 seconds!
+Saena matvec time: 0.000381548
+phase 0: 7.37953e-05
+phase 1: 2.60448e-05
+phase 2: 0.000281708
+
+
+second time:
+1561816
+
+number of procs = 256, number of threads = 1
+Setup in Saena took 0.315703 seconds!
+Saena matvec time: 3.0783e-05
+phase 0: 1.47025e-06
+phase 1: 8.30491e-06
+phase 2: 2.10079e-05
+
+1561817
+
+number of procs = 16, number of threads = 16
+Setup in Saena took 0.025454 seconds!
+Saena matvec time: 0.000182916
+phase 0: 4.16835e-05
+phase 1: 4.61419e-06
+phase 2: 0.000136619
+
+1561818
+
+number of procs = 8, number of threads = 32
+Setup in Saena took 0.0395329 seconds!
+Saena matvec time: 0.000395171
+phase 0: 8.78461e-05
+phase 1: 5.4121e-06
+phase 2: 0.000301913
+
+----------------------------------------
+s:512x512
+263169x263169
+2346009
+node:16
+ppn:32
+N:2 (number of processing elements on each node)
+d:16 (depth: number of threads on each processing element)
+-np:32 (number of MPI tasks)
+
+aprun -n 512 -N 32 -d 1 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/263169s512x512o1.bin ~/majid/saenaComb/vectors/v263169.bin
+aprun -n 32 -N 2 -d 16 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/263169s512x512o1.bin ~/majid/saenaComb/vectors/v263169.bin
+aprun -n 16 -N 1 -d 32 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/263169s512x512o1.bin ~/majid/saenaComb/vectors/v263169.bin
+
+jobid:
+1558112
+job killed
+
+1546561
+
+number of procs=32, number of threads=16
+Setup in Saena took 0.116096 seconds!
+Saena matvec time: 0.000333815
+phase 0: 4.07648e-05
+phase 1: 7.11441e-06
+phase 2: 0.000285935
+
+1546562
+
+number of procs=32, number of threads=16
+Setup in Saena took 0.116096 seconds!
+Saena matvec time: 0.000333815
+phase 0: 4.07648e-05
+phase 1: 7.11441e-06
+phase 2: 0.000285935
+
+
+second time
+1561819
+
+number of procs = 512, number of threads = 1
+Setup in Saena took 0.367988 seconds!
+Saena matvec time: 3.92675e-05
+phase 0: 1.92324e-06
+phase 1: 1.36439e-05
+phase 2: 2.37004e-05
+
+1561820
+
+number of procs = 32, number of threads = 16
+Setup in Saena took 0.0331821 seconds!
+Saena matvec time: 0.000185849
+phase 0: 4.13767e-05
+phase 1: 5.41528e-06
+phase 2: 0.000139057
+
+1561821
+
+number of procs = 16, number of threads = 32
+Setup in Saena took 0.0466931 seconds!
+Saena matvec time: 0.000369485
+phase 0: 7.58775e-05
+phase 1: 1.68943e-05
+phase 2: 0.000276713
+
+----------------------------------------
+s:512x1024
+525825x525825
+4698649
+node:32
+ppn:32
+N:2 (number of processing elements on each node)
+d:16 (depth: number of threads on each processing element)
+-np:64 (number of MPI tasks)
+
+aprun -n 1024 -N 32 -d 1 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/525825s512x1024o1.bin ~/majid/saenaComb/vectors/v525825.bin
+aprun -n 64 -N 2 -d 16 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/525825s512x1024o1.bin ~/majid/saenaComb/vectors/v525825.bin
+aprun -n 32 -N 1 -d 32 ~/majid/saenaComb/Saena ~/majid/saenaComb/2D_homg_matrices2/525825s512x1024o1.bin ~/majid/saenaComb/vectors/v525825.bin
+
+jobid:
+1558108
+
+
+1546573
+
+number of procs=64, number of threads=16
+Setup in Saena took 0.129973 seconds!
+Saena matvec time: 0.000331366
+phase 0: 3.67641e-05
+phase 1: 9.98735e-06
+phase 2: 0.000284615
+
+1546574
+
+number of procs=32, number of threads=32
+Setup in Saena took 0.218729 seconds!
+Saena matvec time: 0.000525596
+phase 0: 7.37643e-05
+phase 1: 2.84576e-05
+phase 2: 0.000423374
+
+
+second time:
+
+number of procs = 1024, number of threads = 1
+Setup in Saena took 0.489599 seconds!
+Saena matvec time: 4.42473e-05
+phase 0: 2.06312e-06
+phase 1: 1.87667e-05
+phase 2: 2.34175e-05
+
+number of procs = 64, number of threads = 16
+Setup in Saena took 0.0454409 seconds!
+Saena matvec time: 0.000185119
+phase 0: 3.98111e-05
+phase 1: 5.54721e-06
+phase 2: 0.000139761
+
+number of procs = 32, number of threads = 32
+Setup in Saena took 0.057045 seconds!
+Saena matvec time: 0.000370282
+phase 0: 7.48142e-05
+phase 1: 2.1251e-05
+phase 2: 0.000274216
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------
+----------------------------------------
+----------------------------------------
+
+third chart:
+3D
+o1
+
+s:8x8x16
+1377x1377
+16150
+node:1
+ppn:14
+
+
+
+----------------------------------------
+s:8x16x16
+2601x2601
+36157
+node:1
+ppn:28
+
+
+
+----------------------------------------
+s:16x16x16
+4913x4913
+81036
+node:2
+ppn:28
+
+
+
+----------------------------------------
+s:16x16x32
+9537x9537
+170795
+node:4
+ppn:28
+
+
+
+----------------------------------------
+s:16x32x32
+18513x18513
+360181
+node:8
+ppn:28
+
+
+
+----------------------------------------
+

@@ -1,0 +1,238 @@
+first chart:
+2D
+o1
+
+s:64x128
+8385x8385
+71257
+node:1
+ppn:14
+
+
+----------------------------------------
+s:128x128
+16641x16641
+144153
+node:1
+ppn:28
+
+
+
+----------------------------------------
+s:128x256
+33153x33153
+289945
+node:2
+ppn:28
+
+
+----------------------------------------
+s:256x256
+66049x66049
+583193
+node:4
+ppn:28
+
+
+
+----------------------------------------
+s:256x512
+131841x131841
+1169689
+node:8
+ppn:28
+
+
+
+----------------------------------------
+----------------------------------------
+----------------------------------------
+
+second chart:
+
+
+----------------------------------------
+s:128x256
+33153x33153
+289945
+
+#SBATCH --nodes=
+#SBATCH -n 
+#SBATCH --sockets-per-node=2
+#SBATCH --cores-per-socket=1
+export OMP_NUM_THREADS=14
+
+mpirun -np $SLURM_NTASKS ./Saena 2D_homg_matrices2/n vectors/
+
+jobid:
+
+
+----------------------------------------
+s:256x256
+66049x66049
+583193
+
+***folder: 2 in the results folder on chpc***
+
+#SBATCH --nodes=1
+#SBATCH -n 2
+#SBATCH --sockets-per-node=2
+#SBATCH --cores-per-socket=1
+export OMP_NUM_THREADS=14
+
+mpirun -np $SLURM_NTASKS ./Saena 2D_homg_matrices2/66049s256x256o1.bin vectors/v66049.bin 66049
+
+number of procs = 2, number of threads = 14
+Setup in Saena took 0.464518 seconds!
+Saena matvec time: 0.000594866
+phase 0: 8.67367e-06
+phase 1: 1.54018e-05
+phase 2: 0.000570791
+
+----------------------------------------
+s:2
+56x512
+131841x131841
+1169689
+
+#SBATCH --nodes=2
+#SBATCH -n 4
+#SBATCH --sockets-per-node=2
+#SBATCH --cores-per-socket=1
+export OMP_NUM_THREADS=14
+
+mpirun -np $SLURM_NTASKS ./Saena 2D_homg_matrices2/131841s256x512o1.bin vectors/v131841.bin 131841
+
+number of procs = 4, number of threads = 14
+Setup in Saena took 0.545968 seconds!
+Saena matvec time: 0.000759897
+phase 0: 8.67128e-06
+phase 1: 0.00021728
+phase 2: 0.000533946
+
+second time:
+number of procs = 4, number of threads = 14
+Setup in Saena took 0.318155 seconds!
+Saena matvec time: 0.0008058
+phase 0: 7.08342e-06
+phase 1: 0.000405533
+phase 2: 0.000393183
+
+third time:
+number of procs = 4, number of threads = 14
+Setup in Saena took 0.314758 seconds!
+Saena matvec time: 0.000745018
+phase 0: 6.12974e-06
+phase 1: 0.000351176
+phase 2: 0.000387712
+
+fourth time:
+number of procs = 4, number of threads = 14
+Setup in Saena took 0.322604 seconds!
+Saena matvec time: 0.000509293
+phase 0: 5.70059e-06
+phase 1: 0.000109038
+phase 2: 0.000394554
+
+----------------------------------------
+s:512x512
+263169x263169
+2346009
+
+#SBATCH --nodes=4
+#SBATCH -n 8
+#SBATCH --sockets-per-node=2
+#SBATCH --cores-per-socket=1
+export OMP_NUM_THREADS=14
+
+mpirun -np $SLURM_NTASKS ./Saena 2D_homg_matrices2/263169s512x512o1.bin vectors/v263169.bin 263169
+
+number of procs = 8, number of threads = 14
+Setup in Saena took 0.337223 seconds!
+Saena matvec time: 0.000652761
+phase 0: 5.51462e-06
+phase 1: 3.87383e-05
+phase 2: 0.000608509
+
+second time:
+number of procs = 8, number of threads = 14
+Setup in Saena took 0.340721 seconds!
+Saena matvec time: 0.000602036
+phase 0: 6.27756e-06
+phase 1: 3.93629e-06
+phase 2: 0.000591822
+
+----------------------------------------
+s:512x1024
+525825x525825
+4698649
+
+#SBATCH --nodes=8
+#SBATCH -n 16
+#SBATCH --sockets-per-node=2
+#SBATCH --cores-per-socket=1
+export OMP_NUM_THREADS=14
+
+mpirun -np $SLURM_NTASKS ./Saena 2D_homg_matrices2/525825s512x1024o1.bin vectors/v525825.bin 525825
+
+number of procs = 16, number of threads = 14
+Setup in Saena took 0.709414 seconds!
+Saena matvec time: 0.000627058
+phase 0: 7.6437e-06
+phase 1: 3.83353e-05
+phase 2: 0.000581079
+
+----------------------------------------
+----------------------------------------
+----------------------------------------
+
+third chart:
+3D
+o1
+
+s:8x8x16
+1377x1377
+16150
+node:1
+ppn:14
+
+
+
+----------------------------------------
+s:8x16x16
+2601x2601
+36157
+node:1
+ppn:28
+
+
+
+----------------------------------------
+s:16x16x16
+4913x4913
+81036
+node:2
+ppn:28
+
+
+
+----------------------------------------
+s:16x16x32
+9537x9537
+170795
+node:4
+ppn:28
+
+
+
+----------------------------------------
+s:16x32x32
+18513x18513
+360181
+node:8
+ppn:28
+
+
+
+----------------------------------------
+

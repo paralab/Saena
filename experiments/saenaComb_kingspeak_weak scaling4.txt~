@@ -1,0 +1,500 @@
+first chart:
+2D
+o1
+
+s:64x128
+8385x8385
+71257
+node:1
+ppn:14
+
+Setup in Saenaalltoall took 0.0172989 seconds!
+phase 0: 4.05312e-06
+phase 1: 7.86781e-06
+phase 2: 8.10623e-05
+min timing: 4.60148e-05 seconds!
+max timing: 8.70228e-05 seconds!
+average timing: 5.99452e-05 seconds!
+standard deviation: 5.80885e-05 seconds!
+min + standard deviation: 0.000104103 seconds!
+
+second time - iteration=200
+Setup in Saenaalltoall took 0.0115368 seconds!
+phase 0: 2.14696e-06
+phase 1: 6.22034e-06
+phase 2: 4.62258e-05
+min timing: 4.50146e-05 seconds!
+max timing: 4.99249e-05 seconds!
+average timing: 4.80029e-05 seconds!
+standard deviation: 4.6418e-05 seconds!
+min + standard deviation: 9.14326e-05 seconds!
+
+third time - iteration=200
+Setup in Saenaalltoall took 0.0119672 seconds!
+phase 0: 2.16722e-06
+phase 1: 6.69599e-06
+phase 2: 4.62139e-05
+min timing: 4.44019e-05 seconds!
+max timing: 5.0261e-05 seconds!
+average timing: 4.75437e-05 seconds!
+standard deviation: 4.59605e-05 seconds!
+min + standard deviation: 9.03623e-05 seconds!
+
+fourth time - iteration=200
+Setup in Saenaalltoall took 0.0099411 seconds!
+phase 0: 2.2161e-06
+phase 1: 6.07729e-06
+phase 2: 4.66323e-05
+min timing: 4.50635e-05 seconds!
+max timing: 5.01156e-05 seconds!
+average timing: 4.82311e-05 seconds!
+standard deviation: 4.66229e-05 seconds!
+min + standard deviation: 9.16864e-05 seconds!
+
+----------------------------------------
+s:128x128
+16641x16641
+144153
+node:1
+ppn:28
+
+Setup in Saenaalltoall took 0.013943 seconds!
+phase 0: 2.65598e-06
+phase 1: 3.7508e-05
+phase 2: 4.77076e-05
+min timing: 4.77076e-05 seconds!
+max timing: 8.56328e-05 seconds!
+average timing: 5.55722e-05 seconds!
+standard deviation: 5.61438e-05 seconds!
+min + standard deviation: 0.000103851 seconds!
+
+second time - iteration=200
+Setup in Saenaalltoall took 0.030236 seconds!
+phase 0: 4.57644e-06
+phase 1: 6.17146e-06
+phase 2: 8.29554e-05
+min timing: 4.6562e-05 seconds!
+max timing: 8.63302e-05 seconds!
+average timing: 7.31654e-05 seconds!
+standard deviation: 7.31782e-05 seconds!
+min + standard deviation: 0.00011974 seconds!
+
+----------------------------------------
+s:128x256
+33153x33153
+289945
+node:2
+ppn:28
+
+Setup in Saenaalltoall took 0.0610449 seconds!
+phase 0: 4.60386e-06
+phase 1: 1.2188e-05
+phase 2: 8.17752e-05
+min timing: 4.58741e-05 seconds!
+max timing: 9.02104e-05 seconds!
+average timing: 7.18634e-05 seconds!
+standard deviation: 7.28623e-05 seconds!
+min + standard deviation: 0.000118736 seconds!
+
+second time - iteration=200
+Setup in Saenaalltoall took 0.199058 seconds!
+phase 0: 4.69685e-06
+phase 1: 6.69837e-06
+phase 2: 8.43275e-05
+min timing: 4.81689e-05 seconds!
+max timing: 8.85892e-05 seconds!
+average timing: 6.61151e-05 seconds!
+standard deviation: 6.74536e-05 seconds!
+min + standard deviation: 0.000115623 seconds!
+----------------------------------------
+s:256x256
+66049x66049
+583193
+node:4
+ppn:28
+
+Setup in Saenaalltoall took 0.125423 seconds!
+phase 0: 3.56913e-06
+phase 1: 4.41074e-05
+phase 2: 5.03826e-05
+min timing: 4.86159e-05 seconds!
+max timing: 8.83293e-05 seconds!
+average timing: 6.74693e-05 seconds!
+standard deviation: 6.93641e-05 seconds!
+min + standard deviation: 0.00011798 seconds!
+
+second time - iteration=200
+Setup in Saenaalltoall took 0.226028 seconds!
+phase 0: 6.05226e-06
+phase 1: 5.39184e-06
+phase 2: 8.68058e-05
+min timing: 4.88329e-05 seconds!
+max timing: 8.80766e-05 seconds!
+average timing: 6.89172e-05 seconds!
+standard deviation: 7.06494e-05 seconds!
+min + standard deviation: 0.000119482 seconds!
+
+----------------------------------------
+s:256x512
+131841x131841
+1169689
+node:8
+ppn:28
+
+Setup in Saenaalltoall took 0.260404 seconds!
+phase 0: 6.2108e-06
+phase 1: 7.75814e-06
+phase 2: 8.62861e-05
+min timing: 4.34208e-05 seconds!
+max timing: 8.88538e-05 seconds!
+average timing: 6.8028e-05 seconds!
+standard deviation: 6.9574e-05 seconds!
+min + standard deviation: 0.000112995 seconds!
+
+second time - iteration=200
+Setup in Saenaalltoall took 0.310877 seconds!
+phase 0: 6.23465e-06
+phase 1: 6.04153e-06
+phase 2: 8.7595e-05
+min timing: 4.91381e-05 seconds!
+max timing: 9.09615e-05 seconds!
+average timing: 6.85943e-05 seconds!
+standard deviation: 7.03498e-05 seconds!
+min + standard deviation: 0.000119488 seconds!
+
+----------------------------------------
+----------------------------------------
+----------------------------------------
+
+second chart:
+2D
+o1
+
+s:128x128
+16641x16641
+144153
+node:1
+ppn:14
+
+Setup in Saena took 0.0135782 seconds!
+Saena matvec time: 4.35591e-05
+phase 0: 3.14236e-06
+phase 1: 5.33581e-06
+phase 2: 3.50809e-05
+Matvec in Saena took 5.35893e-05 seconds!
+Setup in Saenaalltoall took 0.00777411 seconds!
+phase 0: 4.26054e-06
+phase 1: 8.88824e-06
+phase 2: 9.40299e-05
+min timing: 9.15718e-05 seconds!
+max timing: 0.000100913 seconds!
+average timing: 9.73746e-05 seconds!
+standard deviation: 9.41279e-05 seconds!
+min + standard deviation: 0.0001857 seconds!
+
+second time:
+Setup in Saenaalltoall took 0.016999 seconds!
+phase 0: 3.71695e-06
+phase 1: 2.09284e-05
+phase 2: 8.20541e-05
+min timing: 8.20541e-05 seconds!
+max timing: 0.000100133 seconds!
+average timing: 9.65003e-05 seconds!
+standard deviation: 9.41752e-05 seconds!
+min + standard deviation: 0.000176229 seconds!
+
+third time:
+Setup in Saenaalltoall took 0.0525739 seconds!
+phase 0: 4.13656e-06
+phase 1: 1.01471e-05
+phase 2: 9.31764e-05
+min timing: 8.81004e-05 seconds!
+max timing: 0.000100179 seconds!
+average timing: 9.66861e-05 seconds!
+standard deviation: 9.35099e-05 seconds!
+min + standard deviation: 0.00018161 seconds!
+
+----------------------------------------
+s:128x256
+33153x33153
+289945
+node:1
+ppn:28
+
+Setup in Saenaalltoall took 0.019151 seconds!
+phase 0: 7.59602e-06
+phase 1: 8.86679e-06
+phase 2: 0.000164926
+min timing: 9.40084e-05 seconds!
+max timing: 0.000172493 seconds!
+average timing: 0.000145769 seconds!
+standard deviation: 0.000145701 seconds!
+min + standard deviation: 0.00023971 seconds!
+
+second time:
+Setup in Saenaalltoall took 0.01794 seconds!
+phase 0: 6.57558e-06
+phase 1: 1.94931e-05
+phase 2: 0.000156291
+min timing: 9.50003e-05 seconds!
+max timing: 0.000172071 seconds!
+average timing: 0.000145468 seconds!
+standard deviation: 0.000144559 seconds!
+min + standard deviation: 0.00023956 seconds!
+
+----------------------------------------
+s:256x256
+66049x66049
+583193
+node:2
+ppn:28
+
+Setup in Saenaalltoall took 0.149759 seconds!
+phase 0: 9.19819e-06
+phase 1: 4.18901e-06
+phase 2: 0.000169754
+min timing: 9.68647e-05 seconds!
+max timing: 0.000171659 seconds!
+average timing: 0.000132711 seconds!
+standard deviation: 0.000134476 seconds!
+min + standard deviation: 0.000231341 seconds!
+
+----------------------------------------
+s:2
+56x512
+131841x131841
+1169689
+node:4
+ppn:28
+
+Setup in Saenaalltoall took 0.479153 seconds!
+phase 0: 9.26733e-06
+phase 1: 5.01394e-06
+phase 2: 0.000171394
+min timing: 9.24873e-05 seconds!
+max timing: 0.000182831 seconds!
+average timing: 0.000142704 seconds!
+standard deviation: 0.000145493 seconds!
+min + standard deviation: 0.000237981 seconds!
+
+----------------------------------------
+s:512x512
+263169x263169
+2346009
+node:8
+ppn:28
+
+Setup in Saenaalltoall took 0.421021 seconds!
+phase 0: 6.96898e-06
+phase 1: 8.35085e-05
+phase 2: 0.000102124
+min timing: 9.84764e-05 seconds!
+max timing: 0.000177667 seconds!
+average timing: 0.00012811 seconds!
+standard deviation: 0.00013234 seconds!
+min + standard deviation: 0.000230817 seconds!
+
+second time:
+Setup in Saenaalltoall took 0.503565 seconds!
+phase 0: 7.03573e-06
+phase 1: 8.44646e-05
+phase 2: 0.000101578
+min timing: 9.58896e-05 seconds!
+max timing: 0.000179422 seconds!
+average timing: 0.000136496 seconds!
+standard deviation: 0.000140449 seconds!
+min + standard deviation: 0.000236338 seconds!
+
+third time:
+Setup in Saenaalltoall took 0.386677 seconds!
+phase 0: 1.27935e-05
+phase 1: 1.06359e-05
+phase 2: 0.000172541
+min timing: 9.85599e-05 seconds!
+max timing: 0.000182521 seconds!
+average timing: 0.000137345 seconds!
+standard deviation: 0.000140912 seconds!
+min + standard deviation: 0.000239472 seconds!
+
+----------------------------------------
+----------------------------------------
+----------------------------------------
+
+third chart:
+3D
+o1
+
+s:8x8x16
+1377x1377
+16150
+node:1
+ppn:14
+
+Setup in Saenaalltoall took 0.00531197 seconds!
+phase 0: 8.32081e-07
+phase 1: 3.82662e-06
+phase 2: 1.16611e-05
+min timing: 1.02377e-05 seconds!
+max timing: 1.3411e-05 seconds!
+average timing: 1.16437e-05 seconds!
+standard deviation: 1.1247e-05 seconds!
+min + standard deviation: 2.14847e-05 seconds!
+
+second time - iterations=200
+Setup in Saenaalltoall took 0.00454116 seconds!
+phase 0: 8.08239e-07
+phase 1: 1.17528e-05
+phase 2: 1.17743e-05
+min timing: 1.03247e-05 seconds!
+max timing: 1.95861e-05 seconds!
+average timing: 1.28514e-05 seconds!
+standard deviation: 1.27777e-05 seconds!
+min + standard deviation: 2.31024e-05 seconds!
+
+third time - iterations=200
+Setup in Saenaalltoall took 0.016165 seconds!
+phase 0: 1.30057e-06
+phase 1: 3.8147e-06
+phase 2: 1.95062e-05
+min timing: 1.04201e-05 seconds!
+max timing: 2.01845e-05 seconds!
+average timing: 1.38605e-05 seconds!
+standard deviation: 1.33067e-05 seconds!
+min + standard deviation: 2.37268e-05 seconds!
+
+fourth time - iterations=200
+Setup in Saenaalltoall took 0.0333011 seconds!
+phase 0: 1.4019e-06
+phase 1: 4.15206e-06
+phase 2: 1.99497e-05
+min timing: 1.03748e-05 seconds!
+max timing: 2.20728e-05 seconds!
+average timing: 1.40724e-05 seconds!
+standard deviation: 1.3729e-05 seconds!
+min + standard deviation: 2.41038e-05 seconds!
+
+----------------------------------------
+s:8x16x16
+2601x2601
+36157
+node:1
+ppn:28
+
+Setup in Saenaalltoall took 0.00928593 seconds!
+phase 0: 1.92881e-06
+phase 1: 5.47647e-06
+phase 2: 2.19107e-05
+min timing: 1.23024e-05 seconds!
+max timing: 2.31218e-05 seconds!
+average timing: 2.08946e-05 seconds!
+standard deviation: 2.06253e-05 seconds!
+min + standard deviation: 3.29277e-05 seconds!
+
+----------------------------------------
+s:16x16x16
+4913x4913
+81036
+node:2
+ppn:28
+
+Setup in Saenaalltoall took 0.0494261 seconds!
+phase 0: 2.76804e-06
+phase 1: 8.25644e-06
+phase 2: 2.38013e-05
+min timing: 1.3473e-05 seconds!
+max timing: 2.47407e-05 seconds!
+average timing: 2.11981e-05 seconds!
+standard deviation: 2.13099e-05 seconds!
+min + standard deviation: 3.47829e-05 seconds!
+
+----------------------------------------
+s:16x16x32
+9537x9537
+170795
+node:4
+ppn:28
+
+Setup in Saenaalltoall took 0.240268 seconds!
+phase 0: 2.92778e-06
+phase 1: 9.61304e-06
+phase 2: 2.59256e-05
+min timing: 1.34492e-05 seconds!
+max timing: 2.59256e-05 seconds!
+average timing: 2.12678e-05 seconds!
+standard deviation: 2.15656e-05 seconds!
+min + standard deviation: 3.50148e-05 seconds!
+
+----------------------------------------
+s:16x32x32
+18513x18513
+360181
+node:8
+ppn:28
+
+Setup in Saenaalltoall took 0.240734 seconds!
+phase 0: 2.33889e-06
+phase 1: 2.32363e-05
+phase 2: 1.77598e-05
+min timing: 1.38569e-05 seconds!
+max timing: 2.88844e-05 seconds!
+average timing: 2.302e-05 seconds!
+standard deviation: 2.34289e-05 seconds!
+min + standard deviation: 3.72858e-05 seconds!
+
+second time:
+Setup in Saenaalltoall took 0.226299 seconds!
+phase 0: 3.20435e-06
+phase 1: 9.691e-05
+phase 2: 2.2192e-05
+min timing: 1.46937e-05 seconds!
+max timing: 2.82311e-05 seconds!
+average timing: 2.28264e-05 seconds!
+standard deviation: 2.32213e-05 seconds!
+min + standard deviation: 3.7915e-05 seconds!
+
+third time:
+Setup in Saenaalltoall took 0.252612 seconds!
+phase 0: 3.75748e-06
+phase 1: 2.30002e-05
+phase 2: 3.03459e-05
+min timing: 1.37258e-05 seconds!
+max timing: 3.03459e-05 seconds!
+average timing: 2.24115e-05 seconds!
+standard deviation: 2.28342e-05 seconds!
+min + standard deviation: 3.65599e-05 seconds!
+
+fourth time - iterations=200
+Setup in Saenaalltoall took 0.221678 seconds!
+phase 0: 2.33054e-06
+phase 1: 0.00104273
+phase 2: 1.82688e-05
+min timing: 1.52004e-05 seconds!
+max timing: 2.70557e-05 seconds!
+average timing: 2.01849e-05 seconds!
+standard deviation: 2.06633e-05 seconds!
+min + standard deviation: 3.58637e-05 seconds!
+
+fifth time - iterations=200
+Setup in Saenaalltoall took 0.189331 seconds!
+phase 0: 2.32339e-06
+phase 1: 3.43609e-05
+phase 2: 1.74367e-05
+min timing: 1.42014e-05 seconds!
+max timing: 2.8218e-05 seconds!
+average timing: 2.28597e-05 seconds!
+standard deviation: 2.32666e-05 seconds!
+min + standard deviation: 3.7468e-05 seconds!
+
+sixth time - iterations=200
+Setup in Saenaalltoall took 0.228291 seconds!
+phase 0: 3.97682e-06
+phase 1: 1.77777e-05
+phase 2: 2.76792e-05
+min timing: 1.39189e-05 seconds!
+max timing: 2.84493e-05 seconds!
+average timing: 2.28783e-05 seconds!
+standard deviation: 2.32266e-05 seconds!
+min + standard deviation: 3.71455e-05 seconds!
+
+----------------------------------------
+

@@ -1,0 +1,74 @@
+tested on bigred2.
+-----------------------------------
+generated matrices:
+I
+II
+III VI
+
+I:   grid size [II/2 II]
+II:  grid order
+III: matrix size IIIxIII
+VI:  nonzeros
+
+***********************************
+2D
+***********************************
+
+s16
+
+o4
+4225 134945
+
+2D_homg_matrices/4225o4s16.bin vectors/v4225.bin 4225
+2D_homg_matrices/4225o4s16.txt vectors/v4225.txt
+
+ccmrun mpirun -np 64 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/4225o4s16.bin ~/majid/saenaComb/vectors/v4225.bin 4225
+ccmrun mpirun -np 64 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/4225o4s16.txt ~/majid/saenaComb/vectors/v4225.txt
+
+jobid:
+1515129
+
+
+-----------------------------------
+s8
+
+o6
+2401 129073
+
+ccmrun mpirun -np 64 ~/majid/saenaComb/Saena           ~/majid/saenaComb/2D_homg_matrices/2401o6s8.bin ~/majid/saenaComb/vectors/v2401.bin 2401
+ccmrun mpirun -np 64 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/2D_homg_matrices/2401o6s8.txt ~/majid/saenaComb/vectors/v2401.txt
+
+jobid:
+1515130
+-----------------------------------
+***********************************
+3D
+***********************************
+
+s4
+
+o3
+2197 104689
+
+ccmrun mpirun -np 64 ~/majid/saenaComb/Saena           ~/majid/saenaComb/3D_homg_matrices/2197o3s4.bin ~/majid/saenaComb/vectors/v2197.bin 2197
+ccmrun mpirun -np 64 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/3D_homg_matrices/2197o3s4.txt ~/majid/saenaComb/vectors/v2197.txt
+
+jobid:
+1515131
+1515133
+-----------------------------------
+s2
+
+o5
+1331 118251
+
+ccmrun mpirun -np 64 ~/majid/saenaComb/Saena           ~/majid/saenaComb/3D_homg_matrices/1331o5s2.bin ~/majid/saenaComb/vectors/v1331.bin 1331
+ccmrun mpirun -np 64 ~/majid/saenaComb/combblas_matvec ~/majid/saenaComb/3D_homg_matrices/1331o5s2.txt ~/majid/saenaComb/vectors/v1331.txt
+
+jobid:
+1515132
+1515134
+1515136
+-----------------------------------
+
+

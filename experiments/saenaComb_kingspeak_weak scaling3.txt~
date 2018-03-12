@@ -1,0 +1,65 @@
+3D
+o1
+
+s:8x8x16
+1377x1377
+16150
+node:1
+ppn:14
+
+Setup in Saena took 0.00760889 seconds!
+Matvec in Saena took 7.82013e-06 seconds!
+Setup in Saenaalltoall took 0.00468111 seconds!
+Matvec in Saenaalltoall took 5.99146e-06 seconds!
+
+s:8x16x16
+2601x2601
+36157
+node:1
+ppn:28
+
+Setup in Saena took 0.010643 seconds!
+Matvec in Saena took 1.05619e-05 seconds!
+Setup in Saenaalltoall took 0.00742888 seconds!
+Matvec in Saenaalltoall took 8.00133e-06 seconds!
+
+s:16x16x16
+4913x4913
+81036
+node:2
+ppn:28
+
+Setup in Saena took 0.101559 seconds!
+Matvec in Saena took 1.10292e-05 seconds!
+Setup in Saenaalltoall took 0.0735409 seconds!
+Matvec in Saenaalltoall took 1.35207e-05 seconds!
+
+Setup in Saena took 0.0327699 seconds!
+Matvec in Saena took 1.30892e-05 seconds!
+Setup in Saenaalltoall took 0.022656 seconds!
+Matvec in Saenaalltoall took 1.41907e-05 seconds!
+
+s:16x16x32
+9537x9537
+170795
+node:4
+ppn:28
+
+Setup in Saena took 0.0937109 seconds!
+Matvec in Saena took 2.30813e-05 seconds!
+Setup in Saenaalltoall took 0.027199 seconds!
+Matvec in Saenaalltoall took 2.44498e-05 seconds!
+
+s:16x32x32
+18513x18513
+360181
+node:8
+ppn:28
+
+Setup in Saena took 0.0677679 seconds!
+Matvec in Saena took 3.57294e-05 seconds!
+Setup in Saenaalltoall took 0.038203 seconds!
+Matvec in Saenaalltoall took 3.34001e-05 seconds!
+
+----------------------------------------
+
