@@ -1,0 +1,136 @@
+
+Matrix Assemble:
+min: 0.361192
+ave: 0.361929
+max: 0.362504
+
+_____________________________
+
+size of matrix level 0: 499849
+
+Aggregation: level 0
+min: 0.133925
+ave: 0.134804
+max: 0.135917
+
+
+Prolongation: level 0
+min: 0.0545909
+ave: 0.0548582
+max: 0.05585
+
+
+Restriction: level 0
+min: 0.0404811
+ave: 0.0413411
+max: 0.0418351
+
+
+Coarsening: level 0
+min: 1.97011
+ave: 1.97101
+max: 1.97217
+
+_____________________________
+
+size of matrix level 1: 72819
+
+Aggregation: level 1
+min: 0.02984
+ave: 0.0298636
+max: 0.0298779
+
+
+Prolongation: level 1
+min: 0.0195432
+ave: 0.0197419
+max: 0.0203419
+
+
+Restriction: level 1
+min: 0.00794411
+ave: 0.00850191
+max: 0.00879622
+
+
+Coarsening: level 1
+min: 0.656901
+ave: 0.657552
+max: 0.657812
+
+_____________________________
+
+size of matrix level 2: 8855
+
+Aggregation: level 2
+min: 0.0055759
+ave: 0.00558876
+max: 0.00559688
+
+
+Prolongation: level 2
+min: 0.00413799
+ave: 0.00418339
+max: 0.00426579
+
+
+Restriction: level 2
+min: 0.00225806
+ave: 0.00266155
+max: 0.00280213
+
+
+Coarsening: level 2
+min: 0.146059
+ave: 0.146278
+max: 0.14633
+
+_____________________________
+
+size of matrix level 3: 1130
+
+Setup:
+min: 3.0825
+ave: 3.08329
+max: 3.08441
+
+******************************************************
+
+initial residual = 1.81856e+08
+
+
+Vcycle: level 2
+min: 0.0040462
+ave: 0.00512528
+max: 0.00545001
+
+
+Vcycle: level 1
+min: 0.00819707
+ave: 0.00850216
+max: 0.00907493
+
+
+Vcycle: level 0
+min: 0.0194221
+ave: 0.0198247
+max: 0.0223448
+
+******************************************************
+
+final:
+iter = 0, residual = 6384230.702159 
+
+******************************************************
+
+Solve:
+min: 0.0286231
+ave: 0.0286635
+max: 0.028672
+
+Application 11786803 resources: utime ~231s, stime ~21s, Rss ~29236, inblocks ~151192, outblocks ~66984
+Job Cleanup ran on Mon Oct 2 03:07:20 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit4.pbs
+NIDS         : 	 867,870
+NID Placement: 	 867/32 870/32 

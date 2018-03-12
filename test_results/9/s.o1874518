@@ -1,0 +1,415 @@
+number of processes = 8
+
+Matrix Assemble:
+min: 0.140025
+ave: 0.141857
+max: 0.142969
+
+_____________________________
+
+size of matrix level 0: 250000
+nnz level 0: 1242016
+
+Aggregation: level 0
+min: 0.164943
+ave: 0.167135
+max: 0.168284
+
+
+Prolongation: level 0
+min: 0.0788031
+ave: 0.0795767
+max: 0.080528
+
+
+Restriction: level 0
+min: 0.041002
+ave: 0.0422592
+max: 0.0429471
+
+
+Coarsening: level 0
+min: 0.611812
+ave: 0.614026
+max: 0.617509
+
+_____________________________
+
+size of matrix level 1: 36698
+nnz level 1: 401136
+
+Aggregation: level 1
+min: 0.0246029
+ave: 0.0246091
+max: 0.0246141
+
+
+Prolongation: level 1
+min: 0.0147049
+ave: 0.0148968
+max: 0.0151649
+
+
+Restriction: level 1
+min: 0.00570989
+ave: 0.00602025
+max: 0.00617909
+
+
+Coarsening: level 1
+min: 0.1739
+ave: 0.174096
+max: 0.174218
+
+_____________________________
+
+size of matrix level 2: 4394
+nnz level 2: 90788
+
+Aggregation: level 2
+min: 0.00300789
+ave: 0.0030098
+max: 0.00301099
+
+
+Prolongation: level 2
+min: 0.0024178
+ave: 0.00249362
+max: 0.00254989
+
+
+Restriction: level 2
+min: 0.000808001
+ave: 0.000875771
+max: 0.000911951
+
+
+Coarsening: level 2
+min: 0.0362761
+ave: 0.0363672
+max: 0.036411
+
+_____________________________
+
+size of matrix level 3: 537
+nnz level 3: 16473
+
+Aggregation: level 3
+min: 0.000653028
+ave: 0.000654519
+max: 0.000655174
+
+
+Prolongation: level 3
+min: 0.000596046
+ave: 0.000650764
+max: 0.000663996
+
+
+Restriction: level 3
+min: 0.000398874
+ave: 0.000444591
+max: 0.000460863
+
+
+Coarsening: level 3
+min: 0.00770307
+ave: 0.00774604
+max: 0.00776005
+
+_____________________________
+
+size of matrix level 4: 75
+nnz level 4: 2439
+
+Setup:
+min: 1.1797
+ave: 1.18188
+max: 1.18301
+
+******************************************************
+
+initial residual = 1.28479e+08
+
+
+Vcycle: level 3
+min: 0.000902891
+ave: 0.00113511
+max: 0.00137615
+
+
+Vcycle: level 2
+min: 0.00157189
+ave: 0.00237277
+max: 0.0029459
+
+
+Vcycle: level 1
+min: 0.00552607
+ave: 0.00669357
+max: 0.00796318
+
+
+Vcycle: level 0
+min: 0.0273919
+ave: 0.028669
+max: 0.0294349
+
+
+Vcycle: level 3
+min: 0.000913858
+ave: 0.00120881
+max: 0.00160003
+
+
+Vcycle: level 2
+min: 0.00155687
+ave: 0.00240543
+max: 0.00288391
+
+
+Vcycle: level 1
+min: 0.00549483
+ave: 0.00662282
+max: 0.00789595
+
+
+Vcycle: level 0
+min: 0.0273559
+ave: 0.0287122
+max: 0.0298789
+
+
+Vcycle: level 3
+min: 0.000922918
+ave: 0.0012334
+max: 0.00167108
+
+
+Vcycle: level 2
+min: 0.00156307
+ave: 0.00245565
+max: 0.00300312
+
+
+Vcycle: level 1
+min: 0.00549197
+ave: 0.00666276
+max: 0.00794005
+
+
+Vcycle: level 0
+min: 0.027432
+ave: 0.0287351
+max: 0.0299058
+
+
+Vcycle: level 3
+min: 0.000837803
+ave: 0.00114706
+max: 0.00157785
+
+
+Vcycle: level 2
+min: 0.00148392
+ave: 0.00233999
+max: 0.00277996
+
+
+Vcycle: level 1
+min: 0.00546098
+ave: 0.0065783
+max: 0.007797
+
+
+Vcycle: level 0
+min: 0.0272481
+ave: 0.0285828
+max: 0.029793
+
+
+Vcycle: level 3
+min: 0.000835896
+ave: 0.00113976
+max: 0.00158906
+
+
+Vcycle: level 2
+min: 0.00144982
+ave: 0.00232783
+max: 0.00278997
+
+
+Vcycle: level 1
+min: 0.0054338
+ave: 0.00661507
+max: 0.00781393
+
+
+Vcycle: level 0
+min: 0.0269141
+ave: 0.0282452
+max: 0.029438
+
+
+Vcycle: level 3
+min: 0.000810862
+ave: 0.001093
+max: 0.00148988
+
+
+Vcycle: level 2
+min: 0.001436
+ave: 0.00228387
+max: 0.00271702
+
+
+Vcycle: level 1
+min: 0.00536799
+ave: 0.00653601
+max: 0.00775003
+
+
+Vcycle: level 0
+min: 0.0268729
+ave: 0.0281695
+max: 0.029321
+
+
+Vcycle: level 3
+min: 0.000814915
+ave: 0.00110275
+max: 0.00148296
+
+
+Vcycle: level 2
+min: 0.00145388
+ave: 0.00229138
+max: 0.00272107
+
+
+Vcycle: level 1
+min: 0.00537395
+ave: 0.00652996
+max: 0.00773501
+
+
+Vcycle: level 0
+min: 0.0268409
+ave: 0.0281279
+max: 0.029284
+
+
+Vcycle: level 3
+min: 0.000821114
+ave: 0.0010983
+max: 0.00148511
+
+
+Vcycle: level 2
+min: 0.00144196
+ave: 0.00228077
+max: 0.00272608
+
+
+Vcycle: level 1
+min: 0.00534201
+ave: 0.00652108
+max: 0.00776982
+
+
+Vcycle: level 0
+min: 0.0269091
+ave: 0.0281662
+max: 0.0292652
+
+
+Vcycle: level 3
+min: 0.000839949
+ave: 0.00111985
+max: 0.00150418
+
+
+Vcycle: level 2
+min: 0.00146604
+ave: 0.00229624
+max: 0.00274181
+
+
+Vcycle: level 1
+min: 0.00537395
+ave: 0.00652614
+max: 0.00775909
+
+
+Vcycle: level 0
+min: 0.0268509
+ave: 0.0281225
+max: 0.0292389
+
+
+Vcycle: level 3
+min: 0.00090909
+ave: 0.00118613
+max: 0.00157094
+
+
+Vcycle: level 2
+min: 0.00153303
+ave: 0.00235575
+max: 0.00277805
+
+
+Vcycle: level 1
+min: 0.00543594
+ave: 0.00654823
+max: 0.0077579
+
+
+Vcycle: level 0
+min: 0.0268619
+ave: 0.0281689
+max: 0.029223
+
+
+Vcycle: level 3
+min: 0.00089407
+ave: 0.00118166
+max: 0.00156522
+
+
+Vcycle: level 2
+min: 0.00152993
+ave: 0.00234562
+max: 0.00277805
+
+
+Vcycle: level 1
+min: 0.00538898
+ave: 0.00648287
+max: 0.00767398
+
+
+Vcycle: level 0
+min: 0.026715
+ave: 0.028974
+max: 0.0324759
+
+******************************************************
+
+final:
+iter = 10, residual = 1234.608636 
+
+******************************************************
+
+Solve:
+min: 0.369408
+ave: 0.369442
+max: 0.36945
+
+Application 11787286 resources: utime ~13s, stime ~2s, Rss ~74388, inblocks ~74227, outblocks ~32710
+Job Cleanup ran on Mon Oct 2 17:09:35 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit1.pbs
+NIDS         : 	 5
+NID Placement: 	 5/32 

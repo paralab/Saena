@@ -1,0 +1,307 @@
+
+number of processes = 16
+2D Laplacian: dof on each proc = 8100 
+
+Matrix Assemble:
+min: 0.0302072
+ave: 0.0303706
+max: 0.0306411
+
+_____________________________
+
+size of matrix level 0: 129600
+nnz level 0: 640824
+
+Aggregation: level 0
+min: 0.541741
+ave: 0.542739
+max: 0.543249
+
+
+Prolongation: level 0
+min: 0.00977707
+ave: 0.0100809
+max: 0.010325
+
+
+Restriction: level 0
+min: 0.00633788
+ave: 0.0065361
+max: 0.00664306
+
+Ac->last_M_shrink = 129600, Ac->Mbig = 27854, mult = 473518
+
+Coarsening: level 0
+min: 0.0907969
+ave: 0.0910994
+max: 0.0912828
+
+_____________________________
+
+size of matrix level 1: 27854
+nnz level 1: 279028
+row_reduction_min = 0.214923, row_reduction_threshold = 0.900000 
+
+Aggregation: level 1
+min: 0.00837517
+ave: 0.00839689
+max: 0.00840712
+
+
+Prolongation: level 1
+min: 0.00300884
+ave: 0.00313365
+max: 0.0031631
+
+
+Restriction: level 1
+min: 0.0012238
+ave: 0.00132619
+max: 0.00136209
+
+Ac->last_M_shrink = 129600, Ac->Mbig = 5351, mult = 90967
+
+Coarsening: level 1
+min: 0.0433369
+ave: 0.0448144
+max: 0.047853
+
+_____________________________
+
+size of matrix level 2: 5351
+nnz level 2: 88427
+row_reduction_min = 0.192109, row_reduction_threshold = 0.900000 
+
+Aggregation: level 2
+min: 0.00393605
+ave: 0.00394523
+max: 0.00395107
+
+
+Prolongation: level 2
+min: 0.0034318
+ave: 0.00347739
+max: 0.00351596
+
+
+Restriction: level 2
+min: 0.00119019
+ave: 0.00126457
+max: 0.00131297
+
+Ac->last_M_shrink = 5351, Ac->Mbig = 1978, mult = 33626
+
+Coarsening: level 2
+min: 0.0554712
+ave: 0.0558133
+max: 0.0561109
+
+_____________________________
+
+size of matrix level 3: 1978
+nnz level 3: 22748
+row_reduction_min = 0.369651, row_reduction_threshold = 0.900000 
+
+Aggregation: level 3
+min: 0.00127888
+ave: 0.00129074
+max: 0.00129914
+
+
+Prolongation: level 3
+min: 0.000801802
+ave: 0.00085938
+max: 0.000890017
+
+
+Restriction: level 3
+min: 0.000261068
+ave: 0.000294507
+max: 0.00031209
+
+Ac->last_M_shrink = 5351, Ac->Mbig = 1510, mult = 25670
+
+Coarsening: level 3
+min: 0.0179169
+ave: 0.0179715
+max: 0.0179999
+
+_____________________________
+
+size of matrix level 4: 1510
+nnz level 4: 4668
+row_reduction_min = 0.763397, row_reduction_threshold = 0.900000 
+
+Aggregation: level 4
+min: 0.000529051
+ave: 0.000534952
+max: 0.000540018
+
+
+Prolongation: level 4
+min: 0.000208855
+ave: 0.000240982
+max: 0.000267029
+
+
+Restriction: level 4
+min: 0.000146866
+ave: 0.000175655
+max: 0.00019598
+
+Ac->last_M_shrink = 5351, Ac->Mbig = 1450, mult = 24650
+
+Coarsening: level 4
+min: 0.00233197
+ave: 0.00234824
+max: 0.00236106
+
+_____________________________
+
+size of matrix level 5: 1450
+nnz level 5: 1632
+row_reduction_min = 0.960265, row_reduction_threshold = 0.900000 
+
+Setup:
+min: 0.800011
+ave: 0.801094
+max: 0.801373
+
+******************************************************
+
+initial residual = 8.887545e+03 
+
+
+Vcycle: level 0: pre
+min: 0.000155926
+ave: 0.000262171
+max: 0.000652075
+
+
+Vcycle: level 0: restriction
+min: 0.000241995
+ave: 0.000262201
+max: 0.000272036
+
+
+Vcycle: level 1: pre
+min: 0.000159025
+ave: 0.000344992
+max: 0.00113797
+
+
+Vcycle: level 1: restriction
+min: 0.000100851
+ave: 0.000188902
+max: 0.000516891
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 1.90735e-06
+ave: 6.3628e-06
+max: 2.09808e-05
+
+
+Vcycle: level 2: pre
+min: 0.000155926
+ave: 0.000168145
+max: 0.000176907
+
+
+Vcycle: level 2: restriction
+min: 8.4877e-05
+ave: 9.197e-05
+max: 9.799e-05
+
+
+Vcycle: level 3: pre
+min: 7.20024e-05
+ave: 8.35061e-05
+max: 0.000100136
+
+
+Vcycle: level 3: restriction
+min: 2.88486e-05
+ave: 4.12464e-05
+max: 5.10216e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00258517
+ave: 0.00261962
+max: 0.00264907
+
+
+Vcycle: level 3: prolongation
+min: 4.69685e-05
+ave: 4.87566e-05
+max: 5.31673e-05
+
+
+Vcycle: level 3: post
+min: 6.00815e-05
+ave: 6.7234e-05
+max: 7.08103e-05
+
+
+Vcycle: level 2: prolongation
+min: 0.000116825
+ave: 0.000121891
+max: 0.000125885
+
+
+Vcycle: level 2: post
+min: 9.60827e-05
+ave: 0.000106514
+max: 0.00011301
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 4.61936e-06
+max: 6.91414e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.00014019
+ave: 0.000167191
+max: 0.000179052
+
+
+Vcycle: level 1: post
+min: 0.000110149
+ave: 0.000139534
+max: 0.000167131
+
+
+Vcycle: level 0: prolongation
+min: 0.000349045
+ave: 0.000364557
+max: 0.000380993
+
+
+Vcycle: level 0: post
+min: 0.00017786
+ave: 0.000198543
+max: 0.000223875
+
+******************************************************
+
+final:
+stopped at iteration    = 1 
+final absolute residual = 1.523089e+03
+relative residual       = 1.713734e-01 
+
+******************************************************
+
+Solve:
+min: 0.010241
+ave: 0.0102594
+max: 0.010267
+
+Application 13864941 resources: utime ~14s, stime ~3s, Rss ~32104, inblocks ~25393, outblocks ~66438
+Job Cleanup ran on Thu Oct 19 17:40:56 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit0002.pbs
+NIDS         : 	 77,798
+NID Placement: 	 77/32 798/32 

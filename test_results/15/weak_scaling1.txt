@@ -1,0 +1,52 @@
+submit1 up to submit6:
+
+aprun -n 4 -N 4 -d 8 ~/saena/build/Saena 2 4900
+aprun -n 8 -N 4 -d 8 ~/saena/build/Saena 2 4802
+aprun -n 16 -N 4 -d 8 ~/saena/build/Saena 2 4900
+aprun -n 32 -N 4 -d 8 ~/saena/build/Saena 2 4802
+aprun -n 64 -N 4 -d 8 ~/saena/build/Saena 2 4900
+aprun -n 128 -N 4 -d 8 ~/saena/build/Saena 2 4802
+
+job#
+
+
+===================================================
+submit01 up to submit06:
+
+aprun -n 8 -N 8 -d 4 ~/saena/build/Saena 2 4802
+aprun -n 16 -N 8 -d 4 ~/saena/build/Saena 2 4900
+aprun -n 32 -N 8 -d 4 ~/saena/build/Saena 2 4802
+aprun -n 64 -N 8 -d 4 ~/saena/build/Saena 2 4900
+aprun -n 128 -N 8 -d 4 ~/saena/build/Saena 2 4802
+aprun -n 256 -N 8 -d 4 ~/saena/build/Saena 2 4900
+
+job#:
+
+===================================================
+submit001 up to submit006:
+
+aprun -n 8 -N 8 -d 4 ~/saena/build/Saena 2 8192
+aprun -n 16 -N 8 -d 4 ~/saena/build/Saena 2 8100
+aprun -n 32 -N 8 -d 4 ~/saena/build/Saena 2 8192
+aprun -n 64 -N 8 -d 4 ~/saena/build/Saena 2 8100
+aprun -n 128 -N 8 -d 4 ~/saena/build/Saena 2 8192
+aprun -n 256 -N 8 -d 4 ~/saena/build/Saena 2 8100
+
+job#:
+
+
+===================================================
+
+submit0001 up to submit0006:
+
+aprun -n 4 -N 4 -d 8 ~/saena/build/Saena 2 8192
+aprun -n 8 -N 4 -d 8 ~/saena/build/Saena 2 8100
+aprun -n 16 -N 4 -d 8 ~/saena/build/Saena 2 8192
+aprun -n 32 -N 4 -d 8 ~/saena/build/Saena 2 8100
+aprun -n 64 -N 4 -d 8 ~/saena/build/Saena 2 8192
+aprun -n 128 -N 4 -d 8 ~/saena/build/Saena 2 8100
+
+job#:
+
+
+

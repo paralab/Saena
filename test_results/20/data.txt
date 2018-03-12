@@ -1,0 +1,104 @@
+https://sparse.tamu.edu/HB/bcsstk16
+Num Cols 
+4,884
+Nonzeros 
+290,378
+
+https://sparse.tamu.edu/Gset/G55
+Num Cols 
+5,000
+Nonzeros 
+24,996
+
+https://sparse.tamu.edu/Andrianov/fxm3_6
+Num Cols 
+5,026
+Nonzeros 
+94,026
+
+https://sparse.tamu.edu/Schenk_IBMNA/c-29
+Num Cols 
+5,033
+Nonzeros 
+43,731
+
+https://sparse.tamu.edu/PARSEC/SiH4
+Num Cols 
+5,041
+Nonzeros 
+171,903
+
+
+
+-----------------------------------
+node = 2
+n = 4
+export OMP_NUM_THREADS=14
+
+mpirun -np 4 ../matvec002 ../bcsstk16.bin
+mpirun -np 4 ../matvec002 ../c-29.bin
+mpirun -np 4 ../matvec002 ../fxm3_6.bin
+mpirun -np 4 ../matvec002 ../G55.bin
+mpirun -np 4 ../matvec002 ../SiH4.bin
+
+
+----------------------------------
+
+
+
+
+number of processes = 4
+
+
+Saena matrix:
+Mbig = 4884, M = 1221, nnz_g = 290378, nnz_l = 70046
+
+matvec_iter = 300
+3.24999e-05
+3.00672e-05
+4.95616e-05
+
+number of processes = 4
+
+
+Saena matrix:
+Mbig = 5033, M = 314, nnz_g = 43731, nnz_l = 12836
+
+matvec_iter = 300
+8.83302e-06
+8.67783e-06
+4.55609e-05
+
+number of processes = 4
+
+
+Saena matrix:
+Mbig = 5026, M = 942, nnz_g = 94026, nnz_l = 20470
+
+matvec_iter = 300
+1.40663e-05
+1.31581e-05
+4.51193e-05
+
+number of processes = 4
+
+
+Saena matrix:
+Mbig = 5000, M = 937, nnz_g = 24996, nnz_l = 4689
+
+matvec_iter = 300
+1.20602e-05
+1.26506e-05
+4.40995e-05
+
+number of processes = 4
+
+
+Saena matrix:
+Mbig = 5041, M = 1260, nnz_g = 171903, nnz_l = 33544
+
+matvec_iter = 300
+1.75961e-05
+1.72792e-05
+4.01296e-05
+

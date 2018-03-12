@@ -1,0 +1,34 @@
+./vector_generator001 160000
+./vector_generator001 320000
+./vector_generator001 640000
+./vector_generator001 1280000
+./vector_generator001 2560000
+./vector_generator001 5120000
+
+
+aprun -n 1 ~/saena/build/vectors/vector_generator001 160000
+aprun -n 1 ~/saena/build/vectors/vector_generator001 320000
+aprun -n 1 ~/saena/build/vectors/vector_generator001 640000
+aprun -n 1 ~/saena/build/vectors/vector_generator001 1280000
+aprun -n 1 ~/saena/build/vectors/vector_generator001 2560000
+aprun -n 1 ~/saena/build/vectors/vector_generator001 5120000
+
+
+4 mpi tasks per node.
+number of nodes for the following list:
+1, 2, 4, 8, 16, 32
+
+aprun -n 4 -N 4 -d 8 ~/saena/build/Saena 2 10000
+aprun -n 8 -N 4 -d 8 ~/saena/build/Saena 2 10082
+aprun -n 16 -N 4 -d 8 ~/saena/build/Saena 2 100000
+aprun -n 32 -N 4 -d 8 ~/saena/build/Saena 2 10082
+aprun -n 64 -N 4 -d 8 ~/saena/build/Saena 2 100000
+aprun -n 128 -N 4 -d 8 ~/saena/build/Saena 2 10082
+
+
+aprun -n 4 -N 4 -d 8 ~/saena/build/Saena 2 40000
+aprun -n 8 -N 4 -d 8 ~/saena/build/Saena 2 40328
+aprun -n 16 -N 4 -d 8 ~/saena/build/Saena 2 400000
+aprun -n 32 -N 4 -d 8 ~/saena/build/Saena 2 40328
+aprun -n 64 -N 4 -d 8 ~/saena/build/Saena 2 400000
+aprun -n 128 -N 4 -d 8 ~/saena/build/Saena 2 40328

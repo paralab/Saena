@@ -1,0 +1,257 @@
+
+number of processes = 32
+2D Laplacian: dof on each proc = 8192 
+
+Matrix Assemble:
+min: 0.0332301
+ave: 0.0333534
+max: 0.0335262
+
+_____________________________
+
+size of matrix level 0: 262144
+nnz level 0: 1302544
+
+Aggregation: level 0
+min: 0.863787
+ave: 0.865397
+max: 0.865738
+
+
+Prolongation: level 0
+min: 0.00980711
+ave: 0.0099393
+max: 0.0105591
+
+
+Restriction: level 0
+min: 0.00583982
+ave: 0.00599588
+max: 0.006078
+
+
+Coarsening: level 0
+min: 0.138743
+ave: 0.138883
+max: 0.139033
+
+_____________________________
+
+size of matrix level 1: 54804
+nnz level 1: 593914
+
+Aggregation: level 1
+min: 0.00974703
+ave: 0.00975952
+max: 0.00976706
+
+
+Prolongation: level 1
+min: 0.00381708
+ave: 0.00387598
+max: 0.00400114
+
+
+Restriction: level 1
+min: 0.00150609
+ave: 0.00163968
+max: 0.00168204
+
+
+Coarsening: level 1
+min: 0.063004
+ave: 0.063763
+max: 0.0639479
+
+_____________________________
+
+size of matrix level 2: 7766
+nnz level 2: 178060
+
+Aggregation: level 2
+min: 0.00231385
+ave: 0.00232395
+max: 0.00233006
+
+
+Prolongation: level 2
+min: 0.00118399
+ave: 0.00125877
+max: 0.00128698
+
+
+Restriction: level 2
+min: 0.000809193
+ave: 0.000890031
+max: 0.000910997
+
+
+Coarsening: level 2
+min: 0.0233622
+ave: 0.0234976
+max: 0.0235331
+
+_____________________________
+
+size of matrix level 3: 1062
+nnz level 3: 43250
+
+Aggregation: level 3
+min: 0.00083518
+ave: 0.000875816
+max: 0.000983
+
+
+Prolongation: level 3
+min: 0.000746012
+ave: 0.000895455
+max: 0.000978947
+
+
+Restriction: level 3
+min: 0.000415087
+ave: 0.000460923
+max: 0.000503063
+
+
+Coarsening: level 3
+min: 0.0194778
+ave: 0.0195221
+max: 0.019558
+
+_____________________________
+
+size of matrix level 4: 203
+nnz level 4: 12495
+
+Setup:
+min: 1.1488
+ave: 1.15045
+max: 1.15075
+
+******************************************************
+
+initial residual = 1.476189e+04 
+
+
+Vcycle: level 0: pre
+min: 0.000172853
+ave: 0.000221178
+max: 0.000679016
+
+
+Vcycle: level 0: restriction
+min: 0.000225067
+ave: 0.000268839
+max: 0.00113916
+
+
+Vcycle: level 1: pre
+min: 0.00016284
+ave: 0.000272706
+max: 0.00121307
+
+
+Vcycle: level 1: restriction
+min: 8.91685e-05
+ave: 0.000225775
+max: 0.00122905
+
+
+Vcycle: level 2: pre
+min: 8.10623e-05
+ave: 0.000424832
+max: 0.00232601
+
+
+Vcycle: level 2: restriction
+min: 5.29289e-05
+ave: 0.000406235
+max: 0.00232387
+
+
+Vcycle: level 3: pre
+min: 5.19753e-05
+ave: 0.00102735
+max: 0.00354099
+
+
+Vcycle: level 3: restriction
+min: 3.38554e-05
+ave: 0.00118472
+max: 0.00437903
+
+
+Vcycle: level 4: solve coarsest
+min: 0.0038619
+ave: 0.00581226
+max: 0.010323
+
+
+Vcycle: level 3: prolongation
+min: 3.19481e-05
+ave: 5.61848e-05
+max: 8.91685e-05
+
+
+Vcycle: level 3: post
+min: 4.57764e-05
+ave: 6.5051e-05
+max: 9.5129e-05
+
+
+Vcycle: level 2: prolongation
+min: 4.91142e-05
+ave: 7.09146e-05
+max: 0.000103951
+
+
+Vcycle: level 2: post
+min: 4.79221e-05
+ave: 7.77319e-05
+max: 9.70364e-05
+
+
+Vcycle: level 1: prolongation
+min: 0.000143051
+ave: 0.000152513
+max: 0.000161886
+
+
+Vcycle: level 1: post
+min: 9.48906e-05
+ave: 0.000109702
+max: 0.000160933
+
+
+Vcycle: level 0: prolongation
+min: 0.000360012
+ave: 0.00038249
+max: 0.000401974
+
+
+Vcycle: level 0: post
+min: 0.000204086
+ave: 0.000223219
+max: 0.000259161
+
+******************************************************
+
+final:
+stopped at iteration    = 1 
+final absolute residual = 2.724287e+03
+relative residual       = 1.845487e-01 
+
+******************************************************
+
+Solve:
+min: 0.0148778
+ave: 0.0148996
+max: 0.0149071
+
+Application 13599505 resources: utime ~40s, stime ~7s, Rss ~26648, inblocks ~50982, outblocks ~132843
+Job Cleanup ran on Tue Oct 17 09:41:19 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit003.pbs
+NIDS         : 	 1024,1032,1040,1049
+NID Placement: 	 1024/32 1032/32 1040/32 1049/32 

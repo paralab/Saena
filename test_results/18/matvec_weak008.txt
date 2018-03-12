@@ -1,0 +1,303 @@
+folder 13
+isend and irecv
+export OMP_NUM_THREADS=14
+
+node = 1
+mpirun -np 1 ../petsc010 
+3969682
+
+number of processes = 1
+
+Saena Laplacian:
+Mbig = 262144, M = 262144, nnz_g = 1810432, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+4.94011e-06
+0.000456052
+6.3458e-08
+5.04389e-07
+1.09389e-07
+
+number of processes = 1
+
+Saena Laplacian:
+Mbig = 262144, M = 262144, nnz_g = 1810432, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+4.81855e-06
+0.000461701
+6.27149e-08
+4.34443e-07
+8.80302e-08
+
+number of processes = 1
+
+Saena Laplacian:
+Mbig = 262144, M = 262144, nnz_g = 1810432, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+5.10381e-06
+0.000933766
+8.85661e-08
+4.13703e-07
+2.04283e-07
+
+--------------------------------------------------------
+
+node = 1
+mpirun -np 2 ../petsc010 
+3969703
+
+number of processes = 2
+
+Saena Laplacian:
+Mbig = 524288, M = 262144, nnz_g = 3629056, nnz_l = 1814528
+
+experiment 1: matvec_iter = 300
+9.83718e-06
+0.00184104
+2.30549e-05
+9.10297e-06
+1.12237e-05
+
+number of processes = 2
+
+Saena Laplacian:
+Mbig = 524288, M = 262144, nnz_g = 3629056, nnz_l = 1814528
+
+experiment 1: matvec_iter = 300
+9.95157e-06
+0.00188762
+1.96711e-05
+8.85093e-06
+9.91592e-06
+
+number of processes = 2
+
+Saena Laplacian:
+Mbig = 524288, M = 262144, nnz_g = 3629056, nnz_l = 1814528
+
+experiment 1: matvec_iter = 300
+1.05816e-05
+0.00184686
+3.09735e-05
+1.20747e-05
+1.07882e-05
+
+--------------------------------------------------------
+
+node = 2
+mpirun -np 4 ../petsc010 
+3969704
+
+number of processes = 4
+
+Saena Laplacian:
+Mbig = 1048576, M = 262144, nnz_g = 7274496, nnz_l = 1814528
+
+experiment 1: matvec_iter = 300
+1.64872e-05
+0.0018515
+7.8434e-05
+1.68457e-05
+0.000211704
+
+number of processes = 4
+
+Saena Laplacian:
+Mbig = 1048576, M = 262144, nnz_g = 7274496, nnz_l = 1814528
+
+experiment 1: matvec_iter = 300
+1.61544e-05
+0.00162343
+7.21224e-05
+1.41126e-05
+0.000185298
+
+number of processes = 4
+
+Saena Laplacian:
+Mbig = 1048576, M = 262144, nnz_g = 7274496, nnz_l = 1814528
+
+experiment 1: matvec_iter = 300
+1.7799e-05
+0.00165063
+7.3758e-05
+1.4254e-05
+0.000196421
+
+--------------------------------------------------------
+
+node = 3
+mpirun -np 6 ../petsc010 
+3969705
+
+number of processes = 6
+
+Saena Laplacian:
+Mbig = 1572864, M = 262144, nnz_g = 10928128, nnz_l = 1813131
+
+experiment 1: matvec_iter = 300
+6.04888e-05
+0.00183624
+0.00011958
+2.36857e-05
+0.00025154
+
+number of processes = 6
+
+Saena Laplacian:
+Mbig = 1572864, M = 262144, nnz_g = 10928128, nnz_l = 1813131
+
+experiment 1: matvec_iter = 300
+2.6511e-05
+0.00187053
+0.000120033
+2.35909e-05
+0.000263891
+
+number of processes = 6
+
+Saena Laplacian:
+Mbig = 1572864, M = 262144, nnz_g = 10928128, nnz_l = 1813131
+
+experiment 1: matvec_iter = 300
+3.11731e-05
+0.00159324
+0.000126597
+2.45311e-05
+0.000351662
+
+--------------------------------------------------------
+
+node = 4
+mpirun -np 8 ../petsc010 
+3969706
+
+number of processes = 8
+
+Saena Laplacian:
+Mbig = 2097152, M = 262144, nnz_g = 14581760, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.00012097
+0.00233471
+0.000251743
+6.04033e-06
+0.0019731
+
+number of processes = 8
+
+Saena Laplacian:
+Mbig = 2097152, M = 262144, nnz_g = 14581760, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.000122818
+0.00232364
+0.000262165
+5.63981e-06
+0.00206016
+
+number of processes = 8
+
+Saena Laplacian:
+Mbig = 2097152, M = 262144, nnz_g = 14581760, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.000116149
+0.00240341
+0.000262767
+5.76714e-06
+0.00185758
+
+--------------------------------------------------------
+
+node = 6
+mpirun -np 12 ../petsc010 
+3969707
+
+number of processes = 12
+
+Saena Laplacian:
+Mbig = 3145728, M = 262144, nnz_g = 21889024, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.000119156
+0.00214995
+0.000239429
+5.95801e-06
+0.00211477
+
+number of processes = 12
+
+Saena Laplacian:
+Mbig = 3145728, M = 262144, nnz_g = 21889024, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.000114916
+0.00196407
+0.00025673
+6.51982e-06
+0.00210953
+
+number of processes = 12
+
+Saena Laplacian:
+Mbig = 3145728, M = 262144, nnz_g = 21889024, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.000120151
+0.00206775
+0.000242749
+6.30147e-06
+0.00251161
+
+--------------------------------------------------------
+
+node = 8
+mpirun -np 16 ../petsc010 
+3969708
+
+number of processes = 16
+
+Saena Laplacian:
+Mbig = 4194304, M = 262144, nnz_g = 29196288, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.000122282
+0.00232354
+0.000268758
+6.50924e-06
+0.00236681
+
+number of processes = 16
+
+Saena Laplacian:
+Mbig = 4194304, M = 262144, nnz_g = 29196288, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.000113867
+0.00207455
+0.000280666
+6.13258e-06
+0.00241618
+
+number of processes = 16
+
+Saena Laplacian:
+Mbig = 4194304, M = 262144, nnz_g = 29196288, nnz_l = 1810432
+
+experiment 1: matvec_iter = 300
+0.000117334
+0.001971
+0.000272192
+6.59433e-06
+0.00227549
+
+--------------------------------------------------------
+
+node = 12
+mpirun -np 24 ../petsc010
+3969709
+
+

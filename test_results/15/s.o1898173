@@ -1,0 +1,13 @@
+
+number of processes = 1
+2D Laplacian: dof on each proc = 20000 
+
+error: (dof_local * nprocs = 20000) should be a squared number!
+
+Application 13876914 exit codes: 1
+Application 13876914 resources: utime ~0s, stime ~0s, Rss ~5324, inblocks ~12230, outblocks ~33209
+Job Cleanup ran on Thu Oct 19 21:53:31 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit0001.pbs
+NIDS         : 	 882
+NID Placement: 	 882/32 

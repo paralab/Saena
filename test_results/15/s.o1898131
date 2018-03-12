@@ -1,0 +1,2061 @@
+
+number of processes = 16
+2D Laplacian: dof on each proc = 10000 
+
+Matrix Assemble:
+min: 0.037066
+ave: 0.0371588
+max: 0.037293
+
+_____________________________
+
+size of matrix level 0: 160000
+nnz level 0: 792024
+
+Aggregation: level 0
+min: 0.74225
+ave: 0.743251
+max: 0.743482
+
+
+Prolongation: level 0
+min: 0.0119739
+ave: 0.0122355
+max: 0.0123639
+
+
+Restriction: level 0
+min: 0.00694203
+ave: 0.00710455
+max: 0.00715017
+
+Ac->last_M_shrink = 160000, Ac->Mbig = 34418, division = 4thre1 = 20
+rank = 15, M = 10625, nnz_l = 50872, nnz_g = 792024, Ac.M = 2472, Ac.nnz_l = 20445 
+rank = 1, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2145, Ac.nnz_l = 22349 
+rank = 7, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2121, Ac.nnz_l = 21900 
+rank = 5, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2125, Ac.nnz_l = 22002 
+rank = 6, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2165, Ac.nnz_l = 22782 
+
+rank = 3, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2172, Ac.nnz_l = 22951 
+Coarsening: level 0
+rank = 2, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2141, Ac.nnz_l = 22332 
+rank = 4, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2129, Ac.nnz_l = 22089 
+min: 0.120231
+ave: 0.120688
+max: 0.120869
+
+rank = 0, M = 10000, nnz_l = 47762, nnz_g = 792024, Ac.M = 2430, Ac.nnz_l = 20822 
+_____________________________
+
+size of matrix level 1: 34418
+nnz level 1: 346662
+row_reduction_min = 0.215113, row_reduction_threshold = 0.900000 
+
+Aggregation: level 1
+min: 0.011111
+ave: 0.0111227
+max: 0.011127
+
+
+Prolongation: level 1
+min: 0.00379395
+ave: 0.00391585
+max: 0.00395417
+
+
+Restriction: level 1
+min: 0.00161004
+ave: 0.0016827
+max: 0.00171185
+
+Ac->last_M_shrink = 160000, Ac->Mbig = 6562, division = 24thre1 = 20
+rank = 1, M = 2145, nnz_l = 22349, nnz_g = 346662, Ac.M = 360, Ac.nnz_l = 7127 
+rank = 5, M = 2125, nnz_l = 22002, nnz_g = 346662, Ac.M = 368, Ac.nnz_l = 7372 
+rank = 7, M = 2121, nnz_l = 21900, nnz_g = 346662, Ac.M = 354, Ac.nnz_l = 7023 
+rank = 6, M = 2165, nnz_l = 22782, nnz_g = 346662, Ac.M = 359, Ac.nnz_l = 7173 
+rank = 3, M = 2172, nnz_l = 22951, nnz_g = 346662, Ac.M = 363, Ac.nnz_l = 7349 
+rank = 2, M = 2141, nnz_l = 22332, nnz_g = 346662, Ac.M = 363, Ac.nnz_l = 7262 
+rank = 4, M = 2129, nnz_l = 22089, nnz_g = 346662, Ac.M = 1433, Ac.nnz_l = 28442 
+
+Coarsening: level 1
+min: 0.054471
+ave: 0.0559121
+max: 0.0597401
+
+rank = 0, M = 2430, nnz_l = 20822, nnz_g = 346662, Ac.M = 1826, Ac.nnz_l = 28016 
+_____________________________
+
+size of matrix level 2: 6562
+nnz level 2: 113594
+row_reduction_min = 0.190656, row_reduction_threshold = 0.900000 
+
+Aggregation: level 2
+min: 0.00498891
+ave: 0.00499523
+max: 0.00500202
+
+rank = 14, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2090, Ac.nnz_l = 21492 
+rank = 9, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2088, Ac.nnz_l = 21317 
+rank = 13, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2088, Ac.nnz_l = 21428 
+rank = 12, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2055, Ac.nnz_l = 20789 
+rank = 11, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2102, Ac.nnz_l = 21670 
+rank = 10, M = 10000, nnz_l = 49750, nnz_g = 792024, Ac.M = 2114, Ac.nnz_l = 21856 
+rank = 8, M = 9375, nnz_l = 46640, nnz_g = 792024, Ac.M = 1981, Ac.nnz_l = 20438 
+rank = 9, M = 2088, nnz_l = 21317, nnz_g = 346662, Ac.M = 365, Ac.nnz_l = 7226 
+rank = 13, M = 2088, nnz_l = 21428, nnz_g = 346662, Ac.M = 373, Ac.nnz_l = 7557 
+rank = 15, M = 2472, nnz_l = 20445, nnz_g = 346662, Ac.M = 769, Ac.nnz_l = 6634 
+rank = 14, M = 2090, nnz_l = 21492, nnz_g = 346662, Ac.M = 364, Ac.nnz_l = 7265 
+rank = 11, M = 2102, nnz_l = 21670, nnz_g = 346662, Ac.M = 358, Ac.nnz_l = 7028 
+rank = 10, M = 2114, nnz_l = 21856, nnz_g = 346662, Ac.M = 367, Ac.nnz_l = 7416 
+rank = 12, M = 2055, nnz_l = 20789, nnz_g = 346662, Ac.M = 1877, Ac.nnz_l = 28843 
+rank = 8, M = 1981, nnz_l = 20438, nnz_g = 346662, Ac.M = 1426, Ac.nnz_l = 28293 
+
+Prolongation: level 2
+min: 0.00454402
+ave: 0.00460571
+max: 0.00464296
+
+
+Restriction: level 2
+min: 0.00156093
+ave: 0.00162995
+max: 0.00166106
+
+Ac->last_M_shrink = 6562, Ac->Mbig = 2268, division = 2thre1 = 20
+rank = 1, M = 1433, nnz_l = 28442, nnz_g = 113594, Ac.M = 362, Ac.nnz_l = 7192 
+rank = 3, M = 1877, nnz_l = 28843, nnz_g = 113594, Ac.M = 771, Ac.nnz_l = 7059 
+rank = 2, M = 1426, nnz_l = 28293, nnz_g = 113594, Ac.M = 372, Ac.nnz_l = 7830 
+
+Coarsening: level 2
+min: 0.0719569
+ave: 0.0722241
+max: 0.0725441
+
+rank = 0, M = 1826, nnz_l = 28016, nnz_g = 113594, Ac.M = 763, Ac.nnz_l = 6829 
+_____________________________
+
+size of matrix level 3: 2268
+nnz level 3: 28910
+row_reduction_min = 0.345626, row_reduction_threshold = 0.900000 
+
+Aggregation: level 3
+min: 0.00144792
+ave: 0.00146401
+max: 0.00147104
+
+
+Prolongation: level 3
+min: 0.00103307
+ave: 0.00107771
+max: 0.00110483
+
+
+Restriction: level 3
+min: 0.00031805
+ave: 0.000361204
+max: 0.000386953
+
+Ac->last_M_shrink = 6562, Ac->Mbig = 1675, division = 3thre1 = 20
+rank = 3, M = 771, nnz_l = 7059, nnz_g = 28910, Ac.M = 623, Ac.nnz_l = 1385 
+rank = 1, M = 362, nnz_l = 7192, nnz_g = 28910, Ac.M = 217, Ac.nnz_l = 1010 
+rank = 2, M = 372, nnz_l = 7830, nnz_g = 28910, Ac.M = 216, Ac.nnz_l = 1096 
+
+Coarsening: level 3
+min: 0.017983
+ave: 0.0182649
+max: 0.019069
+
+rank = 0, M = 763, nnz_l = 6829, nnz_g = 28910, Ac.M = 619, Ac.nnz_l = 1332 
+_____________________________
+
+size of matrix level 4: 1675
+nnz level 4: 4823
+row_reduction_min = 0.738536, row_reduction_threshold = 0.900000 
+
+Aggregation: level 4
+min: 0.00068903
+ave: 0.000696719
+max: 0.000700951
+
+
+Prolongation: level 4
+min: 0.000226021
+ave: 0.000257313
+max: 0.000279903
+
+
+Restriction: level 4
+min: 0.000154972
+ave: 0.000187278
+max: 0.000210047
+
+Ac->last_M_shrink = 6562, Ac->Mbig = 1609, division = 4thre1 = 20
+rank = 3, M = 623, nnz_l = 1385, nnz_g = 4823, Ac.M = 605, Ac.nnz_l = 653 
+rank = 1, M = 217, nnz_l = 1010, nnz_g = 4823, Ac.M = 203, Ac.nnz_l = 239 
+
+Coarsening: level 4
+min: 0.00216699
+ave: 0.00219625
+max: 0.00221801
+
+rank = 0, M = 619, nnz_l = 1332, nnz_g = 4823, Ac.M = 602, Ac.nnz_l = 650 
+_____________________________
+
+size of matrix level 5: 1609
+nnz level 5: 1765
+row_reduction_min = 0.960597, row_reduction_threshold = 0.900000 
+
+Setup:
+min: 1.06918
+ave: 1.07025
+max: 1.07045
+
+rank = 2, M = 216, nnz_l = 1096, nnz_g = 4823, Ac.M = 199, Ac.nnz_l = 223 
+******************************************************
+
+initial residual = 1.155240e+04 
+
+
+Vcycle: level 0: pre
+min: 0.000475883
+ave: 0.000531942
+max: 0.000570059
+
+
+Vcycle: level 0: restriction
+min: 0.000257015
+ave: 0.000277251
+max: 0.00029707
+
+
+Vcycle: level 1: pre
+min: 0.000386953
+ave: 0.000422597
+max: 0.000442982
+
+
+Vcycle: level 1: restriction
+min: 0.00012207
+ave: 0.000137284
+max: 0.000148058
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 1.90735e-06
+ave: 8.40425e-06
+max: 1.90735e-05
+
+
+Vcycle: level 2: pre
+min: 0.000429153
+ave: 0.000441372
+max: 0.000459194
+
+
+Vcycle: level 2: restriction
+min: 0.000105858
+ave: 0.000110686
+max: 0.000122786
+
+
+Vcycle: level 3: pre
+min: 0.000215054
+ave: 0.000238597
+max: 0.000250101
+
+
+Vcycle: level 3: restriction
+min: 3.31402e-05
+ave: 4.27961e-05
+max: 5.00679e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00262904
+ave: 0.00267154
+max: 0.00270009
+
+
+Vcycle: level 3: prolongation
+min: 5.10216e-05
+ave: 5.55515e-05
+max: 6.41346e-05
+
+
+Vcycle: level 3: post
+min: 0.000187874
+ave: 0.00021261
+max: 0.000228882
+
+
+Vcycle: level 2: prolongation
+min: 0.000151873
+ave: 0.000154197
+max: 0.000159025
+
+
+Vcycle: level 2: post
+min: 0.000331163
+ave: 0.000342786
+max: 0.000359058
+
+
+Vcycle: level 1: un-shrink_u
+min: 1.90735e-06
+ave: 6.03497e-06
+max: 1.5974e-05
+
+
+Vcycle: level 1: prolongation
+min: 0.000176907
+ave: 0.000201732
+max: 0.000216961
+
+
+Vcycle: level 1: post
+min: 0.000324965
+ave: 0.000360131
+max: 0.000384092
+
+
+Vcycle: level 0: prolongation
+min: 0.000437021
+ave: 0.000457957
+max: 0.000485897
+
+
+Vcycle: level 0: post
+min: 0.000550032
+ave: 0.000566959
+max: 0.000628948
+
+
+Vcycle: level 0: pre
+min: 0.000413179
+ave: 0.000440836
+max: 0.000494003
+
+
+Vcycle: level 0: restriction
+min: 0.000200987
+ave: 0.000218332
+max: 0.000236988
+
+
+Vcycle: level 1: pre
+min: 0.000332832
+ave: 0.000348151
+max: 0.000372887
+
+
+Vcycle: level 1: restriction
+min: 7.9155e-05
+ave: 9.59635e-05
+max: 0.000110149
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.15905e-06
+max: 7.86781e-06
+
+
+Vcycle: level 2: pre
+min: 0.000363111
+ave: 0.000380814
+max: 0.000400066
+
+
+Vcycle: level 2: restriction
+min: 8.91685e-05
+ave: 9.61423e-05
+max: 0.000104189
+
+
+Vcycle: level 3: pre
+min: 0.000211954
+ave: 0.000225008
+max: 0.000236988
+
+
+Vcycle: level 3: restriction
+min: 3.19481e-05
+ave: 3.85642e-05
+max: 4.41074e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00246692
+ave: 0.00249821
+max: 0.00252008
+
+
+Vcycle: level 3: prolongation
+min: 4.79221e-05
+ave: 5.12004e-05
+max: 5.6982e-05
+
+
+Vcycle: level 3: post
+min: 0.00019598
+ave: 0.000203311
+max: 0.000210047
+
+
+Vcycle: level 2: prolongation
+min: 0.000128031
+ave: 0.000133693
+max: 0.000140905
+
+
+Vcycle: level 2: post
+min: 0.000331163
+ave: 0.00034076
+max: 0.000355005
+
+
+Vcycle: level 1: un-shrink_u
+min: 3.09944e-06
+ave: 5.23031e-06
+max: 8.10623e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000150919
+ave: 0.000169516
+max: 0.000193119
+
+
+Vcycle: level 1: post
+min: 0.000319004
+ave: 0.000348285
+max: 0.000375032
+
+
+Vcycle: level 0: prolongation
+min: 0.000355959
+ave: 0.000382259
+max: 0.000447035
+
+
+Vcycle: level 0: post
+min: 0.000509024
+ave: 0.000539005
+max: 0.000596046
+
+
+Vcycle: level 0: pre
+min: 0.000415802
+ave: 0.000442535
+max: 0.00050211
+
+
+Vcycle: level 0: restriction
+min: 0.000182867
+ave: 0.000208527
+max: 0.000231981
+
+
+Vcycle: level 1: pre
+min: 0.000328064
+ave: 0.000347197
+max: 0.000366926
+
+
+Vcycle: level 1: restriction
+min: 7.10487e-05
+ave: 9.32068e-05
+max: 0.00010705
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.11434e-06
+max: 7.86781e-06
+
+
+Vcycle: level 2: pre
+min: 0.000366211
+ave: 0.000385106
+max: 0.000409126
+
+
+Vcycle: level 2: restriction
+min: 8.67844e-05
+ave: 9.47714e-05
+max: 0.000104189
+
+
+Vcycle: level 3: pre
+min: 0.000226974
+ave: 0.0002352
+max: 0.000240803
+
+
+Vcycle: level 3: restriction
+min: 3.21865e-05
+ave: 4.19021e-05
+max: 5.22137e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00247097
+ave: 0.00250822
+max: 0.00253105
+
+
+Vcycle: level 3: prolongation
+min: 4.60148e-05
+ave: 5.01871e-05
+max: 5.6982e-05
+
+
+Vcycle: level 3: post
+min: 0.000192881
+ave: 0.000211477
+max: 0.000235081
+
+
+Vcycle: level 2: prolongation
+min: 0.000128984
+ave: 0.000132442
+max: 0.000135899
+
+
+Vcycle: level 2: post
+min: 0.000339031
+ave: 0.00034225
+max: 0.000347853
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 5.34952e-06
+max: 7.86781e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000154018
+ave: 0.000162974
+max: 0.000177145
+
+
+Vcycle: level 1: post
+min: 0.000317812
+ave: 0.000353187
+max: 0.00037694
+
+
+Vcycle: level 0: prolongation
+min: 0.000347137
+ave: 0.000372335
+max: 0.00040102
+
+
+Vcycle: level 0: post
+min: 0.000504971
+ave: 0.000525743
+max: 0.000580072
+
+
+Vcycle: level 0: pre
+min: 0.000414133
+ave: 0.00043802
+max: 0.000501156
+
+
+Vcycle: level 0: restriction
+min: 0.000187874
+ave: 0.000205263
+max: 0.000221968
+
+
+Vcycle: level 1: pre
+min: 0.000329018
+ave: 0.00034672
+max: 0.000360012
+
+
+Vcycle: level 1: restriction
+min: 7.70092e-05
+ave: 9.17464e-05
+max: 0.000104904
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 2.93553e-06
+max: 6.91414e-06
+
+
+Vcycle: level 2: pre
+min: 0.000357151
+ave: 0.0003708
+max: 0.000381947
+
+
+Vcycle: level 2: restriction
+min: 9.20296e-05
+ave: 9.82881e-05
+max: 0.000102043
+
+
+Vcycle: level 3: pre
+min: 0.000200987
+ave: 0.000223994
+max: 0.000241041
+
+
+Vcycle: level 3: restriction
+min: 3.19481e-05
+ave: 4.22597e-05
+max: 4.91142e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00237298
+ave: 0.00240535
+max: 0.0024271
+
+
+Vcycle: level 3: prolongation
+min: 4.50611e-05
+ave: 4.98295e-05
+max: 5.81741e-05
+
+
+Vcycle: level 3: post
+min: 0.000196934
+ave: 0.000204444
+max: 0.000212908
+
+
+Vcycle: level 2: prolongation
+min: 0.000128984
+ave: 0.000132203
+max: 0.000134945
+
+
+Vcycle: level 2: post
+min: 0.000338078
+ave: 0.000352085
+max: 0.000377178
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 5.24521e-06
+max: 9.05991e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000147104
+ave: 0.000163093
+max: 0.000175953
+
+
+Vcycle: level 1: post
+min: 0.000315905
+ave: 0.000348464
+max: 0.000375986
+
+
+Vcycle: level 0: prolongation
+min: 0.000342131
+ave: 0.000367776
+max: 0.000393867
+
+
+Vcycle: level 0: post
+min: 0.000491858
+ave: 0.000521302
+max: 0.000577927
+
+
+Vcycle: level 0: pre
+min: 0.000411987
+ave: 0.000433624
+max: 0.000494003
+
+
+Vcycle: level 0: restriction
+min: 0.00018692
+ave: 0.000204593
+max: 0.000226974
+
+
+Vcycle: level 1: pre
+min: 0.000331879
+ave: 0.000346348
+max: 0.000364065
+
+
+Vcycle: level 1: restriction
+min: 7.70092e-05
+ave: 9.12994e-05
+max: 0.000101089
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.09944e-06
+max: 8.10623e-06
+
+
+Vcycle: level 2: pre
+min: 0.000366926
+ave: 0.000385702
+max: 0.000417948
+
+
+Vcycle: level 2: restriction
+min: 8.4877e-05
+ave: 9.36985e-05
+max: 0.000102997
+
+
+Vcycle: level 3: pre
+min: 0.000200033
+ave: 0.000219882
+max: 0.00023818
+
+
+Vcycle: level 3: restriction
+min: 3.09944e-05
+ave: 3.96967e-05
+max: 4.79221e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00242996
+ave: 0.00246549
+max: 0.00248694
+
+
+Vcycle: level 3: prolongation
+min: 4.48227e-05
+ave: 4.91738e-05
+max: 5.48363e-05
+
+
+Vcycle: level 3: post
+min: 0.000175953
+ave: 0.000192285
+max: 0.000226021
+
+
+Vcycle: level 2: prolongation
+min: 0.000129938
+ave: 0.000132918
+max: 0.000135899
+
+
+Vcycle: level 2: post
+min: 0.000339031
+ave: 0.000346541
+max: 0.000349998
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 5.1409e-06
+max: 7.86781e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000145197
+ave: 0.00016585
+max: 0.000185013
+
+
+Vcycle: level 1: post
+min: 0.000316858
+ave: 0.000348061
+max: 0.000377893
+
+
+Vcycle: level 0: prolongation
+min: 0.000335932
+ave: 0.000366524
+max: 0.000399113
+
+
+Vcycle: level 0: post
+min: 0.00049305
+ave: 0.00051941
+max: 0.000592947
+
+
+Vcycle: level 0: pre
+min: 0.000402927
+ave: 0.000440925
+max: 0.000495911
+
+
+Vcycle: level 0: restriction
+min: 0.000180006
+ave: 0.000205621
+max: 0.000228882
+
+
+Vcycle: level 1: pre
+min: 0.000319004
+ave: 0.000348136
+max: 0.000365019
+
+
+Vcycle: level 1: restriction
+min: 7.9155e-05
+ave: 8.99136e-05
+max: 0.000102997
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.12924e-06
+max: 7.15256e-06
+
+
+Vcycle: level 2: pre
+min: 0.000362873
+ave: 0.000382185
+max: 0.000396013
+
+
+Vcycle: level 2: restriction
+min: 9.60827e-05
+ave: 9.90033e-05
+max: 0.000102043
+
+
+Vcycle: level 3: pre
+min: 0.000205994
+ave: 0.000227809
+max: 0.000241041
+
+
+Vcycle: level 3: restriction
+min: 3.19481e-05
+ave: 3.86834e-05
+max: 4.3869e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00229597
+ave: 0.00233364
+max: 0.00235486
+
+
+Vcycle: level 3: prolongation
+min: 4.19617e-05
+ave: 4.673e-05
+max: 5.10216e-05
+
+
+Vcycle: level 3: post
+min: 0.000189066
+ave: 0.000205576
+max: 0.000228167
+
+
+Vcycle: level 2: prolongation
+min: 0.000124931
+ave: 0.000131011
+max: 0.000138044
+
+
+Vcycle: level 2: post
+min: 0.000329018
+ave: 0.000349164
+max: 0.000362873
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 5.1856e-06
+max: 8.10623e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000145197
+ave: 0.00016351
+max: 0.000190973
+
+
+Vcycle: level 1: post
+min: 0.00030899
+ave: 0.000595763
+max: 0.00121689
+
+
+Vcycle: level 0: prolongation
+min: 0.000355005
+ave: 0.000520214
+max: 0.001333
+
+
+Vcycle: level 0: post
+min: 0.000490189
+ave: 0.000799522
+max: 0.0015471
+
+
+Vcycle: level 0: pre
+min: 0.000442982
+ave: 0.000477239
+max: 0.000526905
+
+
+Vcycle: level 0: restriction
+min: 0.000211
+ave: 0.000237614
+max: 0.000262976
+
+
+Vcycle: level 1: pre
+min: 0.000328064
+ave: 0.000625372
+max: 0.00132608
+
+
+Vcycle: level 1: restriction
+min: 0.000100136
+ave: 0.000121593
+max: 0.000138044
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.53158e-06
+max: 8.82149e-06
+
+
+Vcycle: level 2: pre
+min: 0.000360012
+ave: 0.000376761
+max: 0.000391006
+
+
+Vcycle: level 2: restriction
+min: 9.70364e-05
+ave: 0.000100493
+max: 0.000103951
+
+
+Vcycle: level 3: pre
+min: 0.000213146
+ave: 0.000230551
+max: 0.000241995
+
+
+Vcycle: level 3: restriction
+min: 3.21865e-05
+ave: 3.98755e-05
+max: 4.50611e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00223088
+ave: 0.00226223
+max: 0.00228405
+
+
+Vcycle: level 3: prolongation
+min: 4.79221e-05
+ave: 4.91738e-05
+max: 5.19753e-05
+
+
+Vcycle: level 3: post
+min: 0.000185966
+ave: 0.000209451
+max: 0.000228882
+
+
+Vcycle: level 2: prolongation
+min: 0.000133991
+ave: 0.000138581
+max: 0.000142097
+
+
+Vcycle: level 2: post
+min: 0.000339031
+ave: 0.000350773
+max: 0.000355005
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 4.97699e-06
+max: 7.86781e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000141144
+ave: 0.000308767
+max: 0.00104094
+
+
+Vcycle: level 1: post
+min: 0.000354052
+ave: 0.000664935
+max: 0.00134516
+
+
+Vcycle: level 0: prolongation
+min: 0.000344992
+ave: 0.00051342
+max: 0.0013268
+
+
+Vcycle: level 0: post
+min: 0.000499964
+ave: 0.000806645
+max: 0.00152898
+
+
+Vcycle: level 0: pre
+min: 0.00046587
+ave: 0.000485316
+max: 0.000531912
+
+
+Vcycle: level 0: restriction
+min: 0.000216961
+ave: 0.000237435
+max: 0.000261068
+
+
+Vcycle: level 1: pre
+min: 0.000328064
+ave: 0.000617191
+max: 0.00128794
+
+
+Vcycle: level 1: restriction
+min: 9.89437e-05
+ave: 0.000190884
+max: 0.000561953
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.36766e-06
+max: 9.05991e-06
+
+
+Vcycle: level 2: pre
+min: 0.000384092
+ave: 0.000396848
+max: 0.000424147
+
+
+Vcycle: level 2: restriction
+min: 8.89301e-05
+ave: 9.72152e-05
+max: 0.000108957
+
+
+Vcycle: level 3: pre
+min: 0.000203848
+ave: 0.000227451
+max: 0.000252962
+
+
+Vcycle: level 3: restriction
+min: 3.31402e-05
+ave: 4.08292e-05
+max: 4.60148e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00217509
+ave: 0.00220579
+max: 0.00222707
+
+
+Vcycle: level 3: prolongation
+min: 4.19617e-05
+ave: 4.94719e-05
+max: 5.60284e-05
+
+
+Vcycle: level 3: post
+min: 0.00018692
+ave: 0.000200987
+max: 0.00022006
+
+
+Vcycle: level 2: prolongation
+min: 0.000133991
+ave: 0.00014025
+max: 0.000144005
+
+
+Vcycle: level 2: post
+min: 0.000328064
+ave: 0.000341058
+max: 0.000354052
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 5.37932e-06
+max: 7.86781e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000141859
+ave: 0.000303984
+max: 0.00102401
+
+
+Vcycle: level 1: post
+min: 0.00037384
+ave: 0.000666514
+max: 0.00134587
+
+
+Vcycle: level 0: prolongation
+min: 0.000332117
+ave: 0.000507623
+max: 0.00133705
+
+
+Vcycle: level 0: post
+min: 0.000488043
+ave: 0.000549644
+max: 0.000609875
+
+
+Vcycle: level 0: pre
+min: 0.000414133
+ave: 0.000439897
+max: 0.000513077
+
+
+Vcycle: level 0: restriction
+min: 0.000183105
+ave: 0.000203356
+max: 0.000236034
+
+
+Vcycle: level 1: pre
+min: 0.000322819
+ave: 0.000346601
+max: 0.000377893
+
+
+Vcycle: level 1: restriction
+min: 7.10487e-05
+ave: 9.121e-05
+max: 0.000102997
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.11434e-06
+max: 7.86781e-06
+
+
+Vcycle: level 2: pre
+min: 0.000355005
+ave: 0.000373483
+max: 0.000390053
+
+
+Vcycle: level 2: restriction
+min: 9.01222e-05
+ave: 9.55462e-05
+max: 0.000102997
+
+
+Vcycle: level 3: pre
+min: 0.000205994
+ave: 0.000215054
+max: 0.000230074
+
+
+Vcycle: level 3: restriction
+min: 3.09944e-05
+ave: 4.02927e-05
+max: 4.50611e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.0020349
+ave: 0.00206643
+max: 0.00208998
+
+
+Vcycle: level 3: prolongation
+min: 4.60148e-05
+ave: 4.91738e-05
+max: 5.48363e-05
+
+
+Vcycle: level 3: post
+min: 0.000190973
+ave: 0.000202179
+max: 0.000207901
+
+
+Vcycle: level 2: prolongation
+min: 0.000125885
+ave: 0.00013119
+max: 0.000138998
+
+
+Vcycle: level 2: post
+min: 0.00033617
+ave: 0.000343025
+max: 0.000349998
+
+
+Vcycle: level 1: un-shrink_u
+min: 1.90735e-06
+ave: 5.06639e-06
+max: 7.86781e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000140905
+ave: 0.000156865
+max: 0.000167847
+
+
+Vcycle: level 1: post
+min: 0.000333071
+ave: 0.000348195
+max: 0.000380039
+
+
+Vcycle: level 0: prolongation
+min: 0.000331879
+ave: 0.000360563
+max: 0.00040102
+
+
+Vcycle: level 0: post
+min: 0.000498056
+ave: 0.000525162
+max: 0.0006001
+
+
+Vcycle: level 0: pre
+min: 0.000406981
+ave: 0.000440866
+max: 0.00048399
+
+
+Vcycle: level 0: restriction
+min: 0.00018692
+ave: 0.000204325
+max: 0.000231028
+
+
+Vcycle: level 1: pre
+min: 0.000317097
+ave: 0.000343665
+max: 0.00035882
+
+
+Vcycle: level 1: restriction
+min: 7.10487e-05
+ave: 9.20445e-05
+max: 0.000104189
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 2.98023e-06
+max: 6.91414e-06
+
+
+Vcycle: level 2: pre
+min: 0.000347853
+ave: 0.000367463
+max: 0.000386
+
+
+Vcycle: level 2: restriction
+min: 8.89301e-05
+ave: 9.47714e-05
+max: 0.000102043
+
+
+Vcycle: level 3: pre
+min: 0.00019598
+ave: 0.000218034
+max: 0.000240088
+
+
+Vcycle: level 3: restriction
+min: 3.19481e-05
+ave: 4.00543e-05
+max: 4.41074e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00199199
+ave: 0.00202501
+max: 0.00204706
+
+
+Vcycle: level 3: prolongation
+min: 4.69685e-05
+ave: 4.8697e-05
+max: 5.10216e-05
+
+
+Vcycle: level 3: post
+min: 0.000185966
+ave: 0.000196695
+max: 0.000221968
+
+
+Vcycle: level 2: prolongation
+min: 0.000124931
+ave: 0.000130415
+max: 0.000136852
+
+
+Vcycle: level 2: post
+min: 0.000339031
+ave: 0.000352442
+max: 0.000361919
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.14577e-06
+ave: 5.1856e-06
+max: 8.10623e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.00014019
+ave: 0.000159547
+max: 0.000173092
+
+
+Vcycle: level 1: post
+min: 0.000322104
+ave: 0.000340849
+max: 0.000385046
+
+
+Vcycle: level 0: prolongation
+min: 0.000324011
+ave: 0.000359684
+max: 0.000400066
+
+
+Vcycle: level 0: post
+min: 0.000480175
+ave: 0.000519067
+max: 0.000572205
+
+
+Vcycle: level 0: pre
+min: 0.000413179
+ave: 0.000441656
+max: 0.000496149
+
+
+Vcycle: level 0: restriction
+min: 0.000184059
+ave: 0.000203237
+max: 0.000228882
+
+
+Vcycle: level 1: pre
+min: 0.000319958
+ave: 0.000340939
+max: 0.000375986
+
+
+Vcycle: level 1: restriction
+min: 7.70092e-05
+ave: 9.25213e-05
+max: 0.000109911
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.11434e-06
+max: 6.91414e-06
+
+
+Vcycle: level 2: pre
+min: 0.000364065
+ave: 0.000383556
+max: 0.000399113
+
+
+Vcycle: level 2: restriction
+min: 9.20296e-05
+ave: 9.62615e-05
+max: 0.000102997
+
+
+Vcycle: level 3: pre
+min: 0.000205994
+ave: 0.000226319
+max: 0.000241041
+
+
+Vcycle: level 3: restriction
+min: 3.09944e-05
+ave: 4.11868e-05
+max: 4.79221e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00208092
+ave: 0.00211519
+max: 0.0021379
+
+
+Vcycle: level 3: prolongation
+min: 4.60148e-05
+ave: 4.69685e-05
+max: 4.79221e-05
+
+
+Vcycle: level 3: post
+min: 0.000191927
+ave: 0.000200212
+max: 0.0002141
+
+
+Vcycle: level 2: prolongation
+min: 0.000123978
+ave: 0.000131488
+max: 0.000139952
+
+
+Vcycle: level 2: post
+min: 0.000342131
+ave: 0.00035584
+max: 0.000363111
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 5.61774e-06
+max: 9.05991e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000146151
+ave: 0.000157416
+max: 0.000167847
+
+
+Vcycle: level 1: post
+min: 0.00031209
+ave: 0.000343144
+max: 0.000394106
+
+
+Vcycle: level 0: prolongation
+min: 0.000329018
+ave: 0.000360861
+max: 0.000398159
+
+
+Vcycle: level 0: post
+min: 0.000486135
+ave: 0.000517577
+max: 0.000559092
+
+
+Vcycle: level 0: pre
+min: 0.000404119
+ave: 0.000435606
+max: 0.000492811
+
+
+Vcycle: level 0: restriction
+min: 0.000185013
+ave: 0.000204459
+max: 0.000230789
+
+
+Vcycle: level 1: pre
+min: 0.000324011
+ave: 0.00034304
+max: 0.000358105
+
+
+Vcycle: level 1: restriction
+min: 6.98566e-05
+ave: 9.01222e-05
+max: 0.000106812
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.06964e-06
+max: 7.86781e-06
+
+
+Vcycle: level 2: pre
+min: 0.000361919
+ave: 0.000373542
+max: 0.000387192
+
+
+Vcycle: level 2: restriction
+min: 9.08375e-05
+ave: 9.59039e-05
+max: 0.000101805
+
+
+Vcycle: level 3: pre
+min: 0.000197887
+ave: 0.000207007
+max: 0.000214815
+
+
+Vcycle: level 3: restriction
+min: 3.09944e-05
+ave: 3.74317e-05
+max: 4.3869e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00194597
+ave: 0.00198483
+max: 0.00200915
+
+
+Vcycle: level 3: prolongation
+min: 4.50611e-05
+ave: 4.82798e-05
+max: 5.10216e-05
+
+
+Vcycle: level 3: post
+min: 0.000195026
+ave: 0.000199437
+max: 0.000203848
+
+
+Vcycle: level 2: prolongation
+min: 0.000121117
+ave: 0.000129819
+max: 0.000135183
+
+
+Vcycle: level 2: post
+min: 0.000328064
+ave: 0.000342727
+max: 0.000360012
+
+
+Vcycle: level 1: un-shrink_u
+min: 1.90735e-06
+ave: 5.126e-06
+max: 7.86781e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000142813
+ave: 0.000160649
+max: 0.000175953
+
+
+Vcycle: level 1: post
+min: 0.000324011
+ave: 0.00034517
+max: 0.000373125
+
+
+Vcycle: level 0: prolongation
+min: 0.000327826
+ave: 0.000363037
+max: 0.000404835
+
+
+Vcycle: level 0: post
+min: 0.000478983
+ave: 0.000525817
+max: 0.000576019
+
+
+Vcycle: level 0: pre
+min: 0.00041008
+ave: 0.000438899
+max: 0.00049305
+
+
+Vcycle: level 0: restriction
+min: 0.000187874
+ave: 0.000204787
+max: 0.000223875
+
+
+Vcycle: level 1: pre
+min: 0.000322104
+ave: 0.000348583
+max: 0.00041604
+
+
+Vcycle: level 1: restriction
+min: 7.10487e-05
+ave: 9.02116e-05
+max: 0.000100851
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 2.86102e-06
+max: 6.91414e-06
+
+
+Vcycle: level 2: pre
+min: 0.000363827
+ave: 0.000371397
+max: 0.000389814
+
+
+Vcycle: level 2: restriction
+min: 8.70228e-05
+ave: 9.34601e-05
+max: 0.000101805
+
+
+Vcycle: level 3: pre
+min: 0.000210047
+ave: 0.000218451
+max: 0.000226021
+
+
+Vcycle: level 3: restriction
+min: 3.09944e-05
+ave: 3.80278e-05
+max: 4.41074e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00503898
+ave: 0.00507277
+max: 0.00509405
+
+
+Vcycle: level 3: prolongation
+min: 4.69685e-05
+ave: 5.07832e-05
+max: 5.81741e-05
+
+
+Vcycle: level 3: post
+min: 0.000185966
+ave: 0.000203431
+max: 0.000217915
+
+
+Vcycle: level 2: prolongation
+min: 0.000133991
+ave: 0.000139236
+max: 0.000144005
+
+
+Vcycle: level 2: post
+min: 0.000330925
+ave: 0.000346422
+max: 0.000352859
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.14577e-06
+ave: 7.18236e-06
+max: 1.40667e-05
+
+
+Vcycle: level 1: prolongation
+min: 0.000147104
+ave: 0.000167355
+max: 0.000185013
+
+
+Vcycle: level 1: post
+min: 0.000339031
+ave: 0.000365794
+max: 0.000404119
+
+
+Vcycle: level 0: prolongation
+min: 0.000319958
+ave: 0.00037989
+max: 0.000429869
+
+
+Vcycle: level 0: post
+min: 0.000494957
+ave: 0.000540391
+max: 0.000641823
+
+
+Vcycle: level 0: pre
+min: 0.000414848
+ave: 0.000443429
+max: 0.00049901
+
+
+Vcycle: level 0: restriction
+min: 0.000188112
+ave: 0.000212803
+max: 0.000236034
+
+
+Vcycle: level 1: pre
+min: 0.000321865
+ave: 0.000348166
+max: 0.000402927
+
+
+Vcycle: level 1: restriction
+min: 7.9155e-05
+ave: 9.36985e-05
+max: 0.000105143
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 2.80142e-06
+max: 7.86781e-06
+
+
+Vcycle: level 2: pre
+min: 0.000352859
+ave: 0.000371218
+max: 0.000391006
+
+
+Vcycle: level 2: restriction
+min: 9.39369e-05
+ave: 9.57251e-05
+max: 9.70364e-05
+
+
+Vcycle: level 3: pre
+min: 0.000212908
+ave: 0.000219464
+max: 0.000225067
+
+
+Vcycle: level 3: restriction
+min: 3.19481e-05
+ave: 3.86834e-05
+max: 4.48227e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00187111
+ave: 0.00190181
+max: 0.00192094
+
+
+Vcycle: level 3: prolongation
+min: 4.60148e-05
+ave: 4.83394e-05
+max: 5.10216e-05
+
+
+Vcycle: level 3: post
+min: 0.000184059
+ave: 0.000201523
+max: 0.00022006
+
+
+Vcycle: level 2: prolongation
+min: 0.000129938
+ave: 0.000132501
+max: 0.000136137
+
+
+Vcycle: level 2: post
+min: 0.000336885
+ave: 0.000346422
+max: 0.000351906
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 5.1707e-06
+max: 8.10623e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000146151
+ave: 0.000158578
+max: 0.000171185
+
+
+Vcycle: level 1: post
+min: 0.000313997
+ave: 0.000338003
+max: 0.00036788
+
+
+Vcycle: level 0: prolongation
+min: 0.000319004
+ave: 0.000363201
+max: 0.000406981
+
+
+Vcycle: level 0: post
+min: 0.000501871
+ave: 0.000528634
+max: 0.00059104
+
+
+Vcycle: level 0: pre
+min: 0.000417948
+ave: 0.000436798
+max: 0.000470161
+
+
+Vcycle: level 0: restriction
+min: 0.000178099
+ave: 0.000203505
+max: 0.000230789
+
+
+Vcycle: level 1: pre
+min: 0.000325918
+ave: 0.000343904
+max: 0.000370979
+
+
+Vcycle: level 1: restriction
+min: 7.60555e-05
+ave: 9.02414e-05
+max: 0.00010705
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 3.03984e-06
+max: 7.15256e-06
+
+
+Vcycle: level 2: pre
+min: 0.000356913
+ave: 0.000369132
+max: 0.000374794
+
+
+Vcycle: level 2: restriction
+min: 9.10759e-05
+ave: 9.42349e-05
+max: 9.70364e-05
+
+
+Vcycle: level 3: pre
+min: 0.000192165
+ave: 0.00021261
+max: 0.000234127
+
+
+Vcycle: level 3: restriction
+min: 3.09944e-05
+ave: 4.19617e-05
+max: 5.10216e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00181794
+ave: 0.00185317
+max: 0.00187588
+
+
+Vcycle: level 3: prolongation
+min: 4.50611e-05
+ave: 4.78625e-05
+max: 5.00679e-05
+
+
+Vcycle: level 3: post
+min: 0.000195026
+ave: 0.000208259
+max: 0.000231981
+
+
+Vcycle: level 2: prolongation
+min: 0.000123024
+ave: 0.000130236
+max: 0.000138044
+
+
+Vcycle: level 2: post
+min: 0.000323057
+ave: 0.000344634
+max: 0.000357151
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.86102e-06
+ave: 5.00679e-06
+max: 7.86781e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000144005
+ave: 0.000156939
+max: 0.000169992
+
+
+Vcycle: level 1: post
+min: 0.000317097
+ave: 0.000340849
+max: 0.000372887
+
+
+Vcycle: level 0: prolongation
+min: 0.000325918
+ave: 0.000363231
+max: 0.000397921
+
+
+Vcycle: level 0: post
+min: 0.000488997
+ave: 0.000516653
+max: 0.000571966
+
+
+Vcycle: level 0: pre
+min: 0.000409842
+ave: 0.000440255
+max: 0.000519991
+
+
+Vcycle: level 0: restriction
+min: 0.000185966
+ave: 0.000204116
+max: 0.000224113
+
+
+Vcycle: level 1: pre
+min: 0.000309944
+ave: 0.000340968
+max: 0.000378847
+
+
+Vcycle: level 1: restriction
+min: 7.89165e-05
+ave: 9.17464e-05
+max: 0.000103951
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 9.53674e-07
+ave: 2.92063e-06
+max: 6.91414e-06
+
+
+Vcycle: level 2: pre
+min: 0.000362873
+ave: 0.00037396
+max: 0.000386
+
+
+Vcycle: level 2: restriction
+min: 9.48906e-05
+ave: 9.86457e-05
+max: 0.000104904
+
+
+Vcycle: level 3: pre
+min: 0.000187874
+ave: 0.000213683
+max: 0.000236988
+
+
+Vcycle: level 3: restriction
+min: 3.09944e-05
+ave: 3.96371e-05
+max: 4.3869e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00183082
+ave: 0.00187427
+max: 0.00190115
+
+
+Vcycle: level 3: prolongation
+min: 4.60148e-05
+ave: 4.82798e-05
+max: 5.00679e-05
+
+
+Vcycle: level 3: post
+min: 0.00018096
+ave: 0.000205457
+max: 0.000221968
+
+
+Vcycle: level 2: prolongation
+min: 0.000130177
+ave: 0.000132859
+max: 0.000137091
+
+
+Vcycle: level 2: post
+min: 0.000333071
+ave: 0.000341833
+max: 0.000358105
+
+
+Vcycle: level 1: un-shrink_u
+min: 3.09944e-06
+ave: 5.26011e-06
+max: 9.05991e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000145912
+ave: 0.000156417
+max: 0.000165939
+
+
+Vcycle: level 1: post
+min: 0.00030303
+ave: 0.000339314
+max: 0.000370979
+
+
+Vcycle: level 0: prolongation
+min: 0.000326872
+ave: 0.000360951
+max: 0.000394106
+
+
+Vcycle: level 0: post
+min: 0.000477076
+ave: 0.000517681
+max: 0.000601053
+
+******************************************************
+
+final:
+stopped at iteration    = 16 
+final absolute residual = 6.312797e-05
+relative residual       = 5.464489e-09 
+
+******************************************************
+
+Solve:
+min: 0.149721
+ave: 0.149739
+max: 0.149747
+
+Application 13870724 resources: utime ~22s, stime ~4s, Rss ~40500, inblocks ~25372, outblocks ~66494
+Job Cleanup ran on Thu Oct 19 19:44:41 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit0002.pbs
+NIDS         : 	 77,798
+NID Placement: 	 77/32 798/32 

@@ -1,0 +1,398 @@
+
+number of processes = 4
+2D Laplacian: dof on each proc = 8100 
+
+Matrix Assemble:
+min: 0.026526
+ave: 0.0269073
+max: 0.027359
+
+_____________________________
+
+size of matrix level 0: 32400
+nnz level 0: 158424
+
+Aggregation: level 0
+min: 0.279269
+ave: 0.279815
+max: 0.280388
+
+
+Prolongation: level 0
+min: 0.0119128
+ave: 0.0122842
+max: 0.0125401
+
+
+Restriction: level 0
+min: 0.00605512
+ave: 0.00637907
+max: 0.00667214
+
+
+Coarsening: level 0
+min: 0.076431
+ave: 0.076774
+max: 0.077101
+
+_____________________________
+
+size of matrix level 1: 7260
+nnz level 1: 69140
+row_reduction_min = 0.224074, row_reduction_threshold = 0.900000 
+
+Aggregation: level 1
+min: 0.0064261
+ave: 0.00643551
+max: 0.00643897
+
+
+Prolongation: level 1
+min: 0.00311804
+ave: 0.00319248
+max: 0.00330687
+
+
+Restriction: level 1
+min: 0.00147414
+ave: 0.00156182
+max: 0.001647
+
+
+Coarsening: level 1
+min: 0.0290308
+ave: 0.0293694
+max: 0.029712
+
+_____________________________
+
+size of matrix level 2: 1665
+nnz level 2: 20931
+row_reduction_min = 0.229339, row_reduction_threshold = 0.900000 
+
+Aggregation: level 2
+min: 0.00126004
+ave: 0.00126666
+max: 0.00126982
+
+
+Prolongation: level 2
+min: 0.000809908
+ave: 0.000854671
+max: 0.000892878
+
+
+Restriction: level 2
+min: 0.000277042
+ave: 0.00031352
+max: 0.000343084
+
+
+Coarsening: level 2
+min: 0.0106699
+ave: 0.0107145
+max: 0.010752
+
+_____________________________
+
+size of matrix level 3: 845
+nnz level 3: 4883
+row_reduction_min = 0.507508, row_reduction_threshold = 0.900000 
+
+Aggregation: level 3
+min: 0.000384092
+ave: 0.00038904
+max: 0.00039196
+
+
+Prolongation: level 3
+min: 0.000173092
+ave: 0.000200987
+max: 0.000214815
+
+
+Restriction: level 3
+min: 9.29832e-05
+ave: 0.000119984
+max: 0.000134945
+
+
+Coarsening: level 3
+min: 0.00228286
+ave: 0.00234848
+max: 0.00248814
+
+_____________________________
+
+size of matrix level 4: 734
+nnz level 4: 1036
+row_reduction_min = 0.868639, row_reduction_threshold = 0.900000 
+
+Aggregation: level 4
+min: 0.00029707
+ave: 0.00029707
+max: 0.00029707
+
+
+Prolongation: level 4
+min: 0.000112057
+ave: 0.000112057
+max: 0.000112057
+
+
+Restriction: level 4
+min: 7.20024e-05
+ave: 7.20024e-05
+max: 7.20024e-05
+
+
+Coarsening: level 4
+min: 0.000874996
+ave: 0.000874996
+max: 0.000874996
+
+_____________________________
+
+size of matrix level 5: 718
+nnz level 5: 720
+row_reduction_min = 0.978202, row_reduction_threshold = 0.900000 
+
+Setup:
+min: 0.43503
+ave: 0.435593
+max: 0.436132
+
+******************************************************
+
+initial residual = 3.376013e+03 
+
+
+jacobi matvec time:
+min: 0.000169992
+ave: 0.000402212
+max: 0.000658989
+
+
+jacobi forloop time:
+min: 6.38962e-05
+ave: 0.000305772
+max: 0.00102305
+
+
+Vcycle: level 0: pre
+min: 0.00079298
+ave: 0.00105095
+max: 0.00181293
+
+
+Vcycle: level 0: restriction
+min: 0.000211
+ave: 0.000245571
+max: 0.00029397
+
+
+jacobi matvec time:
+min: 0.000108957
+ave: 0.000559747
+max: 0.00103188
+
+
+jacobi forloop time:
+min: 6.41346e-05
+ave: 0.00030309
+max: 0.00101209
+
+
+Vcycle: level 1: pre
+min: 0.00116301
+ave: 0.00141948
+max: 0.00217414
+
+
+Vcycle: level 1: restriction
+min: 0.000115156
+ave: 0.000122547
+max: 0.000128984
+
+
+jacobi matvec time:
+min: 7.89165e-05
+ave: 0.000528216
+max: 0.000993013
+
+
+jacobi forloop time:
+min: 5.4121e-05
+ave: 0.000286043
+max: 0.000977993
+
+
+Vcycle: level 2: pre
+min: 0.00111699
+ave: 0.00136626
+max: 0.00210309
+
+
+Vcycle: level 2: restriction
+min: 6.29425e-05
+ave: 6.94394e-05
+max: 7.48634e-05
+
+
+jacobi matvec time:
+min: 6.60419e-05
+ave: 7.22408e-05
+max: 7.70092e-05
+
+
+jacobi forloop time:
+min: 1.50204e-05
+ave: 2.70009e-05
+max: 3.29018e-05
+
+
+Vcycle: level 3: pre
+min: 0.000141144
+ave: 0.000164568
+max: 0.00019908
+
+
+Vcycle: level 3: restriction
+min: 3.29018e-05
+ave: 3.59416e-05
+max: 3.69549e-05
+
+
+Vcycle: level 3: shrink_rhs_u
+min: 9.53674e-07
+ave: 2.20537e-06
+max: 4.05312e-06
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00141382
+ave: 0.00141382
+max: 0.00141382
+
+
+Vcycle: level 3: un-shrink_u
+min: 2.86102e-06
+ave: 3.69549e-06
+max: 5.00679e-06
+
+
+Vcycle: level 3: prolongation
+min: 6.79493e-05
+ave: 6.8903e-05
+max: 6.98566e-05
+
+
+jacobi matvec time:
+min: 6.10352e-05
+ave: 6.67572e-05
+max: 7.29561e-05
+
+
+jacobi forloop time:
+min: 2.7895e-05
+ave: 2.92063e-05
+max: 3.00407e-05
+
+
+Vcycle: level 3: post
+min: 0.000150919
+ave: 0.000161886
+max: 0.000188828
+
+
+Vcycle: level 2: prolongation
+min: 3.60012e-05
+ave: 5.27501e-05
+max: 6.00815e-05
+
+
+jacobi matvec time:
+min: 6.41346e-05
+ave: 6.80089e-05
+max: 7.08103e-05
+
+
+jacobi forloop time:
+min: 1.5974e-05
+ave: 2.54512e-05
+max: 3.09944e-05
+
+
+Vcycle: level 2: post
+min: 0.000130177
+ave: 0.000150084
+max: 0.000178099
+
+
+Vcycle: level 1: prolongation
+min: 0.000108957
+ave: 0.000145435
+max: 0.000181913
+
+
+jacobi matvec time:
+min: 7.60555e-05
+ave: 8.5175e-05
+max: 9.29832e-05
+
+
+jacobi forloop time:
+min: 2.90871e-05
+ave: 3.0756e-05
+max: 3.19481e-05
+
+
+Vcycle: level 1: post
+min: 0.000169039
+ave: 0.000180542
+max: 0.000208139
+
+
+Vcycle: level 0: prolongation
+min: 0.000272036
+ave: 0.000338554
+max: 0.000406027
+
+
+jacobi matvec time:
+min: 0.000115871
+ave: 0.00012815
+max: 0.000146866
+
+
+jacobi forloop time:
+min: 2.09808e-05
+ave: 2.76566e-05
+max: 3.19481e-05
+
+
+Vcycle: level 0: post
+min: 0.000211
+ave: 0.000228345
+max: 0.000259161
+
+******************************************************
+
+final:
+stopped at iteration    = 1 
+final absolute residual = 4.211677e+02
+relative residual       = 1.247530e-01 
+
+******************************************************
+
+Solve:
+min: 0.0141132
+ave: 0.0141169
+max: 0.0141208
+
+Application 13860152 resources: utime ~2s, stime ~1s, Rss ~21820, inblocks ~12262, outblocks ~33219
+Job Cleanup ran on Thu Oct 19 16:03:08 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit0001.pbs
+NIDS         : 	 798
+NID Placement: 	 798/32 

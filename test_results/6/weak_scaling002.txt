@@ -1,0 +1,298 @@
+./laplacian001 3 31
+./laplacian001 3 40
+./laplacian001 3 50
+./laplacian001 3 63
+./laplacian001 3 80
+./laplacian001 3 100
+
+
+./vector_generator001 29791
+./vector_generator001 64000
+./vector_generator001 125000
+./vector_generator001 250047
+./vector_generator001 512000
+./vector_generator001 1000000
+
+
+mpirun -n $SLURM_NTASKS ./Saena ~/saena/build/laplacian/laplacian3D29791.bin ~/saena/build/vectors/v29791.bin
+mpirun -n $SLURM_NTASKS ./Saena ~/saena/build/laplacian/laplacian3D64000.bin ~/saena/build/vectors/v64000.bin
+mpirun -n $SLURM_NTASKS ./Saena ~/saena/build/laplacian/laplacian3D125000.bin ~/saena/build/vectors/v125000.bin
+mpirun -n $SLURM_NTASKS ./Saena ~/saena/build/laplacian/laplacian3D250047.bin ~/saena/build/vectors/v250047.bin
+mpirun -n $SLURM_NTASKS ./Saena ~/saena/build/laplacian/laplacian3D512000.bin ~/saena/build/vectors/v512000.bin
+mpirun -n $SLURM_NTASKS ./Saena ~/saena/build/laplacian/laplacian3D1000000.bin ~/saena/build/vectors/v1000000.bin
+
+----------------------------------------------------------------------------------------------------
+
+iteration for all the cases = 6
+
+nprocs = 4
+
+Setup phase:
+min: 0.156135
+ave: 0.159749
+max: 0.165499
+
+
+Aggregation:
+min: 0.0893624
+ave: 0.0940554
+max: 0.0990996
+
+
+Prolongation:
+min: 0.0510993
+ave: 0.0518703
+max: 0.0538383
+
+
+Restriction:
+min: 0.0391071
+ave: 0.0415683
+max: 0.0432787
+
+
+Coarsening:
+min: 0.508421
+ave: 0.524109
+max: 0.533247
+
+******************************************************
+
+final:
+iter = 6, residual = 333.190308 
+
+******************************************************
+
+Solve phase:
+min: 15.3047
+ave: 15.3101
+max: 15.3169
+
+----------------------------------------------------------------------------------------------------
+
+nprocs = 8
+
+Setup phase:
+min: 0.206909
+ave: 0.221071
+max: 0.234935
+
+
+Aggregation:
+min: 0.0990365
+ave: 0.108799
+max: 0.11643
+
+
+Prolongation:
+min: 0.0548623
+ave: 0.0568922
+max: 0.0604875
+
+
+Restriction:
+min: 0.0422206
+ave: 0.0455065
+max: 0.048023
+
+
+Coarsening:
+min: 0.687455
+ave: 0.693454
+max: 0.702044
+
+******************************************************
+
+final:
+iter = 6, residual = 404.718165 
+
+******************************************************
+
+Solve phase:
+min: 31.2143
+ave: 31.2241
+max: 31.2318
+
+----------------------------------------------------------------------------------------------------
+
+nprocs = 16
+
+Setup phase:
+min: 0.315945
+ave: 0.351147
+max: 0.364959
+
+
+Aggregation:
+min: 0.131469
+ave: 0.155363
+max: 0.198207
+
+
+Prolongation:
+min: 0.0628748
+ave: 0.0644483
+max: 0.0688581
+
+
+Restriction:
+min: 0.0374901
+ave: 0.0417432
+max: 0.043617
+
+
+Coarsening:
+min: 0.87945
+ave: 0.925349
+max: 0.996152
+
+******************************************************
+
+final:
+iter = 6, residual = 654.097865 
+
+******************************************************
+
+Solve phase:
+min: 62.7766
+ave: 62.8007
+max: 62.8435
+
+----------------------------------------------------------------------------------------------------
+
+nprocs = 32
+
+Setup phase:
+min: 0.302195
+ave: 0.390772
+max: 0.411416
+
+
+Aggregation:
+min: 0.185195
+ave: 0.217095
+max: 0.272552
+
+
+Prolongation:
+min: 0.069695
+ave: 0.0709732
+max: 0.0752771
+
+
+Restriction:
+min: 0.0462143
+ave: 0.0501699
+max: 0.0564239
+
+
+Coarsening:
+min: 5.27493
+ave: 5.32054
+max: 5.40001
+
+******************************************************
+
+final:
+iter = 6, residual = 948.442188 
+
+******************************************************
+
+Solve phase:
+min: 66.4484
+ave: 66.4803
+max: 66.5359
+
+----------------------------------------------------------------------------------------------------
+
+nprocs = 64
+
+Setup phase:
+min: 0.381998
+ave: 0.460382
+max: 0.482142
+
+
+Aggregation:
+min: 0.294435
+ave: 0.324183
+max: 0.382621
+
+
+Prolongation:
+min: 0.0772078
+ave: 0.0786505
+max: 0.0824313
+
+
+Restriction:
+min: 0.0491283
+ave: 0.0569494
+max: 0.0657854
+
+
+Coarsening:
+min: 18.1023
+ave: 18.1583
+max: 18.3434
+
+******************************************************
+
+final:
+iter = 6, residual = 1412.259668 
+
+******************************************************
+
+Solve phase:
+min: 79.511
+ave: 79.5408
+max: 79.5992
+
+----------------------------------------------------------------------------------------------------
+
+nprocs = 128
+
+Setup phase:
+min: 0.506095
+ave: 0.584273
+max: 0.605748
+
+
+Aggregation:
+min: 0.481536
+ave: 0.511455
+max: 0.606208
+
+
+Prolongation:
+min: 0.0815382
+ave: 0.0833203
+max: 0.0908616
+
+
+Restriction:
+min: 0.0774503
+ave: 0.0890134
+max: 0.108534
+
+
+Coarsening:
+min: 40.5128
+ave: 40.5678
+max: 40.7711
+
+******************************************************
+
+final:
+iter = 6, residual = 2014.192164 
+
+******************************************************
+
+Solve phase:
+min: 102.869
+ave: 102.899
+max: 102.994
+
+----------------------------------------------------------------------------------------------------
+
+

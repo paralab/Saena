@@ -1,0 +1,140 @@
+folder 11
+isend and irecv
+export OMP_NUM_THREADS=14
+
+node = 1
+mpirun -np 1 ../petsc010 
+3938421
+
+number of processes = 1
+mx = 64, my = 64, mz = 64
+m = 262144, n = 262144
+nnz = 1810432
+
+phase1
+phase1
+experiment 1: matvec_iter = 300
+experiment 2: matvec_iter = 300
+experiment 3: matvec_iter = 300
+
+6.26929e-06
+0.000437425
+1.66572e-07
+6.85972e-07
+3.78914e-07
+
+--------------------------------------------------------
+
+node = 1
+mpirun -np 2 ../petsc010 
+3938422
+
+number of processes = 2
+mx = 64, my = 64, mz = 128
+m = 524288, n = 524288
+nnz = 1814528
+
+phase1
+phase1
+experiment 1: matvec_iter = 300
+experiment 2: matvec_iter = 300
+experiment 3: matvec_iter = 300
+
+1.00766e-05
+0.00107819
+2.10173e-05
+1.01859e-05
+1.14753e-05
+
+--------------------------------------------------------
+
+node = 2
+mpirun -np 4 ../petsc010 
+3938423
+
+number of processes = 4
+mx = 64, my = 128, mz = 128
+m = 1048576, n = 1048576
+nnz = 1818624
+
+phase1
+phase1
+experiment 1: matvec_iter = 300
+experiment 2: matvec_iter = 300
+experiment 3: matvec_iter = 300
+
+8.98356e-06
+0.0011448
+5.45709e-05
+3.00328e-06
+6.2816e-05
+
+--------------------------------------------------------
+
+node = 4
+mpirun -np 8 ../petsc010 
+3938424
+
+number of processes = 8
+mx = 128, my = 128, mz = 128
+m = 2097152, n = 2097152
+nnz = 1822720
+
+phase1
+phase1
+experiment 1: matvec_iter = 300
+experiment 2: matvec_iter = 300
+experiment 3: matvec_iter = 300
+
+0.000114405
+0.00148217
+0.000145273
+3.66228e-06
+0.000132369
+
+--------------------------------------------------------
+
+node = 8
+mpirun -np 16 ../petsc010 
+3938425
+
+number of processes = 16
+mx = 128, my = 128, mz = 256
+m = 4194304, n = 4194304
+nnz = 1822720
+
+phase1
+phase1
+experiment 1: matvec_iter = 300
+experiment 2: matvec_iter = 300
+experiment 3: matvec_iter = 300
+
+0.000109343
+0.00147939
+0.000151709
+3.32912e-06
+0.00011688
+
+--------------------------------------------------------
+
+node = 12
+mpirun -np 24 ../petsc010
+3938463
+
+number of processes = 24
+mx = 128, my = 192, mz = 256
+m = 6291456, n = 6291456
+nnz = 1822720
+
+phase1
+phase2
+experiment 1: matvec_iter = 300
+experiment 2: matvec_iter = 300
+experiment 3: matvec_iter = 300
+
+0.000120221
+0.00179615
+0.000189873
+3.84933e-06
+0.000246721
+

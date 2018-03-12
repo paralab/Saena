@@ -1,0 +1,11 @@
+change laplacian to the PETSc's version!
+
+CPUS PER NODE = 24
+OMP_NUM_THREADS = 12
+np = #node x 2
+
+mpirun -np 1 ./Saena 2 1242
+mpirun -np 2 ./Saena 2 2485
+mpirun -np 4 ./Saena 2 4970
+mpirun -np 8 ./Saena 2 9940
+mpirun -np 16 ./Saena 2 19881

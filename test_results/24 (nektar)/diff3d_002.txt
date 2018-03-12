@@ -1,0 +1,187 @@
+./solvers/ADRSolver/ADRSolver-g -I GlobalSysSoln=PETScFull ../solvers/ADRSolver/Tests/diff3d.xml
+
+ 
+PopulateMatrix took 19 second(s) on P0. Size = 553694
+
+ Assemble Matrix Nek++ took 0 second(s) on P0. Size = 553694
+
+ As.set() took 0 second(s) on P0. Size = 553694
+
+ As.assemble() took 0 second(s) on P0. Size = 553694
+_____________________________
+
+level = 0 
+number of procs = 1 
+matrix size 	= 3695 
+nonzero 	= 257719 
+density 	= 0.0189 
+
+the biggest eigenvalue is 6.165834 (Elemental) 
+
+the biggest eigenvalue is 11.905123 (Elemental) 
+_____________________________
+
+level = 1 
+number of procs = 1 
+matrix size 	= 752 
+nonzero 	= 401684 
+density 	= 0.7103 
+
+the biggest eigenvalue is 17.981601 (Elemental) 
+_____________________________
+
+level = 2 
+number of procs = 1 
+matrix size 	= 121 
+nonzero 	= 14641 
+density 	= 1.0000 
+
+the biggest eigenvalue is 15.619700 (Elemental) 
+_____________________________
+
+level = 3 
+number of procs = 1 
+matrix size 	= 25 
+nonzero 	= 625 
+density 	= 1.0000 
+
+the biggest eigenvalue is 4.959111 (Elemental) 
+_____________________________
+
+level = 4 
+number of procs = 1 
+matrix size 	= 5 
+nonzero 	= 25 
+density 	= 1.0000 
+_____________________________
+
+number of levels = << 4 >> (the finest level is 0)
+
+******************************************************
+
+final:
+stopped at iteration    = 203 
+final absolute residual = 2.770639e-20
+relative residual       = 9.508095e-20 
+
+******************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+mpirun -np 4 ./solvers/ADRSolver/ADRSolver-g -I GlobalSysSoln=PETScFull ../solvers/ADRSolver/Tests/diff3d.xml
+
+
+ PopulateMatrix took 1 second(s) on P3. Size = 128066
+
+ PopulateMatrix took 1 second(s) on P1. Size = 126930
+
+ PopulateMatrix took 1 second(s) on P2. Size = 145166
+
+ PopulateMatrix took 1 second(s) on P0. Size = 153532
+
+ Assemble Matrix Nek++ took 1 second(s) on P1. Size = 126930
+
+ Assemble Matrix Nek++ took 1 second(s) on P2. Size = 145166
+
+ Assemble Matrix Nek++ took 1 second(s) on P3. Size = 128066
+
+ Assemble Matrix Nek++ took 1 second(s) on P0. Size = 153532
+
+ As.set() took 0 second(s) on P3. Size = 128066
+
+ As.set() took 0 second(s) on P1. Size = 126930
+
+ As.set() took 0 second(s) on P2. Size = 145166
+
+ As.set() took 0 second(s) on P0. Size = 153532
+
+ As.assemble() took 1 second(s) on P0. Size = 153532
+_____________________________
+
+level = 0 
+number of procs = 4 
+matrix size 	= 3695 
+nonzero 	= 257719 
+density 	= 0.0189 
+
+ As.assemble() took 1 second(s) on P2. Size = 145166
+
+ As.assemble() took 1 second(s) on P3. Size = 128066
+
+ As.assemble() took 1 second(s) on P1. Size = 126930
+
+the biggest eigenvalue is 6.165834 (Elemental) 
+
+the biggest eigenvalue is 25.932757 (Elemental) 
+_____________________________
+
+level = 1 
+number of procs = 4 
+matrix size 	= 1805 
+nonzero 	= 2311199 
+density 	= 0.7094 
+
+the biggest eigenvalue is 31.058554 (Elemental) 
+_____________________________
+
+level = 2 
+number of procs = 4 
+matrix size 	= 371 
+nonzero 	= 137641 
+density 	= 1.0000 
+
+the biggest eigenvalue is 47.504427 (Elemental) 
+_____________________________
+
+level = 3 
+number of procs = 4 
+matrix size 	= 137 
+nonzero 	= 18769 
+density 	= 1.0000 
+
+the biggest eigenvalue is 29.108708 (Elemental) 
+_____________________________
+
+level = 4 
+number of procs = 4 
+matrix size 	= 36 
+nonzero 	= 1296 
+density 	= 1.0000 
+_____________________________
+
+number of levels = << 4 >> (the finest level is 0)
+
+******************************************************
+
+ solver1.set_matrix() took 
+ solver1.set_matrix() took 328 second(s) on P0. Size = 153532
+328 second(s) on P1. Size = 126930
+
+ solver1.set_matrix() took 
+ solver1.set_matrix() took 328 second(s) on P2. Size = 145166
+328 second(s) on P3. Size = 128066
+
+******************************************************
+
+final:
+stopped at iteration    = 205 
+final absolute residual = 2.389181e-20
+relative residual       = 8.198260e-20 
+
+******************************************************
+
+

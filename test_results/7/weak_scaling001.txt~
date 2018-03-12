@@ -1,0 +1,66 @@
+vim command to select all text:
+:%y+
+
+./laplacian001 2 250
+./laplacian001 2 353
+./laplacian001 2 500
+./laplacian001 2 707
+./laplacian001 2 1000
+./laplacian001 2 1414
+./laplacian001 2 2000
+./laplacian001 2 2824
+
+./vector_generator001 62500
+./vector_generator001 124609
+./vector_generator001 250000
+./vector_generator001 499849
+./vector_generator001 1000000
+./vector_generator001 1999396
+./vector_generator001 4000000
+./vector_generator001 7974976
+
+
+node: 1 - 4
+aprun -n 16 -N 16 ~/projects/saena/build/Saena ~/projects/saena/build/laplacian/laplacian2D250000.bin ~/projects/saena/build/vectors/v250000.bin
+
+node: 1 - 8
+aprun -n 32 -N 32 ~/projects/saena/build/Saena ~/projects/saena/build/laplacian/laplacian2D499849.bin ~/projects/saena/build/vectors/v499849.bin
+
+node: 1 - 16
+aprun -n 64 -N 32 ~/projects/saena/build/Saena ~/projects/saena/build/laplacian/laplacian2D1000000.bin ~/projects/saena/build/vectors/v1000000.bin
+
+node: 1
+aprun -n 32 -N 32 ~/projects/saena/build/Saena ~/projects/saena/build/laplacian/laplacian2D1999396.bin ~/projects/saena/build/vectors/v1999396.bin
+
+node: 2
+aprun -n 64 -N 32 ~/projects/saena/build/Saena ~/projects/saena/build/laplacian/laplacian2D4000000.bin ~/projects/saena/build/vectors/v4000000.bin
+
+node: 4
+aprun -n 128 -N 32 ~/projects/saena/build/Saena ~/projects/saena/build/laplacian/laplacian2D7974976.bin ~/projects/saena/build/vectors/v7974976.bin
+
+
+mrasoul@login1:~/projects/saena/build> qsub submit6.pbs 
+1874063
+mrasoul@login1:~/projects/saena/build> vi submit5.pbs 
+mrasoul@login1:~/projects/saena/build> qsub submit5.pbs 
+1874064
+mrasoul@login1:~/projects/saena/build> vi submit4.pbs 
+mrasoul@login1:~/projects/saena/build> qsub submit4.pbs 
+1874065
+mrasoul@login1:~/projects/saena/build> vi submit3.pbs 
+mrasoul@login1:~/projects/saena/build> qsub submit3.pbs 
+1874066
+mrasoul@login1:~/projects/saena/build> vi submit2.pbs 
+mrasoul@login1:~/projects/saena/build> qsub submit2.pbs 
+1874067
+mrasoul@login1:~/projects/saena/build> vi submit1.pbs 
+mrasoul@login1:~/projects/saena/build> qsub submit1.pbs 
+1874068
+
+----------------------------------------------------------------------------------------------------
+
+
+
+----------------------------------------------------------------------------------------------------
+
+

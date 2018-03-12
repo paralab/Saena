@@ -1,0 +1,121 @@
+-----------------------------------------------------------------------
+serial
+-----------------------------------------------------------------------
+
+boss@boss-laptop ~/Dropbox/Projects/Saena/build $ mpirun -np 1 ./Saena ./data/2DSmall_sorted.bin
+******************************************************
+
+initial residual = 1.014218e+02 
+
+******************************************************
+
+final:
+stopped at iteration    = 39 
+final absolute residual = 8.914716e-07
+relative residual       = 8.789740e-09 
+
+******************************************************
+boss@boss-laptop ~/Dropbox/Projects/Saena/build $ mpirun -np 1 ./Saena ./data/2DMed_sorted.bin
+******************************************************
+
+initial residual = 6.017087e+01 
+
+******************************************************
+
+final:
+stopped at iteration    = 11 
+final absolute residual = 1.761578e-07
+relative residual       = 2.927625e-09 
+
+******************************************************
+boss@boss-laptop ~/Dropbox/Projects/Saena/build $ mpirun -np 1 ./Saena ./data/2DLarge_sorted.bin
+******************************************************
+
+initial residual = 5.086579e+02 
+
+******************************************************
+
+final:
+stopped at iteration    = 17 
+final absolute residual = 2.807306e-06
+relative residual       = 5.519045e-09 
+
+******************************************************
+boss@boss-laptop ~/Dropbox/Projects/Saena/build $ mpirun -np 1 ./Saena ./data/3DSmall_sorted.bin
+******************************************************
+
+initial residual = 4.181083e+01 
+
+******************************************************
+
+final:
+stopped at iteration    = 42 
+final absolute residual = 3.066108e-07
+relative residual       = 7.333287e-09 
+
+******************************************************
+boss@boss-laptop ~/Dropbox/Projects/Saena/build $ mpirun -np 1 ./Saena ./data/3DMed_sorted.bin
+******************************************************
+
+initial residual = 9.973004e+01 
+
+******************************************************
+
+final:
+stopped at iteration    = 7 
+final absolute residual = 4.826961e-07
+relative residual       = 4.840027e-09 
+
+******************************************************
+
+
+
+
+
+
+-----------------------------------------------------------------------
+np = 2
+-----------------------------------------------------------------------
+
+boss@boss-laptop ~/Dropbox/Projects/Saena/build $ mpirun -np 2 ./Saena ./data/2DSmall_sorted.bin
+******************************************************
+
+initial residual = 6.845625e+01 
+
+******************************************************
+
+final:
+stopped at iteration    = 39 
+final absolute residual = 5.063847e-07
+relative residual       = 7.397202e-09 
+
+******************************************************
+boss@boss-laptop ~/Dropbox/Projects/Saena/build $ mpirun -np 2 ./Saena ./data/2DMed_sorted.bin
+******************************************************
+
+initial residual = 3.984959e+01 
+
+******************************************************
+
+final:
+stopped at iteration    = 11 
+final absolute residual = 9.668476e-08
+relative residual       = 2.426242e-09 
+
+******************************************************
+boss@boss-laptop ~/Dropbox/Projects/Saena/build $ mpirun -np 2 ./Saena ./data/2DLarge_sorted.bin
+******************************************************
+
+initial residual = 3.425237e+02 
+
+******************************************************
+
+final:
+stopped at iteration    = 16 
+final absolute residual = 2.566213e-06
+relative residual       = 7.492073e-09 
+
+******************************************************
+
+
+

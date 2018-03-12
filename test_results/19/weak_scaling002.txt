@@ -1,0 +1,139 @@
+../scaling001   --> odd
+../scaling001   --> even
+
+------------------------------------
+
+local dof:
+262144
+job id:
+4029350
+
+Mbig = 262144, M = 262144, nnz_g = 1300504, nnz_l = 1300504
+stopped at iteration    = 16
+Setup:
+min: 12.4927
+ave: 12.4927
+max: 12.4927
+Solve:
+min: 0.472113
+ave: 0.472113
+max: 0.472113
+
+
+262088 * 2 = 
+4029351
+
+Mbig = 524176, M = 262088, nnz_g = 2606424, nnz_l = 1303212
+stopped at iteration    = 16
+
+Setup:
+min: 20.3985
+ave: 20.399
+max: 20.3996
+
+Solve:
+min: 0.613405
+ave: 0.613453
+max: 0.613501
+
+
+262144 * 4 = 
+4029352
+
+Mbig = 1048576, M = 262144, nnz_g = 5222424, nnz_l = 1303052
+stopped at iteration    = 17
+Setup:
+min: 38.139
+ave: 38.1476
+max: 38.1558
+Solve:
+min: 1.0502
+ave: 1.05031
+max: 1.05037
+
+
+262086 * 6 =
+4029353
+
+Mbig = 1572516, M = 262086, nnz_g = 7837524, nnz_l = 1302082
+stopped at iteration    = 17
+
+Setup:
+min: 43.7035
+ave: 43.7055
+max: 43.707
+Solve:
+min: 1.23356
+ave: 1.23372
+max: 1.23384
+
+
+
+262088 * 8 =
+4029354
+
+Mbig = 2096704, M = 262088, nnz_g = 10454584, nnz_l = 1301402
+stopped at iteration    = 15
+
+Setup:
+min: 52.8812
+ave: 52.8864
+max: 52.8916
+Solve:
+min: 1.78092
+ave: 1.78121
+max: 1.78134
+
+
+
+261075 * 12 = 
+4029363
+
+Mbig = 3132900, M = 261075, nnz_g = 15629124, nnz_l = 1295062
+stopped at iteration    = 15
+
+Setup:
+min: 62.775
+ave: 62.7851
+max: 62.7928
+Solve:
+min: 1.95365
+ave: 1.95393
+max: 1.95405
+
+
+
+262144 * 16 =
+4029355
+
+Mbig = 4194304, M = 262144, nnz_g = 20930584, nnz_l = 1299212
+stopped at iteration    = 15
+
+Setup:
+min: 76.2925
+ave: 76.3015
+max: 76.3065
+Solve:
+min: 2.31652
+ave: 2.31788
+max: 2.31834
+
+
+262086 * 24 =
+4029356
+
+Mbig = 6290064, M = 262086, nnz_g = 31400184, nnz_l = 1296857
+stopped at iteration    = 15
+
+Setup:
+min: 96.72
+ave: 96.7272
+max: 96.731
+Solve:
+min: 2.53002
+ave: 2.53053
+max: 2.53068
+
+
+
+

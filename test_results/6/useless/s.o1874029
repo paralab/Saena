@@ -1,0 +1,169 @@
+
+Matrix Assemble:
+min: 0.235949
+ave: 0.23696
+max: 0.237339
+
+_____________________________
+
+size of matrix level 0: 124609
+
+Aggregation: level 0
+min: 0.0954239
+ave: 0.096026
+max: 0.0961611
+
+
+Prolongation: level 0
+min: 0.0616658
+ave: 0.0621259
+max: 0.0628002
+
+
+Restriction: level 0
+min: 0.044471
+ave: 0.0453052
+max: 0.0456028
+
+
+Coarsening: level 0
+min: 0.626874
+ave: 0.627612
+max: 0.628282
+
+_____________________________
+
+size of matrix level 1: 18540
+
+Aggregation: level 1
+min: 0.0226638
+ave: 0.0226717
+max: 0.022676
+
+
+Prolongation: level 1
+min: 0.0166819
+ave: 0.0168189
+max: 0.0171108
+
+
+Restriction: level 1
+min: 0.00727391
+ave: 0.00761563
+max: 0.00774002
+
+
+Coarsening: level 1
+min: 0.214694
+ave: 0.214913
+max: 0.215031
+
+_____________________________
+
+size of matrix level 2: 2268
+
+Aggregation: level 2
+min: 0.00407004
+ave: 0.00407349
+max: 0.004076
+
+
+Prolongation: level 2
+min: 0.00339913
+ave: 0.00343859
+max: 0.00346184
+
+
+Restriction: level 2
+min: 0.00155687
+ave: 0.0016297
+max: 0.00165391
+
+
+Coarsening: level 2
+min: 0.0494461
+ave: 0.0495208
+max: 0.0495541
+
+_____________________________
+
+size of matrix level 3: 276
+
+Aggregation: level 3
+min: 0.000963211
+ave: 0.000965565
+max: 0.000967979
+
+
+Prolongation: level 3
+min: 0.00103092
+ave: 0.00113329
+max: 0.00124502
+
+
+Restriction: level 3
+min: 0.000788927
+ave: 0.000915855
+max: 0.00107598
+
+
+Coarsening: level 3
+min: 0.0182929
+ave: 0.0183365
+max: 0.018362
+
+_____________________________
+
+size of matrix level 4: 58
+
+Setup:
+min: 1.17727
+ave: 1.17788
+max: 1.17803
+
+******************************************************
+
+initial residual = 9.07793e+07
+
+
+Vcycle: level 3
+min: 0.00167799
+ave: 0.00180571
+max: 0.00197005
+
+
+Vcycle: level 2
+min: 0.00255013
+ave: 0.00317535
+max: 0.00366688
+
+
+Vcycle: level 1
+min: 0.00617719
+ave: 0.00658588
+max: 0.007236
+
+
+Vcycle: level 0
+min: 0.017349
+ave: 0.0179416
+max: 0.019275
+
+******************************************************
+
+final:
+iter = 0, residual = 3176106.578613 
+
+******************************************************
+
+Solve:
+min: 0.02474
+ave: 0.0247553
+max: 0.024761
+
+Application 11786799 resources: utime ~21s, stime ~5s, Rss ~21224, inblocks ~43201, outblocks ~33460
+Job Cleanup ran on Mon Oct 2 03:06:11 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit2.pbs
+NIDS         : 	 866
+NID Placement: 	 866/32 

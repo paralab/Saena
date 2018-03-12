@@ -1,0 +1,70 @@
+folder 10
+send and recv instead of isend and irecv
+export OMP_NUM_THREADS=14
+
+node = 1
+mpirun -np 1 ../petsc010 
+3938350
+
+number of processes = 1
+mx = 64, my = 64, mz = 64
+m = 262144, n = 262144
+nnz = 1810432
+
+experiment 1: matvec_iter = 100
+experiment 2: matvec_iter = 100
+experiment 3: matvec_iter = 100
+
+6.63609e-06
+0.000725744
+1.47052e-07
+2.54995e-07
+0
+
+--------------------------------------------------------
+
+node = 1
+mpirun -np 2 ../petsc010 
+3938351
+
+number of processes = 2
+mx = 64, my = 64, mz = 128
+m = 524288, n = 524288
+nnz = 1814528
+
+experiment 1: matvec_iter = 100
+experiment 2: matvec_iter = 100
+experiment 3: matvec_iter = 100
+
+6.82464e-06
+0.0010329
+0.000235375
+4.33211e-05
+0
+
+--------------------------------------------------------
+
+node = 2
+mpirun -np 4 ../petsc010 
+3938352
+
+the experiment failed
+
+--------------------------------------------------------
+
+node = 4
+mpirun -np 8 ../petsc010 
+3938353
+
+--------------------------------------------------------
+
+node = 8
+mpirun -np 16 ../petsc010 
+3938354
+
+--------------------------------------------------------
+
+node = 12
+mpirun -np 24 ../petsc010
+3938355
+ 

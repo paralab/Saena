@@ -1,0 +1,462 @@
+
+number of processes = 16
+2D Laplacian: dof on each proc = 8100 
+
+Matrix Assemble:
+min: 0.0299339
+ave: 0.0300946
+max: 0.0303509
+
+_____________________________
+
+size of matrix level 0: 129600
+nnz level 0: 640824
+
+Aggregation: level 0
+min: 0.545399
+ave: 0.546411
+max: 0.546821
+
+
+Prolongation: level 0
+min: 0.00971413
+ave: 0.0100246
+max: 0.0108628
+
+
+Restriction: level 0
+min: 0.00634789
+ave: 0.00653644
+max: 0.00668406
+
+
+Coarsening: level 0
+min: 0.091341
+ave: 0.0916052
+max: 0.091702
+
+_____________________________
+
+size of matrix level 1: 27854
+nnz level 1: 279028
+row_reduction_min = 0.214923, row_reduction_threshold = 0.900000 
+
+Aggregation: level 1
+min: 0.00826812
+ave: 0.00828058
+max: 0.00828719
+
+
+Prolongation: level 1
+min: 0.00303316
+ave: 0.00315924
+max: 0.00318718
+
+
+Restriction: level 1
+min: 0.00120902
+ave: 0.00131489
+max: 0.00133514
+
+
+Coarsening: level 1
+min: 0.043937
+ave: 0.0450575
+max: 0.0481591
+
+_____________________________
+
+size of matrix level 2: 5351
+nnz level 2: 88427
+row_reduction_min = 0.192109, row_reduction_threshold = 0.900000 
+
+Aggregation: level 2
+min: 0.00395584
+ave: 0.00396323
+max: 0.00396895
+
+
+Prolongation: level 2
+min: 0.003479
+ave: 0.00353944
+max: 0.00357985
+
+
+Restriction: level 2
+min: 0.00122094
+ave: 0.00127172
+max: 0.00131822
+
+
+Coarsening: level 2
+min: 0.0553401
+ave: 0.0555748
+max: 0.0560081
+
+_____________________________
+
+size of matrix level 3: 1978
+nnz level 3: 22748
+row_reduction_min = 0.369651, row_reduction_threshold = 0.900000 
+
+Aggregation: level 3
+min: 0.00124693
+ave: 0.00125384
+max: 0.00125813
+
+
+Prolongation: level 3
+min: 0.000802994
+ave: 0.000853956
+max: 0.00088191
+
+
+Restriction: level 3
+min: 0.000259161
+ave: 0.000290751
+max: 0.00030899
+
+
+Coarsening: level 3
+min: 0.016242
+ave: 0.0162658
+max: 0.016294
+
+_____________________________
+
+size of matrix level 4: 1510
+nnz level 4: 4668
+row_reduction_min = 0.763397, row_reduction_threshold = 0.900000 
+
+Aggregation: level 4
+min: 0.00050807
+ave: 0.000514984
+max: 0.000518084
+
+
+Prolongation: level 4
+min: 0.000196934
+ave: 0.000227034
+max: 0.000247002
+
+
+Restriction: level 4
+min: 0.000154018
+ave: 0.000178576
+max: 0.000195026
+
+
+Coarsening: level 4
+min: 0.0022862
+ave: 0.00235438
+max: 0.00239015
+
+_____________________________
+
+size of matrix level 5: 1450
+nnz level 5: 1632
+row_reduction_min = 0.960265, row_reduction_threshold = 0.900000 
+
+Setup:
+min: 0.802382
+ave: 0.803474
+max: 0.803808
+
+******************************************************
+
+initial residual = 8.887545e+03 
+
+rank = 8, jacobi matvec = 0.000133 
+rank = 12, jacobi matvec = 0.000134 
+rank = 9, jacobi matvec = 0.000141 
+rank = 15, jacobi matvec = 0.000149 
+rank = 10, jacobi matvec = 0.000158 
+rank = 14, jacobi matvec = 0.000148 
+rank = 3, jacobi matvec = 0.000143 
+rank = 2, jacobi matvec = 0.000154 
+rank = 6, jacobi matvec = 0.000155 
+rank = 7, jacobi matvec = 0.000160 
+rank = 5, jacobi matvec = 0.000156 
+rank = 3, jacobi foorlop = 0.000032 
+rank = 4, jacobi matvec = 0.000156 
+rank = 2, jacobi foorlop = 0.000032 
+rank = 6, jacobi foorlop = 0.000034 
+rank = 7, jacobi foorlop = 0.000031 
+rank = 5, jacobi foorlop = 0.000031 
+rank = 4, jacobi foorlop = 0.000029 
+rank = 1, jacobi matvec = 0.001260 
+rank = 1, jacobi foorlop = 0.000039 
+rank = 0, jacobi matvec = 0.002320 
+rank = 0, jacobi foorlop = 0.000498 
+
+Vcycle: level 0: pre
+min: 0.000222206
+ave: 0.00047867
+max: 0.00284505
+
+
+Vcycle: level 0: restriction
+min: 0.000225067
+ave: 0.000268713
+max: 0.000282049
+
+rank = 6, jacobi matvec = 0.000171 
+rank = 3, jacobi matvec = 0.000174 
+rank = 4, jacobi matvec = 0.000171 
+rank = 2, jacobi matvec = 0.000181 
+rank = 7, jacobi matvec = 0.000185 
+rank = 5, jacobi matvec = 0.000186 
+rank = 6, jacobi foorlop = 0.000020 
+rank = 3, jacobi foorlop = 0.000021 
+rank = 4, jacobi foorlop = 0.000019 
+rank = 2, jacobi foorlop = 0.000021 
+rank = 7, jacobi foorlop = 0.000019 
+rank = 5, jacobi foorlop = 0.000020 
+rank = 1, jacobi matvec = 0.001068 
+rank = 1, jacobi foorlop = 0.000030 
+rank = 0, jacobi matvec = 0.001145 
+rank = 0, jacobi foorlop = 0.000022 
+
+Vcycle: level 1: pre
+min: 0.000204086
+ave: 0.000394776
+max: 0.00122309
+
+
+Vcycle: level 1: restriction
+min: 0.000120878
+ave: 0.000130594
+max: 0.000138998
+
+
+Vcycle: level 1: shrink_rhs_u
+min: 2.14577e-06
+ave: 6.52671e-06
+max: 2.00272e-05
+
+rank = 0, jacobi matvec = 0.000135 
+rank = 1, jacobi matvec = 0.000156 
+rank = 0, jacobi foorlop = 0.000026 
+rank = 1, jacobi foorlop = 0.000021 
+
+Vcycle: level 2: pre
+min: 0.000176191
+ave: 0.000420868
+max: 0.00113511
+
+
+Vcycle: level 2: restriction
+min: 8.39233e-05
+ave: 9.16719e-05
+max: 0.000100851
+
+rank = 0, jacobi matvec = 0.000071 
+rank = 1, jacobi matvec = 0.000074 
+rank = 1, jacobi foorlop = 0.000017 
+rank = 0, jacobi foorlop = 0.000027 
+
+Vcycle: level 3: pre
+min: 0.000100136
+ave: 0.000342131
+max: 0.00105214
+
+
+Vcycle: level 3: restriction
+min: 4.19617e-05
+ave: 4.57168e-05
+max: 5.29289e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00251389
+ave: 0.00254494
+max: 0.00256515
+
+
+Vcycle: level 3: prolongation
+min: 4.3869e-05
+ave: 4.6432e-05
+max: 4.79221e-05
+
+rank = 1, jacobi matvec = 0.000054 
+rank = 0, jacobi matvec = 0.000067 
+rank = 1, jacobi foorlop = 0.000017 
+rank = 0, jacobi foorlop = 0.000022 
+
+Vcycle: level 3: post
+min: 8.39233e-05
+ave: 9.16719e-05
+max: 0.000102997
+
+
+Vcycle: level 2: prolongation
+min: 0.000133991
+ave: 0.000727057
+max: 0.00099206
+
+rank = 0, jacobi matvec = 0.000097 
+rank = 1, jacobi matvec = 0.000100 
+rank = 1, jacobi foorlop = 0.000018 
+rank = 0, jacobi foorlop = 0.000028 
+
+Vcycle: level 2: post
+min: 0.000126123
+ave: 0.0003618
+max: 0.00105095
+
+
+Vcycle: level 1: un-shrink_u
+min: 2.14577e-06
+ave: 5.23031e-06
+max: 8.10623e-06
+
+
+Vcycle: level 1: prolongation
+min: 0.000155926
+ave: 0.000215441
+max: 0.000484943
+
+rank = 0, jacobi matvec = 0.000109 
+rank = 4, jacobi matvec = 0.000109 
+rank = 6, jacobi matvec = 0.000128 
+rank = 7, jacobi matvec = 0.000133 
+rank = 1, jacobi matvec = 0.000129 
+rank = 2, jacobi matvec = 0.000139 
+rank = 3, jacobi matvec = 0.000141 
+rank = 5, jacobi matvec = 0.000145 
+rank = 4, jacobi foorlop = 0.000025 
+rank = 6, jacobi foorlop = 0.000022 
+rank = 1, jacobi foorlop = 0.000020 
+rank = 2, jacobi foorlop = 0.000025 
+rank = 3, jacobi foorlop = 0.000024 
+rank = 7, jacobi foorlop = 0.000042 
+rank = 0, jacobi foorlop = 0.000033 
+rank = 5, jacobi foorlop = 0.000024 
+
+Vcycle: level 1: post
+min: 0.00016284
+ave: 0.000247061
+max: 0.00118518
+
+
+Vcycle: level 0: prolongation
+min: 0.000387907
+ave: 0.000437304
+max: 0.000803947
+
+rank = 7, jacobi matvec = 0.000200 
+rank = 2, jacobi matvec = 0.000204 
+rank = 6, jacobi matvec = 0.000201 
+rank = 4, jacobi matvec = 0.000212 
+rank = 5, jacobi matvec = 0.000214 
+rank = 1, jacobi matvec = 0.000217 
+rank = 3, jacobi matvec = 0.000231 
+rank = 0, jacobi matvec = 0.000232 
+rank = 4, jacobi foorlop = 0.000024 
+rank = 6, jacobi foorlop = 0.000031 
+rank = 7, jacobi foorlop = 0.000044 
+rank = 1, jacobi foorlop = 0.000026 
+rank = 2, jacobi foorlop = 0.000048 
+rank = 5, jacobi foorlop = 0.000031 
+rank = 3, jacobi foorlop = 0.000031 
+rank = 0, jacobi foorlop = 0.000048 
+
+Vcycle: level 0: post
+min: 0.000247002
+ave: 0.000331551
+max: 0.00129008
+
+******************************************************
+
+final:
+stopped at iteration    = 1 
+final absolute residual = 1.523089e+03
+relative residual       = 1.713734e-01 
+
+******************************************************
+
+Solve:
+min: 0.0209029
+ave: 0.0209236
+max: 0.020932
+
+rank = 11, jacobi matvec = 0.000163 
+rank = 12, jacobi foorlop = 0.000031 
+rank = 13, jacobi matvec = 0.000157 
+rank = 9, jacobi foorlop = 0.000032 
+rank = 8, jacobi foorlop = 0.000061 
+rank = 15, jacobi foorlop = 0.000031 
+rank = 14, jacobi foorlop = 0.000027 
+rank = 10, jacobi foorlop = 0.000032 
+rank = 11, jacobi foorlop = 0.000031 
+rank = 13, jacobi foorlop = 0.000036 
+rank = 8, jacobi matvec = 0.000160 
+rank = 9, jacobi matvec = 0.000163 
+rank = 12, jacobi matvec = 0.000167 
+rank = 13, jacobi matvec = 0.000172 
+rank = 10, jacobi matvec = 0.000177 
+rank = 11, jacobi matvec = 0.000177 
+rank = 15, jacobi matvec = 0.000178 
+rank = 14, jacobi matvec = 0.000180 
+rank = 9, jacobi foorlop = 0.000020 
+rank = 12, jacobi foorlop = 0.000020 
+rank = 13, jacobi foorlop = 0.000022 
+rank = 10, jacobi foorlop = 0.000019 
+rank = 11, jacobi foorlop = 0.000019 
+rank = 15, jacobi foorlop = 0.000023 
+rank = 14, jacobi foorlop = 0.000021 
+rank = 8, jacobi foorlop = 0.001046 
+rank = 2, jacobi matvec = 0.000131 
+rank = 3, jacobi matvec = 0.000151 
+rank = 3, jacobi foorlop = 0.000018 
+rank = 2, jacobi foorlop = 0.000987 
+rank = 3, jacobi matvec = 0.000079 
+rank = 2, jacobi matvec = 0.000085 
+rank = 3, jacobi foorlop = 0.000010 
+rank = 2, jacobi foorlop = 0.000951 
+rank = 2, jacobi matvec = 0.000042 
+rank = 3, jacobi matvec = 0.000051 
+rank = 3, jacobi foorlop = 0.000018 
+rank = 2, jacobi foorlop = 0.000038 
+rank = 3, jacobi matvec = 0.000093 
+rank = 2, jacobi matvec = 0.000102 
+rank = 3, jacobi foorlop = 0.000021 
+rank = 2, jacobi foorlop = 0.000933 
+rank = 8, jacobi matvec = 0.000117 
+rank = 15, jacobi matvec = 0.000123 
+rank = 9, jacobi matvec = 0.000126 
+rank = 10, jacobi matvec = 0.000131 
+rank = 11, jacobi matvec = 0.000127 
+rank = 14, jacobi matvec = 0.000135 
+rank = 12, jacobi matvec = 0.000125 
+rank = 13, jacobi matvec = 0.000136 
+rank = 9, jacobi foorlop = 0.000020 
+rank = 10, jacobi foorlop = 0.000019 
+rank = 15, jacobi foorlop = 0.000033 
+rank = 11, jacobi foorlop = 0.000024 
+rank = 14, jacobi foorlop = 0.000022 
+rank = 13, jacobi foorlop = 0.000020 
+rank = 12, jacobi foorlop = 0.000020 
+rank = 8, jacobi foorlop = 0.001050 
+rank = 15, jacobi matvec = 0.000189 
+rank = 13, jacobi matvec = 0.000202 
+rank = 8, jacobi matvec = 0.000206 
+rank = 10, jacobi matvec = 0.000208 
+rank = 14, jacobi matvec = 0.000213 
+rank = 12, jacobi matvec = 0.000211 
+rank = 11, jacobi matvec = 0.000214 
+rank = 9, jacobi matvec = 0.000232 
+rank = 15, jacobi foorlop = 0.000036 
+rank = 13, jacobi foorlop = 0.000025 
+rank = 10, jacobi foorlop = 0.000024 
+rank = 14, jacobi foorlop = 0.000024 
+rank = 12, jacobi foorlop = 0.000029 
+rank = 11, jacobi foorlop = 0.000029 
+rank = 9, jacobi foorlop = 0.000028 
+rank = 8, jacobi foorlop = 0.001063 
+Application 13863218 resources: utime ~14s, stime ~4s, Rss ~31464, inblocks ~25455, outblocks ~66450
+Job Cleanup ran on Thu Oct 19 17:05:10 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit0002.pbs
+NIDS         : 	 781,963
+NID Placement: 	 781/32 963/32 

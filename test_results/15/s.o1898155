@@ -1,0 +1,610 @@
+
+number of processes = 64
+2D Laplacian: dof on each proc = 10000 
+
+Matrix Assemble:
+min: 0.040746
+ave: 0.0408992
+max: 0.0410352
+
+_____________________________
+
+size of matrix level 0: 640000
+nnz level 0: 3184024
+
+Aggregation: level 0
+min: 1.55288
+ave: 1.55426
+max: 1.55455
+
+
+Prolongation: level 0
+min: 0.0100439
+ave: 0.0103064
+max: 0.0103629
+
+
+Restriction: level 0
+min: 0.00608802
+ave: 0.00626376
+max: 0.00632977
+
+rank = 63, M = 10782, nnz_l = 49787, nnz_g = 3184024, Ac.M = 2862, Ac.nnz_l = 20926 
+rank = 1, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2128, Ac.nnz_l = 22580 
+rank = 7, M = 9843, nnz_l = 49095, nnz_g = 3184024, Ac.M = 2088, Ac.nnz_l = 22121 
+rank = 6, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2119, Ac.nnz_l = 22269 
+rank = 55, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2058, Ac.nnz_l = 21267 
+rank = 53, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2058, Ac.nnz_l = 21256 
+rank = 54, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2085, Ac.nnz_l = 21909 
+rank = 51, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2077, Ac.nnz_l = 21661 
+rank = 50, M = 9844, nnz_l = 49100, nnz_g = 3184024, Ac.M = 2048, Ac.nnz_l = 21379 
+rank = 52, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2091, Ac.nnz_l = 21918 
+rank = 49, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2096, Ac.nnz_l = 22015 
+rank = 41, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2090, Ac.nnz_l = 21847 
+rank = 47, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2090, Ac.nnz_l = 21735 
+rank = 33, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2110, Ac.nnz_l = 22242 
+rank = 37, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2093, Ac.nnz_l = 21966 
+rank = 25, M = 9844, nnz_l = 49095, nnz_g = 3184024, Ac.M = 2097, Ac.nnz_l = 22246 
+rank = 27, M = 10000, nnz_l = 49875, nnz_g = 3184024, Ac.M = 2096, Ac.nnz_l = 22000 
+rank = 31, M = 10000, nnz_l = 49875, nnz_g = 3184024, Ac.M = 2080, Ac.nnz_l = 21650 
+rank = 29, M = 10000, nnz_l = 49875, nnz_g = 3184024, Ac.M = 2132, Ac.nnz_l = 22599 
+rank = 30, M = 10000, nnz_l = 49875, nnz_g = 3184024, Ac.M = 2078, Ac.nnz_l = 21722 
+rank = 26, M = 10000, nnz_l = 49875, nnz_g = 3184024, Ac.M = 2117, Ac.nnz_l = 22299 
+rank = 28, M = 10000, nnz_l = 49875, nnz_g = 3184024, Ac.M = 2078, Ac.nnz_l = 21725 
+rank = 17, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2100, Ac.nnz_l = 21952 
+rank = 23, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2103, Ac.nnz_l = 22008 
+rank = 13, M = 9844, nnz_l = 49100, nnz_g = 3184024, Ac.M = 2072, Ac.nnz_l = 21646 
+rank = 15, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2123, Ac.nnz_l = 22545 
+rank = 12, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2102, Ac.nnz_l = 22009 
+rank = 14, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2117, Ac.nnz_l = 22413 
+rank = 11, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2110, Ac.nnz_l = 22224 
+rank = 5, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2136, Ac.nnz_l = 22740 
+rank = 4, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2111, Ac.nnz_l = 22151 
+rank = 3, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2142, Ac.nnz_l = 22732 
+rank = 2, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2142, Ac.nnz_l = 22811 
+
+Coarsening: level 0
+min: 0.349221
+ave: 0.350212
+max: 0.350383
+
+rank = 0, M = 10625, nnz_l = 49002, nnz_g = 3184024, Ac.M = 2840, Ac.nnz_l = 20797 
+_____________________________
+
+size of matrix level 1: 135789
+nnz level 1: 1409371
+row_reduction_min = 0.212170, row_reduction_threshold = 0.900000 
+rank = 9, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2131, Ac.nnz_l = 22542 
+rank = 10, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2147, Ac.nnz_l = 22887 
+rank = 8, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2104, Ac.nnz_l = 22221 
+rank = 19, M = 9844, nnz_l = 49090, nnz_g = 3184024, Ac.M = 2113, Ac.nnz_l = 22459 
+rank = 18, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2108, Ac.nnz_l = 22246 
+rank = 22, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2114, Ac.nnz_l = 22266 
+rank = 21, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2131, Ac.nnz_l = 22610 
+rank = 20, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2120, Ac.nnz_l = 22488 
+rank = 16, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2124, Ac.nnz_l = 22397 
+rank = 24, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2150, Ac.nnz_l = 22920 
+rank = 39, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2125, Ac.nnz_l = 22576 
+rank = 38, M = 9844, nnz_l = 49090, nnz_g = 3184024, Ac.M = 2094, Ac.nnz_l = 22171 
+rank = 36, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2103, Ac.nnz_l = 21937 
+rank = 35, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2095, Ac.nnz_l = 22001 
+rank = 34, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2092, Ac.nnz_l = 21977 
+rank = 32, M = 9843, nnz_l = 49090, nnz_g = 3184024, Ac.M = 2037, Ac.nnz_l = 21223 
+rank = 43, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2112, Ac.nnz_l = 22388 
+rank = 42, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2081, Ac.nnz_l = 21637 
+rank = 46, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2096, Ac.nnz_l = 22014 
+rank = 45, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2078, Ac.nnz_l = 21768 
+rank = 44, M = 9844, nnz_l = 49100, nnz_g = 3184024, Ac.M = 2080, Ac.nnz_l = 21953 
+rank = 40, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2101, Ac.nnz_l = 22126 
+rank = 48, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2104, Ac.nnz_l = 22221 
+
+Aggregation: level 1
+min: 0.016233
+ave: 0.0162629
+max: 0.0162909
+
+
+Prolongation: level 1
+min: 0.00415111
+ave: 0.0043058
+max: 0.00433993
+
+
+Restriction: level 1
+min: 0.00190091
+ave: 0.00202988
+max: 0.00207186
+
+rank = 62, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2089, Ac.nnz_l = 21893 
+rank = 57, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2043, Ac.nnz_l = 21132 
+rank = 59, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2105, Ac.nnz_l = 22142 
+rank = 58, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2076, Ac.nnz_l = 21697 
+rank = 61, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2046, Ac.nnz_l = 21116 
+rank = 60, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2071, Ac.nnz_l = 21574 
+rank = 56, M = 9843, nnz_l = 49095, nnz_g = 3184024, Ac.M = 2050, Ac.nnz_l = 21429 
+rank = 1, M = 2128, nnz_l = 22580, nnz_g = 1409371, Ac.M = 334, Ac.nnz_l = 7214 
+rank = 3, M = 2142, nnz_l = 22732, nnz_g = 1409371, Ac.M = 333, Ac.nnz_l = 7278 
+rank = 6, M = 2119, nnz_l = 22269, nnz_g = 1409371, Ac.M = 333, Ac.nnz_l = 6972 
+rank = 5, M = 2136, nnz_l = 22740, nnz_g = 1409371, Ac.M = 332, Ac.nnz_l = 7087 
+rank = 7, M = 2088, nnz_l = 22121, nnz_g = 1409371, Ac.M = 324, Ac.nnz_l = 6883 
+rank = 2, M = 2142, nnz_l = 22811, nnz_g = 1409371, Ac.M = 337, Ac.nnz_l = 7228 
+rank = 4, M = 2111, nnz_l = 22151, nnz_g = 1409371, Ac.M = 340, Ac.nnz_l = 7266 
+rank = 63, M = 2862, nnz_l = 20926, nnz_g = 1409371, Ac.M = 1122, Ac.nnz_l = 5890 
+rank = 51, M = 2077, nnz_l = 21661, nnz_g = 1409371, Ac.M = 336, Ac.nnz_l = 7102 
+rank = 50, M = 2048, nnz_l = 21379, nnz_g = 1409371, Ac.M = 317, Ac.nnz_l = 6643 
+rank = 49, M = 2096, nnz_l = 22015, nnz_g = 1409371, Ac.M = 346, Ac.nnz_l = 7319 
+rank = 55, M = 2058, nnz_l = 21267, nnz_g = 1409371, Ac.M = 333, Ac.nnz_l = 7028 
+rank = 54, M = 2085, nnz_l = 21909, nnz_g = 1409371, Ac.M = 321, Ac.nnz_l = 6787 
+rank = 53, M = 2058, nnz_l = 21256, nnz_g = 1409371, Ac.M = 347, Ac.nnz_l = 7479 
+rank = 41, M = 2090, nnz_l = 21847, nnz_g = 1409371, Ac.M = 327, Ac.nnz_l = 6961 
+rank = 43, M = 2112, nnz_l = 22388, nnz_g = 1409371, Ac.M = 323, Ac.nnz_l = 6890 
+rank = 42, M = 2081, nnz_l = 21637, nnz_g = 1409371, Ac.M = 335, Ac.nnz_l = 7085 
+rank = 45, M = 2078, nnz_l = 21768, nnz_g = 1409371, Ac.M = 336, Ac.nnz_l = 7237 
+rank = 47, M = 2090, nnz_l = 21735, nnz_g = 1409371, Ac.M = 346, Ac.nnz_l = 7383 
+rank = 46, M = 2096, nnz_l = 22014, nnz_g = 1409371, Ac.M = 336, Ac.nnz_l = 7197 
+rank = 44, M = 2080, nnz_l = 21953, nnz_g = 1409371, Ac.M = 340, Ac.nnz_l = 7330 
+rank = 37, M = 2093, nnz_l = 21966, nnz_g = 1409371, Ac.M = 315, Ac.nnz_l = 6741 
+rank = 39, M = 2125, nnz_l = 22576, nnz_g = 1409371, Ac.M = 333, Ac.nnz_l = 7130 
+rank = 33, M = 2110, nnz_l = 22242, nnz_g = 1409371, Ac.M = 341, Ac.nnz_l = 7305 
+rank = 35, M = 2095, nnz_l = 22001, nnz_g = 1409371, Ac.M = 333, Ac.nnz_l = 7229 
+rank = 38, M = 2094, nnz_l = 22171, nnz_g = 1409371, Ac.M = 334, Ac.nnz_l = 7116 
+rank = 34, M = 2092, nnz_l = 21977, nnz_g = 1409371, Ac.M = 338, Ac.nnz_l = 7267 
+rank = 25, M = 2097, nnz_l = 22246, nnz_g = 1409371, Ac.M = 324, Ac.nnz_l = 6965 
+rank = 27, M = 2096, nnz_l = 22000, nnz_g = 1409371, Ac.M = 343, Ac.nnz_l = 7429 
+rank = 31, M = 2080, nnz_l = 21650, nnz_g = 1409371, Ac.M = 332, Ac.nnz_l = 7114 
+rank = 30, M = 2078, nnz_l = 21722, nnz_g = 1409371, Ac.M = 334, Ac.nnz_l = 7126 
+rank = 29, M = 2132, nnz_l = 22599, nnz_g = 1409371, Ac.M = 342, Ac.nnz_l = 7366 
+rank = 26, M = 2117, nnz_l = 22299, nnz_g = 1409371, Ac.M = 347, Ac.nnz_l = 7549 
+rank = 21, M = 2131, nnz_l = 22610, nnz_g = 1409371, Ac.M = 336, Ac.nnz_l = 7073 
+rank = 17, M = 2100, nnz_l = 21952, nnz_g = 1409371, Ac.M = 347, Ac.nnz_l = 7453 
+rank = 22, M = 2114, nnz_l = 22266, nnz_g = 1409371, Ac.M = 318, Ac.nnz_l = 6798 
+rank = 20, M = 2120, nnz_l = 22488, nnz_g = 1409371, Ac.M = 331, Ac.nnz_l = 7145 
+rank = 11, M = 2110, nnz_l = 22224, nnz_g = 1409371, Ac.M = 325, Ac.nnz_l = 6970 
+rank = 9, M = 2131, nnz_l = 22542, nnz_g = 1409371, Ac.M = 335, Ac.nnz_l = 7070 
+rank = 15, M = 2123, nnz_l = 22545, nnz_g = 1409371, Ac.M = 334, Ac.nnz_l = 7125 
+rank = 14, M = 2117, nnz_l = 22413, nnz_g = 1409371, Ac.M = 327, Ac.nnz_l = 6954 
+rank = 10, M = 2147, nnz_l = 22887, nnz_g = 1409371, Ac.M = 339, Ac.nnz_l = 7215 
+rank = 13, M = 2072, nnz_l = 21646, nnz_g = 1409371, Ac.M = 340, Ac.nnz_l = 7383 
+
+Coarsening: level 1
+min: 0.117594
+ave: 0.117777
+max: 0.117845
+
+rank = 0, M = 2840, nnz_l = 20797, nnz_g = 1409371, Ac.M = 1140, Ac.nnz_l = 6400 
+_____________________________
+
+size of matrix level 2: 22999
+nnz level 2: 455671
+row_reduction_min = 0.169373, row_reduction_threshold = 0.900000 
+rank = 12, M = 2102, nnz_l = 22009, nnz_g = 1409371, Ac.M = 347, Ac.nnz_l = 7448 
+rank = 8, M = 2104, nnz_l = 22221, nnz_g = 1409371, Ac.M = 340, Ac.nnz_l = 7187 
+rank = 19, M = 2113, nnz_l = 22459, nnz_g = 1409371, Ac.M = 345, Ac.nnz_l = 7457 
+rank = 23, M = 2103, nnz_l = 22008, nnz_g = 1409371, Ac.M = 346, Ac.nnz_l = 7416 
+rank = 18, M = 2108, nnz_l = 22246, nnz_g = 1409371, Ac.M = 330, Ac.nnz_l = 7094 
+rank = 16, M = 2124, nnz_l = 22397, nnz_g = 1409371, Ac.M = 335, Ac.nnz_l = 7268 
+rank = 28, M = 2078, nnz_l = 21725, nnz_g = 1409371, Ac.M = 327, Ac.nnz_l = 7032 
+rank = 24, M = 2150, nnz_l = 22920, nnz_g = 1409371, Ac.M = 335, Ac.nnz_l = 7282 
+rank = 36, M = 2103, nnz_l = 21937, nnz_g = 1409371, Ac.M = 356, Ac.nnz_l = 7711 
+rank = 32, M = 2037, nnz_l = 21223, nnz_g = 1409371, Ac.M = 331, Ac.nnz_l = 7043 
+rank = 40, M = 2101, nnz_l = 22126, nnz_g = 1409371, Ac.M = 341, Ac.nnz_l = 7186 
+rank = 52, M = 2091, nnz_l = 21918, nnz_g = 1409371, Ac.M = 335, Ac.nnz_l = 7252 
+rank = 48, M = 2104, nnz_l = 22221, nnz_g = 1409371, Ac.M = 323, Ac.nnz_l = 6946 
+rank = 57, M = 2043, nnz_l = 21132, nnz_g = 1409371, Ac.M = 323, Ac.nnz_l = 6851 
+rank = 62, M = 2089, nnz_l = 21893, nnz_g = 1409371, Ac.M = 327, Ac.nnz_l = 6860 
+rank = 59, M = 2105, nnz_l = 22142, nnz_g = 1409371, Ac.M = 338, Ac.nnz_l = 7123 
+rank = 58, M = 2076, nnz_l = 21697, nnz_g = 1409371, Ac.M = 331, Ac.nnz_l = 7073 
+rank = 61, M = 2046, nnz_l = 21116, nnz_g = 1409371, Ac.M = 340, Ac.nnz_l = 7082 
+rank = 60, M = 2071, nnz_l = 21574, nnz_g = 1409371, Ac.M = 323, Ac.nnz_l = 6875 
+rank = 56, M = 2050, nnz_l = 21429, nnz_g = 1409371, Ac.M = 340, Ac.nnz_l = 7303 
+
+Aggregation: level 2
+min: 0.00386405
+ave: 0.00389672
+max: 0.00410604
+
+
+Prolongation: level 2
+min: 0.00116301
+ave: 0.00142987
+max: 0.00145888
+
+
+Restriction: level 2
+min: 0.00075388
+ave: 0.000816181
+max: 0.000850916
+
+rank = 1, M = 334, nnz_l = 7214, nnz_g = 455671, Ac.M = 62, Ac.nnz_l = 1276 
+rank = 3, M = 333, nnz_l = 7278, nnz_g = 455671, Ac.M = 68, Ac.nnz_l = 1898 
+rank = 2, M = 337, nnz_l = 7228, nnz_g = 455671, Ac.M = 69, Ac.nnz_l = 1654 
+rank = 63, M = 1122, nnz_l = 5890, nnz_g = 455671, Ac.M = 881, Ac.nnz_l = 2333 
+rank = 62, M = 327, nnz_l = 6860, nnz_g = 455671, Ac.M = 64, Ac.nnz_l = 1367 
+rank = 61, M = 340, nnz_l = 7082, nnz_g = 455671, Ac.M = 63, Ac.nnz_l = 1478 
+rank = 57, M = 323, nnz_l = 6851, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2057 
+rank = 58, M = 331, nnz_l = 7073, nnz_g = 455671, Ac.M = 69, Ac.nnz_l = 2055 
+rank = 59, M = 338, nnz_l = 7123, nnz_g = 455671, Ac.M = 68, Ac.nnz_l = 1929 
+rank = 60, M = 323, nnz_l = 6875, nnz_g = 455671, Ac.M = 71, Ac.nnz_l = 2054 
+rank = 51, M = 336, nnz_l = 7102, nnz_g = 455671, Ac.M = 64, Ac.nnz_l = 1708 
+rank = 49, M = 346, nnz_l = 7319, nnz_g = 455671, Ac.M = 66, Ac.nnz_l = 1766 
+rank = 53, M = 347, nnz_l = 7479, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 1970 
+rank = 55, M = 333, nnz_l = 7028, nnz_g = 455671, Ac.M = 69, Ac.nnz_l = 1920 
+rank = 50, M = 317, nnz_l = 6643, nnz_g = 455671, Ac.M = 63, Ac.nnz_l = 1838 
+rank = 54, M = 321, nnz_l = 6787, nnz_g = 455671, Ac.M = 61, Ac.nnz_l = 1699 
+rank = 52, M = 335, nnz_l = 7252, nnz_g = 455671, Ac.M = 67, Ac.nnz_l = 1939 
+rank = 43, M = 323, nnz_l = 6890, nnz_g = 455671, Ac.M = 67, Ac.nnz_l = 1994 
+rank = 42, M = 335, nnz_l = 7085, nnz_g = 455671, Ac.M = 67, Ac.nnz_l = 1889 
+rank = 41, M = 327, nnz_l = 6961, nnz_g = 455671, Ac.M = 68, Ac.nnz_l = 2080 
+rank = 39, M = 333, nnz_l = 7130, nnz_g = 455671, Ac.M = 67, Ac.nnz_l = 1973 
+rank = 38, M = 334, nnz_l = 7116, nnz_g = 455671, Ac.M = 66, Ac.nnz_l = 1826 
+rank = 33, M = 341, nnz_l = 7305, nnz_g = 455671, Ac.M = 66, Ac.nnz_l = 1898 
+rank = 35, M = 333, nnz_l = 7229, nnz_g = 455671, Ac.M = 65, Ac.nnz_l = 1910 
+rank = 34, M = 338, nnz_l = 7267, nnz_g = 455671, Ac.M = 64, Ac.nnz_l = 1773 
+rank = 37, M = 315, nnz_l = 6741, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2157 
+rank = 25, M = 324, nnz_l = 6965, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2027 
+rank = 27, M = 343, nnz_l = 7429, nnz_g = 455671, Ac.M = 65, Ac.nnz_l = 1814 
+rank = 26, M = 347, nnz_l = 7549, nnz_g = 455671, Ac.M = 66, Ac.nnz_l = 1831 
+rank = 31, M = 332, nnz_l = 7114, nnz_g = 455671, Ac.M = 69, Ac.nnz_l = 1984 
+rank = 30, M = 334, nnz_l = 7126, nnz_g = 455671, Ac.M = 67, Ac.nnz_l = 1883 
+rank = 28, M = 327, nnz_l = 7032, nnz_g = 455671, Ac.M = 63, Ac.nnz_l = 1731 
+rank = 21, M = 336, nnz_l = 7073, nnz_g = 455671, Ac.M = 64, Ac.nnz_l = 1737 
+rank = 17, M = 347, nnz_l = 7453, nnz_g = 455671, Ac.M = 68, Ac.nnz_l = 1917 
+rank = 23, M = 346, nnz_l = 7416, nnz_g = 455671, Ac.M = 69, Ac.nnz_l = 1964 
+rank = 22, M = 318, nnz_l = 6798, nnz_g = 455671, Ac.M = 69, Ac.nnz_l = 2047 
+rank = 19, M = 345, nnz_l = 7457, nnz_g = 455671, Ac.M = 72, Ac.nnz_l = 2122 
+rank = 15, M = 334, nnz_l = 7125, nnz_g = 455671, Ac.M = 65, Ac.nnz_l = 1831 
+rank = 7, M = 324, nnz_l = 6883, nnz_g = 455671, Ac.M = 67, Ac.nnz_l = 1925 
+rank = 6, M = 333, nnz_l = 6972, nnz_g = 455671, Ac.M = 68, Ac.nnz_l = 1890 
+rank = 5, M = 332, nnz_l = 7087, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2023 
+rank = 4, M = 340, nnz_l = 7266, nnz_g = 455671, Ac.M = 63, Ac.nnz_l = 1719 
+
+Coarsening: level 2
+min: 0.040206
+ave: 0.0402561
+max: 0.040293
+
+rank = 0, M = 1140, nnz_l = 6400, nnz_g = 455671, Ac.M = 887, Ac.nnz_l = 2520 
+_____________________________
+
+size of matrix level 3: 5958
+nnz level 3: 124264
+row_reduction_min = 0.259055, row_reduction_threshold = 0.900000 
+rank = 9, M = 335, nnz_l = 7070, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2042 
+rank = 10, M = 339, nnz_l = 7215, nnz_g = 455671, Ac.M = 65, Ac.nnz_l = 1802 
+rank = 11, M = 325, nnz_l = 6970, nnz_g = 455671, Ac.M = 68, Ac.nnz_l = 2035 
+rank = 12, M = 347, nnz_l = 7448, nnz_g = 455671, Ac.M = 66, Ac.nnz_l = 1818 
+rank = 13, M = 340, nnz_l = 7383, nnz_g = 455671, Ac.M = 71, Ac.nnz_l = 2206 
+rank = 14, M = 327, nnz_l = 6954, nnz_g = 455671, Ac.M = 71, Ac.nnz_l = 2197 
+rank = 8, M = 340, nnz_l = 7187, nnz_g = 455671, Ac.M = 61, Ac.nnz_l = 1547 
+rank = 18, M = 330, nnz_l = 7094, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2119 
+rank = 20, M = 331, nnz_l = 7145, nnz_g = 455671, Ac.M = 64, Ac.nnz_l = 1819 
+rank = 16, M = 335, nnz_l = 7268, nnz_g = 455671, Ac.M = 76, Ac.nnz_l = 2471 
+rank = 29, M = 342, nnz_l = 7366, nnz_g = 455671, Ac.M = 69, Ac.nnz_l = 2005 
+rank = 24, M = 335, nnz_l = 7282, nnz_g = 455671, Ac.M = 65, Ac.nnz_l = 1827 
+rank = 36, M = 356, nnz_l = 7711, nnz_g = 455671, Ac.M = 76, Ac.nnz_l = 2291 
+rank = 32, M = 331, nnz_l = 7043, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2068 
+rank = 45, M = 336, nnz_l = 7237, nnz_g = 455671, Ac.M = 68, Ac.nnz_l = 1946 
+rank = 47, M = 346, nnz_l = 7383, nnz_g = 455671, Ac.M = 72, Ac.nnz_l = 2129 
+rank = 44, M = 340, nnz_l = 7330, nnz_g = 455671, Ac.M = 66, Ac.nnz_l = 1969 
+rank = 46, M = 336, nnz_l = 7197, nnz_g = 455671, Ac.M = 72, Ac.nnz_l = 2213 
+rank = 40, M = 341, nnz_l = 7186, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2076 
+rank = 48, M = 323, nnz_l = 6946, nnz_g = 455671, Ac.M = 72, Ac.nnz_l = 2190 
+rank = 56, M = 340, nnz_l = 7303, nnz_g = 455671, Ac.M = 69, Ac.nnz_l = 2088 
+
+Aggregation: level 3
+min: 0.00167394
+ave: 0.0016895
+max: 0.00170684
+
+
+Prolongation: level 3
+min: 0.000790834
+ave: 0.000852905
+max: 0.000899076
+
+
+Restriction: level 3
+min: 0.000486135
+ave: 0.000563536
+max: 0.000644922
+
+rank = 7, M = 67, nnz_l = 1925, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 401 
+rank = 6, M = 68, nnz_l = 1890, nnz_g = 124264, Ac.M = 28, Ac.nnz_l = 179 
+rank = 1, M = 62, nnz_l = 1276, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 404 
+rank = 61, M = 63, nnz_l = 1478, nnz_g = 124264, Ac.M = 28, Ac.nnz_l = 132 
+rank = 57, M = 70, nnz_l = 2057, nnz_g = 124264, Ac.M = 33, Ac.nnz_l = 488 
+rank = 59, M = 68, nnz_l = 1929, nnz_g = 124264, Ac.M = 36, Ac.nnz_l = 582 
+rank = 58, M = 69, nnz_l = 2055, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 371 
+rank = 55, M = 69, nnz_l = 1920, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 393 
+rank = 49, M = 66, nnz_l = 1766, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 477 
+rank = 54, M = 61, nnz_l = 1699, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 645 
+rank = 50, M = 63, nnz_l = 1838, nnz_g = 124264, Ac.M = 25, Ac.nnz_l = 109 
+rank = 51, M = 64, nnz_l = 1708, nnz_g = 124264, Ac.M = 35, Ac.nnz_l = 705 
+rank = 53, M = 70, nnz_l = 1970, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 231 
+rank = 52, M = 67, nnz_l = 1939, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 557 
+rank = 43, M = 67, nnz_l = 1994, nnz_g = 124264, Ac.M = 27, Ac.nnz_l = 261 
+rank = 47, M = 72, nnz_l = 2129, nnz_g = 124264, Ac.M = 30, Ac.nnz_l = 350 
+rank = 46, M = 72, nnz_l = 2213, nnz_g = 124264, Ac.M = 28, Ac.nnz_l = 312 
+rank = 45, M = 68, nnz_l = 1946, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 380 
+rank = 44, M = 66, nnz_l = 1969, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 416 
+rank = 42, M = 67, nnz_l = 1889, nnz_g = 124264, Ac.M = 34, Ac.nnz_l = 663 
+rank = 41, M = 68, nnz_l = 2080, nnz_g = 124264, Ac.M = 33, Ac.nnz_l = 657 
+rank = 39, M = 67, nnz_l = 1973, nnz_g = 124264, Ac.M = 27, Ac.nnz_l = 280 
+rank = 38, M = 66, nnz_l = 1826, nnz_g = 124264, Ac.M = 33, Ac.nnz_l = 565 
+rank = 34, M = 64, nnz_l = 1773, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 270 
+rank = 37, M = 70, nnz_l = 2157, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 489 
+rank = 33, M = 66, nnz_l = 1898, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 601 
+rank = 35, M = 65, nnz_l = 1910, nnz_g = 124264, Ac.M = 28, Ac.nnz_l = 307 
+rank = 36, M = 76, nnz_l = 2291, nnz_g = 124264, Ac.M = 34, Ac.nnz_l = 584 
+rank = 27, M = 65, nnz_l = 1814, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 498 
+rank = 21, M = 64, nnz_l = 1737, nnz_g = 124264, Ac.M = 30, Ac.nnz_l = 314 
+rank = 23, M = 69, nnz_l = 1964, nnz_g = 124264, Ac.M = 33, Ac.nnz_l = 638 
+rank = 22, M = 69, nnz_l = 2047, nnz_g = 124264, Ac.M = 30, Ac.nnz_l = 483 
+rank = 17, M = 68, nnz_l = 1917, nnz_g = 124264, Ac.M = 34, Ac.nnz_l = 661 
+rank = 19, M = 72, nnz_l = 2122, nnz_g = 124264, Ac.M = 37, Ac.nnz_l = 928 
+rank = 18, M = 70, nnz_l = 2119, nnz_g = 124264, Ac.M = 26, Ac.nnz_l = 109 
+rank = 20, M = 64, nnz_l = 1819, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 592 
+rank = 13, M = 71, nnz_l = 2206, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 645 
+rank = 15, M = 65, nnz_l = 1831, nnz_g = 124264, Ac.M = 33, Ac.nnz_l = 610 
+rank = 11, M = 68, nnz_l = 2035, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 427 
+rank = 10, M = 65, nnz_l = 1802, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 358 
+rank = 14, M = 71, nnz_l = 2197, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 694 
+rank = 12, M = 66, nnz_l = 1818, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 522 
+rank = 3, M = 68, nnz_l = 1898, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 498 
+rank = 4, M = 63, nnz_l = 1719, nnz_g = 124264, Ac.M = 30, Ac.nnz_l = 313 
+rank = 2, M = 69, nnz_l = 1654, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 329 
+rank = 5, M = 70, nnz_l = 2023, nnz_g = 124264, Ac.M = 40, Ac.nnz_l = 1104 
+rank = 9, M = 70, nnz_l = 2042, nnz_g = 124264, Ac.M = 35, Ac.nnz_l = 857 
+rank = 8, M = 61, nnz_l = 1547, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 371 
+rank = 25, M = 70, nnz_l = 2027, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 533 
+rank = 26, M = 66, nnz_l = 1831, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 577 
+rank = 29, M = 69, nnz_l = 2005, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 578 
+rank = 31, M = 69, nnz_l = 1984, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 510 
+rank = 30, M = 67, nnz_l = 1883, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 512 
+rank = 28, M = 63, nnz_l = 1731, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 312 
+rank = 32, M = 70, nnz_l = 2068, nnz_g = 124264, Ac.M = 32, Ac.nnz_l = 541 
+rank = 40, M = 70, nnz_l = 2076, nnz_g = 124264, Ac.M = 31, Ac.nnz_l = 421 
+rank = 48, M = 72, nnz_l = 2190, nnz_g = 124264, Ac.M = 34, Ac.nnz_l = 812 
+rank = 63, M = 881, nnz_l = 2333, nnz_g = 124264, Ac.M = 865, Ac.nnz_l = 2806 
+rank = 62, M = 64, nnz_l = 1367, nnz_g = 124264, Ac.M = 28, Ac.nnz_l = 261 
+rank = 60, M = 71, nnz_l = 2054, nnz_g = 124264, Ac.M = 30, Ac.nnz_l = 383 
+rank = 56, M = 69, nnz_l = 2088, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 372 
+rank = 24, M = 65, nnz_l = 1827, nnz_g = 124264, Ac.M = 29, Ac.nnz_l = 368 
+rank = 16, M = 76, nnz_l = 2471, nnz_g = 124264, Ac.M = 30, Ac.nnz_l = 496 
+
+Coarsening: level 3
+min: 0.027797
+ave: 0.027884
+max: 0.028862
+
+rank = 0, M = 887, nnz_l = 2520, nnz_g = 124264, Ac.M = 855, Ac.nnz_l = 2413 
+_____________________________
+
+size of matrix level 4: 3647
+nnz level 4: 34655
+row_reduction_min = 0.612118, row_reduction_threshold = 0.900000 
+
+Aggregation: level 4
+min: 0.00150919
+ave: 0.00152224
+max: 0.00153804
+
+
+Prolongation: level 4
+min: 0.000524044
+ave: 0.000669673
+max: 0.000735044
+
+
+Restriction: level 4
+min: 0.000523806
+ave: 0.000600878
+max: 0.000751972
+
+rank = 7, M = 29, nnz_l = 401, nnz_g = 34655, Ac.M = 24, Ac.nnz_l = 24 
+rank = 5, M = 40, nnz_l = 1104, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 117 
+rank = 6, M = 28, nnz_l = 179, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 26 
+rank = 61, M = 28, nnz_l = 132, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 86 
+rank = 57, M = 33, nnz_l = 488, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 126 
+rank = 53, M = 29, nnz_l = 231, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 26 
+rank = 47, M = 30, nnz_l = 350, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 26 
+rank = 43, M = 27, nnz_l = 261, nnz_g = 34655, Ac.M = 24, Ac.nnz_l = 24 
+rank = 46, M = 28, nnz_l = 312, nnz_g = 34655, Ac.M = 24, Ac.nnz_l = 24 
+rank = 45, M = 31, nnz_l = 380, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 26 
+rank = 42, M = 34, nnz_l = 663, nnz_g = 34655, Ac.M = 29, Ac.nnz_l = 358 
+rank = 44, M = 29, nnz_l = 416, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 140 
+rank = 35, M = 28, nnz_l = 307, nnz_g = 34655, Ac.M = 24, Ac.nnz_l = 24 
+rank = 39, M = 27, nnz_l = 280, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 148 
+rank = 38, M = 33, nnz_l = 565, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 150 
+rank = 37, M = 31, nnz_l = 489, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 338 
+rank = 31, M = 31, nnz_l = 510, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 119 
+rank = 29, M = 32, nnz_l = 578, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 25 
+rank = 30, M = 32, nnz_l = 512, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 235 
+rank = 28, M = 29, nnz_l = 312, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 137 
+rank = 25, M = 32, nnz_l = 533, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 236 
+rank = 23, M = 33, nnz_l = 638, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 26 
+rank = 21, M = 30, nnz_l = 314, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 122 
+rank = 22, M = 30, nnz_l = 483, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 256 
+rank = 17, M = 34, nnz_l = 661, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 137 
+rank = 20, M = 31, nnz_l = 592, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 254 
+rank = 15, M = 33, nnz_l = 610, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 139 
+rank = 13, M = 32, nnz_l = 645, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 218 
+rank = 9, M = 35, nnz_l = 857, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 119 
+rank = 14, M = 32, nnz_l = 694, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 144 
+rank = 12, M = 32, nnz_l = 522, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 246 
+rank = 4, M = 30, nnz_l = 313, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 26 
+rank = 1, M = 31, nnz_l = 404, nnz_g = 34655, Ac.M = 30, Ac.nnz_l = 502 
+rank = 3, M = 32, nnz_l = 498, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 423 
+rank = 2, M = 31, nnz_l = 329, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 196 
+rank = 11, M = 29, nnz_l = 427, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 141 
+rank = 10, M = 31, nnz_l = 358, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 201 
+rank = 8, M = 31, nnz_l = 371, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 117 
+rank = 19, M = 37, nnz_l = 928, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 271 
+rank = 18, M = 26, nnz_l = 109, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 198 
+rank = 27, M = 31, nnz_l = 498, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 364 
+rank = 26, M = 32, nnz_l = 577, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 25 
+rank = 24, M = 29, nnz_l = 368, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 238 
+rank = 34, M = 29, nnz_l = 270, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 143 
+rank = 36, M = 34, nnz_l = 584, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 231 
+rank = 33, M = 32, nnz_l = 601, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 346 
+rank = 41, M = 33, nnz_l = 657, nnz_g = 34655, Ac.M = 29, Ac.nnz_l = 565 
+rank = 40, M = 31, nnz_l = 421, nnz_g = 34655, Ac.M = 26, Ac.nnz_l = 26 
+rank = 55, M = 32, nnz_l = 393, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 227 
+rank = 54, M = 32, nnz_l = 645, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 132 
+rank = 52, M = 31, nnz_l = 557, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 145 
+rank = 49, M = 32, nnz_l = 477, nnz_g = 34655, Ac.M = 28, Ac.nnz_l = 241 
+rank = 51, M = 35, nnz_l = 705, nnz_g = 34655, Ac.M = 30, Ac.nnz_l = 415 
+rank = 50, M = 25, nnz_l = 109, nnz_g = 34655, Ac.M = 24, Ac.nnz_l = 24 
+rank = 59, M = 36, nnz_l = 582, nnz_g = 34655, Ac.M = 27, Ac.nnz_l = 102 
+rank = 58, M = 29, nnz_l = 371, nnz_g = 34655, Ac.M = 24, Ac.nnz_l = 24 
+rank = 63, M = 865, nnz_l = 2806, nnz_g = 34655, Ac.M = 849, Ac.nnz_l = 2867 
+rank = 60, M = 30, nnz_l = 383, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 117 
+rank = 62, M = 28, nnz_l = 261, nnz_g = 34655, Ac.M = 25, Ac.nnz_l = 128 
+rank = 56, M = 29, nnz_l = 372, nnz_g = 34655, Ac.M = 24, Ac.nnz_l = 24 
+rank = 48, M = 34, nnz_l = 812, nnz_g = 34655, Ac.M = 1240, Ac.nnz_l = 4920 
+rank = 32, M = 32, nnz_l = 541, nnz_g = 34655, Ac.M = 421, Ac.nnz_l = 2815 
+rank = 16, M = 30, nnz_l = 496, nnz_g = 34655, Ac.M = 421, Ac.nnz_l = 2762 
+
+Coarsening: level 4
+min: 0.0362291
+ave: 0.0364164
+max: 0.037545
+
+rank = 0, M = 855, nnz_l = 2413, nnz_g = 34655, Ac.M = 1238, Ac.nnz_l = 4779 
+_____________________________
+
+size of matrix level 5: 3320
+nnz level 5: 15276
+row_reduction_min = 0.910337, row_reduction_threshold = 0.900000 
+
+Setup:
+min: 2.18058
+ave: 2.1819
+max: 2.1822
+
+******************************************************
+
+initial residual = 3.220142e+04 
+
+
+Vcycle: level 0: pre
+min: 0.000504017
+ave: 0.000536095
+max: 0.000604153
+
+
+Vcycle: level 0: restriction
+min: 0.00030899
+ave: 0.000320438
+max: 0.000334978
+
+
+Vcycle: level 1: pre
+min: 0.000478983
+ave: 0.000510011
+max: 0.000545025
+
+
+Vcycle: level 1: restriction
+min: 0.000128031
+ave: 0.000158705
+max: 0.000174046
+
+
+Vcycle: level 2: pre
+min: 0.000295877
+ave: 0.000326999
+max: 0.000370026
+
+
+Vcycle: level 2: restriction
+min: 6.41346e-05
+ave: 8.17403e-05
+max: 9.10759e-05
+
+
+Vcycle: level 3: pre
+min: 0.000222921
+ave: 0.000249166
+max: 0.000272036
+
+
+Vcycle: level 3: restriction
+min: 3.40939e-05
+ave: 5.53764e-05
+max: 7.70092e-05
+
+
+Vcycle: level 4: solve coarsest
+min: 0.00765204
+ave: 0.00772395
+max: 0.00775599
+
+
+Vcycle: level 3: prolongation
+min: 3.69549e-05
+ave: 5.13829e-05
+max: 6.00815e-05
+
+
+Vcycle: level 3: post
+min: 0.000206947
+ave: 0.000235774
+max: 0.000262976
+
+
+Vcycle: level 2: prolongation
+min: 4.91142e-05
+ave: 5.93625e-05
+max: 6.50883e-05
+
+
+Vcycle: level 2: post
+min: 0.000243902
+ave: 0.000285398
+max: 0.000306845
+
+
+Vcycle: level 1: prolongation
+min: 0.000166178
+ave: 0.000177171
+max: 0.000190973
+
+
+Vcycle: level 1: post
+min: 0.000370026
+ave: 0.000405293
+max: 0.000440836
+
+
+Vcycle: level 0: prolongation
+min: 0.000436068
+ave: 0.000460267
+max: 0.000485182
+
+
+Vcycle: level 0: post
+min: 0.000610113
+ave: 0.000658192
+max: 0.000703096
+
+******************************************************
+
+final:
+stopped at iteration    = 1 
+final absolute residual = 1.281486e+03
+relative residual       = 3.979593e-02 
+
+******************************************************
+
+Solve:
+min: 0.015167
+ave: 0.0151945
+max: 0.015203
+
+Application 13873779 resources: utime ~144s, stime ~14s, Rss ~32704, inblocks ~101838, outblocks ~265822
+Job Cleanup ran on Thu Oct 19 20:49:04 EDT 2017
+===============================
+submit_args  : 	 submit_args = submit0004.pbs
+NIDS         : 	 801,873,882,893,970,976,978-979
+NID Placement: 	 801/32 873/32 882/32 893/32 970/32 976/32 978/32 979/32 
