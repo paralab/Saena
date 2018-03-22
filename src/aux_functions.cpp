@@ -356,7 +356,6 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
     if(rank == nprocs - 1)
         zm = mz - ( (nprocs - 1) * zm);
 
-
     if(verbose_gen_rhs){
         MPI_Barrier(comm);
         printf("rank = %d, corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);

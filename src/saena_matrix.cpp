@@ -49,7 +49,7 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
         printf("saena_matrix: part 1. rank = %d, nnz_g = %lu, initial_nnz_l = %lu \n", rank, nnz_g, initial_nnz_l);
         MPI_Barrier(comm);}
 
-//    printf("\nrank = %d, nnz_g = %u, initial_nnz_l = %u\n", rank, nnz_g, initial_nnz_l);
+//    printf("\nrank = %d, nnz_g = %lu, initial_nnz_l = %lu \n", rank, nnz_g, initial_nnz_l);
 
     // todo: change data from vector to malloc. then free after repartitioning.
     data_unsorted.resize(initial_nnz_l);
@@ -934,7 +934,12 @@ int saena_matrix::repartition(){
 
     if(repartition_verbose && rank==0) printf("repartition - step 1!\n");
 
+    density = (nnz_g / double(Mbig)) / (Mbig);
+    last_density_shrink = density;
     last_M_shrink = Mbig;
+//    last_nnz_shrink = nnz_g;
+
+//    if(rank==0) printf("\n", nnz_g, Mbig);
 
     // *************************** find splitters ****************************
     // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
@@ -1084,6 +1089,7 @@ int saena_matrix::repartition(){
         }
     }
     split[nprocs] = Mbig;
+    split_old = split;
 
     H_g_scan.clear();
     H_g_scan.shrink_to_fit();
@@ -1098,6 +1104,7 @@ int saena_matrix::repartition(){
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
+//    M_old = M;
 
     if(repartition_verbose && rank==0) printf("repartition - step 4!\n");
 
@@ -1203,6 +1210,7 @@ int saena_matrix::repartition(){
 
     if(repartition_verbose && rank==0) printf("repartition - step 7!\n");
 
+
     return 0;
 }
 
@@ -1221,6 +1229,8 @@ int saena_matrix::repartition2(){
     MPI_Comm_rank(comm, &rank);
 
     if(repartition_verbose && rank==0) printf("repartition - step 1!\n");
+
+    density = (nnz_g / double(Mbig)) / (Mbig);
 
     // *************************** exchange data ****************************
 
@@ -1648,12 +1658,12 @@ int saena_matrix::repartition3(){
 
     if(repartition_verbose && rank==0) printf("repartition3 - step 1!\n");
 
+    density = (nnz_g / double(Mbig)) / (Mbig);
+
 //    MPI_Barrier(comm);
 //    printf("repartition3 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
 //           rank, Mbig, M, nnz_g, nnz_l);
 //    MPI_Barrier(comm);
-
-//    last_M_shrink = Mbig;
 
     // *************************** find splitters ****************************
     // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
@@ -1781,9 +1791,11 @@ int saena_matrix::repartition3(){
 //            std::cout << split[i] << std::endl;
 //        std::cout << std::endl;}
 
-    long procNum = 0;
     // determine number of rows on each proc based on having almost the same number of nonzeros per proc.
     // -------------------------------------------
+
+    split_old = split;
+    long procNum = 0;
     for (index_t i = 1; i < n_buckets; i++){
         if (H_g_scan[i] > (procNum+1)*nnz_g/nprocs){
             procNum++;
@@ -1791,7 +1803,8 @@ int saena_matrix::repartition3(){
         }
     }
     split[nprocs] = Mbig;
-    split_old = split;
+
+//    print_vector(split, -1, comm);
 
 //    if (rank==0){
 //        std::cout << std::endl << "split:" << std::endl;
@@ -1806,16 +1819,13 @@ int saena_matrix::repartition3(){
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
+//    M_old = M;
 
     if(repartition_verbose && rank==0) printf("repartition3 - step 4!\n");
 
-//    unsigned int M_min_global;
-//    MPI_Allreduce(&M, &M_min_global, 1, MPI_UNSIGNED, MPI_MIN, comm);
-
     // *************************** exchange data ****************************
 
-    int* sendSizeArray = (int*)malloc(sizeof(int)*nprocs);
-    std::fill(&sendSizeArray[0], &sendSizeArray[nprocs], 0);
+    std::vector<int> send_size_array(nprocs, 0);
 //    for (unsigned int i=0; i<initial_nnz_l; i++){
 //        tempIndex = lower_bound2(&split[0], &split[nprocs], entry[i].row);
 //        sendSizeArray[tempIndex]++;
@@ -1831,7 +1841,7 @@ int saena_matrix::repartition3(){
 
     for (nnz_t i=0; i<initial_nnz_l; i++){
         least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry[i].row);
-        sendSizeArray[least_proc]++;
+        send_size_array[least_proc]++;
     }
 
 //    if (rank==5){
@@ -1841,10 +1851,13 @@ int saena_matrix::repartition3(){
 
     // this part is for cpu shrinking. assign all the rows on non-root procs to their roots.
     // ---------------------------------
-//    if( (nprocs >= cpu_shrink_thre2) && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) )
-    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
+//    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
+//    if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
+    if(enable_shrink && (nprocs >= cpu_shrink_thre2) && (density >= (last_density_shrink * cpu_shrink_thre1)) ){
         shrinked = true;
         last_M_shrink = Mbig;
+//        last_nnz_shrink = nnz_g;
+        last_density_shrink = density;
         double remainder;
         int root_cpu = nprocs;
         for(int proc = nprocs-1; proc > 0; proc--){
@@ -1859,6 +1872,7 @@ int saena_matrix::repartition3(){
             }
         }
 
+//        M_old = M;
         M = split[rank+1] - split[rank];
 
 //        if (rank==0){
@@ -1874,8 +1888,8 @@ int saena_matrix::repartition3(){
             if(remainder == 0)
                 root_cpu = proc;
             else{
-                sendSizeArray[root_cpu] += sendSizeArray[proc];
-                sendSizeArray[proc] = 0;
+                send_size_array[root_cpu] += send_size_array[proc];
+                send_size_array[proc] = 0;
             }
         }
 
@@ -1885,30 +1899,30 @@ int saena_matrix::repartition3(){
 //                std::cout << sendSizeArray[i] << std::endl;}
     }
 
-    int* recvSizeArray = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(sendSizeArray, 1, MPI_INT, recvSizeArray, 1, MPI_INT, comm);
+    std::vector<int> recv_size_array(nprocs);
+    MPI_Alltoall(&send_size_array[0], 1, MPI_INT, &recv_size_array[0], 1, MPI_INT, comm);
 
 //    if (rank==1){
 //        std::cout << "recvSizeArray:" << std::endl;
 //        for(long i=0;i<nprocs;i++)
 //            std::cout << recvSizeArray[i] << std::endl;}
 
-//    int sOffset[nprocs];
-    int* sOffset = (int*)malloc(sizeof(int)*nprocs);
-    sOffset[0] = 0;
+//    int* sOffset = (int*)malloc(sizeof(int)*nprocs);
+    std::vector<int> send_offset(nprocs);
+    send_offset[0] = 0;
     for (int i=1; i<nprocs; i++)
-        sOffset[i] = sendSizeArray[i-1] + sOffset[i-1];
+        send_offset[i] = send_size_array[i-1] + send_offset[i-1];
 
 //    if (rank==0){
 //        std::cout << "sOffset:" << std::endl;
 //        for(long i=0;i<nprocs;i++)
 //            std::cout << sOffset[i] << std::endl;}
 
-//    int rOffset[nprocs];
-    int* rOffset = (int*)malloc(sizeof(int)*nprocs);
-    rOffset[0] = 0;
+//    int* rOffset = (int*)malloc(sizeof(int)*nprocs);
+    std::vector<int> recv_offset(nprocs);
+    recv_offset[0] = 0;
     for (int i=1; i<nprocs; i++)
-        rOffset[i] = recvSizeArray[i-1] + rOffset[i-1];
+        recv_offset[i] = recv_size_array[i-1] + recv_offset[i-1];
 
 //    if (rank==1){
 //        std::cout << "rOffset:" << std::endl;
@@ -1917,23 +1931,17 @@ int saena_matrix::repartition3(){
 
     if(repartition_verbose && rank==0) printf("repartition3 - step 5!\n");
 
-    nnz_l = rOffset[nprocs-1] + recvSizeArray[nprocs-1];
+    nnz_l = recv_offset[nprocs-1] + recv_size_array[nprocs-1];
 //    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
 
     if(repartition_verbose && rank==0) printf("repartition3 - step 6!\n");
 
     std::vector<cooEntry> entry_old = entry;
-    entry.clear(); // todo: check if it is fine to remove this.
     entry.resize(nnz_l);
     entry.shrink_to_fit();
 
-    MPI_Alltoallv(&entry_old[0], sendSizeArray, sOffset, cooEntry::mpi_datatype(),
-                  &entry[0],     recvSizeArray, rOffset, cooEntry::mpi_datatype(), comm);
-
-    free(sendSizeArray);
-    free(recvSizeArray);
-    free(sOffset);
-    free(rOffset);
+    MPI_Alltoallv(&entry_old[0], &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
+                  &entry[0],     &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
 
     std::sort(entry.begin(), entry.end());
 
@@ -1951,7 +1959,7 @@ int saena_matrix::repartition3(){
 
     if(repartition_verbose) {
         MPI_Barrier(comm);
-        printf("repartition3 - step 7! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
+        printf("repartition3 - end! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
                rank, Mbig, M, nnz_g, nnz_l);
         MPI_Barrier(comm);
     }
@@ -1975,12 +1983,12 @@ int saena_matrix::repartition4(){
 
     if(repartition_verbose && rank==0) printf("repartition4 - step 1!\n");
 
+    density = (nnz_g / double(Mbig)) / (Mbig);
+
 //    MPI_Barrier(comm);
 //    printf("repartition4 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
 //           rank, Mbig, M, nnz_g, nnz_l);
 //    MPI_Barrier(comm);
-
-//    last_M_shrink = Mbig;
 
     // *************************** find splitters ****************************
     // split the matrix row-wise by splitters, so each processor gets almost equal number of rows
@@ -2007,6 +2015,7 @@ int saena_matrix::repartition4(){
 
     if(repartition_verbose && rank==0) printf("repartition4 - step 2!\n");
 
+    split_old = split;
     split[0] = 0;
     for(index_t i=1; i<nprocs; i++)
         split[i] = split[i-1] + splitOffset[i];
@@ -2023,6 +2032,7 @@ int saena_matrix::repartition4(){
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
+//    M_old = M;
 
     if(repartition_verbose && rank==0) printf("repartition4 - step 4!\n");
 
@@ -2060,10 +2070,13 @@ int saena_matrix::repartition4(){
 
     // this part is for cpu shrinking. assign all the rows on non-root procs to their roots.
     // ---------------------------------
-//    if( (nprocs >= cpu_shrink_thre2) && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) )
-    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
+//    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
+//    if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
+    if(enable_shrink && (nprocs >= cpu_shrink_thre2) && (density >= (last_density_shrink * cpu_shrink_thre1)) ){
         shrinked = true;
         last_M_shrink = Mbig;
+//        last_nnz_shrink = nnz_g;
+        last_density_shrink = density;
         double remainder;
         int root_cpu = nprocs;
         for(int proc = nprocs-1; proc > 0; proc--){
@@ -2078,6 +2091,7 @@ int saena_matrix::repartition4(){
             }
         }
 
+//        M_old = M;
         M = split[rank+1] - split[rank];
 
 //        if (rank==0){
@@ -2137,7 +2151,7 @@ int saena_matrix::repartition4(){
     if(repartition_verbose && rank==0) printf("repartition4 - step 5!\n");
 
     nnz_l = rOffset[nprocs-1] + recvSizeArray[nprocs-1];
-//    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
+//    printf("rank=%d \t A.nnz_l=%lu \t A.nnz_g=%lu \n", rank, nnz_l, nnz_g);
 
     if(repartition_verbose && rank==0) printf("repartition4 - step 6!\n");
 
@@ -2177,209 +2191,6 @@ int saena_matrix::repartition4(){
 
     return 0;
 }
-
-
-/*
-int saena_matrix::shrink_cpu(){
-
-    // if number of rows on Ac < threshold*number of rows on A, then shrink.
-    // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
-//    MPI_Comm comm = comm;
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-    unsigned long i;
-    bool verbose_shrink = true;
-
-    MPI_Barrier(comm);
-    if(rank==0) printf("\n****************************\n");
-    if(rank==0) printf("***********SHRINK***********\n");
-    if(rank==0) printf("****************************\n\n");
-    MPI_Barrier(comm);
-
-//    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, Ac->nnz_l); MPI_Barrier(comm);
-
-//    MPI_Barrier(comm);
-//    if(rank == 0){
-//        std::cout << "\nbefore shrinking!!!" <<std::endl;
-//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
-//        for(i=0; i < Ac->entry.size(); i++)
-//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
-//    }
-//    MPI_Barrier(comm);
-//    if(rank == 1){
-//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
-//        for(i=0; i < Ac->entry.size(); i++)
-//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
-//    }
-//    MPI_Barrier(comm);
-//    if(rank == 2){
-//        std::cout << "\nbefore shrinking!!!" <<std::endl;
-//        std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
-//        for(i=0; i < Ac->entry.size(); i++)
-//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;
-//    }
-//    MPI_Barrier(comm);
-
-    // assume cpu_shrink_thre2 is 4 (it is simpler to explain)
-    // 1 - create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
-    int color = rank / cpu_shrink_thre2;
-    MPI_Comm_split(comm, color, rank, &comm_horizontal);
-
-    int rank_new, nprocs_new;
-    MPI_Comm_size( comm_horizontal, &nprocs_new);
-    MPI_Comm_rank( comm_horizontal, &rank_new);
-
-//    MPI_Barrier(Ac->comm_horizontal);
-//    printf("rank = %d, rank_new = %d on Ac->comm_horizontal \n", rank, rank_new);
-
-    // 2 - update the number of rows on process 4k, and resize "entry".
-    unsigned int Ac_M_neighbors_total = 0;
-    unsigned int Ac_nnz_neighbors_total = 0;
-    MPI_Reduce(& M, &Ac_M_neighbors_total, 1, MPI_UNSIGNED, MPI_SUM, 0,  comm_horizontal);
-    MPI_Reduce(&nnz_l, &Ac_nnz_neighbors_total, 1, MPI_UNSIGNED, MPI_SUM, 0,  comm_horizontal);
-
-    if(rank_new == 0){
-         M = Ac_M_neighbors_total;
-         entry.resize(Ac_nnz_neighbors_total);
-        printf("rank = %d, Ac_M_neighbors = %d \n", rank, Ac_M_neighbors_total);
-        printf("rank = %d, Ac_nnz_neighbors = %d \n", rank, Ac_nnz_neighbors_total);
-    }
-
-    // last cpu that its right neighbors are going be shrinked to.
-    auto last_root_cpu = (unsigned int)floor(nprocs/ cpu_shrink_thre2) *  cpu_shrink_thre2;
-    printf("last_root_cpu = %u\n", last_root_cpu);
-    MPI_Barrier(comm);
-
-
-    int neigbor_rank;
-    unsigned int A_recv_nnz = 0; // set to 0 just to avoid "not initialized" warning
-    unsigned long offset =  nnz_l; // put the data on root from its neighbors at the end of entry[] which is of size nnz_l
-    if(nprocs_new > 1) { // if there is no neighbor, skip.
-        for (neigbor_rank = 1; neigbor_rank <  cpu_shrink_thre2; neigbor_rank++) {
-
-//            if( rank == last_root_cpu && (rank + neigbor_rank >= nprocs) )
-//                stop_forloop = true;
-            // last row of cpus should stop to avoid passing the last neighbor cpu.
-//            if( rank >= last_root_cpu){
-//                MPI_Bcast(&stop_forloop, 1, MPI_CXX_BOOL, 0, Ac->comm_horizontal);
-//                printf("rank = %d, neigbor_rank = %d, stop_forloop = %d \n", rank, neigbor_rank, stop_forloop);
-//                if (stop_forloop)
-//                    break;}
-
-            if( rank == last_root_cpu && (rank + neigbor_rank >= nprocs) )
-                break;
-
-            // 3 - send and receive size of Ac.
-            if (rank_new == 0)
-                MPI_Recv(&A_recv_nnz, 1, MPI_UNSIGNED, neigbor_rank, 0,  comm_horizontal, MPI_STATUS_IGNORE);
-
-            if (rank_new == neigbor_rank)
-                MPI_Send(&nnz_l, 1, MPI_UNSIGNED, 0, 0,  comm_horizontal);
-
-            // 4 - send and receive Ac.
-            if (rank_new == 0) {
-//                printf("rank = %d, neigbor_rank = %d, recv size = %u, offset = %lu \n", rank, neigbor_rank, A_recv_nnz, offset);
-                MPI_Recv(&*( entry.begin() + offset), A_recv_nnz, cooEntry::mpi_datatype(), neigbor_rank, 1,
-                          comm_horizontal, MPI_STATUS_IGNORE);
-                offset += A_recv_nnz; // set offset for the next iteration
-            }
-
-            if (rank_new == neigbor_rank) {
-//                printf("rank = %d, neigbor_rank = %d, send size = %u, offset = %lu \n", rank, neigbor_rank, Ac->nnz_l, offset);
-                MPI_Send(&*entry.begin(),  nnz_l, cooEntry::mpi_datatype(), 0, 1,  comm_horizontal);
-            }
-
-            // update local index for rows
-//        if(rank_new == 0)
-//            for(i=0; i < A_recv_nnz; i++)
-//                Ac->entry[offset + i].row += Ac->split[rank + neigbor_rank] - Ac->split[rank];
-        }
-    }
-
-    // even though the entries are sorted before shrinking, after shrinking they still need to be sorted locally,
-    // because remote elements damage sorting after shrinking.
-    std::sort( entry.begin(),  entry.end());
-
-//    MPI_Barrier(comm); MPI_Barrier(Ac->comm_horizontal);
-//    if(rank == 2){
-//        std::cout << "\nafter shrinking: rank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
-//        for(i=0; i < Ac->entry.size(); i++)
-//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;}
-//    MPI_Barrier(comm); MPI_Barrier(Ac->comm_horizontal);
-
-     active = false;
-//    Ac->active_old_comm = true; // this is used for prolong and post-smooth
-    if(rank_new == 0){
-         active = true;
-//        printf("active: rank = %d, rank_new = %d \n", rank, rank_new);
-    }
-
-    // 5 - create a new comm including only processes with 4k rank.
-    MPI_Group bigger_group;
-    MPI_Comm_group(comm, &bigger_group);
-    auto total_active_procs = (unsigned int)ceil((double)nprocs /  cpu_shrink_thre2); // note: this is ceiling, not floor.
-    std::vector<int> ranks(total_active_procs);
-    for(unsigned int i = 0; i < total_active_procs; i++)
-        ranks[i] =  cpu_shrink_thre2 * i;
-//        ranks.push_back(Ac->cpu_shrink_thre2 * i);
-
-//    printf("total_active_procs = %u \n", total_active_procs);
-//    for(i=0; i<ranks.size(); i++)
-//        if(rank==0) std::cout << ranks[i] << std::endl;
-
-    MPI_Group group_new;
-    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
-    MPI_Comm_create_group(comm, group_new, 0, & comm);
-
-//    if(Ac->active) {
-//        int rankkk;
-//        MPI_Comm_rank(Ac->comm, &rankkk);
-//        MPI_Barrier(Ac->comm);
-//        if (rankkk == 4) {
-//                std::cout << "\ninside cpu_shrink, after shrinking" << std::endl;
-//            std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() << std::endl;
-//            for (i = 0; i < Ac->entry.size(); i++)
-//                std::cout << i << "\t" << Ac->entry[i] << std::endl;}
-//        MPI_Barrier(Ac->comm);
-//    }
-
-    // 6 - update 4k.nnz_l and split. nnz_g stays the same, so no need to update.
-    split.clear();
-    if(active){
-        nnz_l =  entry.size();
-        split_old =  split; // save the old split for shrinking rhs and u
-        split.resize(total_active_procs+1);
-        split.shrink_to_fit();
-        split[0] = 0;
-        split[total_active_procs] = Mbig;
-        for(unsigned int i = 1; i < total_active_procs; i++){
-//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
-            split[i] = split_old[ranks[i]];
-        }
-    }
-
-    // 7 - update 4k.nnz_g
-//    if(Ac->active)
-//        MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, Ac->comm);
-
-//    if(Ac->active){
-//        MPI_Comm_size(Ac->comm, &nprocs);
-//        MPI_Comm_rank(Ac->comm, &rank);
-//        printf("\n\nrank = %d, nprocs = %d, M = %u, nnz_l = %u, nnz_g = %u, Ac->split[rank+1] = %lu, Ac->split[rank] = %lu \n",
-//               rank, nprocs, Ac->M, Ac->nnz_l, Ac->nnz_g, Ac->split[rank+1], Ac->split[rank]);
-//    }
-
-    // todo: how should these be freed?
-//    free(&bigger_group);
-//    free(&group_new);
-//    free(&comm_new2);
-
-     last_M_shrink =  Mbig;
-     shrinked = true;
-    return 0;
-}
-*/
 
 
 int saena_matrix::shrink_cpu(){
@@ -2560,6 +2371,7 @@ int saena_matrix::shrink_cpu(){
 //        MPI_Barrier(Ac->comm);
 //    }
 
+    std::vector<index_t> split_temp = split;
     split.clear();
     if(active){
         split.resize(total_active_procs+1);
@@ -2568,8 +2380,9 @@ int saena_matrix::shrink_cpu(){
         split[total_active_procs] = Mbig;
         for(unsigned int i = 1; i < total_active_procs; i++){
 //            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
-            split[i] = split_old[ranks[i]];
+            split[i] = split_temp[ranks[i]];
         }
+//        print_vector(split, -1, comm);
     }
 
 //    MPI_Barrier(comm);
@@ -2620,7 +2433,7 @@ int saena_matrix::matrix_setup() {
             MPI_Barrier(comm);}
 
 //        MPI_Barrier(comm);
-//        printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l);
+//        printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
 //        MPI_Barrier(comm);
 //        if(rank==0){
 //            printf("\nrank = %d\n", rank);
@@ -2684,12 +2497,13 @@ int saena_matrix::matrix_setup() {
         col_remote_size = 0;
         nnz_l_local = 0;
         nnz_l_remote = 0;
-//        recvCount.resize(nprocs);
         recvCount.assign(nprocs, 0);
+//        MPI_Barrier(comm); printf("AAAAAAAAAA   M = %u \n", M); MPI_Barrier(comm);
         nnzPerRow_local.assign(M, 0);
-//    nnzPerRow.assign(M,0);
-//    nnzPerCol_local.assign(Mbig,0); // todo: Nbig = Mbig, assuming A is symmetric.
-//    nnzPerCol_remote.assign(M,0);
+//        nnzPerRow.assign(M,0);
+//        nnzPerCol_local.assign(Mbig,0); // todo: Nbig = Mbig, assuming A is symmetric.
+//        nnzPerCol_remote.assign(M,0);
+//        MPI_Barrier(comm); printf("AAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHH\n"); MPI_Barrier(comm);
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //        nnzPerRow[row[0]-split[rank]]++;
@@ -2721,6 +2535,7 @@ int saena_matrix::matrix_setup() {
 
                 vElement_remote.push_back(entry[0].col);
                 vElementRep_remote.push_back(1);
+//                if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[0].col, lower_bound3(&split[0], &split[nprocs], entry[0].col));
                 recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
             }
         }
@@ -2757,6 +2572,7 @@ int saena_matrix::matrix_setup() {
                         vElement_remote.push_back(entry[i].col);
                         vElementRep_remote.push_back(1);
                         procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+//                        if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[i].col, procNum);
                         recvCount[procNum]++;
                         nnzPerCol_remote.push_back(1);
                     } else {
@@ -3066,7 +2882,7 @@ int saena_matrix::matrix_setup() {
 
         w_buff = new value_t[num_threads*M];
 
-/*
+
         nnz_t total_nnz_l_local;
         nnz_t total_nnz_l_remote;
         MPI_Allreduce(&nnz_l_local,  &total_nnz_l_local,  1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
@@ -3078,12 +2894,12 @@ int saena_matrix::matrix_setup() {
 
 //        printf("rank %d: col_remote_size = %u \n", rank, col_remote_size);
         index_t col_remote_size_min, col_remote_size_ave, col_remote_size_max;
-        MPI_Allreduce(&col_remote_size,  &col_remote_size_min,  1, MPI_UNSIGNED, MPI_MIN, comm);
-        MPI_Allreduce(&col_remote_size,  &col_remote_size_ave,  1, MPI_UNSIGNED, MPI_SUM, comm);
-        MPI_Allreduce(&col_remote_size,  &col_remote_size_max,  1, MPI_UNSIGNED, MPI_MAX, comm);
+        MPI_Allreduce(&col_remote_size, &col_remote_size_min, 1, MPI_UNSIGNED, MPI_MIN, comm);
+        MPI_Allreduce(&col_remote_size, &col_remote_size_ave, 1, MPI_UNSIGNED, MPI_SUM, comm);
+        MPI_Allreduce(&col_remote_size, &col_remote_size_max, 1, MPI_UNSIGNED, MPI_MAX, comm);
         if(rank==0) printf("\nremote_min = %u, remote_ave = %u, remote_max = %u \n",
                            col_remote_size_min, (col_remote_size_ave/nprocs), col_remote_size_max);
-*/
+
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
@@ -3224,17 +3040,42 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
     // the corresponding vector element is saved in vecValues[0]. and so on.
 
-    nnz_t iter = iter_remote_array[omp_get_thread_num()];
-//#pragma omp for
-    for (index_t j = 0; j < col_remote_size; ++j) {
-        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+#pragma omp parallel
+    {
+        unsigned int i, l;
+        int thread_id = omp_get_thread_num();
+        value_t *w_local = w_buff + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+        else
+            std::fill(&w_local[0], &w_local[M], 0);
 
-//                if(rank==0 && omp_get_thread_num()==0){
-//                    printf("thread = %d\n", omp_get_thread_num());
+        nnz_t iter = iter_remote_array[thread_id];
+#pragma omp for
+        for (index_t j = 0; j < col_remote_size; ++j) {
+            for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
+
+//                if(rank==0 && thread_id==0){
+//                    printf("thread = %d\n", thread_id);
 //                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
 //                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
 //                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+            }
+        }
+
+        int thread_partner;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (thread_id % int(pow(2, l+1)) == 0) {
+                thread_partner = thread_id + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    for (i = 0; i < M; i++)
+                        w_local[i] += w_buff[thread_partner * M + i];
+                }
+            }
+#pragma omp barrier
         }
     }
 
@@ -3317,17 +3158,42 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     // remote loop
     double t2_start = omp_get_wtime();
 
-    nnz_t iter = iter_remote_array[omp_get_thread_num()];
-//#pragma omp for
-    for (index_t j = 0; j < col_remote_size; ++j) {
-        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+#pragma omp parallel
+    {
+        unsigned int i, l;
+        int thread_id = omp_get_thread_num();
+        value_t *w_local = w_buff + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+        else
+            std::fill(&w_local[0], &w_local[M], 0);
 
-//                if(rank==0 && omp_get_thread_num()==0){
-//                    printf("thread = %d\n", omp_get_thread_num());
+        nnz_t iter = iter_remote_array[thread_id];
+#pragma omp for
+        for (index_t j = 0; j < col_remote_size; ++j) {
+            for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
+
+//                if(rank==0 && thread_id==0){
+//                    printf("thread = %d\n", thread_id);
 //                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
 //                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
 //                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+            }
+        }
+
+        int thread_partner;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (thread_id % int(pow(2, l+1)) == 0) {
+                thread_partner = thread_id + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    for (i = 0; i < M; i++)
+                        w_local[i] += w_buff[thread_partner * M + i];
+                }
+            }
+#pragma omp barrier
         }
     }
 
@@ -3446,17 +3312,42 @@ int saena_matrix::matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& 
     // remote loop
     double t2_start = omp_get_wtime();
 
-    nnz_t iter = iter_remote_array[omp_get_thread_num()];
-//#pragma omp for
-    for (index_t j = 0; j < col_remote_size; ++j) {
-        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+#pragma omp parallel
+    {
+        unsigned int i, l;
+        int thread_id = omp_get_thread_num();
+        value_t *w_local = w_buff + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+        else
+            std::fill(&w_local[0], &w_local[M], 0);
 
-//                if(rank==0 && omp_get_thread_num()==0){
-//                    printf("thread = %d\n", omp_get_thread_num());
+        nnz_t iter = iter_remote_array[thread_id];
+#pragma omp for
+        for (index_t j = 0; j < col_remote_size; ++j) {
+            for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
+
+//                if(rank==0 && thread_id==0){
+//                    printf("thread = %d\n", thread_id);
 //                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
 //                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
 //                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+            }
+        }
+
+        int thread_partner;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (thread_id % int(pow(2, l+1)) == 0) {
+                thread_partner = thread_id + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    for (i = 0; i < M; i++)
+                        w_local[i] += w_buff[thread_partner * M + i];
+                }
+            }
+#pragma omp barrier
         }
     }
 
@@ -3588,8 +3479,9 @@ int saena_matrix::matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& 
     // remote loop
     double t2_start = omp_get_wtime();
 
-    nnz_t iter = iter_remote_array[omp_get_thread_num()];
-//#pragma omp for
+    // this version is not parallel with OpenMP.
+    /*
+    nnz_t iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
         for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
             w[row_remote[iter]] += values_remote[iter] * vecValues[j];
@@ -3599,6 +3491,46 @@ int saena_matrix::matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& 
 //                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
 //                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
 //                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+        }
+    }
+*/
+    // the previous part is parallelized with OpenMP.
+#pragma omp parallel
+    {
+        unsigned int i, l;
+        int thread_id = omp_get_thread_num();
+        value_t *w_local = w_buff + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+        else
+            std::fill(&w_local[0], &w_local[M], 0);
+
+        nnz_t iter = iter_remote_array[thread_id];
+#pragma omp for
+        for (index_t j = 0; j < col_remote_size; ++j) {
+            for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
+
+//                if(rank==0 && thread_id==0){
+//                    printf("thread = %d\n", thread_id);
+//                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
+//                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
+//                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+            }
+        }
+
+        int thread_partner;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (thread_id % int(pow(2, l+1)) == 0) {
+                thread_partner = thread_id + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    for (i = 0; i < M; i++)
+                        w_local[i] += w_buff[thread_partner * M + i];
+                }
+            }
+#pragma omp barrier
         }
     }
 
@@ -3848,17 +3780,42 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
     // remote loop
     double t2_start = omp_get_wtime();
 
-    nnz_t iter = iter_remote_array[omp_get_thread_num()];
-//#pragma omp for
-    for (index_t j = 0; j < col_remote_size; ++j) {
-        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+#pragma omp parallel
+    {
+        unsigned int i, l;
+        int thread_id = omp_get_thread_num();
+        value_t *w_local = w_buff + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+        else
+            std::fill(&w_local[0], &w_local[M], 0);
 
-//                if(rank==0 && omp_get_thread_num()==0){
-//                    printf("thread = %d\n", omp_get_thread_num());
+        nnz_t iter = iter_remote_array[thread_id];
+#pragma omp for
+        for (index_t j = 0; j < col_remote_size; ++j) {
+            for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
+
+//                if(rank==0 && thread_id==0){
+//                    printf("thread = %d\n", thread_id);
 //                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
 //                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
 //                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+            }
+        }
+
+        int thread_partner;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (thread_id % int(pow(2, l+1)) == 0) {
+                thread_partner = thread_id + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    for (i = 0; i < M; i++)
+                        w_local[i] += w_buff[thread_partner * M + i];
+                }
+            }
+#pragma omp barrier
         }
     }
 
@@ -4296,6 +4253,36 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
             d[j] = ( d1 * d[j] ) + ( d2 * (-res[j]) * invDiag[j] );
             u[j] += d[j];
 //        if(rank==0) printf("u[%lu] = %f \n", j, u[j]);
+        }
+    }
+
+    return 0;
+}
+
+int saena_matrix::print(int ran){
+
+    // if ran >= 0 print the matrix entries on proc with rank = ran
+    // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\nmatrix on proc = %d \n", ran);
+            for (auto i:entry)
+                std::cout << i << std::endl;
+        }
+    } else{
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("\nmatrix on proc = %d \n", proc);
+                for (auto i:entry)
+                    std::cout << i << std::endl;
+            }
+            MPI_Barrier(comm);
         }
     }
 

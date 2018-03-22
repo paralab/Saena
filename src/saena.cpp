@@ -333,7 +333,7 @@ void saena::amg::destroy(){
 
 int saena::amg::set_verbose(bool verb) {
     m_pImpl->verbose = verb;
-    m_pImpl->verbose_setup = verb;
+//    m_pImpl->verbose_setup = verb;
     verbose = verb;
     return 0;
 }

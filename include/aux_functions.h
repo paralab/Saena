@@ -53,6 +53,59 @@ long lower_bound2(T *left, T *right, T val){
         return std::distance(first, left-1);
 }
 
+// binary search tree using the lower bound
+// difference with lower_bound2: in case of a val equal to one of vector entries:
+// lower_bound2 returns the most left one
+// lower_bound3 returns the most right one
+template <class T>
+long lower_bound3(T *left, T *right, T val){
+    T* first = left;
+    while (left < right) {
+        T *middle = right - (right - left) / 2;
+
+        if (*middle < val)
+            left = middle;
+        else{
+            if(*middle == val)
+                left = middle;
+            else
+                right = middle-1;
+        }
+//        std::cout << "left = " << *left << ", middle = " << *(right - (right - left) / 2) << ", right = " << *right << ", val = " << val << std::endl;
+    }
+
+    if(val >= *right)
+        return std::distance(first, left);
+    else
+        return std::distance(first, left-1);
+}
+
+/*
+// binary search tree using the upper bound
+template <class T>
+long upper_bound2(T *left, T *right, T val){
+    T* first = left;
+    while (left < right) {
+        T *middle = right - (right - left) / 2;
+        std::cout << "left = " << *left << ", middle = " << *middle << ", right = " << *right << ", val = " << val << std::endl;
+        if (*middle <= val)
+            left = middle;
+        else
+            right = middle-1;
+    }
+
+    if(val == *right){
+        // when using on split, some procs have equal split value (M=0), so go to the next proc until M != 0.
+//        while(*left == *(left+1))
+//            left++;
+
+        return std::distance(first, right);
+    }
+    else
+        return std::distance(first, right+1);
+}
+*/
+
 
 int randomVector(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm);
 
@@ -301,6 +354,36 @@ template<class T>
 bool almost_zero(T val){
 //    return (fabs(val) < std::numeric_limits<T>::min());
     return (fabs(val) < 1e-12);
+}
+
+template<class T>
+int print_vector(std::vector<T> &v, int ran, MPI_Comm comm){
+    // if ran >= 0 print the vector elements on proc with rank = ran
+    // otherwise print the vector elements on all processors in order. (first on proc 0, then proc 1 and so on.)
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\nvector on proc = %d \n", ran);
+            for (auto i:v)
+                std::cout << i << std::endl;
+        }
+    } else{
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("\nvector on proc = %d \n", proc);
+                for (auto i:v)
+                    std::cout << i << std::endl;
+            }
+            MPI_Barrier(comm);
+        }
+    }
+
+    return 0;
 }
 
 #endif //SAENA_AUXFUNCTIONS_H

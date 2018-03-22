@@ -36,10 +36,11 @@ private:
 public:
     std::vector<cooEntry> entry;
 
-    index_t Mbig = 0; // global number of rows
-    index_t M    = 0; // local number of rows
-    nnz_t nnz_g  = 0; // global nnz
-    nnz_t nnz_l  = 0; // local nnz
+    index_t Mbig  = 0; // global number of rows
+    index_t M     = 0; // local number of rows
+    index_t M_old = 0; // local number of rows, before being repartitioned.
+    nnz_t nnz_g   = 0; // global nnz
+    nnz_t nnz_l   = 0; // local nnz
     std::vector<index_t> split; // (row-wise) partition of the matrix between processes
     std::vector<index_t> split_old;
 
@@ -104,15 +105,17 @@ public:
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
-    bool enable_shrink = false;
-    bool shrinked = false;
-    int cpu_shrink_thre1 = 2; // Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
-    int cpu_shrink_thre2 = 2;
+    bool enable_shrink = true;
+    bool shrinked = false; // if shrinking happens for the matrix, set this to true.
+    int cpu_shrink_thre1 = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)  or  last_nnz_shrink >= (nnz_g * cpu_shrink_thre1)  or  Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
+    int cpu_shrink_thre2 = 2; // number of procs after shrinking = nprocs / cpu_shrink_thre2
     index_t last_M_shrink;
+    nnz_t   last_nnz_shrink;
+    double  last_density_shrink;
 
+    double density = -1.0;
     float jacobi_omega = float(2.0/3);
     double eig_max_of_invdiagXA = 0; // the biggest eigenvalue of (A * invDiag(A)) to be used in chebyshev smoother
-    float density = -1;
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
 
     saena_matrix();
@@ -161,6 +164,8 @@ public:
     int inverse_diag(std::vector<value_t>& x);
     int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
     int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
+
+    int print(int ran);
 
     int set_zero();
     int erase();

@@ -7,6 +7,7 @@
 
 using namespace std;
 
+
 restrict_matrix::restrict_matrix(){}
 
 
@@ -37,6 +38,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         MPI_Barrier(comm);
         printf("rank %d: transposeP part1\n", rank);
     }
+
+//    MPI_Barrier(comm);
+//    printf("rank = %d, R.Mbig = %u, R.NBig = %u, M = %u \n", rank, Mbig, Nbig, M);
+//    MPI_Barrier(comm);
 
     // *********************** send remote part of restriction ************************
 

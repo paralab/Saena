@@ -13,3 +13,4 @@ Grid::Grid(saena_matrix* A1, int maxLev, int currentLev){
 
 
 Grid::~Grid(){}
+

@@ -11,12 +11,13 @@ class prolong_matrix;
 class restrict_matrix;
 class Grid;
 
+
 class saena_object {
 public:
 
-    int max_level = 5; // fine grid is level 0.
+    int max_level = 7; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
-    unsigned int least_row_threshold = 15;
+    unsigned int least_row_threshold = 100;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
     // which means the number of rows was not reduced much.
     double row_reduction_threshold = 0.90;
@@ -25,14 +26,14 @@ public:
     std::string smoother = "chebyshev";
     int preSmooth  = 3;
     int postSmooth = 3;
-    std::string direct_solver = "Elemental"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
-    float connStrength = 0.5; // connection strength parameter: control coarsening aggressiveness
-    bool doSparsify = false;
+    std::string direct_solver = "CG"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
     std::vector<Grid> grids;
+    float connStrength = 0.5; // connection strength parameter: control coarsening aggressiveness
     int CG_max_iter = 100;
     double CG_tol = 1e-10;
-    bool repartition = false;
-    bool shrink_cpu = false;
+    bool doSparsify = false;
+    bool repartition = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
+//    bool shrink_cpu = true;
     bool dynamic_levels = true;
     bool adaptive_coarsening = true;
     float dense_threshold = 0.8; // 0<dense_threshold<=1 decide when to switch to the dense structure.
@@ -56,7 +57,7 @@ public:
     int aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
-    int coarsen(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
+    int coarsen(Grid *grid);
     // this function is similar to the coarsen(), but does R*A*P for only local (diagonal) blocks.
     int coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
     int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
@@ -72,8 +73,11 @@ public:
     int set_repartition_rhs(std::vector<value_t>& rhs);
     int repartition_u(std::vector<value_t>& u);
     int repartition_back_u(std::vector<value_t>& u);
+    int repartition_u2_prepare(Grid *grid);
+    int repartition_u2(std::vector<value_t>& u, Grid &grid);
+    int repartition_back_u2(std::vector<value_t>& u, Grid &grid);
 //    int shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_splitNew);
-    int shrink_rhs_u(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int shrink_u_rhs(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int unshrink_u(Grid* grid, std::vector<value_t>& u);
     bool active(int l);
     int find_eig_Elemental(saena_matrix& A);
@@ -88,3 +92,4 @@ public:
 };
 
 #endif //SAENA_SAENA_OBJECT_H
+

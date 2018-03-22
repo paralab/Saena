@@ -229,6 +229,7 @@ strength_matrix::~strength_matrix(){
 }
 
 
+
 int strength_matrix::erase(){
     M    = 0;
     Mbig = 0;
