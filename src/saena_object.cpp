@@ -51,7 +51,6 @@ int saena_object::setup(saena_matrix* A) {
     float total_row_reduction, row_reduction_min;
 //    index_t M_current;
 
-//    A->density = float(A->nnz_g) / (A->Mbig * A->Mbig);
     if(verbose_setup)
         if(rank==0){
             printf("_____________________________\n\n");
@@ -59,10 +58,8 @@ int saena_object::setup(saena_matrix* A) {
                    nprocs, A->Mbig, A->nnz_g, A->density);}
 
     if(smoother=="chebyshev"){
-        saena_matrix& A_address = *A;
-
 //        double t1 = omp_get_wtime();
-        find_eig_Elemental(A_address); // todo: replace A_address with *A
+        find_eig_Elemental(*A);
 //        find_eig(A_address);
 //        double t2 = omp_get_wtime();
 //        if(verbose_level_setup) print_time(t1, t2, "find_eig() level 0: ", A->comm);
@@ -70,6 +67,7 @@ int saena_object::setup(saena_matrix* A) {
 
     grids.resize(max_level+1);
     grids[0] = Grid(A, max_level, 0); // pass A to grids[0]
+//    printf("rank %d heeeeeeeeeeeeeeeeeyyyyyyyyy\n", rank);
     for(i = 0; i < max_level; i++){
 //        MPI_Barrier(grids[0].A->comm); printf("rank = %d, level setup; before if\n", rank); MPI_Barrier(grids[0].A->comm);
         if(grids[i].A->active) {
@@ -2092,13 +2090,12 @@ int saena_object::coarsen(Grid *grid){
         MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // decide to partition based on number of rows or nonzeros.
-    if(Ac->density < dense_threshold){
+    if(Ac->density < dense_threshold)
         Ac->repartition3(); // based on nonzeros
-        repartition_u2_prepare(grid);
-    }else{
+    else
         Ac->repartition4(); // based on number of rows
-        repartition_u2_prepare(grid);
-    }
+
+    repartition_u2_prepare(grid);
 
     if(Ac->shrinked)
         Ac->shrink_cpu();

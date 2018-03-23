@@ -1,9 +1,8 @@
 #include "iostream"
-
 #include <saena_matrix_dense.h>
 #include <aux_functions.h>
 
-saena_matrix_dense::saena_matrix_dense()=default;
+saena_matrix_dense::saena_matrix_dense(){}
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
     M = M1;
@@ -12,6 +11,8 @@ saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
     entry = new value_t*[M];
     for(index_t i = 0; i < M; i++)
         entry[i] = new value_t[Nbig];
+
+    allocated = true;
 }
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1){
@@ -22,13 +23,17 @@ saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1
     entry = new value_t*[M];
     for(index_t i = 0; i < M; i++)
         entry[i] = new value_t[Nbig];
+
+    allocated = true;
 }
 
 
 saena_matrix_dense::~saena_matrix_dense() {
-    for(index_t i = 0; i < M; i++)
-        delete [] entry[i];
-    delete [] entry;
+    if(allocated){
+        for(index_t i = 0; i < M; i++)
+            delete [] entry[i];
+        delete [] entry;
+    }
 }
 
 
@@ -80,6 +85,76 @@ int saena_matrix_dense::print(int ran){
 }
 
 
+int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(split.empty()){
+        if(rank==0) printf("Error: split for the dense matrix is not set!\n");
+        MPI_Finalize();
+        return -1;
+    }
+
+    if(M != v.size()){
+        if(rank==0) printf("Error: vector v does not have the same size as the local number of the rows of the matrix!\n");
+        MPI_Finalize();
+        return -1;
+    }
+
+    MPI_Status sendRecvStatus;
+    int right_neighbor = (rank + 1)%nprocs;
+    int left_neighbor = rank - 1;
+    if (left_neighbor < 0)
+        left_neighbor += nprocs;
+//    if(rank==0) printf("%d, %d\n", left_neighbor, right_neighbor);
+
+    int owner, next_owner;
+    unsigned int recv_size, send_size = M;
+
+    std::vector<value_t> v_recv = v;
+    std::vector<value_t> v_send = v;
+
+    MPI_Request *requests = new MPI_Request[2];
+    MPI_Status  *statuses = new MPI_Status[2];
+
+    for(index_t k = rank; k < rank+nprocs; k++){
+        // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
+        // Send v to the left_neighbor processor, receive v from the right_neighbor processor.
+        // In the next step: send v that was received in the previous step to the left_neighbor processor,
+        // receive v from the right_neighbor processor. And so on.
+        // --------------------------------------------------------------------
+
+        // compute recv_size
+        next_owner = (k+1)%nprocs;
+        recv_size = split[next_owner+1] - split[next_owner];
+        v_recv.resize(recv_size);
+
+        MPI_Irecv(&v_recv[0], recv_size, MPI_DOUBLE, right_neighbor, right_neighbor, comm, &requests[0]);
+        MPI_Isend(&v_send[0], send_size, MPI_DOUBLE, left_neighbor,  rank,           comm, &requests[1]);
+
+        owner = k%nprocs;
+        for(index_t i = 0; i < M; i++) {
+            for (index_t j = split[owner]; j < split[owner + 1]; j++) {
+                w[i] += entry[i][j] * v_send[j - split[owner]];
+//                if(rank==2) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_recv[j - split[owner]]);
+            }
+        }
+
+        MPI_Waitall(2, requests, statuses);
+        std::swap(v_recv, v_send);
+        send_size = recv_size;
+    }
+
+    delete [] requests;
+    delete [] statuses;
+
+    return 0;
+}
+
+// another dense matvec implementation, but without overlapping.
+/*
 int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
 
     int nprocs, rank;
@@ -160,3 +235,5 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
 
     return 0;
 }
+*/
+

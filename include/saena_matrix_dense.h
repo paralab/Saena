@@ -18,6 +18,7 @@ private:
 
 public:
 
+    bool allocated = false;
     index_t Mbig = 0, Nbig = 0, M = 0;
     value_t **entry;
     MPI_Comm comm;

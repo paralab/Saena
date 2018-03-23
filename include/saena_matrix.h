@@ -107,7 +107,7 @@ public:
 
     bool enable_shrink = true;
     bool shrinked = false; // if shrinking happens for the matrix, set this to true.
-    int cpu_shrink_thre1 = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)  or  last_nnz_shrink >= (nnz_g * cpu_shrink_thre1)  or  Ac->last_M_shrink >= (Ac->Mbig * A->cpu_shrink_thre1)
+    int cpu_shrink_thre1 = 2; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
     int cpu_shrink_thre2 = 2; // number of procs after shrinking = nprocs / cpu_shrink_thre2
     index_t last_M_shrink;
     nnz_t   last_nnz_shrink;

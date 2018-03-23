@@ -3,6 +3,7 @@
 
 #include <mpi.h>
 #include "saena_matrix.h"
+#include "saena_matrix_dense.h"
 #include "restrict_matrix.h"
 #include "prolong_matrix.h"
 
@@ -12,6 +13,8 @@ public:
     saena_matrix* A;
     saena_matrix* A_new; // for solve_pcg_update() experiment
     saena_matrix  Ac;
+//    saena_matrix_dense* A_d; // dense matrix
+    saena_matrix_dense Ac_d; // dense matrix
     prolong_matrix P;
     restrict_matrix R;
     std::vector<value_t> rhs;
