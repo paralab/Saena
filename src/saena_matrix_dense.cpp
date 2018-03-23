@@ -136,6 +136,7 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
         MPI_Isend(&v_send[0], send_size, MPI_DOUBLE, left_neighbor,  rank,           comm, &requests[1]);
 
         owner = k%nprocs;
+#pragma omp parallel for
         for(index_t i = 0; i < M; i++) {
             for (index_t j = split[owner]; j < split[owner + 1]; j++) {
                 w[i] += entry[i][j] * v_send[j - split[owner]];
@@ -257,10 +258,12 @@ int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
         allocated = true;
     }
 
+#pragma omp parallel for
     for(index_t i = 0; i < M; i++)
         for(index_t j = 0; j < Nbig; j++)
             entry[i][j] = 0;
 
+#pragma omp parallel for
     for(nnz_t i = 0; i < A->nnz_l; i++)
         entry[A->entry[i].row-split[rank]][A->entry[i].col] = A->entry[i].val;
 
