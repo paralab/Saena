@@ -10,6 +10,7 @@
 #include <mpi.h>
 #include <cmath>
 #include <cmath>
+#include <string>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -357,7 +358,7 @@ bool almost_zero(T val){
 }
 
 template<class T>
-int print_vector(std::vector<T> &v, int ran, MPI_Comm comm){
+int print_vector(const std::vector<T> &v, const int ran, const std::string &name, MPI_Comm comm){
     // if ran >= 0 print the vector elements on proc with rank = ran
     // otherwise print the vector elements on all processors in order. (first on proc 0, then proc 1 and so on.)
 
@@ -367,7 +368,7 @@ int print_vector(std::vector<T> &v, int ran, MPI_Comm comm){
 
     if(ran >= 0) {
         if (rank == ran) {
-            printf("\nvector on proc = %d \n", ran);
+            printf("\n%s on proc = %d \n", name.c_str(), ran);
             for (auto i:v)
                 std::cout << i << std::endl;
         }
@@ -375,7 +376,7 @@ int print_vector(std::vector<T> &v, int ran, MPI_Comm comm){
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("\nvector on proc = %d \n", proc);
+                printf("\n%s on proc = %d \n", name.c_str(), proc);
                 for (auto i:v)
                     std::cout << i << std::endl;
             }

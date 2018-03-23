@@ -1677,7 +1677,7 @@ int saena_object::coarsen(Grid *grid){
     // todo: change the algorithm so every processor sends data only to the next one and receives from the previous one in each iteration.
     long tag1 = 0;
     for(int i = 1; i < nprocs; i++) {
-        // send A to the right processor, recieve A from the left processor.
+        // send A to the right processor, receive A from the left processor.
         // "left" decreases by one in each iteration. "right" increases by one.
         right = (rank + i) % nprocs;
         left = rank - i;

@@ -5,6 +5,7 @@
 
 #include "saena.hpp"
 #include "saena_matrix.h"
+#include "saena_matrix_dense.h"
 #include "saena_object.h"
 #include "pugixml.hpp"
 

@@ -4,6 +4,7 @@
 #include <mpi.h>
 
 class saena_matrix;
+class saena_matrix_dense;
 class saena_object;
 
 typedef unsigned int index_t;
