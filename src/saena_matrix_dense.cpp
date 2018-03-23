@@ -1,5 +1,6 @@
 #include "iostream"
 #include <saena_matrix_dense.h>
+#include <saena_matrix.h>
 #include <aux_functions.h>
 
 saena_matrix_dense::saena_matrix_dense(){}
@@ -237,3 +238,31 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
 }
 */
 
+
+int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
+
+    comm = A->comm;
+    int rank, nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    M = A->M;
+    Nbig = A->Mbig;
+    split = A->split;
+
+    if(!allocated){
+        entry = new value_t*[M];
+        for(index_t i = 0; i < M; i++)
+            entry[i] = new value_t[Nbig];
+        allocated = true;
+    }
+
+    for(index_t i = 0; i < M; i++)
+        for(index_t j = 0; j < Nbig; j++)
+            entry[i][j] = 0;
+
+    for(nnz_t i = 0; i < A->nnz_l; i++)
+        entry[A->entry[i].row-split[rank]][A->entry[i].col] = A->entry[i].val;
+
+    return 0;
+}

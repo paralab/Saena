@@ -3788,8 +3788,7 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
         if(thread_id==0)
             w_local = &*w.begin();
         else
-            std::fill(&w_local[0], &w_local[M], 0);
-
+            std::fill(&w_local[0], &w_local[M], 0)
         nnz_t iter = iter_remote_array[thread_id];
 #pragma omp for
         for (index_t j = 0; j < col_remote_size; ++j) {
