@@ -699,7 +699,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     index_t d;
     for(index_t i = rank*M; i < (rank+1)*M; i++){
         d = 0;
-        for(int j = i; j <= i+bandwidth; j++){
+        for(index_t j = i; j <= i+bandwidth; j++){
             val = dist(rng); // comment out this to have all values equal to 1.
             if(i==j)
                 A.set(i, j, val);
