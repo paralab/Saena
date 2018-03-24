@@ -23,6 +23,10 @@ void saena::matrix::set_comm(MPI_Comm comm) {
     m_pImpl->set_comm(comm);
 }
 
+MPI_Comm saena::matrix::get_comm(){
+    return m_pImpl->comm;
+}
+
 saena::matrix::matrix(char *name, MPI_Comm comm) {
     m_pImpl = new saena_matrix(name, comm);
 }
@@ -127,6 +131,11 @@ nnz_t saena::matrix::get_nnz(){
 
 nnz_t saena::matrix::get_local_nnz(){
     return m_pImpl->nnz_l;
+}
+
+int saena::matrix::print(int ran){
+    m_pImpl->print(ran);
+    return 0;
 }
 
 
@@ -657,6 +666,54 @@ int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local, MPI_Comm co
         if(modulo == 0 || modulo == (n_grid-1) || division == 0 || division == (n_grid-1) || division_sq == 0 || division_sq == (n_grid-1)  )
             A->set(node, node, 1);
     }
+
+    return 0;
+}
+
+
+int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
+    // generates a band matrix with bandwidth "bandwidth".
+    // set bandwidth to 0 to have a diagonal matrix.
+
+    int rank, nprocs;
+    MPI_Comm_size(A.get_comm(), &nprocs);
+    MPI_Comm_rank(A.get_comm(), &rank);
+
+    index_t Mbig = M * nprocs;
+//    printf("rank %d: M = %u, Mbig = %u \n", rank, M, Mbig);
+
+    if(bandwidth >= Mbig){
+        printf("Error: bandwidth is greater than the size of the matrix\n");
+        MPI_Finalize();
+        return -1;
+    }
+
+    //Type of random number distribution
+    std::uniform_real_distribution<value_t> dist(0, 1); //(min, max)
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    value_t val = 1;
+    index_t d;
+    for(index_t i = rank*M; i < (rank+1)*M; i++){
+        d = 0;
+        for(int j = i; j <= i+bandwidth; j++){
+            val = dist(rng); // comment out this to have all values equal to 1.
+            if(i==j)
+                A.set(i, j, val);
+            else{
+                if(j < Mbig)
+                    A.set(i, j, val);
+                if(j >= 2*d) // equivalent to if(j-2*d >= 0)
+                    A.set(i, j-(2*d), val);
+            }
+            d++;
+        }
+    }
+
+    A.assemble();
 
     return 0;
 }

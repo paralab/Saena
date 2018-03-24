@@ -21,6 +21,8 @@ namespace saena {
         ~matrix();
 
         void set_comm(MPI_Comm comm);
+        MPI_Comm get_comm();
+
         int set(index_t i, index_t j, double val); // set individual value
         int set(index_t* row, index_t* col, double* val, nnz_t nnz_local); // set multiple values
         int set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
@@ -34,6 +36,8 @@ namespace saena {
         index_t get_num_local_rows();
         nnz_t get_nnz();
         nnz_t get_local_nnz();
+
+        int print(int ran);
 
         int erase();
         void destroy();
@@ -106,4 +110,5 @@ namespace saena {
     int laplacian2D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
     int laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
     int laplacian3D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
+    int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth);
 }

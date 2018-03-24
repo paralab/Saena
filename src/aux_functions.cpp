@@ -400,8 +400,8 @@ int generate_rhs_old(std::vector<value_t>& rhs){
     rng.seed(std::random_device{}());
 
     for (index_t i=0; i<size; i++){
-//        rhs[i] = dist(rng);
-        rhs[i] = (value_t)(i+1) / 100;
+        rhs[i] = dist(rng);
+//        rhs[i] = (value_t)(i+1) / 100;
 //        std::cout << i << "\t" << rhs[i] << std::endl;
     }
 
