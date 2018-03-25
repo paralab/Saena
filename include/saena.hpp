@@ -31,6 +31,7 @@ namespace saena {
         bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
         int assemble();
+        int assemble_band_matrix();
         saena_matrix* get_internal_matrix();
         index_t get_num_rows();
         index_t get_num_local_rows();

@@ -21,19 +21,19 @@ class saena_matrix {
 // A matrix of this class has column-major order: first column-wise, then row-wise.
 
 private:
-    std::set<cooEntry> data_coo;
     std::vector<cooEntry> data_unsorted;
     std::vector<cooEntry> data;
 
     nnz_t initial_nnz_l;
     bool read_from_file = false;
-    bool freeBoolean = false; // use this parameter to know if destructor for SaenaMatrix class should free the variables or not.
+    bool freeBoolean = false; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
 
     bool verbose_saena_matrix = false;
     bool repartition_verbose  = false;
     bool verbose_matrix_setup = false;
 
 public:
+    std::set<cooEntry> data_coo;
     std::vector<cooEntry> entry;
 
     index_t Mbig  = 0; // global number of rows
@@ -93,7 +93,8 @@ public:
     std::vector<index_t> vElement_remote;
     std::vector<index_t> vElementRep_local;
     std::vector<index_t> vElementRep_remote;
-    value_t *w_buff; // for matvec3()
+    std::vector<value_t> w_buff; // for matvec3()
+//    value_t *w_buff; // for matvec3()
 
     bool add_duplicates = false;
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
@@ -169,7 +170,9 @@ public:
 
     int set_zero();
     int erase();
+    int erase2();
     int erase_keep_remote(); // use this for coarsen2()
+    int erase_keep_remote2(); // use this for coarsen2()
     int destroy();
 };
 

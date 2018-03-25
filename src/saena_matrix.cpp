@@ -234,7 +234,7 @@ saena_matrix::~saena_matrix() {
 //        iter_local_array.shrink_to_fit();
 //        iter_remote_array.clear();
 //        iter_remote_array.shrink_to_fit();
-        delete w_buff;
+//        delete w_buff;
     }
 }
 
@@ -652,6 +652,8 @@ int saena_matrix::setup_initial_data2(){
     // todo: "data" vector can completely be avoided. function repartition should be changed to use a vector of cooEntry
     // todo: (which is "data_sorted" here), instead of "data" (which is a vector of unsigned long of size 3*nnz).
 
+    data.resize(data_sorted.size());
+
     // put the first element of data_unsorted to data.
     nnz_t data_size = 0;
     if(!data_sorted.empty()){
@@ -828,6 +830,108 @@ int saena_matrix::erase(){
 }
 
 
+int saena_matrix::erase2(){
+//    data.clear();
+//    data.shrink_to_fit();
+
+    entry.clear();
+    split.clear();
+    split_old.clear();
+    values_local.clear();
+    row_local.clear();
+    values_remote.clear();
+    row_remote.clear();
+    col_local.clear();
+    col_remote.clear();
+    col_remote2.clear();
+    nnzPerRow_local.clear();
+    nnzPerCol_remote.clear();
+    invDiag.clear();
+    vdispls.clear();
+    rdispls.clear();
+    recvProcRank.clear();
+    recvProcCount.clear();
+    sendProcRank.clear();
+    sendProcCount.clear();
+    vElementRep_local.clear();
+    vElementRep_remote.clear();
+    vIndex.clear();
+    vSend.clear();
+    vecValues.clear();
+    vSendULong.clear();
+    vecValuesULong.clear();
+    indicesP_local.clear();
+    indicesP_remote.clear();
+    recvCount.clear();
+    recvCountScan.clear();
+    sendCount.clear();
+    sendCountScan.clear();
+    iter_local_array.clear();
+    iter_remote_array.clear();
+    iter_local_array2.clear();
+    iter_remote_array2.clear();
+    vElement_remote.clear();
+    w_buff.clear();
+
+    entry.shrink_to_fit();
+    split.shrink_to_fit();
+    split_old.shrink_to_fit();
+    values_local.shrink_to_fit();
+    values_remote.shrink_to_fit();
+    row_local.shrink_to_fit();
+    row_remote.shrink_to_fit();
+    col_local.shrink_to_fit();
+    col_remote.shrink_to_fit();
+    col_remote2.shrink_to_fit();
+    nnzPerRow_local.shrink_to_fit();
+    nnzPerCol_remote.shrink_to_fit();
+    invDiag.shrink_to_fit();
+    vdispls.shrink_to_fit();
+    rdispls.shrink_to_fit();
+    recvProcRank.shrink_to_fit();
+    recvProcCount.shrink_to_fit();
+    sendProcRank.shrink_to_fit();
+    sendProcCount.shrink_to_fit();
+    vElementRep_local.shrink_to_fit();
+    vElementRep_remote.shrink_to_fit();
+    vIndex.shrink_to_fit();
+    vSend.shrink_to_fit();
+    vecValues.shrink_to_fit();
+    vSendULong.shrink_to_fit();
+    vecValuesULong.shrink_to_fit();
+    indicesP_local.shrink_to_fit();
+    indicesP_remote.shrink_to_fit();
+    recvCount.shrink_to_fit();
+    recvCountScan.shrink_to_fit();
+    sendCount.shrink_to_fit();
+    sendCountScan.shrink_to_fit();
+    iter_local_array.shrink_to_fit();
+    iter_remote_array.shrink_to_fit();
+    iter_local_array2.shrink_to_fit();
+    iter_remote_array2.shrink_to_fit();
+    vElement_remote.shrink_to_fit();
+    w_buff.shrink_to_fit();
+
+//    M = 0;
+//    Mbig = 0;
+//    nnz_g = 0;
+//    nnz_l = 0;
+//    nnz_l_local = 0;
+//    nnz_l_remote = 0;
+//    col_remote_size = 0;
+//    recvSize = 0;
+//    numRecvProc = 0;
+//    numSendProc = 0;
+//    vIndexSize = 0;
+//    shrinked = false;
+//    active = true;
+    assembled = false;
+    freeBoolean = false;
+
+    return 0;
+}
+
+
 int saena_matrix::erase_keep_remote(){
 
     entry.clear();
@@ -895,6 +999,75 @@ int saena_matrix::erase_keep_remote(){
     numRecvProc = 0;
     numSendProc = 0;
     assembled = false;
+
+    return 0;
+}
+
+
+int saena_matrix::erase_keep_remote2(){
+
+    entry.clear();
+
+    // push back the remote part
+    for(unsigned long i = 0; i < row_remote.size(); i++)
+        entry.emplace_back(cooEntry(row_remote[i], col_remote2[i], values_remote[i]));
+
+    split.clear();
+    split_old.clear();
+    values_local.clear();
+    row_local.clear();
+    values_remote.clear();
+    row_remote.clear();
+    col_local.clear();
+    col_remote.clear();
+    col_remote2.clear();
+    nnzPerRow_local.clear();
+    nnzPerCol_remote.clear();
+    invDiag.clear();
+    vdispls.clear();
+    rdispls.clear();
+    recvProcRank.clear();
+    recvProcCount.clear();
+    sendProcRank.clear();
+    sendProcCount.clear();
+    vElementRep_local.clear();
+    vElementRep_remote.clear();
+    vIndex.clear();
+    vSend.clear();
+    vecValues.clear();
+    vSendULong.clear();
+    vecValuesULong.clear();
+    indicesP_local.clear();
+    indicesP_remote.clear();
+    recvCount.clear();
+    recvCountScan.clear();
+    sendCount.clear();
+    sendCountScan.clear();
+    iter_local_array.clear();
+    iter_remote_array.clear();
+    iter_local_array2.clear();
+    iter_remote_array2.clear();
+    vElement_remote.clear();
+    w_buff.clear();
+
+    // erase_keep_remote() is used in coarsen2(), so keep the memory reserved for performance.
+    // so don't use shrink_to_fit() on these vectors.
+
+    M = 0;
+    Mbig = 0;
+    nnz_g = 0;
+    nnz_l = 0;
+    nnz_l_local = 0;
+    nnz_l_remote = 0;
+    col_remote_size = 0;
+    recvSize = 0;
+    numRecvProc = 0;
+    numSendProc = 0;
+    vIndexSize = 0;
+//    assembled = false;
+//    shrinked = false;
+//    active = true;
+    freeBoolean = false;
 
     return 0;
 }
@@ -2880,9 +3053,9 @@ int saena_matrix::matrix_setup() {
 
         // *************************** allocate for w_buff for matvec3() ****************************
 
-        w_buff = new value_t[num_threads*M];
+        w_buff.resize(num_threads*M);
 
-
+/*
         nnz_t total_nnz_l_local;
         nnz_t total_nnz_l_remote;
         MPI_Allreduce(&nnz_l_local,  &total_nnz_l_local,  1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
@@ -2899,7 +3072,7 @@ int saena_matrix::matrix_setup() {
         MPI_Allreduce(&col_remote_size, &col_remote_size_max, 1, MPI_UNSIGNED, MPI_MAX, comm);
         if(rank==0) printf("\nremote_min = %u, remote_ave = %u, remote_max = %u \n",
                            col_remote_size_min, (col_remote_size_ave/nprocs), col_remote_size_max);
-
+*/
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
@@ -2976,10 +3149,10 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     for(index_t i=0;i<vIndexSize;i++)
         vSend[i] = v[(vIndex[i])];
 
-//    if (rank==1){
-//        std::cout << "\nvIndexSize=" << vIndexSize << ", vSend: rank=" << rank << std::endl;
-//        for(int i=0; i<vIndexSize; i++)
-//            std::cout << vSend[i] << std::endl;}
+//    printf("hereeeeee\n");
+
+//    if (rank==1) std::cout << "\nvIndexSize=" << vIndexSize << std::endl;
+//    print_vector(vSend, 0, "vSend", comm);
 
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
     MPI_Status* statuses  = new MPI_Status[numSendProc+numRecvProc];
@@ -3002,7 +3175,7 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     {
         unsigned int i, l;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
 
@@ -3044,7 +3217,7 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     {
         unsigned int i, l;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
         else
@@ -3162,7 +3335,7 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     {
         unsigned int i, l;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
         else
@@ -3316,7 +3489,7 @@ int saena_matrix::matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& 
     {
         unsigned int i, l;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
         else
@@ -3442,7 +3615,7 @@ int saena_matrix::matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& 
     {
         unsigned int i, l, idx;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
 
@@ -3499,7 +3672,7 @@ int saena_matrix::matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& 
     {
         unsigned int i, l;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
         else
@@ -3620,7 +3793,7 @@ int saena_matrix::matvec_timing3_alltoall(std::vector<value_t>& v, std::vector<v
     {
         unsigned int i, l, idx;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
 
@@ -3909,7 +4082,7 @@ int saena_matrix::matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& 
     {
         unsigned int i, l, idx;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
 
