@@ -6,12 +6,12 @@
 //#include "aux_functions.h"
 
 
+
 prolong_matrix::prolong_matrix(){}
 
 prolong_matrix::prolong_matrix(MPI_Comm com){
     comm = com;
 }
-
 
 prolong_matrix::~prolong_matrix(){
 //    if(arrays_defined){

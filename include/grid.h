@@ -7,7 +7,6 @@
 #include "restrict_matrix.h"
 #include "prolong_matrix.h"
 
-
 class Grid{
 public:
     saena_matrix* A;
@@ -37,3 +36,4 @@ public:
 };
 
 #endif //SAENA_GRID_H
+

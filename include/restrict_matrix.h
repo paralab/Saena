@@ -9,6 +9,8 @@ typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
 
+
+
 class restrict_matrix {
 // A matrix of this class is ordered first column-wise, then row-wise, using std:sort with cooEntry class "< operator".
 // It is sorted in restrictMatrix constructor function in restrictmatrix.cpp.

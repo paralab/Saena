@@ -12,6 +12,7 @@
 #include <cmath>
 #include <string>
 
+
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
@@ -337,7 +338,6 @@ int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, double* dot, MP
 
 double print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
 
-
 int print_time_average(double t1, double t2, std::string function_name, int iter, MPI_Comm comm);
 
 
@@ -368,7 +368,7 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
 
     if(ran >= 0) {
         if (rank == ran) {
-            printf("\n%s on proc = %d \n", name.c_str(), ran);
+            printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), ran, v.size());
             for (auto i:v)
                 std::cout << i << std::endl;
         }
@@ -376,7 +376,7 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("\n%s on proc = %d \n", name.c_str(), proc);
+                printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), ran, v.size());
                 for (auto i:v)
                     std::cout << i << std::endl;
             }

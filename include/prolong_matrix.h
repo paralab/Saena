@@ -9,6 +9,7 @@ typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
 
+
 class prolong_matrix {
 // A matrix of this class is ordered <<ONLY>> if it is defined in createProlongation function in saena_object.cpp.
 // Otherwise it can be ordered using the following line:
@@ -55,6 +56,7 @@ public:
     std::vector<index_t> vElementRep_local;
     std::vector<index_t> vElementRep_remote;
 //    std::vector<unsigned int> nnz_row_remote;
+
 
     bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
     int vIndexSize;

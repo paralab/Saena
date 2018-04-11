@@ -27,7 +27,6 @@ int saena_object::destroy(){
     return 0;
 }
 
-
 void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
     vcycle_num = vcycle_n;
@@ -36,7 +35,6 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
     preSmooth = preSm;
     postSmooth = postSm;
 }
-
 
 int saena_object::setup(saena_matrix* A) {
     int nprocs, rank;
@@ -64,10 +62,11 @@ int saena_object::setup(saena_matrix* A) {
 
     grids.resize(max_level+1);
     grids[0] = Grid(A, max_level, 0); // pass A to grids[0]
-//    printf("rank %d heeeeeeeeeeeeeeeeeyyyyyyyyy\n", rank);
     for(i = 0; i < max_level; i++){
 //        MPI_Barrier(grids[0].A->comm); printf("rank = %d, level setup; before if\n", rank); MPI_Barrier(grids[0].A->comm);
         if(grids[i].A->active) {
+            if (shrink_level_vector.size()>i+1) if(shrink_level_vector[i+1]) grids[i].A->enable_shrink_next_level = true;
+            if (shrink_values_vector.size()>i+1) grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
             level_setup(&grids[i]); // create P, R and Ac for grid[i]
             grids[i + 1] = Grid(&grids[i].Ac, max_level, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i])
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
@@ -301,8 +300,8 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
             continue_agg = false;
     }
 
-    if(rank==0) printf("\nfinal: connStrength = %f, current size = %u, new size = %u,  division = %d\n",
-                       connStrength, A->Mbig, new_size, division);
+//    if(rank==0) printf("\nfinal: connStrength = %f, current size = %u, new size = %u,  division = %d\n",
+//                       connStrength, A->Mbig, new_size, division);
 
     connStrength = connStrength_temp;
     aggregate_index_update(&S, aggregate, aggArray, splitNew);
@@ -408,6 +407,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 //            }
         }
     }
+
 
 //    if(rank==1)
 //        for(i=0; i<STi.size(); i++)
@@ -2024,14 +2024,27 @@ int saena_object::coarsen(Grid *grid){
     Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
     Ac->M_old = Ac->M;
     Ac->split = P->splitNew;
-    Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1;
     Ac->last_M_shrink = A->last_M_shrink;
-//    Ac->last_nnz_shrink = A->last_nnz_shrink;
     Ac->last_density_shrink = A->last_density_shrink;
+//    Ac->last_nnz_shrink = A->last_nnz_shrink;
+//    Ac->enable_shrink = A->enable_shrink;
+    Ac->enable_shrink = A->enable_shrink_next_level;
     Ac->comm = A->comm;
     Ac->comm_old = A->comm;
     Ac->active_old_comm = true;
     Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
+
+    Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
+    if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
+        Ac->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
+
+    //return these to default, since they have been used in the above part.
+    A->cpu_shrink_thre2_next_level = -1;
+    A->enable_shrink_next_level = false;
+
+//    MPI_Barrier(comm);
+//    if(rank==0) printf("\nAc->cpu_shrink_thre2 = %d \n", Ac->cpu_shrink_thre2);
+//    MPI_Barrier(comm);
 
 //    MPI_Barrier(comm);
 //    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
@@ -2087,10 +2100,11 @@ int saena_object::coarsen(Grid *grid){
         MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // decide to partition based on number of rows or nonzeros.
-    if(Ac->density < dense_threshold)
-        Ac->repartition3(); // based on nonzeros
-    else
+//    if(switch_repartition && Ac->density >= repartition_threshold)
+    if(switch_repartition && Ac->density >= repartition_threshold)
         Ac->repartition4(); // based on number of rows
+    else
+        Ac->repartition3(); // based on number of nonzeros
 
     repartition_u2_prepare(grid);
 
@@ -4949,6 +4963,23 @@ bool saena_object::active(int l){
     return grids[l].A->active;
 }
 
+
+int saena_object::set_shrink_levels(std::vector<bool> sh_lev_vec) {
+    shrink_level_vector = sh_lev_vec;
+    return 0;
+}
+
+
+int saena_object::set_shrink_values(std::vector<int> sh_val_vec) {
+    shrink_values_vector = sh_val_vec;
+    return 0;
+}
+
+
+int saena_object::set_repartition_threshold(float thre) {
+    repartition_threshold = thre;
+    return 0;
+}
 
 int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
 /*

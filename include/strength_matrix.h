@@ -7,7 +7,6 @@ typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
 
-
 class strength_matrix {
 
 public:
@@ -18,6 +17,7 @@ public:
     nnz_t nnz_l  = 0;
 //    long nnz_g;
 //    double average_sparsity;
+
 
     nnz_t nnz_l_local  = 0;
     nnz_t nnz_l_remote = 0;

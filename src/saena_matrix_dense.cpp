@@ -38,6 +38,23 @@ saena_matrix_dense::~saena_matrix_dense() {
 }
 
 
+int saena_matrix_dense::erase(){
+
+    if(allocated){
+        for(index_t i = 0; i < M; i++)
+            delete [] entry[i];
+        delete [] entry;
+    }
+
+    allocated = false;
+    split.clear();
+    Nbig = 0;
+    M = 0;
+
+    return 0;
+}
+
+
 int saena_matrix_dense::set(index_t row, index_t col, value_t val){
     entry[row][col] = val;
     return 0;
@@ -154,6 +171,8 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
 
     return 0;
 }
+
+
 
 // another dense matvec implementation, but without overlapping.
 /*

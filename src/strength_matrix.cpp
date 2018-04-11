@@ -6,6 +6,7 @@
 
 using namespace std;
 
+
 // sort indices and store the ordering.
 class sort_indices
 {
@@ -227,7 +228,6 @@ strength_matrix::~strength_matrix(){
 //    col.resize(0);
 //    values.resize(0);
 }
-
 
 
 int strength_matrix::erase(){

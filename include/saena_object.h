@@ -15,9 +15,9 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 7; // fine grid is level 0.
+    int max_level = 8; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
-    unsigned int least_row_threshold = 100;
+    unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
     // which means the number of rows was not reduced much.
     double row_reduction_threshold = 0.90;
@@ -36,7 +36,17 @@ public:
 //    bool shrink_cpu = true;
     bool dynamic_levels = true;
     bool adaptive_coarsening = true;
-    float dense_threshold = 0.8; // 0<dense_threshold<=1 decide when to switch to the dense structure.
+
+    int set_shrink_levels(std::vector<bool> sh_lev_vec);
+    std::vector<bool> shrink_level_vector;
+    int set_shrink_values(std::vector<int> sh_val_vec);
+    std::vector<int> shrink_values_vector;
+
+    bool switch_repartition = true;
+    int set_repartition_threshold(float thre);
+    float repartition_threshold = 1.1;
+    bool switch_to_dense = true;
+    float dense_threshold = 1.1; // 0<dense_threshold<=1 decide when to switch to the dense structure. dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
 
     bool verbose = false;
     bool verbose_setup = true;

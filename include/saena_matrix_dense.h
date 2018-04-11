@@ -32,6 +32,7 @@ public:
     saena_matrix_dense(index_t M, index_t Nbig, MPI_Comm comm);
 //    saena_matrix_dense(char* Aname, MPI_Comm com);
     ~saena_matrix_dense();
+    int erase();
 
     int set(index_t row, index_t col, value_t val);
 //    int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);

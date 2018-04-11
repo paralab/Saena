@@ -154,6 +154,12 @@ int saena::matrix::print(int ran){
 }
 
 
+int saena::matrix::enable_shrink(bool val){
+    m_pImpl->enable_shrink = val;
+    return 0;
+}
+
+
 int saena::matrix::erase(){
     m_pImpl->erase();
     return 0;
@@ -295,6 +301,44 @@ saena_object* saena::amg::get_object() {
 }
 
 
+int saena::amg::set_shrink_levels(std::vector<bool> sh_lev_vec) {
+    m_pImpl->set_shrink_levels(sh_lev_vec);
+    return 0;
+}
+
+int saena::amg::set_shrink_values(std::vector<int> sh_val_vec) {
+    m_pImpl->set_shrink_values(sh_val_vec);
+    return 0;
+}
+
+
+int saena::amg::switch_repartition(bool val) {
+    m_pImpl->switch_repartition = val;
+    return 0;
+}
+
+
+int saena::amg::set_repartition_threshold(float thre){
+    m_pImpl->set_repartition_threshold(thre);
+    return 0;
+}
+
+int saena::amg::switch_to_dense(bool val) {
+    m_pImpl->switch_to_dense = val;
+    return 0;
+}
+
+
+int saena::amg::set_dense_threshold(float thre){
+    m_pImpl->dense_threshold = thre;
+    return 0;
+}
+
+
+double saena::amg::get_dense_threshold(){
+    return m_pImpl->dense_threshold;
+}
+
 int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
@@ -341,7 +385,6 @@ int saena::amg::solve_pcg_update4(std::vector<value_t>& u, saena::options* opts,
     m_pImpl->solve_pcg_update4(u, A_new->get_internal_matrix());
     return 0;
 }
-
 
 
 void saena::amg::save_to_file(char* name, unsigned long* agg){
@@ -684,6 +727,7 @@ int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local, MPI_Comm co
 
     return 0;
 }
+
 
 
 int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){

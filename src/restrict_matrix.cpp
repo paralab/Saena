@@ -7,8 +7,8 @@
 
 using namespace std;
 
-
 restrict_matrix::restrict_matrix(){}
+
 
 
 int restrict_matrix::transposeP(prolong_matrix* P) {

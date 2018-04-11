@@ -11,5 +11,4 @@ Grid::Grid(saena_matrix* A1, int maxLev, int currentLev){
     active       = A1->active;
 }
 
-
 Grid::~Grid(){}

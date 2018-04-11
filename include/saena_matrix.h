@@ -7,6 +7,7 @@
 #include <mpi.h>
 #include "aux_functions.h"
 
+
 /**
  * @author Majid
  * @breif Contains the basic structure for the Saena matrix calss (saena_matrix).
@@ -16,6 +17,7 @@
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
+
 
 class saena_matrix {
 // A matrix of this class has column-major order: first column-wise, then row-wise.
@@ -54,9 +56,10 @@ public:
     std::vector<index_t> col_local;
     std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
     std::vector<index_t> col_remote2; //original col index
-    std::vector<nnz_t> nnzPerRow_local; // todo: this is used for openmp part of saena_matrix.cpp
-    std::vector<nnz_t> nnzPerRow_local2; // todo: this is used for openmp part of saena_matrix.cpp
-    std::vector<nnz_t> nnzPerCol_remote;
+    std::vector<index_t> nnzPerRow_local; // todo: this is used for openmp part of saena_matrix.cpp
+    std::vector<index_t> nnzPerRow_local2; // todo: this is used for openmp part of saena_matrix.cpp
+    std::vector<index_t> nnzPerRow_remote; // used for PETSc function: MatMPIAIJSetPreallocation()
+    std::vector<index_t> nnzPerCol_remote;
 
     std::vector<value_t> invDiag;
 //    double norm1, normInf, rhoDA;
@@ -106,13 +109,17 @@ public:
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
-    bool enable_shrink = true;
+    bool enable_shrink = false;
     bool shrinked = false; // if shrinking happens for the matrix, set this to true.
-    int cpu_shrink_thre1 = 2; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
-    int cpu_shrink_thre2 = 2; // number of procs after shrinking = nprocs / cpu_shrink_thre2
+    int cpu_shrink_thre1 = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
+    int cpu_shrink_thre2 = 1; // number of procs after shrinking = nprocs / cpu_shrink_thre2
+    int cpu_shrink_thre2_next_level = -1;
     index_t last_M_shrink;
     nnz_t   last_nnz_shrink;
     double  last_density_shrink;
+    // use these two parameters to decide shrinking for the level of multigrid
+    bool enable_shrink_next_level = false; // default is false. set it to true in the setup() function if it is required.
+//    int cpu_shrink_thre1_next = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
 
     double density = -1.0;
     float jacobi_omega = float(2.0/3);
@@ -156,8 +163,8 @@ public:
     int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
-    int matvec_timing3_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+    int matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
 
@@ -177,3 +184,4 @@ public:
 };
 
 #endif //SAENA_SAENA_MATRIX_H
+

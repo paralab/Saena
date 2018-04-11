@@ -8,6 +8,7 @@
 
 class saena_matrix;
 
+
 int randomVector(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
 
     int rank;
@@ -234,6 +235,7 @@ void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nn
         V[i] = reinterpret_cast<double&>(data[3*i+2]);
     }
 }
+
 
 
 int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, double* dot, MPI_Comm comm){
