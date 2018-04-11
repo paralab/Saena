@@ -1,17 +1,14 @@
 # ccmake -D CMAKE_INSTALL_PREFIX="./elemental_install" -D CMAKE_BUILD_TYPE="Release" ..
 # or
 # ccmake -D CMAKE_INSTALL_PREFIX="./elemental_install" -D CMAKE_BUILD_TYPE="Release" -D GFORTRAN_LIB="/usr/lib64/libgfortran.so.3" ..
-# or
-# ccmake -D CMAKE_INSTALL_PREFIX="./elemental_install" -D CMAKE_BUILD_TYPE="Debug" -D GFORTRAN_LIB="/usr/lib64/libgfortran.so.3" ..
-
-#SET(CMAKE_CXX_COMPILER mpicxx)
-#SET(CMAKE_C_COMPILER mpicc)
 
 cmake_minimum_required(VERSION 3.3)
-project(matvec003)
+project(Saena)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(OpenMP)
 if(OPENMP_FOUND)
@@ -78,17 +75,19 @@ set(SOURCE_FILES
         external/usort/src/sort_profiler.cpp
         include/ietl_saena.h)
 
-add_executable(matvec003 ${SOURCE_FILES})
+add_executable(Saena ${SOURCE_FILES})
 
 if(MPI_COMPILE_FLAGS)
-    set_target_properties(matvec003 PROPERTIES
+    set_target_properties(Saena PROPERTIES
             COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 
 if(MPI_LINK_FLAGS)
-    set_target_properties(matvec003 PROPERTIES
+    set_target_properties(Saena PROPERTIES
             LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif()
 
-target_link_libraries(matvec003 ${MPI_LIBRARIES} El lapack blas)
-#target_link_libraries(matvec003 ${MPI_LIBRARIES} lapack blas)
+target_link_libraries(Saena ${MPI_LIBRARIES} El lapack blas)
+#target_link_libraries(Saena ${MPI_LIBRARIES} lapack blas)
+#target_link_libraries(Saena ${MPI_LIBRARIES} El)
+#target_link_libraries(Saena ${MPI_LIBRARIES})
