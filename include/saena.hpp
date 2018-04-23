@@ -98,13 +98,13 @@ namespace saena {
         int solve_pcg(std::vector<value_t>& u, saena::options* opts);
         // if solver is made based of a matrix, let's call it A, and there is an updated version of A, let's call it B,
         // and one wants to solve B*x = rhs instead of A*x = rhs, then solve_pcg_update can be used and B can be passed as the third argument.
-        int solve_pcg_update(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
+//        int solve_pcg_update(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update, but updates the LHS with A_new.
-        int solve_pcg_update2(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
+        int solve_pcg_update1(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update, but updates grids[i].A for all levels, using the previously made grids[i].P and R.
-        int solve_pcg_update3(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
+        int solve_pcg_update2(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update3, but does R*A*P only for the local (diagonal blocks).
-        int solve_pcg_update4(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
+        int solve_pcg_update3(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
 
         void save_to_file(char* name, unsigned long* agg); // to save aggregates to a file.
         unsigned long* load_from_file(char* name); // to load aggregates from a file.

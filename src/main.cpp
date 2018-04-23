@@ -7,10 +7,10 @@
 
 #include "grid.h"
 #include "saena.hpp"
-//#include <El.hpp>
 #include <saena_object.h>
 #include <saena_matrix.h>
 #include <omp.h>
+//#include <El.hpp>
 
 //using namespace std;
 
@@ -36,13 +36,14 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;}
 */
-
+/*
     if(argc != 2){
         if(rank == 0){
             std::cout << "Usage: ./Saena <MatrixA>" << std::endl;
             std::cout << "Matrix file should be in triples format." << std::endl;}
         MPI_Finalize();
         return -1;}
+*/
 /*
     if(argc != 3){
         if(rank == 0){
@@ -52,13 +53,19 @@ int main(int argc, char* argv[]){
         return -1;}
 */
 /*
+    if(argc != 3){
+        if(rank == 0){
+            std::cout << "Usage: ./Saena <MatrixA> <MatrixA_new>" << std::endl;
+            std::cout << "Matrix file should be in triples format." << std::endl;}
+        MPI_Finalize();
+        return -1;}
+*/
     if(argc != 4){
         if(rank == 0){
             std::cout << "Usage: ./Saena <MatrixA> <rhs_vec> <MatrixA_new>" << std::endl;
             std::cout << "Matrix file should be in triples format." << std::endl;}
         MPI_Finalize();
         return -1;}
-*/
 
     // *************************** initialize the matrix ****************************
 
@@ -100,10 +107,10 @@ int main(int argc, char* argv[]){
 
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs(num_local_row);
-    generate_rhs_old(rhs);
+//    generate_rhs_old(rhs);
 
     // ********** 2 - set rhs: read from file **********
-/*
+
     char* Vname(argv[2]);
 //    char* Vname(argv[3]);
 
@@ -146,7 +153,7 @@ int main(int argc, char* argv[]){
     // set rhs
 //    A.get_internal_matrix()->matvec(v, rhs);W
     rhs = v;
-*/
+
     // ********** print rhs **********
 
 //    if(rank==0)
@@ -164,7 +171,7 @@ int main(int argc, char* argv[]){
 //    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 100;
     double relative_tolerance = 1e-12;
-    std::string smoother      = "jacobi"; // choices: "jacobi", "chebyshev"
+    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;
     int postSmooth            = 3;
 
@@ -175,7 +182,7 @@ int main(int argc, char* argv[]){
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
 //    solver.set_multigrid_max_level(0); // 0 means only use direct solver, so no multigrid will be used.
 
-    solver.set_matrix(&A);
+    solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
     t2 = MPI_Wtime();
@@ -206,6 +213,20 @@ int main(int argc, char* argv[]){
 //        for(long i = 0; i < temp1.size(); i++)
 //            std::cout << i << "\t" << temp1[i] << std::endl;}
 //    MPI_Barrier(comm);
+
+    // *************************** Update Experiments ****************************
+
+    char* file_name2(argv[3]);
+    saena::matrix A_new (file_name2, comm);
+    A_new.assemble();
+//    A_new.print(0);
+
+//    u.assign(u.size(), 0);
+//    solver.solve_pcg_update1(u, &opts, &A_new);
+//    u.assign(u.size(), 0);
+//    solver.solve_pcg_update2(u, &opts, &A_new);
+    u.assign(u.size(), 0);
+    solver.solve_pcg_update3(u, &opts, &A_new);
 
     // *************************** matvec on different coarse levels of a matrix ****************************
 /*

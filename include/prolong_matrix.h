@@ -96,6 +96,7 @@ public:
     ~prolong_matrix();
     int findLocalRemote();
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+    int print(int ran);
 };
 
 

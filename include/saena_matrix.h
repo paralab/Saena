@@ -37,6 +37,7 @@ private:
 public:
     std::set<cooEntry> data_coo;
     std::vector<cooEntry> entry;
+    std::vector<cooEntry> entry_temp; // used for updating the matrix
 
     index_t Mbig  = 0; // global number of rows
     index_t M     = 0; // local number of rows
@@ -56,10 +57,14 @@ public:
     std::vector<index_t> col_local;
     std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
     std::vector<index_t> col_remote2; //original col index
-    std::vector<index_t> nnzPerRow_local; // todo: this is used for openmp part of saena_matrix.cpp
+    std::vector<index_t> nnzPerRow_local;  // todo: this is used for openmp part of saena_matrix.cpp
     std::vector<index_t> nnzPerRow_local2; // todo: this is used for openmp part of saena_matrix.cpp
     std::vector<index_t> nnzPerRow_remote; // used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
+
+    std::vector<index_t> row_local_temp;
+    std::vector<index_t> col_local_temp;
+    std::vector<value_t> values_local_temp;
 
     std::vector<value_t> invDiag;
 //    double norm1, normInf, rhoDA;
@@ -111,7 +116,7 @@ public:
 
     bool enable_shrink = false;
     bool shrinked = false; // if shrinking happens for the matrix, set this to true.
-    int cpu_shrink_thre1 = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
+    int cpu_shrink_thre1 = 1; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
     int cpu_shrink_thre2 = 1; // number of procs after shrinking = nprocs / cpu_shrink_thre2
     int cpu_shrink_thre2_next_level = -1;
     index_t last_M_shrink;
@@ -159,6 +164,8 @@ public:
     int repartition4(); // based on M. use this for repartitioning A's after they are created.
     int shrink_cpu();
 
+    int repartition5(); // based on nnz.
+
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
@@ -178,7 +185,7 @@ public:
     int set_zero();
     int erase();
     int erase2();
-    int erase_keep_remote(); // use this for coarsen2()
+    int erase_update_local(); // use this for coarsen2()
     int erase_keep_remote2(); // use this for coarsen2()
     int destroy();
 };
