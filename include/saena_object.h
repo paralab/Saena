@@ -25,7 +25,7 @@ public:
     std::string smoother = "jacobi";
     int preSmooth  = 3;
     int postSmooth = 3;
-    std::string direct_solver = "CG"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
+    std::string direct_solver = "Elemental"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
     std::vector<Grid> grids;
     float connStrength = 0.5; // connection strength parameter: control coarsening aggressiveness
     int CG_max_iter = 100;
