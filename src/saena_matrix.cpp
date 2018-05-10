@@ -11,7 +11,6 @@
 //                              std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus<value_t>())) \
 //                    initializer(omp_priv = omp_orig)
 
-
 saena_matrix::saena_matrix(){}
 
 
@@ -3041,11 +3040,6 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
         vSend[i] = v[( vIndex[i] )];
     double t0_end = omp_get_wtime();// try this: rdtsc for timing
 
-//    if (rank==0){
-//        std::cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << std::endl;
-//        for(int i=0; i<vIndexSize; i++)
-//            std::cout << vSend[i] << std::endl;}
-
 //    MPI_Barrier(comm);
     double t3_start = omp_get_wtime();
     // iSend your data, and iRecv from others
@@ -3058,11 +3052,6 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     for(int i = 0; i < numSendProc; i++)
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
 
-//    if (rank==0){
-//        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
-//        for(int i=0; i<recvSize; i++)
-//            std::cout << vecValues[i] << std::endl;}
-
     // local loop
     // ----------
     double t1_start = omp_get_wtime();
@@ -3070,18 +3059,16 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     w.assign(w.size(), 0);
     value_t* v_p = &v[0] - split[rank];
     unsigned int i;
+//    MPI_Barrier(comm); printf("here1\n"); MPI_Barrier(comm);
 #pragma omp parallel for default(shared) private(i) reduction(vec_double_plus:w)
     for (i = 0; i < nnz_l_local; ++i)
-        w[row_local[i]] += values_local[i] * v_p[col_local[i]];
+        w[1] = 1;
+//        w[row_local[i]] += values_local[i] * v_p[col_local[i]];
 
+//    MPI_Barrier(comm); printf("here2\n"); MPI_Barrier(comm);
     double t1_end = omp_get_wtime();
 
     MPI_Waitall(numRecvProc, requests, statuses);
-
-//    if (rank==1){
-//        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
-//        for(int i=0; i<recvSize; i++)
-//            std::cout << vecValues[i] << std::endl;}
 
     // remote loop
     double t2_start = omp_get_wtime();
@@ -3090,11 +3077,12 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     {
         unsigned int i, l;
         int thread_id = omp_get_thread_num();
-        value_t *w_local = w_buff + (thread_id*M);
+        value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
             w_local = &*w.begin();
         else
-            std::fill(&w_local[0], &w_local[M], 0)
+            std::fill(&w_local[0], &w_local[M], 0);
+
         nnz_t iter = iter_remote_array[thread_id];
 #pragma omp for
         for (index_t j = 0; j < col_remote_size; ++j) {
@@ -3164,7 +3152,6 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
 */
     return 0;
 }
-
 
 int saena_matrix::matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time) {
 

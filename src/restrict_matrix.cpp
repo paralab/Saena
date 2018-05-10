@@ -495,3 +495,4 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     return 0;
 }
+

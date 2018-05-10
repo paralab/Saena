@@ -2,6 +2,7 @@
 #include <string>
 #include <cstring>
 #include <mpi.h>
+#include <random>
 
 #include "saena.hpp"
 #include "saena_matrix.h"
@@ -50,7 +51,7 @@ int saena::matrix::set(index_t i, index_t j, value_t val){
     return 0;
 }
 
-int saena::matrix::set(index_t* row, index_t* col, double* val, nnz_t nnz_local){
+int saena::matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local){
 
     if (!add_dup)
         m_pImpl->set(row, col, val, nnz_local);
@@ -82,7 +83,7 @@ int saena::matrix::set(index_t i, index_t j, unsigned int size_x, unsigned int s
     return 0;
 }
 
-int saena::matrix::set(index_t i, index_t j, unsigned int* di, unsigned int* dj, double* val, nnz_t nnz_local){
+int saena::matrix::set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local){
     nnz_t ii;
 
     for(ii = 0; ii < nnz_local; ii++) {
@@ -180,6 +181,7 @@ int saena::matrix::add_duplicates(bool add) {
     }
     return 0;
 }
+
 
 // ******************************* options *******************************
 
@@ -323,6 +325,7 @@ int saena::amg::set_repartition_threshold(float thre){
     return 0;
 }
 
+
 int saena::amg::switch_to_dense(bool val) {
     m_pImpl->switch_to_dense = val;
     return 0;
@@ -338,6 +341,7 @@ int saena::amg::set_dense_threshold(float thre){
 double saena::amg::get_dense_threshold(){
     return m_pImpl->dense_threshold;
 }
+
 
 int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),

@@ -270,7 +270,6 @@ int strength_matrix::erase(){
     return 0;
 }
 
-
 void strength_matrix::print(int r){
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);

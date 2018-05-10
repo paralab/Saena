@@ -300,7 +300,6 @@ vector<cooEntry> sort_indices3(const vector<cooEntry>& v){
 }
 */
 
-
 class sort_indices2
 {
 private:

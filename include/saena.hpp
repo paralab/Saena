@@ -24,10 +24,10 @@ namespace saena {
         void set_comm(MPI_Comm comm);
         MPI_Comm get_comm();
 
-        int set(index_t i, index_t j, double val); // set individual value
-        int set(index_t* row, index_t* col, double* val, nnz_t nnz_local); // set multiple values
-        int set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, double* val); // set contiguous block
-        int set(index_t i, index_t j, unsigned int* di, unsigned int* dj, double* val, nnz_t nnz_local); // set generic block
+        int set(index_t i, index_t j, value_t val); // set individual value
+        int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local); // set multiple values
+        int set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, value_t* val); // set contiguous block
+        int set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local); // set generic block
 
         bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
@@ -119,6 +119,7 @@ namespace saena {
     protected:
         saena_object* m_pImpl;
     };
+
 
     // second argument is dof on each processor
     int laplacian2D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);

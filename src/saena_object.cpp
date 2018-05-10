@@ -1,3 +1,14 @@
+#include "saena_matrix.h"
+#include "strength_matrix.h"
+#include "prolong_matrix.h"
+#include "restrict_matrix.h"
+#include "aux_functions.h"
+#include "grid.h"
+#include <parUtils.h>
+#include "saena_object.h"
+//#include "El.hpp"
+//#include "ietl_saena.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -5,17 +16,6 @@
 #include <set>
 #include <mpi.h>
 #include <cmath>
-
-#include <parUtils.h>
-#include "saena_object.h"
-#include "saena_matrix.h"
-#include "strength_matrix.h"
-#include "prolong_matrix.h"
-#include "restrict_matrix.h"
-#include "aux_functions.h"
-#include "grid.h"
-#include "El.hpp"
-//#include "ietl_saena.h"
 
 
 saena_object::saena_object(){
@@ -2695,7 +2695,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
     if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest_CG()\n");
 
     // res = A*u - rhs
-    std::vector<double> res(A->M);
+    std::vector<value_t> res(A->M);
     A->residual(u, rhs, res);
 
     // make res = rhs - A*u
@@ -3969,29 +3969,7 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     int rank, nprocs;
     MPI_Comm_rank(grids[0].A->comm, &rank);
     MPI_Comm_size(grids[0].A->comm, &nprocs);
-//    unsigned long i;
 //    int ran = 0;
-
-//    MPI_Barrier(grids[0].A->comm);
-//    if(rank==0){
-//        printf("\nThis is how RHS is received from Nektar++: \n");
-//        printf("\nrank = %d \trhs.size = %lu\n", rank, rhs0.size());
-//        for(i = 0; i < rhs0.size(); i++)
-//            printf("%lu \t%f\n", i, rhs0[i]);
-//    }
-//    MPI_Barrier(grids[0].A->comm);
-//    if(rank==1){
-//        printf("\nrank = %d \trhs.size = %lu\n", rank, rhs0.size());
-//        for(i = 0; i < rhs0.size(); i++)
-//            printf("%lu \t%f\n", i+grids[0].A->split[rank], rhs0[i]);
-//    }
-//    MPI_Barrier(grids[0].A->comm);
-//    if(rank==2){
-//        printf("\nrank = %d \trhs.size = %lu\n", rank, rhs0.size());
-//        for(i = 0; i < rhs0.size(); i++)
-//            printf("%lu \t%f\n", i+grids[0].A->split[rank], rhs0[i]);
-//    }
-//    MPI_Barrier(grids[0].comm);
 
     // ************** check rhs size **************
 
@@ -5208,7 +5186,7 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 }
 
 int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
-
+/*
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5255,7 +5233,6 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
     El::LinearSolve(A, w);
 //    El::Print( w, "\nsolution (w):\n" );
 
-
 //    double temp;
 //    if(rank==1) printf("w solution:\n");
 //    for(unsigned long i = A_S->split[rank]; i < A_S->split[rank+1]; i++){
@@ -5268,7 +5245,6 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
 //        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
 //    }
 
-
     std::vector<value_t> temp(n);
     for(index_t i = 0; i < n; i++){
         temp[i] = w.Get(i,0);
@@ -5279,13 +5255,13 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
         u[i-A_S->split[rank]] = temp[i];
 
     El::Finalize();
-
+*/
     return 0;
 }
 
 
 int saena_object::find_eig_Elemental(saena_matrix& A) {
-
+/*
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5352,6 +5328,6 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
     if(rank==0) printf("\nthe biggest eigenvalue is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
-
+*/
     return 0;
 }

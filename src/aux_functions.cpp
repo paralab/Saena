@@ -270,27 +270,6 @@ double print_time(double t1, double t2, std::string function_name, MPI_Comm comm
 }
 
 
-int print_time_average(double t1, double t2, std::string function_name, int iter, MPI_Comm comm){
-
-    int rank, nprocs;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &nprocs);
-
-    double min, max, average;
-    double t_dif = t2 - t1;
-
-    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-    average /= nprocs;
-
-    if (rank==0)
-        std::cout << std::endl << function_name << "\nmin: " << min/iter << "\nave: " << average/iter << "\nmax: " << max/iter << std::endl << std::endl;
-
-    return 0;
-}
-
-
 //template <class T>
 //int SaenaObject::writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
 int writeVectorToFiled(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {
@@ -388,7 +367,6 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
 
     return 0;
 }
-
 
 int generate_rhs_old(std::vector<value_t>& rhs){
 

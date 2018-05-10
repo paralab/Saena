@@ -36,4 +36,3 @@ public:
 };
 
 #endif //SAENA_GRID_H
-

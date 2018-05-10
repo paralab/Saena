@@ -436,7 +436,6 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     return 0;
 }
 
-
 int prolong_matrix::print(int ran){
 
     // if ran >= 0 print the matrix entries on proc with rank = ran

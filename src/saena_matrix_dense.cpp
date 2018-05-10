@@ -258,7 +258,6 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
 }
 */
 
-
 int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
 
     comm = A->comm;

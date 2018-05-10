@@ -18,7 +18,6 @@ public:
 //    long nnz_g;
 //    double average_sparsity;
 
-
     nnz_t nnz_l_local  = 0;
     nnz_t nnz_l_remote = 0;
     index_t col_remote_size = 0; // this is the same as vElement_remote.size()

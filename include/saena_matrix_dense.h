@@ -1,7 +1,3 @@
-//
-// Created by Majid on 3/22/18.
-//
-
 #ifndef MATVEC003_SAENA_MATRIX_DENSE_H
 #define MATVEC003_SAENA_MATRIX_DENSE_H
 
