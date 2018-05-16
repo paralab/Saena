@@ -25,7 +25,7 @@ public:
     std::string smoother = "jacobi";
     int preSmooth  = 3;
     int postSmooth = 3;
-    std::string direct_solver = "Elemental"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
+    std::string direct_solver = "CG"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
     std::vector<Grid> grids;
     float connStrength = 0.5; // connection strength parameter: control coarsening aggressiveness
     int CG_max_iter = 100;
@@ -85,7 +85,7 @@ public:
     int repartition_u2_prepare(Grid *grid);
     int repartition_u2(std::vector<value_t>& u, Grid &grid);
     int repartition_back_u2(std::vector<value_t>& u, Grid &grid);
-//    int shrink_cpu_A(saena_matrix* Ac, std::vector<unsigned long>& P_splitNew);
+    int shrink_cpu_A(saena_matrix* Ac, std::vector<index_t>& P_splitNew);
     int shrink_u_rhs(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int unshrink_u(Grid* grid, std::vector<value_t>& u);
     bool active(int l);

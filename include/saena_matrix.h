@@ -151,19 +151,26 @@ public:
 //    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
 
     int setup_initial_data();
-    int repartition(); // based on nnz.
+    int repartition_nnz_initial(); // based on nnz.
     int matrix_setup();
 
     // these versions are used after matrix is assembled and needs to be updated again.
     int setup_initial_data2();
-    int repartition2(); // based on nnz.
-    int matrix_setup2();
+    int repartition_nnz_update(); // based on nnz.
+    int matrix_setup_update();
 
-    int repartition3(); // based on nnz. use this for repartitioning A's after they are created.
-    int repartition4(); // based on M. use this for repartitioning A's after they are created.
+    int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
+    int repartition_row(); // based on M. use this for repartitioning A's after they are created.
+
+    int repartition_nnz_update_Ac(); // based on nnz.
+
+    int set_rho();
+    int set_off_on_diagonal();
+    int find_sortings();
+    int openmp_setup();
+
+    bool decide_shrinking();
     int shrink_cpu();
-
-    int repartition5(); // based on nnz.
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
@@ -186,6 +193,7 @@ public:
     int erase2();
     int erase_update_local(); // use this for coarsen2()
     int erase_keep_remote2(); // use this for coarsen2()
+    int erase_after_shrink();
     int destroy();
 };
 

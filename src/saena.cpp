@@ -102,12 +102,12 @@ int saena::matrix::set(index_t i, index_t j, unsigned int* di, unsigned int* dj,
 int saena::matrix::assemble() {
 
     if(!m_pImpl->assembled){
-        m_pImpl->repartition();
+        m_pImpl->repartition_nnz_initial();
         m_pImpl->matrix_setup();
     }else{
         m_pImpl->setup_initial_data2();
-        m_pImpl->repartition2();
-        m_pImpl->matrix_setup2();
+        m_pImpl->repartition_nnz_update();
+        m_pImpl->matrix_setup_update();
     }
 
     return 0;

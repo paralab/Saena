@@ -34,21 +34,15 @@ int prolong_matrix::findLocalRemote(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     arrays_defined = true;
-//    unsigned long i;
 
 //    printf("rank=%d \t P.nnz_l=%lu \t P.nnz_g=%lu \n", rank, nnz_l, nnz_g);
 
-//    MPI_Barrier(comm);
-//    if(rank==0)
-//        for(i=0; i<nnz_l; i++)
-//            std::cout << entry[i] << std::endl;
-//    MPI_Barrier(comm);
+//    print_vector(entry, 0, "entry", comm);
 
     long procNum;
     col_remote_size = 0; // number of remote columns
     nnz_l_local = 0;
     nnz_l_remote = 0;
-//    int recvCount[nprocs];
     int* recvCount = (int*)malloc(sizeof(int)*nprocs);
     std::fill(recvCount, recvCount + nprocs, 0);
 //    int* recvCount_t = (int*)malloc(sizeof(int)*nprocs);

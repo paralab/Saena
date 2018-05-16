@@ -30,8 +30,8 @@ public:
     nnz_t nnz_l_remote = 0;
     index_t col_remote_size = 0; // this is the same as vElement_remote.size()
 
-    std::vector<index_t > split;
-    std::vector<index_t > splitNew;
+    std::vector<index_t> split;
+    std::vector<index_t> splitNew;
 
 //    std::vector<unsigned long> row;
 //    std::vector<unsigned long> col;
