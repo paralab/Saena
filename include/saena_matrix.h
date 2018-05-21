@@ -69,6 +69,7 @@ public:
 //    double norm1, normInf, rhoDA;
 
     index_t vIndexSize;
+    index_t recvSize;
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
@@ -78,7 +79,6 @@ public:
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;
 
-    int recvSize;
     int numRecvProc;
     int numSendProc;
     std::vector<int> vdispls;
@@ -98,7 +98,7 @@ public:
     std::vector<nnz_t> iter_local_array2;
     std::vector<nnz_t> iter_remote_array2;
     std::vector<index_t> vElement_remote;
-    std::vector<index_t> vElementRep_local;
+//    std::vector<index_t> vElementRep_local;
     std::vector<index_t> vElementRep_remote;
     std::vector<value_t> w_buff; // for matvec3()
 //    value_t *w_buff; // for matvec3()
@@ -114,7 +114,9 @@ public:
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
     bool enable_shrink = false;
+    bool do_shrink = false;
     bool shrinked = false; // if shrinking happens for the matrix, set this to true.
+    std::vector<double> matvec_dummy_time;
     int cpu_shrink_thre1 = 1; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
     int cpu_shrink_thre2 = 1; // number of procs after shrinking = nprocs / cpu_shrink_thre2
     int cpu_shrink_thre2_next_level = -1;
@@ -169,7 +171,12 @@ public:
     int find_sortings();
     int openmp_setup();
 
-    bool decide_shrinking();
+    int set_off_on_diagonal_dummy();
+//    int find_sortings_dummy();
+    int matrix_setup_dummy();
+    int matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w);
+    int compute_matvec_dummy_time();
+    int decide_shrinking(std::vector<double> &prev_time);
     int shrink_cpu();
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
@@ -194,6 +201,7 @@ public:
     int erase_update_local(); // use this for coarsen2()
     int erase_keep_remote2(); // use this for coarsen2()
     int erase_after_shrink();
+    int erase_after_decide_shrinking();
     int destroy();
 };
 

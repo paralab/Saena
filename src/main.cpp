@@ -134,6 +134,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
+
     // define the size of v as the local number of rows on each process
     std::vector <double> v(num_local_row);
     double* vp = &(*(v.begin()));
@@ -148,7 +149,7 @@ int main(int argc, char* argv[]){
     MPI_File_close(&fh);
 
     // set rhs
-//    A.get_internal_matrix()->matvec(v, rhs);W
+//    A.get_internal_matrix()->matvec(v, rhs);
     rhs = v;
 
     // *************************** set u0 ****************************
@@ -190,6 +191,12 @@ int main(int argc, char* argv[]){
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
     print_time(t1, t2, "Solve:", comm);
+
+    // *************************** matvec_dummy ****************************
+
+//    std::vector<double> v_dummy(num_local_row, 1);
+//    std::vector<double> w_dummy(num_local_row);
+//    A.get_internal_matrix()->matvec_dummy(v_dummy, w_dummy);
 
     // *************************** finalize ****************************
 

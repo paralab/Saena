@@ -2018,9 +2018,18 @@ int saena_object::coarsen(Grid *grid){
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
 
+    // ********** decide about shrinking **********
+
+//    if(rank==0) printf("start decide shrinking\n");
+    Ac->matrix_setup_dummy();
+    Ac->compute_matvec_dummy_time();
+    Ac->decide_shrinking(A->matvec_dummy_time);
+    Ac->erase_after_decide_shrinking();
+//    if(rank==0) printf("finish decide shrinking\n");
+
     // ********** setup matrix **********
-// Shrinking gets decided inside repartition_nnz() or repartition_row() functions, then repartition happens.
-// Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
+    // Shrinking gets decided inside repartition_nnz() or repartition_row() functions, then repartition happens.
+    // Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
 
     // decide to partition based on number of rows or nonzeros.
 //    if(switch_repartition && Ac->density >= repartition_threshold)
@@ -2911,7 +2920,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         if(verbose_vcycle){
             MPI_Barrier(grid->A->comm);
-            printf("rank = %d: vcycle current level = %d, A->M = %u, u.size = %lu, rhs.size = %lu \n",
+            if(rank==0) printf("rank = %d: vcycle current level = %d, A->M = %u, u.size = %lu, rhs.size = %lu \n",
                    rank, grid->currentLevel, grid->A->M, u.size(), rhs.size());
             MPI_Barrier(grid->A->comm);}
 

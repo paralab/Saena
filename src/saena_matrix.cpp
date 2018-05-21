@@ -734,7 +734,7 @@ int saena_matrix::erase(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
-    vElementRep_local.clear();
+//    vElementRep_local.clear();
     vElementRep_remote.clear();
 
     entry.shrink_to_fit();
@@ -757,7 +757,7 @@ int saena_matrix::erase(){
     sendProcRank.shrink_to_fit();
     sendProcCount.shrink_to_fit();
     sendProcCount.shrink_to_fit();
-    vElementRep_local.shrink_to_fit();
+//    vElementRep_local.shrink_to_fit();
     vElementRep_remote.shrink_to_fit();
 
     M = 0;
@@ -799,7 +799,7 @@ int saena_matrix::erase2(){
     recvProcCount.clear();
     sendProcRank.clear();
     sendProcCount.clear();
-    vElementRep_local.clear();
+//    vElementRep_local.clear();
     vElementRep_remote.clear();
     vIndex.clear();
     vSend.clear();
@@ -838,7 +838,7 @@ int saena_matrix::erase2(){
     recvProcCount.shrink_to_fit();
     sendProcRank.shrink_to_fit();
     sendProcCount.shrink_to_fit();
-    vElementRep_local.shrink_to_fit();
+//    vElementRep_local.shrink_to_fit();
     vElementRep_remote.shrink_to_fit();
     vIndex.shrink_to_fit();
     vSend.shrink_to_fit();
@@ -911,7 +911,7 @@ int saena_matrix::erase_update_local(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
-    vElementRep_local.clear();
+//    vElementRep_local.clear();
     vElementRep_remote.clear();
 
 //    M = 0;
@@ -956,7 +956,7 @@ int saena_matrix::erase_keep_remote2(){
     recvProcCount.clear();
     sendProcRank.clear();
     sendProcCount.clear();
-    vElementRep_local.clear();
+//    vElementRep_local.clear();
     vElementRep_remote.clear();
     vIndex.clear();
     vSend.clear();
@@ -1010,7 +1010,7 @@ int saena_matrix::erase_after_shrink() {
     col_remote2.clear();
     values_remote.clear();
 
-    vElementRep_local.clear();
+//    vElementRep_local.clear();
     vElementRep_remote.clear();
     vElement_remote.clear();
 
@@ -1023,6 +1023,51 @@ int saena_matrix::erase_after_shrink() {
 //    recvProcCount.clear();
 //    sendProcRank.clear();
 //    sendProcCount.clear();
+//    vIndex.clear();
+//    vSend.clear();
+//    vecValues.clear();
+//    vSendULong.clear();
+//    vecValuesULong.clear();
+//    indicesP_local.clear();
+//    indicesP_remote.clear();
+//    recvCount.clear();
+//    recvCountScan.clear();
+//    sendCount.clear();
+//    sendCountScan.clear();
+//    iter_local_array.clear();
+//    iter_remote_array.clear();
+//    iter_local_array2.clear();
+//    iter_remote_array2.clear();
+//    w_buff.clear();
+
+    return 0;
+}
+
+
+int saena_matrix::erase_after_decide_shrinking() {
+
+//    row_local.clear();
+    col_local.clear();
+    values_local.clear();
+
+    row_remote.clear();
+    col_remote.clear();
+    col_remote2.clear();
+    values_remote.clear();
+
+//    vElementRep_local.clear();
+    vElementRep_remote.clear();
+    vElement_remote.clear();
+
+//    nnzPerRow_local.clear();
+    nnzPerCol_remote.clear();
+//    invDiag.clear();
+//    vdispls.clear();
+//    rdispls.clear();
+    recvProcRank.clear();
+    recvProcCount.clear();
+    sendProcRank.clear();
+    sendProcCount.clear();
 //    vIndex.clear();
 //    vSend.clear();
 //    vecValues.clear();
@@ -2265,16 +2310,6 @@ int saena_matrix::repartition_nnz_update_Ac(){
 }
 
 
-bool saena_matrix::decide_shrinking(){
-
-    bool shrink = false;
-
-    shrink = true;
-
-    return shrink;
-}
-
-
 int saena_matrix::shrink_cpu(){
 
     // if number of rows on Ac < threshold*number of rows on A, then shrink.
@@ -2645,7 +2680,7 @@ int saena_matrix::set_off_on_diagonal(){
         nnz_l_remote = 0;
         recvCount.assign(nprocs, 0);
         nnzPerRow_local.assign(M, 0);
-        nnzPerRow_remote.assign(M, 0);
+//        nnzPerRow_remote.assign(M, 0);
 //        nnzPerRow.assign(M,0);
 //        nnzPerCol_local.assign(Mbig,0); // Nbig = Mbig, assuming A is symmetric.
 //        nnzPerCol_remote.assign(M,0);
@@ -2662,11 +2697,11 @@ int saena_matrix::set_off_on_diagonal(){
                 row_local.push_back(entry[0].row - split[rank]);
                 col_local.push_back(entry[0].col);
                 //vElement_local.push_back(col[0]);
-                vElementRep_local.push_back(1);
+//                vElementRep_local.push_back(1);
 
             } else {
                 nnz_l_remote++;
-                nnzPerRow_remote[entry[0].row - split[rank]]++;
+//                nnzPerRow_remote[entry[0].row - split[rank]]++;
                 values_remote.push_back(entry[0].val);
                 row_remote.push_back(entry[0].row - split[rank]);
                 col_remote_size++;
@@ -2692,14 +2727,13 @@ int saena_matrix::set_off_on_diagonal(){
                     row_local.push_back(entry[i].row - split[rank]);
                     col_local.push_back(entry[i].col);
 
-                    if (entry[i].col != entry[i - 1].col) {
-                        vElementRep_local.push_back(1);
-                    } else {
-                        vElementRep_local.back()++;
-                    }
+//                    if (entry[i].col != entry[i - 1].col)
+//                        vElementRep_local.push_back(1);
+//                    else
+//                        vElementRep_local.back()++;
                 } else {
                     nnz_l_remote++;
-                    nnzPerRow_remote[entry[i].row - split[rank]]++;
+//                    nnzPerRow_remote[entry[i].row - split[rank]]++;
                     values_remote.push_back(entry[i].val);
                     row_remote.push_back(entry[i].row - split[rank]);
                     // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
@@ -3151,14 +3185,13 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
 
     w.assign(w.size(), 0);
     value_t* v_p = &v[0] - split[rank];
-    unsigned int i;
-//    MPI_Barrier(comm); printf("here1\n"); MPI_Barrier(comm);
-#pragma omp parallel for default(shared) private(i) reduction(vec_double_plus:w)
-    for (i = 0; i < nnz_l_local; ++i)
-        w[1] = 1;
-//        w[row_local[i]] += values_local[i] * v_p[col_local[i]];
+    #pragma omp parallel reduction(vec_double_plus:w)
+    {
+        #pragma omp for
+            for (unsigned int i = 0; i < nnz_l_local; ++i)
+                w[row_local[i]] += values_local[i] * v_p[col_local[i]];
+    }
 
-//    MPI_Barrier(comm); printf("here2\n"); MPI_Barrier(comm);
     double t1_end = omp_get_wtime();
 
     MPI_Waitall(numRecvProc, requests, statuses);
@@ -3246,6 +3279,7 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     return 0;
 }
 
+
 int saena_matrix::matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time) {
 
     int nprocs, rank;
@@ -3277,18 +3311,11 @@ int saena_matrix::matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& 
     for(int i = 0; i < numSendProc; i++)
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
 
-//    if (rank==0){
-//        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
-//        for(int i=0; i<recvSize; i++)
-//            std::cout << vecValues[i] << std::endl;}
-
     // local loop
     // ----------
     double t1_start = omp_get_wtime();
 
     value_t* v_p = &v[0] - split[rank];
-    // local loop
-//    std::fill(&*w.begin(), &*w.end(), 0);
 #pragma omp parallel
     {
         nnz_t iter = iter_local_array[omp_get_thread_num()];
@@ -4103,6 +4130,410 @@ int saena_matrix::matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<v
 }
 
 
+int saena_matrix::compute_matvec_dummy_time(){
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    int matvec_iter = 10;
+    std::vector<double> v_dummy(M, 1);
+    std::vector<double> w_dummy(M);
+//    std::vector<double> time_matvec(4, 0);
+
+    MPI_Barrier(comm); // todo: should I keep this barrier?
+//    double t1 = omp_get_wtime();
+    for (int i = 0; i < matvec_iter; i++) {
+        matvec_dummy(v_dummy, w_dummy);
+        v_dummy.swap(w_dummy);
+    }
+//    double t2 = omp_get_wtime();
+
+    matvec_dummy_time[3] += matvec_dummy_time[0]; // total matvec time
+    matvec_dummy_time[0] = matvec_dummy_time[3] - matvec_dummy_time[1] - matvec_dummy_time[2]; // communication including vSet
+
+//    if (rank == 0) {
+//        std::cout << std::endl << "decide_shrinking:" << std::endl;
+//        std::cout << "communication: " << matvec_dummy_time[0] / matvec_iter << std::endl; // comm including "set vSend"
+//        std::cout << "local:         " << matvec_dummy_time[1] / matvec_iter << std::endl; // local loop
+//        std::cout << "remote:        " << matvec_dummy_time[2] / matvec_iter << std::endl; // remote loop
+//        std::cout << "total:         " << matvec_dummy_time[3] / matvec_iter << std::endl; // total time
+//    }
+
+    return 0;
+}
+
+
+int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    if( (matvec_dummy_time[3] > 1.2* prev_time[3]) && (1.2 * matvec_dummy_time[1] < prev_time[1]) ){
+        do_shrink = true;
+        cpu_shrink_thre2 = (int) ceil(prev_time[1] / matvec_dummy_time[1]);
+        if(rank==0) printf("cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
+    }
+
+    return 0;
+}
+
+
+int saena_matrix::matrix_setup_dummy(){
+    set_off_on_diagonal_dummy();
+    return 0;
+}
+
+
+int saena_matrix::set_off_on_diagonal_dummy(){
+    // set and exchange on-diagonal and off-diagonal elements
+    // on-diagonal (local) elements are elements that correspond to vector elements which are local to this process.
+    // off-diagonal (remote) elements correspond to vector elements which should be received from another processes.
+
+    if(active){
+        int nprocs, rank;
+        MPI_Comm_size(comm, &nprocs);
+        MPI_Comm_rank(comm, &rank);
+
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup_dummy: rank = %d, local remote1 \n", rank);
+            MPI_Barrier(comm);
+        }
+
+        col_remote_size = 0;
+        nnz_l_local = 0;
+        nnz_l_remote = 0;
+        recvCount.assign(nprocs, 0);
+//        nnzPerRow_local.assign(M, 0);
+//        nnzPerRow_remote.assign(M, 0);
+
+        // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
+        long procNum;
+        if(!entry.empty()){
+            if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
+//                nnzPerRow_local[entry[0].row - split[rank]]++;
+//                nnzPerCol_local[col[0]]++;
+                nnz_l_local++;
+//                values_local.push_back(entry[0].val);
+//                row_local.push_back(entry[0].row - split[rank]);
+                col_local.push_back(entry[0].col);
+                //vElement_local.push_back(col[0]);
+//                vElementRep_local.push_back(1);
+
+            } else {
+                nnz_l_remote++;
+//                nnzPerRow_remote[entry[0].row - split[rank]]++;
+//                values_remote.push_back(entry[0].val);
+                row_remote.push_back(entry[0].row - split[rank]);
+                col_remote_size++;
+                col_remote.push_back(col_remote_size - 1);
+                col_remote2.push_back(entry[0].col);
+                nnzPerCol_remote.push_back(1);
+                vElement_remote.push_back(entry[0].col);
+                vElementRep_remote.push_back(1);
+//                if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[0].col, lower_bound3(&split[0], &split[nprocs], entry[0].col));
+                recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
+            }
+        }
+
+        if(entry.size() >= 2){
+            for (nnz_t i = 1; i < nnz_l; i++) {
+//                nnzPerRow[row[i]-split[rank]]++;
+//                if(rank==0) std::cout << entry[i] << std::endl;
+                if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
+                    nnz_l_local++;
+//                    nnzPerCol_local[col[i]]++;
+//                    nnzPerRow_local[entry[i].row - split[rank]]++;
+//                    values_local.push_back(entry[i].val);
+//                    row_local.push_back(entry[i].row - split[rank]);
+                    col_local.push_back(entry[i].col);
+
+//                    if (entry[i].col != entry[i - 1].col)
+//                        vElementRep_local.push_back(1);
+//                    else
+//                        vElementRep_local.back()++;
+                } else {
+                    nnz_l_remote++;
+//                    nnzPerRow_remote[entry[i].row - split[rank]]++;
+//                    values_remote.push_back(entry[i].val);
+                    row_remote.push_back(entry[i].row - split[rank]);
+                    // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
+                    col_remote2.push_back(entry[i].col);
+
+                    if (entry[i].col != entry[i - 1].col) {
+                        col_remote_size++;
+                        vElement_remote.push_back(entry[i].col);
+                        vElementRep_remote.push_back(1);
+                        procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+//                        if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[i].col, procNum);
+                        recvCount[procNum]++;
+                        nnzPerCol_remote.push_back(1);
+                    } else {
+                        vElementRep_remote.back()++;
+                        nnzPerCol_remote.back()++;
+                    }
+                    // the original col values are not being used. the ordering starts from 0, and goes up by 1.
+                    col_remote.push_back(col_remote_size - 1);
+                }
+            } // for i
+        }
+
+        // dummy values
+        values_local.assign(nnz_l_local, 1);
+        values_remote.assign(nnz_l_remote, 1);
+
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup_dummy: rank = %d, local remote2 \n", rank);
+            MPI_Barrier(comm);
+        }
+
+        // don't receive anything from yourself
+        recvCount[rank] = 0;
+
+//        print_vector(recvCount, 0, "recvCount", comm);
+
+        sendCount.resize(nprocs);
+        MPI_Alltoall(&recvCount[0], 1, MPI_INT, &sendCount[0], 1, MPI_INT, comm);
+
+//        print_vector(sendCount, 0, "sendCount", comm);
+
+        recvCountScan.resize(nprocs);
+        sendCountScan.resize(nprocs);
+        recvCountScan[0] = 0;
+        sendCountScan[0] = 0;
+        for (unsigned int i = 1; i < nprocs; i++){
+            recvCountScan[i] = recvCountScan[i-1] + recvCount[i-1];
+            sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
+        }
+
+        numRecvProc = 0;
+        numSendProc = 0;
+        for (int i = 0; i < nprocs; i++) {
+            if (recvCount[i] != 0) {
+                numRecvProc++;
+                recvProcRank.push_back(i);
+                recvProcCount.push_back(recvCount[i]);
+            }
+            if (sendCount[i] != 0) {
+                numSendProc++;
+                sendProcRank.push_back(i);
+                sendProcCount.push_back(sendCount[i]);
+            }
+        }
+
+//        if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << std::endl;
+
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup_dummy: rank = %d, local remote3 \n", rank);
+            MPI_Barrier(comm);
+        }
+
+        vdispls.resize(nprocs);
+        rdispls.resize(nprocs);
+        vdispls[0] = 0;
+        rdispls[0] = 0;
+
+        for (int i = 1; i < nprocs; i++) {
+            vdispls[i] = vdispls[i - 1] + sendCount[i - 1];
+            rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
+        }
+        vIndexSize = vdispls[nprocs - 1] + sendCount[nprocs - 1];
+        recvSize   = rdispls[nprocs - 1] + recvCount[nprocs - 1];
+
+        vIndex.resize(vIndexSize);
+        MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
+                      &vIndex[0],          &sendCount[0], &vdispls[0], MPI_UNSIGNED, comm);
+
+//    print_vector(vIndex, -1, "vIndex", comm);
+
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup_dummy: rank = %d, local remote4 \n", rank);
+            MPI_Barrier(comm);
+        }
+
+        // change the indices from global to local
+#pragma omp parallel for
+        for (index_t i = 0; i < vIndexSize; i++)
+            vIndex[i] -= split[rank];
+
+        // vSend = vector values to send to other procs
+        // vecValues = vector values that received from other procs
+        // These will be used in matvec and they are set here to reduce the time of matvec.
+        vSend.resize(vIndexSize);
+        vecValues.resize(recvSize);
+
+//        vSendULong.resize(vIndexSize);
+//        vecValuesULong.resize(recvSize);
+    }
+
+    return 0;
+}
+
+
+// int saena_matrix::find_sortings_dummy()
+/*
+int saena_matrix::find_sortings_dummy(){
+    //find the sorting on rows on both local and remote data, which will be used in matvec
+
+    if(active){
+        int rank;
+        MPI_Comm_rank(comm, &rank);
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup: rank = %d, find_sortings \n", rank);
+            MPI_Barrier(comm);
+        }
+
+        indicesP_local.resize(nnz_l_local);
+#pragma omp parallel for
+        for (nnz_t i = 0; i < nnz_l_local; i++)
+            indicesP_local[i] = i;
+
+        index_t *row_localP = &*row_local.begin();
+        std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
+
+//    if(rank==0)
+//        for(index_t i=0; i<nnz_l_local; i++)
+//            std::cout << row_local[indicesP_local[i]] << "\t" << col_local[indicesP_local[i]]
+//                      << "\t" << values_local[indicesP_local[i]] << std::endl;
+
+//        indicesP_remote.resize(nnz_l_remote);
+//        for (nnz_t i = 0; i < nnz_l_remote; i++)
+//            indicesP_remote[i] = i;
+//
+//        index_t *row_remoteP = &*row_remote.begin();
+//        std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
+    }
+
+    return 0;
+}
+*/
+
+
+int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w) {
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
+
+    // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
+    // put the values of thoss indices in vSend to send to other procs.
+    double t0_start = omp_get_wtime();
+
+    #pragma omp parallel for
+    for(index_t i=0;i<vIndexSize;i++)
+        vSend[i] = v[(vIndex[i])];
+
+    double t0_end = omp_get_wtime();
+
+//    if (rank==1) std::cout << "\nvIndexSize=" << vIndexSize << std::endl;
+//    print_vector(vSend, 0, "vSend", comm);
+
+    double t3_start = omp_get_wtime();
+
+    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
+    MPI_Status* statuses  = new MPI_Status[numSendProc+numRecvProc];
+
+    // receive and put the remote parts of v in vecValues.
+    // they are received in order: first put the values from the lowest rank matrix, and so on.
+    for(int i = 0; i < numRecvProc; i++)
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+
+    for(int i = 0; i < numSendProc; i++)
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+
+    // local loop
+    // ----------
+    // compute the on-diagonal part of matvec on each thread and save it in w_local.
+    // then, do a reduction on w_local on all threads, based on a binary tree.
+
+    double t1_start = omp_get_wtime();
+
+    value_t* v_p = &v[0] - split[rank];
+    long iter = 0;
+    for (index_t i = 0; i < M; ++i) {
+        w[i] = 0;
+        for (index_t j = 0; j < nnz_l_local/M; ++j, ++iter)
+            w[i] += values_local[iter] * v_p[col_local[iter]];
+    }
+
+//    for (index_t i = 0; i < M; ++i) {
+//        w[i] = 0;
+//        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+//            w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+//        }
+//    }
+
+    double t1_end = omp_get_wtime();
+
+    // Wait for the receive communication to finish.
+    MPI_Waitall(numRecvProc, requests, statuses);
+
+//    print_vector(vecValues, 0, "vecValues", comm);
+
+    // remote loop
+    // -----------
+    // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
+    // the corresponding vector element is saved in vecValues[0]. and so on.
+
+    double t2_start = omp_get_wtime();
+
+    iter = 0;
+    for (index_t j = 0; j < col_remote_size; ++j) {
+        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+
+//                if(rank==0 && thread_id==0){
+//                    printf("thread = %d\n", thread_id);
+//                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
+//                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
+//                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+        }
+    }
+
+    double t2_end = omp_get_wtime();
+
+    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
+    double t3_end = omp_get_wtime();
+
+    delete [] requests;
+    delete [] statuses;
+
+    matvec_dummy_time.assign(4, 0);
+
+    // set vsend
+    double time0_local = t0_end-t0_start;
+    double time0;
+    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
+    matvec_dummy_time[0] += time0/nprocs;
+
+    // local loop
+    double time1_local = t1_end-t1_start;
+    double time1;
+    MPI_Allreduce(&time1_local, &time1, 1, MPI_DOUBLE, MPI_SUM, comm);
+    matvec_dummy_time[1] += time1/nprocs;
+
+    // remote loop
+    double time2_local = t2_end-t2_start;
+    double time2;
+    MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
+    matvec_dummy_time[2] += time2/nprocs;
+
+    // communication = t3 - t1 - t2
+    double time3_local = t3_end-t3_start;
+    double time3;
+    MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
+    matvec_dummy_time[3] += time3/nprocs;
+
+    return 0;
+}
+
+
 int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
     // Vector res = A*u - rhs;
 
@@ -4225,6 +4656,7 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
 
     return 0;
 }
+
 
 int saena_matrix::print(int ran){
 
