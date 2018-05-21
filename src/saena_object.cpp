@@ -6,7 +6,7 @@
 #include "grid.h"
 #include <parUtils.h>
 #include "saena_object.h"
-//#include "El.hpp"
+#include "El.hpp"
 //#include "ietl_saena.h"
 
 #include <cstdio>
@@ -5193,7 +5193,7 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 
 
 int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
-/*
+
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5262,13 +5262,13 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
         u[i-A_S->split[rank]] = temp[i];
 
     El::Finalize();
-*/
+
     return 0;
 }
 
 
 int saena_object::find_eig_Elemental(saena_matrix& A) {
-/*
+
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5335,6 +5335,6 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
     if(rank==0) printf("\nthe biggest eigenvalue is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
-*/
+
     return 0;
 }
