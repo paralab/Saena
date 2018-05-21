@@ -113,7 +113,7 @@ public:
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
-    bool enable_shrink = false;
+    bool enable_shrink = true;
     bool do_shrink = false;
     bool shrinked = false; // if shrinking happens for the matrix, set this to true.
     std::vector<double> matvec_dummy_time;

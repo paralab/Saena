@@ -6,7 +6,7 @@
 #include "grid.h"
 #include <parUtils.h>
 #include "saena_object.h"
-#include "El.hpp"
+//#include "El.hpp"
 //#include "ietl_saena.h"
 
 #include <cstdio>
@@ -1993,7 +1993,7 @@ int saena_object::coarsen(Grid *grid){
     Ac->last_density_shrink = A->last_density_shrink;
 //    Ac->last_nnz_shrink = A->last_nnz_shrink;
 //    Ac->enable_shrink = A->enable_shrink;
-    Ac->enable_shrink = A->enable_shrink_next_level;
+//    Ac->enable_shrink = A->enable_shrink_next_level;
     Ac->comm = A->comm;
     Ac->comm_old = A->comm;
     Ac->active_old_comm = true;
@@ -2020,12 +2020,14 @@ int saena_object::coarsen(Grid *grid){
 
     // ********** decide about shrinking **********
 
-//    if(rank==0) printf("start decide shrinking\n");
-    Ac->matrix_setup_dummy();
-    Ac->compute_matvec_dummy_time();
-    Ac->decide_shrinking(A->matvec_dummy_time);
-    Ac->erase_after_decide_shrinking();
-//    if(rank==0) printf("finish decide shrinking\n");
+    if(Ac->enable_shrink){
+//        MPI_Barrier(Ac->comm); if(rank==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
+        Ac->matrix_setup_dummy();
+        Ac->compute_matvec_dummy_time();
+        Ac->decide_shrinking(A->matvec_dummy_time);
+        Ac->erase_after_decide_shrinking();
+//        MPI_Barrier(Ac->comm); if(rank==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
+    }
 
     // ********** setup matrix **********
     // Shrinking gets decided inside repartition_nnz() or repartition_row() functions, then repartition happens.
@@ -5193,7 +5195,7 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 
 
 int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
-
+/*
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5262,13 +5264,13 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
         u[i-A_S->split[rank]] = temp[i];
 
     El::Finalize();
-
+*/
     return 0;
 }
 
 
 int saena_object::find_eig_Elemental(saena_matrix& A) {
-
+/*
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5335,6 +5337,6 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
     if(rank==0) printf("\nthe biggest eigenvalue is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
-
+*/
     return 0;
 }

@@ -104,7 +104,7 @@ int saena::matrix::assemble() {
     if(!m_pImpl->assembled){
         m_pImpl->repartition_nnz_initial();
         m_pImpl->matrix_setup();
-        m_pImpl->compute_matvec_dummy_time();
+        if(m_pImpl->enable_shrink) m_pImpl->compute_matvec_dummy_time();
     }else{
         m_pImpl->setup_initial_data2();
         m_pImpl->repartition_nnz_update();

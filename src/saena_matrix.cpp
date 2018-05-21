@@ -1886,7 +1886,7 @@ int saena_matrix::repartition_nnz(){
     // ---------------------------------
 //    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
 //    if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
-    if(enable_shrink && (nprocs >= cpu_shrink_thre2) && (density >= (last_density_shrink * cpu_shrink_thre1)) ){
+    if(enable_shrink && (nprocs >= cpu_shrink_thre2) && do_shrink){
         shrinked = true;
         last_M_shrink = Mbig;
 //        last_nnz_shrink = nnz_g;
@@ -2060,7 +2060,7 @@ int saena_matrix::repartition_row(){
     // ---------------------------------
 //    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
 //    if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
-    if(enable_shrink && (nprocs >= cpu_shrink_thre2) && (density >= (last_density_shrink * cpu_shrink_thre1)) ){
+    if(enable_shrink && (nprocs >= cpu_shrink_thre2) && do_shrink){
         shrinked = true;
         last_M_shrink = Mbig;
 //        last_nnz_shrink = nnz_g;
@@ -4151,13 +4151,13 @@ int saena_matrix::compute_matvec_dummy_time(){
     matvec_dummy_time[3] += matvec_dummy_time[0]; // total matvec time
     matvec_dummy_time[0] = matvec_dummy_time[3] - matvec_dummy_time[1] - matvec_dummy_time[2]; // communication including vSet
 
-//    if (rank == 0) {
-//        std::cout << std::endl << "decide_shrinking:" << std::endl;
-//        std::cout << "communication: " << matvec_dummy_time[0] / matvec_iter << std::endl; // comm including "set vSend"
-//        std::cout << "local:         " << matvec_dummy_time[1] / matvec_iter << std::endl; // local loop
-//        std::cout << "remote:        " << matvec_dummy_time[2] / matvec_iter << std::endl; // remote loop
-//        std::cout << "total:         " << matvec_dummy_time[3] / matvec_iter << std::endl; // total time
-//    }
+    if (rank == 0) {
+        std::cout << std::endl << "decide_shrinking:" << std::endl;
+        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter << std::endl; // comm including "set vSend"
+        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter << std::endl; // local loop
+        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter << std::endl; // remote loop
+        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter << std::endl; // total time
+    }
 
     return 0;
 }
