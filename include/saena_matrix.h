@@ -120,6 +120,9 @@ public:
     int cpu_shrink_thre1 = 1; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
     int cpu_shrink_thre2 = 1; // number of procs after shrinking = nprocs / cpu_shrink_thre2
     int cpu_shrink_thre2_next_level = -1;
+    float shrink_total_thre = 10.4;
+    float shrink_local_thre = 1.2;
+    float shrink_communic_thre = 1.5;
     index_t last_M_shrink;
     nnz_t   last_nnz_shrink;
     double  last_density_shrink;

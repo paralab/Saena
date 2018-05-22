@@ -4151,13 +4151,13 @@ int saena_matrix::compute_matvec_dummy_time(){
     matvec_dummy_time[3] += matvec_dummy_time[0]; // total matvec time
     matvec_dummy_time[0] = matvec_dummy_time[3] - matvec_dummy_time[1] - matvec_dummy_time[2]; // communication including vSet
 
-    if (rank == 0) {
-        std::cout << std::endl << "decide_shrinking:" << std::endl;
-        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter << std::endl; // comm including "set vSend"
-        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter << std::endl; // local loop
-        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter << std::endl; // remote loop
-        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter << std::endl; // total time
-    }
+//    if (rank == 0) {
+//        std::cout << std::endl << "decide_shrinking:" << std::endl;
+//        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter << std::endl; // comm including "set vSend"
+//        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter << std::endl; // local loop
+//        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter << std::endl; // remote loop
+//        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter << std::endl; // total time
+//    }
 
     return 0;
 }
@@ -4165,10 +4165,23 @@ int saena_matrix::compute_matvec_dummy_time(){
 
 int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
 
+    // matvec_dummy_time[0]: communication (including "set vSend")
+    // matvec_dummy_time[1]: local loop
+    // matvec_dummy_time[2]: remote loop
+    // matvec_dummy_time[3]: total time
+
     int rank;
     MPI_Comm_rank(comm, &rank);
 
-    if( (matvec_dummy_time[3] > 1.2* prev_time[3]) && (1.2 * matvec_dummy_time[1] < prev_time[1]) ){
+    if(rank==0)
+        printf("\nlocal  = %e \nremote = %e \ncomm   = %e \ntotal division = %f \nlocal division = %f \n",
+               matvec_dummy_time[0], matvec_dummy_time[1], matvec_dummy_time[2],
+               matvec_dummy_time[3]/prev_time[3], matvec_dummy_time[1]/prev_time[1]);
+
+    if( (matvec_dummy_time[3] > shrink_total_thre * prev_time[3])
+        && (shrink_local_thre * matvec_dummy_time[1] < prev_time[1])
+        && (matvec_dummy_time[0] > shrink_communic_thre * matvec_dummy_time[1]) ){
+
         do_shrink = true;
         cpu_shrink_thre2 = (int) ceil(prev_time[1] / matvec_dummy_time[1]);
         if(rank==0) printf("cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
