@@ -50,7 +50,7 @@ public:
 
     std::vector<index_t> nnzPerRow_local;
     std::vector<index_t> nnzPerRowScan_local;
-    std::vector<index_t> nnzPerCol_remote; //todo: number of columns is large!
+    std::vector<index_t> nnzPerCol_remote;
     std::vector<index_t> vElement_remote;
     std::vector<index_t> vElement_remote_t;
     std::vector<index_t> vElementRep_local;
@@ -85,18 +85,25 @@ public:
     int numSendProc;
     int numSendProc_t;
 
+    unsigned int num_threads;
+    std::vector<nnz_t> iter_local_array;
+    std::vector<nnz_t> iter_remote_array;
+    std::vector<value_t> w_buff; // for matvec
+
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;
 
     MPI_Comm comm;
 
+    bool verbose_prolong_setup = false;
+
     prolong_matrix();
     prolong_matrix(MPI_Comm com);
     ~prolong_matrix();
     int findLocalRemote();
+    int openmp_setup();
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int print(int ran);
 };
-
 
 #endif //SAENA_PROLONG_MATRIX_H

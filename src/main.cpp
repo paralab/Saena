@@ -237,7 +237,7 @@ int main(int argc, char* argv[]){
     u.resize(num_local_row);
     time_e1.assign(time_e1.size(), 0);
     for (int i = 0; i < 50; i++) {
-        B->matvec_timing1(rhs, u, time_e1);
+        B->matvec_timing4(rhs, u, time_e1);
         rhs.swap(u);
     }
 
@@ -266,7 +266,7 @@ int main(int argc, char* argv[]){
             MPI_Barrier(B->comm);
 //            t1 = omp_get_wtime();
             for (int i = 0; i < matvec_iter; i++) {
-                B->matvec_timing1(rhs, u, time_e1);
+                B->matvec_timing4(rhs, u, time_e1);
                 rhs.swap(u);
             }
 //            t2 = omp_get_wtime();

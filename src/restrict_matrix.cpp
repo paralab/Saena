@@ -3,12 +3,12 @@
 #include <mpi.h>
 #include <prolong_matrix.h>
 #include <restrict_matrix.h>
+#include <omp.h>
 //#include <dtypes.h>
 
 using namespace std;
 
 restrict_matrix::restrict_matrix(){}
-
 
 
 int restrict_matrix::transposeP(prolong_matrix* P) {
@@ -373,8 +373,112 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         printf("rank %d: transposeP done!\n", rank);
     }
 
+    openmp_setup();
+    w_buff.resize(num_threads*M); // allocate for w_buff for matvec
+
     return 0;
 } //end of restrictMatrix::transposeP
+
+
+int restrict_matrix::openmp_setup() {
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(verbose_restrict_setup) {
+        MPI_Barrier(comm);
+        printf("matrix_setup: rank = %d, thread1 \n", rank);
+        MPI_Barrier(comm);
+    }
+
+//    printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u, nnz_l_local = %u, nnz_l_remote = %u \n", rank, Mbig, M, nnz_g, nnz_l, nnz_l_local, nnz_l_remote);
+
+#pragma omp parallel
+    {
+        num_threads = omp_get_num_threads();
+    }
+
+    iter_local_array.resize(num_threads+1);
+    iter_remote_array.resize(num_threads+1);
+
+#pragma omp parallel
+    {
+        const int thread_id = omp_get_thread_num();
+//        if(rank==0 && thread_id==0) std::cout << "number of procs = " << nprocs << ", number of threads = " << num_threads << std::endl;
+        index_t istart = 0; // starting row index for each thread
+        index_t iend = 0;   // last row index for each thread
+        index_t iter_local, iter_remote;
+
+        // compute local iter to do matvec using openmp (it is done to make iter independent data on threads)
+        bool first_one = true;
+#pragma omp for
+        for (index_t i = 0; i < M; ++i) {
+            if (first_one) {
+                istart = i;
+                first_one = false;
+                iend = istart;
+            }
+            iend++;
+        }
+//        if(rank==1) printf("thread id = %d, istart = %u, iend = %u \n", thread_id, istart, iend);
+
+        iter_local = 0;
+        for (index_t i = istart; i < iend; ++i)
+            iter_local += nnzPerRow_local[i];
+
+        iter_local_array[0] = 0;
+        iter_local_array[thread_id + 1] = iter_local;
+
+        // compute remote iter to do matvec using openmp (it is done to make iter independent data on threads)
+        first_one = true;
+#pragma omp for
+        for (index_t i = 0; i < col_remote_size; ++i) {
+            if (first_one) {
+                istart = i;
+                first_one = false;
+                iend = istart;
+            }
+            iend++;
+        }
+
+        iter_remote = 0;
+        if (!nnzPerCol_remote.empty()) {
+            for (index_t i = istart; i < iend; ++i)
+                iter_remote += nnzPerCol_remote[i];
+        }
+
+        iter_remote_array[0] = 0;
+        iter_remote_array[thread_id + 1] = iter_remote;
+
+//        if (rank==1 && thread_id==0){
+//            std::cout << "M=" << M << std::endl;
+//            std::cout << "recvSize=" << recvSize << std::endl;
+//            std::cout << "istart=" << istart << std::endl;
+//            std::cout << "iend=" << iend << std::endl;
+//            std::cout  << "nnz_l=" << nnz_l << ", iter_remote=" << iter_remote << ", iter_local=" << iter_local << std::endl;}
+
+    } // end of omp parallel
+
+    if(verbose_restrict_setup) {
+        MPI_Barrier(comm);
+        printf("matrix_setup: rank = %d, thread2 \n", rank);
+        MPI_Barrier(comm);
+    }
+
+    //scan of iter_local_array
+    for (int i = 1; i < num_threads + 1; i++)
+        iter_local_array[i] += iter_local_array[i - 1];
+
+    //scan of iter_remote_array
+    for (int i = 1; i < num_threads + 1; i++)
+        iter_remote_array[i] += iter_remote_array[i - 1];
+
+//    print_vector(iter_local_array, 0, "iter_local_array", comm);
+//    print_vector(iter_remote_array, 0, "iter_remote_array", comm);
+
+    return 0;
+}
 
 
 restrict_matrix::~restrict_matrix(){
@@ -396,64 +500,42 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    MPI_Barrier(comm);
-//    printf("R matvec: after comm\n");
-//    MPI_Barrier(comm);
-
-//    totalTime = 0;
-//    double t10 = MPI_Wtime();
-
-//    MPI_Barrier(comm);
-//    printf("vIndexSize = %u \n", vIndexSize);
-//    MPI_Barrier(comm);
-
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
-    for(index_t i=0;i<vIndexSize;i++){
-//        printf("%u \tvIndex[i] = %lu \tv = %f \n", i, vIndex[i], v[( vIndex[i] )]);
+    for(index_t i=0;i<vIndexSize;i++)
         vSend[i] = v[( vIndex[i] )];
-    }
+
 //    double t20 = MPI_Wtime();
 //    time[0] += (t20-t10);
 
-//    if (rank==0){
-//        cout << "vIndexSize=" << vIndexSize << ", vSend: rank=" << rank << endl;
-//        for(int i=0; i<vIndexSize; i++)
-//            cout << vSend[i] << endl;}
-
 //    double t13 = MPI_Wtime();
-    // iSend your data, and iRecv from others
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
     MPI_Status* statuses  = new MPI_Status[numSendProc+numRecvProc];
 
-    //First place all recv requests. Do not recv from self.
-    for(int i = 0; i < numRecvProc; i++) {
+    for(int i = 0; i < numRecvProc; i++)
         MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
-    }
 
-    //Next send the messages. Do not send to self.
-    for(int i = 0; i < numSendProc; i++) {
+    for(int i = 0; i < numSendProc; i++)
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
-    }
 
-//    double t11 = MPI_Wtime();
     // local loop
+    // ----------
+//    double t11 = MPI_Wtime();
+    value_t* v_p = &v[0] - split[rank];
+
     w.assign(w.size(), 0);
-//    fill(&w[0], &w[M], 0);
-//#pragma omp parallel        todo: check this openmp part.
-//    {
-//        long iter = iter_local_array[omp_get_thread_num()];
-    nnz_t iter = 0;
-//#pragma omp for
-    for (index_t i = 0; i < M; ++i) {
-        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
-//                if(rank==1) cout << entry_local[indicesP_local[iter]].col - split[rank] << "\t" << v[entry_local[indicesP_local[iter]].col - split[rank]] << endl;
-//                w[i] += values_local[indicesP_local[iter]] * v[col_local[indicesP_local[iter]] - split[rank]];
-            w[i] += entry_local[indicesP_local[iter]].val * v[entry_local[indicesP_local[iter]].col - split[rank]]; // todo: at the end, should it be split or splitNew?
-        }
-//        if(rank==1) cout << "w[" << i << "] = " << w[i] << endl;
+    #pragma omp parallel
+    {
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
+//        nnz_t iter = 0;
+        #pragma omp for
+            for (index_t i = 0; i < M; ++i) {
+                for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+//                    if(rank==1) cout << entry_local[indicesP_local[iter]].col - split[rank] << "\t" << v[entry_local[indicesP_local[iter]].col - split[rank]] << endl;
+                    w[i] += entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col];
+                }
+            }
     }
-//    }
 
 //    double t21 = MPI_Wtime();
 //    time[1] += (t21-t11);
@@ -467,11 +549,14 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //            cout << vecValues[i] << endl;}
 
     // remote loop
+    // -----------
+
+/*
 //    double t12 = MPI_Wtime();
 //#pragma omp parallel
 //    {
 //        unsigned int iter = iter_remote_array[omp_get_thread_num()];
-    iter = 0;
+    nnz_t iter = 0;
 //#pragma omp for
     for (index_t i = 0; i < col_remote_size; ++i) {
         for (index_t j = 0; j < nnzPerCol_remote[i]; ++j, ++iter) {
@@ -483,6 +568,46 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
         }
     }
 //    }
+*/
+
+    #pragma omp parallel
+    {
+        unsigned int i, l;
+        int thread_id = omp_get_thread_num();
+        value_t *w_local = &w_buff[0] + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+        else
+            std::fill(&w_local[0], &w_local[M], 0);
+
+        nnz_t iter = iter_remote_array[thread_id];
+        #pragma omp for
+        for (index_t j = 0; j < col_remote_size; ++j) {
+            for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                w_local[row_remote[iter]] += entry_remote[iter].val * vecValues[j];
+
+//                if(rank==0 && thread_id==0){
+//                    printf("thread = %d\n", thread_id);
+//                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
+//                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
+//                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+            }
+        }
+
+        int thread_partner;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (thread_id % int(pow(2, l+1)) == 0) {
+                thread_partner = thread_id + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    for (i = 0; i < M; i++)
+                        w_local[i] += w_buff[thread_partner * M + i];
+                }
+            }
+#pragma omp barrier
+        }
+    }
 
     MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     delete [] requests;

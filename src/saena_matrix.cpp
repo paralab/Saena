@@ -3041,7 +3041,24 @@ int saena_matrix::openmp_setup() {
 }
 
 
-int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
+int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
+
+//    int rank;
+//    MPI_Comm_rank(comm, &rank);
+//    if(rank==0) printf("matvec! \n");
+
+    if(switch_to_dense && density >= dense_threshold){
+        if(!dense_matrix_generated)
+            generate_dense_matrix();
+        dense_matrix.matvec(v, w);
+    }else
+        matvec_sparse(v,w);
+
+    return 0;
+}
+
+
+int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -3100,7 +3117,7 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
     // the corresponding vector element is saved in vecValues[0]. and so on.
 
-#pragma omp parallel
+    #pragma omp parallel
     {
         unsigned int i, l;
         int thread_id = omp_get_thread_num();
@@ -3111,7 +3128,7 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
             std::fill(&w_local[0], &w_local[M], 0);
 
         nnz_t iter = iter_remote_array[thread_id];
-#pragma omp for
+        #pragma omp for
         for (index_t j = 0; j < col_remote_size; ++j) {
             for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
                 w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
@@ -3135,7 +3152,7 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
                         w_local[i] += w_buff[thread_partner * M + i];
                 }
             }
-#pragma omp barrier
+        #pragma omp barrier
         }
     }
 
@@ -3248,9 +3265,9 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
 
     // set vsend
     double time0_local = t0_end-t0_start;
-    double time0;
-    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
-    time[0] += time0/nprocs;
+//    double time0;
+//    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
+//    time[0] += time0/nprocs;
 
     // local loop
     double time1_local = t1_end-t1_start;
@@ -3264,8 +3281,8 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
     time[2] += time2/nprocs;
 
-    // communication = t3 - t1 - t2
-    double time3_local = t3_end-t3_start;
+    // communication = t3 + t0 - t1 - t2
+    double time3_local = t3_end-t3_start + time0_local - time1_local - time2_local;
     double time3;
     MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
     time[3] += time3/nprocs;
@@ -3386,9 +3403,9 @@ int saena_matrix::matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& 
 
     // set vsend
     double time0_local = t0_end-t0_start;
-    double time0;
-    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
-    time[0] += time0/nprocs;
+//    double time0;
+//    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
+//    time[0] += time0/nprocs;
 
     // local loop
     double time1_local = t1_end-t1_start;
@@ -3402,8 +3419,8 @@ int saena_matrix::matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& 
     MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
     time[2] += time2/nprocs;
 
-    // communication = t3 - t1 - t2
-    double time3_local = t3_end-t3_start;
+    // communication = t3 + t0 - t1 - t2
+    double time3_local = t3_end-t3_start + time0_local - time1_local - time2_local;
     double time3;
     MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
     time[3] += time3/nprocs;
@@ -3534,9 +3551,9 @@ int saena_matrix::matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& 
 
     // set vsend
     double time0_local = t0_end-t0_start;
-    double time0;
-    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
-    time[0] += time0/nprocs;
+//    double time0;
+//    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
+//    time[0] += time0/nprocs;
 
     // local loop
     double time1_local = t1_end-t1_start;
@@ -3550,8 +3567,8 @@ int saena_matrix::matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& 
     MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
     time[2] += time2/nprocs;
 
-    // communication = t3 - t1 - t2
-    double time3_local = t3_end-t3_start;
+    // communication = t3 + t0 - t1 - t2
+    double time3_local = t3_end-t3_start + time0_local - time1_local - time2_local;
     double time3;
     MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
     time[3] += time3/nprocs;
@@ -3608,9 +3625,9 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
 
     // by doing this you will have a local index for v[col_local[i]].
     value_t* v_p = &v[0] - split[rank];
-#pragma omp parallel
+    #pragma omp parallel
     {
-        unsigned int i, l, idx;
+        unsigned int i, l;
         int thread_id = omp_get_thread_num();
         value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
@@ -3618,7 +3635,7 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
 
         std::fill(&w_local[0], &w_local[M], 0);
 
-#pragma omp for
+        #pragma omp for
         for (i = 0; i < nnz_l_local; ++i)
             w_local[row_local[i]] += values_local[i] * v_p[col_local[i]];
 
@@ -3633,7 +3650,7 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
                         w_local[i] += w_buff[thread_partner * M + i];
                 }
             }
-#pragma omp barrier
+        #pragma omp barrier
         }
     }
 
@@ -3709,11 +3726,11 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
     delete [] requests;
     delete [] statuses;
 
-    // setting vsend
+    // set vsend
     double time0_local = t0_end-t0_start;
-    double time0;
-    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
-    time[0] += time0/nprocs;
+//    double time0;
+//    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
+//    time[0] += time0/nprocs;
 
     // local loop
     double time1_local = t1_end-t1_start;
@@ -3727,8 +3744,8 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
     MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
     time[2] += time2/nprocs;
 
-    // communication = t3 - t1 - t2
-    double time3_local = t3_end-t3_start;
+    // communication = t3 + t0 - t1 - t2
+    double time3_local = t3_end-t3_start + time0_local - time1_local - time2_local;
     double time3;
     MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
     time[3] += time3/nprocs;
@@ -3835,6 +3852,7 @@ int saena_matrix::matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<v
     double t2_end = omp_get_wtime();
 //    double t3_end = omp_get_wtime();
 
+/*
     double time0_local = t0_end-t0_start;
     double time0;
     MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
@@ -3860,7 +3878,7 @@ int saena_matrix::matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<v
     time[2] += time2/nprocs;
 //    time[3] += time3/nprocs;
     time[4] += time4/nprocs;
-
+*/
 //    time[0] += time0_local;
 //    time[1] += time1_local;
 //    time[2] += time2_local;
@@ -3974,7 +3992,7 @@ int saena_matrix::matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& 
 
     delete [] requests;
     delete [] statuses;
-
+/*
     double time0_local = t0_end-t0_start;
     double time0;
     MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
@@ -4000,7 +4018,7 @@ int saena_matrix::matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& 
     time[2] += time2/nprocs;
     time[3] += time3/nprocs;
     time[4] += time4/nprocs;
-
+*/
 //    time[0] += time0_local;
 //    time[1] += time1_local;
 //    time[2] += time2_local;
@@ -4094,6 +4112,7 @@ int saena_matrix::matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<v
     double t2_end = omp_get_wtime();
 //    double t3_end = omp_get_wtime();
 
+        /*
     double time0_local = t0_end-t0_start;
     double time0;
     MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
@@ -4119,7 +4138,7 @@ int saena_matrix::matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<v
     time[2] += time2/nprocs;
 //    time[3] += time3/nprocs;
     time[4] += time4/nprocs;
-
+*/
 //    time[0] += time0_local;
 //    time[1] += time1_local;
 //    time[2] += time2_local;
@@ -4135,17 +4154,27 @@ int saena_matrix::compute_matvec_dummy_time(){
     int rank;
     MPI_Comm_rank(comm, &rank);
 
-    int matvec_iter = 10;
+    int matvec_iter_warmup = 5;
+    int matvec_iter        = 10;
     std::vector<double> v_dummy(M, 1);
     std::vector<double> w_dummy(M);
 //    std::vector<double> time_matvec(4, 0);
 
     MPI_Barrier(comm); // todo: should I keep this barrier?
 //    double t1 = omp_get_wtime();
+
+    // warm-up
+    for (int i = 0; i < matvec_iter_warmup; i++) {
+        matvec_dummy(v_dummy, w_dummy);
+        v_dummy.swap(w_dummy);
+    }
+
+    matvec_dummy_time.assign(matvec_dummy_time.size(),0);
     for (int i = 0; i < matvec_iter; i++) {
         matvec_dummy(v_dummy, w_dummy);
         v_dummy.swap(w_dummy);
     }
+
 //    double t2 = omp_get_wtime();
 
     matvec_dummy_time[3] += matvec_dummy_time[0]; // total matvec time
@@ -4173,18 +4202,36 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
     int rank;
     MPI_Comm_rank(comm, &rank);
 
-    if(rank==0)
-        printf("\nlocal  = %e \nremote = %e \ncomm   = %e \ntotal division = %f \nlocal division = %f \n",
-               matvec_dummy_time[0], matvec_dummy_time[1], matvec_dummy_time[2],
-               matvec_dummy_time[3]/prev_time[3], matvec_dummy_time[1]/prev_time[1]);
+    int thre_loc, thre_comm;
+
+//    if(rank==0)
+//        printf("\nlocal  = %e \nremote = %e \ncomm   = %e \ntotal division = %f \nlocal division = %f \ncomm division = %f \n",
+//               matvec_dummy_time[0], matvec_dummy_time[1], matvec_dummy_time[2],
+//               matvec_dummy_time[3]/prev_time[3], prev_time[1]/matvec_dummy_time[1],
+//               matvec_dummy_time[0]/prev_time[0]);
 
     if( (matvec_dummy_time[3] > shrink_total_thre * prev_time[3])
         && (shrink_local_thre * matvec_dummy_time[1] < prev_time[1])
-        && (matvec_dummy_time[0] > shrink_communic_thre * matvec_dummy_time[1]) ){
+        && (matvec_dummy_time[0] > shrink_communic_thre * prev_time[0]) ){
 
         do_shrink = true;
-        cpu_shrink_thre2 = (int) ceil(prev_time[1] / matvec_dummy_time[1]);
+
+        thre_loc  = (int) floor(prev_time[1] / matvec_dummy_time[1]);
+        thre_comm = (int) ceil(matvec_dummy_time[0] / (4 * prev_time[0]));
+        if(rank==0) printf("thre_loc = %d, thre_comm = %d \n", thre_loc, thre_comm);
+        cpu_shrink_thre2 = std::max(thre_loc, thre_comm);
+        if(cpu_shrink_thre2 == 1) cpu_shrink_thre2 = 2;
+        if(rank==0) printf("SHRINK: cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
+
+    } else if( (matvec_dummy_time[3] > 2 * prev_time[3])
+               && (matvec_dummy_time[0] > 3 * prev_time[0]) ){
+
+        do_shrink = true;
+
+        cpu_shrink_thre2 = (int) ceil(matvec_dummy_time[0] / (4 * prev_time[0]));
         if(rank==0) printf("cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
+        if(cpu_shrink_thre2 == 1) cpu_shrink_thre2 = 2;
+        if(rank==0) printf("SHRINK: cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
     }
 
     return 0;
@@ -4700,5 +4747,11 @@ int saena_matrix::print(int ran){
         }
     }
 
+    return 0;
+}
+
+int saena_matrix::generate_dense_matrix() {
+    dense_matrix.convert_saena_matrix(this);
+    dense_matrix_generated = true;
     return 0;
 }

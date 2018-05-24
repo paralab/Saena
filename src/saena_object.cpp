@@ -60,6 +60,11 @@ int saena_object::setup(saena_matrix* A) {
 //        if(verbose_level_setup) print_time(t1, t2, "find_eig() level 0: ", A->comm);
     }
 
+    A->switch_to_dense = switch_to_dense;
+    A->dense_threshold = dense_threshold;
+    if(switch_to_dense && A->density > dense_threshold)
+        A->generate_dense_matrix();
+
     grids.resize(max_level+1);
     grids[0] = Grid(A, max_level, 0); // pass A to grids[0]
     for(i = 0; i < max_level; i++){
@@ -1998,6 +2003,8 @@ int saena_object::coarsen(Grid *grid){
     Ac->comm_old = A->comm;
     Ac->active_old_comm = true;
     Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
+    Ac->switch_to_dense = switch_to_dense;
+    Ac->dense_threshold = dense_threshold;
 
     Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
     if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
@@ -2042,13 +2049,21 @@ int saena_object::coarsen(Grid *grid){
 
     repartition_u2_prepare(grid);
 
+
     if(Ac->shrinked)
         Ac->shrink_cpu();
     if(Ac->active)
         Ac->matrix_setup();
 
-    if(verbose_coarsen){
-        MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
+    if(Ac->shrinked && Ac->active)
+        Ac->compute_matvec_dummy_time();
+
+    if(Ac->active && switch_to_dense && Ac->density > dense_threshold){
+        if(rank==0) printf("Dense! \n");
+        Ac->generate_dense_matrix();
+    }
+
+    if(verbose_coarsen){MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
 
     return 0;
 } // coarsen()

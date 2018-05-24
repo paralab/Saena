@@ -6,6 +6,7 @@
 #include <set>
 #include <mpi.h>
 #include "aux_functions.h"
+#include "saena_matrix_dense.h"
 
 
 /**
@@ -120,8 +121,8 @@ public:
     int cpu_shrink_thre1 = 1; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
     int cpu_shrink_thre2 = 1; // number of procs after shrinking = nprocs / cpu_shrink_thre2
     int cpu_shrink_thre2_next_level = -1;
-    float shrink_total_thre = 10.4;
-    float shrink_local_thre = 1.2;
+    float shrink_total_thre = 1.25;
+    float shrink_local_thre = 1.25;
     float shrink_communic_thre = 1.5;
     index_t last_M_shrink;
     nnz_t   last_nnz_shrink;
@@ -134,6 +135,11 @@ public:
     float jacobi_omega = float(2.0/3);
     double eig_max_of_invdiagXA = 0; // the biggest eigenvalue of (A * invDiag(A)) to be used in chebyshev smoother
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
+
+    saena_matrix_dense dense_matrix;
+    bool switch_to_dense = false;
+    bool dense_matrix_generated = false;
+    float dense_threshold = 0.9; // 0<dense_threshold<=1 decide when to also generate dense_matrix for this matrix.
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
@@ -183,6 +189,7 @@ public:
     int shrink_cpu();
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
@@ -195,6 +202,8 @@ public:
     int inverse_diag(std::vector<value_t>& x);
     int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
     int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
+
+    int generate_dense_matrix();
 
     int print(int ran);
 

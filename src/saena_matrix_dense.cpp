@@ -5,6 +5,7 @@
 
 saena_matrix_dense::saena_matrix_dense(){}
 
+
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
     M = M1;
     Nbig = Nbig1;
@@ -15,6 +16,7 @@ saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
 
     allocated = true;
 }
+
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1){
     M = M1;
@@ -109,6 +111,8 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+//    if(rank==0) printf("dense matvec! \n");
+
     if(split.empty()){
         if(rank==0) printf("Error: split for the dense matrix is not set!\n");
         MPI_Finalize();
@@ -171,7 +175,6 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
 
     return 0;
 }
-
 
 
 // another dense matvec implementation, but without overlapping.
@@ -257,6 +260,7 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
     return 0;
 }
 */
+
 
 int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
 

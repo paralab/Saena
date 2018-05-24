@@ -41,11 +41,12 @@ public:
     int set_shrink_values(std::vector<int> sh_val_vec);
     std::vector<int> shrink_values_vector;
 
-    bool switch_repartition = false;
+    bool switch_repartition = true;
     int set_repartition_threshold(float thre);
-    float repartition_threshold = 1.1;
-    bool switch_to_dense = false;
-    float dense_threshold = 1.1; // 0<dense_threshold<=1 decide when to switch to the dense structure. dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
+    float repartition_threshold = 0.1;
+    bool switch_to_dense = true;
+    float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to switch to the dense structure.
+                                 // dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
 
     bool verbose = false;
     bool verbose_setup = true;

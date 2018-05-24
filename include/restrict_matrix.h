@@ -57,6 +57,11 @@ public:
     int numRecvProc;
     int numSendProc;
 
+    unsigned int num_threads;
+    std::vector<nnz_t> iter_local_array;
+    std::vector<nnz_t> iter_remote_array;
+    std::vector<value_t> w_buff; // for matvec
+
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;
 
@@ -64,9 +69,12 @@ public:
 
     MPI_Comm comm;
 
+    bool verbose_restrict_setup = false;
+
     restrict_matrix();
     ~restrict_matrix();
     int transposeP(prolong_matrix* P);
+    int openmp_setup();
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
 };
 
