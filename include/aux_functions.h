@@ -337,6 +337,7 @@ int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, double* dot, MP
 
 double print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
 
+
 int print_time_average(double t1, double t2, std::string function_name, int iter, MPI_Comm comm);
 
 

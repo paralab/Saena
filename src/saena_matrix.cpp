@@ -2680,7 +2680,7 @@ int saena_matrix::set_off_on_diagonal(){
         nnz_l_remote = 0;
         recvCount.assign(nprocs, 0);
         nnzPerRow_local.assign(M, 0);
-//        nnzPerRow_remote.assign(M, 0);
+        nnzPerRow_remote.assign(M, 0);
 //        nnzPerRow.assign(M,0);
 //        nnzPerCol_local.assign(Mbig,0); // Nbig = Mbig, assuming A is symmetric.
 //        nnzPerCol_remote.assign(M,0);
@@ -2701,7 +2701,7 @@ int saena_matrix::set_off_on_diagonal(){
 
             } else {
                 nnz_l_remote++;
-//                nnzPerRow_remote[entry[0].row - split[rank]]++;
+                nnzPerRow_remote[entry[0].row - split[rank]]++;
                 values_remote.push_back(entry[0].val);
                 row_remote.push_back(entry[0].row - split[rank]);
                 col_remote_size++;
@@ -2733,7 +2733,7 @@ int saena_matrix::set_off_on_diagonal(){
 //                        vElementRep_local.back()++;
                 } else {
                     nnz_l_remote++;
-//                    nnzPerRow_remote[entry[i].row - split[rank]]++;
+                    nnzPerRow_remote[entry[i].row - split[rank]]++;
                     values_remote.push_back(entry[i].val);
                     row_remote.push_back(entry[i].row - split[rank]);
                     // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
@@ -3889,6 +3889,7 @@ int saena_matrix::matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<v
 }
 
 
+
 int saena_matrix::matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time) {
     // old remote loop is used here.
 
@@ -4622,14 +4623,19 @@ int saena_matrix::inverse_diag(std::vector<value_t>& x) {
     int rank;
     MPI_Comm_rank(comm, &rank);
 
+    double temp;
     x.assign(x.size(), 0);
 
     for(nnz_t i=0; i<nnz_l; i++){
 //        if(rank==4) printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
 
         if(entry[i].row == entry[i].col){
-            if(entry[i].val != 0)
-                x[entry[i].row-split[rank]] = 1.0/entry[i].val;
+            if(entry[i].val != 0){
+                temp = 1.0/entry[i].val;
+                x[entry[i].row-split[rank]] = temp;
+                if(fabs(temp) > highest_diag_val)
+                    highest_diag_val = fabs(temp);
+            }
             else{
                 // there is no zero entry in the matrix (sparse), but just to be sure this part is added.
                 if(rank==0) printf("Error: there is a zero diagonal element (at row index = %u)\n", entry[i].row);
@@ -4639,9 +4645,15 @@ int saena_matrix::inverse_diag(std::vector<value_t>& x) {
         }
     }
 
+//    print_vector(x, -1, "inv diag", comm);
+
     for(auto i:x)
         if(i==0)
             if(rank==0) printf("inverse_diag: At least one diagonal entry is 0.\n");
+
+    temp = highest_diag_val;
+    MPI_Allreduce(&temp, &highest_diag_val, 1, MPI_DOUBLE, MPI_MAX, comm);
+//    if(rank==0) printf("\ninverse_diag: highest_diag_val = %f \n", highest_diag_val);
 
     return 0;
 }

@@ -81,6 +81,7 @@ namespace saena {
     class amg {
     public:
         amg();
+        ~amg();
         int set_matrix(saena::matrix* A, saena::options* opts);
         int set_rhs(std::vector<value_t> rhs);
         saena_object* get_object();
@@ -127,3 +128,4 @@ namespace saena {
     int laplacian3D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
     int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth);
 }
+

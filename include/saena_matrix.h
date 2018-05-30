@@ -102,7 +102,6 @@ public:
 //    std::vector<index_t> vElementRep_local;
     std::vector<index_t> vElementRep_remote;
     std::vector<value_t> w_buff; // for matvec3()
-//    value_t *w_buff; // for matvec3()
 
     bool add_duplicates = false;
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
@@ -114,7 +113,7 @@ public:
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
-    bool enable_shrink = true;
+    bool enable_shrink = false;
     bool do_shrink = false;
     bool shrinked = false; // if shrinking happens for the matrix, set this to true.
     std::vector<double> matvec_dummy_time;
@@ -134,6 +133,7 @@ public:
     double density = -1.0;
     float jacobi_omega = float(2.0/3);
     double eig_max_of_invdiagXA = 0; // the biggest eigenvalue of (A * invDiag(A)) to be used in chebyshev smoother
+    double highest_diag_val = 1e-10;
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
 
     saena_matrix_dense dense_matrix;

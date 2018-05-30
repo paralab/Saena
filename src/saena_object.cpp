@@ -6,8 +6,8 @@
 #include "grid.h"
 #include <parUtils.h>
 #include "saena_object.h"
-//#include "El.hpp"
-//#include "ietl_saena.h"
+#include "El.hpp"
+#include "ietl_saena.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -55,7 +55,7 @@ int saena_object::setup(saena_matrix* A) {
     if(smoother=="chebyshev"){
 //        double t1 = omp_get_wtime();
         find_eig_Elemental(*A);
-//        find_eig(A_address);
+        find_eig(*A);
 //        double t2 = omp_get_wtime();
 //        if(verbose_level_setup) print_time(t1, t2, "find_eig() level 0: ", A->comm);
     }
@@ -78,7 +78,7 @@ int saena_object::setup(saena_matrix* A) {
             if(smoother=="chebyshev"){
 //                double t1 = omp_get_wtime();
                 find_eig_Elemental(grids[i].Ac);
-//                find_eig(grids[i].Ac);
+                find_eig(grids[i].Ac);
 //                double t2 = omp_get_wtime();
 //                if(verbose_level_setup) print_time(t1, t2, "find_eig(): ", A->comm);
             }
@@ -1483,6 +1483,8 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     P->findLocalRemote();
 
     MPI_Waitall(A->numSendProc, A->numRecvProc+requests, A->numRecvProc+statuses);
+    delete [] requests;
+    delete [] statuses;
 
     return 0;
 }// end of saena_object::create_prolongation
@@ -2067,6 +2069,7 @@ int saena_object::coarsen(Grid *grid){
 
     return 0;
 } // coarsen()
+
 
 
 int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
@@ -5285,7 +5288,7 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
 
 
 int saena_object::find_eig_Elemental(saena_matrix& A) {
-/*
+
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5352,6 +5355,6 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
     if(rank==0) printf("\nthe biggest eigenvalue is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
-*/
+
     return 0;
 }

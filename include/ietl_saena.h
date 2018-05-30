@@ -1,5 +1,5 @@
-#ifndef MATVEC003_IETL_SAENA_H
-#define MATVEC003_IETL_SAENA_H
+#ifndef IETL_SAENA_H
+#define IETL_SAENA_H
 
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -10,6 +10,7 @@
 #include <boost/limits.hpp>
 #include <cmath>
 #include <limits>
+#include "saena_matrix.h"
 
 typedef saena_matrix Matrix;
 typedef boost::numeric::ublas::vector<value_t> Vector;
@@ -82,16 +83,16 @@ int find_eig(Matrix& A){
     }
 
     // Printing eigenvalues with error & multiplicities:
-//    if(rank==0) std::cout << "#        eigenvalue            error         multiplicity\n";
-//    std::cout.precision(10);
-//    if(rank==0) {
-//        for (int i = 0; i < eigen.size(); i++)
-//            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
-//                      << multiplicity[i] << "\n";}
-//    if(rank==0) {
-//        for (int i = eigen.size()-1; i > eigen.size()-1-n_highest_eigenval; --i)
-//            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
-//                      << multiplicity[i] << "\n";}
+    if(rank==0) std::cout << "\n#        eigenvalue            error         multiplicity\n";
+    std::cout.precision(10);
+    if(rank==0) {
+        for (int i = 0; i < eigen.size(); i++)
+            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
+                      << multiplicity[i] << "\n";}
+    if(rank==0) {
+        for (int i = eigen.size()-1; i > eigen.size()-1-n_highest_eigenval; --i)
+            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
+                      << multiplicity[i] << "\n";}
 
     if(verbose_eig) {
         MPI_Barrier(A.comm);
@@ -117,4 +118,4 @@ int find_eig(Matrix& A){
     return 0;
 }
 
-#endif //MATVEC003_IETL_SAENA_H
+#endif //IETL_SAENA_H

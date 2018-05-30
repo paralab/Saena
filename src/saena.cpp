@@ -34,8 +34,8 @@ saena::matrix::matrix(char *name, MPI_Comm comm) {
 
 
 saena::matrix::~matrix(){
-    m_pImpl->erase();
-//    delete m_pImpl;
+//    m_pImpl->erase();
+    delete m_pImpl;
 }
 
 
@@ -286,6 +286,10 @@ saena::amg::amg(){
     m_pImpl = new saena_object();
 }
 
+saena::amg::~amg(){
+    delete m_pImpl;
+}
+
 int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
@@ -342,7 +346,6 @@ int saena::amg::set_dense_threshold(float thre){
 double saena::amg::get_dense_threshold(){
     return m_pImpl->dense_threshold;
 }
-
 
 int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),

@@ -1,6 +1,10 @@
 #ifndef SAENA_SAENA_OBJECT_H
 #define SAENA_SAENA_OBJECT_H
 
+#include <vector>
+#include <string>
+#include "aux_functions.h"
+
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
@@ -14,7 +18,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 10; // fine grid is level 0.
+    int max_level = 2; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -41,10 +45,10 @@ public:
     int set_shrink_values(std::vector<int> sh_val_vec);
     std::vector<int> shrink_values_vector;
 
-    bool switch_repartition = true;
+    bool switch_repartition = false;
     int set_repartition_threshold(float thre);
     float repartition_threshold = 0.1;
-    bool switch_to_dense = true;
+    bool switch_to_dense = false;
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to switch to the dense structure.
                                  // dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
 
