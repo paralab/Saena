@@ -15,7 +15,7 @@
 typedef saena_matrix Matrix;
 typedef boost::numeric::ublas::vector<value_t> Vector;
 
-int find_eig(Matrix& A){
+int find_eig_ietl(Matrix& A){
     // this function uses IETL library to find the biggest eigenvalue.
     // IETL is modified to work in parallel (only ietl/interface/ublas.h).
 
@@ -83,6 +83,7 @@ int find_eig(Matrix& A){
     }
 
     // Printing eigenvalues with error & multiplicities:
+    // -------------------------------------------------
     if(rank==0) std::cout << "\n#        eigenvalue            error         multiplicity\n";
     std::cout.precision(10);
     if(rank==0) {
@@ -100,7 +101,10 @@ int find_eig(Matrix& A){
         MPI_Barrier(A.comm);
     }
 
-    A.eig_max_of_invdiagXA = eigen.back();
+    if(rank==0) printf("the biggest eigenvalue is %f (IETL) \n", eigen.back());
+
+    A.eig_max_of_invdiagXA = eigen.back() * A.highest_diag_val;
+    if(rank==0) printf("eig_max_of_invdiagXA = %f (IETL) \n", A.eig_max_of_invdiagXA);
 
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++)
@@ -111,7 +115,7 @@ int find_eig(Matrix& A){
 
     if(verbose_eig) {
         MPI_Barrier(A.comm);
-        if(rank==0) printf("end of find_eig()\n");
+        if(rank==0) printf("end of find_eig_ietl()\n");
         MPI_Barrier(A.comm);
     }
 

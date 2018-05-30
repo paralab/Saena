@@ -94,6 +94,7 @@ public:
     int shrink_u_rhs(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int unshrink_u(Grid* grid, std::vector<value_t>& u);
     bool active(int l);
+    int find_eig(saena_matrix& A);
     int find_eig_Elemental(saena_matrix& A);
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
 

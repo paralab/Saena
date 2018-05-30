@@ -54,7 +54,7 @@ int saena_object::setup(saena_matrix* A) {
 
     if(smoother=="chebyshev"){
 //        double t1 = omp_get_wtime();
-        find_eig_Elemental(*A);
+//        find_eig_Elemental(*A);
         find_eig(*A);
 //        double t2 = omp_get_wtime();
 //        if(verbose_level_setup) print_time(t1, t2, "find_eig() level 0: ", A->comm);
@@ -77,7 +77,7 @@ int saena_object::setup(saena_matrix* A) {
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
             if(smoother=="chebyshev"){
 //                double t1 = omp_get_wtime();
-                find_eig_Elemental(grids[i].Ac);
+//                find_eig_Elemental(grids[i].Ac);
                 find_eig(grids[i].Ac);
 //                double t2 = omp_get_wtime();
 //                if(verbose_level_setup) print_time(t1, t2, "find_eig(): ", A->comm);
@@ -5212,77 +5212,11 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 }
 
 
-int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
-/*
-    int argc = 0;
-    char** argv = {NULL};
-//    El::Environment env( argc, argv );
-    El::Initialize( argc, argv );
+int saena_object::find_eig(saena_matrix& A){
 
-    int rank, nprocs;
-    MPI_Comm_rank(A_S->comm, &rank);
-    MPI_Comm_size(A_S->comm, &nprocs);
+    find_eig_ietl(A);
+    find_eig_Elemental(A);
 
-//    printf("solve_coarsest_Elemental!\n");
-
-    const El::Unsigned n = A_S->Mbig;
-//    printf("size = %d\n", n);
-
-    // set the matrix
-    // --------------
-    El::DistMatrix<value_t> A(n,n);
-    El::Zero( A );
-    A.Reserve(A_S->nnz_l);
-    for(nnz_t i = 0; i < A_S->nnz_l; i++){
-//        if(rank==1) printf("%lu \t%lu \t%f \n", A_S->entry[i].row, A_S->entry[i].col, A_S->entry[i].val);
-        A.QueueUpdate(A_S->entry[i].row, A_S->entry[i].col, A_S->entry[i].val);
-    }
-    A.ProcessQueues();
-//    El::Print( A, "\nGlobal Elemental matrix:\n" );
-
-    // set the rhs
-    // --------------
-    El::DistMatrix<value_t> w(n,1);
-    El::Zero( w );
-    w.Reserve(n);
-    for(index_t i = 0; i < rhs.size(); i++){
-//        if(rank==0) printf("%lu \t%f \n", i+A_S->split[rank], rhs[i]);
-        w.QueueUpdate(i+A_S->split[rank], 0, rhs[i]);
-    }
-    w.ProcessQueues();
-//    El::Print( w, "\nrhs (w):\n" );
-
-    // solve the system
-    // --------------
-    // w is the rhs. after calling the solve function, it will be the solution.
-//    El::DistMatrix<double> C(n,n);
-//    El::SymmetricSolve(El::LOWER, El::NORMAL, &A, &);
-    El::LinearSolve(A, w);
-//    El::Print( w, "\nsolution (w):\n" );
-
-//    double temp;
-//    if(rank==1) printf("w solution:\n");
-//    for(unsigned long i = A_S->split[rank]; i < A_S->split[rank+1]; i++){
-//        if(rank==1) printf("before: %lu \t%f \n", i, w.Get(i,0));
-//        temp = w.Get(i,0);
-//        u[i-A_S->split[rank]] = temp;
-//        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, u[i-A_S->split[rank]]);
-//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, u[i-A_S->split[rank]]);
-//        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
-//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
-//    }
-
-    std::vector<value_t> temp(n);
-    for(index_t i = 0; i < n; i++){
-        temp[i] = w.Get(i,0);
-//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp[i]);
-    }
-
-    for(index_t i = A_S->split[rank]; i < A_S->split[rank+1]; i++)
-        u[i-A_S->split[rank]] = temp[i];
-
-    El::Finalize();
-*/
     return 0;
 }
 
@@ -5356,5 +5290,80 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
 
     El::Finalize();
 
+    return 0;
+}
+
+
+int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
+/*
+    int argc = 0;
+    char** argv = {NULL};
+//    El::Environment env( argc, argv );
+    El::Initialize( argc, argv );
+
+    int rank, nprocs;
+    MPI_Comm_rank(A_S->comm, &rank);
+    MPI_Comm_size(A_S->comm, &nprocs);
+
+//    printf("solve_coarsest_Elemental!\n");
+
+    const El::Unsigned n = A_S->Mbig;
+//    printf("size = %d\n", n);
+
+    // set the matrix
+    // --------------
+    El::DistMatrix<value_t> A(n,n);
+    El::Zero( A );
+    A.Reserve(A_S->nnz_l);
+    for(nnz_t i = 0; i < A_S->nnz_l; i++){
+//        if(rank==1) printf("%lu \t%lu \t%f \n", A_S->entry[i].row, A_S->entry[i].col, A_S->entry[i].val);
+        A.QueueUpdate(A_S->entry[i].row, A_S->entry[i].col, A_S->entry[i].val);
+    }
+    A.ProcessQueues();
+//    El::Print( A, "\nGlobal Elemental matrix:\n" );
+
+    // set the rhs
+    // --------------
+    El::DistMatrix<value_t> w(n,1);
+    El::Zero( w );
+    w.Reserve(n);
+    for(index_t i = 0; i < rhs.size(); i++){
+//        if(rank==0) printf("%lu \t%f \n", i+A_S->split[rank], rhs[i]);
+        w.QueueUpdate(i+A_S->split[rank], 0, rhs[i]);
+    }
+    w.ProcessQueues();
+//    El::Print( w, "\nrhs (w):\n" );
+
+    // solve the system
+    // --------------
+    // w is the rhs. after calling the solve function, it will be the solution.
+//    El::DistMatrix<double> C(n,n);
+//    El::SymmetricSolve(El::LOWER, El::NORMAL, &A, &);
+    El::LinearSolve(A, w);
+//    El::Print( w, "\nsolution (w):\n" );
+
+//    double temp;
+//    if(rank==1) printf("w solution:\n");
+//    for(unsigned long i = A_S->split[rank]; i < A_S->split[rank+1]; i++){
+//        if(rank==1) printf("before: %lu \t%f \n", i, w.Get(i,0));
+//        temp = w.Get(i,0);
+//        u[i-A_S->split[rank]] = temp;
+//        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, u[i-A_S->split[rank]]);
+//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, u[i-A_S->split[rank]]);
+//        if(rank==0) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
+//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp);
+//    }
+
+    std::vector<value_t> temp(n);
+    for(index_t i = 0; i < n; i++){
+        temp[i] = w.Get(i,0);
+//        if(rank==1) printf("rank = %d \t%lu \t%f \n", rank, i, temp[i]);
+    }
+
+    for(index_t i = A_S->split[rank]; i < A_S->split[rank+1]; i++)
+        u[i-A_S->split[rank]] = temp[i];
+
+    El::Finalize();
+*/
     return 0;
 }
