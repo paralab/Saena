@@ -29,12 +29,12 @@ int find_eig_ietl(Matrix& A){
         if(rank==0) printf("\nstart of find_eig()\n");
         MPI_Barrier(A.comm);
     }
+
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++) {
 //        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], (A.values_local[i]*A.invDiag[A.row_local[i]] - A.entry[i].val * A.invDiag[A.entry[i].row - A.split[rank]]));
 //        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, local \n", i, A.row_local[i]+A.split[rank], A.values_local[i], A.invDiag[A.row_local[i]], A.values_local[i]*A.invDiag[A.row_local[i]]);
 //        A.values_local[i] *= A.invDiag[A.row_local[i]];
-//        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], A.values_local[i]);
 //    }
 
 //    MPI_Barrier(A.comm);
@@ -82,18 +82,20 @@ int find_eig_ietl(Matrix& A){
         std::cout << e.what() << "\n";
     }
 
+
     // Printing eigenvalues with error & multiplicities:
     // -------------------------------------------------
-    if(rank==0) std::cout << "\n#        eigenvalue            error         multiplicity\n";
-    std::cout.precision(10);
-    if(rank==0) {
-        for (int i = 0; i < eigen.size(); i++)
-            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
-                      << multiplicity[i] << "\n";}
-    if(rank==0) {
-        for (int i = eigen.size()-1; i > eigen.size()-1-n_highest_eigenval; --i)
-            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
-                      << multiplicity[i] << "\n";}
+//    if(rank==0) std::cout << "\n#        eigenvalue            error         multiplicity\n";
+//    std::cout.precision(10);
+//    if(rank==0) {
+//        for (int i = 0; i < eigen.size(); i++)
+//            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
+//                      << multiplicity[i] << "\n";}
+//    if(rank==0) {
+//        for (int i = eigen.size()-1; i > eigen.size()-1-n_highest_eigenval; --i)
+//            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
+//                      << multiplicity[i] << "\n";}
+
 
     if(verbose_eig) {
         MPI_Barrier(A.comm);
@@ -101,12 +103,11 @@ int find_eig_ietl(Matrix& A){
         MPI_Barrier(A.comm);
     }
 
-    if(rank==0) printf("the biggest eigenvalue is %f (IETL) \n", eigen.back());
+    if(rank==0) printf("the biggest eigenvalue of        A is %f (IETL) \n", eigen.back());
 
     A.eig_max_of_invdiagXA = eigen.back() * A.highest_diag_val;
-    if(rank==0) printf("eig_max_of_invdiagXA = %f (IETL) \n", A.eig_max_of_invdiagXA);
+    if(rank==0) printf("the biggest eigenvalue of D^{-1}*A is %f (IETL) \n", A.eig_max_of_invdiagXA);
 
-//    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++)
 //        A.values_local[i] /= A.invDiag[A.row_local[i]];
 //

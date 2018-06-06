@@ -160,7 +160,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 100;
+    int vcycle_num            = 200;
     double relative_tolerance = 1e-12;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;

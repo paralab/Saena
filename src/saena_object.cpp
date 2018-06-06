@@ -54,7 +54,6 @@ int saena_object::setup(saena_matrix* A) {
 
     if(smoother=="chebyshev"){
 //        double t1 = omp_get_wtime();
-//        find_eig_Elemental(*A);
         find_eig(*A);
 //        double t2 = omp_get_wtime();
 //        if(verbose_level_setup) print_time(t1, t2, "find_eig() level 0: ", A->comm);
@@ -77,7 +76,6 @@ int saena_object::setup(saena_matrix* A) {
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
             if(smoother=="chebyshev"){
 //                double t1 = omp_get_wtime();
-//                find_eig_Elemental(grids[i].Ac);
                 find_eig(grids[i].Ac);
 //                double t2 = omp_get_wtime();
 //                if(verbose_level_setup) print_time(t1, t2, "find_eig(): ", A->comm);
@@ -3057,17 +3055,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": restriction";
         if (verbose) print_time(t1, t2, func_name, grid->A->comm);
 
-//        MPI_Barrier(grid->A->comm);
-//        if(rank==0) {
-//            std::cout << "\n3. restriction: res_coarse = R*res, currentLevel = " << grid->currentLevel << std::endl;
-//            for(auto i:res_coarse)
-//                std::cout << i << std::endl;}
-//        MPI_Barrier(grid->A->comm);
-//        if(rank==1) {
-//            std::cout << "\n3. restriction: res_coarse = R*res, currentLevel = " << grid->currentLevel << std::endl;
-//            for(auto i:res_coarse)
-//                std::cout << i << std::endl;}
-//        MPI_Barrier(grid->A->comm);
+//	print_vector(res_coarse, 0, "res_coarse", grid->A->comm);
 
         // **************************************** 4. recurse ****************************************
 
@@ -3082,7 +3070,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
 //        if(rank==0) std::cout << "\n4. uCorrCoarse, currentLevel = " << grid->currentLevel
 //                              << ", uCorrCoarse.size = " << uCorrCoarse.size() << std::endl;
-//        print_vector(uCorrCoarse, 0, grid->A->comm);
+//        print_vector(uCorrCoarse, 0, "uCorrCoarse", grid->A->comm);
 
         // **************************************** 5. prolong ****************************************
 
@@ -3110,7 +3098,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 //        if(rank==0)
 //            std::cout << "\n5. prolongation: uCorr = P*uCorrCoarse , currentLevel = " << grid->currentLevel
 //                      << ", uCorr.size = " << uCorr.size() << std::endl;
-//        print_vector(uCorr, 0, grid->A->comm);
+//        print_vector(uCorr, 0, "uCorr", grid->A->comm);
 
         // **************************************** 6. correct ****************************************
 
@@ -3123,11 +3111,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         for (index_t i = 0; i < u.size(); i++)
             u[i] -= uCorr[i];
 
-//        MPI_Barrier(grid->A->comm);
-//        if(rank==1) std::cout << "\n6. correct: u -= uCorr, currentLevel = " << grid->currentLevel << std::endl;
-        //    if(rank==1)
-        //        for(i=0; i<u.size(); i++)
-        //            std::cout << u[i] << std::endl;
+//        print_vector(u, 0, "u after correction", grid->A->comm);
 
         //    residual(grid->A, u, rhs, res);
         //    dotProduct(res, res, &dot, comm);
@@ -3151,10 +3135,8 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": post";
         if (verbose) print_time(t1, t2, func_name, grid->A->comm);
 
-        //    if(rank==1) std::cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
-        //    if(rank==1)
-        //        for(auto i:u)
-        //            std::cout << i << std::endl;
+//        if(rank==1) std::cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
+//        print_vector(u, 0, "u post-smooth", grid->A->comm);
 
 //        residual(grid->A, u, rhs, res);
 //        dotProduct(res, res, &dot, comm);
@@ -5214,11 +5196,12 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 
 int saena_object::find_eig(saena_matrix& A){
 
-    find_eig_ietl(A);
     find_eig_Elemental(A);
+    find_eig_ietl(A);
 
     return 0;
 }
+
 
 
 int saena_object::find_eig_Elemental(saena_matrix& A) {
@@ -5286,7 +5269,7 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
             A.eig_max_of_invdiagXA = fabs(w.Get(i, 0).real());
     }
 
-    if(rank==0) printf("\nthe biggest eigenvalue is %f (Elemental) \n", A.eig_max_of_invdiagXA);
+    if(rank==0) printf("\nthe biggest eigenvalue of D^{-1}*A is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
 
