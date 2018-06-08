@@ -7,7 +7,7 @@
 #include "aux_functions.h"
 #include "ietl_saena.h"
 #include <parUtils.h>
-#include "El.hpp"
+//#include "El.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -5226,7 +5226,7 @@ int saena_object::find_eig(saena_matrix& A){
 
 
 int saena_object::find_eig_Elemental(saena_matrix& A) {
-
+/*
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5290,16 +5290,16 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
             A.eig_max_of_invdiagXA = fabs(w.Get(i, 0).real());
     }
 
-    if(rank==0) printf("\nthe biggest eigenvalue of A is %f (Elemental) \n", A.eig_max_of_invdiagXA);
+//    if(rank==0) printf("\nthe biggest eigenvalue of A is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
-
+*/
     return 0;
 }
 
 
 int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
-
+/*
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5368,6 +5368,6 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
         u[i-A_S->split[rank]] = temp[i];
 
     El::Finalize();
-
+*/
     return 0;
 }
