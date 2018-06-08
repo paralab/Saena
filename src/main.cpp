@@ -105,10 +105,10 @@ int main(int argc, char* argv[]){
 
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs(num_local_row);
-//    generate_rhs_old(rhs);
+    generate_rhs_old(rhs);
 
     // ********** 2 - set rhs: read from file **********
-
+/*
     char* Vname(argv[2]);
 //    char* Vname(argv[3]);
 
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]){
     // set rhs
 //    A.get_internal_matrix()->matvec(v, rhs);
     rhs = v;
-
+*/
     // *************************** set u0 ****************************
 
     std::vector<double> u(num_local_row, 0);
