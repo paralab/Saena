@@ -32,22 +32,22 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;}
 */
-/*
+
     if(argc != 2){
         if(rank == 0){
             std::cout << "Usage: ./Saena <MatrixA>" << std::endl;
             std::cout << "Matrix file should be in triples format." << std::endl;}
         MPI_Finalize();
         return -1;}
-*/
 
+/*
     if(argc != 3){
         if(rank == 0){
             std::cout << "Usage: ./Saena <MatrixA> <rhs_vec>" << std::endl;
             std::cout << "Matrix file should be in triples format." << std::endl;}
         MPI_Finalize();
         return -1;}
-
+*/
 /*
     if(argc != 3){
         if(rank == 0){

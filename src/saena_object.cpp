@@ -163,8 +163,6 @@ int saena_object::level_setup(Grid* grid){
     double t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Aggregation: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
-    MPI_Barrier(grid->A->comm); if(rank==1) printf("here2222\n"); MPI_Barrier(grid->A->comm);
-
 //    MPI_Barrier(grid->A->comm);
 //    if(rank==0){
 //        std::cout << "\naggregates: rank = " << rank << std::endl;
