@@ -1,17 +1,18 @@
 #ifndef SAENA_SAENA_MATRIX_H
 #define SAENA_SAENA_MATRIX_H
 
+#include "saena_matrix_dense.h"
+#include "aux_functions.h"
+
 #include <iostream>
 #include <vector>
 #include <set>
 #include <mpi.h>
-#include "aux_functions.h"
-#include "saena_matrix_dense.h"
 
 
 /**
  * @author Majid
- * @breif Contains the basic structure for the Saena matrix calss (saena_matrix).
+ * @breif Contains the basic structure for the Saena matrix class (saena_matrix).
  *
  * */
 
@@ -20,7 +21,7 @@ typedef unsigned long nnz_t;
 typedef double value_t;
 
 class saena_matrix {
-// A matrix of this class has column-major order: first column-wise, then row-wise.
+// A matrix of this class has column-major order: ordered first column-wise, then row-wise.
 
 private:
     std::vector<cooEntry> data_unsorted;
@@ -37,7 +38,7 @@ private:
 public:
     std::set<cooEntry> data_coo;
     std::vector<cooEntry> entry;
-    std::vector<cooEntry> entry_temp; // used for updating the matrix
+    std::vector<cooEntry> entry_temp; // is used for updating the matrix
 
     index_t Mbig  = 0; // global number of rows
     index_t M     = 0; // local number of rows
@@ -66,7 +67,9 @@ public:
     std::vector<index_t> col_local_temp;
     std::vector<value_t> values_local_temp;
 
-    std::vector<value_t> invDiag;
+    std::vector<value_t> inv_diag;
+    std::vector<value_t> inv_diag_original;
+    std::vector<value_t> inv_sq_diag;
 //    double norm1, normInf, rhoDA;
 
     index_t vIndexSize;
@@ -132,7 +135,7 @@ public:
 
     double density = -1.0;
     float jacobi_omega = float(2.0/3);
-    double eig_max_of_invdiagXA = 0; // the biggest eigenvalue of (A * invDiag(A)) to be used in chebyshev smoother
+    double eig_max_of_invdiagXA = 0; // the biggest eigenvalue of (A * inv_diag(A)) to be used in chebyshev smoother
     double highest_diag_val = 1e-10;
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
 
@@ -171,7 +174,7 @@ public:
     int matrix_setup_update();
 
     int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
-    int repartition_row(); // based on M. use this for repartitioning A's after they are created.
+    int repartition_row(); // based on M.   use this for repartitioning A's after they are created.
 
     int repartition_nnz_update_Ac(); // based on nnz.
 
@@ -179,6 +182,7 @@ public:
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();
+    int scale();
 
     int set_off_on_diagonal_dummy();
 //    int find_sortings_dummy();
@@ -199,7 +203,7 @@ public:
     int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
 
     int residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res);
-    int inverse_diag(std::vector<value_t>& x);
+    int inverse_diag();
     int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
     int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
 

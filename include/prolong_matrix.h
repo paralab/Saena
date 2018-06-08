@@ -1,9 +1,11 @@
 #ifndef SAENA_PROLONG_MATRIX_H
 #define SAENA_PROLONG_MATRIX_H
 
-#include <vector>
-#include <mpi.h>
 #include "aux_functions.h"
+
+#include <vector>
+#include "mpi.h"
+
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;

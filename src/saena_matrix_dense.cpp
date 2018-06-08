@@ -1,7 +1,9 @@
-#include "iostream"
 #include <saena_matrix_dense.h>
 #include <saena_matrix.h>
 #include <aux_functions.h>
+
+#include "iostream"
+
 
 saena_matrix_dense::saena_matrix_dense(){}
 

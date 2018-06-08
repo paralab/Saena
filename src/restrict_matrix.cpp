@@ -1,12 +1,14 @@
-#include <iostream>
-#include <algorithm>
-#include <mpi.h>
 #include <prolong_matrix.h>
 #include <restrict_matrix.h>
+
+#include <iostream>
+#include <algorithm>
 #include <omp.h>
-//#include <dtypes.h>
+#include <mpi.h>
+
 
 using namespace std;
+
 
 restrict_matrix::restrict_matrix(){}
 

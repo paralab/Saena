@@ -1,13 +1,13 @@
+#include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
 #include "restrict_matrix.h"
-#include "aux_functions.h"
 #include "grid.h"
-#include <parUtils.h>
-#include "saena_object.h"
-#include "El.hpp"
+#include "aux_functions.h"
 #include "ietl_saena.h"
+#include <parUtils.h>
+#include "El.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -18,14 +18,16 @@
 #include <cmath>
 
 
-saena_object::saena_object(){
-} //SaenaObject
+saena_object::saena_object(){}
+
 
 saena_object::~saena_object(){}
+
 
 int saena_object::destroy(){
     return 0;
 }
+
 
 void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
@@ -35,6 +37,7 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
     preSmooth = preSm;
     postSmooth = postSm;
 }
+
 
 int saena_object::setup(saena_matrix* A) {
     int nprocs, rank;
@@ -160,6 +163,7 @@ int saena_object::level_setup(Grid* grid){
     double t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Aggregation: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
+    MPI_Barrier(grid->A->comm); if(rank==1) printf("here2222\n"); MPI_Barrier(grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm);
 //    if(rank==0){
@@ -1436,9 +1440,9 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
             }else{
                 PEntryTemp.push_back(cooEntry(A->row_local[A->indicesP_local[iter]],
                                               aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
-                                              -omega * A->values_local[A->indicesP_local[iter]] * A->invDiag[A->row_local[A->indicesP_local[iter]]]));
+                                              -omega * A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]]));
             }
-//            std::cout << A->row_local[A->indicesP_local[iter]] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->invDiag[A->row_local[A->indicesP_local[iter]]] << std::endl;
+//            std::cout << A->row_local[A->indicesP_local[iter]] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]] << std::endl;
         }
     }
 
@@ -1451,10 +1455,10 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
         for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
             PEntryTemp.push_back(cooEntry(A->row_remote[iter],
                                           A->vecValuesULong[A->col_remote[iter]],
-                                          -omega * A->values_remote[iter] * A->invDiag[A->row_remote[iter]]));
+                                          -omega * A->values_remote[iter] * A->inv_diag[A->row_remote[iter]]));
 //            P->values.push_back(A->values_remote[iter]);
 //            std::cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t"
-//                      << A->values_remote[iter] * A->invDiag[A->row_remote[iter]] << std::endl;
+//                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << std::endl;
         }
     }
 
@@ -2962,16 +2966,17 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
                 return -1;
             }
 
+            // scale back the solution u
+            // -------------------------
+            scale_vector_back(u, grid->A->inv_sq_diag);
+
             t2 = omp_get_wtime();
             func_name = "vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
             if (verbose) print_time(t1, t2, func_name, grid->A->comm);
 
             // print the solution
             // ------------------
-//            if(rank==0){
-//                printf("\nsolution from the direct solver:\n");
-//                for(i = 0; i < u.size(); i++)
-//                    printf("%.10f \n", u[i]);}
+//            print_vector(u, 0, "solution from the direct solver", grid->A->comm);
 
             // check if the solution is correct
             // --------------------------------
@@ -3055,7 +3060,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": restriction";
         if (verbose) print_time(t1, t2, func_name, grid->A->comm);
 
-//	print_vector(res_coarse, 0, "res_coarse", grid->A->comm);
+//	      print_vector(res_coarse, 0, "res_coarse", grid->A->comm);
 
         // **************************************** 4. recurse ****************************************
 
@@ -3113,9 +3118,9 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
 //        print_vector(u, 0, "u after correction", grid->A->comm);
 
-        //    residual(grid->A, u, rhs, res);
-        //    dotProduct(res, res, &dot, comm);
-        //    if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << std::endl;
+//        grid->A->residual(u, rhs, res);
+//        dotProduct(res, res, &dot, grid->A->comm);
+//        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << std::endl;
 
         // **************************************** 7. post-smooth ****************************************
 
@@ -3138,9 +3143,14 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 //        if(rank==1) std::cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
 //        print_vector(u, 0, "u post-smooth", grid->A->comm);
 
-//        residual(grid->A, u, rhs, res);
-//        dotProduct(res, res, &dot, comm);
+//        grid->A->residual(u, rhs, res);
+//        dotProduct(res, res, &dot, grid->A->comm);
 //        if(rank==0) std::cout << "current level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
+
+        // scale back the solution u
+        // -------------------------
+        scale_vector_back(u, grid->A->inv_sq_diag);
+
     } // end of if(active)
 
     return 0;
@@ -3187,15 +3197,19 @@ int saena_object::solve(std::vector<value_t>& u){
     if(max_level == 0)
         printf("\nonly using the direct solver! \n");
 
+    if(rank==0){
+        printf("Vcycle #: \tabsolute residual\n");
+        printf("-----------------------------\n");
+    }
+
     int i;
     for(i=0; i<vcycle_num; i++){
-        if(rank==0) printf("Vcycle %u \n", i);
         vcycle(&grids[0], u, grids[0].rhs);
-//        MPI_Barrier(comm); printf("rank %d -------------now################### \n", rank); MPI_Barrier(comm);
         grids[0].A->residual(u, grids[0].rhs, r);
         dotProduct(r, r, &current_dot, comm);
 
-        if(rank==0) printf("vcycle iteration = %d, residual = %f \n\n", i, sqrt(current_dot));
+        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
+//        if(rank==0) printf("vcycle iteration = %d, residual = %f \n\n", i, sqrt(current_dot));
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
     }
@@ -3294,6 +3308,11 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 //    for(i = 0; i < r.size(); i++)
 //        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
 
+    if(rank==0){
+        printf("Vcycle #: absolute residual \trelative residual\n");
+        printf("--------------------------------------------------------\n");
+    }
+
     std::vector<value_t> h(grids[0].A->M);
     std::vector<value_t> p(grids[0].A->M);
     p = rho;
@@ -3341,7 +3360,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         i--;
 
     if(rank==0){
-        std::cout << "******************************************************" << std::endl;
+        std::cout << "\n******************************************************" << std::endl;
         printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
                        "\nrelative residual       = %e \n\n", i+1, sqrt(current_dot), sqrt(current_dot/initial_dot));
         std::cout << "******************************************************" << std::endl;
@@ -4054,10 +4073,8 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
         return -1;
     }
 
-//    if(rank==ran) printf("\n");
 //    for(i = 0; i < nprocs; i++)
 //        if(rank==ran) printf("%lu \t scount[i] = %d\n", i, scount[i]);
-
 
 //    std::vector<int> rdispls(nprocs);
     grids[0].rdispls.resize(nprocs);
@@ -4065,10 +4082,8 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     for(int i = 1; i < nprocs; i++)
         grids[0].rdispls[i] = grids[0].rcount[i-1] + grids[0].rdispls[i-1];
 
-//    if(rank==ran) printf("\n");
 //    for(i = 0; i < nprocs; i++)
 //        if(rank==ran) printf("%lu \t rdispls[i] = %d\n", i, rdispls[i]);
-
 
 //    std::vector<int> sdispls(nprocs);
     grids[0].sdispls.resize(nprocs);
@@ -4076,7 +4091,6 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     for(int i = 1; i < nprocs; i++)
         grids[0].sdispls[i] = grids[0].sdispls[i-1] + grids[0].scount[i-1];
 
-//    if(rank==ran) printf("\n");
 //    for(i = 0; i < nprocs; i++)
 //        if(rank==ran) printf("%lu \t sdispls[i] = %d\n", i, sdispls[i]);
 
@@ -4088,8 +4102,6 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
 //    printf("rank = %d, repartition_local = %d, repartition = %d \n", rank, repartition_local, repartition);
 
     if(repartition){
-        // todo: is clear required here? It has been used a couple of times in this file.
-        grids[0].rhs.clear();
         grids[0].rhs.resize(grids[0].A->split[rank+1] - grids[0].A->split[rank]);
         MPI_Alltoallv(&*rhs0.begin(), &grids[0].scount[0], &grids[0].sdispls[0], MPI_DOUBLE,
                       &*grids[0].rhs.begin(), &grids[0].rcount[0], &grids[0].rdispls[0], MPI_DOUBLE, grids[0].A->comm);
@@ -4098,19 +4110,11 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
         grids[0].rhs = rhs0;
     }
 
-//    MPI_Barrier(grids[0].comm);
-//    if(rank==0){
-//        printf("\nafter rank = %d \trhs.size = %lu\n", rank, grids[0].rhs.size());
-//        for(i = 0; i < grids[0].rhs.size(); i++)
-//            printf("%lu \t grids[0].rhs = %f\n", i, grids[0].rhs[i]);
-//    }
-//    MPI_Barrier(grids[0].comm);
-//    if(rank==1){
-//        printf("\nrank = %d \trhs.size = %lu\n", rank, grids[0].rhs.size());
-//        for(i = 0; i < grids[0].rhs.size(); i++)
-//            printf("%lu \t grids[0].rhs = %f\n", i, grids[0].rhs[i]);
-//    }
-//    MPI_Barrier(grids[0].comm);
+//    print_vector(grids[0].rhs, 0, "rhs after repartition", grids[0].A->comm);
+
+    // scale rhs
+    // ---------
+    scale_vector(grids[0].rhs, grids[0].A->inv_sq_diag);
 
     return 0;
 }
@@ -5194,14 +5198,33 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 }
 
 
-int saena_object::find_eig(saena_matrix& A){
+int saena_object::scale_vector(std::vector<value_t> v, std::vector<value_t> w) {
 
-    find_eig_Elemental(A);
-    find_eig_ietl(A);
+#pragma omp parallel for
+    for(index_t i = 0; i < v.size(); i++)
+        v[i] *= w[i];
 
     return 0;
 }
 
+
+int saena_object::scale_vector_back(std::vector<value_t> v, std::vector<value_t> w) {
+
+#pragma omp parallel for
+    for(index_t i = 0; i < v.size(); i++)
+        v[i] *= 1.0/w[i];
+
+    return 0;
+}
+
+
+int saena_object::find_eig(saena_matrix& A){
+
+//    find_eig_Elemental(A);
+    find_eig_ietl(A);
+
+    return 0;
+}
 
 
 int saena_object::find_eig_Elemental(saena_matrix& A) {
@@ -5222,7 +5245,7 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
 //    El::Matrix<double> A(n,n);
 //    El::Zero( A );
 //    for(unsigned long i = 0; i<nnz_l; i++)
-//        A(entry[i].row, entry[i].col) = entry[i].val * invDiag[entry[i].row];
+//        A(entry[i].row, entry[i].col) = entry[i].val * inv_diag[entry[i].row];
 
 //    El::Print( A, "\nGlobal Elemental matrix (serial):\n" );
 
@@ -5235,9 +5258,9 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
     B.Reserve(A.nnz_l);
     for(nnz_t i = 0; i < A.nnz_l; i++){
 //        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \telemental\n",
-//                           i, A.entry[i].row, A.entry[i].val, A.invDiag[A.entry[i].row - A.split[rank]], A.entry[i].val*A.invDiag[A.entry[i].row - A.split[rank]]);
-        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val * A.invDiag[A.entry[i].row - A.split[rank]]); // this is not A! each entry is multiplied by the same-row diagonal value.
-//        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val);
+//                           i, A.entry[i].row, A.entry[i].val, A.inv_diag[A.entry[i].row - A.split[rank]], A.entry[i].val*A.inv_diag[A.entry[i].row - A.split[rank]]);
+//        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val * A.inv_diag[A.entry[i].row - A.split[rank]]); // this is not A! each entry is multiplied by the same-row diagonal value.
+        B.QueueUpdate(A.entry[i].row, A.entry[i].col, A.entry[i].val);
     }
     B.ProcessQueues();
 //    El::Print( A, "\nGlobal Elemental matrix:\n" );
@@ -5269,7 +5292,7 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
             A.eig_max_of_invdiagXA = fabs(w.Get(i, 0).real());
     }
 
-    if(rank==0) printf("\nthe biggest eigenvalue of D^{-1}*A is %f (Elemental) \n", A.eig_max_of_invdiagXA);
+    if(rank==0) printf("\nthe biggest eigenvalue of A is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
 
@@ -5278,7 +5301,7 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
 
 
 int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
-/*
+
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5347,6 +5370,6 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
         u[i-A_S->split[rank]] = temp[i];
 
     El::Finalize();
-*/
+
     return 0;
 }

@@ -2,6 +2,8 @@
 #define SAENA_STRENGTH_MATRIX_H
 
 #include <vector>
+#include "mpi.h"
+
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;

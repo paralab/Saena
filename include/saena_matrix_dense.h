@@ -1,8 +1,8 @@
 #ifndef MATVEC003_SAENA_MATRIX_DENSE_H
 #define MATVEC003_SAENA_MATRIX_DENSE_H
 
-#include <mpi.h>
 #include "vector"
+#include <mpi.h>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;

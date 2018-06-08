@@ -1,8 +1,9 @@
+#include "strength_matrix.h"
+
 #include <cstdlib>
 #include <algorithm>
 #include <iostream>
-#include <mpi.h>
-#include "strength_matrix.h"
+#include "mpi.h"
 
 using namespace std;
 

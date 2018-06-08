@@ -1,9 +1,10 @@
 #ifndef SAENA_SAENA_OBJECT_H
 #define SAENA_SAENA_OBJECT_H
 
+#include "aux_functions.h"
+
 #include <vector>
 #include <string>
-#include "aux_functions.h"
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -26,10 +27,10 @@ public:
     double row_reduction_threshold = 0.90;
     int vcycle_num = 300;
     double relative_tolerance = 1e-8;
-    std::string smoother = "jacobi";
+    std::string smoother = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth  = 3;
     int postSmooth = 3;
-    std::string direct_solver = "CG"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
+    std::string direct_solver = "Elemental"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
     std::vector<Grid> grids;
     float connStrength = 0.5; // connection strength parameter: control coarsening aggressiveness
     int CG_max_iter = 100;
@@ -97,6 +98,8 @@ public:
     int find_eig(saena_matrix& A);
     int find_eig_Elemental(saena_matrix& A);
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
+    int scale_vector(std::vector<value_t> v, std::vector<value_t> w);
+    int scale_vector_back(std::vector<value_t> v, std::vector<value_t> w);
 
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);

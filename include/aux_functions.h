@@ -1,16 +1,12 @@
-//
-// Created by abaris on 4/28/17.
-//
-
 #ifndef SAENA_AUXFUNCTIONS_H
 #define SAENA_AUXFUNCTIONS_H
 
 #include <iostream>
-#include <algorithm>
-#include <mpi.h>
-#include <cmath>
-#include <cmath>
 #include <string>
+#include <algorithm>
+#include <vector>
+#include <cmath>
+#include <mpi.h>
 
 
 typedef unsigned int index_t;

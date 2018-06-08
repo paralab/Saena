@@ -1,10 +1,11 @@
-#include <mpi.h>
+#include "prolong_matrix.h"
+//#include "aux_functions.h"
+
 #include <cstdlib>
 #include <algorithm>
 #include <iostream>
 #include <omp.h>
-#include "prolong_matrix.h"
-//#include "aux_functions.h"
+#include "mpi.h"
 
 
 prolong_matrix::prolong_matrix(){}

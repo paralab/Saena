@@ -1,15 +1,17 @@
-#include <fstream>
-#include <algorithm>
-#include <sys/stat.h>
-#include <cstring>
-#include "mpi.h"
-#include <omp.h>
 #include "saena_matrix.h"
 #include "parUtils.h"
+
+#include <fstream>
+#include <cstring>
+#include <algorithm>
+#include <sys/stat.h>
+#include <omp.h>
+#include "mpi.h"
 
 #pragma omp declare reduction(vec_double_plus : std::vector<value_t> : \
                               std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus<value_t>())) \
                     initializer(omp_priv = omp_orig)
+
 
 saena_matrix::saena_matrix(){}
 
@@ -219,7 +221,7 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
 
 
 saena_matrix::~saena_matrix() {
-    if(freeBoolean){
+//    if(freeBoolean){
 //        free(vIndex);
 //        free(vSend);
 //        free(vSendULong);
@@ -234,7 +236,7 @@ saena_matrix::~saena_matrix() {
 //        iter_remote_array.clear();
 //        iter_remote_array.shrink_to_fit();
 //        delete w_buff;
-    }
+//    }
 }
 
 
@@ -726,7 +728,7 @@ int saena_matrix::erase(){
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    invDiag.clear();
+    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -749,7 +751,7 @@ int saena_matrix::erase(){
     col_remote2.shrink_to_fit();
     nnzPerRow_local.shrink_to_fit();
     nnzPerCol_remote.shrink_to_fit();
-    invDiag.shrink_to_fit();
+    inv_diag.shrink_to_fit();
     vdispls.shrink_to_fit();
     rdispls.shrink_to_fit();
     recvProcRank.shrink_to_fit();
@@ -792,7 +794,7 @@ int saena_matrix::erase2(){
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    invDiag.clear();
+    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -831,7 +833,7 @@ int saena_matrix::erase2(){
     col_remote2.shrink_to_fit();
     nnzPerRow_local.shrink_to_fit();
     nnzPerCol_remote.shrink_to_fit();
-    invDiag.shrink_to_fit();
+    inv_diag.shrink_to_fit();
     vdispls.shrink_to_fit();
     rdispls.shrink_to_fit();
     recvProcRank.shrink_to_fit();
@@ -903,7 +905,7 @@ int saena_matrix::erase_update_local(){
     values_remote.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    invDiag.clear();
+    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -949,7 +951,7 @@ int saena_matrix::erase_keep_remote2(){
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    invDiag.clear();
+    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -1016,7 +1018,7 @@ int saena_matrix::erase_after_shrink() {
 
 //    nnzPerRow_local.clear();
 //    nnzPerCol_remote.clear();
-//    invDiag.clear();
+//    inv_diag.clear();
 //    vdispls.clear();
 //    rdispls.clear();
 //    recvProcRank.clear();
@@ -1061,7 +1063,7 @@ int saena_matrix::erase_after_decide_shrinking() {
 
 //    nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-//    invDiag.clear();
+//    inv_diag.clear();
 //    vdispls.clear();
 //    rdispls.clear();
     recvProcRank.clear();
@@ -1135,15 +1137,6 @@ int saena_matrix::repartition_nnz_initial(){
 
     // definition of buckets: bucket[i] = [ firstSplit[i] , firstSplit[i+1] ). Number of buckets = n_buckets
     int n_buckets = 0;
-
-/*    if (Mbig > nprocs*nprocs){
-        if (nprocs < 1000)
-            n_buckets = nprocs*nprocs;
-        else
-            n_buckets = 1000*nprocs;
-    }
-    else
-        n_buckets = Mbig;*/
 
     if (Mbig > nprocs*nprocs){
         if (nprocs < 1000)
@@ -2515,7 +2508,7 @@ int saena_matrix::shrink_cpu(){
 
 
 int saena_matrix::matrix_setup() {
-    // before using this function these variables of saena_matrix should be set:
+    // before using this function the following parameters of saena_matrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
     // todo: here: check if there is another if(active) before calling this function.
@@ -2538,14 +2531,14 @@ int saena_matrix::matrix_setup() {
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
-            printf("matrix_setup: rank = %d, invDiag \n", rank);
+            printf("matrix_setup: rank = %d, inv_diag \n", rank);
             MPI_Barrier(comm);
         }
 
-        invDiag.resize(M);
-        inverse_diag(invDiag);
+        inv_diag.resize(M);
+        inverse_diag();
 
-//        print_vector(invDiag, -1, "invDiag", comm);
+//        print_vector(inv_diag, -1, "inv_diag", comm);
 
         // *************************** set rho ****************************
 
@@ -2564,6 +2557,11 @@ int saena_matrix::matrix_setup() {
 
         openmp_setup();
         w_buff.resize(num_threads*M); // allocate for w_buff for matvec3()
+
+        // *************************** scale ****************************
+        // scale the matrix to have its diagonal entries all equal to 1.
+
+        scale();
 
         // *************************** print info ****************************
 
@@ -2598,7 +2596,7 @@ int saena_matrix::matrix_setup() {
 
 
 int saena_matrix::matrix_setup_update() {
-    // update values_local, values_remote and invDiag.
+    // update values_local, values_remote and inv_diag.
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -2626,8 +2624,8 @@ int saena_matrix::matrix_setup_update() {
         }
     }
 
-    invDiag.resize(M);
-    inverse_diag(invDiag);
+    inv_diag.resize(M);
+    inverse_diag();
 
     return 0;
 }
@@ -2640,13 +2638,13 @@ int saena_matrix::set_rho(){
     /*
         double norm1_local = 0;
         for(unsigned long i=0; i<M; i++)
-            norm1_local += abs(invDiag[i]);
+            norm1_local += abs(inv_diag[i]);
         MPI_Allreduce(&norm1_local, &norm1, 1, MPI_DOUBLE, MPI_SUM, comm);
 
-        double normInf_local = invDiag[0];
+        double normInf_local = inv_diag[0];
         for(unsigned long i=1; i<M; i++)
-            if( abs(invDiag[i]) > normInf_local )
-                normInf_local = abs(invDiag[i]);
+            if( abs(inv_diag[i]) > normInf_local )
+                normInf_local = abs(inv_diag[i]);
         MPI_Allreduce(&normInf_local, &normInf, 1, MPI_DOUBLE, MPI_MAX, comm);
 
         if(normInf < norm1)
@@ -3041,6 +3039,100 @@ int saena_matrix::openmp_setup() {
 }
 
 
+int saena_matrix::scale(){
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
+
+//    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
+
+    inv_diag.assign(M, 1);
+
+    // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
+    // put the values of thoss indices in vSend to send to other procs.
+#pragma omp parallel for
+    for(index_t i=0;i<vIndexSize;i++)
+        vSend[i] = inv_sq_diag[(vIndex[i])];
+
+//    print_vector(vSend, -1, "vSend", comm);
+
+    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
+    MPI_Status* statuses  = new MPI_Status[numSendProc+numRecvProc];
+
+    // receive and put the remote parts of v in vecValues.
+    // they are received in order: first put the values from the lowest rank matrix, and so on.
+    for(int i = 0; i < numRecvProc; i++)
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+
+    for(int i = 0; i < numSendProc; i++)
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+
+    // local loop
+    // ----------
+    // compute the on-diagonal part of matvec on each thread and save it in w_local.
+    // then, do a reduction on w_local on all threads, based on a binary tree.
+
+//    index_t* col_p = &col_local[0] - split[rank];
+#pragma omp parallel for
+    for(nnz_t i = 0; i < nnz_l_local; i++)
+        values_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]]; // D^{-1/2} * A * D^{-1/2}
+
+    // Wait for the receive communication to finish.
+    MPI_Waitall(numRecvProc, requests, statuses);
+
+//    print_vector(vecValues, -1, "vecValues", comm);
+
+    // remote loop
+    // -----------
+    // the col_index of the matrix entry does not matter. do the matvec on the first non-zero col// D^{-1/2} * A * D^{-1/2}umn (j=0).
+    // the corresponding vector element is saved in vecValues[0]. and so on.
+
+#pragma omp parallel
+    {
+        unsigned int i, l;
+        int thread_id = omp_get_thread_num();
+        nnz_t iter = iter_remote_array[thread_id];
+#pragma omp for
+        for (index_t j = 0; j < col_remote_size; ++j) {
+            for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                values_remote[iter] *= inv_sq_diag[row_remote[iter]] * vecValues[j]; // D^{-1/2} * A * D^{-1/2}
+//                w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
+            }
+        }
+    }
+
+    // update the entry vector
+    entry.clear();
+    entry.resize(nnz_l);
+
+    // todo: change the local and remote parameters to cooEntry class to be able to use memcpy here.
+//    memcpy(&*entry.begin(), );
+
+    // copy local entries
+#pragma omp parallel for
+    for(nnz_t i = 0; i < nnz_l_local; i++)
+        entry[i] = cooEntry(row_local[i]+split[rank], col_local[i], values_local[i]);
+
+    // copy remote entries
+#pragma omp parallel for
+    for(nnz_t i = 0; i < nnz_l_remote; i++)
+        entry[nnz_l_local + i] = cooEntry(row_remote[i]+split[rank], col_remote2[i], values_remote[i]);
+
+    std::sort(entry.begin(), entry.end());
+
+    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
+    delete [] requests;
+    delete [] statuses;
+
+//    MPI_Barrier(comm); if(rank==0) printf("end of saena_matrix::scale()\n"); MPI_Barrier(comm);
+
+    return 0;
+}
+
+
 int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
 
 //    int rank;
@@ -3093,18 +3185,14 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
     value_t* v_p = &v[0] - split[rank];
 #pragma omp parallel
     {
-        int thread_id = omp_get_thread_num();
-        long iter = iter_local_array2[thread_id];
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
 #pragma omp for
-        for (unsigned int i = 0; i < M; ++i) {
+        for (index_t i = 0; i < M; ++i) {
             w[i] = 0;
-            for (unsigned int j = 0; j < nnzPerRow_local2[i]; ++j, ++iter) {
+            for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
                 w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
             }
         }
-
-        for (iter = iter_local_array[thread_id]; iter < iter_local_array2[thread_id]; ++iter)
-            w[row_local[indicesP_local[iter]]] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
     }
 
     // Wait for the receive communication to finish.
@@ -3889,7 +3977,6 @@ int saena_matrix::matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<v
 }
 
 
-
 int saena_matrix::matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time) {
     // old remote loop is used here.
 
@@ -4619,12 +4706,13 @@ int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, s
 }
 
 
-int saena_matrix::inverse_diag(std::vector<value_t>& x) {
+int saena_matrix::inverse_diag() {
     int rank;
     MPI_Comm_rank(comm, &rank);
 
     double temp;
-    x.assign(x.size(), 0);
+    inv_diag.assign(M, 0);
+    inv_sq_diag.assign(M, 0);
 
     for(nnz_t i=0; i<nnz_l; i++){
 //        if(rank==4) printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
@@ -4632,7 +4720,8 @@ int saena_matrix::inverse_diag(std::vector<value_t>& x) {
         if(entry[i].row == entry[i].col){
             if(entry[i].val != 0){
                 temp = 1.0/entry[i].val;
-                x[entry[i].row-split[rank]] = temp;
+                inv_diag[entry[i].row-split[rank]] = temp;
+                inv_sq_diag[entry[i].row-split[rank]] = sqrt(temp);
                 if(fabs(temp) > highest_diag_val)
                     highest_diag_val = fabs(temp);
             }
@@ -4645,9 +4734,9 @@ int saena_matrix::inverse_diag(std::vector<value_t>& x) {
         }
     }
 
-//    print_vector(x, -1, "inv diag", comm);
+//    print_vector(inv_diag, -1, "inv diag", comm);
 
-    for(auto i:x)
+    for(auto i:inv_diag)
         if(i==0)
             if(rank==0) printf("inverse_diag: At least one diagonal entry is 0.\n");
 
@@ -4677,7 +4766,7 @@ int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>
 #pragma omp parallel for
         for(index_t i = 0; i < M; i++){
             temp[i] -= rhs[i];
-            temp[i] *= invDiag[i] * jacobi_omega;
+            temp[i] *= inv_diag[i] * jacobi_omega;
             u[i]    -= temp[i];
         }
     }
@@ -4705,10 +4794,11 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
     residual(u, rhs, res);
 #pragma omp parallel for
     for(index_t i = 0; i < u.size(); i++){
-        d[i] = (-res[i] * invDiag[i]) / theta;
+//        d[i] = (-res[i] * inv_diag[i]) / theta;
+        d[i] = (-res[i]) / theta;
         u[i] += d[i];
-//        if(rank==0) printf("invDiag[%lu] = %f, \tres[%lu] = %f, \td[%lu] = %f, \tu[%lu] = %f \n",
-//                           i, invDiag[i], i, res[i], i, d[i], i, u[i]);
+//        if(rank==0) printf("inv_diag[%lu] = %f, \tres[%lu] = %f, \td[%lu] = %f, \tu[%lu] = %f \n",
+//                           i, inv_diag[i], i, res[i], i, d[i], i, u[i]);
     }
 
     for(int i = 1; i < iter; i++){
@@ -4720,7 +4810,7 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
 
 #pragma omp parallel for
         for(index_t j = 0; j < u.size(); j++){
-            d[j] = ( d1 * d[j] ) + ( d2 * (-res[j]) * invDiag[j] );
+            d[j] = ( d1 * d[j] ) + ( d2 * (-res[j]));
             u[j] += d[j];
 //        if(rank==0) printf("u[%lu] = %f \n", j, u[j]);
         }
@@ -4761,6 +4851,7 @@ int saena_matrix::print(int ran){
 
     return 0;
 }
+
 
 int saena_matrix::generate_dense_matrix() {
     dense_matrix.convert_saena_matrix(this);

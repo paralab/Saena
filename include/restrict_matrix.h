@@ -3,12 +3,12 @@
 
 #include <vector>
 
+
 class prolong_matrix;
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
-
 
 
 class restrict_matrix {

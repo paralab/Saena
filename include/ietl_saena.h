@@ -1,6 +1,8 @@
 #ifndef IETL_SAENA_H
 #define IETL_SAENA_H
 
+#include "saena_matrix.h"
+
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <ietl/interface/ublas.h>
@@ -10,7 +12,6 @@
 #include <boost/limits.hpp>
 #include <cmath>
 #include <limits>
-#include "saena_matrix.h"
 
 typedef saena_matrix Matrix;
 typedef boost::numeric::ublas::vector<value_t> Vector;
@@ -32,15 +33,15 @@ int find_eig_ietl(Matrix& A){
 
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++) {
-//        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], (A.values_local[i]*A.invDiag[A.row_local[i]] - A.entry[i].val * A.invDiag[A.entry[i].row - A.split[rank]]));
-//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, local \n", i, A.row_local[i]+A.split[rank], A.values_local[i], A.invDiag[A.row_local[i]], A.values_local[i]*A.invDiag[A.row_local[i]]);
-//        A.values_local[i] *= A.invDiag[A.row_local[i]];
+//        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], (A.values_local[i]*A.inv_diag[A.row_local[i]] - A.entry[i].val * A.inv_diag[A.entry[i].row - A.split[rank]]));
+//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, local \n", i, A.row_local[i]+A.split[rank], A.values_local[i], A.inv_diag[A.row_local[i]], A.values_local[i]*A.inv_diag[A.row_local[i]]);
+//        A.values_local[i] *= A.inv_diag[A.row_local[i]];
 //    }
 
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_remote; i++) {
-//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, remote \n", i, A.row_remote[i], A.values_remote[i], A.invDiag[A.row_remote[i]], A.values_remote[i]*A.invDiag[A.row_remote[i]]);
-//        A.values_remote[i] *= A.invDiag[A.row_remote[i]];
+//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, remote \n", i, A.row_remote[i], A.values_remote[i], A.inv_diag[A.row_remote[i]], A.values_remote[i]*A.inv_diag[A.row_remote[i]]);
+//        A.values_remote[i] *= A.inv_diag[A.row_remote[i]];
 //    }
 //    MPI_Barrier(A.comm);
 
@@ -82,7 +83,6 @@ int find_eig_ietl(Matrix& A){
         std::cout << e.what() << "\n";
     }
 
-
     // Printing eigenvalues with error & multiplicities:
     // -------------------------------------------------
 //    if(rank==0) std::cout << "\n#        eigenvalue            error         multiplicity\n";
@@ -96,23 +96,23 @@ int find_eig_ietl(Matrix& A){
 //            std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t"
 //                      << multiplicity[i] << "\n";}
 
-
     if(verbose_eig) {
         MPI_Barrier(A.comm);
         if(rank==0) printf("the biggest eigenvalue is %f (IETL) \n", eigen.back());
         MPI_Barrier(A.comm);
     }
 
-    if(rank==0) printf("the biggest eigenvalue of        A is %f (IETL) \n", eigen.back());
+    if(rank==0) printf("the biggest eigenvalue of A is %f (IETL) \n", eigen.back());
+    A.eig_max_of_invdiagXA = eigen.back();
 
-    A.eig_max_of_invdiagXA = eigen.back() * A.highest_diag_val;
-    if(rank==0) printf("the biggest eigenvalue of D^{-1}*A is %f (IETL) \n", A.eig_max_of_invdiagXA);
+//    A.eig_max_of_invdiagXA = eigen.back() * A.highest_diag_val;
+//    if(rank==0) printf("the biggest eigenvalue of D^{-1}*A is %f (IETL) \n", A.eig_max_of_invdiagXA);
 
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++)
-//        A.values_local[i] /= A.invDiag[A.row_local[i]];
+//        A.values_local[i] /= A.inv_diag[A.row_local[i]];
 //
 //    for(unsigned long i = 0; i < A.nnz_l_remote; i++)
-//        A.values_remote[i] /= A.invDiag[A.row_remote[i]];
+//        A.values_remote[i] /= A.inv_diag[A.row_remote[i]];
 
     if(verbose_eig) {
         MPI_Barrier(A.comm);
