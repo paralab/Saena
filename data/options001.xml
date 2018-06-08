@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<SAENA>
+    <OPTIONS vcycle_num="50" relative_tolerance="1e-10" smoother="jacobi" preSmooth="3" postSmooth="3" />
+</SAENA>
