@@ -102,7 +102,7 @@ int find_eig_ietl(Matrix& A){
         MPI_Barrier(A.comm);
     }
 
-    if(rank==0) printf("the biggest eigenvalue of A is %f (IETL) \n", eigen.back());
+//    if(rank==0) printf("the biggest eigenvalue of A is %f (IETL) \n", eigen.back());
     A.eig_max_of_invdiagXA = eigen.back();
 
 //    A.eig_max_of_invdiagXA = eigen.back() * A.highest_diag_val;

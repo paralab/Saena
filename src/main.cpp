@@ -22,8 +22,8 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-#pragma omp parallel
-    if(rank==0 && omp_get_thread_num()==0) printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
+//#pragma omp parallel
+//    if(rank==0 && omp_get_thread_num()==0) printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
 
 /*
     if(argc != 4){
@@ -105,7 +105,10 @@ int main(int argc, char* argv[]){
 
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs(num_local_row);
-    generate_rhs_old(rhs);
+//    generate_rhs_old(rhs);
+
+    for(index_t i = 0; i < A.get_num_local_rows(); i++)
+        rhs[i] = i + 1 + A.get_internal_matrix()->split[rank];
 
     // ********** 2 - set rhs: read from file **********
 /*
@@ -191,6 +194,8 @@ int main(int argc, char* argv[]){
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
     print_time(t1, t2, "Solve:", comm);
+
+//    print_vector(u, -1, "u", comm);
 
     // *************************** finalize ****************************
 

@@ -182,7 +182,7 @@ public:
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();
-    int scale();
+    int scale_matrix();
 
     int set_off_on_diagonal_dummy();
 //    int find_sortings_dummy();

@@ -362,19 +362,24 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    index_t iter = 0;
     if(ran >= 0) {
         if (rank == ran) {
             printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), ran, v.size());
-            for (auto i:v)
-                std::cout << i << std::endl;
+            for (auto i:v) {
+                std::cout << iter << "\t" << i << std::endl;
+                iter++;
+            }
         }
     } else{
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
                 printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), proc, v.size());
-                for (auto i:v)
-                    std::cout << i << std::endl;
+                for (auto i:v) {
+                    std::cout << iter << "\t" << i << std::endl;
+                    iter++;
+                }
             }
             MPI_Barrier(comm);
         }

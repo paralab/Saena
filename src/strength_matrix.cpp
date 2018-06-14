@@ -1,4 +1,5 @@
 #include "strength_matrix.h"
+#include "aux_functions.h"
 
 #include <cstdlib>
 #include <algorithm>
@@ -8,6 +9,7 @@
 using namespace std;
 
 
+/*
 // sort indices and store the ordering.
 class sort_indices
 {
@@ -37,6 +39,7 @@ T lower_bound2(T *left, T *right, T val) {
     else
         return distance(first, left-1);
 }
+*/
 
 
 int strength_matrix::strength_matrix_set(std::vector<index_t> &r, std::vector<index_t> &c, std::vector<value_t > &v, index_t m1, index_t m2, nnz_t m3, std::vector<index_t> &spl, MPI_Comm com){
@@ -122,8 +125,8 @@ int strength_matrix::strength_matrix_set(std::vector<index_t> &r, std::vector<in
                 recvCount[procNum]++;
                 nnz_col_remote.push_back(1);
             } else {
-                (*(vElementRep_remote.end()-1))++;
-                (*(nnz_col_remote.end()-1))++;
+                vElementRep_remote.back()++;
+                nnz_col_remote.back()++;
             }
             // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
             col_remote.push_back(col_remote_size-1);
