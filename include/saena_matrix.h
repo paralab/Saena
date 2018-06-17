@@ -184,6 +184,8 @@ public:
     int openmp_setup();
     int scale_matrix();
 
+    int matrix_setup_no_scale();
+
     int set_off_on_diagonal_dummy();
 //    int find_sortings_dummy();
     int matrix_setup_dummy();

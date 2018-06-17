@@ -26,7 +26,7 @@ public:
     // which means the number of rows was not reduced much.
     double row_reduction_threshold = 0.90;
     int vcycle_num = 500;
-    double relative_tolerance = 1e-8;
+    double relative_tolerance = 1e-10;
     std::string smoother = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth  = 3;
     int postSmooth = 3;
@@ -55,11 +55,14 @@ public:
 
     bool verbose = false;
     bool verbose_setup = true;
+    bool verbose_setup_steps = false;
     bool verbose_level_setup = false;
     bool verbose_coarsen = false;
     bool verbose_coarsen2 = false;
-    bool verbose_solve_coarse = false;
+    bool verbose_solve = false;
     bool verbose_vcycle = false;
+    bool verbose_vcycle_residuals = false;
+    bool verbose_solve_coarse = false;
 
     saena_object();
     ~saena_object();

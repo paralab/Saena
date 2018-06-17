@@ -164,7 +164,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 100;
+    int vcycle_num            = 200;
     double relative_tolerance = 1e-12;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;
@@ -196,6 +196,23 @@ int main(int argc, char* argv[]){
     print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
+
+    // *************************** check correctness of the solution ****************************
+
+    // A is scaled. read it from the file and don't scale.
+    saena_matrix AA(file_name, comm);
+    AA.repartition_nnz_initial();
+    AA.matrix_setup_no_scale();
+
+    std::vector<double> Au(num_local_row, 0);
+    AA.matvec(u, Au);
+
+    if(rank==0){
+        for(index_t i = 0; i < num_local_row; i++){
+            if(fabs(Au[i] - rhs[i]) > 1e-8)
+                printf("%.10f \t%.10f \t%.10f \n", Au[i], rhs[i], Au[i] - rhs[i]);
+        }
+    }
 
     // *************************** finalize ****************************
 

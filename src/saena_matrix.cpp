@@ -2598,6 +2598,97 @@ int saena_matrix::matrix_setup() {
 }
 
 
+int saena_matrix::matrix_setup_no_scale(){
+    // before using this function the following parameters of saena_matrix should be set:
+    // "Mbig", "M", "nnz_g", "split", "entry",
+
+    // todo: here: check if there is another if(active) before calling this function.
+    if(active) {
+        int nprocs, rank;
+        MPI_Comm_size(comm, &nprocs);
+        MPI_Comm_rank(comm, &rank);
+
+#pragma omp parallel
+        if(rank==0 && omp_get_thread_num()==0) printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
+
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
+            MPI_Barrier(comm);}
+
+//        print_vector(entry, -1, "entry", comm);
+
+        assembled = true;
+        freeBoolean = true; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
+
+        // *************************** set the inverse of diagonal of A (for smoothers) ****************************
+
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup: rank = %d, inv_diag \n", rank);
+            MPI_Barrier(comm);
+        }
+
+        inv_diag.resize(M);
+        inverse_diag();
+
+//        print_vector(inv_diag, -1, "inv_diag", comm);
+
+        // *************************** set rho ****************************
+
+//        set_rho();
+
+        // *************************** set and exchange on-diagonal and off-diagonal elements ****************************
+
+        set_off_on_diagonal();
+
+        // *************************** find sortings ****************************
+
+        find_sortings();
+
+        // *************************** find start and end of each thread for matvec ****************************
+        // also, find nnz per row for local and remote matvec
+
+        openmp_setup();
+        w_buff.resize(num_threads*M); // allocate for w_buff for matvec3()
+
+        // *************************** scale ****************************
+        // scale the matrix to have its diagonal entries all equal to 1.
+
+//        scale_matrix();
+
+        // *************************** print info ****************************
+
+/*
+        nnz_t total_nnz_l_local;
+        nnz_t total_nnz_l_remote;
+        MPI_Allreduce(&nnz_l_local,  &total_nnz_l_local,  1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+        MPI_Allreduce(&nnz_l_remote, &total_nnz_l_remote, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+        int local_percent  = int(100*(float)total_nnz_l_local/nnz_g);
+        int remote_percent = int(100*(float)total_nnz_l_remote/nnz_g);
+        if(rank==0) printf("\nMbig = %u, nnz_g = %lu, total_nnz_l_local = %lu (%%%d), total_nnz_l_remote = %lu (%%%d) \n",
+                           Mbig, nnz_g, total_nnz_l_local, local_percent, total_nnz_l_remote, remote_percent);
+
+//        printf("rank %d: col_remote_size = %u \n", rank, col_remote_size);
+        index_t col_remote_size_min, col_remote_size_ave, col_remote_size_max;
+        MPI_Allreduce(&col_remote_size, &col_remote_size_min, 1, MPI_UNSIGNED, MPI_MIN, comm);
+        MPI_Allreduce(&col_remote_size, &col_remote_size_ave, 1, MPI_UNSIGNED, MPI_SUM, comm);
+        MPI_Allreduce(&col_remote_size, &col_remote_size_max, 1, MPI_UNSIGNED, MPI_MAX, comm);
+        if(rank==0) printf("\nremote_min = %u, remote_ave = %u, remote_max = %u \n",
+                           col_remote_size_min, (col_remote_size_ave/nprocs), col_remote_size_max);
+*/
+
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup: rank = %d, done \n", rank);
+            MPI_Barrier(comm);
+        }
+
+    } // if(active)
+    return 0;
+}
+
+
 int saena_matrix::matrix_setup_update() {
     // update values_local, values_remote and inv_diag.
 
