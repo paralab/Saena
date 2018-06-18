@@ -33,6 +33,7 @@ namespace saena {
         bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
         int assemble();
+        int assemble_no_scale();
         int assemble_band_matrix();
         saena_matrix* get_internal_matrix();
         index_t get_num_rows();
@@ -53,7 +54,7 @@ namespace saena {
 
     class options {
     private:
-        int vcycle_num            = 200;
+        int vcycle_num            = 500;
         double relative_tolerance = 1e-10;
         std::string smoother      = "chebyshev";
         int preSmooth             = 3;

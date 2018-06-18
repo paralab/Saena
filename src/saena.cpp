@@ -115,6 +115,23 @@ int saena::matrix::assemble() {
     return 0;
 }
 
+
+int saena::matrix::assemble_no_scale(){
+
+    if(!m_pImpl->assembled){
+        m_pImpl->repartition_nnz_initial();
+        m_pImpl->matrix_setup_no_scale();
+        if(m_pImpl->enable_shrink) m_pImpl->compute_matvec_dummy_time();
+    }else{
+        m_pImpl->setup_initial_data2();
+        m_pImpl->repartition_nnz_update();
+        m_pImpl->matrix_setup_update();
+    }
+
+    return 0;
+}
+
+
 int saena::matrix::assemble_band_matrix(){
     m_pImpl->matrix_setup();
 

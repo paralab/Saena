@@ -105,10 +105,10 @@ int main(int argc, char* argv[]){
 
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs(num_local_row);
-//    generate_rhs_old(rhs);
+    generate_rhs_old(rhs);
 
-    for(index_t i = 0; i < A.get_num_local_rows(); i++)
-        rhs[i] = i + 1 + A.get_internal_matrix()->split[rank];
+//    for(index_t i = 0; i < A.get_num_local_rows(); i++)
+//        rhs[i] = i + 1 + A.get_internal_matrix()->split[rank];
 
     // ********** 2 - set rhs: read from file **********
 /*
@@ -198,18 +198,17 @@ int main(int argc, char* argv[]){
 //    print_vector(u, -1, "u", comm);
 
     // *************************** check correctness of the solution ****************************
-
     // A is scaled. read it from the file and don't scale.
-    saena_matrix AA(file_name, comm);
-    AA.repartition_nnz_initial();
-    AA.matrix_setup_no_scale();
 
+    saena::matrix AA (file_name, comm);
+    AA.assemble_no_scale();
+    saena_matrix *AAA = AA.get_internal_matrix();
     std::vector<double> Au(num_local_row, 0);
-    AA.matvec(u, Au);
+    AAA->matvec(u, Au);
 
     if(rank==0){
         for(index_t i = 0; i < num_local_row; i++){
-            if(fabs(Au[i] - rhs[i]) > 1e-8)
+            if(fabs(Au[i] - rhs[i]) > 1e-10)
                 printf("%.10f \t%.10f \t%.10f \n", Au[i], rhs[i], Au[i] - rhs[i]);
         }
     }

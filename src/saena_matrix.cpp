@@ -2517,9 +2517,6 @@ int saena_matrix::matrix_setup() {
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 
-#pragma omp parallel
-        if(rank==0 && omp_get_thread_num()==0) printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
-
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
@@ -4898,7 +4895,7 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
     for(index_t i = 0; i < u.size(); i++){
         d[i] = (-res[i] * inv_diag[i]) / theta;
         u[i] += d[i];
-//        if(rank==0) printf("inv_diag[%lu] = %f, \tres[%lu] = %f, \td[%lu] = %f, \tu[%lu] = %f \n",
+//        if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                           i, inv_diag[i], i, res[i], i, d[i], i, u[i]);
     }
 
@@ -4911,9 +4908,10 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
 
 #pragma omp parallel for
         for(index_t j = 0; j < u.size(); j++){
-            d[j] = ( d1 * d[j] ) + ( d2 * (-res[j] * inv_diag[i]));
+            d[j] = ( d1 * d[j] ) + ( d2 * (-res[j] * inv_diag[j]));
             u[j] += d[j];
-//        if(rank==0) printf("u[%lu] = %f \n", j, u[j]);
+//            if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
+//                               j, inv_diag[j], j, res[j], j, d[j], j, u[j]);
         }
     }
 
