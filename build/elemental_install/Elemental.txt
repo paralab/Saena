@@ -1,1 +1,0 @@
-Elemental will be installed in "elemental_install" folder here.
