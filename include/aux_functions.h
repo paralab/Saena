@@ -114,7 +114,7 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
 int randomVector4(std::vector<unsigned long>& V, long size);
 
 
-// the order of this class is called "Column-major order"
+// the order of this class is called "column-major order"
 class cooEntry{
 public:
     index_t row;
@@ -197,7 +197,7 @@ std::ostream & operator<<(std::ostream & stream, const cooEntry & item);
 bool row_major (const cooEntry& node1, const cooEntry& node2);
 
 
-// the order of this class is called "Row-major order"
+// the order of this class is called "row-major order"
 class cooEntry_row{
 public:
     index_t row;
@@ -212,12 +212,12 @@ public:
         val = v;
     }
 
-    bool operator == (const cooEntry& node2) const
+    bool operator == (const cooEntry_row& node2) const
     {
         return (row == node2.row && col == node2.col);
     }
 
-    bool operator < (const cooEntry& node2) const
+    bool operator < (const cooEntry_row& node2) const
     {
         if(row < node2.row)
             return (true);
@@ -227,7 +227,7 @@ public:
             return false;
     }
 
-    bool operator <= (const cooEntry& node2) const
+    bool operator <= (const cooEntry_row& node2) const
     {
         if(row < node2.row)
             return (true);
@@ -237,7 +237,7 @@ public:
             return false;
     }
 
-    bool operator > (const cooEntry& node2) const
+    bool operator > (const cooEntry_row& node2) const
     {
         if(row > node2.row)
             return (true);
@@ -247,7 +247,7 @@ public:
             return false;
     }
 
-    bool operator >= (const cooEntry& node2) const
+    bool operator >= (const cooEntry_row& node2) const
     {
         if(  row > node2.row)
             return (true);
@@ -265,13 +265,17 @@ public:
         if (first)
         {
             first = false;
-            MPI_Type_contiguous(sizeof(cooEntry), MPI_BYTE, &datatype);
+            MPI_Type_contiguous(sizeof(cooEntry_row), MPI_BYTE, &datatype);
             MPI_Type_commit(&datatype);
         }
 
         return datatype;
     }
 };
+
+
+std::ostream & operator<<(std::ostream & stream, const cooEntry_row & item);
+
 
 //template <class T>
 //float myNorm(std::vector<T>& v);

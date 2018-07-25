@@ -1,3 +1,6 @@
+#include <cmath>
+#include "superlu_ddefs.h"
+
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
@@ -15,7 +18,6 @@
 #include <algorithm>
 #include <set>
 #include <mpi.h>
-#include <cmath>
 
 
 saena_object::saena_object(){}
@@ -2709,18 +2711,11 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-//    long i, j;
 
     if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest_CG()\n");
 
-    // res = A*u - rhs
-    std::vector<value_t> res(A->M);
-    A->residual(u, rhs, res);
-
-    // make res = rhs - A*u
-    #pragma omp parallel for
-    for(index_t i=0; i<res.size(); i++)
-        res[i] = -res[i];
+    // since u is zero, res = -rhs, and the residual in this function is the negative of what I have in this library.
+    std::vector<value_t> res = rhs;
 
     double initial_dot;
     dotProduct(res, res, &initial_dot, comm);
@@ -2733,6 +2728,9 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 
     std::vector<value_t> dir(A->M);
     dir = res;
+
+    double dot2;
+    std::vector<value_t> res2(A->M);
 
     double factor, dot_prev;
     std::vector<value_t> matvecTemp(A->M);
@@ -2747,22 +2745,22 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 //        if(rank==1) std::cout << "\nsolveCoarsest: factor = " << factor << std::endl;
 
         #pragma omp parallel for
-        for(index_t j = 0; j < A->M; j++)
-            u[j] += factor * dir[j];
-
-        // update residual
-        #pragma omp parallel for
-        for(index_t j = 0; j < A->M; j++)
+        for(index_t j = 0; j < A->M; j++){
+            u[j]   += factor * dir[j];
             res[j] -= factor * matvecTemp[j];
+        }
 
         dot_prev = dot;
-
         dotProduct(res, res, &dot, comm);
 //        if(rank==0) std::cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << std::endl;
 //        if(rank==0) std::cout << sqrt(dot)/initialNorm << std::endl;
 
         if(verbose_solve_coarse && rank==0)
             std::cout << "sqrt(dot)/sqrt(initial_dot) = " << sqrt(dot/initial_dot) << "  \tCG_tol = " << CG_tol << std::endl;
+
+        A->residual(u, rhs, res2);
+        dotProduct(res2, res2, &dot2, comm);
+//        if(rank==0) std::cout << "norm(res) = " << sqrt(dot2) << std::endl;
 
         if (dot/initial_dot < CG_tol*CG_tol)
             break;
@@ -2782,7 +2780,288 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
         i--;
 
     if(verbose_solve_coarse && rank==0) printf("end of solve_coarsest! it took CG iterations = %d\n \n", i);
-//    if(rank==0) printf("end of solve_coarsest! it took CG iterations = %ld\n \n", i);
+//    if(rank==0) printf("end of solve_coarsest! it took CG iterations = %d \n\n", i);
+
+    return 0;
+}
+
+
+int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){
+
+    MPI_Comm comm = A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest_SuperLU()\n");
+
+    superlu_dist_options_t options;
+    SuperLUStat_t stat;
+    SuperMatrix A_SLU;
+    ScalePermstruct_t ScalePermstruct;
+    LUstruct_t LUstruct;
+    SOLVEstruct_t SOLVEstruct;
+    gridinfo_t grid;
+    double   *berr;
+    double   *b, *xtrue;
+    int      m, n, m_loc, nnz_loc;
+    int      nprow, npcol;
+    int      iam, info, ldb, ldx, nrhs;
+//    char     **cpp, c;
+//    FILE *fp, *fopen();
+//    FILE *fp;
+//    int cpp_defs();
+
+    nprow = nprocs;  /* Default process rows.      */
+    npcol = 1;  /* Default process columns.   */
+    nrhs  = 1;  /* Number of right-hand side. */
+
+    /* ------------------------------------------------------------
+       INITIALIZE MPI ENVIRONMENT.
+       ------------------------------------------------------------*/
+//    MPI_Init( &argc, &argv );
+
+//    char* file_name(argv[5]);
+//    saena::matrix A_saena (file_name, comm);
+//    A_saena.assemble();
+//    A_saena.print(-1);
+//    if(rank==0) printf("after matrix assemble.\n");
+
+    /*
+    // Parse command line argv[].
+    for (cpp = argv+1; *cpp; ++cpp) {
+        if ( **cpp == '-' ) {
+            c = *(*cpp+1);
+            ++cpp;
+            switch (c) {
+                case 'h':
+                    printf("Options:\n");
+                    printf("\t-r <int>: process rows    (default %4d)\n", nprow);
+                    printf("\t-c <int>: process columns (default %4d)\n", npcol);
+                    exit(0);
+                    break;
+                case 'r': nprow = atoi(*cpp);
+                    break;
+                case 'c': npcol = atoi(*cpp);
+                    break;
+            }
+        } else { // Last arg is considered a filename
+//            if ( !(fp = fopen(*cpp, "r")) ) {
+//                ABORT("File does not exist");
+//            }
+
+            saena::matrix A_saena (*cpp, comm);
+            A_saena.assemble();
+            A_saena.print(-1);
+            if(rank==0) printf("after matrix assemble.\n");
+            break;
+        }
+    }
+*/
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------*/
+    if(verbose_solve_coarse && rank==0) printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
+
+    superlu_gridinit(comm, nprow, npcol, &grid);
+
+    // Bail out if I do not belong in the grid.
+    iam = grid.iam; // my process rank in this group
+//    printf("iam = %d, nprow = %d, npcol = %d \n", iam, nprow, npcol);
+//    if ( iam >= nprow * npcol )	goto out;
+
+    if ( verbose_solve_coarse && !iam ) {
+        int v_major, v_minor, v_bugfix;
+        superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+        printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+
+//        printf("Input matrix file:\t%s\n", *cpp);
+        printf("Process grid:\t\t%d X %d\n", nprow, npcol);
+        fflush(stdout);
+    }
+
+#if ( VAMPIR>=1 )
+    VT_traceoff();
+#endif
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Enter main()");
+#endif
+
+    /* ------------------------------------------------------------
+       PASS THE MATRIX FROM SAENA
+       ------------------------------------------------------------*/
+
+    // Set up the local A_SLU in NR_loc format
+//    dCreate_CompRowLoc_Matrix_dist(A_SLU, m, n, nnz_loc, m_loc, fst_row,
+//                                   nzval_loc, colind, rowptr,
+//                                   SLU_NR_loc, SLU_D, SLU_GE);
+
+    if(verbose_solve_coarse && rank==0) printf("PASS THE MATRIX FROM SAENA. \n");
+
+    m = A->Mbig;
+    m_loc = A->M;
+    n = m;
+    nnz_loc = A->nnz_l;
+    ldb = m_loc;
+    if(verbose_solve_coarse && rank==0)
+        printf("m = %d, m_loc = %d, n = %d, nnz_g = %ld, nnz_loc = %d, ldb = %d \n",
+               m, m_loc, n, A->nnz_g, nnz_loc, ldb);
+
+    // CSR format (compressed row)
+    // sort entries in row-major
+    std::vector<cooEntry> entry_temp = A->entry;
+    std::sort(entry_temp.begin(), entry_temp.end(), row_major);
+//    print_vector(entry_temp, -1, "entry_temp", comm);
+
+    index_t fst_row = A->split[rank];
+    std::vector<int> nnz_per_row(m_loc, 0);
+//    std::vector<int> rowptr(m_loc+1);
+//    std::vector<int> colind(nnz_loc);
+//    std::vector<double> nzval_loc(nnz_loc);
+
+    auto* rowptr = (int_t *) intMalloc_dist(m_loc+1);
+    auto* nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
+    auto* colind = (int_t *) intMalloc_dist(nnz_loc);
+
+    for(nnz_t i = 0; i < nnz_loc; i++){
+        nzval_loc[i] = entry_temp[i].val;
+        nnz_per_row[entry_temp[i].row - fst_row]++;
+        colind[i] = entry_temp[i].col;
+    }
+
+    // rowtptr is scan of nnz_per_row.
+    rowptr[0] = 0;
+    for(index_t i = 0; i < m_loc; i++)
+        rowptr[i+1] = rowptr[i] + nnz_per_row[i];
+
+//    A.print(-1);
+//    print_vector(rowptr, -1, "rowptr", comm);
+//    print_vector(colind, -1, "colind", comm);
+//    print_vector(nzval_loc, -1, "nzval_loc", comm);
+//    for(nnz_t i = 0; i < nnz_loc; i++)
+//        if(rank==0) printf("%ld \t%d \t%lld \t%lf \n", i, entry_temp[i].row-fst_row, colind[i], nzval_loc[i]);
+
+    dCreate_CompRowLoc_Matrix_dist(&A_SLU, m, n, nnz_loc, m_loc, fst_row,
+                                   &nzval_loc[0], &colind[0], &rowptr[0],
+                                   SLU_NR_loc, SLU_D, SLU_GE);
+
+//    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+
+    if ( !(berr = doubleMalloc_dist(nrhs)) )
+        ABORT("Malloc fails for berr[].");
+
+    /* ------------------------------------------------------------
+       SET THE RIGHT HAND SIDE.
+       ------------------------------------------------------------*/
+
+//    std::vector<double> rhs(m_loc);
+//    generate_rhs_old(rhs);
+    b = &rhs[0];
+    u = rhs;
+
+    /* ------------------------------------------------------------
+       .
+       ------------------------------------------------------------*/
+
+    /* Set the default input options:
+        options.Fact              = DOFACT;
+        options.Equil             = YES;
+        options.ParSymbFact       = NO;
+        options.ColPerm           = METIS_AT_PLUS_A;
+        options.RowPerm           = LargeDiag_MC64;
+        options.ReplaceTinyPivot  = NO;
+        options.IterRefine        = DOUBLE;
+        options.Trans             = NOTRANS;
+        options.SolveInitialized  = NO;
+        options.RefineInitialized = NO;
+        options.PrintStat         = YES; -> I changed this to NO.
+     */
+
+    // I changed options->PrintStat default to NO.
+    set_default_options_dist(&options);
+#if 0
+    options.RowPerm = NOROWPERM;
+    options.RowPerm = LargeDiag_AWPM;
+    options.IterRefine = NOREFINE;
+    options.ColPerm = NATURAL;
+    options.Equil = NO;
+    options.ReplaceTinyPivot = YES;
+#endif
+
+    if (verbose_solve_coarse && !iam) {
+        print_sp_ienv_dist(&options);
+        print_options_dist(&options);
+        fflush(stdout);
+    }
+
+//    m = A_SLU.nrow;
+//    n = A_SLU.ncol;
+
+    if(verbose_solve_coarse && rank==0) printf("SOLVE THE LINEAR SYSTEM. \n");
+
+    // Initialize ScalePermstruct and LUstruct.
+    ScalePermstructInit(m, n, &ScalePermstruct);
+    LUstructInit(n, &LUstruct);
+
+    if(verbose_solve_coarse && rank==0) printf("SOLVE THE LINEAR SYSTEM: step 1 \n");
+
+    // Initialize the statistics variables.
+    PStatInit(&stat);
+    // Call the linear equation solver.
+    pdgssvx(&options, &A_SLU, &ScalePermstruct, b, ldb, nrhs, &grid,
+            &LUstruct, &SOLVEstruct, berr, &stat, &info);
+
+    if(verbose_solve_coarse && rank==0) printf("SOLVE THE LINEAR SYSTEM: step 2 \n");
+
+    // put the solution in u
+    // b points to rhs. after calling pdgssvx it will contain the solution.
+    u.swap(rhs);
+
+    if(verbose_solve_coarse && rank==0) printf("SOLVE THE LINEAR SYSTEM: step 3 \n");
+
+    // Check the accuracy of the solution.
+//    pdinf_norm_error(iam, ((NRformat_loc *)A_SLU.Store)->m_loc,
+//                     nrhs, b, ldb, xtrue, ldx, &grid);
+
+    if(verbose_solve_coarse) PStatPrint(&options, &stat, &grid); // Print the statistics.
+
+    /* ------------------------------------------------------------
+       DEALLOCATE STORAGE.
+       ------------------------------------------------------------*/
+
+    if(verbose_solve_coarse && rank==0) printf("DEALLOCATE STORAGE. \n");
+
+    PStatFree(&stat);
+    Destroy_CompRowLoc_Matrix_dist(&A_SLU);
+    ScalePermstructFree(&ScalePermstruct);
+    Destroy_LU(n, &grid, &LUstruct);
+    LUstructFree(&LUstruct);
+    if ( options.SolveInitialized ) {
+        dSolveFinalize(&options, &SOLVEstruct);
+    }
+    SUPERLU_FREE(berr);
+
+    // don't need these two.
+//    SUPERLU_FREE(b);
+//    SUPERLU_FREE(xtrue);
+
+    /* ------------------------------------------------------------
+       RELEASE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------*/
+    out:
+    superlu_gridexit(&grid);
+
+    /* ------------------------------------------------------------
+       TERMINATES THE MPI EXECUTION ENVIRONMENT.
+       ------------------------------------------------------------*/
+//    MPI_Finalize();
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit main()");
+#endif
+
+    if(verbose_solve_coarse && rank==0) printf("end of solve_coarsest_SuperLU()\n");
 
     return 0;
 }
@@ -2950,8 +3229,8 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
             if(direct_solver == "CG")
                 solve_coarsest_CG(grid->A, u, rhs);
-            else if(direct_solver == "Elemental")
-                solve_coarsest_Elemental(grid->A, u, rhs);
+            else if(direct_solver == "SuperLU")
+                solve_coarsest_SuperLU(grid->A, u, rhs);
             else {
                 if (rank == 0) printf("Error: Unknown direct solver is chosen! \n");
                 MPI_Finalize();
@@ -3540,7 +3819,6 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     bool solve_verbose = false;
-//    unsigned long i, j;
 
     // ************** update grids[0].A **************
 // this part is specific to solve_pcg_update2(), in comparison to solve_pcg().
@@ -5230,8 +5508,10 @@ int saena_object::find_eig(saena_matrix& A){
 }
 
 
-int saena_object::find_eig_Elemental(saena_matrix& A) {
+// saena_object::find_eig_Elemental
 /*
+int saena_object::find_eig_Elemental(saena_matrix& A) {
+
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5298,13 +5578,16 @@ int saena_object::find_eig_Elemental(saena_matrix& A) {
 //    if(rank==0) printf("\nthe biggest eigenvalue of A is %f (Elemental) \n", A.eig_max_of_invdiagXA);
 
     El::Finalize();
-*/
+
     return 0;
 }
+*/
 
 
-int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
+// saena_object::solve_coarsest_Elemental
 /*
+int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_t> &u, std::vector<value_t> &rhs){
+
     int argc = 0;
     char** argv = {NULL};
 //    El::Environment env( argc, argv );
@@ -5373,6 +5656,7 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
         u[i-A_S->split[rank]] = temp[i];
 
     El::Finalize();
-*/
+
     return 0;
 }
+*/

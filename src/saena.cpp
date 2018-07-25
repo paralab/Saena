@@ -805,7 +805,8 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     B->entry.resize(B->data_coo.size());
     nnz_t iter = 0;
     for(auto i:B->data_coo){
-        B->entry[iter] = i;
+//        B->entry[iter] = i;
+        B->entry[iter] = cooEntry(i.row, i.col, i.val);
         iter++;
     }
     std::sort(B->entry.begin(), B->entry.end());

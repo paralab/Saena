@@ -3,6 +3,7 @@
 
 #include "saena_matrix_dense.h"
 #include "aux_functions.h"
+#include "zfparray1.h"
 
 #include <iostream>
 #include <vector>
@@ -24,10 +25,10 @@ class saena_matrix {
 // A matrix of this class has column-major order: ordered first column-wise, then row-wise.
 
 private:
-    std::vector<cooEntry> data_unsorted;
+    std::vector<cooEntry_row> data_unsorted;
     std::vector<cooEntry> data;
 
-    nnz_t initial_nnz_l;
+    nnz_t initial_nnz_l = 0;
     bool read_from_file = false;
     bool freeBoolean = false; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
 
@@ -36,7 +37,7 @@ private:
     bool verbose_matrix_setup = false;
 
 public:
-    std::set<cooEntry> data_coo;
+    std::set<cooEntry_row> data_coo;
     std::vector<cooEntry> entry;
     std::vector<cooEntry> entry_temp; // is used for updating the matrix
 
@@ -48,9 +49,9 @@ public:
     std::vector<index_t> split; // (row-wise) partition of the matrix between processes
     std::vector<index_t> split_old;
 
-    nnz_t nnz_l_local;
-    nnz_t nnz_l_remote;
-    index_t col_remote_size; // number of remote columns
+    nnz_t nnz_l_local  = 0;
+    nnz_t nnz_l_remote = 0;
+    index_t col_remote_size = 0; // number of remote columns
     std::vector<value_t> values_local;
     std::vector<value_t> values_remote;
     std::vector<index_t> row_local;
@@ -63,28 +64,30 @@ public:
     std::vector<index_t> nnzPerRow_remote; // used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
 
-    std::vector<index_t> row_local_temp;
-    std::vector<index_t> col_local_temp;
-    std::vector<value_t> values_local_temp;
+//    std::vector<index_t> row_local_temp;
+//    std::vector<index_t> col_local_temp;
+//    std::vector<value_t> values_local_temp;
 
     std::vector<value_t> inv_diag;
     std::vector<value_t> inv_diag_original;
     std::vector<value_t> inv_sq_diag;
 //    double norm1, normInf, rhoDA;
 
-    index_t vIndexSize;
-    index_t recvSize;
+    index_t vIndexSize = 0;
+    index_t recvSize   = 0;
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
     std::vector<unsigned long> vSendULong;
     std::vector<unsigned long> vecValuesULong;
+//    zfp::array1<double> vSend_zfp;
+//    zfp::array1<double> vecValues_zfp;
 
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;
 
-    int numRecvProc;
-    int numSendProc;
+    int numRecvProc = 0;
+    int numSendProc = 0;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
     std::vector<int> recvCount;
@@ -96,7 +99,7 @@ public:
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
 
-    unsigned int num_threads;
+    unsigned int num_threads = 1;
     std::vector<nnz_t> iter_local_array;
     std::vector<nnz_t> iter_remote_array;
     std::vector<nnz_t> iter_local_array2;
@@ -117,18 +120,18 @@ public:
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
     bool enable_shrink = false;
-    bool do_shrink = false;
-    bool shrinked = false; // if shrinking happens for the matrix, set this to true.
+    bool do_shrink     = false;
+    bool shrinked      = false; // if shrinking happens for the matrix, set this to true.
     std::vector<double> matvec_dummy_time;
     int cpu_shrink_thre1 = 1; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
     int cpu_shrink_thre2 = 1; // number of procs after shrinking = nprocs / cpu_shrink_thre2
     int cpu_shrink_thre2_next_level = -1;
-    float shrink_total_thre = 1.25;
-    float shrink_local_thre = 1.25;
-    float shrink_communic_thre = 1.5;
-    index_t last_M_shrink;
-    nnz_t   last_nnz_shrink;
-    double  last_density_shrink;
+    float shrink_total_thre     = 1.25;
+    float shrink_local_thre     = 1.25;
+    float shrink_communic_thre  = 1.5;
+    index_t last_M_shrink       = 0;
+    nnz_t   last_nnz_shrink     = 0;
+    double  last_density_shrink = 0;
     // use these two parameters to decide shrinking for the level of multigrid
     bool enable_shrink_next_level = false; // default is false. set it to true in the setup() function if it is required.
 //    int cpu_shrink_thre1_next = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
@@ -143,6 +146,20 @@ public:
     bool switch_to_dense = false;
     bool dense_matrix_generated = false;
     float dense_threshold = 0.9; // 0<dense_threshold<=1 decide when to also generate dense_matrix for this matrix.
+
+    // zfp parameters
+    zfp_field* field;  /* array meta data */
+    zfp_stream* zfp;   /* compressed stream */
+    bitstream* stream; /* bit stream to write to or read from */
+//    unsigned char *send_buffer; /* storage for compressed stream */
+//    unsigned char *recv_buffer;
+    double *send_buffer; /* storage for compressed stream */
+    double *recv_buffer;
+    unsigned rate = 64;
+    unsigned send_bufsize = 0, recv_bufsize = 0;
+    zfp_field* field2;  /* array meta data */
+    zfp_stream* zfp2;   /* compressed stream */
+    bitstream* stream2; /* bit stream to write to or read from */
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
@@ -165,6 +182,7 @@ public:
 //    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
 
     int setup_initial_data();
+    int remove_duplicates();
     int repartition_nnz_initial(); // based on nnz.
     int matrix_setup();
 
@@ -196,6 +214,7 @@ public:
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
     int matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);

@@ -30,11 +30,11 @@ public:
     std::string smoother = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth  = 3;
     int postSmooth = 3;
-    std::string direct_solver = "CG"; // options: 1- CG, 2- Elemental (uncomment #include "El.hpp" in saena_object.cpp)
+    std::string direct_solver = "SuperLU"; // options: 1- CG, 2- SuperLU
     std::vector<Grid> grids;
     float connStrength = 0.5; // connection strength parameter: control coarsening aggressiveness
-    int CG_max_iter = 150;
-    double CG_tol = 1e-10;
+    int CG_max_iter = 150; //150
+    double CG_tol = 1e-14;
     bool repartition = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
 //    bool shrink_cpu = true;
     bool dynamic_levels = true;
@@ -80,7 +80,8 @@ public:
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
 //    int coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
     int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
-    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int solve_coarsest_SuperLU(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+//    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int smooth(Grid* grid, std::string smoother, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
     int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int solve(std::vector<value_t>& u);
@@ -99,7 +100,7 @@ public:
     int unshrink_u(Grid* grid, std::vector<value_t>& u);
     bool active(int l);
     int find_eig(saena_matrix& A);
-    int find_eig_Elemental(saena_matrix& A);
+//    int find_eig_Elemental(saena_matrix& A);
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
 
@@ -110,6 +111,11 @@ public:
 //    template <class T>
 //    int writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm);
     int change_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew);
+
+    // double versions
+//    int vcycle_d(Grid* grid, std::vector<value_d_t>& u_d, std::vector<value_d_t>& rhs_d);
+//    int scale_vector_d(std::vector<value_d_t>& v, std::vector<value_t>& w);
+//    int solve_coarsest_CG_d(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
 };
 
 #endif //SAENA_SAENA_OBJECT_H
