@@ -3339,7 +3339,8 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             if(rank==0) printf("vcycle: repartition_back_u2\n");
             MPI_Barrier(grid->A->comm);}
 
-        repartition_back_u2(uCorrCoarse, *grid);
+        if(nprocs > 1)
+            repartition_back_u2(uCorrCoarse, *grid);
 
         if(verbose_vcycle){
             MPI_Barrier(grid->A->comm);

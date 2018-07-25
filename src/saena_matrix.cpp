@@ -79,6 +79,7 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
 
     MPI_File_read_at(fh, offset, datap, initial_nnz_l, cooEntry_row::mpi_datatype(), &status);
 
+
 //    double val;
 //    if(rank==0)
 //        for(long i=0; i<initial_nnz_l; i++){
