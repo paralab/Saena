@@ -1,4 +1,3 @@
 build
 .idea
-external
-CMakeLists.txt
+cmake-build-debug
