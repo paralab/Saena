@@ -22,8 +22,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    bool verbose_transposeP = false;
-    unsigned long i, j;
+    unsigned long i;
 
     arrays_defined = true;
     Mbig = P->Nbig;
@@ -47,25 +46,29 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     // *********************** send remote part of restriction ************************
 
+    MPI_Request *requests = new MPI_Request[P->numSendProc_t + P->numRecvProc_t];
+    MPI_Status *statuses  = new MPI_Status[P->numSendProc_t + P->numRecvProc_t];
+
+    if(nprocs > 1) {
 //    MPI_Barrier(comm);
 //    if(rank==1) cout << "\nvSend_t: P->nnz_l_remote = " << P->nnz_l_remote << endl;
-    for (i = 0; i < P->nnz_l_remote; i++){ // all remote entries should be sent.
-        P->vSend_t[i] = cooEntry(P->entry_remote[i].row + split[rank], P->entry_remote[i].col, P->entry_remote[i].val);
+        for (i = 0; i < P->nnz_l_remote; i++) { // all remote entries should be sent.
+            P->vSend_t[i] = cooEntry(P->entry_remote[i].row + split[rank], P->entry_remote[i].col,
+                                     P->entry_remote[i].val);
 //        if(rank==1) printf("%lu\t %lu\t %f \tP_remote\n", P->entry_remote[i].row, P->entry_remote[i].col, P->entry_remote[i].val);
-    }
+        }
 
 //    if(rank==1) printf("numRecvProc_t = %u \tnumSendProc_t = %u \n", P->numRecvProc_t, P->numSendProc_t);
 
-    MPI_Request *requests = new MPI_Request[P->numSendProc_t + P->numRecvProc_t];
-    MPI_Status  *statuses = new MPI_Status[P->numSendProc_t + P->numRecvProc_t];
+        for (i = 0; i < P->numRecvProc_t; i++)
+            MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i],
+                      cooEntry::mpi_datatype(), P->recvProcRank_t[i], 1, comm, &(requests[i]));
 
-    for(i = 0; i < P->numRecvProc_t; i++)
-        MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i], cooEntry::mpi_datatype(), P->recvProcRank_t[i], 1, comm, &(requests[i]));
-
-    for(i = 0; i < P->numSendProc_t; i++) {
-        MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], cooEntry::mpi_datatype(),
-                  P->sendProcRank_t[i], 1, comm, &(requests[P->numRecvProc_t + i]));
+        for (i = 0; i < P->numSendProc_t; i++) {
+            MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], cooEntry::mpi_datatype(),
+                      P->sendProcRank_t[i], 1, comm, &(requests[P->numRecvProc_t + i]));
 //        if(rank==1) printf("numRecvProc_t = %u \tnumSendProc_t = %u \n", P->numRecvProc_t, P->numSendProc_t);
+        }
     }
 
     if(verbose_transposeP){
@@ -109,25 +112,29 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     // *********************** assign remote part of restriction ************************
 
-    MPI_Waitall(P->numRecvProc_t, requests, statuses);
+    if(nprocs > 1) {
 
-//    MPI_Barrier(comm);
-//    if(rank==1) cout << "vecValues_t:" << endl;
-    for(i = 0; i < P->recvSize_t; i++){
+        MPI_Waitall(P->numRecvProc_t, requests, statuses);
+
+//        MPI_Barrier(comm);
+//        if(rank==1) cout << "vecValues_t:" << endl;
+        for (i = 0; i < P->recvSize_t; i++) {
 //        if(rank==1) printf("%lu\t %lu\t %f\n", P->vecValues_t[i].row, P->vecValues_t[i].col - splitNew[rank], P->vecValues_t[i].val);
-        entry.push_back(cooEntry(P->vecValues_t[i].col - splitNew[rank], // make row index local
-                                        P->vecValues_t[i].row,
-                                        P->vecValues_t[i].val));
+            entry.push_back(cooEntry(P->vecValues_t[i].col - splitNew[rank], // make row index local
+                                     P->vecValues_t[i].row,
+                                     P->vecValues_t[i].val));
+        }
+
+        std::sort(entry.begin(), entry.end());
+
+        if (verbose_transposeP) {
+            MPI_Barrier(comm);
+            printf("rank %d: transposeP part3-2\n", rank);
+        }
+
+        MPI_Waitall(P->numSendProc_t, P->numRecvProc_t + requests, P->numRecvProc_t + statuses);
     }
 
-    std::sort(entry.begin(), entry.end());
-
-    if(verbose_transposeP){
-        MPI_Barrier(comm);
-        printf("rank %d: transposeP part3-2\n", rank);
-    }
-
-    MPI_Waitall(P->numSendProc_t, P->numRecvProc_t+requests, P->numRecvProc_t+statuses);
     delete [] requests;
     delete [] statuses;
 
@@ -152,8 +159,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     long procNum;
     col_remote_size = 0; // number of remote columns
-    int* recvCount = (int*)malloc(sizeof(int)*nprocs);
-    std::fill(recvCount, recvCount + nprocs, 0);
+    std::vector<int> recvCount(nprocs, 0);
     nnzPerRow_local.assign(M,0);
     nnzPerRowScan_local.assign(M+1, 0);
     nnz_l_local = 0;
@@ -268,8 +274,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         printf("rank %d: transposeP part6\n", rank);
     }
 
-    int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
+    if(nprocs > 1) {
+        std::vector<int> vIndexCount(nprocs);
+        MPI_Alltoall(&recvCount[0], 1, MPI_INT, &vIndexCount[0], 1, MPI_INT, comm);
 
 //    for(int i=0; i<nprocs; i++){
 //        MPI_Barrier(comm);
@@ -278,37 +285,37 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //        if(rank==2) cout << "send to proc      " << i << "\tvIndexCount = " << vIndexCount[i] << endl;
 //    }
 
-    numRecvProc = 0;
-    numSendProc = 0;
-    for(int i=0; i<nprocs; i++){
-        if(recvCount[i]!=0){
-            numRecvProc++;
-            recvProcRank.push_back(i);
-            recvProcCount.push_back(recvCount[i]);
+        numRecvProc = 0;
+        numSendProc = 0;
+        for (int i = 0; i < nprocs; i++) {
+            if (recvCount[i] != 0) {
+                numRecvProc++;
+                recvProcRank.push_back(i);
+                recvProcCount.push_back(recvCount[i]);
 //            sendProcCount_t.push_back(vIndexCount_t[i]); // use recvProcRank for it.
 //            if(rank==0) cout << i << "\trecvCount[i] = " << recvCount[i] << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
-        }
-        if(vIndexCount[i]!=0){
-            numSendProc++;
-            sendProcRank.push_back(i);
-            sendProcCount.push_back(vIndexCount[i]);
+            }
+            if (vIndexCount[i] != 0) {
+                numSendProc++;
+                sendProcRank.push_back(i);
+                sendProcCount.push_back(vIndexCount[i]);
 //            recvProcCount_t.push_back(recvCount_t[i]); // use sendProcRank for it.
+            }
         }
-    }
 
-    //  if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
+        //  if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
 
-    vdispls.resize(nprocs);
-    rdispls.resize(nprocs);
-    vdispls[0] = 0;
-    rdispls[0] = 0;
+        vdispls.resize(nprocs);
+        rdispls.resize(nprocs);
+        vdispls[0] = 0;
+        rdispls[0] = 0;
 
-    for (int i=1; i<nprocs; i++){
-        vdispls[i] = vdispls[i-1] + vIndexCount[i-1];
-        rdispls[i] = rdispls[i-1] + recvCount[i-1];
-    }
-    vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
-    recvSize   = rdispls[nprocs-1] + recvCount[nprocs-1];
+        for (int i = 1; i < nprocs; i++) {
+            vdispls[i] = vdispls[i - 1] + vIndexCount[i - 1];
+            rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
+        }
+        vIndexSize = vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
+        recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
 //    for (int i=0; i<nprocs; i++)
 //        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
@@ -316,30 +323,28 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //    for (int i=0; i<nprocs; i++)
 //        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
 
-    // vIndex is the set of indices of elements that should be sent.
-    vIndex.resize(vIndexSize);
-    MPI_Alltoallv(&vElement_remote[0], recvCount, &rdispls[0], MPI_UNSIGNED,
-                  &vIndex[0], vIndexCount, &vdispls[0], MPI_UNSIGNED, comm);
+        // vIndex is the set of indices of elements that should be sent.
+        vIndex.resize(vIndexSize);
+        MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
+                      &vIndex[0], &vIndexCount[0], &vdispls[0], MPI_UNSIGNED, comm);
 
-    free(vIndexCount);
-    free(recvCount);
+        if (verbose_transposeP) {
+            MPI_Barrier(comm);
+            printf("rank %d: transposeP part7\n", rank);
+        }
 
-    if(verbose_transposeP){
-        MPI_Barrier(comm);
-        printf("rank %d: transposeP part7\n", rank);
-    }
-
-#pragma omp parallel for
-    for (index_t i = 0; i < vIndexSize; i++){
+        #pragma omp parallel for
+        for (index_t i = 0; i < vIndexSize; i++) {
 //        if(rank==1) cout << vIndex[i] << "\t" << vIndex[i]-P->split[rank] << endl;
-        vIndex[i] -= split[rank];
-    }
+            vIndex[i] -= split[rank];
+        }
 
-    // vSend = vector values to send to other procs
-    // vecValues = vector values that received from other procs
-    // These will be used in matvec and they are set here to reduce the time of matvec.
-    vSend.resize(vIndexSize);
-    vecValues.resize(recvSize);
+        // vSend = vector values to send to other procs
+        // vecValues = vector values that received from other procs
+        // These will be used in matvec and they are set here to reduce the time of matvec.
+        vSend.resize(vIndexSize);
+        vecValues.resize(recvSize);
+    }
 
     indicesP_local.resize(nnz_l_local);
     for(i=0; i<nnz_l_local; i++)

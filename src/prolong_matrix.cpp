@@ -46,8 +46,7 @@ int prolong_matrix::findLocalRemote(){
     col_remote_size = 0; // number of remote columns
     nnz_l_local = 0;
     nnz_l_remote = 0;
-    int* recvCount = (int*)malloc(sizeof(int)*nprocs);
-    std::fill(recvCount, recvCount + nprocs, 0);
+    std::vector<int> recvCount(nprocs, 0);
 //    int* recvCount_t = (int*)malloc(sizeof(int)*nprocs);
 //    std::fill(recvCount_t, recvCount_t + nprocs, 0);
     nnzPerRow_local.assign(M,0);
@@ -63,8 +62,7 @@ int prolong_matrix::findLocalRemote(){
     vElementRep_remote.clear();
     nnzPerCol_remote.clear();
 
-    int* vIndexCount_t = (int*)malloc(sizeof(int)*nprocs);
-    std::fill(vIndexCount_t, vIndexCount_t + nprocs, 0);
+    std::vector<int> vIndexCount_t(nprocs, 0);
 
     //todo: here: change push_back
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
@@ -156,11 +154,13 @@ int prolong_matrix::findLocalRemote(){
 //        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
     }
 
-    int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
+    if(nprocs >1) {
 
-    int* recvCount_t = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(vIndexCount_t, 1, MPI_INT, recvCount_t, 1, MPI_INT, comm);
+        std::vector<int> vIndexCount(nprocs);
+        MPI_Alltoall(&recvCount[0], 1, MPI_INT, &vIndexCount[0], 1, MPI_INT, comm);
+
+        std::vector<int> recvCount_t(nprocs);
+        MPI_Alltoall(&vIndexCount_t[0], 1, MPI_INT, &recvCount_t[0], 1, MPI_INT, comm);
 
 //    for(int i=0; i<nprocs; i++){
 //        MPI_Barrier(comm);
@@ -170,42 +170,42 @@ int prolong_matrix::findLocalRemote(){
 //    }
 //    MPI_Barrier(comm);
 
-    recvProcRank.clear();
-    recvProcCount.clear();
-    sendProcRank.clear();
-    sendProcCount.clear();
+        recvProcRank.clear();
+        recvProcCount.clear();
+        sendProcRank.clear();
+        sendProcCount.clear();
 
-    numRecvProc = 0;
-    numSendProc = 0;
-    for(int i=0; i<nprocs; i++){
-        if(recvCount[i]!=0){
-            numRecvProc++;
-            recvProcRank.push_back(i);
-            recvProcCount.push_back(recvCount[i]);
+        numRecvProc = 0;
+        numSendProc = 0;
+        for (int i = 0; i < nprocs; i++) {
+            if (recvCount[i] != 0) {
+                numRecvProc++;
+                recvProcRank.push_back(i);
+                recvProcCount.push_back(recvCount[i]);
 //            sendProcCount_t.push_back(vIndexCount_t[i]); // use recvProcRank for it.
 //            if(rank==0) cout << i << "\trecvCount[i] = " << recvCount[i] << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
-        }
-        if(vIndexCount[i]!=0){
-            numSendProc++;
-            sendProcRank.push_back(i);
-            sendProcCount.push_back(vIndexCount[i]);
+            }
+            if (vIndexCount[i] != 0) {
+                numSendProc++;
+                sendProcRank.push_back(i);
+                sendProcCount.push_back(vIndexCount[i]);
 //            recvProcCount_t.push_back(recvCount_t[i]); // use sendProcRank for it.
+            }
         }
-    }
 
-    //  if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
+        //  if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
 
-    vdispls.resize(nprocs);
-    rdispls.resize(nprocs);
-    vdispls[0] = 0;
-    rdispls[0] = 0;
+        vdispls.resize(nprocs);
+        rdispls.resize(nprocs);
+        vdispls[0] = 0;
+        rdispls[0] = 0;
 
-    for (int i=1; i<nprocs; i++){
-        vdispls[i] = vdispls[i-1] + vIndexCount[i-1];
-        rdispls[i] = rdispls[i-1] + recvCount[i-1];
-    }
-    vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
-    recvSize   = rdispls[nprocs-1] + recvCount[nprocs-1];
+        for (int i = 1; i < nprocs; i++) {
+            vdispls[i] = vdispls[i - 1] + vIndexCount[i - 1];
+            rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
+        }
+        vIndexSize = vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
+        recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
 //    for (int i=0; i<nprocs; i++)
 //        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
@@ -213,48 +213,50 @@ int prolong_matrix::findLocalRemote(){
 //    for (int i=0; i<nprocs; i++)
 //        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
 
-    // vIndex is the set of indices of elements that should be sent.
-    vIndex.resize(vIndexSize);
-    MPI_Alltoallv(&*vElement_remote.begin(), recvCount, &*rdispls.begin(), MPI_UNSIGNED,
-                  &vIndex[0], vIndexCount, &*vdispls.begin(), MPI_UNSIGNED, comm);
+        // vIndex is the set of indices of elements that should be sent.
+        vIndex.resize(vIndexSize);
+        MPI_Alltoallv(&*vElement_remote.begin(), &recvCount[0], &*rdispls.begin(), MPI_UNSIGNED,
+                      &vIndex[0], &vIndexCount[0], &*vdispls.begin(), MPI_UNSIGNED, comm);
 
-    free(vIndexCount);
-    free(recvCount);
+        vIndexCount.clear();
+        vIndexCount.shrink_to_fit();
+        recvCount.clear();
+        recvCount.shrink_to_fit();
 
-    recvProcRank_t.clear();
-    recvProcCount_t.clear();
-    sendProcRank_t.clear();
-    sendProcCount_t.clear();
+        recvProcRank_t.clear();
+        recvProcCount_t.clear();
+        sendProcRank_t.clear();
+        sendProcCount_t.clear();
 
-    numRecvProc_t = 0;
-    numSendProc_t = 0;
-    for(int i = 0; i < nprocs; i++){
-        if(recvCount_t[i]!=0){
-            numRecvProc_t++;
-            recvProcRank_t.push_back(i);
-            recvProcCount_t.push_back(recvCount_t[i]);
+        numRecvProc_t = 0;
+        numSendProc_t = 0;
+        for (int i = 0; i < nprocs; i++) {
+            if (recvCount_t[i] != 0) {
+                numRecvProc_t++;
+                recvProcRank_t.push_back(i);
+                recvProcCount_t.push_back(recvCount_t[i]);
 //            if(rank==2) cout << i << "\trecvCount_t[i] = " << recvCount_t[i] << endl;
-        }
-        if(vIndexCount_t[i]!=0){
-            numSendProc_t++;
-            sendProcRank_t.push_back(i);
-            sendProcCount_t.push_back(vIndexCount_t[i]);
+            }
+            if (vIndexCount_t[i] != 0) {
+                numSendProc_t++;
+                sendProcRank_t.push_back(i);
+                sendProcCount_t.push_back(vIndexCount_t[i]);
 //            if(rank==1) cout << i << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
+            }
         }
-    }
 
-    vdispls_t.resize(nprocs);
-    rdispls_t.resize(nprocs);
-    vdispls_t[0] = 0;
-    rdispls_t[0] = 0;
+        vdispls_t.resize(nprocs);
+        rdispls_t.resize(nprocs);
+        vdispls_t[0] = 0;
+        rdispls_t[0] = 0;
 
-    for (int i=1; i<nprocs; i++){
+        for (int i = 1; i < nprocs; i++) {
 //        if(rank==0) cout << "vIndexCount_t = " << vIndexCount_t[i-1] << endl;
-        vdispls_t[i] = vdispls_t[i-1] + vIndexCount_t[i-1];
-        rdispls_t[i] = rdispls_t[i-1] + recvCount_t[i-1];
-    }
-    vIndexSize_t = vdispls_t[nprocs-1] + vIndexCount_t[nprocs-1]; // the same as: vIndexSize_t = nnz_l_remote;
-    recvSize_t   = rdispls_t[nprocs-1] + recvCount_t[nprocs-1];
+            vdispls_t[i] = vdispls_t[i - 1] + vIndexCount_t[i - 1];
+            rdispls_t[i] = rdispls_t[i - 1] + recvCount_t[i - 1];
+        }
+        vIndexSize_t = vdispls_t[nprocs - 1] + vIndexCount_t[nprocs - 1]; // the same as: vIndexSize_t = nnz_l_remote;
+        recvSize_t = rdispls_t[nprocs - 1] + recvCount_t[nprocs - 1];
 
 //    for (i=1; i<nprocs; i++){
 //        vdispls_t[i] = 2*vdispls_t[i];
@@ -264,32 +266,30 @@ int prolong_matrix::findLocalRemote(){
 //    MPI_Barrier(comm);
 //    printf("rank = %d\tvIndexSize_t = %u\trecvSize_t = %u \n", rank, vIndexSize_t, recvSize_t);
 
-    // todo: is this part required?
-    // vElement_remote_t is the set of indices of entries that should be sent.
-    // recvIndex_t       is the set of indices of entries that should be received.
+        // todo: is this part required?
+        // vElement_remote_t is the set of indices of entries that should be sent.
+        // recvIndex_t       is the set of indices of entries that should be received.
 //    recvIndex_t = (unsigned long*)malloc(sizeof(unsigned long)*recvSize_t);
 //    MPI_Alltoallv(&(*(vElement_remote_t.begin())), vIndexCount_t, &*(vdispls_t.begin()), MPI_UNSIGNED_LONG, recvIndex_t, recvCount_t, &(*(rdispls_t.begin())), MPI_UNSIGNED_LONG, comm);
-
-    free(vIndexCount_t);
-    free(recvCount_t);
 
 //    if(rank==1) cout << endl << endl;
 //    for (unsigned int i=0; i<vElement_remote.size(); i++)
 //        if(rank==1) cout << vElement_remote[i] << endl;
 
-    // change the indices from global to local
-    for (index_t i=0; i<vIndexSize; i++){
-        vIndex[i] -= splitNew[rank];
+        // change the indices from global to local
+        for (index_t i = 0; i < vIndexSize; i++) {
+            vIndex[i] -= splitNew[rank];
+        }
+
+        // vSend = vector values to send to other procs
+        // vecValues = vector values that received from other procs
+        // These will be used in matvec and they are set here to reduce the time of matvec.
+        vSend.resize(vIndexSize);
+        vecValues.resize(recvSize);
+
+        vSend_t.resize(vIndexSize_t);
+        vecValues_t.resize(recvSize_t);
     }
-
-    // vSend = vector values to send to other procs
-    // vecValues = vector values that received from other procs
-    // These will be used in matvec and they are set here to reduce the time of matvec.
-    vSend.resize(vIndexSize);
-    vecValues.resize(recvSize);
-
-    vSend_t.resize(vIndexSize_t);
-    vecValues_t.resize(recvSize_t);
 
     // todo: change the following two parts the same as indicesP for A in coarsen, which is using entry, instead of row_local and row_remote.
     indicesP_local.resize(nnz_l_local);

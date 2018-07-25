@@ -60,8 +60,7 @@ int strength_matrix::strength_matrix_set(std::vector<index_t> &r, std::vector<in
     nnz_l_local = 0;
     nnz_l_remote = 0;
 //    int recvCount[nprocs];
-    int* recvCount = (int*)malloc(sizeof(int)*nprocs);
-    std::fill(recvCount, recvCount + nprocs, 0);
+    std::vector<int> recvCount(nprocs, 0);
     nnzPerRow.assign(M,0);
     nnzPerRow_local.assign(M,0);
 
@@ -134,61 +133,62 @@ int strength_matrix::strength_matrix_set(std::vector<index_t> &r, std::vector<in
         }
     } // for i
 
-    int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
+     if(nprocs !=1){
+         std::vector<int> vIndexCount(nprocs);
+         MPI_Alltoall(&recvCount[0], 1, MPI_INT, &vIndexCount[0], 1, MPI_INT, comm);
 
-    numRecvProc = 0;
-    numSendProc = 0;
-    for(int i=0; i<nprocs; i++){
-        if(recvCount[i]!=0){
-            numRecvProc++;
-            recvProcRank.push_back(i);
-            recvProcCount.push_back(2*recvCount[i]); // make them double size for prolongation the communication in the aggregation function.
-        }
-        if(vIndexCount[i]!=0){
-            numSendProc++;
-            sendProcRank.push_back(i);
-            sendProcCount.push_back(2*vIndexCount[i]); // make them double size for prolongation the communication in the aggregation function.
-        }
-    }
+         numRecvProc = 0;
+         numSendProc = 0;
+         for(int i=0; i<nprocs; i++){
+             if(recvCount[i]!=0){
+                 numRecvProc++;
+                 recvProcRank.push_back(i);
+                 recvProcCount.push_back(2*recvCount[i]); // make them double size for prolongation the communication in the aggregation function.
+             }
+             if(vIndexCount[i]!=0){
+                 numSendProc++;
+                 sendProcRank.push_back(i);
+                 sendProcCount.push_back(2*vIndexCount[i]); // make them double size for prolongation the communication in the aggregation function.
+             }
+         }
 
 //    if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
 
-    vdispls.resize(nprocs);
-    rdispls.resize(nprocs);
-    vdispls[0] = 0;
-    rdispls[0] = 0;
+         vdispls.resize(nprocs);
+         rdispls.resize(nprocs);
+         vdispls[0] = 0;
+         rdispls[0] = 0;
 
-    for (int i=1; i<nprocs; i++){
-        vdispls[i] = vdispls[i-1] + vIndexCount[i-1];
-        rdispls[i] = rdispls[i-1] + recvCount[i-1];
+         for (int i=1; i<nprocs; i++){
+             vdispls[i] = vdispls[i-1] + vIndexCount[i-1];
+             rdispls[i] = rdispls[i-1] + recvCount[i-1];
+         }
+         vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
+         recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
+
+         vIndex.resize(vIndexSize);
+         MPI_Alltoallv(&*vElement_remote.begin(), &recvCount[0], &*rdispls.begin(), MPI_UNSIGNED,
+                       &vIndex[0], &vIndexCount[0], &*vdispls.begin(), MPI_UNSIGNED, comm);
+
+         // vSend = vector values to send to other procs
+         // vecValues = vector values that received from other procs
+         // These will be used in matvec and they are set here to reduce the time of matvec.
+         vSend.resize(2*vIndexSize); // make them double size for prolongation the communication in the aggregation function.
+         vecValues.resize(2*recvSize); // make them double size for prolongation the communication in the aggregation function.
+
+         // make them double size for prolongation the communication in the aggregation function.
+         for (int i=1; i<nprocs; i++){
+             vdispls[i] = 2*vdispls[i];
+             rdispls[i] = 2*rdispls[i];
+         }
+
+//         print_vector(vIndex, -1, "vIndex", comm);
+
+         // change the indices from global to local
+         #pragma omp parallel for
+         for (unsigned int i=0; i<vIndexSize; i++)
+             vIndex[i] -= split[rank];
     }
-    vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
-    recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
-
-    vIndex.resize(vIndexSize);
-    MPI_Alltoallv(&*vElement_remote.begin(), recvCount, &*rdispls.begin(), MPI_UNSIGNED,
-                  &vIndex[0], vIndexCount, &*vdispls.begin(), MPI_UNSIGNED, comm);
-
-    free(vIndexCount);
-    free(recvCount);
-
-    // make them double size for prolongation the communication in the aggregation function.
-    for (int i=1; i<nprocs; i++){
-        vdispls[i] = 2*vdispls[i];
-        rdispls[i] = 2*rdispls[i];
-    }
-
-/*    if (rank==0){
-        cout << "vIndex: rank=" << rank  << endl;
-        for(int i=0; i<vIndexSize; i++)
-            cout << vIndex[i] << endl;
-    }*/
-
-    // change the indices from global to local
-#pragma omp parallel for
-    for (unsigned int i=0; i<vIndexSize; i++)
-        vIndex[i] -= split[rank];
 
     // change the indices from global to local
 #pragma omp parallel for
@@ -198,12 +198,6 @@ int strength_matrix::strength_matrix_set(std::vector<index_t> &r, std::vector<in
 #pragma omp parallel for
     for (unsigned int i=0; i<row_remote.size(); i++)
         row_remote[i] -= split[rank];
-
-    // vSend = vector values to send to other procs
-    // vecValues = vector values that received from other procs
-    // These will be used in matvec and they are set here to reduce the time of matvec.
-    vSend.resize(2*vIndexSize); // make them double size for prolongation the communication in the aggregation function.
-    vecValues.resize(2*recvSize); // make them double size for prolongation the communication in the aggregation function.
 
     indicesP_local.resize(nnz_l_local);
     for(i=0; i<nnz_l_local; i++)

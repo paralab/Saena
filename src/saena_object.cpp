@@ -1145,7 +1145,7 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 
     // local update
     // --------------
-    bool* isAggRemote = (bool*)malloc(sizeof(bool)*size);
+    std::vector<bool> isAggRemote(size);
     for(i=0; i<size; i++){
         if(aggregate[i] >= S->split[rank] && aggregate[i] < S->split[rank+1]){
             aggregate[i] = lower_bound2(&*aggArray.begin(), &*aggArray.end(), aggregate[i]) + splitNew[rank];
@@ -1167,100 +1167,97 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 
     // remote update
     // ------------
-    int* recvCount = (int*)malloc(sizeof(int)*nprocs);
-    std::fill(recvCount, recvCount + nprocs, 0);
-
     sort(aggregateRemote.begin(), aggregateRemote.end());
     auto last = unique(aggregateRemote.begin(), aggregateRemote.end()); // Unique() Removes consecutive duplicates.
     aggregateRemote.erase(last, aggregateRemote.end());
 
 //    MPI_Barrier(comm); printf("rank %d: aggregateRemote size = %ld \n", rank, aggregateRemote.size()); MPI_Barrier(comm);
 
-//    if(rank==1) std::cout << "i and procNum:" << std::endl;
+    std::vector<int> recvCount(nprocs, 0);
     for(auto i:aggregateRemote){
         procNum = lower_bound2(&S->split[0], &S->split[nprocs], index_t(i));
         recvCount[procNum]++;
 //        if(rank==0) std::cout << i << "\t" << procNum << std::endl;
     }
 
-//    MPI_Barrier(comm);
-//    if(rank==0){
-//        std::cout << "recvCount:\t" << rank << std::endl;
-//        for(i=0; i<nprocs; i++)
-//            std::cout << recvCount[i] << std::endl;}
+//    print_vector(recvCount, -1, "recvCount", comm);
 
-    int* vIndexCount = (int*)malloc(sizeof(int)*nprocs);
-    MPI_Alltoall(recvCount, 1, MPI_INT, vIndexCount, 1, MPI_INT, comm);
+    int recvSize = 0;
+    int vIndexSize = 0;
 
-//    MPI_Barrier(comm);
-//    if(rank==0){
-//        std::cout << "vIndexCount:\t" << rank << std::endl;
-//        for(i=0; i<nprocs; i++)
-//            std::cout << vIndexCount[i] << std::endl;}
+    if(nprocs > 1) {
+        std::vector<int> vIndexCount(nprocs);
+        MPI_Alltoall(&recvCount[0], 1, MPI_INT, &vIndexCount[0], 1, MPI_INT, comm);
 
-    // this part is for isend and ireceive.
-    std::vector<int> recvProcRank;
-    std::vector<int> recvProcCount;
-    std::vector<int> sendProcRank;
-    std::vector<int> sendProcCount;
-    int numRecvProc = 0;
-    int numSendProc = 0;
-    for(int i=0; i<nprocs; i++){
-        if(recvCount[i]!=0){
-            numRecvProc++;
-            recvProcRank.push_back(i);
-            recvProcCount.push_back(recvCount[i]);
+//    print_vector(vIndexCount, -1, "vIndexCount", comm);
+
+        // this part is for isend and ireceive.
+        std::vector<int> recvProcRank;
+        std::vector<int> recvProcCount;
+        std::vector<int> sendProcRank;
+        std::vector<int> sendProcCount;
+        int numRecvProc = 0;
+        int numSendProc = 0;
+        for (int i = 0; i < nprocs; i++) {
+            if (recvCount[i] != 0) {
+                numRecvProc++;
+                recvProcRank.push_back(i);
+                recvProcCount.push_back(recvCount[i]);
+            }
+            if (vIndexCount[i] != 0) {
+                numSendProc++;
+                sendProcRank.push_back(i);
+                sendProcCount.push_back(vIndexCount[i]);
+            }
         }
-        if(vIndexCount[i]!=0){
-            numSendProc++;
-            sendProcRank.push_back(i);
-            sendProcCount.push_back(vIndexCount[i]);
+
+        std::vector<int> vdispls;
+        std::vector<int> rdispls;
+        vdispls.resize(nprocs);
+        rdispls.resize(nprocs);
+        vdispls[0] = 0;
+        rdispls[0] = 0;
+
+        for (int i = 1; i < nprocs; i++) {
+            vdispls[i] = vdispls[i - 1] + vIndexCount[i - 1];
+            rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
         }
-    }
+        vIndexSize = vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
+        recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
-    std::vector<int> vdispls;
-    std::vector<int> rdispls;
-    vdispls.resize(nprocs);
-    rdispls.resize(nprocs);
-    vdispls[0] = 0;
-    rdispls[0] = 0;
-
-    for (int i=1; i<nprocs; i++){
-        vdispls[i] = vdispls[i-1] + vIndexCount[i-1];
-        rdispls[i] = rdispls[i-1] + recvCount[i-1];
-    }
-    int vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
-    int recvSize   = rdispls[nprocs-1] + recvCount[nprocs-1];
 
 //    MPI_Barrier(comm); printf("rank %d: vIndexSize = %d, recvSize = %d \n", rank, vIndexSize, recvSize); MPI_Barrier(comm);
 
-    unsigned long* vIndex = (unsigned long*)malloc(sizeof(unsigned long)*vIndexSize); // indices to be sent. And aggregateRemote are indices to be received.
-    MPI_Alltoallv(&*aggregateRemote.begin(), recvCount, &*rdispls.begin(), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
+        std::vector<unsigned long> vIndex(vIndexSize);
+        MPI_Alltoallv(&*aggregateRemote.begin(), &recvCount[0], &*rdispls.begin(), MPI_UNSIGNED_LONG, &vIndex[0],
+                      &vIndexCount[0], &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
 //    MPI_Alltoallv(&*aggregateRemote2.begin(), recvCount, &*rdispls.begin(), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
 
-    unsigned long* aggSend = (unsigned long*)malloc(sizeof(unsigned long*) * vIndexSize);
-    unsigned long* aggRecv = (unsigned long*)malloc(sizeof(unsigned long*) * recvSize);
+        std::vector<unsigned long> aggSend(vIndexSize);
+        std::vector<unsigned long> aggRecv(recvSize);
 
 //    if(rank==0) std::cout << std::endl << "vSend:\trank:" << rank << std::endl;
-    for(long i=0;i<vIndexSize;i++){
-        aggSend[i] = aggregate[( vIndex[i]-S->split[rank] )];
+        for (long i = 0; i < vIndexSize; i++) {
+            aggSend[i] = aggregate[(vIndex[i] - S->split[rank])];
 //        if(rank==0) std::cout << "vIndex = " << vIndex[i] << "\taggSend = " << aggSend[i] << std::endl;
-    }
+        }
 
-    // replace this alltoallv with isend and irecv.
+        // replace this alltoallv with isend and irecv.
 //    MPI_Alltoallv(aggSend, vIndexCount, &*(vdispls.begin()), MPI_UNSIGNED_LONG, aggRecv, recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, comm);
 
-    MPI_Request *requests2 = new MPI_Request[numSendProc + numRecvProc];
-    MPI_Status  *statuses2 = new MPI_Status[numSendProc + numRecvProc];
+        MPI_Request *requests2 = new MPI_Request[numSendProc + numRecvProc];
+        MPI_Status *statuses2 = new MPI_Status[numSendProc + numRecvProc];
 
-    for(int i = 0; i < numRecvProc; i++)
-        MPI_Irecv(&aggRecv[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_UNSIGNED_LONG, recvProcRank[i], 1, comm, &(requests2[i]));
+        for (int i = 0; i < numRecvProc; i++)
+            MPI_Irecv(&aggRecv[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_UNSIGNED_LONG, recvProcRank[i], 1, comm,
+                      &(requests2[i]));
 
-    //Next send the messages. Do not send to self.
-    for(int i = 0; i < numSendProc; i++)
-        MPI_Isend(&aggSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_UNSIGNED_LONG, sendProcRank[i], 1, comm, &(requests2[numRecvProc+i]));
+        //Next send the messages. Do not send to self.
+        for (int i = 0; i < numSendProc; i++)
+            MPI_Isend(&aggSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_UNSIGNED_LONG, sendProcRank[i], 1, comm,
+                      &(requests2[numRecvProc + i]));
 
-    MPI_Waitall(numRecvProc, requests2, statuses2);
+        MPI_Waitall(numRecvProc, requests2, statuses2);
 
 //    if(rank==1) std::cout << "aggRemote received:" << std::endl;
 //    set<unsigned long>::iterator it;
@@ -1271,48 +1268,21 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 //            aggregate[i] = aggRecv[ distance(aggregateRemote2.begin(), it) ];
 //        }
 //    }
-//    if(rank==1) std::cout << std::endl;
 
-//    if(rank==1) std::cout << "aggRemote received:" << std::endl;
-    // remote
-    for(i=0; i<size; i++){
-        if(isAggRemote[i]){
-            aggregate[i] = aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ];
+        // remote
+        for (i = 0; i < size; i++) {
+            if (isAggRemote[i]) {
+                aggregate[i] = aggRecv[lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i])];
 //            if(rank==1) std::cout << i << "\t" << aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ] << std::endl;
+            }
         }
+
+//    print_vector(aggregate, -1, "aggregate", comm);
+
+        MPI_Waitall(numSendProc, numRecvProc + requests2, numRecvProc + statuses2);
+        delete[] requests2;
+        delete[] statuses2;
     }
-
-//    MPI_Barrier(comm);
-//    if(rank==0){
-//        std::cout << "aggregate:" << std::endl;
-//        for(index_t i = 0; i < size; i++)
-//            std::cout << aggregate[i] << std::endl;
-//        std::cout << std::endl;}
-//    MPI_Barrier(comm);
-
-    //    set<unsigned long> aggArray2(&aggregate[0], &aggregate[size]);
-//    if(rank==1){
-//        std::cout << "aggArray2:" << std::endl;
-//        for(auto i:aggArray2)
-//            std::cout << i << std::endl;
-//        std::cout << std::endl;
-//    }
-    // update aggregate to new indices
-//    set<unsigned long>::iterator it;
-//    for(i=0; i<size; i++){
-//        it = aggArray.find(aggregate[i]);
-//        aggregate[i] = distance(aggArray.begin(), it) + splitNew[rank];
-//    }
-
-    MPI_Waitall(numSendProc, numRecvProc+requests2, numRecvProc+statuses2);
-    delete [] requests2;
-    delete [] statuses2;
-    free(aggSend);
-    free(aggRecv);
-    free(isAggRemote);
-    free(recvCount);
-    free(vIndexCount);
-    free(vIndex);
     return 0;
 }
 
@@ -2061,7 +2031,6 @@ int saena_object::coarsen(Grid *grid){
         Ac->repartition_nnz(); // based on number of nonzeros
 
     repartition_u2_prepare(grid);
-
 
     if(Ac->shrinked)
         Ac->shrink_cpu();
@@ -3332,7 +3301,8 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             if(rank==0) printf("vcycle: repartition_u2\n");
             MPI_Barrier(grid->A->comm);}
 
-        repartition_u2(res_coarse, *grid);
+        if(nprocs > 1)
+            repartition_u2(res_coarse, *grid);
 
         t2 = omp_get_wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": restriction";
@@ -4817,8 +4787,10 @@ int saena_object::repartition_u2_prepare(Grid *grid){
 
 //    print_vector(grid->scount2, -1, comm);
 
-    grid->rcount2.resize(nprocs);
-    MPI_Alltoall(&grid->scount2[0], 1, MPI_INT, &grid->rcount2[0], 1, MPI_INT, comm);
+    // instead of only resizing rcount2, it is put equal to scount2 in case of nprocs = 1.
+    grid->rcount2 = grid->scount2;
+    if(nprocs > 1)
+        MPI_Alltoall(&grid->scount2[0], 1, MPI_INT, &grid->rcount2[0], 1, MPI_INT, comm);
 
 //    print_vector(grid->rcount2, -1, comm);
 

@@ -60,8 +60,8 @@ public:
 //    std::vector<unsigned int> nnz_row_remote;
 
     bool arrays_defined = false; // set to true if findLocalRemote function is called. it will be used for destructor.
-    int vIndexSize;
-    int vIndexSize_t;
+    int vIndexSize   = 0;
+    int vIndexSize_t = 0;
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<cooEntry> vSend_t;
@@ -80,14 +80,14 @@ public:
     std::vector<int> sendProcRank_t;
     std::vector<int> sendProcCount;
     std::vector<int> sendProcCount_t;
-    int recvSize;
-    int recvSize_t;
-    int numRecvProc;
-    int numRecvProc_t;
-    int numSendProc;
-    int numSendProc_t;
+    int recvSize      = 0;
+    int recvSize_t    = 0;
+    int numRecvProc   = 0;
+    int numRecvProc_t = 0;
+    int numSendProc   = 0;
+    int numSendProc_t = 0;
 
-    unsigned int num_threads;
+    unsigned int num_threads = 1;
     std::vector<nnz_t> iter_local_array;
     std::vector<nnz_t> iter_remote_array;
     std::vector<value_t> w_buff; // for matvec

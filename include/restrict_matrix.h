@@ -17,13 +17,13 @@ class restrict_matrix {
 private:
 
 public:
-    index_t M;
-    index_t Mbig;
-    index_t Nbig;
-    nnz_t nnz_g;
-    nnz_t nnz_l;
-    nnz_t nnz_l_local;
-    nnz_t nnz_l_remote;
+    index_t M    = 0;
+    index_t Mbig = 0;
+    index_t Nbig = 0;
+    nnz_t nnz_g  = 0;
+    nnz_t nnz_l  = 0;
+    nnz_t nnz_l_local  = 0;
+    nnz_t nnz_l_remote = 0;
 
     std::vector<cooEntry> entry;
     std::vector<cooEntry> entry_local;
@@ -39,7 +39,7 @@ public:
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
 
-    index_t col_remote_size; // number of remote columns. this is the same as vElement_remote.size()
+    index_t col_remote_size = 0; // number of remote columns. this is the same as vElement_remote.size()
     std::vector<index_t> nnzPerRow_local;
     std::vector<index_t> vElement_remote;
     std::vector<index_t> vElementRep_local;
@@ -52,12 +52,12 @@ public:
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
-    int vIndexSize;
-    int recvSize;
-    int numRecvProc;
-    int numSendProc;
+    int vIndexSize  = 0;
+    int recvSize    = 0;
+    int numRecvProc = 0;
+    int numSendProc = 0;
 
-    unsigned int num_threads;
+    unsigned int num_threads = 1;
     std::vector<nnz_t> iter_local_array;
     std::vector<nnz_t> iter_remote_array;
     std::vector<value_t> w_buff; // for matvec
@@ -70,6 +70,7 @@ public:
     MPI_Comm comm;
 
     bool verbose_restrict_setup = false;
+    bool verbose_transposeP = false;
 
     restrict_matrix();
     ~restrict_matrix();

@@ -1699,101 +1699,103 @@ int saena_matrix::repartition_nnz(){
 
     // *************************** exchange data ****************************
 
-    std::vector<int> send_size_array(nprocs, 0);
-//    for (unsigned int i=0; i<initial_nnz_l; i++){
-//        tempIndex = lower_bound2(&split[0], &split[nprocs], entry[i].row);
-//        sendSizeArray[tempIndex]++;
-//    }
+    if(nprocs > 1){
+        std::vector<int> send_size_array(nprocs, 0);
+    //    for (unsigned int i=0; i<initial_nnz_l; i++){
+    //        tempIndex = lower_bound2(&split[0], &split[nprocs], entry[i].row);
+    //        sendSizeArray[tempIndex]++;
+    //    }
 
-    long least_proc, last_proc;
-    least_proc = lower_bound2(&split[0], &split[nprocs], entry[0].row);
-    last_proc  = lower_bound2(&split[0], &split[nprocs], entry.back().row);
-    last_proc++;
+        long least_proc, last_proc;
+        least_proc = lower_bound2(&split[0], &split[nprocs], entry[0].row);
+        last_proc  = lower_bound2(&split[0], &split[nprocs], entry.back().row);
+        last_proc++;
 
-//    if (rank==1) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
+    //    if (rank==1) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
 
-    for (nnz_t i=0; i<initial_nnz_l; i++){
-        least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry[i].row);
-        send_size_array[least_proc]++;
-    }
-
-//    print_vector(send_size_array, 0, "send_size_array", comm);
-
-    // this part is for cpu shrinking. assign all the rows on non-root procs to their roots.
-    // ---------------------------------
-//    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
-//    if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
-    if(enable_shrink && (nprocs >= cpu_shrink_thre2) && do_shrink){
-        shrinked = true;
-        last_M_shrink = Mbig;
-//        last_nnz_shrink = nnz_g;
-        last_density_shrink = density;
-        double remainder;
-        int root_cpu = nprocs;
-        for(int proc = nprocs-1; proc > 0; proc--){
-            remainder = proc % cpu_shrink_thre2;
-//        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
-            if(remainder == 0)
-                root_cpu = proc;
-            else{
-                split[proc] = split[root_cpu];
-            }
+        for (nnz_t i=0; i<initial_nnz_l; i++){
+            least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry[i].row);
+            send_size_array[least_proc]++;
         }
 
-//        M_old = M;
-        M = split[rank+1] - split[rank];
+    //    print_vector(send_size_array, 0, "send_size_array", comm);
 
-//    print_vector(split, 0, "split", comm);
-
-        root_cpu = 0;
-        for(int proc = 0; proc < nprocs; proc++){
-            remainder = proc % cpu_shrink_thre2;
-//        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
-            if(remainder == 0)
-                root_cpu = proc;
-            else{
-                send_size_array[root_cpu] += send_size_array[proc];
-                send_size_array[proc] = 0;
+        // this part is for cpu shrinking. assign all the rows on non-root procs to their roots.
+        // ---------------------------------
+    //    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
+    //    if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
+        if(enable_shrink && (nprocs >= cpu_shrink_thre2) && do_shrink){
+            shrinked = true;
+            last_M_shrink = Mbig;
+    //        last_nnz_shrink = nnz_g;
+            last_density_shrink = density;
+            double remainder;
+            int root_cpu = nprocs;
+            for(int proc = nprocs-1; proc > 0; proc--){
+                remainder = proc % cpu_shrink_thre2;
+    //        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
+                if(remainder == 0)
+                    root_cpu = proc;
+                else{
+                    split[proc] = split[root_cpu];
+                }
             }
+
+    //        M_old = M;
+            M = split[rank+1] - split[rank];
+
+    //    print_vector(split, 0, "split", comm);
+
+            root_cpu = 0;
+            for(int proc = 0; proc < nprocs; proc++){
+                remainder = proc % cpu_shrink_thre2;
+    //        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
+                if(remainder == 0)
+                    root_cpu = proc;
+                else{
+                    send_size_array[root_cpu] += send_size_array[proc];
+                    send_size_array[proc] = 0;
+                }
+            }
+
+    //        print_vector(send_size_array, 0, "send_size_array", comm);
         }
 
-//        print_vector(send_size_array, 0, "send_size_array", comm);
-    }
-
-    std::vector<int> recv_size_array(nprocs);
-    MPI_Alltoall(&send_size_array[0], 1, MPI_INT, &recv_size_array[0], 1, MPI_INT, comm);
+        std::vector<int> recv_size_array(nprocs);
+        MPI_Alltoall(&send_size_array[0], 1, MPI_INT, &recv_size_array[0], 1, MPI_INT, comm);
 
 //    print_vector(recv_size_array, 0, "recv_size_array", comm);
 
-    std::vector<int> send_offset(nprocs);
-    send_offset[0] = 0;
-    for (int i=1; i<nprocs; i++)
-        send_offset[i] = send_size_array[i-1] + send_offset[i-1];
+        std::vector<int> send_offset(nprocs);
+        send_offset[0] = 0;
+        for (int i = 1; i < nprocs; i++)
+            send_offset[i] = send_size_array[i - 1] + send_offset[i - 1];
 
 //    print_vector(send_offset, 0, "send_offset", comm);
 
-    std::vector<int> recv_offset(nprocs);
-    recv_offset[0] = 0;
-    for (int i=1; i<nprocs; i++)
-        recv_offset[i] = recv_size_array[i-1] + recv_offset[i-1];
+        std::vector<int> recv_offset(nprocs);
+        recv_offset[0] = 0;
+        for (int i = 1; i < nprocs; i++)
+            recv_offset[i] = recv_size_array[i - 1] + recv_offset[i - 1];
 
 //    print_vector(recv_offset, 0, "recv_offset", comm);
 
-    if(repartition_verbose && rank==0) printf("repartition3 - step 5!\n");
+        if (repartition_verbose && rank == 0) printf("repartition3 - step 5!\n");
 
-    nnz_l = recv_offset[nprocs-1] + recv_size_array[nprocs-1];
+        nnz_l = recv_offset[nprocs - 1] + recv_size_array[nprocs - 1];
 //    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
 
-    if(repartition_verbose && rank==0) printf("repartition3 - step 6!\n");
+        if (repartition_verbose && rank == 0) printf("repartition3 - step 6!\n");
 
-    std::vector<cooEntry> entry_old = entry;
-    entry.resize(nnz_l);
-    entry.shrink_to_fit();
+        std::vector<cooEntry> entry_old = entry;
+        entry.resize(nnz_l);
+        entry.shrink_to_fit();
 
-    MPI_Alltoallv(&entry_old[0], &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
-                  &entry[0],     &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
+        MPI_Alltoallv(&entry_old[0], &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
+                      &entry[0], &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
 
-    std::sort(entry.begin(), entry.end());
+        std::sort(entry.begin(), entry.end());
+    }
 
 //    print_vector(entry, -1, "entry", comm);
 
