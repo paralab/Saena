@@ -30,7 +30,7 @@ public:
     std::string smoother = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth  = 3;
     int postSmooth = 3;
-    std::string direct_solver = "CG"; // options: 1- CG, 2- SuperLU
+    std::string direct_solver = "SuperLU"; // options: 1- CG, 2- SuperLU
     std::vector<Grid> grids;
     float connStrength = 0.5; // connection strength parameter: control coarsening aggressiveness
     int CG_max_iter = 150; //150

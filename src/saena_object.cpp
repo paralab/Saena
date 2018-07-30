@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <set>
 #include <mpi.h>
+#include <superlu_defs.h>
 
 
 saena_object::saena_object(){}
@@ -2772,10 +2773,12 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     SOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     double   *berr;
-    double   *b, *xtrue;
+//    double   *b, *xtrue;
+    double   *b;
     int      m, n, m_loc, nnz_loc;
     int      nprow, npcol;
-    int      iam, info, ldb, ldx, nrhs;
+//    int      iam, info, ldb, ldx, nrhs;
+    int      iam, info, ldb, nrhs;
 //    char     **cpp, c;
 //    FILE *fp, *fopen();
 //    FILE *fp;
@@ -2904,12 +2907,18 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     for(index_t i = 0; i < m_loc; i++)
         rowptr[i+1] = rowptr[i] + nnz_per_row[i];
 
-//    A.print(-1);
+//    A->print(-1);
 //    print_vector(rowptr, -1, "rowptr", comm);
 //    print_vector(colind, -1, "colind", comm);
 //    print_vector(nzval_loc, -1, "nzval_loc", comm);
-//    for(nnz_t i = 0; i < nnz_loc; i++)
-//        if(rank==0) printf("%ld \t%d \t%lld \t%lf \n", i, entry_temp[i].row-fst_row, colind[i], nzval_loc[i]);
+//    if(rank==0){
+//        printf("\nmatrix entries in row-major format to be passed to SuperLU:\n");
+//        for(nnz_t i = 0; i < nnz_loc; i++)
+//            printf("%ld \t%d \t%lld \t%lf \n", i, entry_temp[i].row-fst_row, colind[i], nzval_loc[i]);
+//        printf("\nrowptr:\n");
+//        for(nnz_t i = 0; i < m_loc+1; i++)
+//            printf("%ld \t%lld \n", i, rowptr[i]);
+//    }
 
     dCreate_CompRowLoc_Matrix_dist(&A_SLU, m, n, nnz_loc, m_loc, fst_row,
                                    &nzval_loc[0], &colind[0], &rowptr[0],
@@ -2949,6 +2958,9 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
     // I changed options->PrintStat default to NO.
     set_default_options_dist(&options);
+    options.ColPerm = NATURAL;
+//    options.SymPattern = YES;
+
 #if 0
     options.RowPerm = NOROWPERM;
     options.RowPerm = LargeDiag_AWPM;
@@ -3500,7 +3512,6 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-    bool solve_verbose = false;
 
     // ************** check u size **************
 
@@ -3635,10 +3646,14 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
     // ************** repartition u back **************
 
+//    print_vector(u, 2, "final u before repartition_back_u", comm);
+
     if(repartition)
         repartition_back_u(u);
 
     if(verbose_solve) if(rank == 0) printf("verbose:solve_pcg: repartition back u!\n");
+
+//     print_vector(u, 0, "final u", comm);
 
     return 0;
 }
@@ -4266,20 +4281,22 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new
 
 int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
 
+    MPI_Comm comm = grids[0].A->comm;
     int rank, nprocs;
-    MPI_Comm_rank(grids[0].A->comm, &rank);
-    MPI_Comm_size(grids[0].A->comm, &nprocs);
-//    int ran = 0;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
 
     // ************** check rhs size **************
 
     index_t rhs_size_local = rhs0.size(), rhs_size_total;
-    MPI_Allreduce(&rhs_size_local, &rhs_size_total, 1, MPI_UNSIGNED, MPI_SUM, grids[0].A->comm);
+    MPI_Allreduce(&rhs_size_local, &rhs_size_total, 1, MPI_UNSIGNED, MPI_SUM, comm);
     if(grids[0].A->Mbig != rhs_size_total){
         if(rank==0) printf("Error: size of LHS (=%u) and RHS (=%u) are not equal!\n", grids[0].A->Mbig,rhs_size_total);
         MPI_Finalize();
         return -1;
     }
+
+//    print_vector(grids[0].A->split, 1, "split", comm);
 
     // ************** repartition rhs, based on A.split **************
 
@@ -4287,21 +4304,17 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     rhs_init_partition[rank] = rhs0.size();
     index_t temp = rhs0.size();
 
-    MPI_Allgather(&temp, 1, MPI_UNSIGNED, &*rhs_init_partition.begin(), 1, MPI_UNSIGNED, grids[0].A->comm);
+    MPI_Allgather(&temp, 1, MPI_UNSIGNED, &*rhs_init_partition.begin(), 1, MPI_UNSIGNED, comm);
 //    MPI_Alltoall(&*grids[0].rhs_init_partition.begin(), 1, MPI_INT, &*grids[0].rhs_init_partition.begin(), 1, MPI_INT, grids[0].comm);
 
-//    for(i = 0; i < rhs_init_partition.size(); i++)
-//        if(rank==ran) printf("%lu \t rhs_init_partition = %lu\n", i, rhs_init_partition[i]);
+//    print_vector(rhs_init_partition, 1, "rhs_init_partition", comm);
 
     std::vector<index_t> init_partition_scan(nprocs+1);
     init_partition_scan[0] = 0;
     for(int i = 1; i < nprocs+1; i++)
         init_partition_scan[i] = init_partition_scan[i-1] + rhs_init_partition[i-1];
 
-//    if(rank==ran) printf("\n");
-//    for(i = 0; i < nprocs+1; i++)
-//        if(rank==ran) printf("%lu \t init_partition_scan[i] = %lu\n", i, init_partition_scan[i]);
-
+//    print_vector(init_partition_scan, 1, "init_partition_scan", comm);
 
     index_t start, end, start_proc, end_proc;
     start = grids[0].A->split[rank];
@@ -4310,12 +4323,12 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     end_proc   = lower_bound2(&*init_partition_scan.begin(), &*init_partition_scan.end(), end);
     if(init_partition_scan[rank+1] == grids[0].A->split[rank+1])
         end_proc--;
-//    if(rank == ran) printf("\nstart_proc = %lu, end_proc = %lu \n", start_proc, end_proc);
+//    if(rank == 1) printf("\nstart_proc = %u, end_proc = %u \n", start_proc, end_proc);
 
     grids[0].rcount.assign(nprocs, 0);
     if(start_proc < end_proc){
-//        if(rank==ran) printf("start_proc = %lu, end_proc = %lu\n", start_proc, end_proc);
-//        if(rank==ran) printf("init_partition_scan[start_proc+1] = %lu, grids[0].A->split[rank] = %lu\n", init_partition_scan[start_proc+1], grids[0].A->split[rank]);
+//        if(rank==1) printf("start_proc = %u, end_proc = %u\n", start_proc, end_proc);
+//        if(rank==1) printf("init_partition_scan[start_proc+1] = %u, grids[0].A->split[rank] = %u\n", init_partition_scan[start_proc+1], grids[0].A->split[rank]);
         grids[0].rcount[start_proc] = init_partition_scan[start_proc+1] - grids[0].A->split[rank];
         grids[0].rcount[end_proc] = grids[0].A->split[rank+1] - init_partition_scan[end_proc];
 
@@ -4323,17 +4336,16 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
 //            if(rank==ran) printf("init_partition_scan[i+1] = %lu, init_partition_scan[i] = %lu\n", init_partition_scan[i+1], init_partition_scan[i]);
             grids[0].rcount[i] = init_partition_scan[i+1] - init_partition_scan[i];
         }
-    } else if(start_proc == end_proc)
-        grids[0].rcount[start_proc] = grids[0].A->split[start_proc+1] - grids[0].A->split[start_proc];
-    else{
+    }else if(start_proc == end_proc){
+//        grids[0].rcount[start_proc] = grids[0].A->split[start_proc + 1] - grids[0].A->split[start_proc];
+        grids[0].rcount[start_proc] = grids[0].A->split[rank + 1] - grids[0].A->split[rank];
+    }else{
         printf("error in set_repartition_rhs function: start_proc > end_proc\n");
         MPI_Finalize();
         return -1;
     }
 
-//    if(rank==ran) printf("\n");
-//    for(i = 0; i < nprocs; i++)
-//        if(rank==ran) printf("%lu \t rcount[i] = %d\n", i, grids[0].rcount[i]);
+//    print_vector(grids[0].rcount, -1, "grids[0].rcount", comm);
 
     start = init_partition_scan[rank];
     end   = init_partition_scan[rank+1];
@@ -4345,6 +4357,8 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
 
     grids[0].scount.assign(nprocs, 0);
     if(end_proc > start_proc){
+//        if(rank==1) printf("start_proc = %u, end_proc = %u\n", start_proc, end_proc);
+//        if(rank==1) printf("init_partition_scan[rank+1] = %u, grids[0].A->split[end_proc] = %u\n", init_partition_scan[rank+1], grids[0].A->split[end_proc]);
         grids[0].scount[start_proc] = grids[0].A->split[start_proc+1] - init_partition_scan[rank];
         grids[0].scount[end_proc] = init_partition_scan[rank+1] - grids[0].A->split[end_proc];
 
@@ -4358,8 +4372,7 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
         return -1;
     }
 
-//    for(i = 0; i < nprocs; i++)
-//        if(rank==ran) printf("%lu \t scount[i] = %d\n", i, scount[i]);
+//    print_vector(grids[0].scount, -1, "grids[0].scount", comm);
 
 //    std::vector<int> rdispls(nprocs);
     grids[0].rdispls.resize(nprocs);
@@ -4367,8 +4380,7 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     for(int i = 1; i < nprocs; i++)
         grids[0].rdispls[i] = grids[0].rcount[i-1] + grids[0].rdispls[i-1];
 
-//    for(i = 0; i < nprocs; i++)
-//        if(rank==ran) printf("%lu \t rdispls[i] = %d\n", i, rdispls[i]);
+//    print_vector(grids[0].rdispls, -1, "grids[0].rdispls", comm);
 
 //    std::vector<int> sdispls(nprocs);
     grids[0].sdispls.resize(nprocs);
@@ -4376,26 +4388,24 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     for(int i = 1; i < nprocs; i++)
         grids[0].sdispls[i] = grids[0].sdispls[i-1] + grids[0].scount[i-1];
 
-//    for(i = 0; i < nprocs; i++)
-//        if(rank==ran) printf("%lu \t sdispls[i] = %d\n", i, sdispls[i]);
+//    print_vector(grids[0].sdispls, -1, "grids[0].sdispls", comm);
 
     // check if repartition is required. it is not required if the number of rows on all processors does not change.
     bool repartition_local = true;
     if(start_proc == end_proc)
         repartition_local = false;
-    MPI_Allreduce(&repartition_local, &repartition, 1, MPI_CXX_BOOL, MPI_LOR, grids[0].A->comm);
+    MPI_Allreduce(&repartition_local, &repartition, 1, MPI_CXX_BOOL, MPI_LOR, comm);
 //    printf("rank = %d, repartition_local = %d, repartition = %d \n", rank, repartition_local, repartition);
 
     if(repartition){
         grids[0].rhs.resize(grids[0].A->split[rank+1] - grids[0].A->split[rank]);
         MPI_Alltoallv(&*rhs0.begin(), &grids[0].scount[0], &grids[0].sdispls[0], MPI_DOUBLE,
-                      &*grids[0].rhs.begin(), &grids[0].rcount[0], &grids[0].rdispls[0], MPI_DOUBLE, grids[0].A->comm);
-//        printf("rank = %d repart!!!!!!!!!!!!\n", rank);
+                      &*grids[0].rhs.begin(), &grids[0].rcount[0], &grids[0].rdispls[0], MPI_DOUBLE, comm);
     } else{
         grids[0].rhs = rhs0;
     }
 
-//    print_vector(grids[0].rhs, 0, "rhs after repartition", grids[0].A->comm);
+//    print_vector(grids[0].rhs, 0, "rhs after repartition", comm);
 
     // scale rhs
     // ---------
@@ -4426,14 +4436,12 @@ int saena_object::repartition_u(std::vector<value_t>& u0){
 
 int saena_object::repartition_back_u(std::vector<value_t>& u0){
 
+    MPI_Comm comm = grids[0].A->comm;
     int rank, nprocs;
     MPI_Comm_rank(grids[0].A->comm, &rank);
     MPI_Comm_size(grids[0].A->comm, &nprocs);
-//    unsigned long i;
-//    int ran = 1;
 
-    // make a copy of u0 to be used in Alltoall as sendbuf. u0 itself will be recvbuf there.
-    std::vector<value_t> u_temp = u0;
+//    print_vector(grids[0].A->split, 0, "split", comm);
 
     // rdispls should be the opposite of the initial repartition function. So, rdispls should be the scan of scount.
     // the same for sdispls.
@@ -4442,34 +4450,34 @@ int saena_object::repartition_back_u(std::vector<value_t>& u0){
     for(int i = 1; i < nprocs; i++)
         rdispls[i] = rdispls[i-1] + grids[0].scount[i-1];
 
-//    if(rank==ran) printf("\n");
-//    for(i = 0; i < nprocs; i++)
-//        if(rank==ran) printf("%lu \t rdispls[i] = %d\n", i, rdispls[i]);
+//    print_vector(grids[0].scount, -1, "rec size", comm);
+//    print_vector(rdispls, -1, "rdispls", grids[0].A->comm);
 
     std::vector<int> sdispls(nprocs);
     sdispls[0] = 0;
     for(int i = 1; i < nprocs; i++)
         sdispls[i] = sdispls[i-1] + grids[0].rcount[i-1];
 
-//    if(rank==ran) printf("\n");
-//    for(i = 0; i < nprocs; i++)
-//        if(rank==ran) printf("%lu \t sdispls[i] = %d\n", i, sdispls[i]);
+//    print_vector(grids[0].rcount, -1, "send size", comm);
+//    print_vector(sdispls, -1, "sdispls", grids[0].A->comm);
 
-    long rhs_init_size = rdispls[nprocs-1] + grids[0].scount[nprocs-1]; // this is the summation over all rcount values on each proc.
+    index_t rhs_init_size = rdispls[nprocs-1] + grids[0].scount[nprocs-1]; // this is the summation over all rcount values on each proc.
 //    printf("rank = %d, rhs_init_size = %lu \n", rank, rhs_init_size);
-    u0.resize(rhs_init_size);
-    MPI_Alltoallv(&*u_temp.begin(), &grids[0].rcount[0], &sdispls[0], MPI_DOUBLE,
-                  &*u0.begin(), &grids[0].scount[0], &rdispls[0], MPI_DOUBLE, grids[0].A->comm);
 
-//    MPI_Barrier(grids[0].comm);
-//    if(rank==ran) printf("\nrank = %d \tu.size = %lu\n", rank, u0.size());
-//    for(i = 0; i < u0.size(); i++)
-//        if(rank==ran) printf("u[%lu] = %f\n", i, u0[i]);
-//    MPI_Barrier(grids[0].comm);
+    // make a copy of u0 to be used in Alltoall as sendbuf. u0 itself will be recvbuf there.
+    std::vector<value_t> u_temp = u0;
+//    u0.clear();
+    u0.resize(rhs_init_size);
+//    std::fill(u0.begin(), u0.end(), -111);
+//    print_vector(u_temp, 2, "u_temp", grids[0].A->comm);
+    MPI_Alltoallv(&u_temp[0], &grids[0].rcount[0], &sdispls[0], MPI_DOUBLE,
+                  &u0[0],     &grids[0].scount[0], &rdispls[0], MPI_DOUBLE, comm);
+
+//    MPI_Barrier(grids[0].A->comm);
+//    print_vector(u0, -1, "u after repartition_back_u", grids[0].A->comm);
 
     return 0;
 }
-
 
 
 int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<index_t>& P_splitNew){
@@ -5342,7 +5350,7 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<index_t>& aggr
 //    for(auto i:aggregate)
 //        std::cout << i << std::endl;
 
-    MPI_Status status2;
+//    MPI_Status status2;
     MPI_File fh2;
     MPI_Offset offset2;
 

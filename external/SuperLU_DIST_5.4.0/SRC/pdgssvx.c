@@ -624,7 +624,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     R = ScalePermstruct->R;
     C = ScalePermstruct->C;
     /********/
-
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter pdgssvx()");
 #endif
@@ -922,7 +921,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
             for (i = 0; i < m; ++i) perm_r[i] = i;
         }
 
-#if ( DEBUGlevel>=2 )
+        #if ( DEBUGlevel>=2 )
         if ( !iam ) PrintInt10("perm_r",  m, perm_r);
 #endif
     } /* end if (!factored) */
@@ -993,7 +992,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       * and does not modify it.  It also allocates memory for       *
 	       * sizes[] and fstVtxSep[] arrays, that contain information    *
 	       * on the separator tree computed by ParMETIS.                 */
-	      flinfo = get_perm_c_parmetis(A, perm_r, perm_c, nprocs_num,
+          flinfo = get_perm_c_parmetis(A, perm_r, perm_c, nprocs_num,
                                   	   noDomains, &sizes, &fstVtxSep,
                                            grid, &symb_comm);
 	      if (flinfo > 0) {
@@ -1004,7 +1003,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		  return;
      	      }
 	  } else {
-	      get_perm_c_dist(iam, permc_spec, &GA, perm_c);
+          get_perm_c_dist(iam, permc_spec, &GA, perm_c);
           }
         }
 
@@ -1259,8 +1258,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	             LUstruct->Glu_persist, SOLVEstruct);
 #endif
 
-	
-    /* ------------------------------------------------------------
+	/* ------------------------------------------------------------
        Compute the solution matrix X.
        ------------------------------------------------------------*/
     if ( nrhs && *info == 0 ) {
@@ -1421,9 +1419,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	for (i = 0; i < m_loc; ++i)
 	  printf("\t(%d)\t%4d\t%.10f\n", iam, i+fst_row, B[i]);
 #endif
-	
-	/* Transform the solution matrix X to a solution of the original
-	   system before equilibration. */
+
+		/* Transform the solution matrix X to a solution of the original
+           system before equilibration. */
 	if ( notran ) {
 	    if ( colequ ) {
 		b_col = B;

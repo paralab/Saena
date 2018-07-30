@@ -594,8 +594,10 @@ int saena_matrix::erase(){
 //    vElementRep_local.shrink_to_fit();
     vElementRep_remote.shrink_to_fit();
 
-    free(send_buffer);
-    free(recv_buffer);
+    if(free_zfp_buff){
+        free(zfp_send_buffer);
+        free(zfp_recv_buffer);
+    }
 
     M = 0;
     Mbig = 0;
@@ -695,8 +697,10 @@ int saena_matrix::erase2(){
     vElement_remote.shrink_to_fit();
     w_buff.shrink_to_fit();
 
-    free(send_buffer);
-    free(recv_buffer);
+    if(free_zfp_buff){
+        free(zfp_send_buffer);
+        free(zfp_recv_buffer);
+    }
 
 //    M = 0;
 //    Mbig = 0;
@@ -2783,10 +2787,11 @@ int saena_matrix::set_off_on_diagonal(){
 //            recv_bufsize = rate / 2 * (unsigned)ceil(recvSize/4.0);
 //            send_buffer = (unsigned char*)malloc(8*send_bufsize);
 //            recv_buffer = (unsigned char*)malloc(8*recv_bufsize);
-            send_bufsize = rate / 2 * (unsigned)ceil(vIndexSize/4.0); // rate/8 * 4 * ceil(size/4). This is in bytes.
-            recv_bufsize = rate / 2 * (unsigned)ceil(recvSize/4.0);
-            send_buffer = (double*)malloc(send_bufsize);
-            recv_buffer = (double*)malloc(recv_bufsize);
+            zfp_send_bufsize = rate / 2 * (unsigned)ceil(vIndexSize/4.0); // rate/8 * 4 * ceil(size/4). This is in bytes.
+            zfp_recv_bufsize = rate / 2 * (unsigned)ceil(recvSize/4.0);
+            zfp_send_buffer = (double*)malloc(zfp_send_bufsize);
+            zfp_recv_buffer = (double*)malloc(zfp_recv_bufsize);
+            free_zfp_buff = true;
 //            printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
 //               rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);
         }
@@ -3229,7 +3234,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     unsigned long size1;
     if(vIndexSize || recvSize){
         field = zfp_field_1d(&vSend[0], zfp_type_double, vIndexSize);
-        stream = stream_open(send_buffer, send_bufsize);
+        stream = stream_open(zfp_send_buffer, zfp_send_bufsize);
         zfp = zfp_stream_open(stream);
         zfp_stream_set_rate(zfp, rate, zfp_type_double, 1, 0);
 //        zfp_stream_set_bit_stream(zfp, stream);
@@ -3260,7 +3265,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     int size4k;
     for(int i = 0; i < numRecvProc; i++) {
         size4k = 4 * (int)ceil(recvProcCount[i]/4.0);
-        MPI_Irecv(&recv_buffer[rdispls[recvProcRank[i]]], size4k, MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+        MPI_Irecv(&zfp_recv_buffer[rdispls[recvProcRank[i]]], size4k, MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
 //        MPI_Irecv(&recv_buffer[(rate/CHAR_BIT)*rdispls[recvProcRank[i]]], (rate/CHAR_BIT)*recvProcCount[i], MPI_UNSIGNED_CHAR, recvProcRank[i], 1, comm, &(requests[i]));
 //        if(rank==0) printf("(rate/CHAR_BIT)*rdispls[recvProcRank[i]] = %d, (rate/CHAR_BIT)*recvProcCount[i] = %d, recvProcRank[i] = %d \n",
 //                           (rate/CHAR_BIT)*rdispls[recvProcRank[i]], (rate/CHAR_BIT)*recvProcCount[i], recvProcRank[i]);
@@ -3268,7 +3273,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 
     for(int i = 0; i < numSendProc; i++){
         size4k = 4 * (int)ceil(sendProcCount[i]/4.0);
-        MPI_Isend(&send_buffer[vdispls[sendProcRank[i]]], size4k, MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+        MPI_Isend(&zfp_send_buffer[vdispls[sendProcRank[i]]], size4k, MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
 //        MPI_Isend(&send_buffer[(rate/CHAR_BIT)*vdispls[sendProcRank[i]]], (rate/CHAR_BIT), MPI_UNSIGNED_CHAR, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
 //        if(rank==1) printf("(rate/CHAR_BIT)*vdispls[sendProcRank[i]] = %d, (rate/CHAR_BIT)*sendProcCount[i] = %d, sendProcRank[i] = %d \n",
 //                           (rate/CHAR_BIT)*vdispls[sendProcRank[i]], (rate/CHAR_BIT)*sendProcCount[i], sendProcRank[i]);
@@ -3307,7 +3312,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 
     if(recvSize){
         field2 = zfp_field_1d(&vecValues[0], zfp_type_double, recvSize);
-        stream2 = stream_open(recv_buffer, recv_bufsize);
+        stream2 = stream_open(zfp_recv_buffer, zfp_recv_bufsize);
         zfp2 = zfp_stream_open(stream2);
         zfp_stream_set_rate(zfp2, rate, zfp_type_double, 1, 0);
 //        zfp_stream_params(zfp2, &minbits, &maxbits, &maxprec, &minexp);
