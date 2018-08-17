@@ -53,7 +53,7 @@ include_directories(${MPI_INCLUDE_PATH})
 #add_subdirectory(external/parmetis-4.0.3)
 
 #message("++++ CMAKE_INSTALL_PREFIX after parmetis: " ${CMAKE_INSTALL_PREFIX})
-message("-----------CMAKE_SOURCE_DIR: " ${CMAKE_SOURCE_DIR})
+#message("-----------CMAKE_SOURCE_DIR: " ${CMAKE_SOURCE_DIR})
 
 set(PARMETIS_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3)
 set(METIS_LIBRARY ${PARMETIS_ROOT_DIR}/metis/build/install_folder/lib/libmetis.a)
@@ -93,10 +93,10 @@ include_directories(${LAPACK_INCLUDE_PATH})
 # -----------------------------------------------------------------------
 # SuperLU
 
-message("-----------CMAKE_CURRENT_SOURCE_DIR: " ${CMAKE_CURRENT_SOURCE_DIR})
-message("-----------CMAKE_SOURCE_DIR: " ${CMAKE_SOURCE_DIR})
-message("-----------CMAKE_CURRENT_BINARY_DIR: " ${CMAKE_CURRENT_BINARY_DIR})
-message("-----------CMAKE_BINARY_DIR: " ${CMAKE_BINARY_DIR})
+#message("-----------CMAKE_CURRENT_SOURCE_DIR: " ${CMAKE_CURRENT_SOURCE_DIR})
+#message("-----------CMAKE_SOURCE_DIR: " ${CMAKE_SOURCE_DIR})
+#message("-----------CMAKE_CURRENT_BINARY_DIR: " ${CMAKE_CURRENT_BINARY_DIR})
+#message("-----------CMAKE_BINARY_DIR: " ${CMAKE_BINARY_DIR})
 
 set(SuperLU_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SuperLU_DIST_5.4.0)
 set(SuperLU_DIST_LIB ${CMAKE_BINARY_DIR}/build_superlu/lib/libsuperlu_dist.a)
@@ -171,6 +171,16 @@ include_directories(
 #        )
 
 # -----------------------------------------------------------------------
+#PETSc
+
+set(PETSC_DIR "/home/boss/softwares/petsc-3.8.0")
+set(PETSC_LIB ${PETSC_DIR}/arch-linux2-c-debug/lib/libpetsc.so)
+include_directories(
+        ${PETSC_DIR}/include
+        ${PETSC_DIR}/arch-linux2-c-debug/include
+)
+
+# -----------------------------------------------------------------------
 # Main Files
 
 include_directories(include)
@@ -185,6 +195,7 @@ set(HEADER_FILES ${HEADER_FILES}
         include/restrict_matrix.h
         include/aux_functions.h
         include/grid.h
+#        include/petsc_functions.h
         )
 
 set(SOURCE_FILES ${SOURCE_FILES}
@@ -199,6 +210,7 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/aux_functions.cpp
         src/grid.cpp
         src/saena.cpp
+#        src/petsc_functions.cpp
         )
 
 # -----------------------------------------------------------------------
@@ -220,4 +232,6 @@ endif()
 
 # -----------------------------------------------------------------------
 
-target_link_libraries(Saena ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB})
+#target_link_libraries(Saena ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB})
+target_link_libraries(Saena ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
+
