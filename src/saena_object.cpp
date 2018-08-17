@@ -226,9 +226,10 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
     // finding aggregation is written in an adaptive way. An aggregation is being created first. If it is too small,
     // or too big it will be recreated until an aggregation with size within the acceptable range is produced.
 
-    int nprocs, rank;
+    MPI_Comm comm = A->comm;
+    int rank;
+    MPI_Comm_rank(comm, &rank);
 //    MPI_Comm_size(A->comm, &nprocs);
-    MPI_Comm_rank(A->comm, &rank);
 
     strength_matrix S;
     create_strength_matrix(A, &S);
@@ -246,7 +247,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
         continue_agg = false;
 
         new_size_local = aggArray.size();
-        MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, A->comm);
+        MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, comm);
         division = A->Mbig / new_size;
 //        if(rank==0) printf("connStrength = %f, current size = %u, new size = %u,  division = %d\n",
 //                           connStrength, A->Mbig, new_size, division);
@@ -283,6 +284,8 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
     connStrength = connStrength_temp;
     aggregate_index_update(&S, aggregate, aggArray, splitNew);
 //    updateAggregation(aggregate, &aggSize);
+
+    print_vector(aggArray, -1, "aggArray", comm);
 
     return 0;
 } // end of SaenaObject::findAggregation
