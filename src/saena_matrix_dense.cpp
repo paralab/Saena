@@ -67,8 +67,8 @@ int saena_matrix_dense::set(index_t row, index_t col, value_t val){
 
 int saena_matrix_dense::print(int ran){
 
-    // if ran >= 0 print the matrix entries on proc with rank = ran
-    // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
+    // if ran >= 0 print_entry the matrix entries on proc with rank = ran
+    // otherwise print_entry the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);

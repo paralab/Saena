@@ -90,15 +90,27 @@ public:
     int solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new);
     int solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new);
     int set_repartition_rhs(std::vector<value_t>& rhs);
+
+    // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
+    // then, repartition_back_u() at the end of the solve function to convert the solution to the initial partition.
     int repartition_u(std::vector<value_t>& u);
     int repartition_back_u(std::vector<value_t>& u);
-    int repartition_u2_prepare(Grid *grid);
-    int repartition_u2(std::vector<value_t>& u, Grid &grid);
-    int repartition_back_u2(std::vector<value_t>& u, Grid &grid);
+
+    // if shrinking happens, u and rhs should be shrunk too.
+    int repartition_u_shrink_prepare(Grid *grid);
+    int repartition_u_shrink(std::vector<value_t> &u, Grid &grid);
+    int repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid);
+
+    // if minor shrinking happens, u and rhs should be shrunk too.
+//    int repartition_u_shrink_minor_prepare(Grid *grid);
+//    int repartition_u_shrink_minor(std::vector<value_t> &u, Grid &grid);
+//    int repartition_back_u_shrink_minor(std::vector<value_t> &u, Grid &grid);
+
     int shrink_cpu_A(saena_matrix* Ac, std::vector<index_t>& P_splitNew);
     int shrink_u_rhs(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int unshrink_u(Grid* grid, std::vector<value_t>& u);
     bool active(int l);
+
     int find_eig(saena_matrix& A);
 //    int find_eig_Elemental(saena_matrix& A);
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);

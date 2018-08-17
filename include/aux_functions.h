@@ -359,8 +359,8 @@ bool almost_zero(T val){
 
 template<class T>
 int print_vector(const std::vector<T> &v, const int ran, const std::string &name, MPI_Comm comm){
-    // if ran >= 0 print the vector elements on proc with rank = ran
-    // otherwise print the vector elements on all processors in order. (first on proc 0, then proc 1 and so on.)
+    // if ran >= 0 print_entry the vector elements on proc with rank = ran
+    // otherwise print_entry the vector elements on all processors in order. (first on proc 0, then proc 1 and so on.)
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);

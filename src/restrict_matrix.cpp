@@ -40,9 +40,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         printf("rank %d: transposeP part1\n", rank);
     }
 
-//    MPI_Barrier(comm);
-//    printf("rank = %d, R.Mbig = %u, R.NBig = %u, M = %u \n", rank, Mbig, Nbig, M);
-//    MPI_Barrier(comm);
+//    P->print_info(-1);
 
     // *********************** send remote part of restriction ************************
 
@@ -58,7 +56,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //        if(rank==1) printf("%lu\t %lu\t %f \tP_remote\n", P->entry_remote[i].row, P->entry_remote[i].col, P->entry_remote[i].val);
         }
 
-//    if(rank==1) printf("numRecvProc_t = %u \tnumSendProc_t = %u \n", P->numRecvProc_t, P->numSendProc_t);
+//        if(rank==0) printf("numRecvProc_t = %u \tnumSendProc_t = %u \n", P->numRecvProc_t, P->numSendProc_t);
+//        print_vector(P->recvProcCount_t, 0, "recvProcCount_t", comm);
 
         for (i = 0; i < P->numRecvProc_t; i++)
             MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i],
@@ -67,13 +66,13 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         for (i = 0; i < P->numSendProc_t; i++) {
             MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], cooEntry::mpi_datatype(),
                       P->sendProcRank_t[i], 1, comm, &(requests[P->numRecvProc_t + i]));
-//        if(rank==1) printf("numRecvProc_t = %u \tnumSendProc_t = %u \n", P->numRecvProc_t, P->numSendProc_t);
         }
     }
 
     if(verbose_transposeP){
         MPI_Barrier(comm);
         printf("rank %d: transposeP part2\n", rank);
+        MPI_Barrier(comm);
     }
 
     // *********************** assign local part of restriction ************************
@@ -108,6 +107,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     if(verbose_transposeP){
         MPI_Barrier(comm);
         printf("rank %d: transposeP part3-1\n", rank);
+        MPI_Barrier(comm);
     }
 
     // *********************** assign remote part of restriction ************************
@@ -130,6 +130,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         if (verbose_transposeP) {
             MPI_Barrier(comm);
             printf("rank %d: transposeP part3-2\n", rank);
+            MPI_Barrier(comm);
         }
 
         MPI_Waitall(P->numSendProc_t, P->numRecvProc_t + requests, P->numRecvProc_t + statuses);
@@ -147,13 +148,15 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     nnz_l = entry.size();
     MPI_Allreduce(&nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
-    // todo: check why is R so imbalanced for 289 size matrix on 8 processors. use the following print function.
-//    printf("\nrank = %d, R.Mbig = %u, R.Nbig = %u, M = %u, R.nnz_l = %lu, R.nnz_g = %lu \n", rank, Mbig, Nbig, M, nnz_l, nnz_g);
 
     if(verbose_transposeP){
         MPI_Barrier(comm);
+        printf("rank = %d, R.Mbig = %u, R.Nbig = %u, M = %u, R.nnz_l = %lu, R.nnz_g = %lu \n", rank, Mbig, Nbig, M, nnz_l, nnz_g);
+        MPI_Barrier(comm);
         printf("rank %d: transposeP part4\n", rank);
+        MPI_Barrier(comm);
     }
+    // todo: check why is R so imbalanced for 289 size matrix on 8 processors. use the following print_entry function.
 
     // *********************** setup matvec ************************
 
@@ -185,7 +188,6 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     row_remote.clear();
     col_remote.clear();
 
-    // todo: sometimes nnz_l is 0. check if everything is fine.
     if(entry.size() != 0){
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
@@ -211,11 +213,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
             nnzPerCol_remote.push_back(1);
             vElement_remote.push_back(entry[0].col);
             vElementRep_remote.push_back(1);
-            recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
+            recvCount[lower_bound3(&split[0], &split[nprocs], entry[0].col)] = 1;
         }
 
         if(verbose_transposeP){
-            MPI_Barrier(comm);
+//            MPI_Barrier(comm);
             printf("rank %d: transposeP part5\n", rank);
         }
 
@@ -231,30 +233,30 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
                 if (entry[i].col != entry[i-1].col)
                     vElementRep_local.push_back(1);
                 else
-                    (*(vElementRep_local.end()-1))++;
+                    vElementRep_local.back()++;
 
                 // remote
             } else {
                 entry_remote.push_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
                 row_remote.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
                 // col_remote2 is the original col value. col_remote starts from 0.
-//            col_remote2.push_back(entry[i].col);
-//            values_remote.push_back(entry[i].val);
+//                col_remote2.push_back(entry[i].col);
+//                values_remote.push_back(entry[i].val);
 
                 if (entry[i].col != entry[i-1].col) {
                     col_remote_size++;
                     vElement_remote.push_back(entry[i].col);
                     vElementRep_remote.push_back(1);
-                    procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+                    procNum = lower_bound3(&split[0], &split[nprocs], entry[i].col);
                     recvCount[procNum]++;
                     nnzPerCol_remote.push_back(1);
                 } else {
-                    (*(vElementRep_remote.end()-1))++;
-                    (*(nnzPerCol_remote.end()-1))++;
+                    vElementRep_remote.back()++;
+                    nnzPerCol_remote.back()++;
                 }
                 // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
                 col_remote.push_back(col_remote_size-1);
-//            nnzPerCol_remote[col_remote_size-1]++;
+//                nnzPerCol_remote[col_remote_size-1]++;
             }
         } // for i
 
@@ -264,14 +266,13 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
         for(index_t i = 0; i < M; i++){
             nnzPerRowScan_local[i+1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
-//        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
+//            if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
         }
 
     } // end of if(entry.size()) != 0
 
     if(verbose_transposeP){
-        MPI_Barrier(comm);
-        printf("rank %d: transposeP part6\n", rank);
+        MPI_Barrier(comm); printf("rank %d: transposeP part6\n", rank); MPI_Barrier(comm);
     }
 
     if(nprocs > 1) {
@@ -299,7 +300,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
                 numSendProc++;
                 sendProcRank.push_back(i);
                 sendProcCount.push_back(vIndexCount[i]);
-//            recvProcCount_t.push_back(recvCount_t[i]); // use sendProcRank for it.
+//                recvProcCount_t.push_back(recvCount_t[i]); // use sendProcRank for it.
             }
         }
 
@@ -331,6 +332,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         if (verbose_transposeP) {
             MPI_Barrier(comm);
             printf("rank %d: transposeP part7\n", rank);
+            MPI_Barrier(comm);
         }
 
         #pragma omp parallel for
@@ -378,6 +380,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     if(verbose_transposeP){
         MPI_Barrier(comm);
         printf("rank %d: transposeP done!\n", rank);
+        MPI_Barrier(comm);
     }
 
     openmp_setup();
@@ -628,3 +631,65 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     return 0;
 }
 
+
+int restrict_matrix::print_entry(int ran){
+
+    // if ran >= 0 print the matrix entries on proc with rank = ran
+    // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\nrestriction matrix on proc = %d \n", ran);
+            printf("nnz = %lu \n", nnz_l);
+            for (auto i:entry)
+                std::cout << i << std::endl;
+        }
+    } else{
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("\nrestriction matrix on proc = %d \n", proc);
+                printf("nnz = %lu \n", nnz_l);
+                for (auto i:entry)
+                    std::cout << i << std::endl;
+            }
+            MPI_Barrier(comm);
+        }
+    }
+
+    return 0;
+}
+
+
+int restrict_matrix::print_info(int ran){
+
+    // if ran >= 0 print the matrix info on proc with rank = ran
+    // otherwise print the matrix info on all processors in order. (first on proc 0, then proc 1 and so on.)
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\nmatrix R info on proc = %d \n", ran);
+            printf("Mbig = %u, Nbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", Mbig, Nbig, M, nnz_g, nnz_l);
+        }
+    } else{
+        MPI_Barrier(comm);
+        if(rank==0) printf("\nmatrix R info:      Mbig = %u, Nbig = %u, nnz_g = %lu \n", Mbig, Nbig, nnz_g);
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("matrix R on rank %d: M = %u, nnz_l = %lu \n", proc, M, nnz_l);
+            }
+            MPI_Barrier(comm);
+        }
+    }
+
+    return 0;
+}

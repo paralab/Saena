@@ -85,8 +85,7 @@ int strength_matrix::strength_matrix_set(std::vector<index_t> &r, std::vector<in
         col_remote_size++; // number of remote columns
         col_remote.push_back(col_remote_size-1);
         col_remote2.push_back(c[0]);
-//        nnz_col_remote[col_remote_size-1]++;
-        nnz_col_remote.push_back(1);
+        nnzPerCol_remote.push_back(1);
 
         vElement_remote.push_back(c[0]);
         vElementRep_remote.push_back(1);
@@ -122,14 +121,14 @@ int strength_matrix::strength_matrix_set(std::vector<index_t> &r, std::vector<in
                 vElementRep_remote.push_back(1);
                 procNum = lower_bound2(&split[0], &split[nprocs], c[i]);
                 recvCount[procNum]++;
-                nnz_col_remote.push_back(1);
+                nnzPerCol_remote.push_back(1);
             } else {
                 vElementRep_remote.back()++;
-                nnz_col_remote.back()++;
+                nnzPerCol_remote.back()++;
             }
             // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
             col_remote.push_back(col_remote_size-1);
-//            nnz_col_remote[col_remote_size-1]++;
+//            nnzPerCol_remote[col_remote_size-1]++;
         }
     } // for i
 
@@ -253,7 +252,7 @@ int strength_matrix::erase(){
     col_remote2.clear();
     nnzPerRow.clear();
     nnzPerRow_local.clear();
-    nnz_col_remote.clear();
+    nnzPerCol_remote.clear();
     vElement_remote.clear();
     vElementRep_local.clear();
     vElementRep_remote.clear();
@@ -268,19 +267,68 @@ int strength_matrix::erase(){
     return 0;
 }
 
-void strength_matrix::print(int r){
-//    int rank;
-//    MPI_Comm_rank(comm, &rank);
-//
-//    if(rank==r)
-//        for(unsigned int i=0; i<nnz_l; i++){
-//            cout << "S:  " << "[" << Si2[i] << "," << Sj2[i] << "] = " << Sval2[i] << endl;
-//            cout << "S:  " << "[" << (Si2[i] - A->split[rank]) << "," << Sj2[i] << "] = \t" << Sval2[i] << endl;
-//        }
-//
-//    if (rank==r)
-//        for(unsigned int i=0; i<M; i++){
-//            for(long j=rowIndex[i]; j<rowIndex[i+1]; j++)
-//                cout << "[" << i+1 << ",\t" << col[j]+1 << "] = \t" << values[j] << endl;
-//        }
+
+void strength_matrix::print_diagonal_block(int ran){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    index_t iter = 0;
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\nstrength matrix (diagonal_block) on proc = %d \n", ran);
+            printf("nnz = %lu \n", nnz_l_local);
+            for (index_t i = 0; i < nnz_l_local; i++) {
+                std::cout << iter << "\t" << row_local[i] + split[rank] << "\t" << col_local[i] << "\t" << values_local[i] << std::endl;
+                iter++;
+            }
+        }
+    } else{
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("\nstrength matrix (diagonal_block) on proc = %d \n", rank);
+                printf("nnz = %lu \n", nnz_l_local);
+                for (index_t i = 0; i < nnz_l_local; i++) {
+                    std::cout << iter << "\t" << row_local[i] + split[rank] << "\t" << col_local[i] << "\t" << values_local[i] << std::endl;
+                    iter++;
+                }
+            }
+            MPI_Barrier(comm);
+        }
+    }
+}
+
+
+void strength_matrix::print_off_diagonal(int ran){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    index_t iter = 0;
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\nstrength matrix (off_diagonal) on proc = %d \n", ran);
+            printf("nnz = %lu \n", nnz_l_remote);
+            for (index_t i = 0; i < nnz_l_remote; i++) {
+                std::cout << iter << "\t" << row_remote[i] + split[rank] << "\t" << col_remote2[i] << "\t" << values_remote[i] << std::endl;
+                iter++;
+            }
+        }
+    } else{
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("\nstrength matrix (off_diagonal) on proc = %d \n", rank);
+                printf("nnz = %lu \n", nnz_l_remote);
+                for (index_t i = 0; i < nnz_l_remote; i++) {
+                    std::cout << iter << "\t" << row_remote[i] + split[rank] << "\t" << col_remote2[i] << "\t" << values_remote[i] << std::endl;
+                    iter++;
+                }
+            }
+            MPI_Barrier(comm);
+        }
+    }
 }

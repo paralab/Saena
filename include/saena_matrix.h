@@ -109,7 +109,7 @@ public:
     std::vector<index_t> vElementRep_remote;
     std::vector<value_t> w_buff; // for matvec3()
 
-    bool add_duplicates = false;
+    bool add_duplicates = true;
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
 
     MPI_Comm comm;
@@ -119,12 +119,14 @@ public:
     bool active = true;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
-    bool enable_shrink = false;
-    bool do_shrink     = false;
-    bool shrinked      = false; // if shrinking happens for the matrix, set this to true.
+    bool enable_shrink = false;  // default = true
+    bool do_shrink     = false; // default = false
+    bool shrinked      = false; // default = false. if shrinking happens for the matrix, set this to true.
+    bool enable_dummy_matvec = true; // default = true
     std::vector<double> matvec_dummy_time;
-    int cpu_shrink_thre1 = 1; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
-    int cpu_shrink_thre2 = 1; // number of procs after shrinking = nprocs / cpu_shrink_thre2
+    unsigned int total_active_procs = 0;
+    int cpu_shrink_thre1 = 1; // default = 1. set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
+    int cpu_shrink_thre2 = 1; // default = 1. number of procs after shrinking = nprocs / cpu_shrink_thre2
     int cpu_shrink_thre2_next_level = -1;
     float shrink_total_thre     = 1.25;
     float shrink_local_thre     = 1.25;
@@ -136,16 +138,23 @@ public:
     bool enable_shrink_next_level = false; // default is false. set it to true in the setup() function if it is required.
 //    int cpu_shrink_thre1_next = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
 
+    // shrink_minor: if there no entry for the coarse matrix on this proc, then shrink.
+    bool active_minor = true;    // default = true
+//    index_t M_old_minor = 0; // local number of rows, before being repartitioned.
+    std::vector<index_t> split_old_minor;
+    bool shrinked_minor = false; // default = false
+//    MPI_Comm comm_old_minor;
+
     double density = -1.0;
     float jacobi_omega = float(2.0/3);
     double eig_max_of_invdiagXA = 0; // the biggest eigenvalue of (A * inv_diag(A)) to be used in chebyshev smoother
-    double highest_diag_val = 1e-10;
+    double highest_diag_val = 1e-10; // todo: check if this is still required.
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
 
     saena_matrix_dense dense_matrix;
     bool switch_to_dense = false;
     bool dense_matrix_generated = false;
-    float dense_threshold = 0.9; // 0<dense_threshold<=1 decide when to also generate dense_matrix for this matrix.
+    float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to also generate dense_matrix for this matrix.
 
     // zfp parameters
     zfp_field* field;  /* array meta data */
@@ -164,10 +173,6 @@ public:
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
-    /**
-     * @param[in] Aname is the pointer to the matrix
-     * @param[in] Mbig Number of rows in the matrix
-     * */
     saena_matrix(char* Aname, MPI_Comm com);
     ~saena_matrix();
 
@@ -186,6 +191,7 @@ public:
     int remove_duplicates();
     int repartition_nnz_initial(); // based on nnz.
     int matrix_setup();
+    int matrix_setup_no_scale();
 
     // these versions are used after matrix is assembled and needs to be updated again.
     int setup_initial_data2();
@@ -203,8 +209,6 @@ public:
     int openmp_setup();
     int scale_matrix();
 
-    int matrix_setup_no_scale();
-
     int set_off_on_diagonal_dummy();
 //    int find_sortings_dummy();
     int matrix_setup_dummy();
@@ -212,6 +216,7 @@ public:
     int compute_matvec_dummy_time();
     int decide_shrinking(std::vector<double> &prev_time);
     int shrink_cpu();
+    int shrink_cpu_minor();
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);

@@ -8,7 +8,7 @@
 
 class saena_matrix;
 
-
+// todo: replace strength_matrix with two other arguments: S->M and S->nnzPerRow
 int randomVector(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
 
     int rank;
@@ -86,6 +86,7 @@ int randomVector2(std::vector<double>& V){
     return 0;
 }
 
+// todo: replace strength_matrix with two other arguments: S->M and S->nnzPerRow
 int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
     // This function DOES NOT generate a random vector. It computes the maximum degree of all the nodes.
     // (degree of node i = number of nonzeros on row i)
@@ -125,7 +126,7 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
     std::vector<double> rand(S->M);
     for (i = 0; i < V.size(); i++){
         V[i] = max_degree - S->nnzPerRow[i];
-//        if(rank==0) cout << i << "\tnnzPerRow = " << S->nnzPerRow[i] << "\t weight = " << V[i] << endl;
+//        if(rank==1) std::cout << i << "\tnnzPerRow = " << S->nnzPerRow[i] << "\t weight = " << V[i] << std::endl;
     }
 //        rand[i] = dist(rng);
 
@@ -204,6 +205,7 @@ std::ostream & operator<<(std::ostream & stream, const cooEntry_row & item) {
     return stream;
 }
 
+
 void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nnz_t initial_nnz_l, MPI_Comm comm){
 
     int rank, nprocs;
@@ -243,7 +245,6 @@ void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nn
         V[i] = reinterpret_cast<double&>(data[3*i+2]);
     }
 }
-
 
 
 int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, value_t* dot, MPI_Comm comm){
@@ -375,6 +376,7 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
 
     return 0;
 }
+
 
 int generate_rhs_old(std::vector<value_t>& rhs){
 

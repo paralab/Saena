@@ -27,9 +27,11 @@ int find_eig_ietl(Matrix& A){
 
     if(verbose_eig) {
         MPI_Barrier(A.comm);
-        if(rank==0) printf("\nstart of find_eig()\n");
+        if(rank==0) printf("\nfind_eig: start\n");
         MPI_Barrier(A.comm);
     }
+
+//    A.print_entry(-1);
 
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++) {
@@ -53,6 +55,12 @@ int find_eig_ietl(Matrix& A){
     Gen mygen;
     ietl::lanczos<Matrix,Vecspace> lanczos(A,vec);
 
+    if(verbose_eig) {
+        MPI_Barrier(A.comm);
+        if(rank==0) printf("find_eig: after lanczos\n");
+        MPI_Barrier(A.comm);
+    }
+
     // Creation of an iteration object:
     int max_iter = 20; // default was 10*N
     double rel_tol = 500*std::numeric_limits<double>::epsilon();
@@ -63,6 +71,12 @@ int find_eig_ietl(Matrix& A){
 
 //    if(rank==0) std::cout << "-----------------------------------\n\n";
 //    if(rank==0) std::cout << "\nComputation of " << n_highest_eigenval << " highest converged eigenvalues\n\n";
+
+    if(verbose_eig) {
+        MPI_Barrier(A.comm);
+        if(rank==0) printf("find_eig: after lanczos_iteration_nhighest \n");
+        MPI_Barrier(A.comm);
+    }
 
     std::vector<double> eigen;
     std::vector<double> err;
@@ -116,7 +130,7 @@ int find_eig_ietl(Matrix& A){
 
     if(verbose_eig) {
         MPI_Barrier(A.comm);
-        if(rank==0) printf("end of find_eig_ietl()\n");
+        if(rank==0) printf("find_eig: end\n");
         MPI_Barrier(A.comm);
     }
 

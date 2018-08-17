@@ -30,7 +30,7 @@ namespace saena {
         int set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, value_t* val); // set contiguous block
         int set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local); // set generic block
 
-        bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
+        bool add_dup = true; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
         int assemble();
         int assemble_no_scale();
@@ -125,9 +125,11 @@ namespace saena {
 
 
     // second argument is dof on each processor
-    int laplacian2D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
-    int laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
-    int laplacian3D_old(saena::matrix* A, unsigned int dof_local, MPI_Comm comm);
+    int laplacian2D_old(saena::matrix* A, unsigned int dof_local);
+    int laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz);
+    int laplacian3D_set_rhs(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
+    int laplacian3D_set_rhs_zero(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
+    int laplacian3D_old(saena::matrix* A, unsigned int dof_local);
     int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth);
 }
 

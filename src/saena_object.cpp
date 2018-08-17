@@ -43,7 +43,7 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
 
 
 int saena_object::setup(saena_matrix* A) {
-    int nprocs, rank;
+    int nprocs, rank, rank_new;
     MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
     A->active_old_comm = true;
@@ -53,7 +53,8 @@ int saena_object::setup(saena_matrix* A) {
         printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
 
     int i;
-    float total_row_reduction, row_reduction_min;
+    float row_reduction_min;
+//    float total_row_reduction;
 //    index_t M_current;
 
     if(verbose_setup)
@@ -89,66 +90,69 @@ int saena_object::setup(saena_matrix* A) {
             level_setup(&grids[i]); // create P, R and Ac for grid[i]
             grids[i + 1] = Grid(&grids[i].Ac, max_level, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i])
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
-            if(smoother=="chebyshev"){
+
+            if(grids[i].Ac.active) {
+                if (smoother == "chebyshev") {
 //                double t1 = omp_get_wtime();
-                find_eig(grids[i].Ac);
+                    find_eig(grids[i].Ac);
 //                double t2 = omp_get_wtime();
 //                if(verbose_level_setup) print_time(t1, t2, "find_eig(): ", A->comm);
+                }
             }
 
-            if (verbose_setup)
-                if (rank == 0){
-                    MPI_Comm_size(grids[i].Ac.comm, &nprocs);
+            if (verbose_setup) {
+                if (rank == 0) {
+//                    MPI_Comm_size(grids[i].Ac.comm, &nprocs);
                     printf("_____________________________\n\n");
                     printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
-                           grids[i + 1].currentLevel, nprocs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g, grids[i + 1].A->density);}
+                           grids[i + 1].currentLevel, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
+                           grids[i + 1].A->density);
+                }
+            }
 
             // decide if next level for multigrid is required or not.
             // threshold to set maximum multigrid level
             if(dynamic_levels){
-                if(grids[i].Ac.active) {
-//                    MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
-//                    total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
-                    row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
-//
-//                    if(rank==0) printf("row_reduction_min = %f, total_row_reduction = %f\n", row_reduction_min, total_row_reduction);
-//                    if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
-//                    row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
-//                    MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
-//                    if(rank==0) printf("row_reduction_min = %f, row_reduction_threshold = %f \n", row_reduction_min, row_reduction_threshold);
-//                    if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
+//                MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
+//                total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
+                row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
 
-                    if ( (grids[i].Ac.Mbig < least_row_threshold) || (row_reduction_min > row_reduction_threshold) ) {
-                        max_level = grids[i].currentLevel + 1;
-                        grids.resize(max_level);
+//                if(rank==0) printf("row_reduction_min = %f, total_row_reduction = %f\n", row_reduction_min, total_row_reduction);
+//                if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
+//                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
+//                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
+//                if(rank==0) printf("row_reduction_min = %f, row_reduction_threshold = %f \n", row_reduction_min, row_reduction_threshold);
+//                if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
 
-                        // delete the coarsest level, if the size is not reduced much.
-                        if (row_reduction_min > row_reduction_threshold) {
-                            grids.pop_back();
-                            max_level--;
-                            // todo: when destroy() is written, delete P and R by that.
+                if ( (grids[i].Ac.Mbig < least_row_threshold) || (row_reduction_min > row_reduction_threshold) ) {
+                    max_level = grids[i].currentLevel + 1;
+                    grids.resize(max_level);
+
+                    // delete the coarsest level, if the size is not reduced much.
+                    if (row_reduction_min > row_reduction_threshold) {
+                        grids.pop_back();
+                        max_level--;
+                        // todo: when destroy() is written, delete P and R by that.
 //                        grids[i].P.destroy(); // destructor
 //                        grids[i].R.destroy(); // destructor
-                        }
                     }
                 }
             }
-        }
 
-        if(!grids[i].Ac.active)
-            break;
+        }
+//        if(!grids[i].Ac.active)
+//            break;
     }
 
-    MPI_Bcast(&max_level, 1, MPI_INT, 0, grids[0].A->comm);
-    grids.resize(max_level);
+//    MPI_Bcast(&max_level, 1, MPI_INT, 0, grids[0].A->comm);
+//    grids.resize(max_level);
 
-    if(verbose_setup) if(rank==0){
-            printf("_____________________________\n\n");
-            printf("number of levels = << %d >> (the finest level is 0)\n", max_level);
-            printf("\n******************************************************\n");
-        }
+    if(verbose_setup && rank==0){
+        printf("_____________________________\n\n");
+        printf("number of levels = << %d >> (the finest level is 0)\n", max_level);
+        printf("\n******************************************************\n");
+    }
 
-//    printf("\nrank = %d, end of setup() \n", rank);
     return 0;
 }
 
@@ -160,8 +164,6 @@ int saena_object::level_setup(Grid* grid){
     MPI_Comm_rank(grid->A->comm, &rank);
 
 //    if(verbose_level_setup){
-//        MPI_Barrier(grid->A->comm);
-//        printf("\n");
 //        MPI_Barrier(grid->A->comm);
 //        printf("rank = %d, start of level_setup: level = %d \n", rank, grid->currentLevel);
 //        MPI_Barrier(grid->A->comm);
@@ -175,17 +177,7 @@ int saena_object::level_setup(Grid* grid){
     double t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Aggregation: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==0){
-//        std::cout << "\naggregates: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->A->M; i++)
-//            std::cout << i << "\t" << aggregate[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==1){
-//        std::cout << "\naggregates: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->A->M; i++)
-//            std::cout << i+grid->A->split[rank] << "\t" << aggregate[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
+//    print_vector(aggregate, 0, "aggregate", grid->A->comm);
 
     // **************************** changeAggregation ****************************
 
@@ -199,18 +191,8 @@ int saena_object::level_setup(Grid* grid){
     t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Prolongation: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==0){
-//        std::cout << "\nprolongation: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->P.nnz_l; i++)
-//            std::cout << i << "\t" << grid->P.entry[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==1){
-//        std::cout << "\nprolongation: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->P.nnz_l; i++)
-//            std::cout << i + grid->A->split[rank] << "\t" << grid->P.entry[i].row + grid->A->split[rank]
-//                      << "\t" << grid->P.entry[i].col << "\t" << grid->P.entry[i].val << std::endl;}
-//    MPI_Barrier(grid->A->comm);
+//    grid->P.print_info(-1);
+//    print_vector(grid->P.entry, 0, "grid->P.entry", grid->A->comm);
 
     // **************************** restriction ****************************
 
@@ -219,44 +201,19 @@ int saena_object::level_setup(Grid* grid){
     t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Restriction: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==0){
-//        std::cout << "\nrestriction: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->R.nnz_l; i++)
-//            std::cout << grid->R.entry[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==1){
-//        std::cout << "\nrestriction: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->R.nnz_l; i++)
-//            std::cout << i + grid->R.splitNew[rank] << "\t" << grid->R.entry[i].row + grid->R.splitNew[rank]
-//                      << "\t" << grid->R.entry[i].col << "\t" << grid->R.entry[i].val << std::endl;}
-//    MPI_Barrier(grid->A->comm);
+//    grid->R.print_info(-1);
+//    print_vector(grid->R.entry, 0, "grid->R.entry", grid->A->comm);
 
     // **************************** coarsen ****************************
 
     t1 = omp_get_wtime();
-//    coarsen(grid->A, &grid->P, &grid->R, &grid->Ac);
     coarsen(grid);
     t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Coarsening: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==0){
-//        std::cout << "\nAc: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->Ac.nnz_l; i++)
-//            std::cout << i << "\t" << grid->Ac.entry[i] << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-//    if(rank==1){
-//        std::cout << "\nAc: rank = " << rank << std::endl;
-//        for(long i=0; i<grid->Ac.nnz_l; i++)
-//            std::cout << i + grid->Ac.split[rank] << "\t" << grid->Ac.entry[i].row
-//                      << "\t" << grid->Ac.entry[i].col << "\t" << grid->Ac.entry[i].val << std::endl;}
-//    MPI_Barrier(grid->A->comm);
-
-//    if(rank==0){
-//        std::cout << "\nAc.split:" << std::endl;
-//        for(long i=0; i<nprocs+1; i++)
-//            std::cout << grid->Ac.split[i] << std::endl;}
+//    MPI_Barrier(grid->A->comm); printf("rank %d: here after coarsen!!! \n", rank); MPI_Barrier(grid->A->comm);
+//    print_vector(grid->Ac.entry, 1, "grid->Ac.entry", grid->A->comm);
+//    print_vector(grid->Ac.split, 1, "grid->Ac.split", grid->A->comm);
 
 //    printf("rank = %d, M = %u, nnz_l = %u, nnz_g = %u, Ac.M = %u, Ac.nnz_l = %u \n",
 //           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l);
@@ -275,11 +232,12 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
 
     strength_matrix S;
     create_strength_matrix(A, &S);
-//    S.print(0);
+//    S.print_entry(0);
 
     float connStrength_temp = connStrength;
     std::vector<unsigned long> aggArray; // vector of root nodes.
     bool continue_agg = true;
+
     // new_size is the size of the new coarse matrix.
     unsigned int new_size_local, new_size=0, division=0;
 
@@ -301,6 +259,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
                 aggArray.clear();
                 continue_agg = true;
                 S.erase();
+                //todo: call the last part of create_strength_matrix() here, instead of calling create_strength_matrix() each time.
                 create_strength_matrix(A, &S);
             }
         } else if( division < 1.5 ){
@@ -314,7 +273,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
                 create_strength_matrix(A, &S);
             }
         }
-        if(adaptive_coarsening == false)
+        if(!adaptive_coarsening)
             continue_agg = false;
     }
 
@@ -330,6 +289,8 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
 
 
 int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
+
+    // todo: add openmp to this function.
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
@@ -352,14 +313,11 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
         }
     }
 
-//    if(rank==0)
-//        for(i=0; i<A->M; i++)
-//            std::cout << i << "\t" << maxPerRow[i] << std::endl;
+//    print_vector(maxPerRow, -1, "maxPerRow", comm);
 
     // ******************************** compute S ********************************
 
-    std::vector<index_t> Si;
-    std::vector<index_t> Sj;
+    std::vector<index_t> Si, Sj;
     std::vector<value_t> Sval;
     for(nnz_t i = 0; i < A->nnz_l; i++){
         if(A->entry[i].row == A->entry[i].col) {
@@ -372,21 +330,17 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
             Si.push_back(A->entry[i].row);
             Sj.push_back(A->entry[i].col);
             Sval.push_back(  -A->entry[i].val / (maxPerRow[A->entry[i].row - A->split[rank]])  );
-//                if(rank==0) std::cout << "A.val = " << -A->values[i] << ", max = " << maxPerRow[A->row[i] - A->split[rank]] << ", divide = " << (-A->values[i] / (maxPerRow[A->row[i] - A->split[rank]])) << std::endl;
+//            if(rank==0) std::cout << "A.val = " << -A->values[i] << ", max = " << maxPerRow[A->row[i] - A->split[rank]] << ", divide = " << (-A->values[i] / (maxPerRow[A->row[i] - A->split[rank]])) << std::endl;
 //            }
         }
     }
 
-//    if(rank==1)
-//        for (index_t i=0; i<Si.size(); i++)
-//            std::cout << "val = " << Sval[i] << std::endl;
+//    print_vector(Sval, -1, "Sval", comm);
 
     // ******************************** compute max per column - version 1 - for general matrices ********************************
 
-    // todo: the size of this vector is Mbig. change it.
     std::vector<value_t> local_maxPerCol(A->Mbig);
     local_maxPerCol.assign(A->Mbig,0);
-//    fill(&local_maxPerCol[0], &local_maxPerCol[A->Mbig], 0);
 
     for(nnz_t i=0; i<A->nnz_l; i++){
         if( A->entry[i].row != A->entry[i].col ){
@@ -397,14 +351,10 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
         }
     }
 
-//    double maxPerCol[A->Mbig];
     std::vector<value_t> maxPerCol(A->Mbig);
-//    MPI_Allreduce(&local_maxPerCol, &maxPerCol, A->Mbig, MPI_DOUBLE, MPI_MAX, comm);
     MPI_Allreduce(&*local_maxPerCol.begin(), &*maxPerCol.begin(), A->Mbig, MPI_DOUBLE, MPI_MAX, comm);
 
-//    if(rank==0)
-//        for(index_t i=0; i<A->Mbig; i++)
-//            std::cout << i << "\t" << maxPerCol[i] << std::endl;
+//    print_vector(maxPerCol, -1, "maxPerCol", comm);
 
     // ******************************** compute ST - version 1 ********************************
 
@@ -425,7 +375,6 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 //            }
         }
     }
-
 
 //    if(rank==1)
 //        for(i=0; i<STi.size(); i++)
@@ -497,7 +446,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     // add OpenMP just like matvec.
 //    iter = 0;
 //    for (i = 0; i < A->col_remote_size; ++i) {
-//        for (unsigned int j = 0; j < A->nnz_col_remote[i]; ++j, ++iter) {
+//        for (unsigned int j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
 //            STi.push_back(A->row_remote[A->indicesP_remote[iter]]);
 //            STj.push_back(A->col_remote2[A->indicesP_remote[iter]]);
 //            STval.push_back( -A->values_remote[A->indicesP_remote[iter]] / A->vecValues[A->col_remote[A->indicesP_remote[iter]]] );
@@ -521,10 +470,10 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 //            std::cout << "ST: " << "[" << STi[i]+1 << "," << STj[i]+1 << "] = " << STval[i] << std::endl;
 */
 
+// todo: move this part to find_aggregation function to avoid repeating the previous part.
     // *************************** make S symmetric and apply the connection strength parameter ****************************
 
-    std::vector<index_t> Si2;
-    std::vector<index_t> Sj2;
+    std::vector<index_t> Si2, Sj2;
     std::vector<value_t> Sval2;
 
     for(nnz_t i=0; i<Si.size(); i++){
@@ -555,7 +504,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     S->strength_matrix_set(Si2, Sj2, Sval2, A->M, A->Mbig, Si2.size(), A->split, comm);
 
     return 0;
-} // end of SaenaObject::createStrengthMatrix
+} // end of saena_object::create_strength_matrix
 
 
 // Using MIS(2) from the following paper by Luke Olson:
@@ -565,6 +514,9 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
     // If there is not any root in distance-2, that node should become a root.
 
+    // aggregate: of size dof at the end will shows to what root node (aggregate) each node is assigned.
+    // aggArray: the root nodes of the coarse matrix.
+
     // variables used in this function:
     // weight[i]: the two most left bits store the status of node i, the other 62 bits store weight assigned to that node.
     //            status of a node: 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
@@ -573,7 +525,6 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     //            aggregation process, it becomes the weight of the node's aggregate.
 
     MPI_Comm comm = S->comm;
-
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -581,46 +532,35 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     unsigned long i, j;
     unsigned long size = S->M;
 
-//    std::vector<unsigned long> aggArray; // vector of root nodes.
     std::vector<unsigned long> aggregate2(size);
-//    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
     std::vector<unsigned long> weight(size);
     std::vector<unsigned long> weight2(size);
     std::vector<unsigned long> initialWeight(size);
+//    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
 
 //    randomVector(initialWeight, S->Mbig, S, comm);
     randomVector3(initialWeight, S->Mbig, S, comm);
 //    randomVector4(initialWeight, S->Mbig);
 
-/*
-    MPI_Barrier(comm);
-    if(rank==0){
-        std::cout << std::endl << "after initialization!" << std::endl;
-        for (i = 0; i < size; ++i)
-            std::cout << i << "\tinitialWeight = " << initialWeight[i] << std::endl;}
-    MPI_Barrier(comm);
-    if(rank==1){
-        std::cout << std::endl << "after initialization!" << std::endl;
-        for (i = 0; i < size; ++i)
-            std::cout << i << "\tinitialWeight = " << initialWeight[i] << std::endl;}
-    MPI_Barrier(comm);
-*/
+//    print_vector(initialWeight, -1, "initialWeight", comm);
 
     const int wOffset = 62;
+    // 1UL<<wOffset: the status of the node is set to 1 which is not assigned.
+    // 2UL<<wOffset: the status of the node is set to 2 which is root.
+
     const unsigned long weightMax = (1UL<<wOffset) - 1;
     const unsigned long UNDECIDED = 1UL<<wOffset;
-    const unsigned long ROOT = 1UL<<(wOffset+1);
+    const unsigned long ROOT =      1UL<<(wOffset+1);
 //    const unsigned long UNDECIDED_OR_ROOT = 3UL<<wOffset;
+
     unsigned long weightTemp, aggregateTemp, aggStatusTemp;
     int* root_distance = (int*)malloc(sizeof(int)*size);
     // root_distance is initialized to 3(11). root = 0 (00), 1-distance root = 1 (01), 2-distance root = 2 (10).
     bool* dist1or2undecided = (bool*)malloc(sizeof(bool)*size);
     // if there is a distance-2 neighbor which is undecided, set this to true.
-//    fill(&dist2undecided[0], &dist2undecided[size], 0);
     bool continueAggLocal;
     bool continueAgg = true;
-    unsigned long i_remote, j_remote, weight_remote, agg_remote;
-    unsigned long iter, col_index;
+    unsigned long i_remote, j_remote, weight_remote, agg_remote, iter, col_index;
     int whileiter = 0;
 
     MPI_Request *requests = new MPI_Request[S->numSendProc + S->numRecvProc];
@@ -631,43 +571,37 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
     for(i=0; i<size; i++) {
         aggregate[i] = i + S->split[rank];
 //        aggStatus2[i] = 1;
-        // Boundary nodes are the ones which only have one neighbor (so one nnzPerRow), which is the diagonal element. They are roots for every coarse-grid.
+        // Boundary nodes are the ones that only have one neighbor which is itself (so one nnzPerRow),
+        // and it is the diagonal element. They are roots for every coarse-grid.
 //        if(rank==0) std::cout << i << "\t" << S->nnzPerRow[i] << std::endl;
         if(S->nnzPerRow[i] == 1){
             weight[i] = ( 2UL<<wOffset | initialWeight[i] );
             root_distance[i] = 0;
             aggArray.push_back(aggregate[i]);
 //            if(rank==0) std::cout << "boundary: " << i+S->split[rank] << std::endl;
-        }
-        else{
+        }else{
             weight[i] = ( 1UL<<wOffset | initialWeight[i] ); // status of each node is initialized to 1 and its weight to initialWeight.
 //            if(rank==0) std::cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << std::endl;
         }
     }
 
-//    if(rank==0){
-//        std::cout << "if(rank==0){" << std::endl;
-//        for(i=0; i<size; i++)
-//            std::cout << "V[" << i << "] = " << initialWeight[i] << ";" << std::endl;
-//        std::cout << "}" << std::endl;
-//    }
-//    MPI_Barrier(comm);
-//    if(rank==1){
-//        std::cout << "if(rank==1){" << std::endl;
-//        for(i=0; i<size; i++)
-//            std::cout << "V[" << i << "] = " << initialWeight[i] << ";" << std::endl;
-//        std::cout << "}" << std::endl;
-//    }
-//    MPI_Barrier(comm);
+//    S->print_diagonal_block(-1);
+//    S->print_off_diagonal(0);
+//    print_vector(weight, -1, "weight", comm);
+//    print_vector(S->split, 0, "split", comm);
+//    print_vector(S->nnzPerCol_remote, 0, "nnzPerCol_remote", comm);
 
     while(continueAgg) {
         // ******************************* first round of max computation *******************************
         // first "compute max" is local. The second one is both local and remote.
-        // for loop is of size "number of rows". it checks if a node is UNDECIDED. Then, it goes over its neighbors, which are nonzeros on that row.
-        // if the neighbor is UNDECIDED or ROOT, and its weight is higher than weightTemp, then than node will be chosen for root.
+        // for loop is of size "number of rows". it checks if a node is UNDECIDED. Then, it goes over its neighbors,
+        // which are nonzeros on that row. If the neighbor is UNDECIDED or ROOT, and its weight is higher than
+        // weightTemp, then that node will be chosen for root for now.
         // UNDECIDED is also considered because it may become a root later, and it may be a better root for that node.
         // In the next "for" loop, weight and aggregate are updated, but not the status.
 
+        // here for every node that is assigned to a 2-distance root check if there is a 1-distance root.
+        // if there is, then assign to it.
         iter = 0;
         for (i = 0; i < size; ++i) {
             if ( (weight[i] >> wOffset == 0) && (root_distance[i] == 2) ) {
@@ -685,7 +619,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                 iter += S->nnzPerRow_local[i];
         }
 
-        //distance-1 aggregate
+        // local part - distance-1 aggregate
         iter = 0;
         for (i = 0; i < size; ++i) {
             if(weight[i]&UNDECIDED) {
@@ -710,11 +644,12 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //                        break; todo: try to add this break. You can define nnzPerRowScan_local.
                     } else if( (weight[col_index] & UNDECIDED) && (initialWeight[col_index] >= weightTemp) ){
                         // if there is an UNDECIDED neighbor, and its weight is bigger than this node, this node should
-                        // wait until the next round of the "while" loop to see if that neighbor becomes root or assigned.
+                        // wait until the next round of the "while" loop to see if this neighbor becomes root or assigned.
 //                        if(rank==0) std::cout << i+S->split[rank] << "\t neighbor = " << S->col_local[S->indicesP_local[iter]] << std::endl;
 
-                        if((initialWeight[col_index] > weightTemp) || ((initialWeight[col_index] == weightTemp) && (aggregate[col_index] > i+S->split[rank])) ){
-//                            if(rank==0 && i==10) std::cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << std::endl;
+                        if( (initialWeight[col_index] > weightTemp) ||
+                            ((initialWeight[col_index] == weightTemp) && (aggregate[col_index] > i+S->split[rank])) ){
+//                            if(rank==0 && i==10) std::cout << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << std::endl;
                             weightTemp = (weight[col_index] & weightMax);
                             aggregateTemp = S->col_local[S->indicesP_local[iter]];
                             root_distance[i] = 1;
@@ -744,6 +679,79 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         //            std::cout << i << "\tweight = " << weight[i] << "\tindex = " << aggregate[i] << std::endl;
         //    }
 
+
+
+
+
+/*
+        // remote part - distance-1 aggregate
+        iter = 0;
+        for (i = 0; i < S->col_remote_size; ++i) {
+            for (j = 0; j < S->nnzPerCol_remote[i]; ++j, ++iter) {
+                i_remote = S->row_remote[iter];
+                j_remote = S->col_remote[iter];
+                weight_remote = S->vecValues[2 * j_remote];
+                agg_remote    = S->vecValues[2 * j_remote + 1];
+
+                if (weight[i_remote] & UNDECIDED) {
+
+                    //distance-1 aggregate
+                    if (weight_remote & ROOT) {
+                        weight[i_remote] = (0UL << wOffset | (weight_remote & weightMax));
+//                        weight2[i_remote] = weight[i_remote];
+                        aggregate[i_remote] = (agg_remote & weightMax);
+                        root_distance[i_remote] = 1;
+                        dist1or2undecided[i_remote] = false;
+//                        if(rank==0) std::cout << i+S->split[rank] << "\t assigned to = " << aggregate[i_remote] << " distance-1 remote \t weight = " << weight[i_remote] << std::endl;
+                    } else if (weight_remote & UNDECIDED) {
+
+                        if (root_distance[i_remote] == 1)
+                            weightTemp = (weight2[i_remote] & weightMax);
+                        else{
+                            weightTemp = initialWeight[i_remote];
+                        }
+
+                        if ( ( (weight_remote & weightMax) > weightTemp) ||
+                             ( ( (weight_remote & weightMax) == weightTemp) && ( ((agg_remote & weightMax) > i_remote+S->split[rank]) )) ) {
+//                            if(rank==1) std::cout << "first  before\t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << std::endl;
+                            weight2[i_remote] = (weight_remote & weightMax);
+                            aggregate2[i_remote] = (agg_remote & weightMax);
+                            root_distance[i_remote] = 1;
+                            dist1or2undecided[i_remote] = true;
+//                            aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]] >> wOffset);
+//                            if(rank==1) std::cout << "first  after \t" << "row = " << S->row_remote[iter]+S->split[rank] << "  \tinitial weight = " << initialWeight[S->row_remote[iter]] << ",\taggregate = " << aggregate2[S->row_remote[iter]] << "\t\tremote weight = " << (weight2[S->row_remote[iter]]&weightMax) << "\tremote status = " << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset) << "\taggStat2 = " << aggStatus2[S->row_remote[iter]] << std::endl;
+                        }
+                    }
+
+                    // if the node is assigned and root_distance is 2, check to see if there is a root in distance-1
+                } else if( (weight[i_remote]>>wOffset == 0) && (root_distance[i_remote] == 2) ){
+                    if (weight_remote & ROOT){
+                        weight[i_remote] = (0UL << wOffset | (weight_remote & weightMax));
+                        aggregate[i_remote] = (agg_remote & weightMax);
+                        root_distance[i_remote] = 1;
+                    }
+                }
+            }
+        }
+
+        MPI_Waitall(S->numSendProc, S->numRecvProc+requests, S->numRecvProc+statuses);
+
+        // put weight2 in weight and aggregate2 in aggregate.
+        // if a row does not have a remote element then (weight2[i]&weightMax) == (weight[i]&weightMax)
+        // update aggStatus of remote elements at the same time
+        for(i=0; i<size; i++){
+            if( (weight[i]&UNDECIDED) && aggregate[i] != aggregate2[i] ){
+                aggregate[i] = aggregate2[i];
+                weight[i] = ( 1UL<<wOffset | weight2[i] );
+//                if(aggStatus2[i] != 1) // if this is 1, it should go to the next aggregation round.
+//                    weight[i] = (0UL<<wOffset | weight2[i]&weightMax);
+            }
+        }
+*/
+
+
+
+
         // ******************************* exchange remote max values for the second round of max computation *******************************
 
         // vSend[2*i]:   the first right 62 bits of vSend is maxPerCol for remote elements that should be sent to other processes.
@@ -752,11 +760,11 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         //               the first left 2 bits are root_distance.
         //               root_distance is initialized to 3(11). root = 0 (00), 1-distance root = 1 (01), 2-distance root = 2 (10).
 
-        // the following shows how the data are being stored in vecValues:
+        // the following shows how the data is being stored in vecValues:
 //        iter = 0;
 //        if(rank==1)
 //            for (i = 0; i < S->col_remote_size; ++i)
-//                for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter){
+//                for (j = 0; j < S->nnzPerCol_remote[i]; ++j, ++iter){
 //                    std::cout << "row:" << S->row_remote[iter]+S->split[rank] << "\tneighbor(col) = " << S->col_remote2[iter]
 //                         << "\t weight of neighbor = "        << (S->vecValues[2*S->col_remote[iter]]&weightMax)
 //                         << "\t\t status of neighbor = "      << (S->vecValues[2*S->col_remote[iter]]>>wOffset)
@@ -765,9 +773,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //                         << std::endl;
 //                }
 
-//        if(rank==1) std::cout << std::endl << std::endl;
         for (i = 0; i < S->vIndexSize; i++){
-//            S->vSend[i] = weight[(S->vIndex[i])];
             S->vSend[2*i] = weight[S->vIndex[i]];
             aggStatusTemp = (unsigned long)root_distance[S->vIndex[i]]; // this is root_distance of the neighbor's aggregate.
             S->vSend[2*i+1] = ( (aggStatusTemp<<wOffset) | (aggregate[S->vIndex[i]]&weightMax) );
@@ -783,12 +789,12 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                       S->sendProcRank[i], 1, comm, &(requests[S->numRecvProc + i]));
 
         // ******************************* second round of max computation *******************************
-        // "for" loop is of size "number of rows". it checks if a node is UNDECIDED and also if it does not have a root of distance one.
-        // Roots of distance 1 have priority. Then, it goes over its neighbors, which are nonzeros on that row.
-        // The neighbor should be UNDECIDED or assigned. Then, it should have a 1-distance root, because we are looking for a distance-2 root.
-        // Finally, its weight should be higher than weightTemp, then than node will be chosen for root.
-        // UNDECIDED is also considered because it may become have a 1-distance root later.
-        // In the next "for" loop, weight and aggregate are updated, but not the status.
+        // "for" loop is of size "number of rows". It checks if a node is UNDECIDED and also if it does not have a
+        // root of distance one. Roots of distance 1 have priority. Then, it goes over its neighbors, which are
+        // nonzeros on that row. The neighbor should be UNDECIDED or assigned. Then, it should have a 1-distance root,
+        // because we are looking for a distance-2 root. Finally, its weight should be higher than weightTemp,
+        // then than node will be chosen for root. UNDECIDED is also considered because it may find a 1-distance root
+        // later. In the next "for" loop, weight and aggregate are updated, but not the status.
 
         // local part - distance-2 aggregate
         iter = 0;
@@ -804,7 +810,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
                         if( ((weight[col_index]&weightMax) > (weightTemp&weightMax)) ||
                             ( ((weight[col_index]&weightMax) == (weightTemp&weightMax)) && (aggregate[col_index] > i+S->split[rank]) ) ){
 
-//                            if(rank==1 && i==2) std::cout << "??????????? " << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << std::endl;
+//                            if(rank==1 && i==2) std::cout << col_index << "\tweight = " << (weight[col_index]&weightMax) << "\tagg = " << aggregate[col_index] << std::endl;
                             aggregateTemp = aggregate[col_index];
                             weightTemp    = weight[col_index];
                             root_distance[i] = 2;
@@ -846,7 +852,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //        iter = 0;
 //        if(rank==1)
 //            for (i = 0; i < S->col_remote_size; ++i)
-//                for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter){
+//                for (j = 0; j < S->nnzPerCol_remote[i]; ++j, ++iter){
 //                    std::cout << "row:" << S->row_remote[iter]+S->split[rank] << "\tneighbor(col) = " << S->col_remote2[iter]
 //                         << "\tweight of neighbor = "          << (S->vecValues[2*S->col_remote[iter]]&weightMax)
 //                         << "\t\tstatus of neighbor = "        << (S->vecValues[2*S->col_remote[iter]]>>wOffset)
@@ -860,11 +866,12 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
         // store the max of rows of remote elements in weight2 and aggregate2.
         iter = 0;
         for (i = 0; i < S->col_remote_size; ++i) {
-            for (j = 0; j < S->nnz_col_remote[i]; ++j, ++iter) {
+            for (j = 0; j < S->nnzPerCol_remote[i]; ++j, ++iter) {
                 i_remote = S->row_remote[iter];
                 j_remote = S->col_remote[iter];
                 weight_remote = S->vecValues[2 * j_remote];
                 agg_remote    = S->vecValues[2 * j_remote + 1];
+//                if(rank==0) printf("%lu \t%lu \n", i_remote, j_remote);
 
                 if (weight[i_remote] & UNDECIDED) {
 
@@ -920,7 +927,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 
                                 weight2[i_remote] = (weight_remote & weightMax);
                                 aggregate2[i_remote] = (agg_remote & weightMax);
-//                            aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]]>>wOffset); // this is always 0.
+//                                aggStatus2[S->row_remote[iter]] = (S->vecValues[2 * S->col_remote[iter]]>>wOffset); // this is always 0.
                                 root_distance[i_remote] = 2;
                                 dist1or2undecided[i_remote] = true;
 
@@ -978,7 +985,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //                        if (root_distance[aggregate[i] - S->split[rank]] == 0) root_distance[i] = 1; // todo: this is WRONG!
                     }
 
-                    // remote
+                // remote
                 }else{
 //                    if(root_distance[i] == 1)
 //                        continue;
@@ -1051,10 +1058,12 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 
     // check if there is not any root nodes on a processor make its first node, a root node
 
+    // todo: remove this!
     // keep at least one root node on each proc
-    if(aggArray.empty()){
-        aggArray.push_back(0+S->split[rank]);
-        aggregate[0] = 0+S->split[rank];}
+//    if(aggArray.empty()){
+//        printf("rank %d = aggArray.empty \n", rank);
+//        aggArray.push_back(0+S->split[rank]);
+//        aggregate[0] = 0+S->split[rank];}
 
     // *************************** update aggregate to new indices ****************************
 
@@ -1079,7 +1088,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 //        aggregate[i]--;
 
     // aggArray is the set of root nodes.
-    sort(aggArray.begin(), aggArray.end());
+    if(!aggArray.empty()) sort(aggArray.begin(), aggArray.end());
 
 //    if(rank==1){
 //        std::cout << "aggArray:" << aggArray.size() << std::endl;
@@ -1108,7 +1117,7 @@ int saena_object::aggregation(strength_matrix* S, std::vector<unsigned long>& ag
 int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew){
     // ************* update aggregates' indices *************
     // check each node to see if it is assigned to a local or remote node.
-    // if it is local then aggreagte [i] will be to the root's new index,
+    // if it is local, then aggregate[i] will be to the root's new index,
     // and if it is remote, then it will be add to aggregateRemote to communicate the new index for its root.
     // **********************************************************
 
@@ -1118,7 +1127,7 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    unsigned long i, j;
+    unsigned long i;
     unsigned long size = S->M;
 
     unsigned long procNum;
@@ -1138,6 +1147,7 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
     for(i=1; i<nprocs+1; i++)
         splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
 
+//    print_vector(splitNew, 0, "splitNew", comm);
 //    if(rank==0){
 //        std::cout << "split and splitNew:" << std::endl;
 //        for(i=0; i<nprocs+1; i++)
@@ -1190,7 +1200,7 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
         std::vector<int> vIndexCount(nprocs);
         MPI_Alltoall(&recvCount[0], 1, MPI_INT, &vIndexCount[0], 1, MPI_INT, comm);
 
-//    print_vector(vIndexCount, -1, "vIndexCount", comm);
+//        print_vector(vIndexCount, -1, "vIndexCount", comm);
 
         // this part is for isend and ireceive.
         std::vector<int> recvProcRank;
@@ -1284,6 +1294,7 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
         delete[] requests2;
         delete[] statuses2;
     }
+
     return 0;
 }
 
@@ -1497,12 +1508,16 @@ int saena_object::coarsen(Grid *grid){
 
     if(verbose_coarsen){
         MPI_Barrier(comm);
-        printf("start of coarsen: rank = %d, nprocs: %d, A->M = %u, A.nnz_l = %lu, A.nnz_g = %lu, P.nnz_l = %lu, P.nnz_g = %lu, R.nnz_l = %lu,"
-                       " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n\n", rank, nprocs, A->M, A->nnz_l,
-               A->nnz_g, P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
+        if(rank==0) printf("start of coarsen nprocs: %d \n", nprocs);
+        MPI_Barrier(comm);
+        printf("rank %d: A.Mbig = %u, A.M = %u, A.nnz_g = %lu, A.nnz_l = %lu \n", rank, A->Mbig, A->M, A->nnz_g, A->nnz_l);
+        MPI_Barrier(comm);
+        printf("rank %d: P.Mbig = %u, P.M = %u, P.nnz_g = %lu, P.nnz_l = %lu \n", rank, P->Mbig, P->M, P->nnz_g, P->nnz_l);
+        MPI_Barrier(comm);
+        printf("rank %d: R.Mbig = %u, R.M = %u, R.nnz_g = %lu, R.nnz_l = %lu \n", rank, R->Mbig, R->M, R->nnz_g, R->nnz_l);
+        MPI_Barrier(comm);
     }
 
-//    unsigned long i, j;
     prolong_matrix RA_temp(comm); // RA_temp is being used to remove duplicates while pushing back to RA.
 
     // ************************************* RA_temp - A local *************************************
@@ -1571,7 +1586,6 @@ int saena_object::coarsen(Grid *grid){
 //            std::cout << RA_temp.entry[i].row + R->splitNew[rank] << "\t" << RA_temp.entry[i].col << "\t" << RA_temp.entry[i].val << std::endl;}
 
 //    MPI_Barrier(comm); printf("rank %d: local RA.size = %lu \n", rank, RA_temp.entry.size()); MPI_Barrier(comm);
-
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
 
@@ -1998,6 +2012,13 @@ int saena_object::coarsen(Grid *grid){
     A->cpu_shrink_thre2_next_level = -1;
     A->enable_shrink_next_level = false;
 
+    for(index_t i = 0; i < nprocs+1; i++){
+        if(Ac->split[i+1] - Ac->split[i] == 0){
+            Ac->shrink_cpu_minor();
+            break;
+        }
+    }
+
 //    MPI_Barrier(comm);
 //    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
 //           rank, Ac->Mbig, Ac->M, Ac->nnz_g, Ac->nnz_l, Ac->density);
@@ -2011,39 +2032,49 @@ int saena_object::coarsen(Grid *grid){
 
     // ********** decide about shrinking **********
 
-    if(Ac->enable_shrink){
-//        MPI_Barrier(Ac->comm); if(rank==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
-        Ac->matrix_setup_dummy();
-        Ac->compute_matvec_dummy_time();
-        Ac->decide_shrinking(A->matvec_dummy_time);
-        Ac->erase_after_decide_shrinking();
-//        MPI_Barrier(Ac->comm); if(rank==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
-    }
+    if(Ac->active_minor){
+        if(Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1){
+//            MPI_Barrier(Ac->comm); if(rank==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
+            Ac->matrix_setup_dummy();
+            Ac->compute_matvec_dummy_time();
+            Ac->decide_shrinking(A->matvec_dummy_time);
+            Ac->erase_after_decide_shrinking();
+//            MPI_Barrier(Ac->comm); if(rank==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
+        }
 
-    // ********** setup matrix **********
-    // Shrinking gets decided inside repartition_nnz() or repartition_row() functions, then repartition happens.
-    // Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
+        // ********** setup matrix **********
+        // Shrinking gets decided inside repartition_nnz() or repartition_row() functions, then repartition happens.
+        // Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
 
-    // decide to partition based on number of rows or nonzeros.
+        // decide to partition based on number of rows or nonzeros.
 //    if(switch_repartition && Ac->density >= repartition_threshold)
-    if(switch_repartition && Ac->density >= repartition_threshold)
-        Ac->repartition_row(); // based on number of rows
-    else
-        Ac->repartition_nnz(); // based on number of nonzeros
+        if(switch_repartition && Ac->density >= repartition_threshold){
+            if(rank==0) printf("equi-ROW partition for the next level: density = %f, repartition_threshold = %f \n", Ac->density, repartition_threshold);
+            Ac->repartition_row(); // based on number of rows
+        }else{
+            Ac->repartition_nnz(); // based on number of nonzeros
+        }
 
-    repartition_u2_prepare(grid);
+//        if(Ac->shrinked_minor){
+//            repartition_u_shrink_minor_prepare(grid);
+//        }
 
-    if(Ac->shrinked)
-        Ac->shrink_cpu();
-    if(Ac->active)
-        Ac->matrix_setup();
+        if(Ac->shrinked){
+            repartition_u_shrink_prepare(grid);
+            Ac->shrink_cpu();
+        }
 
-    if(Ac->shrinked && Ac->active)
-        Ac->compute_matvec_dummy_time();
+        if(Ac->active){
+            Ac->matrix_setup();
 
-    if(Ac->active && switch_to_dense && Ac->density > dense_threshold){
-        if(rank==0) printf("Dense! \n");
-        Ac->generate_dense_matrix();
+            if(Ac->shrinked && Ac->enable_dummy_matvec)
+                Ac->compute_matvec_dummy_time();
+
+            if(switch_to_dense && Ac->density > dense_threshold){
+                if(rank==0) printf("Switch to dense: density = %f, dense_threshold = %f \n", Ac->density, dense_threshold);
+                Ac->generate_dense_matrix();
+            }
+        }
     }
 
     if(verbose_coarsen){MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -2296,7 +2327,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     if(verbose_coarsen2){
         MPI_Barrier(comm); printf("coarsen2: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
 
-//    repartition_u2_prepare(grid);
+//    repartition_u_shrink_prepare(grid);
 
 //    if(Ac->shrinked)
 //        Ac->shrink_cpu();
@@ -2796,7 +2827,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 //    char* file_name(argv[5]);
 //    saena::matrix A_saena (file_name, comm);
 //    A_saena.assemble();
-//    A_saena.print(-1);
+//    A_saena.print_entry(-1);
 //    if(rank==0) printf("after matrix assemble.\n");
 
     /*
@@ -2824,7 +2855,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
             saena::matrix A_saena (*cpp, comm);
             A_saena.assemble();
-            A_saena.print(-1);
+            A_saena.print_entry(-1);
             if(rank==0) printf("after matrix assemble.\n");
             break;
         }
@@ -2907,7 +2938,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     for(index_t i = 0; i < m_loc; i++)
         rowptr[i+1] = rowptr[i] + nnz_per_row[i];
 
-//    A->print(-1);
+//    A->print_entry(-1);
 //    print_vector(rowptr, -1, "rowptr", comm);
 //    print_vector(colind, -1, "colind", comm);
 //    print_vector(nzval_loc, -1, "nzval_loc", comm);
@@ -3177,9 +3208,10 @@ int saena_object::smooth(Grid* grid, std::string smoother, std::vector<value_t>&
 int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs){
 
     if(grid->A->active) {
+        MPI_Comm comm = grid->A->comm;
         int rank, nprocs;
-        MPI_Comm_size(grid->A->comm, &nprocs);
-        MPI_Comm_rank(grid->A->comm, &rank);
+        MPI_Comm_size(comm, &nprocs);
+        MPI_Comm_rank(comm, &rank);
 
         double t1, t2;
         value_t dot;
@@ -3191,18 +3223,18 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         std::vector<value_t> temp;
 
         if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
+            MPI_Barrier(comm);
             if(rank==0) printf("rank = %d: vcycle level = %d, A->M = %u, u.size = %lu, rhs.size = %lu \n",
                    rank, grid->currentLevel, grid->A->M, u.size(), rhs.size());
-            MPI_Barrier(grid->A->comm);}
+            MPI_Barrier(comm);}
 
         // **************************************** 0. direct-solve the coarsest level ****************************************
 
         if (grid->currentLevel == max_level) {
             if(verbose_vcycle){
-                MPI_Barrier(grid->A->comm);
+                MPI_Barrier(comm);
                 if(rank==0) std::cout << "vcycle: solving the coarsest level using " << direct_solver << std::endl;
-                MPI_Barrier(grid->A->comm);}
+                MPI_Barrier(comm);}
 
             res.resize(grid->A->M);
 
@@ -3224,11 +3256,11 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
             t2 = omp_get_wtime();
             func_name = "vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
-            if (verbose) print_time(t1, t2, func_name, grid->A->comm);
+            if (verbose) print_time(t1, t2, func_name, comm);
 
             if(verbose_vcycle_residuals){
                 grid->A->residual(u, rhs, res);
-                dotProduct(res, res, &dot, grid->A->comm);
+                dotProduct(res, res, &dot, comm);
                 if(rank==0) std::cout << "\nlevel = " << grid->currentLevel
                                       << ", after coarsest level = " << sqrt(dot) << std::endl;
             }
@@ -3257,16 +3289,16 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         if(verbose_vcycle_residuals){
             grid->A->residual(u, rhs, res);
-            dotProduct(res, res, &dot, grid->A->comm);
+            dotProduct(res, res, &dot, comm);
             if(rank==0) std::cout << "\nlevel = " << grid->currentLevel << ", vcycle start      = " << sqrt(dot) << std::endl;
         }
 
         // **************************************** 1. pre-smooth ****************************************
 
         if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
+            MPI_Barrier(comm);
             if(rank==0) printf("vcycle: presmooth\n");
-            MPI_Barrier(grid->A->comm);}
+            MPI_Barrier(comm);}
 
 //        MPI_Barrier(grid->A->comm);
         t1 = omp_get_wtime();
@@ -3276,95 +3308,110 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         t2 = omp_get_wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": pre";
-        if (verbose) print_time(t1, t2, func_name, grid->A->comm);
+        if (verbose) print_time(t1, t2, func_name, comm);
 
 //        if(rank==0) std::cout << "\n1. pre-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
 
         // **************************************** 2. compute residual ****************************************
 
         if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
+            MPI_Barrier(comm);
             if(rank==0) printf("vcycle: residual\n");
-            MPI_Barrier(grid->A->comm);}
+            MPI_Barrier(comm);}
 
         grid->A->residual(u, rhs, res);
 
 //        print_vector(res, 0, grid->A->comm);
 
         if(verbose_vcycle_residuals){
-            dotProduct(res, res, &dot, grid->A->comm);
+            dotProduct(res, res, &dot, comm);
             if(rank==0) std::cout << "level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << std::endl;
         }
 
         // **************************************** 3. restrict ****************************************
 
         if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
+            MPI_Barrier(comm);
             if(rank==0) printf("vcycle: restrict\n");
-            MPI_Barrier(grid->A->comm);}
+            printf("grid->Ac.M_old = %u \n", grid->Ac.M_old);
+            MPI_Barrier(comm);}
 
         t1 = omp_get_wtime();
 
         res_coarse.resize(grid->Ac.M_old);
         grid->R.matvec(res, res_coarse);
 
-        if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
-            if(rank==0) printf("vcycle: repartition_u2\n");
-            MPI_Barrier(grid->A->comm);}
+//        MPI_Barrier(comm); print_vector(res_coarse, -1, "res_coarse", comm); MPI_Barrier(comm);
 
-        if(nprocs > 1)
-            repartition_u2(res_coarse, *grid);
+        if(grid->Ac.active_minor) {
+            comm = grid->Ac.comm;
+            MPI_Comm_size(comm, &nprocs);
+            MPI_Comm_rank(comm, &rank);
 
-        t2 = omp_get_wtime();
-        func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": restriction";
-        if (verbose) print_time(t1, t2, func_name, grid->A->comm);
+            if (verbose_vcycle) {
+                MPI_Barrier(comm);
+                if (rank == 0) printf("vcycle: repartition_u_shrink\n");
+                MPI_Barrier(comm);
+            }
 
-//	      print_vector(res_coarse, 0, "res_coarse", grid->A->comm);
+            if (grid->Ac.shrinked && nprocs > 1)
+                repartition_u_shrink(res_coarse, *grid);
 
-        // **************************************** 4. recurse ****************************************
+            t2 = omp_get_wtime();
+            func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": restriction";
+            if (verbose) print_time(t1, t2, func_name, comm);
 
-        if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
-            if(rank==0) printf("vcycle: recurse\n");
-            MPI_Barrier(grid->A->comm);}
+//	      print_vector(res_coarse, 0, "res_coarse", comm);
 
-        // scale rhs of the next level
-        scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag);
+            // **************************************** 4. recurse ****************************************
 
-        uCorrCoarse.assign(grid->Ac.M, 0);
-        vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
+            if (verbose_vcycle) {
+                MPI_Barrier(comm);
+                if (rank == 0) printf("vcycle: recurse\n");
+                MPI_Barrier(comm);
+            }
 
-        // scale u
-        scale_vector(uCorrCoarse, grid->coarseGrid->A->inv_sq_diag);
+            // scale rhs of the next level
+            scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag);
+
+            uCorrCoarse.assign(grid->Ac.M, 0);
+            vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
+
+            // scale u
+            scale_vector(uCorrCoarse, grid->coarseGrid->A->inv_sq_diag);
 
 //        if(rank==0) std::cout << "\n4. uCorrCoarse, currentLevel = " << grid->currentLevel
 //                              << ", uCorrCoarse.size = " << uCorrCoarse.size() << std::endl;
 //        print_vector(uCorrCoarse, 0, "uCorrCoarse", grid->A->comm);
-
+        }
         // **************************************** 5. prolong ****************************************
+
+        comm = grid->A->comm;
+        MPI_Comm_size(comm, &nprocs);
+        MPI_Comm_rank(comm, &rank);
 
         t1 = omp_get_wtime();
 
-        if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
-            if(rank==0) printf("vcycle: repartition_back_u2\n");
-            MPI_Barrier(grid->A->comm);}
+        if (verbose_vcycle) {
+            MPI_Barrier(comm);
+            if (rank == 0) printf("vcycle: repartition_back_u_shrink\n");
+            MPI_Barrier(comm);
+        }
 
-        if(nprocs > 1)
-            repartition_back_u2(uCorrCoarse, *grid);
+        if(grid->Ac.shrinked && nprocs > 1)
+            repartition_back_u_shrink(uCorrCoarse, *grid);
 
         if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
+            MPI_Barrier(comm);
             if(rank==0) printf("vcycle: prolong\n");
-            MPI_Barrier(grid->A->comm);}
+            MPI_Barrier(comm);}
 
         uCorr.resize(grid->A->M);
         grid->P.matvec(uCorrCoarse, uCorr);
 
         t2 = omp_get_wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": prolongation";
-        if (verbose) print_time(t1, t2, func_name, grid->A->comm);
+        if (verbose) print_time(t1, t2, func_name, comm);
 
 //        if(rank==0)
 //            std::cout << "\n5. prolongation: uCorr = P*uCorrCoarse , currentLevel = " << grid->currentLevel
@@ -3374,9 +3421,9 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         // **************************************** 6. correct ****************************************
 
         if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
+            MPI_Barrier(comm);
             if(rank==0) printf("vcycle: correct\n");
-            MPI_Barrier(grid->A->comm);}
+            MPI_Barrier(comm);}
 
 #pragma omp parallel for
         for (index_t i = 0; i < u.size(); i++)
@@ -3386,16 +3433,16 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         if(verbose_vcycle_residuals){
             grid->A->residual(u, rhs, res);
-            dotProduct(res, res, &dot, grid->A->comm);
+            dotProduct(res, res, &dot, comm);
             if(rank==0) std::cout << "level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << std::endl;
         }
 
         // **************************************** 7. post-smooth ****************************************
 
         if(verbose_vcycle){
-            MPI_Barrier(grid->A->comm);
+            MPI_Barrier(comm);
             if(rank==0) printf("vcycle: post-smooth\n");
-            MPI_Barrier(grid->A->comm);}
+            MPI_Barrier(comm);}
 
         t1 = omp_get_wtime();
 
@@ -3404,14 +3451,14 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         t2 = omp_get_wtime();
         func_name = "Vcycle: level " + std::to_string(grid->currentLevel) + ": post";
-        if (verbose) print_time(t1, t2, func_name, grid->A->comm);
+        if (verbose) print_time(t1, t2, func_name, comm);
 
 //        if(rank==1) std::cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
 //        print_vector(u, 0, "u post-smooth", grid->A->comm);
 
         if(verbose_vcycle_residuals){
             grid->A->residual(u, rhs, res);
-            dotProduct(res, res, &dot, grid->A->comm);
+            dotProduct(res, res, &dot, comm);
             if(rank==0) std::cout << "level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
         }
 
@@ -4135,9 +4182,9 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new
     for(i = 0; i < max_level; i++){
         if(grids[i].A->active) {
 //            if(rank==0) printf("_____________________________________\nlevel = %lu \n", i);
-//            grids[i].Ac.print(-1);
+//            grids[i].Ac.print_entry(-1);
             coarsen_update_Ac(&grids[i], A_diff);
-//            grids[i].Ac.print(-1);
+//            grids[i].Ac.print_entry(-1);
 //            print_vector(A_diff, -1, "A_diff", grids[i].Ac.comm);
 //            print_vector(grids[i+1].A->split, 0, "split", grids[i+1].A->comm);
         }
@@ -4405,7 +4452,7 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
         grids[0].rhs = rhs0;
     }
 
-//    print_vector(grids[0].rhs, 0, "rhs after repartition", comm);
+//    print_vector(grids[0].rhs, -1, "rhs after repartition", comm);
 
     // scale rhs
     // ---------
@@ -4417,9 +4464,9 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
 
 int saena_object::repartition_u(std::vector<value_t>& u0){
 
-    int rank, nprocs;
+    int rank;
     MPI_Comm_rank(grids[0].A->comm, &rank);
-    MPI_Comm_size(grids[0].A->comm, &nprocs);
+//    MPI_Comm_size(grids[0].A->comm, &nprocs);
 
     // make a copy of u0 to be used in Alltoallv as sendbuf. u0 itself will be recvbuf there.
     std::vector<value_t> u_temp = u0;
@@ -4693,9 +4740,9 @@ int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<index_t>& P_splitNe
 
 
 
-// int saena_object::repartition_u2_prepare
+// int saena_object::repartition_u_shrink_prepare
 /*
-int saena_object::repartition_u2_prepare(std::vector<value_t> &u, Grid &grid){
+int saena_object::repartition_u_shrink_prepare(std::vector<value_t> &u, Grid &grid){
 
     MPI_Comm comm = grid.A->comm;
     int rank, nprocs;
@@ -4754,9 +4801,10 @@ int saena_object::repartition_u2_prepare(std::vector<value_t> &u, Grid &grid){
 }
 */
 
-int saena_object::repartition_u2_prepare(Grid *grid){
 
-    MPI_Comm comm = grid->A->comm;
+int saena_object::repartition_u_shrink_prepare(Grid *grid){
+
+    MPI_Comm comm = grid->Ac.comm;
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -4765,13 +4813,8 @@ int saena_object::repartition_u2_prepare(Grid *grid){
     // --------------------
     saena_matrix *A = &grid->Ac;
 
-//    MPI_Barrier(comm);
-//    if(rank == 0) printf("\nsplit_old: \n");
-//    print_vector(A->split_old, 0, comm);
-//    MPI_Barrier(comm);
-//    if(rank == 0) printf("\nsplit: \n");
-//    print_vector(A->split, 0, comm);
-//    MPI_Barrier(comm);
+//    print_vector(A->split_old, 0, "split_old", comm);
+//    print_vector(A->split, 0, "split", comm);
 //    printf("rank %d: A->M = %u, A->M_old = %u \n", rank, A->M, A->M_old);
 //    MPI_Barrier(comm);
 
@@ -4785,10 +4828,10 @@ int saena_object::repartition_u2_prepare(Grid *grid){
     long curr_proc = least_proc;
     for(index_t i = 1; i < A->M_old; i++){
         if(i + A->split_old[rank] >= A->split[curr_proc+1]){
-            if(A->shrinked)
+//            if(A->shrinked)
                 curr_proc += A->cpu_shrink_thre2;
-            else
-                curr_proc++;
+//            else
+//                curr_proc++;
         }
         grid->scount2[curr_proc]++;
 //        if(rank==2) printf("i + A.split_old[rank] = %u, curr_proc = %ld \n", i + A->split_old[rank], curr_proc);
@@ -4823,9 +4866,9 @@ int saena_object::repartition_u2_prepare(Grid *grid){
 }
 
 
-int saena_object::repartition_u2(std::vector<value_t> &u, Grid &grid){
+int saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
 
-    MPI_Comm comm = grid.A->comm;
+    MPI_Comm comm = grid.Ac.comm;
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -4843,12 +4886,12 @@ int saena_object::repartition_u2(std::vector<value_t> &u, Grid &grid){
 }
 
 
-int saena_object::repartition_back_u2(std::vector<value_t> &u, Grid &grid){
+int saena_object::repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid){
 
     MPI_Comm comm = grid.A->comm;
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+//    int rank, nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_rank(comm, &rank);
 
     std::vector<value_t> u_old = u;
     u.resize(grid.Ac.M_old);
@@ -4859,9 +4902,96 @@ int saena_object::repartition_back_u2(std::vector<value_t> &u, Grid &grid){
 }
 
 
-// int saena_object::repartition_back_u2
+//int saena_object::repartition_u_shrink_minor_prepare(Grid *grid)
 /*
-int saena_object::repartition_back_u2(std::vector<value_t> &u, saena_matrix &A){
+int saena_object::repartition_u_shrink_minor_prepare(Grid *grid){
+
+    MPI_Comm comm = grid->Ac.comm;
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // Note: A is grid->Ac!
+    // --------------------
+    saena_matrix *A = &grid->Ac;
+
+//    print_vector(A->split_old, 0, "split_old", comm);
+//    print_vector(A->split, 0, "split", comm);
+//    printf("rank %d: A->M = %u, A->M_old = %u \n", rank, A->M, A->M_old);
+//    MPI_Barrier(comm);
+
+    grid->scount3.assign(nprocs, 0);
+
+    long least_proc;
+    least_proc = lower_bound3(&A->split[0], &A->split[nprocs], 0 + A->split_old_minor[rank]);
+    grid->scount3[least_proc]++;
+//    printf("rank %d: 0 + A.split_old[rank] = %u, least_proc = %ld \n", rank, 0 + A->split_old[rank], least_proc);
+
+    long curr_proc = least_proc;
+    for(index_t i = 1; i < A->M; i++){
+        while(i + A->split_old_minor[rank] >= A->split[curr_proc+1]){
+             curr_proc++;
+        }
+        grid->scount3[curr_proc]++;
+//        if(rank==2) printf("i + A.split_old[rank] = %u, curr_proc = %ld \n", i + A->split_old[rank], curr_proc);
+    }
+
+//    print_vector(grid->scount3, -1, comm);
+
+    // instead of only resizing rcount2, it is put equal to scount2 in case of nprocs = 1.
+    grid->rcount3 = grid->scount3;
+    if(nprocs > 1)
+        MPI_Alltoall(&grid->scount3[0], 1, MPI_INT, &grid->rcount3[0], 1, MPI_INT, comm);
+
+//    print_vector(grid->rcount3, -1, comm);
+
+//    std::vector<int> sdispls3(nprocs);
+    grid->sdispls3.resize(nprocs);
+    grid->sdispls3[0] = 0;
+    for (int i=1; i<nprocs; i++)
+        grid->sdispls3[i] = grid->scount3[i-1] + grid->sdispls3[i-1];
+
+//    print_vector(grid->sdispls3, -1, comm);
+
+//    std::vector<int> rdispls2(nprocs);
+    grid->rdispls3.resize(nprocs);
+    grid->rdispls3[0] = 0;
+    for (int i=1; i<nprocs; i++)
+        grid->rdispls3[i] = grid->rcount3[i-1] + grid->rdispls3[i-1];
+
+//    print_vector(grid->rdispls3, -1, comm);
+
+    return 0;
+}
+*/
+
+
+//int saena_object::repartition_u_shrink_minor(std::vector<value_t> &u, Grid &grid)
+/*
+int saena_object::repartition_u_shrink_minor(std::vector<value_t> &u, Grid &grid){
+
+    MPI_Comm comm = grid.Ac.comm;
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    MPI_Barrier(grid.A->comm);
+//    printf("rank %d: A->M = %u, A->M_old = %u \n", rank, grid.Ac.M, grid.Ac.M_old);
+//    MPI_Barrier(grid.A->comm);
+
+    std::vector<value_t> u_old = u;
+    u.resize(grid.Ac.M);
+    MPI_Alltoallv(&u_old[0], &grid.scount3[0], &grid.sdispls3[0], MPI_DOUBLE,
+                  &u[0],     &grid.rcount3[0], &grid.rdispls3[0], MPI_DOUBLE, comm);
+
+    return 0;
+}
+*/
+
+
+// int saena_object::repartition_back_u_shrink
+/*
+int saena_object::repartition_back_u_shrink(std::vector<value_t> &u, saena_matrix &A){
 
     MPI_Comm comm = A.comm; //todo: after shrinking check if it is still true
     int rank, nprocs;

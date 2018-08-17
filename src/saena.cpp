@@ -9,7 +9,9 @@
 #include <cstring>
 #include <mpi.h>
 #include <random>
+#include <math.h>
 
+# define PETSC_PI		3.14159265358979323846	/* pi */
 
 // ******************************* matrix *******************************
 
@@ -42,12 +44,12 @@ saena::matrix::~matrix(){
 
 int saena::matrix::set(index_t i, index_t j, value_t val){
 
-    if( val != 0) {
+//    if( val != 0) {
         if (!add_dup)
             m_pImpl->set(i, j, val);
         else
             m_pImpl->set2(i, j, val);
-    }
+//    }
 
     return 0;
 }
@@ -409,13 +411,16 @@ void saena::amg::save_to_file(char* name, unsigned long* agg){
 
 }
 
+
 unsigned long* saena::amg::load_from_file(char* name){
     return nullptr;
 }
 
+
 void saena::amg::destroy(){
     // will add later.
 }
+
 
 int saena::amg::set_verbose(bool verb) {
     m_pImpl->verbose = verb;
@@ -424,14 +429,16 @@ int saena::amg::set_verbose(bool verb) {
     return 0;
 }
 
+
 int saena::amg::set_multigrid_max_level(int max){
     m_pImpl->max_level = max;
     return 0;
 }
 
 
-int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local, MPI_Comm comm){
+int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local){
 
+    MPI_Comm comm = A->get_comm();
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -502,14 +509,21 @@ int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local, MPI_Comm co
 }
 
 
-int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm){
+int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz){
 
+    MPI_Comm comm = A->get_comm();
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    int       i,j,k,xm,ym,zm,xs,ys,zs,num, numi, numj, numk;
-    value_t    v[7],Hx,Hy,Hz,HyHzdHx,HxHzdHy,HxHydHz;
+//    if(nprocs > mz){
+//        printf("ERROR: nprocs > z axis size \n");
+//        MPI_Finalize();
+//        return -1;
+//    }
+
+    int     i,j,k,xm,ym,zm,xs,ys,zs,num, numi, numj, numk;
+    value_t v[7],Hx,Hy,Hz,HyHzdHx,HxHzdHy,HxHydHz;
     index_t col_index[7];
     index_t node;
 
@@ -643,16 +657,117 @@ int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsig
             }
         }
     }
-//    printf("here\n");
+
+    // todo: this was for having at least one entry on each proc, if the number of proc is less than z axis size.
+    // todo: find a better way to do this.
+    A->set(0, 0, 0);
+
     A->assemble();
-//    printf("after\n");
 
     return 0;
 }
 
 
-int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local, MPI_Comm comm){
+int saena::laplacian3D_set_rhs(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm){
+    // set rhs entries using the cos() function.
 
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    int     i,j,k,xm,ym,zm,xs,ys,zs;
+    value_t Hx,Hy,Hz;
+    index_t node;
+
+    Hx      = 1.0 / (value_t)(mx);
+    Hy      = 1.0 / (value_t)(my);
+    Hz      = 1.0 / (value_t)(mz);
+//    printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+
+    // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+    xs = 0;
+    xm = mx;
+    ys = 0;
+    ym = my;
+    zm = (int)floor(mz / nprocs);
+    zs = rank * zm;
+    if(rank == nprocs - 1)
+        zm = mz - ( (nprocs - 1) * zm);
+
+//    printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+
+    rhs.resize(mx * my * zm);
+
+    index_t iter = 0;
+    for (k=zs; k<zs+zm; k++) {
+        for (j=ys; j<ys+ym; j++) {
+            for (i=xs; i<xs+xm; i++) {
+                node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
+                rhs[iter] = 12 * PETSC_PI * PETSC_PI
+                                 * cos(2*PETSC_PI*(((value_t)i+0.5)*Hx))
+                                 * cos(2*PETSC_PI*(((value_t)j+0.5)*Hy))
+                                 * cos(2*PETSC_PI*(((value_t)k+0.5)*Hz))
+                                 * Hx * Hy * Hz;
+//                if(rank==1) printf("node = %d, rhs[node] = %f \n", node, rhs[node]);
+                iter++;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+int saena::laplacian3D_set_rhs_zero(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm){
+    // set rhs entries corresponding to boundary points to zero.
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    int     i,j,k,xm,ym,zm,xs,ys,zs,num, numi, numj, numk;
+    value_t v[7],Hx,Hy,Hz,HyHzdHx,HxHzdHy,HxHydHz;
+    index_t col_index[7];
+    index_t node;
+
+    Hx      = 1.0 / (value_t)(mx);
+    Hy      = 1.0 / (value_t)(my);
+    Hz      = 1.0 / (value_t)(mz);
+//    printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+
+    HyHzdHx = Hy*Hz/Hx;
+    HxHzdHy = Hx*Hz/Hy;
+    HxHydHz = Hx*Hy/Hz;
+
+    // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+    xs = 0;
+    xm = mx;
+    ys = 0;
+    ym = my;
+    zm = (int)floor(mz / nprocs);
+    zs = rank * zm;
+    if(rank == nprocs - 1)
+        zm = mz - ( (nprocs - 1) * zm);
+//    printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+
+    for (k=zs; k<zs+zm; k++) {
+        for (j=ys; j<ys+ym; j++) {
+            for (i=xs; i<xs+xm; i++) {
+                node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
+                if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+                    rhs[node] = 0;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local){
+
+    MPI_Comm comm = A->get_comm();
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -747,7 +862,6 @@ int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local, MPI_Comm co
 }
 
 
-
 int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     // generates a band matrix with bandwidth "bandwidth".
     // set bandwidth to 0 to have a diagonal matrix.
@@ -798,9 +912,9 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 //    printf("hereeeeee\n");
 
     saena_matrix *B = A.get_internal_matrix();
-//    B->print(-1);
+//    B->print_entry(-1);
 //    std::sort(B->data_coo.begin(), B->data_coo.end());
-//    B->print(-1);
+//    B->print_entry(-1);
 
     B->entry.resize(B->data_coo.size());
     nnz_t iter = 0;
@@ -819,7 +933,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     for(index_t i = 0; i < nprocs+1; i++)
         B->split[i] = i*M;
 //
-//    B->print(-1);
+//    B->print_entry(-1);
 
 //    A.assemble();
     A.assemble_band_matrix();

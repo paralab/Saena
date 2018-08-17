@@ -36,12 +36,12 @@ public:
     std::vector<index_t> row_local;
     std::vector<index_t> row_remote;
     std::vector<index_t> col_local;
-    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
-    std::vector<index_t> col_remote2; //original col index
+    std::vector<index_t> col_remote;  // index starting from 0, instead of the original column index
+    std::vector<index_t> col_remote2; // original col index
     std::vector<nnz_t> nnzPerRow;
     std::vector<nnz_t> nnzPerRow_local;
 //    std::vector<unsigned int> nnzPerRow_remote;
-    std::vector<nnz_t> nnz_col_remote;
+    std::vector<nnz_t> nnzPerCol_remote;
     std::vector<index_t> vElement_remote;
     std::vector<index_t> vElementRep_local;
     std::vector<index_t> vElementRep_remote;
@@ -65,7 +65,8 @@ public:
                             index_t M, index_t Mbig, nnz_t nnzl, std::vector<index_t>& split, MPI_Comm com);
     ~strength_matrix();
     int erase();
-    void print(int rank);
+    void print_diagonal_block(int rank);
+    void print_off_diagonal(int rank);
 };
 
 #endif //SAENA_STRENGTH_MATRIX_H

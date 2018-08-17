@@ -36,10 +36,17 @@ public:
     std::vector<int> scount;
     std::vector<int> rdispls;
     std::vector<int> sdispls;
+
     std::vector<int> rcount2;
     std::vector<int> scount2;
     std::vector<int> rdispls2;
     std::vector<int> sdispls2;
+
+    std::vector<int> rcount3;
+    std::vector<int> scount3;
+    std::vector<int> rdispls3;
+    std::vector<int> sdispls3;
+
     bool active = false;
 //    MPI_Comm comm;
 
