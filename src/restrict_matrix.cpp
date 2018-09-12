@@ -4,7 +4,6 @@
 #include <iostream>
 #include <algorithm>
 #include <omp.h>
-#include <mpi.h>
 
 
 using namespace std;
@@ -59,9 +58,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //        if(rank==0) printf("numRecvProc_t = %u \tnumSendProc_t = %u \n", P->numRecvProc_t, P->numSendProc_t);
 //        print_vector(P->recvProcCount_t, 0, "recvProcCount_t", comm);
 
-        for (i = 0; i < P->numRecvProc_t; i++)
+        for (i = 0; i < P->numRecvProc_t; i++) {
             MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i],
                       cooEntry::mpi_datatype(), P->recvProcRank_t[i], 1, comm, &(requests[i]));
+        }
 
         for (i = 0; i < P->numSendProc_t; i++) {
             MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], cooEntry::mpi_datatype(),
@@ -119,13 +119,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //        MPI_Barrier(comm);
 //        if(rank==1) cout << "vecValues_t:" << endl;
         for (i = 0; i < P->recvSize_t; i++) {
-//        if(rank==1) printf("%lu\t %lu\t %f\n", P->vecValues_t[i].row, P->vecValues_t[i].col - splitNew[rank], P->vecValues_t[i].val);
+//            if(rank==2) printf("%u \t%u \t%f \n", P->vecValues_t[i].row, P->vecValues_t[i].col, P->vecValues_t[i].val);
             entry.push_back(cooEntry(P->vecValues_t[i].col - splitNew[rank], // make row index local
                                      P->vecValues_t[i].row,
                                      P->vecValues_t[i].val));
         }
-
-        std::sort(entry.begin(), entry.end());
 
         if (verbose_transposeP) {
             MPI_Barrier(comm);
@@ -138,6 +136,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     delete [] requests;
     delete [] statuses;
+
+    std::sort(entry.begin(), entry.end());
 
 //    MPI_Barrier(comm);
 //    if(rank==2){
@@ -677,15 +677,15 @@ int restrict_matrix::print_info(int ran){
     if(ran >= 0) {
         if (rank == ran) {
             printf("\nmatrix R info on proc = %d \n", ran);
-            printf("Mbig = %u, Nbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", Mbig, Nbig, M, nnz_g, nnz_l);
+            printf("Mbig = %u, \tNbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", Mbig, Nbig, M, nnz_g, nnz_l);
         }
     } else{
         MPI_Barrier(comm);
-        if(rank==0) printf("\nmatrix R info:      Mbig = %u, Nbig = %u, nnz_g = %lu \n", Mbig, Nbig, nnz_g);
+        if(rank==0) printf("\nmatrix R info:      Mbig = %u, \tNbig = %u, \tnnz_g = %lu \n", Mbig, Nbig, nnz_g);
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("matrix R on rank %d: M = %u, nnz_l = %lu \n", proc, M, nnz_l);
+                printf("matrix R on rank %d: M = %u, \tnnz_l = %lu \n", proc, M, nnz_l);
             }
             MPI_Barrier(comm);
         }

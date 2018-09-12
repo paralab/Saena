@@ -32,14 +32,14 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;}
 */
-
+/*
     if(argc != 2){
         if(rank == 0){
             std::cout << "Usage: ./Saena <MatrixA>" << std::endl;
             std::cout << "Matrix file should be in triples format." << std::endl;}
         MPI_Finalize();
         return -1;}
-
+*/
 /*
     if(argc != 3){
         if(rank == 0){
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
 
     // ******** 1 - initialize the matrix: laplacian *************
-/*
+
     int mx(std::stoi(argv[1]));
     int my(std::stoi(argv[2]));
     int mz(std::stoi(argv[3]));
@@ -81,19 +81,19 @@ int main(int argc, char* argv[]){
     double t1 = MPI_Wtime();
 
     saena::matrix A(comm);
-//    saena::laplacian2D_old(&A, mx, comm);
-//    saena::laplacian3D_old(&A, mx, comm);
-    saena::laplacian3D(&A, mx, my, mz, comm);
+    saena::laplacian3D(&A, mx, my, mz);
+//    saena::laplacian2D_old(&A, mx);
+//    saena::laplacian3D_old(&A, mx);
+//    A.print_entry(-1);
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
-    // ******** 2 - initialize the matrix: read from file *************
 
-    char* file_name(argv[1]);
-    // timing the matrix setup phase
+    // ******** 2 - initialize the matrix: read from file *************
+/*
     double t1 = MPI_Wtime();
 
+    char* file_name(argv[1]);
     saena::matrix A (file_name, comm);
     A.assemble();
 
@@ -101,16 +101,32 @@ int main(int argc, char* argv[]){
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
     print_time(t1, t2, "Matrix Assemble:", comm);
 
+//    A.print(0);
+//    A.get_internal_matrix()->print_info(0);
+*/
     // *************************** set rhs ****************************
 
     unsigned int num_local_row = A.get_num_local_rows();
-    std::vector<double> rhs(num_local_row);
-    generate_rhs_old(rhs);
+//    std::vector<double> rhs(num_local_row);
+
+    // ********** 1 - set rhs: random **********
+
+//    generate_rhs_old(rhs);
+//    print_vector(rhs, -1, "rhs", comm);
+
+    // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
 
 //    for(index_t i = 0; i < A.get_num_local_rows(); i++)
 //        rhs[i] = i + 1 + A.get_internal_matrix()->split[rank];
+//    print_vector(rhs, -1, "rhs", comm);
 
-    // ********** 2 - set rhs: read from file **********
+    // ********** 3 - set rhs: Laplacian **********
+
+    std::vector<double> rhs; // don't set the size for this method
+    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
+//    print_vector(rhs, -1, "rhs", comm);
+
+    // ********** 4 - set rhs: read from file **********
 /*
     char* Vname(argv[2]);
 //    char* Vname(argv[3]);
@@ -164,7 +180,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 200;
+    int vcycle_num            = 100;
     double relative_tolerance = 1e-12;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;
@@ -184,6 +200,9 @@ int main(int argc, char* argv[]){
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
     print_time(t1, t2, "Setup:", comm);
 
+//    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
+//    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
+
     // *************************** AMG - Solve ****************************
 
     t1 = MPI_Wtime();
@@ -197,22 +216,41 @@ int main(int argc, char* argv[]){
 
 //    print_vector(u, -1, "u", comm);
 
+    // write the Laplacian matrix to file.
+//    std::string mat_name = "3DLap";
+//    mat_name += std::to_string(mx);
+//    mat_name += "-";
+//    mat_name += std::to_string(my);
+//    mat_name += "-";
+//    mat_name += std::to_string(mz);
+//    solver.get_object()->writeMatrixToFileA(A.get_internal_matrix(), mat_name);
+
     // *************************** check correctness of the solution ****************************
     // A is scaled. read it from the file and don't scale.
-
+/*
     saena::matrix AA (file_name, comm);
     AA.assemble_no_scale();
     saena_matrix *AAA = AA.get_internal_matrix();
     std::vector<double> Au(num_local_row, 0);
-    AAA->matvec(u, Au);
+    std::vector<double> sol = u;
+    AAA->matvec(sol, Au);
 
+    bool bool_correct = true;
     if(rank==0){
+        printf("\nChecking the correctness of the Saena solution by Saena itself:\n");
+        printf("Au \t\trhs \t\tAu-rhs \n");
         for(index_t i = 0; i < num_local_row; i++){
-            if(fabs(Au[i] - rhs[i]) > 1e-10)
+            if(fabs(Au[i] - rhs[i]) > 1e-10){
+                bool_correct = false;
                 printf("%.10f \t%.10f \t%.10f \n", Au[i], rhs[i], Au[i] - rhs[i]);
+            }
         }
+        if(bool_correct)
+            printf("\n******* The solution was correct! *******\n\n");
+        else
+            printf("\n******* The solution was NOT correct! *******\n\n");
     }
-
+*/
     // *************************** finalize ****************************
 
 //    A.destroy();

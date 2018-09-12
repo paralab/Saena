@@ -19,7 +19,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 10; // fine grid is level 0.
+    int max_level = 1; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -67,28 +67,32 @@ public:
     saena_object();
     ~saena_object();
     int destroy();
+
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
     int level_setup(Grid* grid);
     int setup(saena_matrix* A);
-    int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
-    int create_strength_matrix(saena_matrix* A, strength_matrix* S);
-    int aggregation(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray);
-    int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
-    int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
     int coarsen(Grid *grid);
     // this function is similar to the coarsen(), but does R*A*P for only local (diagonal) blocks.
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
 //    int coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
-    int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
-    int solve_coarsest_SuperLU(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
-//    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
-    int smooth(Grid* grid, std::string smoother, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
-    int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
+    int create_strength_matrix(saena_matrix* A, strength_matrix* S);
+    int aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
+    int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
+    int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
+    int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
+
     int solve(std::vector<value_t>& u);
     int solve_pcg(std::vector<value_t>& u);
     int solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new);
     int solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new);
     int solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new);
+    int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int smooth(Grid* grid, std::string smoother, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
+    int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int solve_coarsest_SuperLU(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+//    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+
     int set_repartition_rhs(std::vector<value_t>& rhs);
 
     // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
@@ -119,7 +123,9 @@ public:
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);
     int writeMatrixToFileR(restrict_matrix* R, std::string name);
-    int writeVectorToFileul(std::vector<unsigned long>& v, unsigned long vSize, std::string name, MPI_Comm comm);
+    int writeVectorToFileul(std::vector<unsigned long>& v, std::string name, MPI_Comm comm);
+    int writeVectorToFileul2(std::vector<unsigned long>& v, std::string name, MPI_Comm comm);
+    int writeVectorToFileui(std::vector<unsigned int>& v, std::string name, MPI_Comm comm);
 //    template <class T>
 //    int writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm);
     int change_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew);

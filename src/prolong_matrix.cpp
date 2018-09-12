@@ -40,7 +40,7 @@ int prolong_matrix::findLocalRemote(){
 
 //    printf("rank=%d \t P.nnz_l=%lu \t P.nnz_g=%lu \n", rank, nnz_l, nnz_g);
 
-//    print_vector(entry, 0, "entry", comm);
+//    print_vector(entry, -1, "entry", comm);
 
     long procNum;
     col_remote_size = 0; // number of remote columns
@@ -439,6 +439,8 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+//    print_vector(v, -1, "v in matvec", comm);
+
 //    totalTime = 0;
 //    double t10 = MPI_Wtime();
 
@@ -449,7 +451,8 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //    double t20 = MPI_Wtime();
 //    time[0] += (t20-t10);
 
-//    print_vector(vSend, 0, "vSend", comm);
+//    print_vector(vIndex, -1, "vIndex", comm);
+//    print_vector(vSend, -1, "vSend", comm);
 
 //    double t13 = MPI_Wtime();
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
@@ -476,8 +479,9 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
             for (index_t i = 0; i < M; ++i) {
                 w[i] = 0;
                 for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
-    //                if(rank==1) cout << entry_local[indicesP_local[iter]].col - splitNew[rank] << "\t" << v[entry_local[indicesP_local[iter]].col - splitNew[rank]] << endl;
-    //                w[i] += entry_local[indicesP_local[iter]].val * v[entry_local[indicesP_local[iter]].col - splitNew[rank]];
+//                    if(rank==0 && i==1) printf("%u \t%.18f \t%.18f \t%.18f \n",
+//                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);
+//                    w[i] += entry_local[indicesP_local[iter]].val * v[entry_local[indicesP_local[iter]].col - splitNew[rank]];
                     w[i] += entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col];
                 }
             }
@@ -488,6 +492,7 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     // Wait for comm to finish.
     MPI_Waitall(numRecvProc, requests, statuses);
+//    print_vector(vecValues, 0, "vecValues", comm);
 
     // remote loop
     // -----------
@@ -507,6 +512,7 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //    }
 */
 
+/*
 #pragma omp parallel
     {
         unsigned int i, l;
@@ -543,6 +549,17 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
                 }
             }
 #pragma omp barrier
+        }
+    }
+*/
+
+    // remote matvec without openmp part
+    nnz_t iter = 0;
+    for (index_t j = 0; j < col_remote_size; ++j) {
+        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+//            if(rank==0 && entry_remote[iter].row==1) printf("%u \t%.18f \t%.18f \t%.18f \t%u \n",
+//                                       entry_remote[iter].col, entry_remote[iter].val, vecValues[j], entry_remote[iter].val * vecValues[j], col_remote[j]);
+            w[entry_remote[iter].row] += entry_remote[iter].val * vecValues[j];
         }
     }
 
@@ -594,8 +611,8 @@ int prolong_matrix::print_entry(int ran){
 
 int prolong_matrix::print_info(int ran){
 
-    // if ran >= 0 print the matrix entries on proc with rank = ran
-    // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
+    // if ran >= 0 print the matrix info on proc with rank = ran
+    // otherwise print the matrix info on all processors in order. (first on proc 0, then proc 1 and so on.)
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
@@ -604,15 +621,15 @@ int prolong_matrix::print_info(int ran){
     if(ran >= 0) {
         if (rank == ran) {
             printf("\nmatrix P info on proc = %d \n", ran);
-            printf("Mbig = %u, Nbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", Mbig, Nbig, M, nnz_g, nnz_l);
+            printf("Mbig = %u, \tNbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", Mbig, Nbig, M, nnz_g, nnz_l);
         }
     } else{
         MPI_Barrier(comm);
-        if(rank==0) printf("\nmatrix P info:      Mbig = %u, Nbig = %u, nnz_g = %lu \n", Mbig, Nbig, nnz_g);
+        if(rank==0) printf("\nmatrix P info:      Mbig = %u, \tNbig = %u, \tnnz_g = %lu \n", Mbig, Nbig, nnz_g);
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("matrix P on rank %d: M = %u, nnz_l = %lu \n", proc, M, nnz_l);
+                printf("matrix P on rank %d: M    = %u, \tnnz_l = %lu \n", proc, M, nnz_l);
             }
             MPI_Barrier(comm);
         }

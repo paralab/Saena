@@ -171,7 +171,7 @@ nnz_t saena::matrix::get_local_nnz(){
 }
 
 int saena::matrix::print(int ran){
-    m_pImpl->print(ran);
+    m_pImpl->print_entry(ran);
     return 0;
 }
 

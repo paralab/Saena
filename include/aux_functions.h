@@ -374,6 +374,7 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
                 std::cout << iter << "\t" << i << std::endl;
                 iter++;
             }
+            printf("\n");
         }
     } else{
         for(index_t proc = 0; proc < nprocs; proc++){
@@ -384,6 +385,7 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
                     std::cout << iter << "\t" << i << std::endl;
                     iter++;
                 }
+                printf("\n");
             }
             MPI_Barrier(comm);
         }

@@ -90,9 +90,10 @@ int randomVector2(std::vector<double>& V){
 int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
     // This function DOES NOT generate a random vector. It computes the maximum degree of all the nodes.
     // (degree of node i = number of nonzeros on row i)
-    // Then assign to a higher degree, a lower weight ( weghit(node i) = max_degree - degree(node i) )
+    // Then assign to a higher degree, a lower weight ( weight(node i) = max_degree - degree(node i) )
     // This method is similar to Yavneh's paper, in which nodes with lower degrees become coarse nodes first,
     // then nodes with higher degrees.
+    // Yavneh's paper: Non-Galerkin Multigrid Based on Sparsified Smoothed Aggregation - pages: A51-A52
 
     int rank;
     MPI_Comm_rank(comm, &rank);
@@ -132,7 +133,6 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
 
     // to have one node with the highest weight possible, so that node will be a root and
     // consequently P and R won't be zero matrices. the median index is being chosen here.
-    // todo: fix this later. doing this as follows will affect the aggregation in a bad way.
 //    if (V.size() >= 2)
 //        V[ floor(V.size()/2) ] = size + 1;
 //    else if(V.size() == 1)
