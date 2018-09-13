@@ -2535,12 +2535,12 @@ int saena_object::coarsen(Grid *grid){
 
     if(Ac->active_minor){
         if(Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1){
-//            MPI_Barrier(Ac->comm); if(rank==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
+            MPI_Barrier(Ac->comm); if(rank==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
             Ac->matrix_setup_dummy();
             Ac->compute_matvec_dummy_time();
             Ac->decide_shrinking(A->matvec_dummy_time);
             Ac->erase_after_decide_shrinking();
-//            MPI_Barrier(Ac->comm); if(rank==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
+            MPI_Barrier(Ac->comm); if(rank==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
         }
 
         // ********** setup matrix **********
