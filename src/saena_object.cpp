@@ -2534,6 +2534,7 @@ int saena_object::coarsen(Grid *grid){
     // ********** decide about shrinking **********
 
     if(Ac->active_minor){
+        MPI_Comm_rank(Ac->comm, &rank);
         if(Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1){
             MPI_Barrier(Ac->comm); if(rank==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
             Ac->matrix_setup_dummy();
