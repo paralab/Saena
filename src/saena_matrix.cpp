@@ -2402,8 +2402,8 @@ int saena_matrix::shrink_cpu_minor(){
     MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
     MPI_Comm_create_group(comm, group_new, 1, &comm);
 
-    split_old_minor = split;
 //    std::vector<index_t> split_temp = split;
+    split_old_minor = split;
     split.clear();
     if(active_minor){
         split.resize(total_active_procs+1);
@@ -2414,7 +2414,7 @@ int saena_matrix::shrink_cpu_minor(){
 //            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
             split[i] = split_old_minor[ranks[i]];
         }
-//        print_vector(split, 0, "split after shrinking", comm);
+        print_vector(split, 0, "split after shrinking", comm);
     }
 
     return 0;
