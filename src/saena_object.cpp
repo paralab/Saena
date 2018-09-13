@@ -2544,8 +2544,6 @@ int saena_object::coarsen(Grid *grid){
             MPI_Barrier(Ac->comm); if(rank==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
         }
 
-        MPI_Barrier(Ac->comm); if(rank==0) printf("here\n"); MPI_Barrier(Ac->comm);
-
         // ********** setup matrix **********
         // Shrinking gets decided inside repartition_nnz() or repartition_row() functions, then repartition happens.
         // Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
@@ -2558,6 +2556,8 @@ int saena_object::coarsen(Grid *grid){
         }else{
             Ac->repartition_nnz(); // based on number of nonzeros
         }
+
+        MPI_Barrier(Ac->comm); if(rank==0) printf("here\n"); MPI_Barrier(Ac->comm);
 
 //        if(Ac->shrinked_minor){
 //            repartition_u_shrink_minor_prepare(grid);
