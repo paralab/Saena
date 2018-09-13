@@ -2376,7 +2376,7 @@ int saena_matrix::shrink_cpu_minor(){
     active_minor = false;
     if(split[rank+1] - split[rank] != 0){
         active_minor = true;
-//        printf("active: rank = %d \n", rank);
+        printf("active: rank = %d \n", rank);
     }
     active = active_minor;
 
