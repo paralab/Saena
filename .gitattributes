@@ -4,3 +4,4 @@ experiments/* linguist-vendored
 external/* linguist-vendored
 papers/* linguist-vendored
 test_results/* linguist-vendored
+jquery.js linguist-vendored=false
