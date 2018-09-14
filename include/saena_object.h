@@ -56,8 +56,8 @@ public:
     bool verbose = false;
     bool verbose_setup = true;
     bool verbose_setup_steps = false;
-    bool verbose_level_setup = true;
-    bool verbose_coarsen = true;
+    bool verbose_level_setup = false;
+    bool verbose_coarsen = false;
     bool verbose_coarsen2 = false;
     bool verbose_solve = false;
     bool verbose_vcycle = false;
@@ -69,8 +69,8 @@ public:
     int destroy();
 
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
-    int level_setup(Grid* grid);
     int setup(saena_matrix* A);
+    int level_setup(Grid* grid);
     int coarsen(Grid *grid);
     // this function is similar to the coarsen(), but does R*A*P for only local (diagonal) blocks.
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);

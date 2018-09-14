@@ -2376,7 +2376,7 @@ int saena_matrix::shrink_cpu_minor(){
     active_minor = false;
     if(split[rank+1] - split[rank] != 0){
         active_minor = true;
-        printf("active: rank = %d \n", rank);
+//        printf("active: rank = %d \n", rank);
     }
     active = active_minor;
 
@@ -2414,7 +2414,7 @@ int saena_matrix::shrink_cpu_minor(){
 //            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
             split[i] = split_old_minor[ranks[i]];
         }
-        print_vector(split, 0, "split after shrinking", comm);
+//        print_vector(split, 0, "split after shrinking", comm);
     }
 
     return 0;
@@ -2679,6 +2679,8 @@ int saena_matrix::set_off_on_diagonal(){
             printf("matrix_setup: rank = %d, local remote1 \n", rank);
             MPI_Barrier(comm);
         }
+
+//        print_entry(-1);
 
         col_remote_size = 0;
         nnz_l_local = 0;
@@ -5108,15 +5110,15 @@ int saena_matrix::print_info(int ran) {
     if(ran >= 0) {
         if (rank == ran) {
             printf("\nmatrix A info on proc = %d \n", ran);
-            printf("Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", Mbig, M, nnz_g, nnz_l);
+            printf("Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", Mbig, M, nnz_g, nnz_l);
         }
     } else{
         MPI_Barrier(comm);
-        if(rank==0) printf("\nmatrix A info:      Mbig = %u, nnz_g = %lu \n", Mbig, nnz_g);
+        if(rank==0) printf("\nmatrix A info:      Mbig = %u, \tnnz_g = %lu \n", Mbig, nnz_g);
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("matrix A on rank %d: M = %u, nnz_l = %lu \n", proc, M, nnz_l);
+                printf("matrix A on rank %d: M = %u, \tnnz_l = %lu \n", proc, M, nnz_l);
             }
             MPI_Barrier(comm);
         }
@@ -5124,6 +5126,7 @@ int saena_matrix::print_info(int ran) {
 
     return 0;
 }
+
 
 int saena_matrix::generate_dense_matrix() {
     dense_matrix.convert_saena_matrix(this);

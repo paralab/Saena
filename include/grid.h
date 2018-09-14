@@ -31,7 +31,9 @@ public:
     restrict_matrix R;
     std::vector<value_t> rhs;
     int currentLevel, maxLevel;
+    float row_reduction_min = 0;
     Grid* coarseGrid;
+
     std::vector<int> rcount;
     std::vector<int> scount;
     std::vector<int> rdispls;
@@ -42,10 +44,10 @@ public:
     std::vector<int> rdispls2;
     std::vector<int> sdispls2;
 
-    std::vector<int> rcount3;
-    std::vector<int> scount3;
-    std::vector<int> rdispls3;
-    std::vector<int> sdispls3;
+//    std::vector<int> rcount3;
+//    std::vector<int> scount3;
+//    std::vector<int> rdispls3;
+//    std::vector<int> sdispls3;
 
     bool active = false;
 //    MPI_Comm comm;

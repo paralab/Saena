@@ -100,7 +100,8 @@ private:
     vector_type vec2;
     unsigned int n; // index of vec2
     std::vector<int> M1, M2, Ma;
-    
+
+    MPI_Comm comm = MPI_COMM_WORLD;
   }; // end of class lanczos.
   
   //-----------------------------------------------------------------------  
@@ -111,6 +112,7 @@ private:
     vecspace_(vec),
     startvector(new_vector(vec)),
     vec2(new_vector(vec)),
+    comm(matrix.comm),
     n(0) {}
 
     
@@ -366,25 +368,25 @@ private:
     magnitude_type a, b;
     ietl::generate(startvector,gen);      
     ietl::project(startvector,vecspace_);
-    startvector/=ietl::two_norm(startvector); // normalization of startvector.
+    startvector/=ietl::two_norm(startvector, comm); // normalization of startvector.
     ietl::mult(matrix_,startvector,vec2);
-    a =  ietl::real(ietl::dot(startvector,vec2));
+    a =  ietl::real(ietl::dot(startvector,vec2, comm));
     vec2-=a*startvector;
-    b =  ietl::two_norm(vec2);   
+    b =  ietl::two_norm(vec2, comm);
     vec2/=b;
     return std::make_pair(a,b);
-  }  
-    
+  }
+
   template <class MATRIX, class VS>
   std::pair<typename lanczos<MATRIX, VS>::magnitude_type, typename lanczos<MATRIX, VS>::magnitude_type> 
   lanczos<MATRIX, VS>::make_step(int j,vector_type& vec3) {
     magnitude_type a, b;
     b = super_type::beta[j-1];
     ietl::mult(matrix_,vec2,vec3);
-    a = ietl::real(ietl::dot(vec2,vec3));
+    a = ietl::real(ietl::dot(vec2, vec3, comm));
     vec3-=a*vec2;
     vec3-=b*startvector;
-    b = ietl::two_norm(vec3);
+    b = ietl::two_norm(vec3, comm);
     vec3/=b;
     std::swap(vec2,startvector); 
     std::swap(vec3,vec2);

@@ -1,6 +1,6 @@
 # see Config file for compile-time settings
 
-MAKEFLAGS += --no-print-directory
+MAKEFLAGS += --no-print_entry-directory
 
 all:
 	@cd src; $(MAKE) clean static

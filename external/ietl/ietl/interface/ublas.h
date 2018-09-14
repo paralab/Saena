@@ -23,6 +23,7 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <ietl/traits.h>
 
+
 namespace ietl {
 
   template < class T, class Gen> 
@@ -31,18 +32,18 @@ namespace ietl {
   }  
 
   template < class T, class S>
-  inline T dot(const boost::numeric::ublas::vector<T,S>& x , const boost::numeric::ublas::vector<T,S>& y) {
+  inline T dot(const boost::numeric::ublas::vector<T,S>& x , const boost::numeric::ublas::vector<T,S>& y, MPI_Comm comm) {
       double dot_l = boost::numeric::ublas::inner_prod (boost::numeric::ublas::conj(x), y);
       double dot;
-      MPI_Allreduce(&dot_l, &dot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(&dot_l, &dot, 1, MPI_DOUBLE, MPI_SUM, comm);
       return dot;
   }
 
   template < class T>
-   inline typename number_traits<T>::magnitude_type two_norm(boost::numeric::ublas::vector<T>& x) {
+   inline typename number_traits<T>::magnitude_type two_norm(boost::numeric::ublas::vector<T>& x, MPI_Comm comm) {
       double dot_l = boost::numeric::ublas::inner_prod (boost::numeric::ublas::conj(x), x);
       double dot;
-      MPI_Allreduce(&dot_l, &dot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(&dot_l, &dot, 1, MPI_DOUBLE, MPI_SUM, comm);
       return sqrt(dot);
   }
 
