@@ -1,1 +1,6 @@
 data/* linguist-vendored
+examples/* linguist-vendored
+experiments/* linguist-vendored
+external/* linguist-vendored
+papers/* linguist-vendored
+test_results/* linguist-vendored
