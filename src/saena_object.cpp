@@ -2095,7 +2095,7 @@ int saena_object::coarsen(Grid *grid){ $
         }
     }
 
-    printf("rank %d: RA_temp.entry.size = %lu \n", rank, RA_temp.entry.size());
+    printf("rank %d: RA_temp.entry.size_local = %lu \n", rank, RA_temp.entry.size());
 
 //    if(rank==0){
 //        std::cout << "\nRA_temp.entry.size = " << RA_temp.entry.size() << std::endl;
@@ -2274,7 +2274,7 @@ int saena_object::coarsen(Grid *grid){ $
     // todo: duplicates happen only on this processor, so sorting should be done locally.
     std::sort(RA_temp.entry.begin(), RA_temp.entry.end());
 
-    printf("rank %d: RA_temp.entry.size = %lu \n", rank, RA_temp.entry.size());
+    printf("rank %d: RA_temp.entry.size_total = %lu \n", rank, RA_temp.entry.size());
 //    print_vector(RA_temp.entry, -1, "RA_temp.entry", comm);
 
     prolong_matrix RA(comm);
