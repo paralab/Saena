@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <vector>
 #include <omp.h>
+#include <dollar.hpp>
 #include "mpi.h"
 
 
@@ -252,6 +253,8 @@ int main(int argc, char* argv[]){
     }
 */
     // *************************** finalize ****************************
+
+    if(rank==0) dollar::text(std::cout);
 
 //    A.destroy();
 //    solver.destroy();

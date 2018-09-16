@@ -60,7 +60,7 @@ public:
     std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
     std::vector<index_t> col_remote2; //original col index
     std::vector<index_t> nnzPerRow_local;  // todo: this is used for openmp part of saena_matrix.cpp
-    std::vector<index_t> nnzPerRow_local2; // todo: this is used for openmp part of saena_matrix.cpp
+    std::vector<index_t> nnzPerRow_local2; // todo: remove this. this is used for openmp part of saena_matrix.cpp
     std::vector<index_t> nnzPerRow_remote; // used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
 

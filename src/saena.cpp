@@ -3,6 +3,7 @@
 #include "saena_matrix_dense.h"
 #include "saena_object.h"
 #include "pugixml.hpp"
+#include "dollar.hpp"
 
 #include <vector>
 #include <string>

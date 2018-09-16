@@ -3018,7 +3018,7 @@ int saena_matrix::openmp_setup() {
             const int thread_id = omp_get_thread_num();
             iter_local_array2[thread_id] = iter_local_array[thread_id]; // the default value
 
-#pragma omp for
+            #pragma omp for
             for(index_t i = 0; i < M; i++)
                 nnzPerRow_local2[i] = nnzPerRow_local[i];
 

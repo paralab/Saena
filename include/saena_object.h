@@ -32,7 +32,7 @@ public:
     int postSmooth = 3;
     std::string direct_solver = "SuperLU"; // options: 1- CG, 2- SuperLU
     std::vector<Grid> grids;
-    float connStrength = 0.5; // connection strength parameter: control coarsening aggressiveness
+    float connStrength = 0.3; // connection strength parameter: control coarsening aggressiveness
     int CG_max_iter = 150; //150
     double CG_tol = 1e-14;
     bool repartition = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
@@ -56,8 +56,8 @@ public:
     bool verbose = false;
     bool verbose_setup = true;
     bool verbose_setup_steps = false;
-    bool verbose_level_setup = false;
-    bool verbose_coarsen = false;
+    bool verbose_level_setup = true;
+    bool verbose_coarsen = true;
     bool verbose_coarsen2 = false;
     bool verbose_solve = false;
     bool verbose_vcycle = false;
