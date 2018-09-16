@@ -2048,8 +2048,9 @@ int saena_object::coarsen(Grid *grid){ $
     // todo: is this way better than using the previous Allreduce? reduce on processor 0, then broadcast to other processors.
 
     // alloacted memory for AMaxM, instead of A.M to avoid reallocation of memory for when receiving data from other procs.
-    unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*AMaxM);
-    std::fill(&AnnzPerRow[0], &AnnzPerRow[AMaxM], 0);
+//    unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*AMaxM);
+//    std::fill(&AnnzPerRow[0], &AnnzPerRow[AMaxM], 0);
+    std::vector<unsigned int> AnnzPerRow(AMaxM, 0);
     for(nnz_t i=0; i<A->nnz_l; i++)
         AnnzPerRow[A->entry[i].row - A->split[rank]]++;
 
@@ -2061,7 +2062,8 @@ int saena_object::coarsen(Grid *grid){ $
 //    }
 
     // alloacted memory for AMaxM+1, instead of A.M+1 to avoid reallocation of memory for when receiving data from other procs.
-    unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(AMaxM+1));
+//    unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(AMaxM+1));
+    std::vector<unsigned long> AnnzPerRowScan(AMaxM+1);
     AnnzPerRowScan[0] = 0;
     for(index_t i=0; i<A->M; i++){
         AnnzPerRowScan[i+1] = AnnzPerRowScan[i] + AnnzPerRow[i];
@@ -2074,10 +2076,10 @@ int saena_object::coarsen(Grid *grid){ $
     // todo: combine indicesP and indicesPRecv together.
     // find row-wise ordering for A and save it in indicesP
 //    unsigned long* indicesP = (unsigned long*)malloc(sizeof(unsigned long)*A->nnz_l);
-    std::vector<nnz_t> indicesP(A->nnz_l);
+    std::vector<nnz_t> indices_row_wise(A->nnz_l);
     for(nnz_t i=0; i<A->nnz_l; i++)
-        indicesP[i] = i;
-    std::sort(&indicesP[0], &indicesP[A->nnz_l], sort_indices2(&*A->entry.begin()));
+        indices_row_wise[i] = i;
+    std::sort(&indices_row_wise[0], &indices_row_wise[A->nnz_l], sort_indices2(&*A->entry.begin()));
 
     index_t jstart, jend;
     if(!R->entry_local.empty()) {
@@ -2089,8 +2091,8 @@ int saena_object::coarsen(Grid *grid){ $
 //            if(rank==0) std::cout << A->entry[indicesP[j]].row << "\t" << A->entry[indicesP[j]].col << "\t" << A->entry[indicesP[j]].val
 //                             << "\t" << R->entry_local[i].col << "\t" << R->entry_local[i].col - P->split[rank] << std::endl;
                 RA_temp.entry.push_back(cooEntry(R->entry_local[i].row,
-                                                 A->entry[indicesP[j]].col,
-                                                 R->entry_local[i].val * A->entry[indicesP[j]].val));
+                                                 A->entry[indices_row_wise[j]].col,
+                                                 R->entry_local[i].val * A->entry[indices_row_wise[j]].val));
             }
         }
     }
@@ -2144,7 +2146,8 @@ int saena_object::coarsen(Grid *grid){ $
 //    printf("rank=%d A.nnz=%u \n", rank, A->nnz_l);
 //    auto indicesPRecv = (unsigned long*)malloc(sizeof(unsigned long)*AMaxNnz);
     std::vector<nnz_t> indicesPRecv(AMaxNnz);
-    auto Arecv = (cooEntry*)malloc(sizeof(cooEntry)*AMaxNnz);
+//    auto Arecv = (cooEntry*)malloc(sizeof(cooEntry)*AMaxNnz);
+    std::vector<cooEntry> Arecv(AMaxNnz);
     int left, right;
     nnz_t nnzSend, nnzRecv;
     long ARecvM;
@@ -2207,7 +2210,7 @@ int saena_object::coarsen(Grid *grid){ $
 
         // use sender rank for send and receive tags.
         MPI_Sendrecv(&A->entry[0], nnzSend, cooEntry::mpi_datatype(), right, rank,
-                     Arecv,        nnzRecv, cooEntry::mpi_datatype(), left,  left, comm, &sendRecvStatus);
+                     &Arecv[0],    nnzRecv, cooEntry::mpi_datatype(), left,  left, comm, &sendRecvStatus);
 
 //        for(unsigned int j=0; j<nnzRecv; j++)
 //                        printf("rank = %d, j=%d \t %lu \t %lu \t %f \n", rank, j, Arecv[j].row , Arecv[j].col, Arecv[j].val);
@@ -2239,7 +2242,7 @@ int saena_object::coarsen(Grid *grid){ $
         // find row-wise ordering for Arecv and save it in indicesPRecv
         for(nnz_t i=0; i<nnzRecv; i++)
             indicesPRecv[i] = i;
-        std::sort(&indicesPRecv[0], &indicesPRecv[nnzRecv], sort_indices2(Arecv));
+        std::sort(&indicesPRecv[0], &indicesPRecv[nnzRecv], sort_indices2(&Arecv[0]));
 
 //        if(rank==1) std::cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << std::endl;
         for (index_t j = jstart; j < jend; j++) {
@@ -2261,9 +2264,9 @@ int saena_object::coarsen(Grid *grid){ $
 
 
 //    free(indicesPRecv);
-    free(AnnzPerRow);
-    free(AnnzPerRowScan);
-    free(Arecv);
+//    free(AnnzPerRow);
+//    free(AnnzPerRowScan);
+//    free(Arecv);
 //    free(R_block_nnz);
 //    free(R_block_nnz_scan);
 
@@ -2318,8 +2321,9 @@ int saena_object::coarsen(Grid *grid){ $
     MPI_Allreduce(&P->M, &P_max_M, 1, MPI_UNSIGNED, MPI_MAX, comm);
 //    MPI_Barrier(comm); printf("rank=%d, PMaxNnz=%d \n", rank, PMaxNnz); MPI_Barrier(comm);
 
-    unsigned int* PnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*P_max_M);
-    std::fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
+//    unsigned int* PnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*P_max_M);
+//    std::fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
+    std::vector<unsigned int> PnnzPerRow(P_max_M, 0);
     for(nnz_t i=0; i<P->nnz_l; i++){
         PnnzPerRow[P->entry[i].row]++;
     }
@@ -2328,7 +2332,8 @@ int saena_object::coarsen(Grid *grid){ $
 //        for(i=0; i<P->M; i++)
 //            std::cout << PnnzPerRow[i] << std::endl;
 
-    unsigned int* PnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(P_max_M+1));
+//    unsigned int* PnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(P_max_M+1));
+    std::vector<unsigned long> PnnzPerRowScan(P_max_M+1);
     PnnzPerRowScan[0] = 0;
     for(nnz_t i = 0; i < P->M; i++){
         PnnzPerRowScan[i+1] = PnnzPerRowScan[i] + PnnzPerRow[i];
@@ -2393,7 +2398,8 @@ int saena_object::coarsen(Grid *grid){ $
 
 //    unsigned long* indicesP_ProlongRecv = (unsigned long*)malloc(sizeof(unsigned long)*PMaxNnz);
     std::vector<nnz_t> indicesP_ProlongRecv(PMaxNnz);
-    cooEntry* Precv = (cooEntry*)malloc(sizeof(cooEntry)*PMaxNnz);
+//    cooEntry* Precv = (cooEntry*)malloc(sizeof(cooEntry)*PMaxNnz);
+    std::vector<cooEntry> Precv(PMaxNnz);
     nnz_t PrecvM;
 
     for(int i = 1; i < nprocs; i++) {
@@ -2416,7 +2422,8 @@ int saena_object::coarsen(Grid *grid){ $
         // *************************** RAP_temp - P remote - sendrecv(P) ****************************
 
         // use sender rank for send and receive tags.
-        MPI_Sendrecv(&P->entry[0], P->nnz_l, cooEntry::mpi_datatype(), right, rank, Precv, nnzRecv, cooEntry::mpi_datatype(), left, left, comm, &sendRecvStatus);
+        MPI_Sendrecv(&P->entry[0], P->nnz_l, cooEntry::mpi_datatype(), right, rank,
+                     &Precv[0],    nnzRecv,  cooEntry::mpi_datatype(), left,  left, comm, &sendRecvStatus);
 
 //        if(rank==1) for(int j=0; j<P->nnz_l; j++)
 //                        printf("j=%d \t %lu \t %lu \t %f \n", j, P->entry[j].row, P->entry[j].col, P->entry[j].val);
@@ -2444,7 +2451,7 @@ int saena_object::coarsen(Grid *grid){ $
         for(nnz_t i=0; i<nnzRecv; i++)
             indicesP_ProlongRecv[i] = i;
 
-        std::sort(&indicesP_ProlongRecv[0], &indicesP_ProlongRecv[nnzRecv], sort_indices2(Precv));
+        std::sort(&indicesP_ProlongRecv[0], &indicesP_ProlongRecv[nnzRecv], sort_indices2(&Precv[0]));
 
 //        if(rank==1) std::cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << std::endl;
         if(!RA.entry.empty()) {
@@ -2467,9 +2474,9 @@ int saena_object::coarsen(Grid *grid){ $
         MPI_Barrier(comm); printf("coarsen: step 6-1: rank = %d\n", rank); MPI_Barrier(comm);}
 
 //    free(indicesP_ProlongRecv);
-    free(PnnzPerRow);
-    free(PnnzPerRowScan);
-    free(Precv);
+//    free(PnnzPerRow);
+//    free(PnnzPerRowScan);
+//    free(Precv);
 //    free(left_block_nnz);
 //    free(left_block_nnz_scan);
 
