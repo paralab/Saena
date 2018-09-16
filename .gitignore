@@ -1,5 +1,4 @@
 build
 .idea
 cmake-build-debug
-CMakeLists.txt
 external_old
