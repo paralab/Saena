@@ -2072,11 +2072,10 @@ int saena_object::coarsen(Grid *grid){ $
 
     // todo: combine indicesP and indicesPRecv together.
     // find row-wise ordering for A and save it in indicesP
-//    unsigned long* indicesP = (unsigned long*)malloc(sizeof(unsigned long)*A->nnz_l);
     std::vector<nnz_t> indices_row_wise(A->nnz_l);
     for(nnz_t i=0; i<A->nnz_l; i++)
         indices_row_wise[i] = i;
-    std::sort(&indices_row_wise[0], &indices_row_wise[A->nnz_l], sort_indices2(&*A->entry.begin()));
+    std::sort(&indices_row_wise[0], &indices_row_wise[A->nnz_l], sort_indices2(&A->entry[0]));
 
     index_t jstart, jend;
     if(!R->entry_local.empty()) {
@@ -2141,9 +2140,7 @@ int saena_object::coarsen(Grid *grid){ $
 //    print_vector(left_block_nnz_scan, -1, "left_block_nnz_scan", comm);
 
 //    printf("rank=%d A.nnz=%u \n", rank, A->nnz_l);
-//    auto indicesPRecv = (unsigned long*)malloc(sizeof(unsigned long)*AMaxNnz);
     std::vector<nnz_t> indicesPRecv(AMaxNnz);
-//    auto Arecv = (cooEntry*)malloc(sizeof(cooEntry)*AMaxNnz);
     std::vector<cooEntry> Arecv(AMaxNnz);
     int left, right;
     nnz_t nnzSend, nnzRecv;
@@ -2220,8 +2217,9 @@ int saena_object::coarsen(Grid *grid){ $
 
         ARecvM = A->split[left+1] - A->split[left];
         std::fill(&AnnzPerRow[0], &AnnzPerRow[ARecvM], 0);
+        AnnzPerRow_p = &AnnzPerRow[0] - A->split[left];
         for(index_t j=0; j<nnzRecv; j++){
-            AnnzPerRow[Arecv[j].row - A->split[left]]++;
+            AnnzPerRow_p[Arecv[j].row]++;
 //            if(rank==2)
 //                printf("%lu \tArecv[j].row[i] = %lu, Arecv[j].row - A->split[left] = %lu \n", j, Arecv[j].row, Arecv[j].row - A->split[left]);
         }
@@ -2269,11 +2267,11 @@ int saena_object::coarsen(Grid *grid){ $
     printf("rank %d: RA_temp.entry.size_total = %lu \n", rank, RA_temp.entry.size());
 //    print_vector(RA_temp.entry, -1, "RA_temp.entry", comm);
 
-    prolong_matrix RA(comm);
-    RA.entry.resize(RA_temp.entry.size());
-
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 4-2: rank = %d\n", rank); MPI_Barrier(comm);}
+
+    prolong_matrix RA(comm);
+    RA.entry.resize(RA_temp.entry.size());
 
     // remove duplicates.
     unsigned long entry_size = 0;
@@ -2310,8 +2308,6 @@ int saena_object::coarsen(Grid *grid){ $
     MPI_Allreduce(&P->M, &P_max_M, 1, MPI_UNSIGNED, MPI_MAX, comm);
 //    MPI_Barrier(comm); printf("rank=%d, PMaxNnz=%d \n", rank, PMaxNnz); MPI_Barrier(comm);
 
-//    unsigned int* PnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*P_max_M);
-//    std::fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
     std::vector<unsigned int> PnnzPerRow(P_max_M, 0);
     for(nnz_t i=0; i<P->nnz_l; i++){
         PnnzPerRow[P->entry[i].row]++;
