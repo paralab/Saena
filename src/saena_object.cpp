@@ -2070,7 +2070,6 @@ int saena_object::coarsen(Grid *grid){ $
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 1: rank = %d\n", rank); MPI_Barrier(comm);}
 
-    // todo: combine indicesP and indicesPRecv together.
     // find row-wise ordering for A and save it in indicesP
     std::vector<nnz_t> indices_row_wise(A->nnz_l);
     for(nnz_t i=0; i<A->nnz_l; i++)
@@ -2140,7 +2139,8 @@ int saena_object::coarsen(Grid *grid){ $
 //    print_vector(left_block_nnz_scan, -1, "left_block_nnz_scan", comm);
 
 //    printf("rank=%d A.nnz=%u \n", rank, A->nnz_l);
-    std::vector<nnz_t> indicesPRecv(AMaxNnz);
+//    std::vector<nnz_t> indicesPRecv(AMaxNnz);
+    indices_row_wise.resize(AMaxNnz);
     std::vector<cooEntry> Arecv(AMaxNnz);
     int left, right;
     nnz_t nnzSend, nnzRecv;
@@ -2236,8 +2236,8 @@ int saena_object::coarsen(Grid *grid){ $
 
         // find row-wise ordering for Arecv and save it in indicesPRecv
         for(nnz_t i=0; i<nnzRecv; i++)
-            indicesPRecv[i] = i;
-        std::sort(&indicesPRecv[0], &indicesPRecv[nnzRecv], sort_indices2(&Arecv[0]));
+            indices_row_wise[i] = i;
+        std::sort(&indices_row_wise[0], &indices_row_wise[nnzRecv], sort_indices2(&Arecv[0]));
 
 //        if(rank==1) std::cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << std::endl;
         for (index_t j = jstart; j < jend; j++) {
@@ -2249,8 +2249,8 @@ int saena_object::coarsen(Grid *grid){ $
             for (k = kstart; k < kend; k++) {
 //                    if(rank==1) std::cout << "R = " << R->entry_remote[j] << "\tA = " << Arecv[indicesPRecv[k]] << std::endl;
                 RA_temp.entry.push_back(cooEntry(R->entry_remote[j].row,
-                                                 Arecv[indicesPRecv[k]].col,
-                                                 R->entry_remote[j].val * Arecv[indicesPRecv[k]].val));
+                                                 Arecv[indices_row_wise[k]].col,
+                                                 R->entry_remote[j].val * Arecv[indices_row_wise[k]].val));
             }
         }
 
