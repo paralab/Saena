@@ -2047,10 +2047,17 @@ int saena_object::coarsen(Grid *grid){ $
 //    MPI_Barrier(comm); printf("\nrank=%d, AMaxNnz=%d, AMaxM = %d \n", rank, AMaxNnz, AMaxM); MPI_Barrier(comm);
 
     // alloacted memory for AMaxM, instead of A.M to avoid reallocation of memory for when receiving data from other procs.
-    std::vector<unsigned int> AnnzPerRow(AMaxM, 0);
-    unsigned int *AnnzPerRow_p = &AnnzPerRow[0] - A->split[rank];
-    for(nnz_t i=0; i<A->nnz_l; i++)
-        AnnzPerRow_p[A->entry[i].row]++;
+//    std::vector<unsigned int> AnnzPerRow(AMaxM, 0);
+//    unsigned int *AnnzPerRow_p = &AnnzPerRow[0] - A->split[rank];
+//    for(nnz_t i=0; i<A->nnz_l; i++)
+//        AnnzPerRow_p[A->entry[i].row]++;
+
+    std::vector<unsigned int> AnnzPerRow = A->nnzPerRow_local;
+//    for(nnz_t i=0; i<A->nnz_l; i++)
+//        AnnzPerRow[A->row_remote[i]]++;
+
+    for(nnz_t i=0; i<A->M; i++)
+        AnnzPerRow[i] += A->nnzPerRow_remote[i];
 
 //    print_vector(AnnzPerRow, -1, "AnnzPerRow", comm);
 
@@ -2135,6 +2142,7 @@ int saena_object::coarsen(Grid *grid){ $
 
 //    printf("rank=%d A.nnz=%u \n", rank, A->nnz_l);
 //    std::vector<nnz_t> indicesPRecv(AMaxNnz);
+    AnnzPerRow.resize(AMaxM);
     indices_row_wise.resize(AMaxNnz);
     std::vector<cooEntry> Arecv(AMaxNnz);
     int left, right;
@@ -2145,7 +2153,6 @@ int saena_object::coarsen(Grid *grid){ $
     bool send_data = true;
     bool recv_data;
     index_t k, kstart, kend;
-
 //    MPI_Barrier(comm); printf("\n\n rank = %d, loop starts! \n", rank); MPI_Barrier(comm);
 
 //    print_vector(R->entry_remote, -1, "R->entry_remote", comm);
@@ -2210,7 +2217,7 @@ int saena_object::coarsen(Grid *grid){ $
 
         ARecvM = A->split[left+1] - A->split[left];
         std::fill(&AnnzPerRow[0], &AnnzPerRow[ARecvM], 0);
-        AnnzPerRow_p = &AnnzPerRow[0] - A->split[left];
+        unsigned int *AnnzPerRow_p = &AnnzPerRow[0] - A->split[left];
         for(index_t j=0; j<nnzRecv; j++){
             AnnzPerRow_p[Arecv[j].row]++;
 //            if(rank==2)
