@@ -2036,7 +2036,7 @@ int saena_object::coarsen(Grid *grid){ $
 
     prolong_matrix RA_temp(comm); // RA_temp is being used to remove duplicates while pushing back to RA.
 
-    // ************************************* RA_temp - A local *************************************
+    // ************************************* RA_temp - R on-diag and A local (on and off-diag) *************************************
     // Some local and remote elements of RA_temp are computed here using local R and local A.
     // Note: A local means whole entries of A on this process, not just the diagonal block.
 
@@ -2077,16 +2077,16 @@ int saena_object::coarsen(Grid *grid){ $
         indices_row_wise[i] = i;
     std::sort(&indices_row_wise[0], &indices_row_wise[A->nnz_l], sort_indices2(&A->entry[0]));
 
-    index_t jstart, jend;
+    nnz_t jstart, jend;
     if(!R->entry_local.empty()) {
         for (index_t i = 0; i < R->nnz_l_local; i++) {
             jstart = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]];
             jend   = AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1];
             if(jend - jstart == 0) continue;
-            for (index_t j = jstart; j < jend; j++) {
+            for (nnz_t j = jstart; j < jend; j++) {
 //            if(rank==0) std::cout << A->entry[indicesP[j]].row << "\t" << A->entry[indicesP[j]].col << "\t" << A->entry[indicesP[j]].val
 //                             << "\t" << R->entry_local[i].col << "\t" << R->entry_local[i].col - P->split[rank] << std::endl;
-                RA_temp.entry.push_back(cooEntry(R->entry_local[i].row,
+                RA_temp.entry.emplace_back(cooEntry(R->entry_local[i].row,
                                                  A->entry[indices_row_wise[j]].col,
                                                  R->entry_local[i].val * A->entry[indices_row_wise[j]].val));
             }
@@ -2103,7 +2103,7 @@ int saena_object::coarsen(Grid *grid){ $
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
 
-    // ************************************* RA_temp - A remote *************************************
+    // ************************************* RA_temp - R off-diag and A remote (on and off-diag) *************************************
 
     // find the start and end nnz iterator of each block of R.
     // use A.split for this part to find each block corresponding to each processor's A.
@@ -2149,7 +2149,7 @@ int saena_object::coarsen(Grid *grid){ $
     nnz_t R_block_nnz_own;
     bool send_data = true;
     bool recv_data;
-    index_t k, kstart, kend;
+    nnz_t k, kstart, kend;
 //    MPI_Barrier(comm); printf("\n\n rank = %d, loop starts! \n", rank); MPI_Barrier(comm);
 
 //    print_vector(R->entry_remote, -1, "R->entry_remote", comm);
@@ -2235,14 +2235,16 @@ int saena_object::coarsen(Grid *grid){ $
         std::sort(&indices_row_wise[0], &indices_row_wise[nnzRecv], sort_indices2(&Arecv[0]));
 
 //        if(rank==1) std::cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << std::endl;
+        // jstart is the starting entry index of R corresponding to this neighbor.
         for (index_t j = jstart; j < jend; j++) {
-//                if(rank==1) std::cout << "R = " << R->entry_remote[j] << std::endl;
+//            if(rank==1) std::cout << "R = " << R->entry_remote[j] << std::endl;
 //            if(rank==1) std::cout << "col = " << R->entry_remote[j].col << "\tcol-split = " << R->entry_remote[j].col - P->split[left] << "\tstart = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left]] << "\tend = " << AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1] << std::endl;
+            // kstart is the starting row entry index of A corresponding to the R entry column.
             kstart = AnnzPerRowScan[R->entry_remote[j].col - P->split[left]];
             kend   = AnnzPerRowScan[R->entry_remote[j].col - P->split[left] + 1];
             if(kend - kstart == 0) continue; // if there isno nonzero on this row of A, then skip.
             for (k = kstart; k < kend; k++) {
-//                    if(rank==1) std::cout << "R = " << R->entry_remote[j] << "\tA = " << Arecv[indicesPRecv[k]] << std::endl;
+//                if(rank==1) std::cout << "R = " << R->entry_remote[j] << "\tA = " << Arecv[indicesPRecv[k]] << std::endl;
                 RA_temp.entry.push_back(cooEntry(R->entry_remote[j].row,
                                                  Arecv[indices_row_wise[k]].col,
                                                  R->entry_remote[j].val * Arecv[indices_row_wise[k]].val));
