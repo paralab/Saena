@@ -2055,7 +2055,6 @@ int saena_object::coarsen(Grid *grid){ $
     std::vector<unsigned int> AnnzPerRow = A->nnzPerRow_local;
 //    for(nnz_t i=0; i<A->nnz_l; i++)
 //        AnnzPerRow[A->row_remote[i]]++;
-
     for(nnz_t i=0; i<A->M; i++)
         AnnzPerRow[i] += A->nnzPerRow_remote[i];
 
@@ -2094,13 +2093,12 @@ int saena_object::coarsen(Grid *grid){ $
         }
     }
 
-    printf("rank %d: RA_temp.entry.size_local = %lu \n", rank, RA_temp.entry.size());
-
 //    if(rank==0){
 //        std::cout << "\nRA_temp.entry.size = " << RA_temp.entry.size() << std::endl;
 //        for(i=0; i<RA_temp.entry.size(); i++)
 //            std::cout << RA_temp.entry[i].row + R->splitNew[rank] << "\t" << RA_temp.entry[i].col << "\t" << RA_temp.entry[i].val << std::endl;}
 
+    printf("rank %d: RA_temp.entry.size_local = %lu \n", rank, RA_temp.entry.size());
 //    MPI_Barrier(comm); printf("rank %d: local RA.size = %lu \n", rank, RA_temp.entry.size()); MPI_Barrier(comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -2141,7 +2139,6 @@ int saena_object::coarsen(Grid *grid){ $
 //    print_vector(left_block_nnz_scan, -1, "left_block_nnz_scan", comm);
 
 //    printf("rank=%d A.nnz=%u \n", rank, A->nnz_l);
-//    std::vector<nnz_t> indicesPRecv(AMaxNnz);
     AnnzPerRow.resize(AMaxM);
     indices_row_wise.resize(AMaxNnz);
     std::vector<cooEntry> Arecv(AMaxNnz);
@@ -2289,6 +2286,8 @@ int saena_object::coarsen(Grid *grid){ $
 //        if(rank==1) std::cout << "final: " << std::endl << RA.entry.back().val << std::endl;
     }
 
+    RA_temp.entry.clear();
+    RA_temp.entry.shrink_to_fit();
     RA.entry.resize(entry_size);
     RA.entry.shrink_to_fit();
 
@@ -2341,12 +2340,11 @@ int saena_object::coarsen(Grid *grid){ $
 
     // todo: combine indicesP_Prolong and indicesP_ProlongRecv together.
     // find row-wise ordering for A and save it in indicesP
-//    unsigned long* indicesP_Prolong = (unsigned long*)malloc(sizeof(unsigned long)*P->nnz_l);
-    std::vector<nnz_t> indicesP_Prolong(P->nnz_l);
+    indices_row_wise.resize(P->nnz_l);
     for(nnz_t i=0; i<P->nnz_l; i++)
-        indicesP_Prolong[i] = i;
+        indices_row_wise[i] = i;
 
-    std::sort(&indicesP_Prolong[0], &indicesP_Prolong[P->nnz_l], sort_indices2(&*P->entry.begin()));
+    std::sort(&indices_row_wise[0], &indices_row_wise[P->nnz_l], sort_indices2(&*P->entry.begin()));
 
     for(nnz_t i=left_block_nnz_scan[rank]; i<left_block_nnz_scan[rank+1]; i++){
         for(nnz_t j = PnnzPerRowScan[RA.entry[i].col - P->split[rank]]; j < PnnzPerRowScan[RA.entry[i].col - P->split[rank] + 1]; j++){
@@ -2354,8 +2352,8 @@ int saena_object::coarsen(Grid *grid){ $
 //            if(rank==3) std::cout << RA.entry[i].row + P->splitNew[rank] << "\t" << P->entry[indicesP_Prolong[j]].col << "\t" << RA.entry[i].val * P->entry[indicesP_Prolong[j]].val << std::endl;
 
             RAP_temp.entry.emplace_back(cooEntry(RA.entry[i].row + P->splitNew[rank],  // Ac.entry should have global indices at the end.
-                                                 P->entry[indicesP_Prolong[j]].col,
-                                                 RA.entry[i].val * P->entry[indicesP_Prolong[j]].val));
+                                                 P->entry[indices_row_wise[j]].col,
+                                                 RA.entry[i].val * P->entry[indices_row_wise[j]].val));
         }
     }
 
@@ -2369,7 +2367,7 @@ int saena_object::coarsen(Grid *grid){ $
     nnz_t PMaxNnz;
     MPI_Allreduce(&P->nnz_l, &PMaxNnz, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
 
-    std::vector<nnz_t> indicesP_ProlongRecv(PMaxNnz);
+    indices_row_wise.resize(PMaxNnz);
     std::vector<cooEntry> Precv(PMaxNnz);
     nnz_t PrecvM;
 
@@ -2420,9 +2418,9 @@ int saena_object::coarsen(Grid *grid){ $
 
         // find row-wise ordering for Arecv and save it in indicesPRecv
         for(nnz_t i=0; i<nnzRecv; i++)
-            indicesP_ProlongRecv[i] = i;
+            indices_row_wise[i] = i;
 
-        std::sort(&indicesP_ProlongRecv[0], &indicesP_ProlongRecv[nnzRecv], sort_indices2(&Precv[0]));
+        std::sort(&indices_row_wise[0], &indices_row_wise[nnzRecv], sort_indices2(&Precv[0]));
 
 //        if(rank==1) std::cout << "block start = " << RBlockStart[left] << "\tend = " << RBlockStart[left+1] << "\tleft rank = " << left << "\t i = " << i << std::endl;
         if(!RA.entry.empty()) {
@@ -2433,8 +2431,8 @@ int saena_object::coarsen(Grid *grid){ $
 //                if(rank==0) std::cout << Precv[indicesP_ProlongRecv[k]].row << "\t" << Precv[indicesP_ProlongRecv[k]].col << "\t" << Precv[indicesP_ProlongRecv[k]].val << std::endl;
                     RAP_temp.entry.push_back(cooEntry(
                             RA.entry[j].row + P->splitNew[rank], // Ac.entry should have global indices at the end.
-                            Precv[indicesP_ProlongRecv[k]].col,
-                            RA.entry[j].val * Precv[indicesP_ProlongRecv[k]].val));
+                            Precv[indices_row_wise[k]].col,
+                            RA.entry[j].val * Precv[indices_row_wise[k]].val));
                 }
             }
         }
@@ -2472,6 +2470,8 @@ int saena_object::coarsen(Grid *grid){ $
 
 //    if(rank==0) printf("rank %d: entry_size = %lu \n", rank, entry_size);
 
+    RAP_temp.entry.clear();
+    RAP_temp.entry.shrink_to_fit();
     Ac->entry.resize(entry_size);
     Ac->entry.shrink_to_fit();
 
