@@ -533,7 +533,7 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //    double t11 = MPI_Wtime();
     value_t* v_p = &v[0] - split[rank];
 
-    w.assign(w.size(), 0);
+    std::fill(w.begin(), w.end(), 0);
     #pragma omp parallel
     {
         nnz_t iter = iter_local_array[omp_get_thread_num()];

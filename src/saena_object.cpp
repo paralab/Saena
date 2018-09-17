@@ -2325,8 +2325,7 @@ int saena_object::coarsen(Grid *grid){ $
 //        if(rank==2) printf("i=%lu, PnnzPerRow=%d, PnnzPerRowScan = %d\n", i, PnnzPerRow[i], PnnzPerRowScan[i]);
     }
 
-//    std::fill(left_block_nnz, &left_block_nnz[nprocs], 0);
-    left_block_nnz.assign(nprocs, 0);
+    std::fill(&left_block_nnz[0], &left_block_nnz[nprocs], 0);
     if(!RA.entry.empty()){
         for (nnz_t i = 0; i < RA.entry.size(); i++) {
             procNum = lower_bound2(&P->split[0], &P->split[nprocs], RA.entry[i].col);
@@ -4504,7 +4503,7 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
             break;
 
         if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %u *****\n", i+1);
-        rho.assign(rho.size(), 0);
+        std::fill(rho.begin(), rho.end(), 0);
         vcycle(&grids[0], rho, r);
         dotProduct(r, rho, &beta, comm);
         beta /= rho_res;
@@ -4665,7 +4664,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new
         if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i+1);
         // this prints the "absolute residual" and the "convergence factor":
 //        if(rank==0) printf("Vcycle %lu: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
-        rho.assign(rho.size(), 0);
+        std::fill(rho.begin(), rho.end(), 0);
         vcycle(&grids[0], rho, r);
         dotProduct(r, rho, &beta, comm);
         beta /= rho_res;
@@ -4833,7 +4832,7 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new
         if(verbose || solve_verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %lu *****\n", i+1);
         // this prints the "absolute residual" and the "convergence factor":
 //        if(rank==0) printf("Vcycle %lu: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
-        rho.assign(rho.size(), 0);
+        std::fill(rho.begin(), rho.end(), 0);
         vcycle(&grids[0], rho, r);
         dotProduct(r, rho, &beta, comm);
         beta /= rho_res;

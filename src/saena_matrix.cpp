@@ -3486,7 +3486,7 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     // ----------
     double t1_start = omp_get_wtime();
 
-    w.assign(w.size(), 0);
+    std::fill(w.begin(), w.end(), 0);
     value_t* v_p = &v[0] - split[rank];
     #pragma omp parallel reduction(vec_double_plus:w)
     {
@@ -4459,7 +4459,7 @@ int saena_matrix::compute_matvec_dummy_time(){$
         v_dummy.swap(w_dummy);
     }
 
-    matvec_dummy_time.assign(matvec_dummy_time.size(),0);
+    std::fill(matvec_dummy_time.begin(), matvec_dummy_time.end(), 0);
     for (int i = 0; i < matvec_iter; i++) {
         matvec_dummy(v_dummy, w_dummy);
         v_dummy.swap(w_dummy);
