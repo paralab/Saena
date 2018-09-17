@@ -2052,12 +2052,7 @@ int saena_object::coarsen(Grid *grid){ $
     for(nnz_t i=0; i<A->nnz_l; i++)
         AnnzPerRow_p[A->entry[i].row]++;
 
-//    MPI_Barrier(A->comm);
-//    if(rank==0){
-//        printf("rank = %d, AnnzPerRow: \n", rank);
-//        for(i=0; i<A->M; i++)
-//            printf("%lu \t%u \n", i, AnnzPerRow[i]);
-//    }
+//    print_vector(AnnzPerRow, -1, "AnnzPerRow", comm);
 
     // alloacted memory for AMaxM+1, instead of A.M+1 to avoid reallocation of memory for when receiving data from other procs.
     std::vector<unsigned long> AnnzPerRowScan(AMaxM+1);
@@ -2153,9 +2148,7 @@ int saena_object::coarsen(Grid *grid){ $
 
 //    MPI_Barrier(comm); printf("\n\n rank = %d, loop starts! \n", rank); MPI_Barrier(comm);
 
-//    if(rank==1)
-//        for(i=0; i<R->entry_remote.size(); i++)
-//            std::cout << R->entry_remote[i] << std::endl;
+//    print_vector(R->entry_remote, -1, "R->entry_remote", comm);
 
     // todo: after adding "R_remote block size" part, the current idea seems more efficient than this idea:
     // todo: change the algorithm so every processor sends data only to the next one and receives from the previous one in each iteration.
@@ -2224,9 +2217,7 @@ int saena_object::coarsen(Grid *grid){ $
 //                printf("%lu \tArecv[j].row[i] = %lu, Arecv[j].row - A->split[left] = %lu \n", j, Arecv[j].row, Arecv[j].row - A->split[left]);
         }
 
-//      if(rank==2)
-//          for(i=0; i<A->M; i++)
-//              printf("%u \tAnnzPerRow[i] = %u \n", i, AnnzPerRow[i]);
+//        print_vector(AnnzPerRow, -1, "AnnzPerRow", comm);
 
         AnnzPerRowScan[0] = 0;
         for(index_t j=0; j<ARecvM; j++){
@@ -2313,9 +2304,7 @@ int saena_object::coarsen(Grid *grid){ $
         PnnzPerRow[P->entry[i].row]++;
     }
 
-//    if(rank==1)
-//        for(i=0; i<P->M; i++)
-//            std::cout << PnnzPerRow[i] << std::endl;
+//    print_vector(PnnzPerRow, -1, "PnnzPerRow", comm);
 
 //    unsigned int* PnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(P_max_M+1));
     std::vector<unsigned long> PnnzPerRowScan(P_max_M+1);
@@ -2338,10 +2327,7 @@ int saena_object::coarsen(Grid *grid){ $
     for(int i = 0; i < nprocs; i++)
         left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
 
-//    if(rank==1){
-//        std::cout << "RABlockStart: " << std::endl;
-//        for(i=0; i<nprocs+1; i++)
-//            std::cout << R_block_nnz_scan[i] << std::endl;}
+//    print_vector(left_block_nnz_scan, -1, "left_block_nnz_scan", comm);
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 4-4: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -2366,9 +2352,7 @@ int saena_object::coarsen(Grid *grid){ $
         }
     }
 
-//    if(rank==1)
-//        for(i=0; i<RAP_temp.entry.size(); i++)
-//            std::cout << RAP_temp.entry[i].row << "\t" << RAP_temp.entry[i].col << "\t" << RAP_temp.entry[i].val << std::endl;
+//    print_vector(RAP_temp.entry, -1, "RAP_temp.entry", comm);
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -2378,9 +2362,7 @@ int saena_object::coarsen(Grid *grid){ $
     nnz_t PMaxNnz;
     MPI_Allreduce(&P->nnz_l, &PMaxNnz, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
 
-//    unsigned long* indicesP_ProlongRecv = (unsigned long*)malloc(sizeof(unsigned long)*PMaxNnz);
     std::vector<nnz_t> indicesP_ProlongRecv(PMaxNnz);
-//    cooEntry* Precv = (cooEntry*)malloc(sizeof(cooEntry)*PMaxNnz);
     std::vector<cooEntry> Precv(PMaxNnz);
     nnz_t PrecvM;
 
