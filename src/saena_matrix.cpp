@@ -24,7 +24,7 @@ saena_matrix::saena_matrix(MPI_Comm com) {
 }
 
 
-saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {$
+saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
     // the following variables of saena_matrix class will be set in this function:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
     // "data" is only required for repartition function.
@@ -141,7 +141,7 @@ saena_matrix::~saena_matrix() {
 }
 
 
-int saena_matrix::set(index_t row, index_t col, value_t val){$
+int saena_matrix::set(index_t row, index_t col, value_t val){
 
     cooEntry_row temp_new = cooEntry_row(row, col, val);
     std::pair<std::set<cooEntry_row>::iterator, bool> p = data_coo.insert(temp_new);
@@ -163,7 +163,7 @@ int saena_matrix::set(index_t row, index_t col, value_t val){$
 }
 
 
-int saena_matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local){$
+int saena_matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local){
 
     if(nnz_local <= 0){
         printf("size in the set function is either zero or negative!");
@@ -197,7 +197,7 @@ int saena_matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local)
 }
 
 
-int saena_matrix::set2(index_t row, index_t col, value_t val){$
+int saena_matrix::set2(index_t row, index_t col, value_t val){
 
     // todo: if there are duplicates with different values on two different processors, what should happen?
     // todo: which one should be removed? Hari said "do it randomly".
@@ -221,7 +221,7 @@ int saena_matrix::set2(index_t row, index_t col, value_t val){$
 }
 
 
-int saena_matrix::set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local){$
+int saena_matrix::set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local){
 
     if(nnz_local <= 0){
         printf("size in the set function is either zero or negative!");
@@ -345,7 +345,7 @@ void saena_matrix::set_comm(MPI_Comm com){
 }
 
 
-int saena_matrix::remove_duplicates() {$
+int saena_matrix::remove_duplicates() {
     // parameters needed for this function:
     // comm, data_unsorted
 
@@ -508,7 +508,7 @@ int saena_matrix::setup_initial_data(){
 }
 
 
-int saena_matrix::setup_initial_data2(){$
+int saena_matrix::setup_initial_data2(){
     // parameters needed for this function:
     // comm, data_coo
 
@@ -546,7 +546,7 @@ int saena_matrix::destroy(){
 }
 
 
-int saena_matrix::erase(){$
+int saena_matrix::erase(){
 //    data.clear();
 //    data.shrink_to_fit();
 
@@ -617,7 +617,7 @@ int saena_matrix::erase(){$
 }
 
 
-int saena_matrix::erase2(){$
+int saena_matrix::erase2(){
 //    data.clear();
 //    data.shrink_to_fit();
 
@@ -724,7 +724,7 @@ int saena_matrix::erase2(){$
 }
 
 
-int saena_matrix::erase_update_local(){$
+int saena_matrix::erase_update_local(){
 
 //    row_local_temp.clear();
 //    col_local_temp.clear();
@@ -776,7 +776,7 @@ int saena_matrix::erase_update_local(){$
 }
 
 
-int saena_matrix::erase_keep_remote2(){$
+int saena_matrix::erase_keep_remote2(){
 
     entry.clear();
 
@@ -845,7 +845,7 @@ int saena_matrix::erase_keep_remote2(){$
 }
 
 
-int saena_matrix::erase_after_shrink() {$
+int saena_matrix::erase_after_shrink() {
 
     row_local.clear();
     col_local.clear();
@@ -890,7 +890,7 @@ int saena_matrix::erase_after_shrink() {$
 }
 
 
-int saena_matrix::erase_after_decide_shrinking() {$
+int saena_matrix::erase_after_decide_shrinking() {
 
 //    row_local.clear();
     col_local.clear();
@@ -935,7 +935,7 @@ int saena_matrix::erase_after_decide_shrinking() {$
 }
 
 
-int saena_matrix::set_zero(){$
+int saena_matrix::set_zero(){
 
 #pragma omp parallel for
     for(nnz_t i = 0; i < nnz_l; i++)
@@ -948,7 +948,7 @@ int saena_matrix::set_zero(){$
 }
 
 
-int saena_matrix::repartition_nnz_initial(){$
+int saena_matrix::repartition_nnz_initial(){
     // before using this function these variables of saena_matrix should be set:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
 
@@ -1174,7 +1174,7 @@ int saena_matrix::repartition_nnz_initial(){$
 }
 
 
-int saena_matrix::repartition_nnz_update(){$
+int saena_matrix::repartition_nnz_update(){
     // before using this function these variables of SaenaMatrix should be set:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
 
@@ -1562,7 +1562,7 @@ int saena_matrix::repartition_nnz(){
 */
 
 
-int saena_matrix::repartition_nnz(){$
+int saena_matrix::repartition_nnz(){
 
     // summary: number of buckets are computed based of the number of <<rows>> and number of processors.
     // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix with almost equal number of rows.
@@ -1817,7 +1817,7 @@ int saena_matrix::repartition_nnz(){$
 }
 
 
-int saena_matrix::repartition_row(){$
+int saena_matrix::repartition_row(){
 
     // summary: number of buckets are computed based of the number fo rows and number of processors.
     // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix with almost equal number of rows.
@@ -1991,7 +1991,7 @@ int saena_matrix::repartition_row(){$
 }
 
 
-int saena_matrix::repartition_nnz_update_Ac(){$
+int saena_matrix::repartition_nnz_update_Ac(){
 
     // summary: number of buckets are computed based of the number fo rows and number of processors.
     // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix with almost equal number of rows.
@@ -2155,7 +2155,7 @@ int saena_matrix::repartition_nnz_update_Ac(){$
 }
 
 
-int saena_matrix::shrink_cpu(){$
+int saena_matrix::shrink_cpu(){
 
     // if number of rows on Ac < threshold*number of rows on A, then shrink.
     // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
@@ -2359,7 +2359,7 @@ int saena_matrix::shrink_cpu(){$
 }
 
 
-int saena_matrix::shrink_cpu_minor(){$
+int saena_matrix::shrink_cpu_minor(){
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
@@ -2422,7 +2422,7 @@ int saena_matrix::shrink_cpu_minor(){$
 }
 
 
-int saena_matrix::matrix_setup() {$
+int saena_matrix::matrix_setup() {
     // before using this function the following parameters of saena_matrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
@@ -2511,7 +2511,7 @@ int saena_matrix::matrix_setup() {$
 }
 
 
-int saena_matrix::matrix_setup_no_scale(){$
+int saena_matrix::matrix_setup_no_scale(){
     // before using this function the following parameters of saena_matrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
@@ -2603,7 +2603,7 @@ int saena_matrix::matrix_setup_no_scale(){$
 }
 
 
-int saena_matrix::matrix_setup_update() {$
+int saena_matrix::matrix_setup_update() {
     // update values_local, values_remote and inv_diag.
 
     int rank, nprocs;
@@ -2639,7 +2639,7 @@ int saena_matrix::matrix_setup_update() {$
 }
 
 
-int saena_matrix::set_rho(){$
+int saena_matrix::set_rho(){
 
     // computing rhoDA for the prolongation matrix: P = (I - 4/(3*rhoDA) * DA) * P_t
     // rhoDA = min( norm(DA , 1) , norm(DA , inf) )
@@ -2665,7 +2665,7 @@ int saena_matrix::set_rho(){$
 }
 
 
-int saena_matrix::set_off_on_diagonal(){$
+int saena_matrix::set_off_on_diagonal(){
     // set and exchange on-diagonal and off-diagonal elements
     // on-diagonal (local) elements are elements that correspond to vector elements which are local to this process.
     // off-diagonal (remote) elements correspond to vector elements which should be received from another processes.
@@ -2870,7 +2870,7 @@ int saena_matrix::set_off_on_diagonal(){$
 }
 
 
-int saena_matrix::find_sortings(){$
+int saena_matrix::find_sortings(){
     //find the sorting on rows on both local and remote data, which will be used in matvec
 
     if(active){
@@ -2906,7 +2906,7 @@ int saena_matrix::find_sortings(){$
 }
 
 
-int saena_matrix::openmp_setup() {$
+int saena_matrix::openmp_setup() {
 
     // *************************** find start and end of each thread for matvec ****************************
     // also, find nnz per row for local and remote matvec
@@ -3054,7 +3054,7 @@ int saena_matrix::openmp_setup() {$
 }
 
 
-int saena_matrix::scale_matrix(){$
+int saena_matrix::scale_matrix(){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -3158,7 +3158,7 @@ int saena_matrix::scale_matrix(){$
 }
 
 
-int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){$
+int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
 
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
@@ -3177,7 +3177,7 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){$
 }
 
 
-int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w) {$
+int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -3299,7 +3299,7 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
 }
 
 
-int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t>& w) {$
+int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -4439,7 +4439,7 @@ int saena_matrix::matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<v
 }
 
 
-int saena_matrix::compute_matvec_dummy_time(){$
+int saena_matrix::compute_matvec_dummy_time(){
 
     int rank;
     MPI_Comm_rank(comm, &rank);
@@ -4482,7 +4482,7 @@ int saena_matrix::compute_matvec_dummy_time(){$
 }
 
 
-int saena_matrix::decide_shrinking(std::vector<double> &prev_time){$
+int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
 
     // matvec_dummy_time[0]: communication (including "set vSend")
     // matvec_dummy_time[1]: local loop
@@ -4538,7 +4538,7 @@ int saena_matrix::matrix_setup_dummy(){
 }
 
 
-int saena_matrix::set_off_on_diagonal_dummy(){$
+int saena_matrix::set_off_on_diagonal_dummy(){
     // set and exchange on-diagonal and off-diagonal elements
     // on-diagonal (local) elements are elements that correspond to vector elements which are local to this process.
     // off-diagonal (remote) elements correspond to vector elements which should be received from another processes.
@@ -4767,7 +4767,7 @@ int saena_matrix::find_sortings_dummy(){
 */
 
 
-int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w) {$
+int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -4897,7 +4897,7 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
 }
 
 
-int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){$
+int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
     // Vector res = A*u - rhs;
 
     int nprocs, rank;
@@ -4945,7 +4945,7 @@ int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, s
 }
 
 
-int saena_matrix::inverse_diag() {$
+int saena_matrix::inverse_diag() {
     int rank;
     MPI_Comm_rank(comm, &rank);
 
@@ -4987,7 +4987,7 @@ int saena_matrix::inverse_diag() {$
 }
 
 
-int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp) {$
+int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Au - rhs)
@@ -5016,7 +5016,7 @@ int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>
 }
 
 
-int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res, std::vector<value_t>& d){$
+int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res, std::vector<value_t>& d){
 
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
@@ -5061,7 +5061,7 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
 }
 
 
-int saena_matrix::print_entry(int ran){$
+int saena_matrix::print_entry(int ran){
 
     // if ran >= 0 print_entry the matrix entries on proc with rank = ran
     // otherwise print_entry the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
@@ -5099,7 +5099,7 @@ int saena_matrix::print_entry(int ran){$
 }
 
 
-int saena_matrix::print_info(int ran) {$
+int saena_matrix::print_info(int ran) {
 
     // if ran >= 0 print the matrix info on proc with rank = ran
     // otherwise print the matrix info on all processors in order. (first on proc 0, then proc 1 and so on.)
@@ -5129,7 +5129,7 @@ int saena_matrix::print_info(int ran) {$
 }
 
 
-int saena_matrix::generate_dense_matrix() {$
+int saena_matrix::generate_dense_matrix() {
     dense_matrix.convert_saena_matrix(this);
     dense_matrix_generated = true;
     return 0;
