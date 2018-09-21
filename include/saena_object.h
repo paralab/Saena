@@ -72,6 +72,7 @@ public:
     int setup(saena_matrix* A);
     int level_setup(Grid* grid);
     int coarsen(Grid *grid);
+    int fast_mm(saena_matrix &A, std::vector<cooEntry> &B, std::vector<cooEntry> &C, std::vector<nnz_t> &AnnzPerColScan);
     // this function is similar to the coarsen(), but does R*A*P for only local (diagonal) blocks.
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
 //    int coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
