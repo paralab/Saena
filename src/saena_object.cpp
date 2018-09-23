@@ -1999,7 +1999,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
 }// end of saena_object::create_prolongation
 
 
-int saena_object::fast_mm(saena_matrix &A, std::vector<cooEntry> &B, std::vector<cooEntry> &C, std::vector<nnz_t> &AnnzPerColScan){
+int saena_object::fast_mm(cooEntry *A, nnz_t A_nnz, cooEntry *B, nnz_t B_nnz, std::vector<cooEntry> &C, nnz_t *AnnzPerColScan, index_t A_row_size, index_t A_col_size, index_t B_col_size){
 
     //idea of matrix-matrix product:
     // ----------------------------
@@ -2018,14 +2018,15 @@ int saena_object::fast_mm(saena_matrix &A, std::vector<cooEntry> &B, std::vector
 //    }
 
     index_t r_dense=16, c_dense=16;
-    std::vector<value_t> C_temp(r_dense * c_dense, 0); // 1D array is better than 2D for many reasons.
+    if(A_row_size < r_dense && A_col_size < c_dense){ //todo: fix this.
+        std::vector<value_t> C_temp(r_dense * c_dense, 0); // 1D array is better than 2D for many reasons.
 
-    // Here we are using transpose of R_i, so we are using row instead of col and vice versa.
-    for(nnz_t j = 0; j < C.size(); j++){
-        for(nnz_t i = 0; i < AnnzPerColScan[ B[j].col]; i++) {
-            C_temp[A.entry[i].row * c_dense +  B[j].row] +=  B[j].val * A.entry[i].val;
+        // Here we are using transpose of R_i, so we are using row instead of col and vice versa.
+        for(nnz_t j = 0; j < B_nnz; j++){
+            for(nnz_t i = 0; i < AnnzPerColScan[ B[j].col]; i++) {
+                C_temp[A[i].row * c_dense +  B[j].row] +=  B[j].val * A[i].val;
+            }
         }
-    }
 
 //    print_vector(C_temp, -1, "C_temp", comm);
 //    if(rank==0){
@@ -2036,6 +2037,64 @@ int saena_object::fast_mm(saena_matrix &A, std::vector<cooEntry> &B, std::vector
 //        }
 //    }
 
+        // add the new elements to C
+        for(nnz_t i = 0; i < r_dense * c_dense; i++){
+            if(!C_temp[i]){
+                C.emplace_back(C_temp[i]);
+            }
+        }
+
+    } else if(A_row_size < A_col_size){ //todo: fix this.
+
+        std::vector<cooEntry> C1, C2;
+        nnz_t A_nnz_middle = AnnzPerColScan[A_col_size/2];
+        nnz_t B_nnz_middle = 0; //todo: fix this.
+        fast_mm(&A[0], A_nnz_middle, &B[0], B_nnz_middle, C1, &AnnzPerColScan[0], A_row_size, A_col_size/2, B_col_size);
+        fast_mm(&A[A_nnz_middle], A_nnz-A_nnz_middle, &B[B_nnz_middle], B_nnz-B_nnz_middle, C2,
+                &AnnzPerColScan[(A_col_size/2)+1], A_row_size, A_col_size-A_col_size/2, B_col_size);
+
+        // take care of the special cases when either C1 or C2 is empty.
+        if(C1.empty()){
+            C = C2;
+            return 0;
+        } else if(C2.empty()){
+            C = C1;
+            return 0;
+        }
+
+        nnz_t i=0, j=0;
+        while(i < C1.size() && j < C2.size()){
+            if(C1[i] < C2[j]){
+                C.emplace_back(C1[i]);
+                i++;
+            }else if(C1[i] == C2[j]){ // there is no duplicate in either C1 or C2. So there may be at most one duplicate when we add them.
+                C.emplace_back(C1[i]);
+                C.back().val += C2[j].val;
+                i++; j++;
+            }else{ // C1[i] > C2[j]
+                C.emplace_back(C2[j]);
+                j++;
+            }
+
+            // when end of C1 or C2 is reached.
+            if(i == C1.size()){
+                while(j < C2.size()){
+                    C.emplace_back(C2[j]);
+                    j++;
+                }
+                return 0;
+            }else if(j == C2.size()) {
+                while (i < C1.size()) {
+                    C.emplace_back(C2[i]);
+                    i++;
+                }
+                return 0;
+            }
+        }
+
+    } else { // A_row_size >= A_col_size
+
+    }
 
     return 0;
 }
@@ -2694,7 +2753,7 @@ int saena_object::coarsen(Grid *grid) {
         AnnzPerColScan[i+1] = AnnzPerColScan[i] + AnnzPerCol[i];
 
     std::vector<cooEntry> C;
-    fast_mm(*A, R->entry, C, AnnzPerColScan);
+    fast_mm(A->entry, R->entry, C, AnnzPerColScan, A->entry.size());
 
 
 
