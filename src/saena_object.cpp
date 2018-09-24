@@ -2017,7 +2017,7 @@ int saena_object::fast_mm(cooEntry *A, nnz_t A_nnz, cooEntry *B, nnz_t B_nnz, st
 //        }
 //    }
 
-    index_t r_dense=16, c_dense=16;
+    index_t r_dense=16, c_dense=16; //todo: fix this.
     if(A_row_size < r_dense && A_col_size < c_dense){ //todo: fix this.
         std::vector<value_t> C_temp(r_dense * c_dense, 0); // 1D array is better than 2D for many reasons.
 
@@ -2046,12 +2046,35 @@ int saena_object::fast_mm(cooEntry *A, nnz_t A_nnz, cooEntry *B, nnz_t B_nnz, st
 
     } else if(A_row_size < A_col_size){ //todo: fix this.
 
-        std::vector<cooEntry> C1, C2;
+        // Split B in half.
+        nnz_t iter1 = 0, iter2 = 0;
+        std::vector<cooEntry> B1(B_nnz), B2(B_nnz);
+        for(nnz_t i = 0; i < B_nnz; i++){
+            if(B[i].col < B_col_size/2){ // todo: col is a global index. fix this
+                B1[iter1] = B[i];
+                iter1++;
+            }else{
+                B2[iter2] = B[i];
+                iter2++;
+            }
+        }
+        B1.resize(iter1);
+        B2.resize(iter2);
+
         nnz_t A_nnz_middle = AnnzPerColScan[A_col_size/2];
-        nnz_t B_nnz_middle = 0; //todo: fix this.
-        fast_mm(&A[0], A_nnz_middle, &B[0], B_nnz_middle, C1, &AnnzPerColScan[0], A_row_size, A_col_size/2, B_col_size);
-        fast_mm(&A[A_nnz_middle], A_nnz-A_nnz_middle, &B[B_nnz_middle], B_nnz-B_nnz_middle, C2,
+        std::vector<cooEntry> C1, C2;
+
+        // C1 = A1 * B1
+        fast_mm(&A[0], A_nnz_middle, &B1[0], iter1, C1, &AnnzPerColScan[0], A_row_size, A_col_size/2, B_col_size);
+
+        // C2 = A2 * B2
+        fast_mm(&A[A_nnz_middle], A_nnz-A_nnz_middle, &B2[0], iter2, C2,
                 &AnnzPerColScan[(A_col_size/2)+1], A_row_size, A_col_size-A_col_size/2, B_col_size);
+
+        B1.clear();
+        B2.clear();
+        B1.shrink_to_fit();
+        B2.shrink_to_fit();
 
         // take care of the special cases when either C1 or C2 is empty.
         if(C1.empty()){
@@ -2062,6 +2085,7 @@ int saena_object::fast_mm(cooEntry *A, nnz_t A_nnz, cooEntry *B, nnz_t B_nnz, st
             return 0;
         }
 
+        // merge C1 and C2
         nnz_t i=0, j=0;
         while(i < C1.size() && j < C2.size()){
             if(C1[i] < C2[j]){
@@ -2094,6 +2118,49 @@ int saena_object::fast_mm(cooEntry *A, nnz_t A_nnz, cooEntry *B, nnz_t B_nnz, st
 
     } else { // A_row_size >= A_col_size
 
+        // Split A in half.
+        nnz_t iter1 = 0, iter2 = 0;
+        std::vector<cooEntry> A1(A_nnz), A2(A_nnz);
+        for(nnz_t i = 0; i < A_nnz; i++){
+            if(A[i].col < A_col_size/2){ // todo: col is a global index. fix this
+                A1[iter1] = A[i];
+                iter1++;
+            }else{
+                A2[iter2] = A[i];
+                iter2++;
+            }
+        }
+        A1.resize(iter1);
+        A2.resize(iter2);
+
+//        nnz_t A_nnz_middle = 0;
+        nnz_t B_nnz_middle = 0; //todo: fix this.
+
+//        std::vector<cooEntry> C1, C2, C3, C4;
+
+        // C1 = A1 * B1:
+        fast_mm(&A1[0], iter1, &B[0], B_nnz_middle, C,
+                &AnnzPerColScan[0], A_row_size/2, A_col_size, B_col_size/2);
+
+        // C2 = A2 * B1:
+        fast_mm(&A2[0], iter2, &B[0], B_nnz_middle, C,
+                &AnnzPerColScan[0], A_row_size-A_row_size/2, A_col_size, B_col_size/2);
+
+        // C3 = A1 * B2:
+        fast_mm(&A1[0], iter1, &B[B_nnz_middle], B_nnz-B_nnz_middle, C,
+                &AnnzPerColScan[0], A_row_size/2, A_col_size, B_col_size-B_col_size/2);
+
+        // C4 = A2 * B2
+        fast_mm(&A2[0], iter2, &B[B_nnz_middle], B_nnz-B_nnz_middle, C,
+                &AnnzPerColScan[(A_col_size/2)+1], A_row_size-A_row_size/2, A_col_size, B_col_size-B_col_size/2);
+
+        A1.clear();
+        A2.clear();
+        A1.shrink_to_fit();
+        A2.shrink_to_fit();
+
+        //todo: Check if this part can be optimized.
+        std::sort(C.begin(), C.end());
     }
 
     return 0;
