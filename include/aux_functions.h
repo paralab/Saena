@@ -174,6 +174,11 @@ public:
             return false;
     }
 
+    cooEntry operator + (const cooEntry& node2) const
+    {
+        return (cooEntry(row, col, val+node2.val));
+    }
+    
     static MPI_Datatype mpi_datatype()
     {
         static bool         first = true;
@@ -255,6 +260,11 @@ public:
             return( col >= node2.col);
         else
             return false;
+    }
+
+    cooEntry_row operator + (const cooEntry_row& node2) const
+    {
+        return (cooEntry_row(row, col, val+node2.val));
     }
 
     static MPI_Datatype mpi_datatype()
