@@ -56,7 +56,7 @@ public:
     bool verbose = false;
     bool verbose_setup = true;
     bool verbose_setup_steps = false;
-    bool verbose_level_setup = true;
+    bool verbose_level_setup = false;
     bool verbose_coarsen = false;
     bool verbose_coarsen2 = false;
     bool verbose_matmat = false;
