@@ -43,7 +43,7 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
 }
 
 
-int saena_object::setup(saena_matrix* A) {
+int saena_object::setup(saena_matrix* A) { $
     int nprocs, rank, rank_new;
     MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
@@ -168,7 +168,7 @@ int saena_object::setup(saena_matrix* A) {
 }
 
 
-int saena_object::level_setup(Grid* grid){
+int saena_object::level_setup(Grid* grid){$
 
     int nprocs, rank;
     MPI_Comm_size(grid->A->comm, &nprocs);
@@ -243,7 +243,7 @@ int saena_object::level_setup(Grid* grid){
 }
 
 
-int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew){
+int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew){$
     // finding aggregation is written in an adaptive way. An aggregation_2_dist is being created first. If it is too small,
     // or too big it will be recreated until an aggregation_2_dist with size within the acceptable range is produced.
 
@@ -316,7 +316,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
 } // end of SaenaObject::findAggregation
 
 
-int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
+int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){$
 
     // based on the following paper by Irad Yavneh:
     // Non-Galerkin Multigrid Based on Sparsified Smoothed Aggregation - page: A51
@@ -507,7 +507,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 // Using MIS(1) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
 int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate,
-                                     std::vector<unsigned long> &aggArray) {
+                                     std::vector<unsigned long> &aggArray) {$
 
     // todo: update the comments for 1-distance independent set.
     // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
@@ -1888,7 +1888,7 @@ int SaenaObject::Aggregation(CSRMatrix* S){
  */
 
 
-int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){
+int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){$
     // formula for the prolongation matrix from Irad Yavneh's paper:
     // P = (I - 4/(3*rhoDA) * DA) * P_t
 
@@ -2003,7 +2003,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
 
 int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, std::vector<cooEntry> &C,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                          index_t B_row_offset, index_t B_col_size, index_t B_col_offset, MPI_Comm comm){
+                          index_t B_row_offset, index_t B_col_size, index_t B_col_offset, MPI_Comm comm){$
     // This function has three parts:
     // 1- A is horizontal (row > col)
     // 2- A is vertical
@@ -2298,7 +2298,7 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 }
 
 
-int saena_object::coarsen(Grid *grid) {
+int saena_object::coarsen(Grid *grid) {$
 
     saena_matrix *A = grid->A;
     prolong_matrix *P = &grid->P;
@@ -2662,8 +2662,7 @@ int saena_object::coarsen(Grid *grid) {
 } // coarsen()
 
 
-
-int saena_object::coarsen_old(Grid *grid){
+int saena_object::coarsen_old(Grid *grid){$
 
     // todo: to improve the performance of this function, consider using the arrays used for RA also for RAP.
     // todo: this way allocating and freeing memory will be halved.
@@ -3976,7 +3975,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 }
 
 
-int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){
+int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){$
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
@@ -4377,7 +4376,7 @@ int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vect
 */
 
 
-int saena_object::smooth(Grid* grid, std::string smoother, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter){
+int saena_object::smooth(Grid* grid, std::string smoother, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter){$
     std::vector<value_t> temp1(u.size());
     std::vector<value_t> temp2(u.size());
 
@@ -4395,7 +4394,7 @@ int saena_object::smooth(Grid* grid, std::string smoother, std::vector<value_t>&
 }
 
 
-int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs){
+int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs){$
 
     if(grid->A->active) {
         MPI_Comm comm = grid->A->comm;
@@ -4754,7 +4753,7 @@ int saena_object::solve(std::vector<value_t>& u){
 }
 
 
-int saena_object::solve_pcg(std::vector<value_t>& u){
+int saena_object::solve_pcg(std::vector<value_t>& u){$
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
