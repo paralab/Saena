@@ -124,8 +124,8 @@ public:
 //    int find_eig_Elemental(saena_matrix& A);
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
-    int transpose_locally(cooEntry *A, nnz_t size);
-    int transpose_locally(cooEntry *A, nnz_t size, cooEntry *B);
+    int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
+    int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);
 
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);

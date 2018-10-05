@@ -227,8 +227,8 @@ int saena_object::level_setup(Grid* grid){
     // **************************** coarsen ****************************
 
     t1 = omp_get_wtime();
-    coarsen(grid);
-//    coarsen_old(grid);
+//    coarsen(grid);
+    coarsen_old(grid);
     t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Coarsening: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
@@ -2033,25 +2033,13 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 
 //    print_vector(A, -1, "A", comm);
 //    print_vector(B, -1, "B", comm);
-//    if(rank==0){
-//        std::cout << "\nfast_mm: matrix A entries: size " << A_nnz << std::endl;
-//        for(nnz_t i = 0; i < A_nnz; i++){
-//            std::cout << i << "\t" << A[i] << std::endl;
-//        }
-//    }
-//    if(rank==0){
-//        std::cout << "\nfast_mm: matrix B entries: size " << B_nnz << std::endl;
-//        for(nnz_t i = 0; i < B_nnz; i++){
-//            std::cout << i << "\t" << B[i] << std::endl;
-//        }
-//    }
 //    if(rank==0) printf("A: %ux%u, B: %ux%u \n\n", A_row_size, A_col_size, A_col_size, B_col_size);
 //    if(rank==0) printf("A_row_size = %u, A_row_offset = %u, A_col_size = %u, A_col_offset= %u, B_row_offset = %u, B_col_size = %u, B_col_offset = %u \n\n",
 //            A_row_size, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size, B_col_offset);
 
     index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
 
-    index_t r_dense = 16, c_dense = 16; //todo: fix this.
+    index_t r_dense = 10, c_dense = 10; //todo: fix this.
     if( (A_row_size < r_dense && A_col_size < c_dense) || size_min < 6 ){ //todo: fix this.
 
         if(rank==0 && verbose_matmat) printf("fast_mm: case 1: start \n");
@@ -2082,11 +2070,14 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
         // todo: check if indices here are local or global.
         for(nnz_t j = 0; j < B.size(); j++){
             for(nnz_t i = AnnzPerColScan[B[j].row - B_row_offset]; i < AnnzPerColScan[B[j].row - B_row_offset + 1]; i++) {
-//                if(rank==0 && A[i].row == 0 && B[i].col == 0) std::cout << "A: " << A[i] << "\tB: " << B[j] << "\tC: " << A[i].row + A_row_size * B[j].col << std::endl;
+//                if(rank==1 && A[i].row == 2 && B[j].col == 0) std::cout << "A: " << A[i] << "\tB: " << B[j] << "\tC_index: " << A[i].row + A_row_size * B[j].col << std::endl;
 //                if(rank==0) printf("A[i].row = %u, \tB[j].col = %u, \tC_index = %u \n", A[i].row-A_row_offset, B[j].col-B_col_offset, (A[i].row-A_row_offset) + A_row_size * (B[j].col-B_col_offset));
                 C_temp[(A[i].row-A_row_offset) + A_row_size * (B[j].col-B_col_offset)] =
                         cooEntry(A[i].row, B[j].col, B[j].val * A[i].val + C_temp[(A[i].row-A_row_offset) + A_row_size * (B[j].col-B_col_offset)].val);
 //                if(rank==0) printf("A[i].val = %f, B[j].val = %f, C_temp[-] = %f \n", A[i].val, B[j].val, C_temp[A[i].row * c_dense + B[j].col].val);
+//                if(rank==1 && A[i].row == 0 && B[j].col == 0) std::cout << "A: " << A[i] << "\tB: " << B[j]
+//                     << "\tC: " << C_temp[(A[i].row-A_row_offset) + A_row_size * (B[j].col-B_col_offset)]
+//                     << "\tA*B: " << B[j].val * A[i].val << std::endl;
             }
         }
 
@@ -2348,20 +2339,85 @@ int saena_object::coarsen(Grid *grid) {
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> R_tranpose(R->entry.size());
-    transpose_locally(&R->entry[0], R->entry.size(), &R_tranpose[0]);
+    transpose_locally(R->entry, R->entry.size(), R_tranpose);
+
+    // convert the indices to global
+    for(nnz_t i = 0; i < R_tranpose.size(); i++){
+        R_tranpose[i].col += R->splitNew[rank];
+    }
 //    print_vector(R->entry, -1, "R->entry", comm);
 //    print_vector(R_tranpose, -1, "R_tranpose", comm);
 
-    std::vector<cooEntry> AP;
-    fast_mm(A->entry, R_tranpose, AP, A->M, A->split[rank], A->Mbig, 0, 0, R->M, P->splitNew[rank], A->comm);
 
+    int right_neighbor = (rank + 1)%nprocs;
+    int left_neighbor = rank - 1;
+    if (left_neighbor < 0)
+        left_neighbor += nprocs;
+//    if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
+
+    int owner;
+//    int next_owner;
+    unsigned long send_size = R_tranpose.size();
+    unsigned long recv_size;
+    index_t mat_recv_M;
+
+    std::vector<cooEntry> mat_recv = R_tranpose;
+    std::vector<cooEntry> mat_send = R_tranpose;
+
+    MPI_Request *requests = new MPI_Request[4];
+    MPI_Status  *statuses = new MPI_Status[4];
+
+    std::vector<cooEntry> AP;
+
+    for(index_t k = rank; k < rank+nprocs; k++){
+        // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
+        // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor processor.
+        // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
+        // receive R_tranpose from the right_neighbor processor. And so on.
+        // --------------------------------------------------------------------
+
+        // communicate recv_size
+        MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
+        MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
+        MPI_Waitall(1, requests, statuses);
+//        printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+//        print_vector(mat_recv, 0, "mat_recv", A->comm);
+        mat_recv.resize(recv_size);
+
+        MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests+2);
+        MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+3);
+
+        owner = k%nprocs;
+        mat_recv_M = P->splitNew[owner + 1] - P->splitNew[owner];
+        fast_mm(A->entry, mat_send, AP, A->M, A->split[rank], A->Mbig, 0, 0, mat_recv_M, P->splitNew[owner], A->comm);
+
+        MPI_Waitall(3, requests+1, statuses+1);
+
+//        std::swap(mat_recv, mat_send);
+        mat_recv.swap(mat_send);
+        send_size = recv_size;
+//        mat_send.resize(send_size);
+//        print_vector(mat_send, -1, "mat_send", A->comm);
+//        print_vector(mat_recv, -1, "mat_recv", A->comm);
+    }
+
+    delete [] requests;
+    delete [] statuses;
+
+    std::sort(AP.begin(), AP.end());
 //    print_vector(AP, -1, "AP", A->comm);
+
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
-    transpose_locally(&P->entry[0], P->entry.size(), &P_tranpose[0]);
+    transpose_locally(P->entry, P->entry.size(), P_tranpose);
+
+    // convert the indices to global
+    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+        P_tranpose[i].col += P->split[rank];
+    }
 //    print_vector(P->entry, -1, "P->entry", comm);
 //    print_vector(P_tranpose, -1, "P_tranpose", comm);
 
@@ -2377,12 +2433,14 @@ int saena_object::coarsen(Grid *grid) {
 
 //    std::sort(RAP_temp.begin(), RAP_temp.end());
 
+    std::vector<cooEntry_row> RAP_no_dup;
+
     // remove duplicates.
     for(nnz_t i=0; i<RAP_temp.size(); i++){
-        Ac->entry.emplace_back(RAP_temp[i]);
+        RAP_no_dup.emplace_back(cooEntry_row( RAP_temp[i].row, RAP_temp[i].col, RAP_temp[i].val ));
         while(i<RAP_temp.size()-1 && RAP_temp[i] == RAP_temp[i+1]){ // values of entries with the same row and col should be added.
 //            Ac->entry.back().val += RAP_temp.entry[i+1].val;
-            Ac->entry.back().val += RAP_temp[i+1].val;
+            RAP_no_dup.back().val += RAP_temp[i+1].val;
             i++;
         }
         // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
@@ -2390,14 +2448,46 @@ int saena_object::coarsen(Grid *grid) {
 //            Ac->entry.pop_back();
     }
 
-//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-//    if(rank==0) printf("rank %d: entry_size = %lu \n", rank, entry_size);
-
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
 
+    std::vector<cooEntry_row> RAP_sorted_row;
+    par::sampleSort(RAP_no_dup, RAP_sorted_row, comm);
+//    print_vector(RAP_sorted_row, -1, "RAP_sorted_row", A->comm);
 
-    // use this part to print data to be used in Julia to check the solution.
+    RAP_no_dup.clear();
+    RAP_no_dup.shrink_to_fit();
+
+    // todo: memcpy and RAP_sorted are redundant!
+    std::vector<cooEntry> RAP_sorted(RAP_sorted_row.size());
+    memcpy(&RAP_sorted[0], &RAP_sorted_row[0], RAP_sorted_row.size() * sizeof(cooEntry));
+
+    RAP_sorted_row.clear();
+    RAP_sorted_row.shrink_to_fit();
+
+    // remove duplicates.
+    for(nnz_t i=0; i<RAP_sorted.size(); i++){
+        Ac->entry.emplace_back(RAP_sorted[i]);
+        while(i<RAP_sorted.size()-1 && RAP_sorted[i] == RAP_sorted[i+1]){ // values of entries with the same row and col should be added.
+            Ac->entry.back().val += RAP_sorted[i+1].val;
+            i++;
+        }
+        // todo: pruning. don't hard code tol.
+//        if( abs(Ac->entry.back().val) < 1e-6)
+//            Ac->entry.pop_back();
+    }
+
+    std::sort(Ac->entry.begin(), Ac->entry.end());
+//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+//    if(rank==0) printf("rank %d: entry_size = %lu \n", rank, entry_size);
+
+    RAP_sorted.clear();
+    RAP_sorted.shrink_to_fit();
+
+    // *******************************************************
+    // use this part to print data to be used in Julia, to check the solution.
+    // *******************************************************
+
 //    std::cout << "\n";
 //    for(nnz_t i = 0; i < A->entry.size(); i++){
 //        std::cout << A->entry[i].row+1 << ", ";
@@ -2445,7 +2535,7 @@ int saena_object::coarsen(Grid *grid) {
 //    A = sparse(I, J ,V)
 //    and so on. then compare the multiplication from Julia with the following:
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-
+    // *******************************************************
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -2499,12 +2589,14 @@ int saena_object::coarsen(Grid *grid) {
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
-    // ********** decide about shrinking **********
-
     if(Ac->active_minor){
         comm = Ac->comm;
         int rank_new;
         MPI_Comm_rank(Ac->comm, &rank_new);
+        Ac->print_info(-1);
+
+        // ********** decide about shrinking **********
+
         if(Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1){
 //            MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
             Ac->matrix_setup_dummy();
@@ -2566,6 +2658,7 @@ int saena_object::coarsen(Grid *grid) {
 
     return 0;
 } // coarsen()
+
 
 
 int saena_object::coarsen_old(Grid *grid){
@@ -3102,12 +3195,15 @@ int saena_object::coarsen_old(Grid *grid){
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
-    // ********** decide about shrinking **********
 
     if(Ac->active_minor){
         comm = Ac->comm;
         int rank_new;
         MPI_Comm_rank(Ac->comm, &rank_new);
+        Ac->print_info(-1);
+
+        // ********** decide about shrinking **********
+
         if(Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1){
 //            MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
             Ac->matrix_setup_dummy();
@@ -7015,25 +7111,25 @@ int saena_object::solve_coarsest_Elemental(saena_matrix *A_S, std::vector<value_
 */
 
 
-int saena_object::transpose_locally(cooEntry *A, nnz_t size){
+int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size){
 
     for(nnz_t i = 0; i < size; i++){
         A[i] = cooEntry(A[i].col, A[i].row, A[i].val);
     }
 
-    std::sort(&A[0], &A[size-1]);
+    std::sort(A.begin(), A.end());
 
     return 0;
 }
 
 
-int saena_object::transpose_locally(cooEntry *A, nnz_t size, cooEntry *B){
+int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B){
 
     for(nnz_t i = 0; i < size; i++){
         B[i] = cooEntry(A[i].col, A[i].row, A[i].val);
     }
 
-    std::sort(&B[0], &B[size-1]);
+    std::sort(B.begin(), B.end());
 
     return 0;
 }

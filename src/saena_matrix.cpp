@@ -2435,8 +2435,10 @@ int saena_matrix::matrix_setup() {
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
-            MPI_Barrier(comm);}
+            MPI_Barrier(comm);
+        }
 
+//        printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
 //        print_vector(entry, -1, "entry", comm);
 
         assembled = true;
@@ -2478,6 +2480,7 @@ int saena_matrix::matrix_setup() {
         // scale the matrix to have its diagonal entries all equal to 1.
 
         scale_matrix();
+//        print_vector(entry, 0, "entry", comm);
 
         // *************************** print_entry info ****************************
 
@@ -3064,7 +3067,8 @@ int saena_matrix::scale_matrix(){
 
 //    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
-    inv_diag.assign(M, 1);
+//    print_vector(inv_diag, -1, "inv_diag", comm);
+    std::fill(inv_diag.begin(), inv_diag.end(), 1);
 
     MPI_Request* requests;
     MPI_Status* statuses;
@@ -5119,7 +5123,7 @@ int saena_matrix::print_info(int ran) {
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("matrix A on rank %d: M = %u, \tnnz_l = %lu \n", proc, M, nnz_l);
+                printf("matrix A on rank %d: M    = %u, \tnnz_l = %lu \n", proc, M, nnz_l);
             }
             MPI_Barrier(comm);
         }
