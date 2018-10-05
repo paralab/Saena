@@ -227,8 +227,8 @@ int saena_object::level_setup(Grid* grid){$
     // **************************** coarsen ****************************
 
     t1 = omp_get_wtime();
-    coarsen(grid);
-//    coarsen_old(grid);
+//    coarsen(grid);
+    coarsen_old(grid);
     t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Coarsening: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
