@@ -227,8 +227,8 @@ int saena_object::level_setup(Grid* grid){
     // **************************** coarsen ****************************
 
     t1 = omp_get_wtime();
-//    coarsen(grid);
-    coarsen_old(grid);
+    coarsen(grid);
+//    coarsen_old(grid);
     t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Coarsening: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
@@ -2348,7 +2348,6 @@ int saena_object::coarsen(Grid *grid) {
 //    print_vector(R->entry, -1, "R->entry", comm);
 //    print_vector(R_tranpose, -1, "R_tranpose", comm);
 
-
     int right_neighbor = (rank + 1)%nprocs;
     int left_neighbor = rank - 1;
     if (left_neighbor < 0)
@@ -2450,6 +2449,9 @@ int saena_object::coarsen(Grid *grid) {
 
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
+
+//    MPI_Barrier(comm); printf("RAP_no_dup.size = %lu \n", RAP_no_dup.size()); MPI_Barrier(comm);
+//    print_vector(RAP_no_dup, -1, "RAP_no_dup", comm);
 
     std::vector<cooEntry_row> RAP_sorted_row;
     par::sampleSort(RAP_no_dup, RAP_sorted_row, comm);
@@ -2569,14 +2571,14 @@ int saena_object::coarsen(Grid *grid) {
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
 
-//    print_vector(Ac->split, -1, "Ac->split", comm);
-    for(index_t i = 0; i < Ac->split.size()-1; i++){
-        if(Ac->split[i+1] - Ac->split[i] == 0){
+    // ********** minor shrinking **********
+//    for(index_t i = 0; i < Ac->split.size()-1; i++){
+//        if(Ac->split[i+1] - Ac->split[i] == 0){
 //            printf("rank %d: shrink minor in coarsen: i = %d, split[i] = %d, split[i+1] = %d\n", rank, i, Ac->split[i], Ac->split[i+1]);
-            Ac->shrink_cpu_minor();
-            break;
-        }
-    }
+//            Ac->shrink_cpu_minor();
+//            break;
+//        }
+//    }
 
 //    MPI_Barrier(comm);
 //    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
@@ -2650,7 +2652,7 @@ int saena_object::coarsen(Grid *grid) {
             }
         }
 
-//        Ac->print_info(-1);
+        Ac->print_info(-1);
 //        Ac->print_entry(-1);
     }
     comm = grid->A->comm;
@@ -3093,7 +3095,7 @@ int saena_object::coarsen_old(Grid *grid){
                 for (nnz_t k = PnnzPerRowScan[RA.entry[j].col - P->split[left]];
                      k < PnnzPerRowScan[RA.entry[j].col - P->split[left] + 1]; k++) {
 //                if(rank==0) std::cout << Precv[indicesP_ProlongRecv[k]].row << "\t" << Precv[indicesP_ProlongRecv[k]].col << "\t" << Precv[indicesP_ProlongRecv[k]].val << std::endl;
-                    RAP_temp.entry.push_back(cooEntry(
+                    RAP_temp.entry.emplace_back(cooEntry(
                             RA.entry[j].row + P->splitNew[rank], // Ac.entry should have global indices at the end.
                             Precv[indices_row_wise[k]].col,
                             RA.entry[j].val * Precv[indices_row_wise[k]].val));
@@ -3139,7 +3141,8 @@ int saena_object::coarsen_old(Grid *grid){
     Ac->entry.resize(entry_size);
     Ac->entry.shrink_to_fit();
 
-//    print_vector(Ac->entry, 0, "Ac->entry", comm);
+//    MPI_Barrier(comm); printf("rank %d: %lu \n", rank, Ac->entry.size()); MPI_Barrier(comm);
+//    print_vector(Ac->entry, -1, "Ac->entry", comm);
 
 //    par::sampleSort(Ac_temp, Ac->entry, comm);
 
@@ -6147,6 +6150,9 @@ int saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
 
     std::vector<value_t> u_old = u;
     u.resize(grid.Ac.M);
+    if(u_old.empty()){ // to avoid having a null pointer.
+        u_old.emplace_back(0);
+    }
     MPI_Alltoallv(&u_old[0], &grid.scount2[0], &grid.sdispls2[0], MPI_DOUBLE,
                   &u[0],     &grid.rcount2[0], &grid.rdispls2[0], MPI_DOUBLE, comm);
 

@@ -1862,11 +1862,18 @@ int saena_matrix::repartition_row(){
 
     if(repartition_verbose && rank==0) printf("repartition4 - step 2!\n");
 
+    std::vector<index_t> split_extra;
     split_old = split;
     split[0] = 0;
-    for(index_t i=1; i<nprocs; i++)
+    split_extra.emplace_back(0);
+    for(index_t i=1; i<nprocs; i++){
         split[i] = split[i-1] + splitOffset[i];
+        if(split_old[i+1] - split_old[i] == 0){
+            split_extra.emplace_back();
+        }
+    }
     split[nprocs] = Mbig;
+    split_extra.emplace_back(Mbig);
 
     splitOffset.clear();
     splitOffset.shrink_to_fit();
@@ -1925,7 +1932,7 @@ int saena_matrix::repartition_row(){
 //        M_old = M;
         M = split[rank+1] - split[rank];
 
-//    print_vector(split, 0, "split", comm);
+//        print_vector(split, 0, "split", comm);
 
         root_cpu = 0;
         for(int proc = 0; proc < nprocs; proc++){
@@ -2366,11 +2373,11 @@ int saena_matrix::shrink_cpu_minor(){
     MPI_Comm_rank(comm, &rank);
     bool verbose_shrink = false;
 
-//    MPI_Barrier(comm);
-//    if(rank==0) printf("\n****************************\n");
-//    if(rank==0) printf("********MINOR SHRINK********\n");
-//    if(rank==0) printf("****************************\n\n");
-//    MPI_Barrier(comm);
+    MPI_Barrier(comm);
+    if(rank==0) printf("\n****************************\n");
+    if(rank==0) printf("********MINOR SHRINK********\n");
+    if(rank==0) printf("****************************\n\n");
+    MPI_Barrier(comm);
 
     shrinked_minor = true;
 
