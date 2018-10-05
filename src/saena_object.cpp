@@ -2040,7 +2040,7 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
     index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
 
     index_t r_dense = 100, c_dense = 100; //todo: fix this.
-    if( (A_row_size < r_dense && A_col_size < c_dense) || size_min < 16 ){ //todo: fix this.
+    if( (A_row_size < r_dense && A_col_size < c_dense) || size_min < 30 ){ //todo: fix this.
 
         if(rank==0 && verbose_matmat) printf("fast_mm: case 1: start \n");
 
