@@ -227,8 +227,8 @@ int saena_object::level_setup(Grid* grid){$
     // **************************** coarsen ****************************
 
     t1 = omp_get_wtime();
-//    coarsen(grid);
-    coarsen_old(grid);
+    coarsen(grid);
+//    coarsen_old(grid);
     t2 = omp_get_wtime();
     if(verbose_level_setup) print_time(t1, t2, "Coarsening: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
@@ -2039,7 +2039,7 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 
     index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
 
-    index_t r_dense = 40, c_dense = 40; //todo: fix this.
+    index_t r_dense = 100, c_dense = 100; //todo: fix this.
     if( (A_row_size < r_dense && A_col_size < c_dense) || size_min < 16 ){ //todo: fix this.
 
         if(rank==0 && verbose_matmat) printf("fast_mm: case 1: start \n");
