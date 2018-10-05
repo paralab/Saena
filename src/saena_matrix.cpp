@@ -3075,6 +3075,7 @@ int saena_matrix::scale_matrix(){
 //    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
 //    print_vector(inv_diag, -1, "inv_diag", comm);
+//    inv_diag.assign(, 0);
     std::fill(inv_diag.begin(), inv_diag.end(), 1);
 
     MPI_Request* requests;

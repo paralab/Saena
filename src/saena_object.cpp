@@ -2039,7 +2039,7 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 
     index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
 
-    index_t r_dense = 10, c_dense = 10; //todo: fix this.
+    index_t r_dense = 20, c_dense = 20; //todo: fix this.
     if( (A_row_size < r_dense && A_col_size < c_dense) || size_min < 6 ){ //todo: fix this.
 
         if(rank==0 && verbose_matmat) printf("fast_mm: case 1: start \n");
@@ -2595,7 +2595,7 @@ int saena_object::coarsen(Grid *grid) {
         comm = Ac->comm;
         int rank_new;
         MPI_Comm_rank(Ac->comm, &rank_new);
-        Ac->print_info(-1);
+//        Ac->print_info(-1);
 
         // ********** decide about shrinking **********
 
@@ -2652,7 +2652,7 @@ int saena_object::coarsen(Grid *grid) {
             }
         }
 
-        Ac->print_info(-1);
+//        Ac->print_info(-1);
 //        Ac->print_entry(-1);
     }
     comm = grid->A->comm;
@@ -6091,21 +6091,23 @@ int saena_object::repartition_u_shrink_prepare(Grid *grid){
 
     grid->scount2.assign(nprocs, 0);
 
-    long least_proc;
-    least_proc = lower_bound3(&A->split[0], &A->split[nprocs], 0 + A->split_old[rank]);
-    grid->scount2[least_proc]++;
+    long least_proc = 0, curr_proc;
+    if(A->M_old != 0){
+        least_proc = lower_bound3(&A->split[0], &A->split[nprocs], 0 + A->split_old[rank]);
+        grid->scount2[least_proc]++;
 //    printf("rank %d: 0 + A.split_old[rank] = %u, least_proc = %ld \n", rank, 0 + A->split_old[rank], least_proc);
 
-    long curr_proc = least_proc;
-    for(index_t i = 1; i < A->M_old; i++){
-        if(i + A->split_old[rank] >= A->split[curr_proc+1]){
-            if(A->shrinked)
-                curr_proc += A->cpu_shrink_thre2;
-            else
-                curr_proc++;
+        curr_proc = least_proc;
+        for(index_t i = 1; i < A->M_old; i++){
+            if(i + A->split_old[rank] >= A->split[curr_proc+1]){
+                if(A->shrinked)
+                    curr_proc += A->cpu_shrink_thre2;
+                else
+                    curr_proc++;
+            }
+            grid->scount2[curr_proc]++;
+    //        if(rank==2) printf("i + A.split_old[rank] = %u, curr_proc = %ld \n", i + A->split_old[rank], curr_proc);
         }
-        grid->scount2[curr_proc]++;
-//        if(rank==2) printf("i + A.split_old[rank] = %u, curr_proc = %ld \n", i + A->split_old[rank], curr_proc);
     }
 
 //    print_vector(grid->scount2, -1, "scount2", comm);
@@ -6147,12 +6149,10 @@ int saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
 //    MPI_Barrier(grid.A->comm);
 //    printf("rank %d: A->M = %u, A->M_old = %u \n", rank, grid.Ac.M, grid.Ac.M_old);
 //    MPI_Barrier(grid.A->comm);
+//    print_vector(u, 1, "u inside repartition_u_shrink", comm);
 
     std::vector<value_t> u_old = u;
     u.resize(grid.Ac.M);
-    if(u_old.empty()){ // to avoid having a null pointer.
-        u_old.emplace_back(0);
-    }
     MPI_Alltoallv(&u_old[0], &grid.scount2[0], &grid.sdispls2[0], MPI_DOUBLE,
                   &u[0],     &grid.rcount2[0], &grid.rdispls2[0], MPI_DOUBLE, comm);
 
