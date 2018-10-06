@@ -2039,7 +2039,7 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 
     index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
 
-    index_t r_dense = 200, c_dense = 200; //todo: fix this.
+    index_t r_dense = 100, c_dense = 100; //todo: fix this.
     if( (A_row_size < r_dense && A_col_size < c_dense) || size_min < 30 ){ //todo: fix this.
 
         if(rank==0 && verbose_matmat) printf("fast_mm: case 1: start \n");
@@ -2466,24 +2466,92 @@ int saena_object::coarsen(Grid *grid) {$
     RAP_sorted_row.clear();
     RAP_sorted_row.shrink_to_fit();
 
+//    double val_temp;
     // remove duplicates.
+//    for(nnz_t i=0; i<RAP_sorted.size(); i++){
+//        val_temp = RAP_sorted[i].val;
+//        while(i<RAP_sorted.size()-1 && RAP_sorted[i] == RAP_sorted[i+1]){ // values of entries with the same row and col should be added.
+//            val_temp += RAP_sorted[i+1].val;
+//            i++;
+//        }
+//        Ac->entry.emplace_back( cooEntry(RAP_sorted[i].row, RAP_sorted[i].col, val_temp) );
+//    }
+
+    double val_temp;
+    double norm_frob_sq = 0;
+
+    // remove duplicates.
+    // compute Frobenius norm squared (norm_frob_sq).
+    std::vector<cooEntry> Ac_orig;
     for(nnz_t i=0; i<RAP_sorted.size(); i++){
-        Ac->entry.emplace_back(RAP_sorted[i]);
+        val_temp = RAP_sorted[i].val;
         while(i<RAP_sorted.size()-1 && RAP_sorted[i] == RAP_sorted[i+1]){ // values of entries with the same row and col should be added.
-            Ac->entry.back().val += RAP_sorted[i+1].val;
+            val_temp += RAP_sorted[i+1].val;
             i++;
         }
-        // todo: pruning. don't hard code tol.
-//        if( abs(Ac->entry.back().val) < 1e-6)
-//            Ac->entry.pop_back();
+
+//        if( fabs(val_temp) > sparse_epsilon / 2 / P->Nbig)
+        if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / 4 / P->Nbig / P->Nbig){
+            Ac_orig.emplace_back( cooEntry(RAP_sorted[i].row, RAP_sorted[i].col, val_temp) );
+            norm_frob_sq += val_temp * val_temp;
+        }
     }
 
-    std::sort(Ac->entry.begin(), Ac->entry.end());
-//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-//    if(rank==0) printf("rank %d: entry_size = %lu \n", rank, entry_size);
+    if(rank==0) printf("Ac_orig.size() = %lu\n", Ac_orig.size());
+//    std::sort(Ac_orig.begin(), Ac_orig.end());
+//    print_vector(Ac_orig, -1, "Ac_orig", A->comm);
 
     RAP_sorted.clear();
     RAP_sorted.shrink_to_fit();
+
+    // *******************************************************
+    // sparsification
+    // *******************************************************
+
+    //Type of random number distribution
+    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max)
+
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    // s = 28nln(sqrt(2)*n) / epsilon^2
+    nnz_t sample_size = nnz_t( 28 * P->Nbig * log(sqrt(2) * P->Nbig) * norm_frob_sq / sparse_epsilon / sparse_epsilon );
+    if(rank==0) printf("sample_size = %lu\n", sample_size);
+
+    std::vector<cooEntry> Ac_orig_sparse(sample_size);
+    double norm_temp = 0;
+    for(nnz_t i = 0; i < Ac_orig.size(); i++){
+        norm_temp += Ac_orig[i].val * Ac_orig[i].val;
+
+        for(nnz_t j = 0; j < sample_size; j++){
+            if(dist(rng) < Ac_orig[i].val * Ac_orig[i].val / norm_temp){
+//                printf("dist(rng) = %f \n", dist(rng));
+                Ac_orig_sparse[j] = cooEntry(Ac_orig[i].row, Ac_orig[i].col, Ac_orig[i].val / norm_frob_sq);
+            }
+        }
+    }
+
+    if(rank==0) printf("Ac_orig_sparse.size() = %lu\n", Ac_orig_sparse.size());
+//    print_vector(Ac_orig_sparse, -1, "Ac_orig_sparse", A->comm);
+    std::sort(Ac_orig_sparse.begin(), Ac_orig_sparse.end());
+
+    // remove duplicates and change the values based on Algorithm 1 of Drineas' paper.
+    double sxpij; // s * p_{ij}
+    for(nnz_t i=0; i<Ac_orig_sparse.size(); i++){
+        val_temp = Ac_orig_sparse[i].val;
+        sxpij = sample_size * val_temp / norm_frob_sq;
+        while(i<Ac_orig_sparse.size()-1 && Ac_orig_sparse[i] == Ac_orig_sparse[i+1]){ // values of entries with the same row and col should be added.
+            val_temp += Ac_orig_sparse[i+1].val;
+            i++;
+        }
+        Ac->entry.emplace_back( cooEntry(Ac_orig_sparse[i].row, Ac_orig_sparse[i].col, val_temp / sxpij) );
+    }
+
+    if(rank==0) printf("Ac->entry.size() = %lu\n", Ac->entry.size());
+//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
 
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
@@ -7137,3 +7205,16 @@ int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::v
 
     return 0;
 }
+
+
+int saena_object::sparsify(std::vector<cooEntry>& A, MPI_Comm comm) {
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+
+
+    return 0;
+}
+

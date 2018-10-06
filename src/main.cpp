@@ -254,7 +254,7 @@ int main(int argc, char* argv[]){
 */
     // *************************** finalize ****************************
 
-    if(rank==0) dollar::text(std::cout);
+//    if(rank==0) dollar::text(std::cout);
 
 //    A.destroy();
 //    solver.destroy();
