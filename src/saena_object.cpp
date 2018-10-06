@@ -2067,7 +2067,6 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 
         if(rank==0 && verbose_matmat) printf("fast_mm: case 1: step 1 \n");
 
-        // todo: check if indices here are local or global.
         for(nnz_t j = 0; j < B.size(); j++){
             for(nnz_t i = AnnzPerColScan[B[j].row - B_row_offset]; i < AnnzPerColScan[B[j].row - B_row_offset + 1]; i++) {
 //                if(rank==1 && A[i].row == 2 && B[j].col == 0) std::cout << "A: " << A[i] << "\tB: " << B[j] << "\tC_index: " << A[i].row + A_row_size * B[j].col << std::endl;
@@ -2111,10 +2110,10 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 
         if(rank==0 && verbose_matmat) printf("fast_mm: case 2: start \n");
 
-        // Split A in half by the middle row.
+        // Split A in half by the middle col.
         std::vector<cooEntry> A1, A2;
         for(nnz_t i = 0; i < A.size(); i++){
-            if(A[i].col-A_col_offset < A_col_size/2){ // todo: is row a global index?
+            if(A[i].col-A_col_offset < A_col_size/2){
                 A1.emplace_back(A[i]);
             }else{
                 A2.emplace_back(A[i]);
@@ -2129,7 +2128,7 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
         // Split B in half by the middle row.
         std::vector<cooEntry> B1, B2;
         for(nnz_t i = 0; i < B.size(); i++){
-            if(B[i].row-B_row_offset < A_col_size/2) { // todo: is row a global index?
+            if(B[i].row-B_row_offset < A_col_size/2) {
                 B1.emplace_back(B[i]);
             }else{
                 B2.emplace_back(B[i]);
@@ -2230,7 +2229,7 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
         // Split A in half by the middle row.
         std::vector<cooEntry> A1, A2;
         for(nnz_t i = 0; i < A.size(); i++){
-            if(A[i].row-A_row_offset < A_row_size/2){ // todo: is row a global index?
+            if(A[i].row-A_row_offset < A_row_size/2){
                 A1.emplace_back(A[i]);
             }else{
                 A2.emplace_back(A[i]);
@@ -2242,7 +2241,7 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
         // Split B in half by the middle column.
         std::vector<cooEntry> B1, B2;
         for(nnz_t i = 0; i < B.size(); i++){
-            if(B[i].col-B_col_offset < B_col_size/2){ // todo: col is a global index. fix this.
+            if(B[i].col-B_col_offset < B_col_size/2){
                 B1.emplace_back(B[i]);
             }else{
                 B2.emplace_back(B[i]);
