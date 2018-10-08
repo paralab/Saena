@@ -41,6 +41,7 @@ long lower_bound2(T *left, T *right, T val){
     }
 
     if(val == *left){
+
         // when using on split, some procs have equal split value (M=0), so go to the next proc until M != 0.
 //        while(*left == *(left+1))
 //            left++;
@@ -55,6 +56,7 @@ long lower_bound2(T *left, T *right, T val){
 // difference with lower_bound2: in case of a val equal to one of vector entries:
 // lower_bound2 returns the most left one
 // lower_bound3 returns the most right one
+// todo: this is std::upper_bound? change std::upper_bound just like how it is done for lower_bound2.
 template <class T>
 long lower_bound3(T *left, T *right, T val){
     T* first = left;

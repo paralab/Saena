@@ -273,7 +273,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
         new_size_local = aggArray.size();
         MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, comm);
         division = (double)A->Mbig / new_size;
-        if(rank==0) printf("connStrength = %.2f, current size = %u, new size = %u, division = %.2f\n",
+        if(rank==0) printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
                            connStrength_temp, A->Mbig, new_size, division);
 
         if( division > 8 ){
@@ -2449,12 +2449,13 @@ int saena_object::coarsen(Grid *grid) {$
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
 
-//    MPI_Barrier(comm); printf("RAP_no_dup.size = %lu \n", RAP_no_dup.size()); MPI_Barrier(comm);
+//    MPI_Barrier(comm); printf("rank %d: RAP_no_dup.size = %lu \n", rank, RAP_no_dup.size()); MPI_Barrier(comm);
 //    print_vector(RAP_no_dup, -1, "RAP_no_dup", comm);
 
     std::vector<cooEntry_row> RAP_sorted_row;
-    par::sampleSort(RAP_no_dup, RAP_sorted_row, comm);
+    par::sampleSort(RAP_no_dup, RAP_sorted_row, P->split, comm);
 //    print_vector(RAP_sorted_row, -1, "RAP_sorted_row", A->comm);
+//    MPI_Barrier(comm); printf("rank %d: RAP_sorted_row.size = %lu \n", rank, RAP_sorted_row.size()); MPI_Barrier(comm);
 
     RAP_no_dup.clear();
     RAP_no_dup.shrink_to_fit();
@@ -2466,17 +2467,21 @@ int saena_object::coarsen(Grid *grid) {$
     RAP_sorted_row.clear();
     RAP_sorted_row.shrink_to_fit();
 
-//    double val_temp;
     // remove duplicates.
-//    for(nnz_t i=0; i<RAP_sorted.size(); i++){
-//        val_temp = RAP_sorted[i].val;
-//        while(i<RAP_sorted.size()-1 && RAP_sorted[i] == RAP_sorted[i+1]){ // values of entries with the same row and col should be added.
-//            val_temp += RAP_sorted[i+1].val;
-//            i++;
-//        }
-//        Ac->entry.emplace_back( cooEntry(RAP_sorted[i].row, RAP_sorted[i].col, val_temp) );
-//    }
+    double val_temp;
+    for(nnz_t i=0; i<RAP_sorted.size(); i++){
+        val_temp = RAP_sorted[i].val;
+        while(i<RAP_sorted.size()-1 && RAP_sorted[i] == RAP_sorted[i+1]){ // values of entries with the same row and col should be added.
+            val_temp += RAP_sorted[i+1].val;
+            i++;
+        }
+        Ac->entry.emplace_back( cooEntry(RAP_sorted[i].row, RAP_sorted[i].col, val_temp) );
+    }
 
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
+
+/*
     double val_temp;
     double norm_frob_sq = 0;
 
@@ -2552,7 +2557,7 @@ int saena_object::coarsen(Grid *grid) {$
 
     if(rank==0) printf("Ac->entry.size() = %lu\n", Ac->entry.size());
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-
+*/
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************
