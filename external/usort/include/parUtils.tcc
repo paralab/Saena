@@ -2263,7 +2263,7 @@ namespace par {
         }
         par::Mpi_Allgather<T>(sendSplitsPtr, splittersPtr, 1, comm);
 
-        print_vector(splitters, 0, "splitters", comm);
+//        print_vector(splitters, 0, "splitters", comm);
 
         if(splitter_old[1] == splitter_old[0]){
             splittersPtr[1] = arr[0];
@@ -2277,7 +2277,7 @@ namespace par {
             splittersPtr[npes-1] = arr.back()++;
         }
 
-        print_vector(splitters, 0, "splitters after", comm);
+//        print_vector(splitters, 0, "splitters after", comm);
 
 
 //        MPI_Barrier(comm);
@@ -2314,9 +2314,9 @@ namespace par {
       for (DendroIntL j = 0; j < nelem; j++) {
         if (arr[j] < splitters[k+1]) {
             sendcnts[k]++;
-            if(rank==0){
-                std::cout << arr[j] << "\tk = " << k << "\t" << splitters[k] << "\tfirst" << std::endl;
-            }
+//            if(rank==0){
+//                std::cout << arr[j] << "\tk = " << k << "\t" << splitters[k] << "\tfirst" << std::endl;
+//            }
 
         } else {
 //            k = std::lower_bound(splitters[0], splitters[npes-1], arr[j]) - &arr[0];
@@ -2326,9 +2326,9 @@ namespace par {
 //            k++;
 //          }
 
-            if(rank==0){
-                std::cout << arr[j] << "\tk = " << k << "\t" << splitters[k] << "\tsecond" << std::endl;
-            }
+//            if(rank==0){
+//                std::cout << arr[j] << "\tk = " << k << "\t" << splitters[k] << "\tsecond" << std::endl;
+//            }
 
             if (k == (npes-1) ){
             //could not find any splitter >= arr[j]
