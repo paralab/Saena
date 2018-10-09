@@ -2336,10 +2336,6 @@ int saena_object::coarsen(Grid *grid) {$
         MPI_Barrier(comm);
     }
 
-
-
-
-
     Ac->Mbig = P->Nbig;
     Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
     Ac->M_old = Ac->M;
@@ -2363,6 +2359,7 @@ int saena_object::coarsen(Grid *grid) {$
     A->cpu_shrink_thre2_next_level = -1;
     A->enable_shrink_next_level = false;
     Ac->split = P->splitNew;
+
     // ********** minor shrinking **********
     for(index_t i = 0; i < Ac->split.size()-1; i++){
         if(Ac->split[i+1] - Ac->split[i] == 0){
@@ -2374,17 +2371,6 @@ int saena_object::coarsen(Grid *grid) {$
 
 //    int nprocs_updated;
 //    MPI_Comm_size(Ac->comm, &nprocs_updated);
-
-
-
-
-
-
-
-
-
-
-
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> R_tranpose(R->entry.size());
