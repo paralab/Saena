@@ -1970,7 +1970,7 @@ namespace par {
       T* sendSplitsPtr = NULL;
       T* splittersPtr = NULL;
       if(sendSplits.size() > static_cast<unsigned int>(npes-2)) {
-        sendSplitsPtr = &(*(sendSplits.begin() + (npes -2)));
+        sendSplitsPtr = &(*(sendSplits.begin() + (npes-2)));
       }
       if(!splitters.empty()) {
         splittersPtr = &(*(splitters.begin()));
@@ -2134,6 +2134,16 @@ namespace par {
             return 0;
         }
 
+        // find the new number of processors that should receive entries after calling this function.
+        // Since shrinking may happen and some processes will be inactive.
+//        int npes_updated = 0;
+//        for(int i = 1; i < splitter_old.size(); i++){
+//            if(splitter_old[i] != splitter_old[i-1]){
+//                npes_updated++;
+//            }
+//        }
+//        print_vector(splitter_old, 0, "splitter_old", comm);
+
         std::vector<T>  splitters;
         std::vector<T>  allsplitters;
 
@@ -2203,7 +2213,7 @@ namespace par {
       }
 #endif
 
-        //Re-part arr so that each proc. has atleast p elements.
+        //Re-part arr so that each proc. has at least p elements.
         par::partitionW<T>(arr, NULL, comm);
 
         nelem = arr.size();
@@ -2214,36 +2224,54 @@ namespace par {
         std::vector<T> sendSplits(npes-1);
         splitters.resize(npes);
 
+//        sendSplits[0] = arr[0];
 #pragma omp parallel for
-        for(int i = 1; i < npes; i++)         {
+        for(int i = 1; i < npes; i++) {
             sendSplits[i-1] = arr[i*nelem/npes];
         }//end for i
+
+//        int iter = 1;
+//        sendSplits[0] = arr[0];
+//#pragma omp parallel for
+//        for(int i = 1; i < npes; i++) {
+//            if(splitter_old[i] == splitter_old[i-1]){
+//                sendSplits[i] = sendSplits[i-1];
+//            }else{
+//                sendSplits[i] = arr[iter*nelem/npes_updated];
+//                iter++;
+//            }
+//        }//end for i
+
+//        print_vector(sendSplits, -1, "sendSplits", comm);
 
         // sort sendSplits using bitonic ...
         par::bitonicSort<T>(sendSplits,comm);
 
-        // All gather with last element of splitters.
+//        print_vector(sendSplits, -1, "sendSplits after bitonicSort", comm);
+
+        // All gather with first element of splitters.
         T* sendSplitsPtr = NULL;
         T* splittersPtr = NULL;
         if(sendSplits.size() > static_cast<unsigned int>(npes-2)) {
-            sendSplitsPtr = &(*(sendSplits.begin() + (npes -2)));
+            sendSplitsPtr = &(*(sendSplits.begin() + (npes-2)));
         }
         if(!splitters.empty()) {
             splittersPtr = &(*(splitters.begin()));
         }
         par::Mpi_Allgather<T>(sendSplitsPtr, splittersPtr, 1, comm);
 
+        print_vector(splitters, 0, "splitters", comm);
 
-
-//        splitter_old[1] = splitter_old[0];
-        if(splitter_old[1] == splitter_old[0]){
-            splittersPtr[0] = arr[0];
-        }
+//        if(splitter_old[1] == splitter_old[0]){
+//            splittersPtr[0] = arr[0];
+//        }
         for(int i = 1; i < npes-1; i++) {
             if(splitter_old[i+1] == splitter_old[i]){
                 splittersPtr[i] = splittersPtr[i-1];
             }
         }//end for i
+
+        print_vector(splitters, 0, "splitters after", comm);
 
 
 //        MPI_Barrier(comm);
@@ -2302,13 +2330,16 @@ namespace par {
             sendcnts[k] = 0;
         }
 
-        //To be parallelized
-/*      int k = 0;
+      //To be parallelized
+      int k = 0;
       for (DendroIntL j = 0; j < nelem; j++) {
-        if (arr[j] <= splitters[k]) {
+        if (arr[j] < splitters[k]) {
           sendcnts[k]++;
         } else{
           k = seq::UpperBound<T>(npes-1, splittersPtr, k+1, arr[j]);
+//          if(arr[j] >= splitters[k]){
+//            k++;
+//          }
           if (k == (npes-1) ){
             //could not find any splitter >= arr[j]
             sendcnts[k] = (nelem - j);
@@ -2319,9 +2350,16 @@ namespace par {
             sendcnts[k]++;
           }
         }//end if-else
-      }//end for j
-*/
 
+//          if(rank==0){
+//              std::cout << arr[j] << "\t" << k << "\t" << splitters[k] << std::endl;
+//          }
+
+      }//end for j
+
+
+
+/*
         {
             int omp_p=omp_get_max_threads();
             int* proc_split = new int[omp_p+1];
@@ -2394,6 +2432,9 @@ namespace par {
             delete [] lst_split_indx;
             delete [] proc_split;
         }
+*/
+
+
 
 //        MPI_Barrier(comm);
 //        if(rank==0){
@@ -2412,6 +2453,13 @@ namespace par {
 //        MPI_Barrier(comm);
 //        if(rank==2){
 //            std::cout << "sendcounts 2:" << std::endl;
+//            for(int i = 0; i < npes; i++){
+//                std::cout << i << "\t" << sendcnts[i] << std::endl;
+//            }
+//        }
+//        MPI_Barrier(comm);
+//        if(rank==3){
+//            std::cout << "sendcounts 3:" << std::endl;
 //            for(int i = 0; i < npes; i++){
 //                std::cout << i << "\t" << sendcnts[i] << std::endl;
 //            }

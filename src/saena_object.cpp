@@ -2336,6 +2336,56 @@ int saena_object::coarsen(Grid *grid) {$
         MPI_Barrier(comm);
     }
 
+
+
+
+
+    Ac->Mbig = P->Nbig;
+    Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
+    Ac->M_old = Ac->M;
+    Ac->comm = A->comm;
+    Ac->comm_old = A->comm;
+    Ac->last_M_shrink = A->last_M_shrink;
+    Ac->last_density_shrink = A->last_density_shrink;
+//    Ac->last_nnz_shrink = A->last_nnz_shrink;
+//    Ac->enable_shrink = A->enable_shrink;
+//    Ac->enable_shrink = A->enable_shrink_next_level;
+    Ac->active_old_comm = true;
+    Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
+    Ac->switch_to_dense = switch_to_dense;
+    Ac->dense_threshold = dense_threshold;
+
+    Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
+    if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
+        Ac->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
+
+    //return these to default, since they have been used in the above part.
+    A->cpu_shrink_thre2_next_level = -1;
+    A->enable_shrink_next_level = false;
+    Ac->split = P->splitNew;
+    // ********** minor shrinking **********
+    for(index_t i = 0; i < Ac->split.size()-1; i++){
+        if(Ac->split[i+1] - Ac->split[i] == 0){
+//            printf("rank %d: shrink minor in coarsen: i = %d, split[i] = %d, split[i+1] = %d\n", rank, i, Ac->split[i], Ac->split[i+1]);
+            Ac->shrink_cpu_minor();
+            break;
+        }
+    }
+
+//    int nprocs_updated;
+//    MPI_Comm_size(Ac->comm, &nprocs_updated);
+
+
+
+
+
+
+
+
+
+
+
+
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> R_tranpose(R->entry.size());
     transpose_locally(R->entry, R->entry.size(), R_tranpose);
@@ -2451,9 +2501,10 @@ int saena_object::coarsen(Grid *grid) {$
 
 //    MPI_Barrier(comm); printf("rank %d: RAP_no_dup.size = %lu \n", rank, RAP_no_dup.size()); MPI_Barrier(comm);
 //    print_vector(RAP_no_dup, -1, "RAP_no_dup", comm);
+    print_vector(P->splitNew, 0, "P->splitNew", comm);
 
     std::vector<cooEntry_row> RAP_sorted_row;
-    par::sampleSort(RAP_no_dup, RAP_sorted_row, P->split, comm);
+    par::sampleSort(RAP_no_dup, RAP_sorted_row, P->splitNew, comm);
 //    print_vector(RAP_sorted_row, -1, "RAP_sorted_row", A->comm);
 //    MPI_Barrier(comm); printf("rank %d: RAP_sorted_row.size = %lu \n", rank, RAP_sorted_row.size()); MPI_Barrier(comm);
 
@@ -2478,6 +2529,7 @@ int saena_object::coarsen(Grid *grid) {$
         Ac->entry.emplace_back( cooEntry(RAP_sorted[i].row, RAP_sorted[i].col, val_temp) );
     }
 
+//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 
@@ -2616,29 +2668,6 @@ int saena_object::coarsen(Grid *grid) {$
 
     Ac->nnz_l = Ac->entry.size();
     MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
-    Ac->Mbig = P->Nbig;
-    Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
-    Ac->M_old = Ac->M;
-    Ac->split = P->splitNew;
-    Ac->last_M_shrink = A->last_M_shrink;
-    Ac->last_density_shrink = A->last_density_shrink;
-//    Ac->last_nnz_shrink = A->last_nnz_shrink;
-//    Ac->enable_shrink = A->enable_shrink;
-//    Ac->enable_shrink = A->enable_shrink_next_level;
-    Ac->comm = A->comm;
-    Ac->comm_old = A->comm;
-    Ac->active_old_comm = true;
-    Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
-    Ac->switch_to_dense = switch_to_dense;
-    Ac->dense_threshold = dense_threshold;
-
-    Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
-    if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
-        Ac->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
-
-    //return these to default, since they have been used in the above part.
-    A->cpu_shrink_thre2_next_level = -1;
-    A->enable_shrink_next_level = false;
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}

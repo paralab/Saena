@@ -33,7 +33,7 @@ private:
     bool freeBoolean = false; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
 
     bool verbose_saena_matrix = false;
-    bool verbose_repartition  = false;
+    bool verbose_repartition  = true;
     bool verbose_matrix_setup = false;
 
 public:
