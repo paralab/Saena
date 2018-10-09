@@ -2501,7 +2501,7 @@ int saena_object::coarsen(Grid *grid) {$
 
 //    MPI_Barrier(comm); printf("rank %d: RAP_no_dup.size = %lu \n", rank, RAP_no_dup.size()); MPI_Barrier(comm);
 //    print_vector(RAP_no_dup, -1, "RAP_no_dup", comm);
-    print_vector(P->splitNew, 0, "P->splitNew", comm);
+//    print_vector(P->splitNew, 0, "P->splitNew", comm);
 
     std::vector<cooEntry_row> RAP_sorted_row;
     par::sampleSort(RAP_no_dup, RAP_sorted_row, P->splitNew, comm);

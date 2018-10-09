@@ -2221,13 +2221,13 @@ namespace par {
 //      std::sort(arr.begin(),arr.end());
         omp_par::merge_sort(arr.begin(),arr.end());
 
-        std::vector<T> sendSplits(npes-1);
+        std::vector<T> sendSplits(npes);
         splitters.resize(npes);
 
-//        sendSplits[0] = arr[0];
+        sendSplits[0] = arr[0];
 #pragma omp parallel for
         for(int i = 1; i < npes; i++) {
-            sendSplits[i-1] = arr[i*nelem/npes];
+            sendSplits[i] = arr[i*nelem/npes];
         }//end for i
 
 //        int iter = 1;
@@ -2252,26 +2252,29 @@ namespace par {
         // All gather with first element of splitters.
         T* sendSplitsPtr = NULL;
         T* splittersPtr = NULL;
-        if(sendSplits.size() > static_cast<unsigned int>(npes-2)) {
-            sendSplitsPtr = &(*(sendSplits.begin() + (npes-2)));
+//        if(sendSplits.size() > static_cast<unsigned int>(npes-1)) {
+//            sendSplitsPtr = &(*(sendSplits.begin() + (npes-1)));
+//        }
+        if(!sendSplits.empty()) {
+            sendSplitsPtr = &(*(sendSplits.begin()));
         }
         if(!splitters.empty()) {
             splittersPtr = &(*(splitters.begin()));
         }
         par::Mpi_Allgather<T>(sendSplitsPtr, splittersPtr, 1, comm);
 
-        print_vector(splitters, 0, "splitters", comm);
+//        print_vector(splitters, 0, "splitters", comm);
 
-//        if(splitter_old[1] == splitter_old[0]){
-//            splittersPtr[0] = arr[0];
-//        }
+        if(splitter_old[1] == splitter_old[0]){
+            splittersPtr[1] = arr[0];
+        }
         for(int i = 1; i < npes-1; i++) {
             if(splitter_old[i+1] == splitter_old[i]){
                 splittersPtr[i] = splittersPtr[i-1];
             }
         }//end for i
 
-        print_vector(splitters, 0, "splitters after", comm);
+//        print_vector(splitters, 0, "splitters after", comm);
 
 
 //        MPI_Barrier(comm);
@@ -2333,27 +2336,34 @@ namespace par {
       //To be parallelized
       int k = 0;
       for (DendroIntL j = 0; j < nelem; j++) {
-        if (arr[j] < splitters[k]) {
-          sendcnts[k]++;
-        } else{
-          k = seq::UpperBound<T>(npes-1, splittersPtr, k+1, arr[j]);
-//          if(arr[j] >= splitters[k]){
+        if (arr[j] < splitters[k+1]) {
+            sendcnts[k]++;
+//            if(rank==0){
+//                std::cout << arr[j] << "\t" << k << "\t" << splitters[k] << "\tfirst" << std::endl;
+//            }
+
+        } else {
+//            k = std::lower_bound(splitters[0], splitters[npes-1], arr[j]) - &arr[0];
+            k = (int)lower_bound3(&splitters[0], &splitters[npes-1], arr[j]);
+//            k = seq::UpperBound<T>(npes-1, splittersPtr, k+1, arr[j]);
+//          if(arr[j] == splitters[k]){
 //            k++;
 //          }
-          if (k == (npes-1) ){
-            //could not find any splitter >= arr[j]
-            sendcnts[k] = (nelem - j);
-            break;
-          } else {
-            assert(k < (npes-1));
-            assert(splitters[k] >= arr[j]);
-            sendcnts[k]++;
-          }
-        }//end if-else
 
-//          if(rank==0){
-//              std::cout << arr[j] << "\t" << k << "\t" << splitters[k] << std::endl;
-//          }
+//            if(rank==0){
+//                std::cout << arr[j] << "\t" << k << "\t" << splitters[k] << "\tsecond" << std::endl;
+//            }
+
+            if (k == (npes-1) ){
+            //could not find any splitter >= arr[j]
+                sendcnts[k] = (nelem - j);
+                break;
+            } else {
+                assert(k < (npes-1));
+                assert(arr[j] < splitters[k+1]);
+                sendcnts[k]++;
+            }
+        }//end if-else
 
       }//end for j
 
