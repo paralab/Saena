@@ -2299,6 +2299,16 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 
 int saena_object::coarsen(Grid *grid) {$
 
+    // Output: Ac = R * A * P
+    // Steps:
+    // 1- Compute AP = A * P. To do that use the transpose of R_i, instead of P. Pass all R_j's to all the processors,
+    //    Then, multiply local A_i by R_jon each process.
+    // 2- Compute RAP = R * AP. Use transpose of P_i instead of R. It is done locally. So multiply P_i * (AP)_i.
+    // 3- Sort and remove local duplicates.
+    // 4- Do a parallel sort based on row-major order. A modified version of par::sampleSort from usort is used here.
+    //    Again, remove duplicates.
+    // 5- Not complete yet: Sparsify Ac.
+
     saena_matrix *A = grid->A;
     prolong_matrix *P = &grid->P;
     restrict_matrix *R = &grid->R;
@@ -2360,6 +2370,17 @@ int saena_object::coarsen(Grid *grid) {$
     A->enable_shrink_next_level = false;
     Ac->split = P->splitNew;
 
+    //    MPI_Barrier(comm);
+//    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
+//           rank, Ac->Mbig, Ac->M, Ac->nnz_g, Ac->nnz_l, Ac->density);
+//    MPI_Barrier(comm);
+
+//    if(verbose_coarsen){
+//        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %lu, Ac->nnz_g = %lu \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
+
     // ********** minor shrinking **********
     for(index_t i = 0; i < Ac->split.size()-1; i++){
         if(Ac->split[i+1] - Ac->split[i] == 0){
@@ -2372,6 +2393,9 @@ int saena_object::coarsen(Grid *grid) {$
 //    int nprocs_updated;
 //    MPI_Comm_size(Ac->comm, &nprocs_updated);
 
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
+
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> R_tranpose(R->entry.size());
     transpose_locally(R->entry, R->entry.size(), R_tranpose);
@@ -2382,6 +2406,9 @@ int saena_object::coarsen(Grid *grid) {$
     }
 //    print_vector(R->entry, -1, "R->entry", comm);
 //    print_vector(R_tranpose, -1, "R_tranpose", comm);
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 
     int right_neighbor = (rank + 1)%nprocs;
     int left_neighbor = rank - 1;
@@ -2410,7 +2437,7 @@ int saena_object::coarsen(Grid *grid) {$
         // receive R_tranpose from the right_neighbor processor. And so on.
         // --------------------------------------------------------------------
 
-        // communicate recv_size
+        // communicate size
         MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
         MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
         MPI_Waitall(1, requests, statuses);
@@ -2427,10 +2454,8 @@ int saena_object::coarsen(Grid *grid) {$
 
         MPI_Waitall(3, requests+1, statuses+1);
 
-//        std::swap(mat_recv, mat_send);
         mat_recv.swap(mat_send);
         send_size = recv_size;
-//        mat_send.resize(send_size);
 //        print_vector(mat_send, -1, "mat_send", A->comm);
 //        print_vector(mat_recv, -1, "mat_recv", A->comm);
     }
@@ -2442,7 +2467,7 @@ int saena_object::coarsen(Grid *grid) {$
 //    print_vector(AP, -1, "AP", A->comm);
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
@@ -2458,67 +2483,78 @@ int saena_object::coarsen(Grid *grid) {$
     std::vector<cooEntry> RAP_temp;
     fast_mm(P_tranpose, AP, RAP_temp, P->Nbig, 0, P->M, P->split[rank], A->split[rank], P->Nbig, 0, A->comm);
 
-//    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
-    if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
-
+    P_tranpose.clear();
+    P_tranpose.shrink_to_fit();
     AP.clear();
     AP.shrink_to_fit();
 
-//    std::sort(RAP_temp.begin(), RAP_temp.end());
+//    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
 
-    std::vector<cooEntry_row> RAP_no_dup;
-
-    // remove duplicates.
+    // remove local duplicates.
+    // Entries should be sorted in row-major order first, since the matrix should be partitioned based on rows.
+    // So cooEntry_row is used here. Remove local duplicates and put them in RAP_temp_row.
+    std::vector<cooEntry_row> RAP_temp_row;
     for(nnz_t i=0; i<RAP_temp.size(); i++){
-        RAP_no_dup.emplace_back(cooEntry_row( RAP_temp[i].row, RAP_temp[i].col, RAP_temp[i].val ));
+        RAP_temp_row.emplace_back(cooEntry_row( RAP_temp[i].row, RAP_temp[i].col, RAP_temp[i].val ));
         while(i<RAP_temp.size()-1 && RAP_temp[i] == RAP_temp[i+1]){ // values of entries with the same row and col should be added.
-//            Ac->entry.back().val += RAP_temp.entry[i+1].val;
-            RAP_no_dup.back().val += RAP_temp[i+1].val;
+            RAP_temp_row.back().val += RAP_temp[i+1].val;
             i++;
         }
-        // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
-//        if( abs(Ac->entry.back().val) < 1e-6)
-//            Ac->entry.pop_back();
     }
 
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
 
-//    MPI_Barrier(comm); printf("rank %d: RAP_no_dup.size = %lu \n", rank, RAP_no_dup.size()); MPI_Barrier(comm);
-//    print_vector(RAP_no_dup, -1, "RAP_no_dup", comm);
+//    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
+//    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
 //    print_vector(P->splitNew, 0, "P->splitNew", comm);
 
-    std::vector<cooEntry_row> RAP_sorted_row;
-    par::sampleSort(RAP_no_dup, RAP_sorted_row, P->splitNew, comm);
-//    print_vector(RAP_sorted_row, -1, "RAP_sorted_row", A->comm);
-//    MPI_Barrier(comm); printf("rank %d: RAP_sorted_row.size = %lu \n", rank, RAP_sorted_row.size()); MPI_Barrier(comm);
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
 
-    RAP_no_dup.clear();
-    RAP_no_dup.shrink_to_fit();
+    std::vector<cooEntry_row> RAP_row_sorted;
+    par::sampleSort(RAP_temp_row, RAP_row_sorted, P->splitNew, comm);
 
-    // todo: memcpy and RAP_sorted are redundant!
-    std::vector<cooEntry> RAP_sorted(RAP_sorted_row.size());
-    memcpy(&RAP_sorted[0], &RAP_sorted_row[0], RAP_sorted_row.size() * sizeof(cooEntry));
+    RAP_temp_row.clear();
+    RAP_temp_row.shrink_to_fit();
 
-    RAP_sorted_row.clear();
-    RAP_sorted_row.shrink_to_fit();
+//    print_vector(RAP_row_sorted, -1, "RAP_row_sorted", A->comm);
+//    MPI_Barrier(comm); printf("rank %d: RAP_row_sorted.size = %lu \n", rank, RAP_row_sorted.size()); MPI_Barrier(comm);
+
+//    std::vector<cooEntry> RAP_sorted(RAP_row_sorted.size());
+//    memcpy(&RAP_sorted[0], &RAP_row_sorted[0], RAP_row_sorted.size() * sizeof(cooEntry));
+//    RAP_row_sorted.clear();
+//    RAP_row_sorted.shrink_to_fit();
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
+
+    // *******************************************************
+    // form Ac
+    // *******************************************************
+    // version 1: without sparsification
+    // *******************************************************
 
     // remove duplicates.
     double val_temp;
-    for(nnz_t i=0; i<RAP_sorted.size(); i++){
-        val_temp = RAP_sorted[i].val;
-        while(i<RAP_sorted.size()-1 && RAP_sorted[i] == RAP_sorted[i+1]){ // values of entries with the same row and col should be added.
-            val_temp += RAP_sorted[i+1].val;
+    for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
+        val_temp = RAP_row_sorted[i].val;
+        while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+            val_temp += RAP_row_sorted[i+1].val;
             i++;
         }
-        Ac->entry.emplace_back( cooEntry(RAP_sorted[i].row, RAP_sorted[i].col, val_temp) );
+        Ac->entry.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
     }
 
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
+    // *******************************************************
+    // version 2: with sparsification
+    // *******************************************************
 /*
     double val_temp;
     double norm_frob_sq = 0;
@@ -2649,34 +2685,11 @@ int saena_object::coarsen(Grid *grid) {$
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     // *******************************************************
 
-    if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
-
     Ac->nnz_l = Ac->entry.size();
     MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
-
-    // ********** minor shrinking **********
-//    for(index_t i = 0; i < Ac->split.size()-1; i++){
-//        if(Ac->split[i+1] - Ac->split[i] == 0){
-//            printf("rank %d: shrink minor in coarsen: i = %d, split[i] = %d, split[i+1] = %d\n", rank, i, Ac->split[i], Ac->split[i+1]);
-//            Ac->shrink_cpu_minor();
-//            break;
-//        }
-//    }
-
-//    MPI_Barrier(comm);
-//    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
-//           rank, Ac->Mbig, Ac->M, Ac->nnz_g, Ac->nnz_l, Ac->density);
-//    MPI_Barrier(comm);
-
-//    if(verbose_coarsen){
-//        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %lu, Ac->nnz_g = %lu \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
-
-    if(verbose_coarsen){
-        MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("coarsen: step 10: rank = %d\n", rank); MPI_Barrier(comm);}
 
     if(Ac->active_minor){
         comm = Ac->comm;
@@ -2696,7 +2709,7 @@ int saena_object::coarsen(Grid *grid) {$
         }
 
         if(verbose_coarsen){
-            MPI_Barrier(comm); printf("coarsen: step 10: rank = %d\n", rank); MPI_Barrier(comm);}
+            MPI_Barrier(comm); printf("coarsen: step 11: rank = %d\n", rank); MPI_Barrier(comm);}
 
         // ********** setup matrix **********
         // Shrinking gets decided inside repartition_nnz() or repartition_row() functions, then repartition happens.
@@ -2716,7 +2729,7 @@ int saena_object::coarsen(Grid *grid) {$
 //        }
 
         if(verbose_coarsen){
-            MPI_Barrier(comm); printf("coarsen: step 11: rank = %d\n", rank); MPI_Barrier(comm);}
+            MPI_Barrier(comm); printf("coarsen: step 12: rank = %d\n", rank); MPI_Barrier(comm);}
 
         repartition_u_shrink_prepare(grid);
 
@@ -2725,7 +2738,7 @@ int saena_object::coarsen(Grid *grid) {$
         }
 
         if(verbose_coarsen){
-            MPI_Barrier(comm); printf("coarsen: step 12: rank = %d\n", rank); MPI_Barrier(comm);}
+            MPI_Barrier(comm); printf("coarsen: step 13: rank = %d\n", rank); MPI_Barrier(comm);}
 
         if(Ac->active){
             Ac->matrix_setup();
