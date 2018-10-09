@@ -179,6 +179,12 @@ public:
         return (cooEntry(row, col, val+node2.val));
     }
 
+//    cooEntry operator++ () const
+//    {
+//        return (cooEntry(row+1, col, val));
+//    }
+
+
     static MPI_Datatype mpi_datatype()
     {
         static bool         first = true;
@@ -268,6 +274,11 @@ public:
             printf("ERROR: adding two entries without the same indices!");
         }
         return (cooEntry_row(row, col, val+node2.val));
+    }
+
+    cooEntry_row operator++ (int) const
+    {
+        return (cooEntry_row(row, col+1, val));
     }
 
     static MPI_Datatype mpi_datatype()
