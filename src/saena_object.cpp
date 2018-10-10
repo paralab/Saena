@@ -2614,7 +2614,7 @@ int saena_object::coarsen(Grid *grid) {$
     // s = 28nln(sqrt(2)*n) / epsilon^2
     nnz_t sample_size = nnz_t( (double)28 * Ac->Mbig * log(sqrt(2) * Ac->Mbig) * norm_frob_sq / (sparse_epsilon * sparse_epsilon) );
     if(rank==0) printf("sample size \t\t\t\t= %lu\n", sample_size);
-    if(rank==0) printf("norm_frob_sq = %f, \tsparse_epsilon = %f, \tAc->Mbig = %u \n", norm_frob_sq, sparse_epsilon, Ac->Mbig);
+//    if(rank==0) printf("norm_frob_sq = %f, \tsparse_epsilon = %f, \tAc->Mbig = %u \n", norm_frob_sq, sparse_epsilon, Ac->Mbig);
 
     std::vector<cooEntry> Ac_sample(sample_size);
     double norm_temp = 0, criteria;
