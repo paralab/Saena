@@ -2583,15 +2583,15 @@ int saena_object::coarsen(Grid *grid) {$
         }
 
 //        if( fabs(val_temp) > sparse_epsilon / 2 / P->Nbig)
-        if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / 4 / P->Nbig / P->Nbig){
+        if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / (4 * P->Nbig * P->Nbig) ){
             Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
             norm_frob_sq += val_temp * val_temp;
         }
         no_sparse_size++; //todo: just for test. delete this later!
     }
 
-    if(rank==0) printf("\nno_sparse_size        = %lu\n", no_sparse_size);
-    if(rank==0) printf("\nAc_orig.size()        = %lu\n", Ac_orig.size());
+    if(rank==0) printf("\nno_sparse_size   = %lu\n", no_sparse_size);
+    if(rank==0) printf("\nAc_orig.size()   = %lu\n", Ac_orig.size());
 //    std::sort(Ac_orig.begin(), Ac_orig.end());
 //    print_vector(Ac_orig, -1, "Ac_orig", A->comm);
 
@@ -2612,43 +2612,44 @@ int saena_object::coarsen(Grid *grid) {$
     rng.seed(std::random_device{}());
 
     // s = 28nln(sqrt(2)*n) / epsilon^2
-    nnz_t sample_size = nnz_t( 28 * P->Nbig * log(sqrt(2) * P->Nbig) * norm_frob_sq / sparse_epsilon / sparse_epsilon );
-    if(rank==0) printf("sample_size           = %lu\n", sample_size);
+    nnz_t sample_size = nnz_t( 28 * P->Nbig * log(sqrt(2) * P->Nbig) * norm_frob_sq / (sparse_epsilon * sparse_epsilon) );
+    if(rank==0) printf("sample_size      = %lu\n", sample_size);
 
-    std::vector<cooEntry> Ac_orig_sparse(sample_size);
-    double norm_temp = 0;
+    std::vector<cooEntry> Ac_sample(sample_size);
+    double norm_temp = 0, criteria;
     for(nnz_t i = 0; i < Ac_orig.size(); i++){
         norm_temp += Ac_orig[i].val * Ac_orig[i].val;
 
+        criteria = (Ac_orig[i].val * Ac_orig[i].val) / norm_temp;
         for(nnz_t j = 0; j < sample_size; j++){
-            if(dist(rng) < Ac_orig[i].val * Ac_orig[i].val / norm_temp){
-//                printf("dist(rng) = %f \n", dist(rng));
-                Ac_orig_sparse[j] = cooEntry(Ac_orig[i].row, Ac_orig[i].col, Ac_orig[i].val / norm_frob_sq);
+            if(dist(rng) < criteria){
+//                std::cout << "dist(rng) = " << dist(rng) << "\tcriteria = " << criteria << "\tAc_sample[j] = " << Ac_sample[j] << std::endl;
+//                Ac_sample[j] = cooEntry(Ac_orig[i].row, Ac_orig[i].col, Ac_orig[i].val);
+                Ac_sample[j] = Ac_orig[i];
             }
         }
     }
 
-    if(rank==0) printf("Ac_orig_sparse.size() = %lu\n", Ac_orig_sparse.size());
-//    print_vector(Ac_orig_sparse, -1, "Ac_orig_sparse", A->comm);
-    std::sort(Ac_orig_sparse.begin(), Ac_orig_sparse.end());
+    if(rank==0) printf("Ac_sample.size() = %lu\n", Ac_sample.size());
+//    print_vector(Ac_sample, -1, "Ac_sample", A->comm);
+    std::sort(Ac_sample.begin(), Ac_sample.end());
 
     // remove duplicates and change the values based on Algorithm 1 of Drineas' paper.
-    double sxpij; // s * p_{ij}
-    for(nnz_t i=0; i<Ac_orig_sparse.size(); i++){
-        val_temp = Ac_orig_sparse[i].val;
-        sxpij = sample_size * val_temp / norm_frob_sq;
-        while(i<Ac_orig_sparse.size()-1 && Ac_orig_sparse[i] == Ac_orig_sparse[i+1]){ // values of entries with the same row and col should be added.
-            val_temp += Ac_orig_sparse[i+1].val;
+    double factor = norm_frob_sq / sample_size;
+    for(nnz_t i=0; i<Ac_sample.size(); i++){
+        val_temp = Ac_sample[i].val;
+        while(i<Ac_sample.size()-1 && Ac_sample[i] == Ac_sample[i+1]){ // values of entries with the same row and col should be added.
+            val_temp += Ac_sample[i+1].val;
             i++;
         }
-        Ac->entry.emplace_back( cooEntry(Ac_orig_sparse[i].row, Ac_orig_sparse[i].col, val_temp / sxpij) );
+        Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, factor / val_temp) );
     }
 
-    if(rank==0) printf("Ac->entry.size()      = %lu\n", Ac->entry.size());
+//    if(rank==0) printf("Ac->entry.size()      = %lu\n", Ac->entry.size());
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
 
-    Ac_orig_sparse.clear();
-    Ac_orig_sparse.shrink_to_fit();
+    Ac_sample.clear();
+    Ac_sample.shrink_to_fit();
 
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.

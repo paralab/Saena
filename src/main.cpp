@@ -194,8 +194,9 @@ int main(int argc, char* argv[]){
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
 //    solver.set_multigrid_max_level(0); // 0 means only use direct solver, so no multigrid will be used.
 
+    if(rank==0) printf("usage: ./Saena x_size y_size z_size sparse_epsilon \n");
     double sp_epsilon(std::atof(argv[4]));
-    if(rank==0) printf("sp_epsilon = %f \n", sp_epsilon);
+    if(rank==0) printf("\nsp_epsilon = %f \n", sp_epsilon);
     solver.get_object()->sparse_epsilon = sp_epsilon;
 
     solver.set_matrix(&A, &opts);
