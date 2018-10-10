@@ -2645,7 +2645,7 @@ int saena_object::coarsen(Grid *grid) {$
         Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, factor / val_temp) );
     }
 
-//    if(rank==0) printf("Ac->entry.size()      = %lu\n", Ac->entry.size());
+    if(rank==0) printf("Ac->entry.size()      = %lu\n", Ac->entry.size());
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
 
     Ac_sample.clear();
