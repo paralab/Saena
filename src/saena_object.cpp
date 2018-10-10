@@ -2643,7 +2643,8 @@ int saena_object::coarsen(Grid *grid) {$
             val_temp += Ac_sample[i+1].val;
             i++;
         }
-        Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, factor / val_temp) );
+//        Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, factor / val_temp) );
+        Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, val_temp) );
     }
 
     if(rank==0) printf("Ac size after sparsification \t\t= %lu\n", Ac->entry.size());
