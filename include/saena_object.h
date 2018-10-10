@@ -40,7 +40,7 @@ public:
     bool dynamic_levels = true;
     bool adaptive_coarsening = true;
 //    bool doSparsify = false;
-    double sparse_epsilon = 3;
+    double sparse_epsilon = 1;
 
     int set_shrink_levels(std::vector<bool> sh_lev_vec);
     std::vector<bool> shrink_level_vector;
