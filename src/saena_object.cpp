@@ -2582,8 +2582,8 @@ int saena_object::coarsen(Grid *grid) {$
             i++;
         }
 
-//        if( fabs(val_temp) > sparse_epsilon / 2 / P->Nbig)
-        if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / (4 * P->Nbig * P->Nbig) ){
+//        if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
+        if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
             Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
             norm_frob_sq += val_temp * val_temp;
         }
@@ -2612,7 +2612,7 @@ int saena_object::coarsen(Grid *grid) {$
     rng.seed(std::random_device{}());
 
     // s = 28nln(sqrt(2)*n) / epsilon^2
-    nnz_t sample_size = nnz_t( 28 * P->Nbig * log(sqrt(2) * P->Nbig) * norm_frob_sq / (sparse_epsilon * sparse_epsilon) );
+    nnz_t sample_size = nnz_t( (double)28 * Ac->Mbig * log(sqrt(2) * Ac->Mbig) * norm_frob_sq / (sparse_epsilon * sparse_epsilon) );
     if(rank==0) printf("sample size \t\t\t\t= %lu\n", sample_size);
 
     std::vector<cooEntry> Ac_sample(sample_size);
