@@ -2545,7 +2545,7 @@ int saena_object::coarsen(Grid *grid) {$
     // *******************************************************
     // version 1: without sparsification
     // *******************************************************
-/*
+
     // remove duplicates.
     double val_temp;
     for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
@@ -2563,11 +2563,11 @@ int saena_object::coarsen(Grid *grid) {$
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
-*/
+
     // *******************************************************
     // version 2: with sparsification
     // *******************************************************
-
+/*
     nnz_t no_sparse_size = 0;
 
     // remove duplicates.
@@ -2652,7 +2652,7 @@ int saena_object::coarsen(Grid *grid) {$
 
     Ac_sample.clear();
     Ac_sample.shrink_to_fit();
-
+*/
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************

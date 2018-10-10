@@ -259,7 +259,7 @@ int main(int argc, char* argv[]){
 */
 
     // *************************** matvec on different coarse levels of a matrix ****************************
-
+/*
     int matvec_iter = 300;
     int time_num = 4;
     std::vector<double> time_e1(time_num, 0); // array for timing matvec
@@ -342,6 +342,7 @@ int main(int argc, char* argv[]){
                       << (time_total[i][0] + time_total[i][3] - time_total[i][1] - time_total[i][2])/matvec_iter << "\t"
                       << (time_total[i][0] + time_total[i][3])/matvec_iter << std::endl;
     }
+*/
 /*
     // wrtie to file
     if(rank==0){
@@ -376,7 +377,7 @@ int main(int argc, char* argv[]){
 
     // *************************** finalize ****************************
 
-//    if(rank==0) dollar::text(std::cout);
+    if(rank==0) dollar::text(std::cout);
 
 //    A.destroy();
 //    solver.destroy();
