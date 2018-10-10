@@ -18,6 +18,7 @@
 #include <fstream>
 #include <algorithm>
 #include <set>
+#include <random>
 #include <mpi.h>
 #include <superlu_defs.h>
 
