@@ -213,7 +213,7 @@ int main(int argc, char* argv[]){
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
-//    print_time(t1, t2, "Solve:", comm);
+    print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
 
@@ -252,6 +252,123 @@ int main(int argc, char* argv[]){
             printf("\n******* The solution was NOT correct! *******\n\n");
     }
 */
+
+    // *************************** matvec on different coarse levels of a matrix ****************************
+
+    int matvec_iter = 300;
+    int time_num = 4;
+    std::vector<double> time_e1(time_num, 0); // array for timing matvec
+    std::vector<std::vector<double>> time_total; // array for keeping all levels timings
+//    double average1, average2, average3;
+
+    saena_object* amg = solver.get_object();
+    saena_matrix *B;
+    int levels = amg->max_level;
+
+    // warm-up
+    // -------
+    B = amg->grids[0].A;
+    num_local_row = B->M;
+    rhs.resize(num_local_row);
+    u.resize(num_local_row);
+    time_e1.assign(time_e1.size(), 0);
+    for (int i = 0; i < 50; i++) {
+        B->matvec_timing1(rhs, u, time_e1);
+        rhs.swap(u);
+    }
+
+//    if (rank == 0) std::cout << "\nlocal loop, remote loop and communication (including <<set vSend>>) times of matvec"
+//                                " are being printed for different levels of the multigrid hierarchy:" << std::endl;
+
+    if (rank == 0) printf("\n#####################################\n\n");
+    for(int l = 0; l < levels+1; l++) {
+        if (rank == 0) printf("start level %d of %d \n", l, levels);
+
+        if (amg->grids[l].active) {
+            B = amg->grids[l].A;
+            num_local_row = B->M;
+//            printf("level = %d, num_local_row = %d \n", l, num_local_row);
+            rhs.resize(num_local_row);
+            u.resize(num_local_row);
+//            if (rank == 0) printf("level %d of %d step1! \n", l, levels);
+
+            // *************************** matvec1 ****************************
+
+            generate_rhs_old(rhs);
+            u.assign(num_local_row, 0);
+            time_e1.assign(time_e1.size(), 0);
+//            printf("rank %d: level %d of %d step3! \n", rank, l, levels);
+
+            MPI_Barrier(B->comm);
+//            t1 = omp_get_wtime();
+            for (int i = 0; i < matvec_iter; i++) {
+                B->matvec_timing1(rhs, u, time_e1);
+                rhs.swap(u);
+            }
+//            t2 = omp_get_wtime();
+
+//        average1 = print_time(t1/double(matvec_iter), t2/double(matvec_iter), "matvec1:", comm);
+//        if (rank==0) printf("_________________________________\n\n");
+//        if (rank==0) printf("local matvec level %d of %d \n", l, levels);
+//        if (rank==0) std::cout << time_e1[1]/(matvec_iter) << std::endl;
+
+//            if (rank == 0) {
+//              std::cout << "\n1- Saena matvec total time:\n" << (time_e1[0]+time_e1[3])/(matvec_iter) << std::endl;
+//              std::cout << std::endl << "matvec1:" << std::endl;
+//                std::cout << time_e1[1] / matvec_iter << std::endl; // local loop
+//                std::cout << time_e1[2] / matvec_iter << std::endl; // remote loop
+//                std::cout << ( time_e1[0] + time_e1[3] - time_e1[1] - time_e1[2]) / matvec_iter << std::endl; // communication including "set vSend"
+//            }
+
+        }
+        time_total.push_back(time_e1);
+    }
+
+    // *************************** print time results ****************************
+
+    // print on output
+    if(rank==0){
+        std::cout << "\ntime results:\n" << std::endl;
+        std::cout << "level \tlocal \t\tremote \t\tcomm \t\ttotal" << std::endl;
+        for(int i = 0; i < time_total.size(); i++)
+            std::cout << i << "\t"
+                      << time_total[i][1]/matvec_iter << "\t"
+                      << time_total[i][2]/matvec_iter << "\t"
+                      << (time_total[i][0] + time_total[i][3] - time_total[i][1] - time_total[i][2])/matvec_iter << "\t"
+                      << (time_total[i][0] + time_total[i][3])/matvec_iter << std::endl;
+    }
+/*
+    // wrtie to file
+    if(rank==0){
+
+        if(rank==0) {
+            std::string input_filename_ext = argv[1];
+            size_t extIndex = input_filename_ext.find_last_of(".");
+            std::string file_name = "./shrink_";
+            file_name += input_filename_ext.substr(0, extIndex);
+            file_name += ".txt";
+            std::ofstream outFile(file_name);
+
+            outFile << "average time for " << matvec_iter << " matvec iterations" << std::endl;
+            outFile << "matrix name   = " << argv[1] << "\nprocessors    = " << nprocs << std::endl;
+#pragma omp parallel
+            if (rank == 0 && omp_get_thread_num() == 0)
+                outFile << "OpenMP thread = " << omp_get_num_threads() << std::endl;
+
+            outFile << "\ntime results:\n" << std::endl;
+            outFile << "level \tlocal \tremote \tcomm" << std::endl;
+            for (int i = 0; i < time_total.size(); i++)
+                outFile << i << "\t"
+                          << time_total[i][1] / matvec_iter << "\t"
+                          << time_total[i][2] / matvec_iter << "\t"
+                          << (time_total[i][0] + time_total[i][3] - time_total[i][1] - time_total[i][2]) / matvec_iter
+                          << std::endl;
+
+            outFile.close();
+        }
+    }
+*/
+
     // *************************** finalize ****************************
 
 //    if(rank==0) dollar::text(std::cout);

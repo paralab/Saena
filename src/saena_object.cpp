@@ -2425,6 +2425,9 @@ int saena_object::coarsen(Grid *grid) {$
     std::vector<cooEntry> mat_recv = R_tranpose;
     std::vector<cooEntry> mat_send = R_tranpose;
 
+    R_tranpose.clear();
+    R_tranpose.shrink_to_fit();
+
     MPI_Request *requests = new MPI_Request[4];
     MPI_Status  *statuses = new MPI_Status[4];
 
@@ -2465,6 +2468,11 @@ int saena_object::coarsen(Grid *grid) {$
 
     std::sort(AP.begin(), AP.end());
 //    print_vector(AP, -1, "AP", A->comm);
+
+    mat_send.clear();
+    mat_send.shrink_to_fit();
+    mat_recv.clear();
+    mat_recv.shrink_to_fit();
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -2536,7 +2544,7 @@ int saena_object::coarsen(Grid *grid) {$
     // *******************************************************
     // version 1: without sparsification
     // *******************************************************
-
+/*
     // remove duplicates.
     double val_temp;
     for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
@@ -2548,40 +2556,46 @@ int saena_object::coarsen(Grid *grid) {$
         Ac->entry.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
     }
 
+    RAP_row_sorted.clear();
+    RAP_row_sorted.shrink_to_fit();
+
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
-
+*/
     // *******************************************************
     // version 2: with sparsification
     // *******************************************************
-/*
-    double val_temp;
-    double norm_frob_sq = 0;
+
+    nnz_t no_sparse_size = 0;
 
     // remove duplicates.
     // compute Frobenius norm squared (norm_frob_sq).
+    double val_temp;
+    double norm_frob_sq = 0;
     std::vector<cooEntry> Ac_orig;
-    for(nnz_t i=0; i<RAP_sorted.size(); i++){
-        val_temp = RAP_sorted[i].val;
-        while(i<RAP_sorted.size()-1 && RAP_sorted[i] == RAP_sorted[i+1]){ // values of entries with the same row and col should be added.
-            val_temp += RAP_sorted[i+1].val;
+    for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
+        val_temp = RAP_row_sorted[i].val;
+        while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+            val_temp += RAP_row_sorted[i+1].val;
             i++;
         }
 
 //        if( fabs(val_temp) > sparse_epsilon / 2 / P->Nbig)
         if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / 4 / P->Nbig / P->Nbig){
-            Ac_orig.emplace_back( cooEntry(RAP_sorted[i].row, RAP_sorted[i].col, val_temp) );
+            Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
             norm_frob_sq += val_temp * val_temp;
         }
+        no_sparse_size++; //todo: just for test. delete this later!
     }
 
-    if(rank==0) printf("Ac_orig.size() = %lu\n", Ac_orig.size());
+    if(rank==0) printf("\nno_sparse_size        = %lu\n", no_sparse_size);
+    if(rank==0) printf("\nAc_orig.size()        = %lu\n", Ac_orig.size());
 //    std::sort(Ac_orig.begin(), Ac_orig.end());
 //    print_vector(Ac_orig, -1, "Ac_orig", A->comm);
 
-    RAP_sorted.clear();
-    RAP_sorted.shrink_to_fit();
+    RAP_row_sorted.clear();
+    RAP_row_sorted.shrink_to_fit();
 
     // *******************************************************
     // sparsification
@@ -2598,7 +2612,7 @@ int saena_object::coarsen(Grid *grid) {$
 
     // s = 28nln(sqrt(2)*n) / epsilon^2
     nnz_t sample_size = nnz_t( 28 * P->Nbig * log(sqrt(2) * P->Nbig) * norm_frob_sq / sparse_epsilon / sparse_epsilon );
-    if(rank==0) printf("sample_size = %lu\n", sample_size);
+    if(rank==0) printf("sample_size           = %lu\n", sample_size);
 
     std::vector<cooEntry> Ac_orig_sparse(sample_size);
     double norm_temp = 0;
@@ -2629,9 +2643,12 @@ int saena_object::coarsen(Grid *grid) {$
         Ac->entry.emplace_back( cooEntry(Ac_orig_sparse[i].row, Ac_orig_sparse[i].col, val_temp / sxpij) );
     }
 
-    if(rank==0) printf("Ac->entry.size() = %lu\n", Ac->entry.size());
+    if(rank==0) printf("Ac->entry.size()      = %lu\n", Ac->entry.size());
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-*/
+
+    Ac_orig_sparse.clear();
+    Ac_orig_sparse.shrink_to_fit();
+
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************
@@ -2683,7 +2700,13 @@ int saena_object::coarsen(Grid *grid) {$
 //    A = sparse(I, J ,V)
 //    and so on. then compare the multiplication from Julia with the following:
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+
     // *******************************************************
+    // setup matrix
+    // *******************************************************
+    // Update this description: Shrinking gets decided inside repartition_nnz() or repartition_row() functions,
+    // then repartition happens.
+    // Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
 
     Ac->nnz_l = Ac->entry.size();
     MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
@@ -2710,10 +2733,6 @@ int saena_object::coarsen(Grid *grid) {$
 
         if(verbose_coarsen){
             MPI_Barrier(comm); printf("coarsen: step 11: rank = %d\n", rank); MPI_Barrier(comm);}
-
-        // ********** setup matrix **********
-        // Shrinking gets decided inside repartition_nnz() or repartition_row() functions, then repartition happens.
-        // Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
 
         // decide to partition based on number of rows or nonzeros.
 //    if(switch_repartition && Ac->density >= repartition_threshold)
