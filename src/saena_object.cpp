@@ -2590,8 +2590,8 @@ int saena_object::coarsen(Grid *grid) {$
         no_sparse_size++; //todo: just for test. delete this later!
     }
 
-    if(rank==0) printf("\nno_sparse_size   = %lu\n", no_sparse_size);
-    if(rank==0) printf("\nAc_orig.size()   = %lu\n", Ac_orig.size());
+    if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
+    if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
 //    std::sort(Ac_orig.begin(), Ac_orig.end());
 //    print_vector(Ac_orig, -1, "Ac_orig", A->comm);
 
@@ -2613,7 +2613,7 @@ int saena_object::coarsen(Grid *grid) {$
 
     // s = 28nln(sqrt(2)*n) / epsilon^2
     nnz_t sample_size = nnz_t( 28 * P->Nbig * log(sqrt(2) * P->Nbig) * norm_frob_sq / (sparse_epsilon * sparse_epsilon) );
-    if(rank==0) printf("sample_size      = %lu\n", sample_size);
+    if(rank==0) printf("sample size \t\t\t\t= %lu\n", sample_size);
 
     std::vector<cooEntry> Ac_sample(sample_size);
     double norm_temp = 0, criteria;
@@ -2630,7 +2630,7 @@ int saena_object::coarsen(Grid *grid) {$
         }
     }
 
-    if(rank==0) printf("Ac_sample.size() = %lu\n", Ac_sample.size());
+//    if(rank==0) printf("Ac_sample.size() = %lu\n", Ac_sample.size());
 //    print_vector(Ac_sample, -1, "Ac_sample", A->comm);
     std::sort(Ac_sample.begin(), Ac_sample.end());
 
@@ -2645,7 +2645,7 @@ int saena_object::coarsen(Grid *grid) {$
         Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, factor / val_temp) );
     }
 
-    if(rank==0) printf("Ac->entry.size()      = %lu\n", Ac->entry.size());
+    if(rank==0) printf("Ac size after sparsification \t\t= %lu\n", Ac->entry.size());
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
 
     Ac_sample.clear();
