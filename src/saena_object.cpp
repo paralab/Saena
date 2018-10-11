@@ -2111,6 +2111,10 @@ int saena_object::fast_mm(std::vector<cooEntry> &A, std::vector<cooEntry> &B, st
 
         if(rank==0 && verbose_matmat) printf("fast_mm: case 2: start \n");
 
+        
+
+
+
         // Split A in half by the middle col.
         std::vector<cooEntry> A1, A2;
         for(nnz_t i = 0; i < A.size(); i++){
@@ -2545,7 +2549,7 @@ int saena_object::coarsen(Grid *grid) {$
     // *******************************************************
     // version 1: without sparsification
     // *******************************************************
-
+/*
     // remove duplicates.
     double val_temp;
     for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
@@ -2563,11 +2567,11 @@ int saena_object::coarsen(Grid *grid) {$
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
-
+*/
     // *******************************************************
     // version 2: with sparsification
     // *******************************************************
-/*
+
     nnz_t no_sparse_size = 0;
 
     // remove duplicates.
@@ -2648,11 +2652,11 @@ int saena_object::coarsen(Grid *grid) {$
     }
 
     if(rank==0) printf("Ac size after sparsification \t\t= %lu\n", Ac->entry.size());
-//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
 
     Ac_sample.clear();
     Ac_sample.shrink_to_fit();
-*/
+
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************
