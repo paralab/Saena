@@ -1573,16 +1573,14 @@ int saena_matrix::repartition_nnz(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    bool verbose_repartition = false;
-
-    if(verbose_repartition && rank==0) printf("repartition3 - step 1!\n");
+    if(verbose_repartition){
+        MPI_Barrier(comm);
+        printf("repartition_nnz - step1! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
+               rank, Mbig, M, nnz_g, nnz_l);
+        MPI_Barrier(comm);
+    }
 
     density = (nnz_g / double(Mbig)) / (Mbig);
-
-//    MPI_Barrier(comm);
-//    printf("repartition3 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
-//           rank, Mbig, M, nnz_g, nnz_l);
-//    MPI_Barrier(comm);
 
     // *************************** find splitters ****************************
     // split the matrix row-wise by splitters, so each processor get almost equal number of nonzeros
@@ -1624,7 +1622,7 @@ int saena_matrix::repartition_nnz(){
 
 //    print_vector(splitOffset, 0, "splitOffset", comm);
 
-    if(verbose_repartition && rank==0) printf("repartition3 - step 2!\n");
+    if(verbose_repartition && rank==0) printf("repartition_nnz - step 2!\n");
 
     std::vector<index_t > firstSplit(n_buckets+1);
     firstSplit[0] = 0;
@@ -1677,7 +1675,7 @@ int saena_matrix::repartition_nnz(){
 
 //    print_vector(H_g_scan, 0, "H_g_scan", comm);
 
-    if(verbose_repartition && rank==0) printf("repartition3 - step 3!\n");
+    if(verbose_repartition && rank==0) printf("repartition_nnz - step 3!\n");
 
     // -------------------------------------------
     // determine number of rows on each proc based on having almost the same number of nonzeros per proc.
@@ -1702,7 +1700,7 @@ int saena_matrix::repartition_nnz(){
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
 
-    if(verbose_repartition && rank==0) printf("repartition3 - step 4!\n");
+    if(verbose_repartition && rank==0) printf("repartition_nnz - step 4!\n");
 
     // *************************** exchange data ****************************
 
@@ -1756,7 +1754,7 @@ int saena_matrix::repartition_nnz(){
             root_cpu = 0;
             for(int proc = 0; proc < nprocs; proc++){
                 remainder = proc % cpu_shrink_thre2;
-    //        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
+//                if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
                 if(remainder == 0)
                     root_cpu = proc;
                 else{
@@ -1787,12 +1785,12 @@ int saena_matrix::repartition_nnz(){
 
 //    print_vector(recv_offset, 0, "recv_offset", comm);
 
-        if (verbose_repartition && rank == 0) printf("repartition3 - step 5!\n");
+        if (verbose_repartition && rank == 0) printf("repartition_nnz - step 5!\n");
 
         nnz_l = recv_offset[nprocs - 1] + recv_size_array[nprocs - 1];
 //    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
 
-        if (verbose_repartition && rank == 0) printf("repartition3 - step 6!\n");
+        if (verbose_repartition && rank == 0) printf("repartition_nnz - step 6!\n");
 
         std::vector<cooEntry> entry_old = entry;
         entry.resize(nnz_l);
@@ -1808,7 +1806,7 @@ int saena_matrix::repartition_nnz(){
 
     if(verbose_repartition) {
         MPI_Barrier(comm);
-        printf("repartition3 - end! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
+        printf("repartition_nnz - end! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
                rank, Mbig, M, nnz_g, nnz_l);
         MPI_Barrier(comm);
     }
@@ -2373,11 +2371,11 @@ int saena_matrix::shrink_cpu_minor(){
     MPI_Comm_rank(comm, &rank);
     bool verbose_shrink = false;
 
-    MPI_Barrier(comm);
-    if(rank==0) printf("\n****************************\n");
-    if(rank==0) printf("********MINOR SHRINK********\n");
-    if(rank==0) printf("****************************\n\n");
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
+//    if(rank==0) printf("\n****************************\n");
+//    if(rank==0) printf("********MINOR SHRINK********\n");
+//    if(rank==0) printf("****************************\n\n");
+//    MPI_Barrier(comm);
 
     shrinked_minor = true;
 

@@ -293,12 +293,13 @@ int main(int argc, char* argv[]){
     // print on output
     if(rank==0){
         std::cout << "\ntime results:\n" << std::endl;
-        std::cout << "level \tlocal \t\tremote \t\tcomm" << std::endl;
+        std::cout << "level \tlocal \t\tremote \t\tcomm \t\ttotal" << std::endl;
         for(int i = 0; i < time_total.size(); i++)
             std::cout << i << "\t"
                       << time_total[i][1]/matvec_iter << "\t"
                       << time_total[i][2]/matvec_iter << "\t"
-                      << (time_total[i][0] + time_total[i][3] - time_total[i][1] - time_total[i][2])/matvec_iter << std::endl;
+                      << (time_total[i][0] + time_total[i][3] - time_total[i][1] - time_total[i][2])/matvec_iter << "\t"
+                      << (time_total[i][0] + time_total[i][3])/matvec_iter << std::endl;
     }
 /*
     // wrtie to file
