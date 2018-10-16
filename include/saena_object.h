@@ -62,8 +62,8 @@ public:
     bool verbose_coarsen2 = false;
     bool verbose_matmat = true;
     bool verbose_matmat_recursive = true;
-    bool verbose_fastmm_A = true;
-    bool verbose_fastmm_B = false;
+    bool verbose_matmat_A = true;
+    bool verbose_matmat_B = false;
     bool verbose_solve = false;
     bool verbose_vcycle = false;
     bool verbose_vcycle_residuals = false;
