@@ -2182,7 +2182,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //        }
         for(nnz_t i = 0; i < A_col_size; i++){
             for(nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
-                if(A[j].col-A_col_offset < A_col_size/2) {
+                if(A[j].col - A_col_offset < A_col_size/2) {
                     A1_nnz++;
                 }
             }
@@ -2202,7 +2202,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //        }
         for(nnz_t i = 0; i < B_col_size; i++){
             for(nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
-                if(B[j].row < A_col_size/2){ // A_col_size/2 is middle row of B too.
+                if(B[j].row - B_row_offset < A_col_size/2){ // A_col_size/2 is middle row of B too.
                     nnzPerCol_middle[B[j].col - B_col_offset]++;
                     B1_nnz++;
                 }
@@ -2421,7 +2421,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //        }
         for(nnz_t i = 0; i < B_col_size; i++){
             for(nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
-                if(B[j].col-B_col_offset < B_col_size/2){
+                if(B[j].col - B_col_offset < B_col_size/2){
                     B1_nnz++;
                 }
             }
@@ -2442,7 +2442,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //        }
         for(nnz_t i = 0; i < A_col_size; i++){
             for(nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
-                if(A[j].row < A_row_size/2){
+                if(A[j].row - A_row_offset < A_row_size/2){
                     nnzPerCol_middle[A[j].col - A_col_offset]++;
                     A1_nnz++;
                 }
