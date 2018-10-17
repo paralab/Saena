@@ -2983,7 +2983,7 @@ int saena_object::coarsen(Grid *grid) {$
     RAP_row_sorted.clear();
     RAP_row_sorted.shrink_to_fit();
 
-    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
@@ -3146,7 +3146,7 @@ int saena_object::coarsen(Grid *grid) {$
         int rank_new;
         MPI_Comm_rank(Ac->comm, &rank_new);
 //        Ac->print_info(-1);
-        Ac->print_entry(-1);
+//        Ac->print_entry(-1);
 
         // ********** decide about shrinking **********
 
