@@ -1802,7 +1802,7 @@ int saena_matrix::repartition_nnz(){
         std::sort(entry.begin(), entry.end());
     }
 
-//    print_vector(entry, -1, "entry", comm);
+    print_vector(entry, -1, "entry", comm);
 
     if(verbose_repartition) {
         MPI_Barrier(comm);
