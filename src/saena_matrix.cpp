@@ -2420,7 +2420,7 @@ int saena_matrix::shrink_cpu_minor(){
 //            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
             split[i] = split_old_minor[ranks[i]];
         }
-//        print_vector(split, 0, "split after shrinking", comm);
+        print_vector(split, 0, "split after shrinking", comm);
     }
 
     return 0;
