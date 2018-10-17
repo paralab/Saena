@@ -22,6 +22,18 @@
 #include <mpi.h>
 #include <superlu_defs.h>
 
+#include <trsl/is_picked_systematic.hpp>
+#include <trsl/ppfilter_iterator.hpp>
+//#include <numeric> // accumulate
+//#include <cassert>
+
+
+typedef trsl::is_picked_systematic<cooEntry> is_picked;
+
+typedef trsl::ppfilter_iterator<
+is_picked, std::vector<cooEntry>::const_iterator
+> sample_iterator;
+
 
 saena_object::saena_object(){}
 
@@ -2968,7 +2980,7 @@ int saena_object::coarsen(Grid *grid) {$
     // *******************************************************
     // version 1: without sparsification
     // *******************************************************
-
+/*
     // remove duplicates.
     double val_temp;
     for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
@@ -2986,9 +2998,9 @@ int saena_object::coarsen(Grid *grid) {$
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
-
+*/
     // *******************************************************
-    // version 2: with sparsification
+    // version 2: with sparsification. Drineas' Method
     // *******************************************************
 /*
     nnz_t no_sparse_size = 0;
@@ -3076,6 +3088,45 @@ int saena_object::coarsen(Grid *grid) {$
     Ac_sample.clear();
     Ac_sample.shrink_to_fit();
 */
+
+    // *******************************************************
+    // version 3: with sparsification. use TRSL.
+    // *******************************************************
+
+//    nnz_t no_sparse_size = 0;
+
+    // remove duplicates.
+    // compute Frobenius norm squared (norm_frob_sq).
+    double val_temp;
+    double norm_frob_sq = 0;
+    std::vector<cooEntry> Ac_orig;
+    for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
+        val_temp = RAP_row_sorted[i].val;
+        while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+            val_temp += RAP_row_sorted[i+1].val;
+            i++;
+        }
+
+        Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
+        norm_frob_sq += val_temp * val_temp;
+
+//        if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
+//        if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
+//            Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
+//            norm_frob_sq += val_temp * val_temp;
+//        }
+//        no_sparse_size++; //todo: just for test. delete this later!
+    }
+
+//    if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
+//    if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
+//    std::sort(Ac_orig.begin(), Ac_orig.end());
+//    print_vector(Ac_orig, -1, "Ac_orig", A->comm);
+
+    RAP_row_sorted.clear();
+    RAP_row_sorted.shrink_to_fit();
+
+    sparsify(Ac_orig, norm_frob_sq, comm);
 
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
@@ -7689,13 +7740,19 @@ int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::v
 }
 
 
-int saena_object::sparsify(std::vector<cooEntry>& A, MPI_Comm comm) {
+int saena_object::sparsify(std::vector<cooEntry>& A, double norm_frob_sq, MPI_Comm comm) {
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
+    nnz_t population_size = A.size();
+    nnz_t sample_size = nnz_t(0.95 * population_size);
 
+    std::vector<cooEntry> const& const_pop = A;
+    std::vector<cooEntry> sample;
+    // Create the systematic sampling functor.
+    is_picked predicate(SAMPLE_SIZE, 1.0, &cooEntry::getWeight);
 
     return 0;
 }

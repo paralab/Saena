@@ -131,7 +131,7 @@ public:
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);
-    int sparsify(std::vector<cooEntry> & A, MPI_Comm comm);
+    int sparsify(std::vector<cooEntry> & A, double norm_frob_sq, MPI_Comm comm);
 
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);
