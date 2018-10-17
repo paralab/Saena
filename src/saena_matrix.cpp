@@ -1579,6 +1579,7 @@ int saena_matrix::repartition_nnz(){
                rank, Mbig, M, nnz_g, nnz_l);
         MPI_Barrier(comm);
     }
+    print_vector(entry, -1, "entry", comm);
 
     density = (nnz_g / double(Mbig)) / (Mbig);
 
@@ -1704,8 +1705,6 @@ int saena_matrix::repartition_nnz(){
 
     // *************************** exchange data ****************************
 
-    print_vector(entry, -1, "entry", comm);
-
     if(nprocs > 1){
         std::vector<int> send_size_array(nprocs, 0);
     //    for (unsigned int i=0; i<initial_nnz_l; i++){
@@ -1793,8 +1792,6 @@ int saena_matrix::repartition_nnz(){
 //    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
 
         if (verbose_repartition && rank == 0) printf("repartition_nnz - step 6!\n");
-
-        print_vector(entry, -1, "entry", comm);
 
         std::vector<cooEntry> entry_old = entry;
         entry.resize(nnz_l);
