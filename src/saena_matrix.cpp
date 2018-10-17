@@ -1579,7 +1579,7 @@ int saena_matrix::repartition_nnz(){
                rank, Mbig, M, nnz_g, nnz_l);
         MPI_Barrier(comm);
     }
-    print_vector(entry, -1, "entry", comm);
+    print_vector(entry, -1, "entry", comm_old);
 
     density = (nnz_g / double(Mbig)) / (Mbig);
 
