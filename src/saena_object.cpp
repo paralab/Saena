@@ -3146,6 +3146,7 @@ int saena_object::coarsen(Grid *grid) {$
         int rank_new;
         MPI_Comm_rank(Ac->comm, &rank_new);
 //        Ac->print_info(-1);
+        Ac->print_entry(-1);
 
         // ********** decide about shrinking **********
 
