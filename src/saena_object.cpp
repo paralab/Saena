@@ -3199,7 +3199,7 @@ int saena_object::coarsen(Grid *grid) {$
         }
 
 //        Ac->print_info(-1);
-//        Ac->print_entry(-1);
+        Ac->print_entry(-1);
     }
     comm = grid->A->comm;
     if(verbose_coarsen){MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
