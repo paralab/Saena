@@ -1704,6 +1704,8 @@ int saena_matrix::repartition_nnz(){
 
     // *************************** exchange data ****************************
 
+    print_vector(entry, -1, "entry", comm);
+
     if(nprocs > 1){
         std::vector<int> send_size_array(nprocs, 0);
     //    for (unsigned int i=0; i<initial_nnz_l; i++){
