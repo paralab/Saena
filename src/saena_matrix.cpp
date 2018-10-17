@@ -1792,6 +1792,8 @@ int saena_matrix::repartition_nnz(){
 
         if (verbose_repartition && rank == 0) printf("repartition_nnz - step 6!\n");
 
+        print_vector(entry, -1, "entry", comm);
+
         std::vector<cooEntry> entry_old = entry;
         entry.resize(nnz_l);
         entry.shrink_to_fit();
@@ -1802,7 +1804,7 @@ int saena_matrix::repartition_nnz(){
         std::sort(entry.begin(), entry.end());
     }
 
-    print_vector(entry, -1, "entry", comm);
+//    print_vector(entry, -1, "entry", comm);
 
     if(verbose_repartition) {
         MPI_Barrier(comm);
