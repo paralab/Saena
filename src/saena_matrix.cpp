@@ -2401,7 +2401,7 @@ int saena_matrix::shrink_cpu_minor(){
     ranks.resize(total_active_procs);
     ranks.shrink_to_fit();
 
-    print_vector(split, 0, "split before shrinking", comm);
+//    print_vector(split, 0, "split before shrinking", comm);
 
 //    comm_old_minor = comm;
     MPI_Group group_new;
@@ -2420,7 +2420,7 @@ int saena_matrix::shrink_cpu_minor(){
 //            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
             split[i] = split_old_minor[ranks[i]];
         }
-        print_vector(split, 0, "split after shrinking", comm);
+//        print_vector(split, 0, "split after shrinking", comm);
     }
 
     return 0;
@@ -2443,7 +2443,7 @@ int saena_matrix::matrix_setup() {
             MPI_Barrier(comm);
         }
 
-        printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
+//        printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
 //        print_vector(entry, -1, "entry", comm);
 
         assembled = true;
