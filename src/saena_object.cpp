@@ -2029,13 +2029,20 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //        }
 //    }
 
+    // todo: fix this.
+    const index_t r_dense = 14; //default 100.
+    const index_t c_dense = r_dense;
+    const index_t min_size_threshold = 4; //default 30.
+
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-    if(rank==0 && verbose_matmat) printf("\nfast_mm: start \n");
+
+    int verbose_rank = 1;
+    if(rank==verbose_rank && verbose_matmat) printf("\nfast_mm: start \n");
 
     if(A_nnz == 0 || B_nnz == 0){
-        printf("\nskip: A_nnz == 0 || B_nnz == 0\n\n");
+        if(rank==verbose_rank && verbose_matmat) printf("\nskip: A_nnz == 0 || B_nnz == 0\n\n");
         return 0;
     }
 
@@ -2045,8 +2052,8 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //    MPI_Barrier(comm); printf("rank %d: A_row_size = %u, A_row_offset = %u, A_col_size = %u, A_col_offset = %u, B_row_offset = %u, B_col_size = %u, B_col_offset = %u \n\n",
 //            rank, A_row_size, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size, B_col_offset);
 
-    MPI_Barrier(comm);
-    if(rank==0){
+//    MPI_Barrier(comm);
+    if(rank==verbose_rank){
 
         if(verbose_matmat_A){
             std::cout << "\nA: nnz = " << A_nnz << std::endl;
@@ -2084,14 +2091,13 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //            std::cout << i << "\t" << nnzPerColScan_leftEnd[i] << std::endl;
 //        }
     }
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
 
     index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
 
-    index_t r_dense = 10, c_dense = 10; //default 100. todo: fix this.
-    if( (A_row_size < r_dense && A_col_size < c_dense) || size_min < 4 ){ //default 30. todo: fix this.
+    if( (A_row_size < r_dense && A_col_size < c_dense) || size_min < min_size_threshold ){
 
-        if(rank==0 && verbose_matmat){printf("fast_mm: case 1: start \n");}
+        if(rank==verbose_rank && (verbose_matmat || verbose_matmat_recursive)){printf("fast_mm: case 1: start \n");}
 /*
         std::vector<unsigned int> AnnzPerCol(A_col_size, 0);
 //        unsigned int *AnnzPerCol_p = &AnnzPerCol[0] - A[0].col;
@@ -2114,7 +2120,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
             C_temp[i] = cooEntry(0, 0, 0);
         }
 
-        if(rank==0 && verbose_matmat) {printf("fast_mm: case 1: step 1 \n");}
+        if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 1: step 1 \n");}
 
         index_t C_index;
         for(nnz_t j = 0; j < B_col_size; j++) { // columns of B
@@ -2151,7 +2157,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //            }
 //        }
 
-        if(rank==0 && verbose_matmat) {printf("fast_mm: case 1: step 2 \n");}
+        if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 1: step 2 \n");}
 
         // add the new elements to C
         // add the entries in column-major order
@@ -2166,11 +2172,11 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 
 //        print_vector(C, -1, "C", comm);
 
-        if(rank==0 && verbose_matmat) printf("fast_mm: case 1: end \n");
+        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
 
     } else if(A_row_size <= A_col_size) { //todo: fix this.
 
-        if(rank==0 && verbose_matmat) {printf("fast_mm: case 2: start \n");}
+        if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: start \n");}
 
         // prepare splits of matrix A by column
         nnz_t A1_nnz = 0, A2_nnz;
@@ -2223,7 +2229,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //        if(rank==0) printf("rank %d: A_nnz = %lu, A1_nnz = %lu, A2_nnz = %lu, B_nnz = %lu, B1_nnz = %lu, B2_nnz = %lu \n",
 //                rank, A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz);
 
-        if(rank==0 && verbose_matmat) {printf("fast_mm: case 2: step 1 \n");}
+        if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 1 \n");}
 
         for(nnz_t i = 0; i < B_col_size; i++){
             nnzPerColScan_middle[i] = nnzPerColScan_middle[i+1] + nnzPerColScan_rightStart[i] - nnzPerColScan_middle[i];
@@ -2233,15 +2239,15 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 
 //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
 
-        if(rank==0 && verbose_matmat) {printf("fast_mm: case 2: step 2 \n");}
+        if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 2 \n");}
 
         // A1: start: nnzPerColScan_leftStart,               end: nnzPerColScan_leftEnd
         // A2: start: nnzPerColScan_leftStart[A_col_size/2], end: nnzPerColScan_leftEnd[A_col_size/2]
         // B1: start: nnzPerColScan_rightStart,              end: nnzPerColScan_middle
         // B2: start: nnzPerColScan_middle,                  end: nnzPerColScan_rightEnd
 
-        MPI_Barrier(comm);
-        if(rank==0){
+//        MPI_Barrier(comm);
+        if(rank==verbose_rank){
 
             if(verbose_matmat_A) {
                 std::cout << "\nranges of A:" << std::endl;
@@ -2306,12 +2312,12 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
             }
         }
 //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
 
         std::vector<cooEntry> C1, C2;
 
         // C1 = A1 * B1
-        if(rank==0 && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 1 \n");
+        if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 1 \n");
         fast_mm(&A[0], &B[0], C1, A1_nnz, B1_nnz,
                 A_row_size, A_row_offset, A_col_size/2, A_col_offset,
                 B_row_offset, B_col_size, B_col_offset,
@@ -2324,7 +2330,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //                nnzPerColScan_rightStart, &nnzPerColScan_middle[0], comm); // B1
 
         // C2 = A2 * B2
-        if(rank==0 && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 2 \n");
+        if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 2 \n");
         fast_mm(&A[0], &B[0], C2, A2_nnz, B2_nnz,
                 A_row_size, A_row_offset, A_col_size-A_col_size/2, A_col_offset+A_col_size/2,
                 B_row_offset+A_col_size/2, B_col_size, B_col_offset,
@@ -2340,7 +2346,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //        print_vector(C1, -1, "C1", comm);
 //        print_vector(C2, -1, "C2", comm);
 
-        if(rank==0 && verbose_matmat) {printf("fast_mm: case 2: step 3 \n");}
+        if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 3 \n");}
 //        if(rank==0 && verbose_matmat) printf("C1.size() = %lu, C2.size() = %lu \n", C1.size(), C2.size());
 
         // take care of the special cases when either C1 or C2 is empty.
@@ -2357,7 +2363,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 C.emplace_back(C2[i]);
                 i++;
             }
-            if(rank==0 && verbose_matmat) printf("fast_mm: end \n\n");
+            if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
             return 0;
         }
 
@@ -2366,11 +2372,11 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 C.emplace_back(C1[i]);
                 i++;
             }
-            if(rank==0 && verbose_matmat) printf("fast_mm: end \n\n");
+            if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
             return 0;
         }
 
-        if(rank==0 && verbose_matmat) {printf("fast_mm: case 2: step 4 \n");}
+        if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 4 \n");}
 
         // merge C1 and C2
         i = 0;
@@ -2393,23 +2399,24 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                     C.emplace_back(C2[j]);
                     j++;
                 }
-                if(rank==0 && verbose_matmat) printf("fast_mm: end \n\n");
+                if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
                 return 0;
             }else if(j == C2.size()) {
                 while (i < C1.size()) {
                     C.emplace_back(C1[i]);
                     i++;
                 }
-                if(rank==0 && verbose_matmat) printf("fast_mm: end \n\n");
+                if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
                 return 0;
             }
         }
 
-        if(rank==0 && verbose_matmat) printf("fast_mm: case 2: end \n");
+
+        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 2: end \n");
 
     } else { // A_row_size > A_col_size
 
-        if(rank==0 && verbose_matmat) printf("fast_mm: case 3: start \n");
+        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
 
         // prepare splits of matrix B by column
         nnz_t B1_nnz = 0, B2_nnz;
@@ -2428,7 +2435,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         }
         B2_nnz = B_nnz - B1_nnz;
 
-        if(rank==0 && verbose_matmat) printf("fast_mm: case 3: step 1 \n");
+        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 1 \n");
 
         // prepare splits of matrix A by row
         nnz_t A1_nnz = 0, A2_nnz;
@@ -2457,23 +2464,22 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 
         A2_nnz = A_nnz - A1_nnz;
 
-        if(rank==0 && verbose_matmat) printf("fast_mm: case 3: step 2 \n");
+        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 2 \n");
 
         for(nnz_t i = 0; i < A_col_size; i++){
             nnzPerColScan_middle[i] = nnzPerColScan_middle[i+1] + nnzPerColScan_leftStart[i] - nnzPerColScan_middle[i];
 //            if(rank==0) printf("nnzPerColScan_middle[%lu] = %u \n", i, nnzPerColScan_middle[i]);
         }
 
-        if(rank==0 && verbose_matmat) printf("fast_mm: case 3: step 3 \n");
+        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 3 \n");
 
         // A1: start: nnzPerColScan_leftStart,                end: nnzPerColScan_middle
         // A2: start: nnzPerColScan_middle,                   end: nnzPerColScan_leftEnd
         // B1: start: nnzPerColScan_rightStart,               end: nnzPerColScan_rightEnd
         // B2: start: nnzPerColScan_rightStart[B_col_size/2], end: nnzPerColScan_rightEnd[B_col_size/2]
 
-
-        MPI_Barrier(comm);
-        if(rank==0){
+//        MPI_Barrier(comm);
+        if(rank==verbose_rank){
 
             if(verbose_matmat_A) {
                 // print entries of A1:
@@ -2530,12 +2536,12 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 }
             }
         }
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
 
         std::vector<cooEntry> C_temp;
 
         // C1 = A1 * B1
-        if(rank==0 && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 1 \n");
+        if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 1 \n");
         fast_mm(&A[0], &B[0], C_temp, A1_nnz, B1_nnz,
                 A_row_size/2, A_row_offset, A_col_size, A_col_offset,
                 B_row_offset, B_col_size/2, B_col_offset,
@@ -2543,7 +2549,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
 
         // C2 = A2 * B1:
-        if(rank==0 && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 2 \n");
+        if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 2 \n");
         fast_mm(&A[0], &B[0], C_temp, A2_nnz, B1_nnz,
                 A_row_size-A_row_size/2, A_row_offset+A_row_size/2, A_col_size, A_col_offset,
                 B_row_offset, B_col_size/2, B_col_offset,
@@ -2551,7 +2557,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
 
         // C3 = A1 * B2:
-        if(rank==0 && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 3 \n");
+        if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 3 \n");
         fast_mm(&A[0], &B[0], C_temp, A1_nnz, B2_nnz,
                 A_row_size/2, A_row_offset, A_col_size, A_col_offset,
                 B_row_offset, B_col_size-B_col_size/2, B_col_offset+B_col_size/2,
@@ -2559,7 +2565,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 &nnzPerColScan_rightStart[B_col_size/2], &nnzPerColScan_rightEnd[B_col_size/2], comm); // B2
 
         // C4 = A2 * B2
-        if(rank==0 && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 4 \n");
+        if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 4 \n");
         fast_mm(&A[0], &B[0], C_temp, A2_nnz, B2_nnz,
                 A_row_size-A_row_size/2, A_row_offset+A_row_size/2, A_col_size, A_col_offset,
                 B_row_offset, B_col_size-B_col_size/2, B_col_offset+B_col_size/2,
@@ -2588,10 +2594,10 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
             }
         }
 
-        if(rank==0 && verbose_matmat) printf("fast_mm: case 3: end \n");
+        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: end \n");
     }
 
-    if(rank==0 && verbose_matmat) printf("fast_mm: end \n\n");
+    if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
 
     return 0;
 }
@@ -2670,7 +2676,7 @@ int saena_object::coarsen(Grid *grid) {$
     A->enable_shrink_next_level = false;
     Ac->split = P->splitNew;
 
-    //    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
 //    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
 //           rank, Ac->Mbig, Ac->M, Ac->nnz_g, Ac->nnz_l, Ac->density);
 //    MPI_Barrier(comm);
@@ -2718,6 +2724,8 @@ int saena_object::coarsen(Grid *grid) {$
 //        if(rank==0) printf("A[i].col = %u, \tA_col_size = %u \n", A[i].col - A_col_offset, A_col_size);
         nnzPerCol_left[A->entry[i].col]++;
     }
+//    print_vector(A->entry, 1, "A->entry", comm);
+//    print_vector(nnzPerCol_left, 1, "nnzPerCol_left", comm);
 
     std::vector<index_t> nnzPerColScan_left(A->Mbig+1);
     nnzPerColScan_left[0] = 0;
@@ -2743,7 +2751,7 @@ int saena_object::coarsen(Grid *grid) {$
     std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
     std::vector<index_t> nnzPerColScan_right;
 
-//    print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+//    print_vector(P->splitNew, -1, "P->splitNew", comm);
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -2781,21 +2789,26 @@ int saena_object::coarsen(Grid *grid) {$
         MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
         MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
         MPI_Waitall(1, requests, statuses);
-        printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
-//        print_vector(mat_recv, 0, "mat_recv", A->comm);
+//        printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
         mat_recv.resize(recv_size);
 
+//        print_vector(mat_recv, -1, "mat_recv", A->comm);
+//        print_vector(mat_send, -1, "mat_send", A->comm);
+
+        // communicate data
         MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests+2);
         MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+3);
 
         owner = k%nprocs;
         mat_recv_M = P->splitNew[owner + 1] - P->splitNew[owner];
+//        printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
 
         nnzPerCol_right.assign(mat_recv_M, 0);
         for(nnz_t i = 0; i < mat_send.size(); i++){
             nnzPerCol_right[mat_send[i].col - P->splitNew[owner]]++;
         }
 //        print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+
         nnzPerColScan_right.resize(mat_recv_M+1);
         nnzPerColScan_right[0] = 0;
         for(nnz_t i = 0; i < mat_recv_M; i++){
@@ -2805,8 +2818,10 @@ int saena_object::coarsen(Grid *grid) {$
 
         fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
                 A->M, A->split[rank], A->Mbig, 0, 0, mat_recv_M, P->splitNew[owner],
-                &nnzPerColScan_left[0], &nnzPerColScan_left[1],
+                &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+//        print_vector(AP, -1, "AP", A->comm);
 
         MPI_Waitall(3, requests+1, statuses+1);
 
@@ -2815,6 +2830,7 @@ int saena_object::coarsen(Grid *grid) {$
 //        print_vector(mat_send, -1, "mat_send", A->comm);
 //        print_vector(mat_recv, -1, "mat_recv", A->comm);
 //        prev_owner = owner;
+//        printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
     }
 
     delete [] requests;
@@ -2837,7 +2853,6 @@ int saena_object::coarsen(Grid *grid) {$
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 
-
     // *******************************************************
     // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
     // *******************************************************
@@ -2852,7 +2867,6 @@ int saena_object::coarsen(Grid *grid) {$
     }
 //    print_vector(P->entry, -1, "P->entry", comm);
 //    print_vector(P_tranpose, -1, "P_tranpose", comm);
-
 
     // compute nnzPerColScan_left for P_tranpose
     nnzPerCol_left.assign(P->M, 0);
@@ -2927,7 +2941,7 @@ int saena_object::coarsen(Grid *grid) {$
 
 //    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
-//    print_vector(P->splitNew, 0, "P->splitNew", comm);
+//    print_vector(P->splitNew, -1, "P->splitNew", comm);
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);}

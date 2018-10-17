@@ -54,20 +54,20 @@ public:
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to switch to the dense structure.
                                  // dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
 
-    bool verbose = false;
-    bool verbose_setup = true;
-    bool verbose_setup_steps = false;
-    bool verbose_level_setup = false;
-    bool verbose_coarsen = true;
-    bool verbose_coarsen2 = false;
-    bool verbose_matmat = true;
-    bool verbose_matmat_recursive = true;
-    bool verbose_matmat_A = true;
-    bool verbose_matmat_B = false;
-    bool verbose_solve = false;
-    bool verbose_vcycle = false;
+    bool verbose                  = false;
+    bool verbose_setup            = true;
+    bool verbose_setup_steps      = false;
+    bool verbose_level_setup      = false;
+    bool verbose_coarsen          = false;
+    bool verbose_coarsen2         = false;
+    bool verbose_matmat           = false;
+    bool verbose_matmat_recursive = false;
+    bool verbose_matmat_A         = false;
+    bool verbose_matmat_B         = false;
+    bool verbose_solve            = false;
+    bool verbose_vcycle           = false;
     bool verbose_vcycle_residuals = false;
-    bool verbose_solve_coarse = false;
+    bool verbose_solve_coarse     = false;
 
     saena_object();
     ~saena_object();
