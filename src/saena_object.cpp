@@ -2983,7 +2983,7 @@ int saena_object::coarsen(Grid *grid) {$
     RAP_row_sorted.clear();
     RAP_row_sorted.shrink_to_fit();
 
-//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
@@ -3076,10 +3076,11 @@ int saena_object::coarsen(Grid *grid) {$
     Ac_sample.clear();
     Ac_sample.shrink_to_fit();
 */
+
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************
-
+/*
 //    std::cout << "\n";
 //    for(nnz_t i = 0; i < A->entry.size(); i++){
 //        std::cout << A->entry[i].row+1 << ", ";
@@ -3127,6 +3128,7 @@ int saena_object::coarsen(Grid *grid) {$
 //    A = sparse(I, J ,V)
 //    and so on. then compare the multiplication from Julia with the following:
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+*/
 
     // *******************************************************
     // setup matrix
