@@ -2443,7 +2443,7 @@ int saena_matrix::matrix_setup() {
             MPI_Barrier(comm);
         }
 
-//        printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
+        printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
 //        print_vector(entry, -1, "entry", comm);
 
         assembled = true;
