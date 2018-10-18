@@ -39,7 +39,7 @@ public:
 //    bool shrink_cpu = true;
     bool dynamic_levels = true;
     bool adaptive_coarsening = true;
-//    bool doSparsify = false;
+    bool doSparsify = true;
     double sparse_epsilon = 1;
 
     int set_shrink_levels(std::vector<bool> sh_lev_vec);
@@ -91,6 +91,8 @@ public:
     int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
+    int sparsify(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, MPI_Comm comm);
+    int sparsify2(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, MPI_Comm comm);
 
     int solve(std::vector<value_t>& u);
     int solve_pcg(std::vector<value_t>& u);
@@ -131,7 +133,6 @@ public:
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);
-    int sparsify(std::vector<cooEntry> & A, double norm_frob_sq, MPI_Comm comm);
 
     int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);

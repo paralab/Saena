@@ -28,13 +28,6 @@
 //#include <cassert>
 
 
-typedef trsl::is_picked_systematic<cooEntry> is_picked;
-
-typedef trsl::ppfilter_iterator<
-is_picked, std::vector<cooEntry>::const_iterator
-> sample_iterator;
-
-
 saena_object::saena_object(){}
 
 
@@ -329,7 +322,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
 } // end of SaenaObject::findAggregation
 
 
-int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){$
+int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
     // based on the following paper by Irad Yavneh:
     // Non-Galerkin Multigrid Based on Sparsified Smoothed Aggregation - page: A51
@@ -520,7 +513,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){$
 // Using MIS(1) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
 int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate,
-                                     std::vector<unsigned long> &aggArray) {$
+                                     std::vector<unsigned long> &aggArray) {
 
     // todo: update the comments for 1-distance independent set.
     // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
@@ -2978,29 +2971,74 @@ int saena_object::coarsen(Grid *grid) {$
     // *******************************************************
     // form Ac
     // *******************************************************
-    // version 1: without sparsification
-    // *******************************************************
-/*
-    // remove duplicates.
-    double val_temp;
-    for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
-        val_temp = RAP_row_sorted[i].val;
-        while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-            val_temp += RAP_row_sorted[i+1].val;
-            i++;
-        }
-        Ac->entry.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
-    }
 
-    RAP_row_sorted.clear();
-    RAP_row_sorted.shrink_to_fit();
+    if(!doSparsify){
+
+        // *******************************************************
+        // version 1: without sparsification
+        // *******************************************************
+
+        // remove duplicates.
+        double val_temp;
+        for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
+            val_temp = RAP_row_sorted[i].val;
+            while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+                val_temp += RAP_row_sorted[i+1].val;
+                i++;
+            }
+            Ac->entry.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
+        }
+
+        RAP_row_sorted.clear();
+        RAP_row_sorted.shrink_to_fit();
+
+    }else{
+
+        // *******************************************************
+        // version 2: with sparsification. use TRSL.
+        // *******************************************************
+
+        // remove duplicates.
+        // compute Frobenius norm squared (norm_frob_sq).
+        double norm_frob_sq = 0;
+        std::vector<cooEntry> Ac_orig;
+        for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
+            Ac_orig.emplace_back( RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val );
+            while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+                Ac_orig.back().val += RAP_row_sorted[i+1].val;
+                i++;
+            }
+
+            norm_frob_sq += Ac_orig.back().val * Ac_orig.back().val;
+
+//            if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
+//            if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
+//                Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
+//                norm_frob_sq += val_temp * val_temp;
+//            }
+        }
+
+//        if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
+//        if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
+//
+//        std::sort(Ac_orig.begin(), Ac_orig.end());
+//        print_vector(Ac_orig, -1, "Ac_orig", A->comm);
+
+        RAP_row_sorted.clear();
+        RAP_row_sorted.shrink_to_fit();
+
+        sparsify(Ac_orig, Ac->entry, norm_frob_sq, comm);
+
+    }
 
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
-*/
+
     // *******************************************************
-    // version 2: with sparsification. Drineas' Method
+    // version 3: with sparsification. Drineas' Method
+    // *******************************************************
+    // part 1: remove duplicates
     // *******************************************************
 /*
     nnz_t no_sparse_size = 0;
@@ -3034,7 +3072,7 @@ int saena_object::coarsen(Grid *grid) {$
     RAP_row_sorted.shrink_to_fit();
 
     // *******************************************************
-    // sparsification
+    // version 3: part 2: sparsification
     // *******************************************************
 
     //Type of random number distribution
@@ -3088,46 +3126,6 @@ int saena_object::coarsen(Grid *grid) {$
     Ac_sample.clear();
     Ac_sample.shrink_to_fit();
 */
-
-    // *******************************************************
-    // version 3: with sparsification. use TRSL.
-    // *******************************************************
-
-//    nnz_t no_sparse_size = 0;
-
-    // remove duplicates.
-    // compute Frobenius norm squared (norm_frob_sq).
-    double val_temp;
-    double norm_frob_sq = 0;
-    std::vector<cooEntry> Ac_orig;
-    for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
-        val_temp = RAP_row_sorted[i].val;
-        while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-            val_temp += RAP_row_sorted[i+1].val;
-            i++;
-        }
-
-        Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
-        norm_frob_sq += val_temp * val_temp;
-
-//        if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
-//        if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
-//            Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
-//            norm_frob_sq += val_temp * val_temp;
-//        }
-//        no_sparse_size++; //todo: just for test. delete this later!
-    }
-
-//    if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
-//    if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
-//    std::sort(Ac_orig.begin(), Ac_orig.end());
-//    print_vector(Ac_orig, -1, "Ac_orig", A->comm);
-
-    RAP_row_sorted.clear();
-    RAP_row_sorted.shrink_to_fit();
-
-    sparsify(Ac_orig, norm_frob_sq, comm);
-
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************
@@ -4976,7 +4974,7 @@ int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vect
 */
 
 
-int saena_object::smooth(Grid* grid, std::string smoother, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter){$
+int saena_object::smooth(Grid* grid, std::string smoother, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter){
     std::vector<value_t> temp1(u.size());
     std::vector<value_t> temp2(u.size());
 
@@ -4994,7 +4992,7 @@ int saena_object::smooth(Grid* grid, std::string smoother, std::vector<value_t>&
 }
 
 
-int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs){$
+int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs){
 
     if(grid->A->active) {
         MPI_Comm comm = grid->A->comm;
@@ -7740,7 +7738,83 @@ int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::v
 }
 
 
-int saena_object::sparsify(std::vector<cooEntry>& A, double norm_frob_sq, MPI_Comm comm) {
+typedef std::vector<cooEntry>::iterator population_iterator;
+
+typedef trsl::is_picked_systematic<cooEntry> is_picked;
+
+typedef trsl::persistent_filter_iterator
+        <is_picked, population_iterator> sample_iterator;
+
+typedef trsl::ppfilter_iterator<
+        is_picked, std::vector<cooEntry>::const_iterator
+> sample_iterator2;
+
+int saena_object::sparsify(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, MPI_Comm comm) { $
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    nnz_t population_size = A.size();
+    nnz_t sample_size = nnz_t(8 * population_size);
+    printf("\npopulation_size = %lu, sample_size = %lu \n", population_size, sample_size);
+
+//    std::vector<cooEntry> const& const_pop = A;
+
+    {
+        //----------------------------//
+        // Sample from the population //
+        //----------------------------//
+
+        auto populationIteratorBegin = A.begin(), // type is population_iterator
+             populationIteratorEnd = A.end();
+
+        is_picked predicate(sample_size, norm_frob_sq, &cooEntry::get_val_sq);
+
+        sample_iterator sampleIteratorBegin(predicate,
+                                            populationIteratorBegin,
+                                            populationIteratorEnd);
+        sample_iterator sampleIteratorEnd(predicate,
+                                          populationIteratorEnd,
+                                          populationIteratorEnd);
+
+//        std::cout << "\nSample of " << sample_size << " elements:" << std::endl;
+//        std::copy(sampleIteratorBegin,
+//                  sampleIteratorEnd,
+//                  std::ostream_iterator<cooEntry>(std::cout, "\n"));
+//        std::cout << std::endl;
+
+//        std::cout << "sample vector" << std::endl;
+        std::vector<cooEntry> A_spars_dup;
+        for (sample_iterator
+                     sb = sampleIteratorBegin,
+                     si = sb,
+                     se = sampleIteratorEnd;
+             si != se; ++si){
+
+//            std::cout << std::distance(sb, se) << "\t" << *si << std::endl;
+            A_spars_dup.emplace_back(*si);
+        }
+
+        std::sort(A_spars_dup.begin(), A_spars_dup.end());
+//        print_vector(A_spars_dup, -1, "A_spars_dup", comm);
+
+        // remove duplicates
+        for(nnz_t i=0; i<A_spars_dup.size(); i++){
+            A_spars.emplace_back( A_spars_dup[i] );
+            while(i<A_spars_dup.size()-1 && A_spars_dup[i] == A_spars_dup[i+1]){ // values of entries with the same row and col should be added.
+                A_spars.back().val += A_spars_dup[i+1].val;
+                i++;
+            }
+        }
+
+    }
+
+    return 0;
+}
+
+
+int saena_object::sparsify2(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, MPI_Comm comm) {
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -7748,12 +7822,29 @@ int saena_object::sparsify(std::vector<cooEntry>& A, double norm_frob_sq, MPI_Co
 
     nnz_t population_size = A.size();
     nnz_t sample_size = nnz_t(0.95 * population_size);
+//    nnz_t sample_size = 9;
+//    printf("population_size = %lu, sample_size = %lu\n", population_size, sample_size);
+
+//    for(nnz_t i = 0; i < A.size(); i++){
+//        A[i].val = A[i].val * A[i]. val / norm_frob_sq;
+//    }
 
     std::vector<cooEntry> const& const_pop = A;
     std::vector<cooEntry> sample;
     // Create the systematic sampling functor.
-    is_picked predicate(SAMPLE_SIZE, 1.0, &cooEntry::getWeight);
+    is_picked predicate(sample_size, norm_frob_sq, &cooEntry::get_val_sq);
+//    is_picked predicate(sample_size, 1.0, &cooEntry::get_val);
+
+//    std::cout << "sample vector" << std::endl;
+    for (sample_iterator2
+                 sb = sample_iterator2(predicate, const_pop.begin(), const_pop.end()),
+                 si = sb,
+                 se = sample_iterator2(predicate, const_pop.end(),   const_pop.end());
+         si != se; ++si){
+
+//        std::cout << std::distance(sb, se) << "\t" << *si << std::endl;
+        A_spars.emplace_back(*si);
+    }
 
     return 0;
 }
-

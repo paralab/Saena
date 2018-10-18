@@ -1,6 +1,7 @@
 #include <prolong_matrix.h>
 #include <restrict_matrix.h>
 
+#include "dollar.hpp"
 #include <iostream>
 #include <algorithm>
 #include <omp.h>
@@ -12,7 +13,7 @@ using namespace std;
 restrict_matrix::restrict_matrix(){}
 
 
-int restrict_matrix::transposeP(prolong_matrix* P) {
+int restrict_matrix::transposeP(prolong_matrix* P) { $
 
     // splitNew is the row partition for restrict_matrix and split is column partition. it is the opposite of prolong_matrix and saena_matrix.
 
