@@ -2979,14 +2979,14 @@ int saena_object::coarsen(Grid *grid) {$
         // *******************************************************
 
         // remove duplicates.
-        double val_temp;
+        cooEntry temp;
         for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
-            val_temp = RAP_row_sorted[i].val;
+            temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
             while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-                val_temp += RAP_row_sorted[i+1].val;
+                temp.val += RAP_row_sorted[i+1].val;
                 i++;
             }
-            Ac->entry.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
+            Ac->entry.emplace_back( temp );
         }
 
         RAP_row_sorted.clear();
@@ -2994,40 +2994,55 @@ int saena_object::coarsen(Grid *grid) {$
 
     }else{
 
-        // *******************************************************
-        // version 2: with sparsification. use TRSL.
-        // *******************************************************
-
         // remove duplicates.
         // compute Frobenius norm squared (norm_frob_sq).
+        cooEntry temp;
         double norm_frob_sq = 0;
         std::vector<cooEntry> Ac_orig;
+//        nnz_t no_sparse_size = 0;
         for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
-            Ac_orig.emplace_back( RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val );
+            temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
             while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-                Ac_orig.back().val += RAP_row_sorted[i+1].val;
+                temp.val += RAP_row_sorted[i+1].val;
                 i++;
             }
 
-            norm_frob_sq += Ac_orig.back().val * Ac_orig.back().val;
-
 //            if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
-//            if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
-//                Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
-//                norm_frob_sq += val_temp * val_temp;
+//            if(temp.val * temp.val > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
+                Ac_orig.emplace_back( temp );
+                norm_frob_sq += temp.val * temp.val;
 //            }
+//            no_sparse_size++; //todo: just for test. delete this later!
         }
 
+        if(rank==0) printf("\noriginal size   = %lu\n", Ac_orig.size());
 //        if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
 //        if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
-//
+
 //        std::sort(Ac_orig.begin(), Ac_orig.end());
 //        print_vector(Ac_orig, -1, "Ac_orig", A->comm);
 
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
 
-        sparsify(Ac_orig, Ac->entry, norm_frob_sq, comm);
+        auto sample_size = nnz_t(0.9 * Ac_orig.size());
+        if(rank==0) printf("sample_size     = %lu \n", sample_size);
+
+        if(sparsifier == "TRSL"){
+
+            sparsify_trsl1(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
+
+        }else if(sparsifier == "drineas"){
+
+            sparsify_drineas(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
+
+        }else if(sparsifier == "majid"){
+
+            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
+
+        }else{
+            printf("\nerror: wrong sparsifier!");
+        }
 
     }
 
@@ -7749,14 +7764,16 @@ typedef trsl::ppfilter_iterator<
         is_picked, std::vector<cooEntry>::const_iterator
 > sample_iterator2;
 
-int saena_object::sparsify(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, MPI_Comm comm) { $
+int saena_object::sparsify_trsl1(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm) { $
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
+    if(rank==0) std::cout << "\n" << __func__ << ":" << std::endl;
+
     nnz_t population_size = A.size();
-    nnz_t sample_size = nnz_t(8 * population_size);
+//    nnz_t sample_size = nnz_t(2 * population_size);
     printf("\npopulation_size = %lu, sample_size = %lu \n", population_size, sample_size);
 
 //    std::vector<cooEntry> const& const_pop = A;
@@ -7767,9 +7784,10 @@ int saena_object::sparsify(std::vector<cooEntry>& A, std::vector<cooEntry>& A_sp
         //----------------------------//
 
         auto populationIteratorBegin = A.begin(), // type is population_iterator
-             populationIteratorEnd = A.end();
+             populationIteratorEnd   = A.end();
 
         is_picked predicate(sample_size, norm_frob_sq, &cooEntry::get_val_sq);
+//        is_picked predicate(sample_size, norm_frob_sq, std::ptr_fun(spars_prob));
 
         sample_iterator sampleIteratorBegin(predicate,
                                             populationIteratorBegin,
@@ -7814,14 +7832,18 @@ int saena_object::sparsify(std::vector<cooEntry>& A, std::vector<cooEntry>& A_sp
 }
 
 
-int saena_object::sparsify2(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, MPI_Comm comm) {
+int saena_object::sparsify_trsl2(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm) {
+
+    // function is not complete!
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
+    if(rank==0) std::cout << "\n" << __func__ << ":" << std::endl;
+
     nnz_t population_size = A.size();
-    nnz_t sample_size = nnz_t(0.95 * population_size);
+//    nnz_t sample_size = nnz_t(0.95 * population_size);
 //    nnz_t sample_size = 9;
 //    printf("population_size = %lu, sample_size = %lu\n", population_size, sample_size);
 
@@ -7848,3 +7870,141 @@ int saena_object::sparsify2(std::vector<cooEntry>& A, std::vector<cooEntry>& A_s
 
     return 0;
 }
+
+
+int saena_object::sparsify_drineas(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    if(rank==0) std::cout << "\n" << __func__ << ":" << std::endl;
+
+    // s = 28nln(sqrt(2)*n) / epsilon^2
+//    nnz_t sample_size = nnz_t( (double)28 * Ac->Mbig * log(sqrt(2) * Ac->Mbig) * norm_frob_sq / (sparse_epsilon * sparse_epsilon) );
+    if(rank==0) printf("sample size \t\t\t\t= %lu\n", sample_size);
+//    if(rank==0) printf("norm_frob_sq = %f, \tsparse_epsilon = %f, \tAc->Mbig = %u \n", norm_frob_sq, sparse_epsilon, Ac->Mbig);
+
+    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max). Type of random number distribution
+    std::mt19937 rng; //Mersenne Twister: Good quality random number generator
+    rng.seed(std::random_device{}()); //Initialize with non-deterministic seeds
+
+    std::vector<cooEntry> Ac_sample(sample_size);
+    double norm_temp = 0, criteria;
+    for(nnz_t i = 0; i < A.size(); i++){
+        norm_temp += A[i].val * A[i].val;
+
+        criteria = (A[i].val * A[i].val) / norm_temp;
+        for(nnz_t j = 0; j < sample_size; j++){
+            if(dist(rng) < criteria){
+//                std::cout << "dist(rng) = " << dist(rng) << "\tcriteria = " << criteria << "\tAc_sample[j] = " << Ac_sample[j] << std::endl;
+//                Ac_sample[j] = cooEntry(A[i].row, A[i].col, A[i].val);
+                Ac_sample[j] = A[i];
+            }
+        }
+    }
+
+//    if(rank==0) printf("Ac_sample.size() = %lu\n", Ac_sample.size());
+//    print_vector(Ac_sample, -1, "Ac_sample", A->comm);
+    std::sort(Ac_sample.begin(), Ac_sample.end());
+
+    // remove duplicates and change the values based on Algorithm 1 of Drineas' paper.
+    cooEntry temp;
+    double factor = norm_frob_sq / sample_size;
+    for(nnz_t i=0; i<Ac_sample.size(); i++){
+        temp = Ac_sample[i];
+        while(i<Ac_sample.size()-1 && Ac_sample[i] == Ac_sample[i+1]){ // values of entries with the same row and col should be added.
+            temp.val += Ac_sample[i+1].val;
+            i++;
+        }
+//        Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, factor / val_temp) );
+        A_spars.emplace_back( temp );
+    }
+
+    if(rank==0) printf("Ac size after sparsification \t\t= %lu\n", A_spars.size());
+
+    Ac_sample.clear();
+    Ac_sample.shrink_to_fit();
+
+    return 0;
+}
+
+
+int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    if(rank==0) std::cout << "\n" << __func__ << ":" << std::endl;
+//    if(rank==0) printf("Ac size before sparsification = %lu\n", A.size());
+
+    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max). Type of random number distribution
+    std::mt19937 rng; //Mersenne Twister: Good quality random number generator
+    rng.seed(std::random_device{}()); //Initialize with non-deterministic seeds
+
+    index_t A_passes = 1;
+    nnz_t iter = 0, i = 0;
+    std::vector<cooEntry> A_spars_dup;
+    while(i < sample_size){
+        if(dist(rng) < sample_size * ( A[iter].val * ( A[iter].val / norm_frob_sq )) ){
+            A_spars_dup.emplace_back(A[iter]);
+            i++;
+        }
+
+        iter++;
+        if(iter >= A.size()){
+            iter -= A.size();
+            A_passes++;
+        }
+    }
+
+//    if(rank==0) printf("A_spars_dup.size() = %lu\n", A_spars_dup.size());
+//    print_vector(A_spars_dup, -1, "A_spars_dup", comm);
+    std::sort(A_spars_dup.begin(), A_spars_dup.end());
+
+    // remove duplicates and change the values based on Algorithm 1 of Drineas' paper.
+    cooEntry temp;
+    double factor = norm_frob_sq / sample_size;
+    for(nnz_t i=0; i<A_spars_dup.size(); i++){
+        temp = A_spars_dup[i];
+        while(i<A_spars_dup.size()-1 && A_spars_dup[i] == A_spars_dup[i+1]){ // values of entries with the same row and col should be added.
+            temp.val += A_spars_dup[i+1].val;
+            i++;
+        }
+//        Ac->entry.emplace_back( cooEntry(A_spars_dup[i].row, A_spars_dup[i].col, factor / val_temp) );
+        A_spars.emplace_back( temp );
+    }
+
+//    print_vector(A_spars, -1, "A_spars", comm);
+    if(rank==0) printf("sparsified size = %lu\n", A_spars.size());
+    if(rank==0) printf("A_passes = %u\n", A_passes);
+
+    A_spars_dup.clear();
+    A_spars_dup.shrink_to_fit();
+
+    return 0;
+}
+
+
+double saena_object::spars_prob(cooEntry a){
+
+    if(a.row == a.col){
+        return 10000000;
+    } else{
+        return a.val * a.val;
+    }
+
+}
+
+/*
+double saena_object::spars_prob(cooEntry a, double norm_frob_sq){
+
+    if(a.row == a.col){
+        return norm_frob_sq;
+    } else{
+        return a.val * a.val;
+    }
+
+}
+ */
