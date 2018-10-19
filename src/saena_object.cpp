@@ -2997,6 +2997,7 @@ int saena_object::coarsen(Grid *grid) {$
         // remove duplicates.
         // compute Frobenius norm squared (norm_frob_sq).
         cooEntry temp;
+        double max_val = 0;
         double norm_frob_sq = 0;
         std::vector<cooEntry> Ac_orig;
 //        nnz_t no_sparse_size = 0;
@@ -3011,11 +3012,14 @@ int saena_object::coarsen(Grid *grid) {$
 //            if(temp.val * temp.val > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
                 Ac_orig.emplace_back( temp );
                 norm_frob_sq += temp.val * temp.val;
+                if(temp.val > max_val){
+                    max_val = temp.val;
+                }
 //            }
 //            no_sparse_size++; //todo: just for test. delete this later!
         }
 
-        if(rank==0) printf("\noriginal size   = %lu\n", Ac_orig.size());
+//        if(rank==0) printf("\noriginal size   = %lu\n", Ac_orig.size());
 //        if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
 //        if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
 
@@ -3025,8 +3029,9 @@ int saena_object::coarsen(Grid *grid) {$
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
 
-        auto sample_size = nnz_t(0.9 * Ac_orig.size());
-        if(rank==0) printf("sample_size     = %lu \n", sample_size);
+        auto sample_size = nnz_t(0.8 * Ac_orig.size());
+//        auto sample_size = nnz_t(Ac->Mbig * Ac->Mbig * A->density);
+//        if(rank==0) printf("sample_size     = %lu \n", sample_size);
 
         if(sparsifier == "TRSL"){
 
@@ -3038,7 +3043,7 @@ int saena_object::coarsen(Grid *grid) {$
 
         }else if(sparsifier == "majid"){
 
-            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
+            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
 
         }else{
             printf("\nerror: wrong sparsifier!");
@@ -7930,7 +7935,58 @@ int saena_object::sparsify_drineas(std::vector<cooEntry> & A, std::vector<cooEnt
 }
 
 
-int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm){
+int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    if(rank==0) std::cout << "\n" << __func__ << ":" << std::endl;
+//    print_vector(A, -1, "A", comm);
+
+    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max). Type of random number distribution
+    std::mt19937 rng; //Mersenne Twister: Good quality random number generator
+    rng.seed(std::random_device{}()); //Initialize with non-deterministic seeds
+
+    std::vector<bool> chosen(A.size(), false);
+    double max_prob_inv = norm_frob_sq / max_val / max_val;
+    double prob, rand, rand_factor = 1;
+    index_t A_passes = 1;
+    nnz_t iter = 0, i = 0;
+    while(i < sample_size){
+        prob = max_prob_inv * ( A[iter].val * ( A[iter].val / norm_frob_sq ));
+        rand = dist(rng) * rand_factor;
+//        if(rank==0 && !chosen[iter]) printf("prob = %.8f, \trand = %.8f, \tA.row = %u, \tA.col = %u \n",
+//                                            prob, rand, A[iter].row, A[iter].col);
+
+        if( !chosen[iter] && ( (rand < prob) || (A[iter].row == A[iter].col) ) ){
+            A_spars.emplace_back(A[iter]);
+            i++;
+            chosen[iter] = true;
+        }
+
+        iter++;
+        if(iter >= A.size()){
+            iter -= A.size();
+            A_passes++;
+            rand_factor /= 10;
+//            if(rank==0) printf("\nA_pass %u: \n", A_passes);
+        }
+    }
+
+    std::sort(A_spars.begin(), A_spars.end());
+
+//    print_vector(A_spars, -1, "A_spars", comm);
+    if(rank==0) printf("original size   = %lu\n", A.size());
+//    if(rank==0) printf("sample size     = %lu\n", sample_size);
+    if(rank==0) printf("sparsified size = %lu\n", A_spars.size());
+    if(rank==0) printf("A_passes        = %u\n", A_passes);
+
+    return 0;
+}
+
+
+int saena_object::sparsify_majid_with_dup(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -7943,11 +7999,12 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     std::mt19937 rng; //Mersenne Twister: Good quality random number generator
     rng.seed(std::random_device{}()); //Initialize with non-deterministic seeds
 
+    double max_prob_inv = norm_frob_sq / max_val / max_val;
     index_t A_passes = 1;
     nnz_t iter = 0, i = 0;
     std::vector<cooEntry> A_spars_dup;
     while(i < sample_size){
-        if(dist(rng) < sample_size * ( A[iter].val * ( A[iter].val / norm_frob_sq )) ){
+        if( dist(rng) < max_prob_inv * ( A[iter].val * ( A[iter].val / norm_frob_sq )) ){
             A_spars_dup.emplace_back(A[iter]);
             i++;
         }
