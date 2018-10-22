@@ -86,6 +86,7 @@ public:
                 index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
 //    int coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
+
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
     int aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
