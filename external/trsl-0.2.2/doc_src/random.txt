@@ -1,0 +1,31 @@
+// (C) Copyright Renaud Detry   2007-2008.
+// Distributed under the Boost Software License, Version 1.0. (See
+// accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+/**
+ * @defgroup random Random Number Generators
+ *
+ * Some of the classes in TRSL need random numbers. If a class needs only
+ * one random number (e.g. trsl::is_picked_systematic), it is generally
+ * possible to provide it directly. It's then up to the user
+ * to take care of the random generator.
+ * 
+ * Another possibility is to use TRSL-internal random capabilities,
+ * implemented using system random number generators. By default, the
+ * <tt>std::rand</tt> function is used.
+ * 
+ * The <tt>std::rand</tt> generator that comes with BSD systems (including
+ * MacOS X) has slight issues &mdash; e.g. some bits of the returned
+ * numbers are not usable. However, BSD systems provide a second, better
+ * random number generator through a function named
+ * <tt>::%random</tt>. This function will be used instead of <tt>std::rand</tt>
+ * if TRSL_USE_BSD_BETTER_RANDOM_GENERATOR is defined. In that case,
+ * seeding should be done through <tt>::%srandom</tt>. Note that in
+ * GNU/Linux systems, both <tt>std::rand</tt> and <tt>::%random</tt> use the
+ * same generator.
+ * 
+ * When relying on TRSL-internal <tt>std::rand/::%random</tt> calls, the user is
+ * still responsible for seeding the random number generator.
+ * 
+ */

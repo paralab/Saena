@@ -1,0 +1,150 @@
+\hypertarget{classtrsl_1_1is__picked__systematic}{
+\subsection{trsl::is\_\-picked\_\-systematic$<$ ElementType, WeightType, WeightAccessor $>$ Class Template Reference}
+\label{classtrsl_1_1is__picked__systematic}\index{trsl::is\_\-picked\_\-systematic@{trsl::is\_\-picked\_\-systematic}}
+}
+
+
+Functor to use with \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} for systematic sampling of a range.  
+
+
+{\ttfamily \#include $<$is\_\-picked\_\-systematic.hpp$>$}\subsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1is__picked__systematic_a1f5e0255284dff2537b129fe9e3b619e}{
+typedef ElementType {\bfseries element\_\-type}}
+\label{classtrsl_1_1is__picked__systematic_a1f5e0255284dff2537b129fe9e3b619e}
+
+\item 
+\hypertarget{classtrsl_1_1is__picked__systematic_a5a0540f7315ffb38d8aec43e7c6f9bb4}{
+typedef WeightType {\bfseries weight\_\-type}}
+\label{classtrsl_1_1is__picked__systematic_a5a0540f7315ffb38d8aec43e7c6f9bb4}
+
+\item 
+\hypertarget{classtrsl_1_1is__picked__systematic_ae6d759df217dd322bbe88ee537eeeed0}{
+typedef WeightAccessor {\bfseries weight\_\-accessor\_\-type}}
+\label{classtrsl_1_1is__picked__systematic_ae6d759df217dd322bbe88ee537eeeed0}
+
+\end{DoxyCompactItemize}
+\subsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classtrsl_1_1is__picked__systematic_a6e812d5651e0ee441f508c0ab88c692d}{is\_\-picked\_\-systematic} ()
+\begin{DoxyCompactList}\small\item\em Default constructor, shoud not be used explicitely. \item\end{DoxyCompactList}\item 
+\hyperlink{classtrsl_1_1is__picked__systematic_a74577120b2a697ad3a91f538a844b055}{is\_\-picked\_\-systematic} (size\_\-t sampleSize, WeightType populationWeight, WeightAccessor const \&wac=WeightAccessor())
+\begin{DoxyCompactList}\small\item\em Construction with system-\/provided random number. \item\end{DoxyCompactList}\item 
+\hyperlink{classtrsl_1_1is__picked__systematic_abc605b982bcf8ff63eedcd95e4d1e64a}{is\_\-picked\_\-systematic} (size\_\-t sampleSize, WeightType populationWeight, WeightType uniform01, WeightAccessor const \&wac=WeightAccessor())
+\begin{DoxyCompactList}\small\item\em Construction with user-\/provided random number. \item\end{DoxyCompactList}\item 
+bool \hyperlink{classtrsl_1_1is__picked__systematic_a95574c2aeff95ece7389efaa915e5d12}{operator()} (const ElementType \&e)
+\begin{DoxyCompactList}\small\item\em Decides whether {\ttfamily e} should be picked or not (used by \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator}). \item\end{DoxyCompactList}\item 
+bool \hyperlink{classtrsl_1_1is__picked__systematic_a47828e07ba7bc503b503e069e145d68a}{is\_\-first\_\-pick} (const ElementType \&e) const 
+\begin{DoxyCompactList}\small\item\em Return whether {\ttfamily e} has been picked already. \item\end{DoxyCompactList}\item 
+bool \hyperlink{classtrsl_1_1is__picked__systematic_aaa69edda00def493c8c50c2d0164f64c}{operator==} (const \hyperlink{classtrsl_1_1is__picked__systematic}{is\_\-picked\_\-systematic}$<$ ElementType, WeightType, WeightAccessor $>$ \&p) const 
+\begin{DoxyCompactList}\small\item\em Returns whether two predicates are at the same sampling advancement. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+\subsubsection*{template$<$typename ElementType, typename WeightType = double, typename WeightAccessor = mp\_\-weight\_\-accessor$<$WeightType, ElementType$>$$>$ class trsl::is\_\-picked\_\-systematic$<$ ElementType, WeightType, WeightAccessor $>$}
+
+Functor to use with \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} for systematic sampling of a range. The sampling method is systematic sampling \mbox{[}1, 2\mbox{]}.
+
+This class is intended to be used as a predicate functor to \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator} to form a {\itshape sample iterator\/}. The sample iterator accesses a population of elements through a range defined by a pair of Forward Iterators (begin/end), and provides on-\/the-\/fly iteration through a sample of the population.
+
+Systematic sampling may perform very badly if the order in which the input population is presented is following a pattern. If a pattern is likely to occur in the population, the user may want to pipe the sample iterator {\itshape after\/} a \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator}, or use \hyperlink{classtrsl_1_1is__picked__systematic}{is\_\-picked\_\-systematic} with \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}. The resulting iterator effectively implements {\itshape probability sampling\/}. The price to pay for probability sampling is a {\itshape Random Access Iterator\/}. While \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} will work e.g. with {\ttfamily std::list}, \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator} requires e.g. {\ttfamily std::vector} or {\ttfamily std::deque}.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em ElementType}]Type of the elements in the population. Constness and reference modifiers are handled internally; this parameter should be a bare type, e.g. {\ttfamily Particle} ({\itshape not\/} {\ttfamily const Particle\&}).\item[{\em WeightType}]Element weight type, should be a floating point type. Defaults to {\ttfamily double}.\item[{\em WeightAccessor}]Type of the accessor that will allow to extract weights from elements. Defaults to \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor}, see \hyperlink{group__accessor}{Accessors} for further details on accessors.\end{DoxyParams}
+{\bfseries References:}
+
+
+\begin{DoxyItemize}
+\item \mbox{[}1\mbox{]} R. Douc, O. Cappe, and E. Moulines. Comparison of resampling schemes for particle filtering. International Symposium on Parallel and Distributed Processing and Applications, 2005:64, 2005.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item \mbox{[}2\mbox{]} J. Hol, T. Sch\"{o}n, and F. Gustafsson. On resampling algorithms for particle filters. In Nonlinear Statistical Signal Processing Workshop, 2006. 
+\end{DoxyItemize}\begin{Desc}
+\item[Examples: ]\par
+
+
+\hyperlink{ParticleCollection_8hpp-example}{ParticleCollection.hpp}, \hyperlink{trsl__example1_8cpp-example}{trsl\_\-example1.cpp}, and \hyperlink{trsl__example2_8cpp-example}{trsl\_\-example2.cpp}.\end{Desc}
+
+
+Definition at line 77 of file is\_\-picked\_\-systematic.hpp.
+
+\subsubsection{Constructor \& Destructor Documentation}
+\hypertarget{classtrsl_1_1is__picked__systematic_a6e812d5651e0ee441f508c0ab88c692d}{
+\index{trsl::is\_\-picked\_\-systematic@{trsl::is\_\-picked\_\-systematic}!is\_\-picked\_\-systematic@{is\_\-picked\_\-systematic}}
+\index{is\_\-picked\_\-systematic@{is\_\-picked\_\-systematic}!trsl::is_picked_systematic@{trsl::is\_\-picked\_\-systematic}}
+\paragraph[{is\_\-picked\_\-systematic}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename ElementType, typename WeightType = double, typename WeightAccessor = mp\_\-weight\_\-accessor$<$WeightType, ElementType$>$$>$ {\bf trsl::is\_\-picked\_\-systematic}$<$ ElementType, WeightType, WeightAccessor $>$::{\bf is\_\-picked\_\-systematic} ()\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1is__picked__systematic_a6e812d5651e0ee441f508c0ab88c692d}
+
+
+Default constructor, shoud not be used explicitely. This constructor makes an invalid predicate. It should only be used in cases where the predicate is never used. 
+
+Definition at line 92 of file is\_\-picked\_\-systematic.hpp.\hypertarget{classtrsl_1_1is__picked__systematic_a74577120b2a697ad3a91f538a844b055}{
+\index{trsl::is\_\-picked\_\-systematic@{trsl::is\_\-picked\_\-systematic}!is\_\-picked\_\-systematic@{is\_\-picked\_\-systematic}}
+\index{is\_\-picked\_\-systematic@{is\_\-picked\_\-systematic}!trsl::is_picked_systematic@{trsl::is\_\-picked\_\-systematic}}
+\paragraph[{is\_\-picked\_\-systematic}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename ElementType, typename WeightType = double, typename WeightAccessor = mp\_\-weight\_\-accessor$<$WeightType, ElementType$>$$>$ {\bf trsl::is\_\-picked\_\-systematic}$<$ ElementType, WeightType, WeightAccessor $>$::{\bf is\_\-picked\_\-systematic} (size\_\-t {\em sampleSize}, \/  WeightType {\em populationWeight}, \/  WeightAccessor const \& {\em wac} = {\ttfamily WeightAccessor()})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1is__picked__systematic_a74577120b2a697ad3a91f538a844b055}
+
+
+Construction with system-\/provided random number. The systematic sampling predicate initialization needs a random number in {\ttfamily \mbox{[}0,1\mbox{[}}. This constructor uses \hyperlink{namespacetrsl_1_1rand__gen_af0b1115635aac6b7eff68ca6e6846652}{trsl::rand\_\-gen::uniform\_\-01} to generate that number. See \hyperlink{group__random}{Random Number Generators} for more details.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em sampleSize}]Number of elements in the sample, within {\ttfamily \mbox{[}0, infinity\mbox{[}}.\item[{\em populationWeight}]Total weight of the population, within {\ttfamily \mbox{]}0, infinity\mbox{[}}. Generally equal to 1.\item[{\em wac}]Weight accessor. Defaults to \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor}. Note that if you don't pass explicitly a \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor}({\ttfamily \&ElementType::GETWEIGHTMETHOD}), the default constructor for \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor} will setup to always return 1, ignoring element weights. See \hyperlink{group__accessor}{Accessors} for further details.\end{DoxyParams}
+The population weight has to be strictly larger than 0. Also, {\ttfamily WeightType} should be fine enough to allow the sum of all element weights to be close to {\ttfamily populationWeight}. 
+
+Definition at line 124 of file is\_\-picked\_\-systematic.hpp.\hypertarget{classtrsl_1_1is__picked__systematic_abc605b982bcf8ff63eedcd95e4d1e64a}{
+\index{trsl::is\_\-picked\_\-systematic@{trsl::is\_\-picked\_\-systematic}!is\_\-picked\_\-systematic@{is\_\-picked\_\-systematic}}
+\index{is\_\-picked\_\-systematic@{is\_\-picked\_\-systematic}!trsl::is_picked_systematic@{trsl::is\_\-picked\_\-systematic}}
+\paragraph[{is\_\-picked\_\-systematic}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename ElementType, typename WeightType = double, typename WeightAccessor = mp\_\-weight\_\-accessor$<$WeightType, ElementType$>$$>$ {\bf trsl::is\_\-picked\_\-systematic}$<$ ElementType, WeightType, WeightAccessor $>$::{\bf is\_\-picked\_\-systematic} (size\_\-t {\em sampleSize}, \/  WeightType {\em populationWeight}, \/  WeightType {\em uniform01}, \/  WeightAccessor const \& {\em wac} = {\ttfamily WeightAccessor()})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1is__picked__systematic_abc605b982bcf8ff63eedcd95e4d1e64a}
+
+
+Construction with user-\/provided random number. The systematic sampling predicate initialization needs a random number in {\ttfamily \mbox{[}0,1\mbox{[}}. This constructor allows the user to provide that number directly; the user is free to choose a fancy random number generator, such as the \href{http://www.boost.org/libs/random/index.html}{\tt Boost Random Number Library} or \href{http://www.gnu.org/software/gsl/manual/html_node/Random-Number-Generation.html}{\tt GSL}.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em sampleSize}]Number of elements in the sample, within {\ttfamily \mbox{[}0, infinity\mbox{[}}.\item[{\em populationWeight}]Total weight of the population, within {\ttfamily \mbox{]}0, infinity\mbox{[}}. Generally equal to 1.\item[{\em uniform01}]Random number in {\ttfamily \mbox{[}0,1\mbox{[}}.\item[{\em wac}]Weight accessor. Defaults to \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor}. Note that if you don't pass explicitly a \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor}({\ttfamily \&ElementType::GETWEIGHTMETHOD}), the default constructor for \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor} will setup to always return 1, ignoring element weights. See \hyperlink{group__accessor}{Accessors} for further details.\end{DoxyParams}
+The population weight has to be strictly larger than 0. Also, {\ttfamily WeightType} should be fine enough to allow the sum of all element weights to be close to {\ttfamily populationWeight}. 
+
+Definition at line 164 of file is\_\-picked\_\-systematic.hpp.
+
+\subsubsection{Member Function Documentation}
+\hypertarget{classtrsl_1_1is__picked__systematic_a47828e07ba7bc503b503e069e145d68a}{
+\index{trsl::is\_\-picked\_\-systematic@{trsl::is\_\-picked\_\-systematic}!is\_\-first\_\-pick@{is\_\-first\_\-pick}}
+\index{is\_\-first\_\-pick@{is\_\-first\_\-pick}!trsl::is_picked_systematic@{trsl::is\_\-picked\_\-systematic}}
+\paragraph[{is\_\-first\_\-pick}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename ElementType, typename WeightType = double, typename WeightAccessor = mp\_\-weight\_\-accessor$<$WeightType, ElementType$>$$>$ bool {\bf trsl::is\_\-picked\_\-systematic}$<$ ElementType, WeightType, WeightAccessor $>$::is\_\-first\_\-pick (const ElementType \& {\em e}) const\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1is__picked__systematic_a47828e07ba7bc503b503e069e145d68a}
+
+
+Return whether {\ttfamily e} has been picked already. This method will return a coherent value only if the last call of \hyperlink{classtrsl_1_1is__picked__systematic_a95574c2aeff95ece7389efaa915e5d12}{operator()(const ElementType\&)} was on {\ttfamily e} and returned true. When \hyperlink{classtrsl_1_1is__picked__systematic}{is\_\-picked\_\-systematic} is used with a presistent\_\-filter\_\-iterator {\ttfamily i}, this assumption is always valid for {\ttfamily $\ast$i} as long as {\ttfamily i} is not the end.
+
+This method is awkward to use directly; it is meant to be called by \hyperlink{namespacetrsl_a412db7961cfc65236d71610635038225}{trsl::is\_\-first\_\-pick}. 
+
+Definition at line 226 of file is\_\-picked\_\-systematic.hpp.\hypertarget{classtrsl_1_1is__picked__systematic_a95574c2aeff95ece7389efaa915e5d12}{
+\index{trsl::is\_\-picked\_\-systematic@{trsl::is\_\-picked\_\-systematic}!operator()@{operator()}}
+\index{operator()@{operator()}!trsl::is_picked_systematic@{trsl::is\_\-picked\_\-systematic}}
+\paragraph[{operator()}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename ElementType, typename WeightType = double, typename WeightAccessor = mp\_\-weight\_\-accessor$<$WeightType, ElementType$>$$>$ bool {\bf trsl::is\_\-picked\_\-systematic}$<$ ElementType, WeightType, WeightAccessor $>$::operator() (const ElementType \& {\em e})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1is__picked__systematic_a95574c2aeff95ece7389efaa915e5d12}
+
+
+Decides whether {\ttfamily e} should be picked or not (used by \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator}). Part of the requirements for \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} predicates. 
+
+Definition at line 181 of file is\_\-picked\_\-systematic.hpp.\hypertarget{classtrsl_1_1is__picked__systematic_aaa69edda00def493c8c50c2d0164f64c}{
+\index{trsl::is\_\-picked\_\-systematic@{trsl::is\_\-picked\_\-systematic}!operator==@{operator==}}
+\index{operator==@{operator==}!trsl::is_picked_systematic@{trsl::is\_\-picked\_\-systematic}}
+\paragraph[{operator==}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename ElementType, typename WeightType = double, typename WeightAccessor = mp\_\-weight\_\-accessor$<$WeightType, ElementType$>$$>$ bool {\bf trsl::is\_\-picked\_\-systematic}$<$ ElementType, WeightType, WeightAccessor $>$::operator== (const {\bf is\_\-picked\_\-systematic}$<$ ElementType, WeightType, WeightAccessor $>$ \& {\em p}) const\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1is__picked__systematic_aaa69edda00def493c8c50c2d0164f64c}
+
+
+Returns whether two predicates are at the same sampling advancement. Part of the requirements for \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} predicates. 
+
+Definition at line 243 of file is\_\-picked\_\-systematic.hpp.
+
+The documentation for this class was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{is__picked__systematic_8hpp}{is\_\-picked\_\-systematic.hpp}\end{DoxyCompactItemize}

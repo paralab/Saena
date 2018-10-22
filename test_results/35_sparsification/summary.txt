@@ -1,0 +1,49 @@
+sparsification for the first level of multigrid for different epsilon values
+
+epsilon: 0.8
+iteration to converge:8
+
+original size without sparsification   	= 1803
+filtered Ac size before sparsification 	= 1241
+sample size 				= 90151
+Ac size after sparsification 		= 1113
+
+------------------------------------------------
+
+epsilon: 1
+iteration to converge:8
+
+original size without sparsification   	= 1803
+filtered Ac size before sparsification 	= 1177
+sample size 				= 57670
+Ac size after sparsification 		= 1011
+
+------------------------------------------------
+
+epsilon: 2
+iteration to converge:9
+
+original size without sparsification   	= 1803
+filtered Ac size before sparsification 	= 821
+sample size 				= 14332
+Ac size after sparsification 		= 547
+
+------------------------------------------------
+
+epsilon: 3
+iteration to converge:10
+
+original size without sparsification   	= 1803
+filtered Ac size before sparsification 	= 339
+sample size 				= 6185
+Ac size after sparsification 		= 247
+
+------------------------------------------------
+
+epsilon: 4
+iteration to converge:10
+
+original size without sparsification   	= 1803
+filtered Ac size before sparsification 	= 215
+sample size 				= 3436
+Ac size after sparsification 		= 149

@@ -1,0 +1,121 @@
+[u1013493@kp359:build]$ mpirun -np 1 ./Saena 5 5 5 0.8
+usage: ./Saena x_size y_size z_size sparse_epsilon 
+
+sp_epsilon = 0.800000 
+
+number of processes = 1, number of threads = 1
+
+_____________________________
+
+level = 0 
+number of procs = 1 
+matrix size 	= 125 
+nonzero 	= 725 
+density 	= 0.046400 
+
+connStrength = 0.30 
+current size = 125 
+new size     = 63 
+division     = 1.98
+
+original size without sparsification   	= 1803
+filtered Ac size before sparsification 	= 1241
+sample size 				= 90151
+Ac size after sparsification 		= 1113
+_____________________________
+
+level = 1 
+number of procs = 1 
+matrix size 	= 63 
+nonzero 	= 1113 
+density 	= 0.280423 
+
+connStrength = 0.30 
+current size = 63 
+new size     = 33 
+division     = 1.91
+
+original size without sparsification   	= 1089
+filtered Ac size before sparsification 	= 33
+sample size 				= 11252
+Ac size after sparsification 		= 33
+_____________________________
+
+level = 2 
+number of procs = 1 
+matrix size 	= 33 
+nonzero 	= 33 
+density 	= 0.030303 
+
+connStrength = 0.30 
+current size = 33 
+new size     = 33 
+division     = 1.00
+
+connStrength = 0.25 
+current size = 33 
+new size     = 33 
+division     = 1.00
+
+connStrength = 0.20 
+current size = 33 
+new size     = 33 
+division     = 1.00
+
+original size without sparsification   	= 33
+filtered Ac size before sparsification 	= 33
+sample size 				= 2260
+Ac size after sparsification 		= 33
+_____________________________
+
+level = 3 
+number of procs = 1 
+matrix size 	= 33 
+nonzero 	= 33 
+density 	= 0.030303 
+_____________________________
+
+number of levels = << 2 >> (the finest level is 0)
+
+******************************************************
+******************************************************
+
+initial residual = 4.060862e+00 
+
+Vcycle 1: 0.0079503125  	0.0019577892 
+Vcycle 2: 0.0004997419  	0.0628581438 
+Vcycle 3: 0.0000005031  	0.0010066936 
+Vcycle 4: 0.0000000453  	0.0899600607 
+Vcycle 5: 0.0000000056  	0.1231339012 
+Vcycle 6: 0.0000000005  	0.0977932859 
+Vcycle 7: 0.0000000000  	0.0746083464 
+Vcycle 8: 0.0000000000  	0.0084847309 
+
+******************************************************
+
+final:
+stopped at iteration    = 8 
+final absolute residual = 3.449888e-13
+relative residual       = 8.495456e-14 
+
+******************************************************
+
+Solve:
+min: 0.00686026
+ave: 0.00686026
+max: 0.00686026
+
+
+#####################################
+
+start level 0 of 2 
+start level 1 of 2 
+start level 2 of 2 
+
+time results:
+
+level 	local 		remote 		comm 		total
+0	1.14106e-05	7.30613e-07	-1.15065e-05	6.34748e-07
+1	1.42487e-05	7.44633e-07	-1.43404e-05	6.52918e-07
+2	2.79431e-06	8.06317e-07	-2.85184e-06	7.48786e-07
+

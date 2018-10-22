@@ -1,0 +1,74 @@
+\hypertarget{classtrsl_1_1mp__weight__accessor}{
+\subsection{trsl::mp\_\-weight\_\-accessor$<$ WeightType, ElementType $>$ Class Template Reference}
+\label{classtrsl_1_1mp__weight__accessor}\index{trsl::mp\_\-weight\_\-accessor@{trsl::mp\_\-weight\_\-accessor}}
+}
+
+
+Method Pointer weight accessor.  
+
+
+{\ttfamily \#include $<$weight\_\-accessor.hpp$>$}\subsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1mp__weight__accessor_af9df7e4d41291bf0e6f29ad10a0cb8c8}{
+typedef WeightType(ElementType::$\ast$ \hyperlink{classtrsl_1_1mp__weight__accessor_af9df7e4d41291bf0e6f29ad10a0cb8c8}{WeightAccessorMethodPointer} )() const }
+\label{classtrsl_1_1mp__weight__accessor_af9df7e4d41291bf0e6f29ad10a0cb8c8}
+
+\begin{DoxyCompactList}\small\item\em Pointer to a const method of ElementType that returns double. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classtrsl_1_1mp__weight__accessor_a11a52dfed053534bf1003a917d2ec28b}{mp\_\-weight\_\-accessor} (\hyperlink{classtrsl_1_1mp__weight__accessor_af9df7e4d41291bf0e6f29ad10a0cb8c8}{WeightAccessorMethodPointer} wptr=NULL)
+\begin{DoxyCompactList}\small\item\em Constructor from a WeightAccessorMethodPointer. \item\end{DoxyCompactList}\item 
+WeightType \hyperlink{classtrsl_1_1mp__weight__accessor_aff20477c2a3c98508fe2f26effb49000}{operator()} (ElementType const \&e) const 
+\begin{DoxyCompactList}\small\item\em Functor implementation. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+\subsubsection*{template$<$typename WeightType, typename ElementType$>$ class trsl::mp\_\-weight\_\-accessor$<$ WeightType, ElementType $>$}
+
+Method Pointer weight accessor. Weight accessor for element classes that provide access to their weight through a method signed {\ttfamily WeightType (ElementType::$\ast$)() const}.
+
+This class is very similar to {\ttfamily std::const\_\-mem\_\-fun\_\-ref\_\-t}. The only two differences are 
+\begin{DoxyItemize}
+\item \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor} provides a default constructor that initializes the method pointer to NULL; 
+\item \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor} checks if the method pointer is NULL before dereferencing it.
+\end{DoxyItemize}These differences allow \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor} to be used as a default type for \hyperlink{classtrsl_1_1is__picked__systematic}{is\_\-picked\_\-systematic} weight accessor, since a default-\/value initialization won't imply segfault. However, access is a bit slower because of the extra check for a non-\/NULL pointer. If the pointer is NULL, {\ttfamily operator()} returns 1.
+
+See \hyperlink{group__accessor}{Accessors} for more details. 
+
+Definition at line 61 of file weight\_\-accessor.hpp.
+
+\subsubsection{Constructor \& Destructor Documentation}
+\hypertarget{classtrsl_1_1mp__weight__accessor_a11a52dfed053534bf1003a917d2ec28b}{
+\index{trsl::mp\_\-weight\_\-accessor@{trsl::mp\_\-weight\_\-accessor}!mp\_\-weight\_\-accessor@{mp\_\-weight\_\-accessor}}
+\index{mp\_\-weight\_\-accessor@{mp\_\-weight\_\-accessor}!trsl::mp_weight_accessor@{trsl::mp\_\-weight\_\-accessor}}
+\paragraph[{mp\_\-weight\_\-accessor}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename WeightType , typename ElementType $>$ {\bf trsl::mp\_\-weight\_\-accessor}$<$ WeightType, ElementType $>$::{\bf mp\_\-weight\_\-accessor} ({\bf WeightAccessorMethodPointer} {\em wptr} = {\ttfamily NULL})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1mp__weight__accessor_a11a52dfed053534bf1003a917d2ec28b}
+
+
+Constructor from a WeightAccessorMethodPointer. 
+\begin{DoxyParams}{Parameters}
+\item[{\em wptr}]Pointer to the method of ElementType that returns the element weight. If no pointer is passed, operator() will return 1 all the time. \end{DoxyParams}
+
+
+Definition at line 75 of file weight\_\-accessor.hpp.
+
+\subsubsection{Member Function Documentation}
+\hypertarget{classtrsl_1_1mp__weight__accessor_aff20477c2a3c98508fe2f26effb49000}{
+\index{trsl::mp\_\-weight\_\-accessor@{trsl::mp\_\-weight\_\-accessor}!operator()@{operator()}}
+\index{operator()@{operator()}!trsl::mp_weight_accessor@{trsl::mp\_\-weight\_\-accessor}}
+\paragraph[{operator()}]{\setlength{\rightskip}{0pt plus 5cm}template$<$typename WeightType , typename ElementType $>$ WeightType {\bf trsl::mp\_\-weight\_\-accessor}$<$ WeightType, ElementType $>$::operator() (ElementType const \& {\em e}) const\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1mp__weight__accessor_aff20477c2a3c98508fe2f26effb49000}
+
+
+Functor implementation. \begin{DoxyReturn}{Returns}
+1 if wptr\_\- is NULL, {\ttfamily e.$\ast$wptr\_\-()} else. 
+\end{DoxyReturn}
+
+
+Definition at line 83 of file weight\_\-accessor.hpp.
+
+The documentation for this class was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{weight__accessor_8hpp}{weight\_\-accessor.hpp}\end{DoxyCompactItemize}

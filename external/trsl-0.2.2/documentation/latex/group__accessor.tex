@@ -1,0 +1,67 @@
+\hypertarget{group__accessor}{
+\subsection{Accessors}
+\label{group__accessor}\index{Accessors@{Accessors}}
+}
+Accessors are usually called at least once for each element of the accessed collection. Hence, they should be designed carefully in every situation where performance is an issue. For example, one can gain a lot by having the compiler inline accessors.\hypertarget{group__accessor_accessor_accessor_types}{}\subsubsection{Accessor Types}\label{group__accessor_accessor_accessor_types}
+This section describes different types of accessor. In the following, we assume elements to be {\ttfamily Particle}s. 
+\begin{DoxyCode}
+ class Particle
+ {
+ public:
+   Particle(double weight, double x, double y) :
+     x_(x), y_(y), weight_(weight) {}
+   
+   void setWeight(const double weight) { weight_ = weight; }
+   double getWeight() const { return weight_; };
+ 
+ private:
+   double x_;
+   double y_;
+   double weight_;
+ };
+\end{DoxyCode}
+\hypertarget{group__accessor_accessor_functor}{}\paragraph{Functor}\label{group__accessor_accessor_functor}
+
+\begin{DoxyCode}
+ struct functor_weight_accessor {
+   double operator() (const Particle& p) const
+   { return p.getWeight(); }
+ };
+\end{DoxyCode}
+
+
+
+\begin{DoxyDescription}
+\item[Accessor Type ]{\ttfamily functor\_\-weight\_\-accessor} 
+\item[Accessor object, to pass to the object that needs access ]{\ttfamily functor\_\-weight\_\-accessor()} 
+\end{DoxyDescription}
+
+An example of functor accessor is \hyperlink{structtrsl_1_1weight__accessor}{trsl::weight\_\-accessor}, which always returns 1 --- useful if elements have uniform weights.\hypertarget{group__accessor_accessor_functionpointer}{}\paragraph{Function Pointer}\label{group__accessor_accessor_functionpointer}
+
+\begin{DoxyCode}
+ double function_pointer_weight_accessor(const Particle& p)
+ { return p.getWeight(); }
+\end{DoxyCode}
+
+
+
+\begin{DoxyDescription}
+\item[Accessor Type ]{\ttfamily std::pointer\_\-to\_\-unary\_\-function$<$const Particle\&, double$>$} 
+\item[Accessor object, to pass to the object that needs access ]{\ttfamily std::ptr\_\-fun(function\_\-pointer\_\-weight\_\-accessor)} 
+\end{DoxyDescription}\hypertarget{group__accessor_accessor_methodpointer}{}\paragraph{Method Pointer}\label{group__accessor_accessor_methodpointer}
+
+\begin{DoxyDescription}
+\item[Accessor Type ]{\ttfamily std::const\_\-mem\_\-fun\_\-ref\_\-t$<$double, Particle$>$} 
+\item[Accessor object, to pass to the object that needs access ]{\ttfamily std::mem\_\-fun\_\-ref(\&Particle::getWeight)} 
+\end{DoxyDescription}
+
+Method pointer is currently the default in \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic} (but subject to change, see \hyperlink{group__accessor_accessor_discussion}{Discussion}). The implementation used in TRSL is not std::const\_\-mem\_\-fun\_\-ref\_\-t however, but \hyperlink{classtrsl_1_1mp__weight__accessor}{trsl::mp\_\-weight\_\-accessor} which allows a default construction without implying segfault when called --- that comes with a price, see \hyperlink{classtrsl_1_1mp__weight__accessor}{trsl::mp\_\-weight\_\-accessor}.
+
+
+\begin{DoxyDescription}
+\item[Accessor Type ]{\ttfamily trsl::mp\_\-weight\_\-accessor$<$double, Particle$>$} 
+\item[Accessor object, to pass to the object that needs access ]{\ttfamily \&Particle::getWeight} (implicit conversion) 
+\end{DoxyDescription}
+
+The pointer to {\ttfamily getWeight} implicitly constructs a \hyperlink{classtrsl_1_1mp__weight__accessor}{trsl::mp\_\-weight\_\-accessor}. (Why does the std counterpart have an explicit constructor?)\hypertarget{group__accessor_accessor_discussion}{}\subsubsection{Discussion}\label{group__accessor_accessor_discussion}
+I had the impression that GCC was able to inline fuctions from pointers. Performance tests on accessors (see {\ttfamily tests/accessor\_\-efficiency.cpp}) tend to contradict this impression. With {\ttfamily -\/03} optimization, the functor accessor is twice as fast as other accessors. Please comment if you know more about this. 

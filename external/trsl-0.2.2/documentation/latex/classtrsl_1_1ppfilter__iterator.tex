@@ -1,0 +1,91 @@
+\hypertarget{classtrsl_1_1ppfilter__iterator}{
+\subsection{trsl::ppfilter\_\-iterator$<$ Predicate, ElementIterator $>$ Class Template Reference}
+\label{classtrsl_1_1ppfilter__iterator}\index{trsl::ppfilter\_\-iterator@{trsl::ppfilter\_\-iterator}}
+}
+
+
+Random permutation, persistent filter iterator.  
+
+
+{\ttfamily \#include $<$ppfilter\_\-iterator.hpp$>$}\subsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1ppfilter__iterator_aaf6381837631e4f5958062691e195c8d}{
+typedef base\_\-t::element\_\-iterator {\bfseries element\_\-iterator}}
+\label{classtrsl_1_1ppfilter__iterator_aaf6381837631e4f5958062691e195c8d}
+
+\end{DoxyCompactItemize}
+\subsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1ppfilter__iterator_a3eea027a52e75d8d2840e8d6daca79a1}{
+\hyperlink{classtrsl_1_1ppfilter__iterator_a3eea027a52e75d8d2840e8d6daca79a1}{ppfilter\_\-iterator} (Predicate f, ElementIterator first, ElementIterator last)}
+\label{classtrsl_1_1ppfilter__iterator_a3eea027a52e75d8d2840e8d6daca79a1}
+
+\begin{DoxyCompactList}\small\item\em Constructor. \item\end{DoxyCompactList}\item 
+{\footnotesize template$<$class OtherElementIterator $>$ }\\\hyperlink{classtrsl_1_1ppfilter__iterator_a02f5b311d35437e1fca8df255a659d77}{ppfilter\_\-iterator} (\hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}$<$ Predicate, OtherElementIterator $>$ const \&r, typename boost::enable\_\-if\_\-convertible$<$ OtherElementIterator, ElementIterator $>$::type $\ast$=0)
+\begin{DoxyCompactList}\small\item\em Allows conversion from a \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator} to a const \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}, won't allow conversion from a const \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator} to a \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}. \item\end{DoxyCompactList}\item 
+\hypertarget{classtrsl_1_1ppfilter__iterator_af021932b413e59de85751231d45ce5b7}{
+\hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}$<$ Predicate, ElementIterator $>$ \hyperlink{classtrsl_1_1ppfilter__iterator_af021932b413e59de85751231d45ce5b7}{begin} () const }
+\label{classtrsl_1_1ppfilter__iterator_af021932b413e59de85751231d45ce5b7}
+
+\begin{DoxyCompactList}\small\item\em Returns a \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator} pointing to the begining of the range. \item\end{DoxyCompactList}\item 
+\hypertarget{classtrsl_1_1ppfilter__iterator_aaf4755a54c9ae1c9d87b148c00a1f23d}{
+\hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}$<$ Predicate, ElementIterator $>$ \hyperlink{classtrsl_1_1ppfilter__iterator_aaf4755a54c9ae1c9d87b148c00a1f23d}{end} () const }
+\label{classtrsl_1_1ppfilter__iterator_aaf4755a54c9ae1c9d87b148c00a1f23d}
+
+\begin{DoxyCompactList}\small\item\em Returns a \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator} pointing to the end of the range. \item\end{DoxyCompactList}\item 
+\hypertarget{classtrsl_1_1ppfilter__iterator_a801f61c794cc3b79f1acd9d5f9606087}{
+upstream\_\-iterator::index\_\-t \hyperlink{classtrsl_1_1ppfilter__iterator_a801f61c794cc3b79f1acd9d5f9606087}{index} () const }
+\label{classtrsl_1_1ppfilter__iterator_a801f61c794cc3b79f1acd9d5f9606087}
+
+\begin{DoxyCompactList}\small\item\em Returns the index of the element that the iterator is currently pointing to. \item\end{DoxyCompactList}\item 
+\hypertarget{classtrsl_1_1ppfilter__iterator_aef81ab99e1db57bd682036c0d62f4018}{
+Predicate \hyperlink{classtrsl_1_1ppfilter__iterator_aef81ab99e1db57bd682036c0d62f4018}{predicate} () const }
+\label{classtrsl_1_1ppfilter__iterator_aef81ab99e1db57bd682036c0d62f4018}
+
+\begin{DoxyCompactList}\small\item\em Returns the \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} predicate. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1ppfilter__iterator_ac09f73e325921cc50ebcd96bed0f8096}{
+class {\bfseries boost::iterator\_\-core\_\-access}}
+\label{classtrsl_1_1ppfilter__iterator_ac09f73e325921cc50ebcd96bed0f8096}
+
+\item 
+\hypertarget{classtrsl_1_1ppfilter__iterator_ac3c82da2ca64e375b4b4fac8b09b5d40}{
+class {\bfseries ppfilter\_\-iterator}}
+\label{classtrsl_1_1ppfilter__iterator_ac3c82da2ca64e375b4b4fac8b09b5d40}
+
+\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+\subsubsection*{template$<$class Predicate, class ElementIterator$>$ class trsl::ppfilter\_\-iterator$<$ Predicate, ElementIterator $>$}
+
+Random permutation, persistent filter iterator. This class pipes a \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{random\_\-permutation\_\-iterator()} (upstream) with a \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} (downstream). It is intended to be used with \hyperlink{classtrsl_1_1is__picked__systematic}{is\_\-picked\_\-systematic}. Systematic sampling of a random permutation achieves {\itshape probability sampling\/}.
+
+{\ttfamily ElementIterator} should model {\itshape Random Access Iterator\/}. \begin{Desc}
+\item[Examples: ]\par
+
+
+\hyperlink{ParticleCollection_8hpp-example}{ParticleCollection.hpp}, \hyperlink{trsl__example1_8cpp-example}{trsl\_\-example1.cpp}, and \hyperlink{trsl__example2_8cpp-example}{trsl\_\-example2.cpp}.\end{Desc}
+
+
+Definition at line 58 of file ppfilter\_\-iterator.hpp.
+
+\subsubsection{Constructor \& Destructor Documentation}
+\hypertarget{classtrsl_1_1ppfilter__iterator_a02f5b311d35437e1fca8df255a659d77}{
+\index{trsl::ppfilter\_\-iterator@{trsl::ppfilter\_\-iterator}!ppfilter\_\-iterator@{ppfilter\_\-iterator}}
+\index{ppfilter\_\-iterator@{ppfilter\_\-iterator}!trsl::ppfilter_iterator@{trsl::ppfilter\_\-iterator}}
+\paragraph[{ppfilter\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}template$<$class Predicate, class ElementIterator$>$ template$<$class OtherElementIterator $>$ {\bf trsl::ppfilter\_\-iterator}$<$ Predicate, ElementIterator $>$::{\bf ppfilter\_\-iterator} ({\bf ppfilter\_\-iterator}$<$ Predicate, OtherElementIterator $>$ const \& {\em r}, \/  typename boost::enable\_\-if\_\-convertible$<$ OtherElementIterator, ElementIterator $>$::type $\ast$ = {\ttfamily 0})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1ppfilter__iterator_a02f5b311d35437e1fca8df255a659d77}
+
+
+Allows conversion from a \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator} to a const \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}, won't allow conversion from a const \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator} to a \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}. By ``const \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}'', we mean that the {\ttfamily ElementIterator} is const, e.g. {\ttfamily std::vector$<$Particle$>$::const\_\-iterator}. 
+
+Definition at line 99 of file ppfilter\_\-iterator.hpp.
+
+The documentation for this class was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{ppfilter__iterator_8hpp}{ppfilter\_\-iterator.hpp}\end{DoxyCompactItemize}

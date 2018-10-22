@@ -1,0 +1,46 @@
+\hypertarget{group__products}{
+\subsection{Products}
+\label{group__products}\index{Products@{Products}}
+}
+This module presents the functionalities offered by TRSL.
+
+
+
+\hypertarget{group__products_products_systematic_sampling}{}\subsubsection{Systematic Sampling}\label{group__products_products_systematic_sampling}
+Systematic sampling is provided through \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic}, a predicate functor to use in combination with \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator} to form a {\itshape sample iterator\/}. The sample iterator accesses a population of elements through a range defined by a pair of Forward Iterators (begin/end), and provides on-\/the-\/fly iteration through a sample of the population.
+
+Systematic sampling may perform very badly if the order in which the input population is presented is following a pattern. If a pattern is likely to occur in the population, the user may want to pipe the sample iterator {\itshape after\/} a \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator}, or use is\_\-picked\_\-systematic with ppfilter\_\-iterator. The resulting iterator effectively implements {\itshape probability sampling\/}. The price to pay for probability sampling is a {\itshape Random Access Iterator\/}. While persistent\_\-filter\_\-iterator will work e.g. with {\ttfamily std::list}, ppfilter\_\-iterator requires e.g. {\ttfamily std::vector} or {\ttfamily std::deque}.
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{trsl__example1_8cpp-example}{trsl\_\-example1.cpp} for a basic example.
+\end{DoxySeeAlso}
+
+\begin{DoxyDescription}
+\item[{\bfseries Implementation:}]\hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic}, \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator}, \hyperlink{classtrsl_1_1ppfilter__iterator}{trsl::ppfilter\_\-iterator}.
+\end{DoxyDescription}
+
+
+
+\hypertarget{group__products_products_reorder}{}\subsubsection{Range Reordering}\label{group__products_products_reorder}
+Iteration through an index-\/based reordering of a range can be obtained with \hyperlink{classtrsl_1_1reorder__iterator}{trsl::reorder\_\-iterator}. TRSL provides several functions that generate reorder iterators for common reorderings.\hypertarget{group__products_products_permutation}{}\paragraph{Random Permutation}\label{group__products_products_permutation}
+\hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator} provides an iterator over a random permutation of a range.
+
+
+\begin{DoxyDescription}
+\item[{\bfseries Implementation:}]\hyperlink{classtrsl_1_1reorder__iterator}{trsl::reorder\_\-iterator}, \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator}.
+\end{DoxyDescription}
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{trsl__example2_8cpp-example}{trsl\_\-example2.cpp} for a basic example.
+\end{DoxySeeAlso}
+\hypertarget{group__products_products_sorting}{}\paragraph{Sorted Permutation}\label{group__products_products_sorting}
+\hyperlink{namespacetrsl_aa23892a3c8929e627df1618c6b5dd2df}{trsl::sort\_\-iterator} provides an iterator over a sorted permutation of a range.
+
+
+\begin{DoxyDescription}
+\item[{\bfseries Implementation:}]\hyperlink{classtrsl_1_1reorder__iterator}{trsl::reorder\_\-iterator}, \hyperlink{namespacetrsl_aa23892a3c8929e627df1618c6b5dd2df}{trsl::sort\_\-iterator}.
+\end{DoxyDescription}
+
+
+
+ 

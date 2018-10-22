@@ -1,0 +1,11 @@
+\hypertarget{group__random}{
+\subsection{Random Number Generators}
+\label{group__random}\index{Random Number Generators@{Random Number Generators}}
+}
+Some of the classes in TRSL need random numbers. If a class needs only one random number (e.g. \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic}), it is generally possible to provide it directly. It's then up to the user to take care of the random generator.
+
+Another possibility is to use TRSL-\/internal random capabilities, implemented using system random number generators. By default, the {\ttfamily std::rand} function is used.
+
+The {\ttfamily std::rand} generator that comes with BSD systems (including MacOS X) has slight issues --- e.g. some bits of the returned numbers are not usable. However, BSD systems provide a second, better random number generator through a function named {\ttfamily ::random}. This function will be used instead of {\ttfamily std::rand} if TRSL\_\-USE\_\-BSD\_\-BETTER\_\-RANDOM\_\-GENERATOR is defined. In that case, seeding should be done through {\ttfamily ::srandom}. Note that in GNU/Linux systems, both {\ttfamily std::rand} and {\ttfamily ::random} use the same generator.
+
+When relying on TRSL-\/internal {\ttfamily std::rand/::random} calls, the user is still responsible for seeding the random number generator. 

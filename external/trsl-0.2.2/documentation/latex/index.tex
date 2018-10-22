@@ -1,0 +1,80 @@
+\begin{center}\href{http://trsl.sourceforge.net/}{\tt http://trsl.sourceforge.net/}\end{center} 
+
+TRSL is a C++ library that implements several sampling schemes behind an (STL-\/like) iterator interface. The library may be used e.g. in particle filtering or probabilistic inference frameworks. For an overview of the functionalities provided by TRSL, refer to the \hyperlink{group__products}{Products} page.\hypertarget{index_News}{}\subsection{News}\label{index_News}
+
+\begin{DoxyDescription}
+\item[2011-\/04-\/06 ]Released TRSL 0.2.2. This release contains minor updates, see \hyperlink{group__version__history}{Version History} for a list of changes.  
+\item[2008-\/05-\/21 ]The Boost Software License is now \href{http://www.opensource.org/licenses/bsl1.0.html}{\tt Open Source} (certified by OSI since Feb. 2008). 
+\item[2008-\/05-\/18 ]Released TRSL 0.2.1. This release contains minor updates only, see \hyperlink{group__version__history}{Version History} for a list of changes.  
+\item[2008-\/03-\/27 ]TRSL 0.2.0 is out. See \hyperlink{group__version__history}{Version History} for a list of changes.  
+\item[2008-\/01-\/02 ]TRSL 0.1.1 is out. See \hyperlink{group__version__history}{Version History} for a list of changes.  
+\end{DoxyDescription}\hypertarget{index_index_license}{}\subsection{License}\label{index_index_license}
+TRSL is distributed under the \href{http://www.boost.org/LICENSE_1_0.txt}{\tt Boost Software License} (BSL). BSL is a \href{http://www.fsf.org/licensing/licenses}{\tt GPL-\/compatible free-\/software} license, very similar to the BSD license and the MIT license; see \href{http://www.boost.org/more/license_info.html}{\tt Boost Software License Background}. BSL is also \href{http://www.opensource.org/docs/osd}{\tt open-\/source}; see \href{http://www.opensource.org/licenses/bsl1.0.html}{\tt Boost Software License 1.0} on the \href{http://www.opensource.org/}{\tt Open Source Initiative} website.\hypertarget{index_index_services}{}\subsection{Source}\label{index_index_services}
+TRSL is in a usable state. However, as its version number suggests, it is likely to grow and change interface in the future.
+
+
+\begin{DoxyDescription}
+\item[{\bfseries Downloads}  ]Releases are available at the Sourceforge \href{http://sourceforge.net/project/platformdownload.php?group_id=212585}{\tt download page}. The latest sources are available through Subversion:\par
+{\ttfamily svn co \href{https://trsl.svn.sourceforge.net/svnroot/trsl/trunk}{\tt https://trsl.svn.sourceforge.net/svnroot/trsl/trunk} \hyperlink{namespacetrsl}{trsl}}
+
+
+\item[{\bfseries Project Services}  ]Sourceforge \href{http://sourceforge.net/projects/trsl}{\tt project page}.
+
+
+\end{DoxyDescription}
+
+TRSL is meant to be OS Portable. It has been tested on Linux and MacOS X with GCC 4 and LLVM 2.8 (with clang). If anyone tries it with a different compiler/platform, \href{http://sourceforge.net/forum/?group_id=212585}{\tt please comment}!\hypertarget{index_index_feedback}{}\subsection{Feedback}\label{index_index_feedback}
+The preferred method of communication is currently the Sourceforge \href{http://sourceforge.net/forum/?group_id=212585}{\tt forums} (anonymous posts allowed).\hypertarget{index_index_products}{}\subsection{Products}\label{index_index_products}
+See the \hyperlink{group__products}{Products} page for the complete list of functionalities offered by TRSL.
+
+The central TRSL product is \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic}, a predicate functor to use in combination with \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator} to form a {\itshape sample iterator\/}. The sample iterator accesses a population of elements through a range defined by a pair of Forward Iterators (begin/end), and provides on-\/the-\/fly iteration through a sample of the population.
+
+Let us assume a particle filter implementation, which manages a population of particles ({\ttfamily struct Particle \{ weight; x; y; \}}) stored in a container {\ttfamily ParticleCollection}. The following bit of code shows an example of how to iterate through a sample of the population after having implemented {\ttfamily ParticleCollection::sample\_\-begin(size\_\-t)} and {\ttfamily ParticleCollection::sample\_\-end()} using e.g. \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic}.
+
+
+\begin{DoxyCodeInclude}
+const size_t POPULATION_SIZE = 100;
+const size_t SAMPLE_SIZE = 10;
+
+//-----------------------//
+// Generate a population //
+//-----------------------//
+
+ParticleCollection population;
+for (size_t i = 0; i < POPULATION_SIZE; ++i)
+{
+  Particle p(double(rand())/RAND_MAX,  // weight
+             double(rand())/RAND_MAX,  // position (x)
+             double(rand())/RAND_MAX); // position (y)
+  population.add(p);
+}
+
+//----------------------------//
+// Sample from the population //
+//----------------------------//
+
+ParticleCollection sample;
+
+//-- population contains 100 elements. --//
+
+for (ParticleCollection::const_sample_iterator
+       si = population.sample_begin(SAMPLE_SIZE),
+       se = population.sample_end();
+     si != se; ++si)
+{
+  Particle p = *si;
+  p.setWeight(1);
+  sample.add(p);
+
+  // ... or do something else with *si ...
+}
+
+//-- sample contains 10 elements. --//
+
+assert(sample.size() == SAMPLE_SIZE);
+\end{DoxyCodeInclude}
+\hypertarget{index_index_author}{}\subsection{Authors}\label{index_index_author}
+TRSL is developped by \href{http://sourceforge.net/users/renauddetry/}{\tt Renaud Detry}.\hypertarget{index_index_credits}{}\subsection{Credits}\label{index_index_credits}
+TRSL is based on the excellent \href{http://www.boost.org/libs/iterator/doc/index.html}{\tt Boost Iterator Library}.
+
+Several concept implementations (e.g. accessors) are inspired from \href{http://libkdtree.alioth.debian.org}{\tt libkdtree++}. 

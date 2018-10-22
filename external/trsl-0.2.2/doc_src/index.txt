@@ -1,0 +1,125 @@
+// (C) Copyright Renaud Detry   2007-2008.
+// Distributed under the Boost Software License, Version 1.0. (See
+// accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+/**
+ * @mainpage
+ *
+ * <center><a href="http://trsl.sourceforge.net/"
+ * >http://trsl.sourceforge.net/</a></center>
+ *
+ * TRSL is a C++ library that implements several sampling schemes
+ * behind an (STL-like) iterator interface. The library may be used
+ * e.g. in particle filtering or probabilistic inference frameworks.
+ * For an overview of the functionalities provided by TRSL, refer to
+ * the @ref products page.
+ *
+ * @section News
+ *
+ * <dl>
+ * <dt>2011-04-06</dt>
+ * <dd>Released TRSL 0.2.2. This release contains minor updates,
+ *     see @ref version_history for a list of changes.
+ * </dd>
+ * <dt>2008-05-21</dt>
+ * <dd>The Boost Software License is now <a
+ * href="http://www.opensource.org/licenses/bsl1.0.html">Open
+ * Source</a> (certified by OSI since Feb. 2008).</dd>
+ * <dt>2008-05-18</dt>
+ * <dd>Released TRSL 0.2.1. This release contains minor updates only,
+ *     see @ref version_history for a list of changes.
+ * </dd>
+ * <dt>2008-03-27</dt>
+ * <dd>TRSL 0.2.0 is out. See @ref version_history for a list of changes.
+ * </dd>
+ * <dt>2008-01-02</dt>
+ * <dd>TRSL 0.1.1 is out. See @ref version_history for a list of changes.
+ * </dd>
+ * </dl>
+ *
+ * @section index_license License
+ *
+ * TRSL is distributed under the <a
+ * href="http://www.boost.org/LICENSE_1_0.txt" >Boost Software
+ * License</a> (BSL). BSL is a <a
+ * href="http://www.fsf.org/licensing/licenses" >GPL-compatible free-software</a> license,
+ * very similar to the BSD license and the MIT license; see <a
+ * href="http://www.boost.org/more/license_info.html" >Boost Software
+ * License Background</a>. BSL is also <a
+ * href="http://www.opensource.org/docs/osd">open-source</a>; see <a
+ * href="http://www.opensource.org/licenses/bsl1.0.html" >Boost Software License 1.0</a>
+ * on the <a
+ * href="http://www.opensource.org/" >Open Source Initiative</a> website.
+ *
+ * @section index_services Source
+ *
+ * TRSL is in a usable state. However, as its version number suggests,
+ * it is likely to grow and change interface in the future.
+ *
+ * <dl>
+ *
+ * <dt><b>Downloads</b></dt>
+ *
+ * <dd>Releases are available at the Sourceforge <a
+ * href="http://sourceforge.net/project/platformdownload.php?group_id=212585"
+ * >download page</a>. The latest sources are available through
+ * Subversion:<br><tt>svn co
+ * https://trsl.svn.sourceforge.net/svnroot/trsl/trunk trsl</tt></dd>
+ *
+ * <dt><b>Project Services</b></dt>
+ *
+ * <dd>Sourceforge <a href="http://sourceforge.net/projects/trsl"
+ * >project page</a>.</dd>
+ *
+ * </dl>
+ *
+ * TRSL is meant to be OS Portable. It has been tested on Linux and MacOS X with
+ * GCC 4 and LLVM 2.8 (with clang). If anyone tries it with a
+ * different compiler/platform, <a
+ * href="http://sourceforge.net/forum/?group_id=212585" >please
+ * comment</a>!
+ *
+ * @section index_feedback Feedback
+ *
+ * The preferred method of communication is currently the Sourceforge <a
+ * href="http://sourceforge.net/forum/?group_id=212585" >forums</a>
+ * (anonymous posts allowed).
+ *
+ * @section index_products Products
+ *
+ * See the @ref products page for the complete list of functionalities
+ * offered by TRSL.
+ *
+ * The central TRSL product is trsl::is_picked_systematic, a predicate
+ * functor to use in combination with trsl::persistent_filter_iterator
+ * to form a <em>sample iterator</em>.  The sample iterator accesses a
+ * population of elements through a range defined by a pair of Forward
+ * Iterators (begin/end), and provides on-the-fly iteration through a
+ * sample of the population.
+ *
+ * Let us assume a particle filter implementation, which manages a
+ * population of particles (<tt>struct Particle { weight; x; y;
+ * }</tt>) stored in a container <tt>ParticleCollection</tt>. The following
+ * bit of code shows an example of how to iterate through a sample of
+ * the population after having implemented
+ * <tt>ParticleCollection::sample_begin(size_t)</tt> and
+ * <tt>ParticleCollection::sample_end()</tt> using
+ * e.g. trsl::is_picked_systematic.
+ *
+ * @include example_stub.cpp
+ *
+ * @section index_author Authors
+ *
+ * TRSL is developped by <a href="http://sourceforge.net/users/renauddetry/"
+ * >Renaud Detry</a>.
+ *
+ * @section index_credits Credits
+ *
+ * TRSL is based on the excellent <a
+ * href="http://www.boost.org/libs/iterator/doc/index.html" >Boost
+ * Iterator Library</a>.
+ *
+ * Several concept implementations (e.g. accessors) are inspired from <a
+ * href="http://libkdtree.alioth.debian.org">libkdtree++</a>.
+ */

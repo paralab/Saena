@@ -1,0 +1,49 @@
+\hypertarget{structtrsl_1_1detail_1_1ppfilter__iterator__base}{
+\subsection{trsl::detail::ppfilter\_\-iterator\_\-base$<$ Predicate, ElementIterator $>$ Struct Template Reference}
+\label{structtrsl_1_1detail_1_1ppfilter__iterator__base}\index{trsl::detail::ppfilter\_\-iterator\_\-base@{trsl::detail::ppfilter\_\-iterator\_\-base}}
+}
+
+
+Used internally.  
+
+
+{\ttfamily \#include $<$ppfilter\_\-iterator.hpp$>$}\subsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{structtrsl_1_1detail_1_1ppfilter__iterator__base_ad33a4f9f792737abbebe79d5478254bf}{
+typedef Predicate {\bfseries predicate\_\-t}}
+\label{structtrsl_1_1detail_1_1ppfilter__iterator__base_ad33a4f9f792737abbebe79d5478254bf}
+
+\item 
+\hypertarget{structtrsl_1_1detail_1_1ppfilter__iterator__base_ada5b7212956e6cf0f471cfabef841ed2}{
+typedef ElementIterator {\bfseries element\_\-iterator}}
+\label{structtrsl_1_1detail_1_1ppfilter__iterator__base_ada5b7212956e6cf0f471cfabef841ed2}
+
+\item 
+\hypertarget{structtrsl_1_1detail_1_1ppfilter__iterator__base_a5cae90de5a0029e99714a6d0d83f3162}{
+typedef \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ ElementIterator $>$ {\bfseries upstream\_\-iterator}}
+\label{structtrsl_1_1detail_1_1ppfilter__iterator__base_a5cae90de5a0029e99714a6d0d83f3162}
+
+\item 
+\hypertarget{structtrsl_1_1detail_1_1ppfilter__iterator__base_a533a06b1295bd4b9d0c47f8bebf8073f}{
+typedef \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator}$<$ Predicate, \hyperlink{classtrsl_1_1reorder__iterator}{upstream\_\-iterator} $>$ {\bfseries downstream\_\-iterator}}
+\label{structtrsl_1_1detail_1_1ppfilter__iterator__base_a533a06b1295bd4b9d0c47f8bebf8073f}
+
+\item 
+\hypertarget{structtrsl_1_1detail_1_1ppfilter__iterator__base_a3e4e3af9f7da9d275b5eda19ecfaa2ab}{
+typedef boost::iterator\_\-adaptor$<$ \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}$<$ Predicate, ElementIterator $>$, \hyperlink{classtrsl_1_1persistent__filter__iterator}{downstream\_\-iterator}, typename boost::detail::iterator\_\-traits$<$ ElementIterator $>$::value\_\-type, boost::forward\_\-traversal\_\-tag, typename boost::detail::iterator\_\-traits$<$ ElementIterator $>$::reference $>$ {\bfseries type}}
+\label{structtrsl_1_1detail_1_1ppfilter__iterator__base_a3e4e3af9f7da9d275b5eda19ecfaa2ab}
+
+\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+\subsubsection*{template$<$class Predicate, class ElementIterator$>$ struct trsl::detail::ppfilter\_\-iterator\_\-base$<$ Predicate, ElementIterator $>$}
+
+Used internally. 
+
+Definition at line 27 of file ppfilter\_\-iterator.hpp.
+
+The documentation for this struct was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{ppfilter__iterator_8hpp}{ppfilter\_\-iterator.hpp}\end{DoxyCompactItemize}

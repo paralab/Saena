@@ -1,0 +1,46 @@
+\hypertarget{persistent__filter__iterator_8hpp}{
+\subsection{persistent\_\-filter\_\-iterator.hpp File Reference}
+\label{persistent__filter__iterator_8hpp}\index{persistent\_\-filter\_\-iterator.hpp@{persistent\_\-filter\_\-iterator.hpp}}
+}
+{\ttfamily \#include $<$boost/iterator.hpp$>$}\par
+{\ttfamily \#include $<$boost/iterator/iterator\_\-adaptor.hpp$>$}\par
+{\ttfamily \#include $<$boost/iterator/iterator\_\-categories.hpp$>$}\par
+{\ttfamily \#include $<$boost/type\_\-traits/is\_\-class.hpp$>$}\par
+{\ttfamily \#include $<$boost/static\_\-assert.hpp$>$}\par
+\subsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structtrsl_1_1detail_1_1persistent__filter__iterator__base}{trsl::detail::persistent\_\-filter\_\-iterator\_\-base$<$ Predicate, Iterator $>$}
+\begin{DoxyCompactList}\small\item\em Used internally. \item\end{DoxyCompactList}\item 
+class \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator$<$ Predicate, Iterator $>$}
+\begin{DoxyCompactList}\small\item\em Adaptation of \href{http://www.boost.org/libs/iterator/doc/filter_iterator.html}{\tt boost::filter\_\-iterator} to allow an element to be selected multiple times. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \hyperlink{namespacetrsl}{trsl}
+
+
+\begin{DoxyCompactList}\small\item\em Public namespace. \item\end{DoxyCompactList}\item 
+namespace \hyperlink{namespacetrsl_1_1detail}{trsl::detail}
+
+
+\begin{DoxyCompactList}\small\item\em Implementation details. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{namespacetrsl_ad8c5e8b27a1d741da83c4385fcbf97bb}{
+{\footnotesize template$<$class Predicate , class Iterator $>$ }\\persistent\_\-filter\_\-iterator$<$ Predicate, Iterator $>$ {\bfseries trsl::make\_\-persistent\_\-filter\_\-iterator} (Predicate f, Iterator x, Iterator end=Iterator())}
+\label{namespacetrsl_ad8c5e8b27a1d741da83c4385fcbf97bb}
+
+\item 
+\hypertarget{namespacetrsl_ab88305e1f15b3fca3cbe4d001e9ceee1}{
+{\footnotesize template$<$class Predicate , class Iterator $>$ }\\persistent\_\-filter\_\-iterator$<$ Predicate, Iterator $>$ {\bfseries trsl::make\_\-persistent\_\-filter\_\-iterator} (typename boost::iterators::enable\_\-if$<$ boost::is\_\-class$<$ Predicate $>$, Iterator $>$::type x, Iterator end=Iterator())}
+\label{namespacetrsl_ab88305e1f15b3fca3cbe4d001e9ceee1}
+
+\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+
+
+Definition in file \hyperlink{persistent__filter__iterator_8hpp_source}{persistent\_\-filter\_\-iterator.hpp}.
