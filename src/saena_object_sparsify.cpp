@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <set>
+#include <random>
 #include <mpi.h>
 
 #include <trsl/is_picked_systematic.hpp>
