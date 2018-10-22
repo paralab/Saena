@@ -68,7 +68,6 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
 
     // ******** 1 - initialize the matrix: laplacian *************
-/*
 
     int mx(std::stoi(argv[1]));
     int my(std::stoi(argv[2]));
@@ -90,10 +89,9 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
 
     // ******** 2 - initialize the matrix: read from file *************
-
+/*
     double t1 = MPI_Wtime();
 
     char* file_name(argv[1]);
@@ -103,18 +101,18 @@ int main(int argc, char* argv[]){
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
     print_time(t1, t2, "Matrix Assemble:", comm);
-
+*/
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
 
     // *************************** set rhs ****************************
 
     unsigned int num_local_row = A.get_num_local_rows();
-    std::vector<double> rhs(num_local_row);
+//    std::vector<double> rhs(num_local_row);
 
     // ********** 1 - set rhs: random **********
 
-    generate_rhs_old(rhs);
+//    generate_rhs_old(rhs);
 //    print_vector(rhs, -1, "rhs", comm);
 
     // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
@@ -124,11 +122,11 @@ int main(int argc, char* argv[]){
 //    print_vector(rhs, -1, "rhs", comm);
 
     // ********** 3 - set rhs: Laplacian **********
-/*
+
     std::vector<double> rhs; // don't set the size for this method
     saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
 //    print_vector(rhs, -1, "rhs", comm);
-*/
+
     // ********** 4 - set rhs: read from file **********
 /*
     char* Vname(argv[2]);

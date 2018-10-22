@@ -5388,14 +5388,14 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
         return -1;
     }
 
-    if(verbose_solve) if(rank == 0) printf("verbose:solve_pcg: check u size!\n");
+    if(verbose_solve) if(rank == 0) printf("solve_pcg: check u size!\n");
 
     // ************** repartition u **************
 
     if(repartition)
         repartition_u(u);
 
-    if(verbose_solve) if(rank == 0) printf("verbose:solve_pcg: repartition u!\n");
+    if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition u!\n");
 
     // ************** solve **************
 
@@ -5439,7 +5439,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
     std::vector<value_t> rho(grids[0].A->M, 0);
     vcycle(&grids[0], rho, r);
 
-    if(verbose_solve) if(rank == 0) printf("verbose:solve_pcg: first vcycle!\n");
+    if(verbose_solve) if(rank == 0) printf("solve_pcg: first vcycle!\n");
 
 //    for(i = 0; i < r.size(); i++)
 //        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
@@ -5506,7 +5506,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
         std::cout << "******************************************************" << std::endl;
     }
 
-    if(verbose_solve) if(rank == 0) printf("verbose:solve_pcg: solve!\n");
+    if(verbose_solve) if(rank == 0) printf("solve_pcg: solve!\n");
 
     // ************** scale u **************
 
@@ -5519,7 +5519,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
     if(repartition)
         repartition_back_u(u);
 
-    if(verbose_solve) if(rank == 0) printf("verbose:solve_pcg: repartition back u!\n");
+    if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition back u!\n");
 
 //     print_vector(u, 0, "final u", comm);
 
@@ -5675,9 +5675,9 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
     bool solve_verbose = false;
 
     // ************** update grids[0].A **************
-// this part is specific to solve_pcg_update2(), in comparison to solve_pcg().
-// the difference between this function and solve_pcg(): the finest level matrix (original LHS) is updated with
-// the new one.
+//    this part is specific to solve_pcg_update2(), in comparison to solve_pcg().
+//    the difference between this function and solve_pcg(): the finest level matrix (original LHS) is updated with
+//    the new one.
 
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
@@ -7954,15 +7954,25 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     index_t A_passes = 1;
     nnz_t iter = 0, i = 0;
     while(i < sample_size){
-        prob = max_prob_inv * ( A[iter].val * ( A[iter].val / norm_frob_sq ));
-        rand = dist(rng) * rand_factor;
-//        if(rank==0 && !chosen[iter]) printf("prob = %.8f, \trand = %.8f, \tA.row = %u, \tA.col = %u \n",
-//                                            prob, rand, A[iter].row, A[iter].col);
 
-        if( !chosen[iter] && ( (rand < prob) || (A[iter].row == A[iter].col) ) ){
-            A_spars.emplace_back(A[iter]);
-            i++;
-            chosen[iter] = true;
+        if( !chosen[iter] && A[iter].row >= A[iter].col ){
+
+            prob = max_prob_inv * ( A[iter].val * ( A[iter].val / norm_frob_sq ));
+            rand = dist(rng) * rand_factor;
+//            if(rank==0 && !chosen[iter]) printf("prob = %.8f, \trand = %.8f, \tA.row = %u, \tA.col = %u \n",
+//                                            prob, rand, A[iter].row, A[iter].col);
+            if( rand < prob ){
+                if(A[iter].row == A[iter].col){
+                    A_spars.emplace_back(A[iter]);
+                    i++;
+                }else{ // A[iter].row > A[iter].col
+                    A_spars.emplace_back(A[iter]);
+                    A_spars.emplace_back(A[iter].col, A[iter].row, A[iter].val);
+                    i += 2;
+                }
+                chosen[iter] = true;
+            }
+
         }
 
         iter++;
@@ -7972,6 +7982,7 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
             rand_factor /= 10;
 //            if(rank==0) printf("\nA_pass %u: \n", A_passes);
         }
+
     }
 
     std::sort(A_spars.begin(), A_spars.end());
