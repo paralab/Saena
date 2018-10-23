@@ -187,11 +187,11 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
             for (nnz_t i = 0; i < A_col_size; i++) {
                 A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
                 if (A1_nnz >= A_half_nnz) {
-                    A_col_half = A[nnzPerColScan_leftStart[i]].col - A_col_offset + 1;
+                    A_col_half = A[nnzPerColScan_leftStart[i]].col + 1 - A_col_offset;
                     break;
                 }
             }
-        } else {
+        } else { // A_col_half will stay A_col_size/2
             for (nnz_t i = 0; i < A_col_half; i++) {
                 A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
             }
@@ -417,7 +417,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //            if(rank==verbose_rank) printf("B_nnz = %lu, B_half_nnz = %lu, B1_nnz = %lu, col = %u, offset = %u \n",
 //                                          B_nnz, B_half_nnz, B1_nnz, B[nnzPerColScan_rightStart[i]].col, B_col_offset);
                 if (B1_nnz >= B_half_nnz) {
-                    B_col_half = B[nnzPerColScan_rightStart[i]].col - B_col_offset + 1;
+                    B_col_half = B[nnzPerColScan_rightStart[i]].col + 1 - B_col_offset;
 //                if(rank==verbose_rank) printf("B_nnz = %lu, B_half_nnz = %lu, B1_nnz = %lu, B_col_half = %u, B_col_size = %u \n",
 //                                              B_nnz, B_half_nnz, B1_nnz, B_col_half, B_col_size);
                     break;
@@ -1356,7 +1356,7 @@ int saena_object::coarsen(Grid *grid) {$
         MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 
     int right_neighbor = (rank + 1)%nprocs;
-    int left_neighbor = rank - 1;
+    int left_neighbor  = rank - 1;
     if (left_neighbor < 0)
         left_neighbor += nprocs;
 //    if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
@@ -1372,12 +1372,12 @@ int saena_object::coarsen(Grid *grid) {$
     R_tranpose.clear();
     R_tranpose.shrink_to_fit();
 
-    MPI_Request *requests = new MPI_Request[4];
-    MPI_Status  *statuses = new MPI_Status[4];
+    auto *requests = new MPI_Request[4];
+    auto *statuses = new MPI_Status[4];
 
     std::vector<cooEntry> AP;
 
-    for(index_t k = rank; k < rank+nprocs; k++){
+    for(int k = rank; k < rank+nprocs; k++){
         // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
         // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor processor.
         // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
@@ -1606,7 +1606,7 @@ int saena_object::coarsen(Grid *grid) {$
 //            if(temp.val * temp.val > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
             Ac_orig.emplace_back( temp );
             norm_frob_sq += temp.val * temp.val;
-            if(temp.val > max_val){
+            if( fabs(temp.val) > max_val){
                 max_val = temp.val;
             }
 //            }
@@ -1649,97 +1649,6 @@ int saena_object::coarsen(Grid *grid) {$
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
-    // *******************************************************
-    // version 3: with sparsification. Drineas' Method
-    // *******************************************************
-    // part 1: remove duplicates
-    // *******************************************************
-/*
-    nnz_t no_sparse_size = 0;
-
-    // remove duplicates.
-    // compute Frobenius norm squared (norm_frob_sq).
-    double val_temp;
-    double norm_frob_sq = 0;
-    std::vector<cooEntry> Ac_orig;
-    for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
-        val_temp = RAP_row_sorted[i].val;
-        while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-            val_temp += RAP_row_sorted[i+1].val;
-            i++;
-        }
-
-//        if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
-        if(val_temp * val_temp > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
-            Ac_orig.emplace_back( cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, val_temp) );
-            norm_frob_sq += val_temp * val_temp;
-        }
-        no_sparse_size++; //todo: just for test. delete this later!
-    }
-
-    if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
-    if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
-//    std::sort(Ac_orig.begin(), Ac_orig.end());
-//    print_vector(Ac_orig, -1, "Ac_orig", A->comm);
-
-    RAP_row_sorted.clear();
-    RAP_row_sorted.shrink_to_fit();
-
-    // *******************************************************
-    // version 3: part 2: sparsification
-    // *******************************************************
-
-    //Type of random number distribution
-    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max)
-
-    //Mersenne Twister: Good quality random number generator
-    std::mt19937 rng;
-
-    //Initialize with non-deterministic seeds
-    rng.seed(std::random_device{}());
-
-    // s = 28nln(sqrt(2)*n) / epsilon^2
-    nnz_t sample_size = nnz_t( (double)28 * Ac->Mbig * log(sqrt(2) * Ac->Mbig) * norm_frob_sq / (sparse_epsilon * sparse_epsilon) );
-    if(rank==0) printf("sample size \t\t\t\t= %lu\n", sample_size);
-//    if(rank==0) printf("norm_frob_sq = %f, \tsparse_epsilon = %f, \tAc->Mbig = %u \n", norm_frob_sq, sparse_epsilon, Ac->Mbig);
-
-    std::vector<cooEntry> Ac_sample(sample_size);
-    double norm_temp = 0, criteria;
-    for(nnz_t i = 0; i < Ac_orig.size(); i++){
-        norm_temp += Ac_orig[i].val * Ac_orig[i].val;
-
-        criteria = (Ac_orig[i].val * Ac_orig[i].val) / norm_temp;
-        for(nnz_t j = 0; j < sample_size; j++){
-            if(dist(rng) < criteria){
-//                std::cout << "dist(rng) = " << dist(rng) << "\tcriteria = " << criteria << "\tAc_sample[j] = " << Ac_sample[j] << std::endl;
-//                Ac_sample[j] = cooEntry(Ac_orig[i].row, Ac_orig[i].col, Ac_orig[i].val);
-                Ac_sample[j] = Ac_orig[i];
-            }
-        }
-    }
-
-//    if(rank==0) printf("Ac_sample.size() = %lu\n", Ac_sample.size());
-//    print_vector(Ac_sample, -1, "Ac_sample", A->comm);
-    std::sort(Ac_sample.begin(), Ac_sample.end());
-
-    // remove duplicates and change the values based on Algorithm 1 of Drineas' paper.
-    double factor = norm_frob_sq / sample_size;
-    for(nnz_t i=0; i<Ac_sample.size(); i++){
-        val_temp = Ac_sample[i].val;
-        while(i<Ac_sample.size()-1 && Ac_sample[i] == Ac_sample[i+1]){ // values of entries with the same row and col should be added.
-            val_temp += Ac_sample[i+1].val;
-            i++;
-        }
-//        Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, factor / val_temp) );
-        Ac->entry.emplace_back( cooEntry(Ac_sample[i].row, Ac_sample[i].col, val_temp) );
-    }
-
-    if(rank==0) printf("Ac size after sparsification \t\t= %lu\n", Ac->entry.size());
-    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-
-    Ac_sample.clear();
-    Ac_sample.shrink_to_fit();
-*/
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************
