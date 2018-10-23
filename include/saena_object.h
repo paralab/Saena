@@ -39,7 +39,7 @@ public:
 //    bool shrink_cpu = true;
     bool dynamic_levels = true;
     bool adaptive_coarsening = true;
-    bool doSparsify = false;
+    bool doSparsify = true;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
     double sparse_epsilon = 1;
 

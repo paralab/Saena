@@ -204,7 +204,7 @@ int main(int argc, char* argv[]){
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
-//    print_time(t1, t2, "Setup:", comm);
+    print_time(t1, t2, "Setup:", comm);
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
