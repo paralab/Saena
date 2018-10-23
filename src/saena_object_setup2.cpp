@@ -42,9 +42,9 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //    }
 
     // todo: fix this.
-    const index_t r_dense = 50; //default 100.
+    const index_t r_dense = 100; //default 100.
     const index_t c_dense = r_dense;
-    const index_t min_size_threshold = 10; //default 30.
+    const index_t min_size_threshold = 30; //default 30.
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
