@@ -81,7 +81,7 @@ public:
     int coarsen_old(Grid *grid);
     int fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                index_t B_row_offset, index_t B_col_size, index_t B_col_offset,
+                index_t B_col_size, index_t B_col_offset,
                 index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                 index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
