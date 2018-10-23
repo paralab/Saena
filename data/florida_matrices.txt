@@ -1,0 +1,42 @@
+https://sparse.tamu.edu/HB/bcsstk28
+Name	bcsstk28
+Group	HB
+Matrix ID	50
+Num Rows 	4,410
+Num Cols 	4,410
+Nonzeros 	219,024
+
+Saena not working on this one.
+https://sparse.tamu.edu/HB/plat362
+Name	plat362
+Group	HB
+Matrix ID	229
+Num Rows 	362
+Num Cols 	362
+Nonzeros 	5,786
+Kind 	2D/3D Problem
+
+works very well.
+https://sparse.tamu.edu/HB/dwt_234
+Name	dwt_234
+Group	HB
+Matrix ID	118
+Num Rows 	234
+Num Cols 	234
+Nonzeros 	834
+Kind 	Structural Problem
+
+
+*** Error in `./Saena': double free or corruption
+https://sparse.tamu.edu/Simon/olafu
+Name	olafu
+Group	Simon
+Matrix ID	813
+Num Rows 	16,146
+Num Cols 	16,146
+Nonzeros 	1,015,156
+Kind 	Structural Problem
+
+
+
+
