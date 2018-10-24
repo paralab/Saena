@@ -222,7 +222,7 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
             rand = dist(rng) * rand_factor;
 //            if(rank==0 && !chosen[iter]) printf("prob = %.8f, \trand = %.8f, \tA.row = %u, \tA.col = %u \n",
 //                                            prob, rand, A[iter].row, A[iter].col);
-            if( rand < prob ){
+            if( (rand < prob) || (A[iter].row == A[iter].col) ){
                 if(A[iter].row == A[iter].col){
                     A_spars.emplace_back(A[iter]);
                     i++;
