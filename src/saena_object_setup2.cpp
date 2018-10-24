@@ -418,7 +418,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //                                          B_nnz, B_half_nnz, B1_nnz, B[nnzPerColScan_rightStart[i]].col, B_col_offset);
                 if (B1_nnz >= B_half_nnz) {
                     B_col_half = B[nnzPerColScan_rightStart[i]].col + 1 - B_col_offset;
-//                if(rank==verbose_rank) printf("B_nnz = %lu, B_half_nnz = %lu, B1_nnz = %lu, B_col_half = %u, B_col_size = %u \n",
+//                    if(rank==verbose_rank) printf("B_nnz = %lu, B_half_nnz = %lu, B1_nnz = %lu, B_col_half = %u, B_col_size = %u \n",
 //                                              B_nnz, B_half_nnz, B1_nnz, B_col_half, B_col_size);
                     break;
                 }
