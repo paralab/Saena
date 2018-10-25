@@ -39,6 +39,11 @@ public:
 //    bool shrink_cpu = true;
     bool dynamic_levels = true;
     bool adaptive_coarsening = true;
+
+    const index_t matmat_size_thre = 40000; // if(row * col) do the dense matmat default 40000
+//    const index_t min_size_threshold = 50; //default 50
+    const index_t matmat_nnz_thre = 100; //default 100
+
     bool doSparsify = false;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
     double sparse_epsilon = 1;
@@ -86,12 +91,14 @@ public:
                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                 index_t B_col_size, index_t B_col_offset,
                 index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
-                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
+                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
+                value_t *mempool, MPI_Comm comm);
     int fast_mm_row_col(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                 index_t B_col_size, index_t B_col_offset,
                 index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
-                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
+                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
+                value_t *mempool, MPI_Comm comm);
 
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
