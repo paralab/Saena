@@ -1,0 +1,305 @@
+tested on Oct 22, 2018
+[u1013493@kp327:build]$ mpirun -np 10 ./library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenew.xml
+Solving 3D Helmholtz:
+  - Communication: Parallel MPI (10 processes)
+  - Solver type  : PETScFull
+  - Lambda       : 1
+  - No. modes    : 4
+
+
+max(d00) = 2.98104 min(d00) = 2
+
+max(d00) = 3.35775 min(d00) = 2
+
+max(d00) = 
+max(d00) = 2.97591 min(d00) = 3.20339 min(d00) = 2
+2
+
+max(d00) = 3.4021 min(d00) = 2
+
+max(d00) = 3.1352 min(d00) = 2
+
+max(d00) = 3.34266 min(d00) = 2
+
+max(d00) = 3.42652 min(d00) = 2.75539
+
+max(d00) = 2.87573 min(d00) = 2
+
+max(d00) = 2.46677 min(d00) = 2
+
+number of processes = 10, number of threads = 1
+
+_____________________________
+
+level = 0 
+number of procs = 10 
+matrix size 	= 30267 
+nonzero 	= 1165939 
+density 	= 0.001273 
+
+connStrength = 0.30 
+current size = 30267 
+new size     = 10206 
+division     = 2.97
+_____________________________
+
+level = 1 
+number of procs = 10 
+matrix size 	= 10206 
+nonzero 	= 7232330 
+density 	= 0.069433 
+
+connStrength = 0.30 
+current size = 10206 
+new size     = 3181 
+division     = 3.21
+_____________________________
+
+level = 2 
+number of procs = 10 
+matrix size 	= 3181 
+nonzero 	= 9262461 
+density 	= 0.915375 
+
+connStrength = 0.30 
+current size = 3181 
+new size     = 1332 
+division     = 2.39
+_____________________________
+
+level = 3 
+number of procs = 10 
+matrix size 	= 1332 
+nonzero 	= 1774224 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 1332 
+new size     = 758 
+division     = 1.76
+_____________________________
+
+level = 4 
+number of procs = 10 
+matrix size 	= 758 
+nonzero 	= 574564 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 758 
+new size     = 500 
+division     = 1.52
+_____________________________
+
+level = 5 
+number of procs = 10 
+matrix size 	= 500 
+nonzero 	= 250000 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 500 
+new size     = 400 
+division     = 1.25
+
+connStrength = 0.25 
+current size = 500 
+new size     = 390 
+division     = 1.28
+
+connStrength = 0.20 
+current size = 500 
+new size     = 387 
+division     = 1.29
+_____________________________
+
+level = 6 
+number of procs = 10 
+matrix size 	= 387 
+nonzero 	= 149769 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 387 
+new size     = 372 
+division     = 1.04
+
+connStrength = 0.25 
+current size = 387 
+new size     = 372 
+division     = 1.04
+
+connStrength = 0.20 
+current size = 387 
+new size     = 369 
+division     = 1.05
+_____________________________
+
+level = 7 
+number of procs = 10 
+matrix size 	= 369 
+nonzero 	= 136161 
+density 	= 1.000000 
+_____________________________
+
+number of levels = << 6 >> (the finest level is 0)
+
+******************************************************
+
+ solver1.set_matrix() took 
+ solver1.set_matrix() took 
+ solver1.set_matrix() took 964 second(s) on P2. Size = 
+ solver1.set_matrix() took 964 second(s) on P
+ solver1.set_matrix() took 964 second(s) on P4. Size = 183317
+ solver1.set_matrix() took 964 second(s) on P6. Size = 
+ solver1.set_matrix() took 964 second(s) on P7. Size = 
+ solver1.set_matrix() took 964 second(s) on P8. Size = 240641
+ solver1.set_matrix() took 964 second(s) on P9. Size = 203464
+964 second(s) on P0. Size = 206105
+964 second(s) on P1. Size = 210472
+219701
+3. Size = 225373
+
+
+ solver1.set_matrix() took 964 second(s) on P5. Size = 201413
+209030
+203842
+
+******************************************************
+
+initial residual = 1.954534e+00 
+
+Vcycle 1: 0.6580760194  	0.3366920246 
+Vcycle 2: 0.2570014059  	0.3905345254 
+Vcycle 3: 0.1148353816  	0.4468278342 
+Vcycle 4: 0.0670137029  	0.5835632016 
+Vcycle 5: 0.0486244775  	0.7255900707 
+Vcycle 6: 0.0311204404  	0.6400159345 
+Vcycle 7: 0.0151536320  	0.4869350106 
+Vcycle 8: 0.0087257092  	0.5758163630 
+Vcycle 9: 0.0065693216  	0.7528696382 
+Vcycle 10: 0.0033199482  	0.5053715463 
+Vcycle 11: 0.0015663875  	0.4718108229 
+Vcycle 12: 0.0010056222  	0.6420009229 
+Vcycle 13: 0.0006693857  	0.6656432912 
+Vcycle 14: 0.0003488396  	0.5211340098 
+Vcycle 15: 0.0001611490  	0.4619573147 
+Vcycle 16: 0.0000963172  	0.5976902936 
+Vcycle 17: 0.0000691413  	0.7178494353 
+Vcycle 18: 0.0000347720  	0.5029128893 
+Vcycle 19: 0.0000163908  	0.4713799063 
+Vcycle 20: 0.0000103580  	0.6319364779 
+Vcycle 21: 0.0000072050  	0.6955995108 
+Vcycle 22: 0.0000034937  	0.4848976675 
+Vcycle 23: 0.0000017586  	0.5033604038 
+Vcycle 24: 0.0000012018  	0.6834044173 
+Vcycle 25: 0.0000007144  	0.5943963645 
+Vcycle 26: 0.0000003355  	0.4696479157 
+Vcycle 27: 0.0000002124  	0.6330351329 
+Vcycle 28: 0.0000001430  	0.6734446638 
+Vcycle 29: 0.0000000663  	0.4632121296 
+Vcycle 30: 0.0000000333  	0.5021470417 
+Vcycle 31: 0.0000000236  	0.7095076225 
+Vcycle 32: 0.0000000134  	0.5662052089 
+Vcycle 33: 0.0000000060  	0.4525820478 
+Vcycle 34: 0.0000000036  	0.5916942738 
+Vcycle 35: 0.0000000026  	0.7287443214 
+Vcycle 36: 0.0000000013  	0.4947348423 
+Vcycle 37: 0.0000000006  	0.4688617304 
+Vcycle 38: 0.0000000004  	0.7060741130 
+Vcycle 39: 0.0000000003  	0.6471432889 
+Vcycle 40: 0.0000000001  	0.4280411626 
+Vcycle 41: 0.0000000001  	0.5255571483 
+Vcycle 42: 0.0000000000  	0.7150051755 
+Vcycle 43: 0.0000000000  	0.5262041083 
+Vcycle 44: 0.0000000000  	0.4473314987 
+Vcycle 45: 0.0000000000  	0.6253525044 
+Vcycle 46: 0.0000000000  	0.6570139326 
+Vcycle 47: 0.0000000000  	0.4746714118 
+Vcycle 48: 0.0000000000  	0.5545558341 
+Vcycle 49: 0.0000000000  	0.6936910060 
+Vcycle 50: 0.0000000000  	0.5347528277 
+Vcycle 51: 0.0000000000  	0.5275421364 
+Vcycle 52: 0.0000000000  	0.6860905500 
+Vcycle 53: 0.0000000000  	0.5455114675 
+Vcycle 54: 0.0000000000  	0.4719099296 
+Vcycle 55: 0.0000000000  	0.6566507762 
+Vcycle 56: 0.0000000000  	0.6082602777 
+Vcycle 57: 0.0000000000  	0.4670655110 
+Vcycle 58: 0.0000000000  	0.6263704473 
+Vcycle 59: 0.0000000000  	0.6374970944 
+Vcycle 60: 0.0000000000  	0.4971219945 
+Vcycle 61: 0.0000000000  	0.5636987270 
+Vcycle 62: 0.0000000000  	0.6349377615 
+Vcycle 63: 0.0000000000  	0.5610216440 
+Vcycle 64: 0.0000000000  	0.5315419585 
+Vcycle 65: 0.0000000000  	0.5317617566 
+Vcycle 66: 0.0000000000  	0.5928019727 
+Vcycle 67: 0.0000000000  	0.6460534260 
+Vcycle 68: 0.0000000000  	0.4948720538 
+Vcycle 69: 0.0000000000  	0.4906148765 
+Vcycle 70: 0.0000000000  	0.6730265746 
+Vcycle 71: 0.0000000000  	0.5967389362 
+Vcycle 72: 0.0000000000  	0.5063149068 
+Vcycle 73: 0.0000000000  	0.5831677218 
+Vcycle 74: 0.0000000000  	0.6098455363 
+Vcycle 75: 0.0000000000  	0.5732636611 
+Vcycle 76: 0.0000000000  	0.5845643064 
+
+******************************************************
+
+final:
+stopped at iteration    = 76 
+final absolute residual = 1.853068e-19
+relative residual       = 9.480867e-20 
+
+******************************************************
+****** Nek++ and Saena outputs match on P1! ******
+
+****** Nek++ and Saena outputs match on P2! ******
+
+****** Nek++ and Saena outputs match on P3! ******
+
+****** Nek++ and Saena outputs match on P4! ******
+
+****** Nek++ and Saena outputs match on P5! ******
+
+****** Nek++ and Saena outputs match on P6! ******
+
+****** Nek++ and Saena outputs match on P7! ******
+
+****** Nek++ and Saena outputs match on P8! ******
+
+****** Nek++ and Saena outputs match on P9! ******
+
+   1.   |-int saena_object::setup(saena_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object.cpp:42)                                                                                                                                                                                                           [..........]  0.14% CPU ( 1378.095ms)     1 hits 
+   2.   | +-int saena_object::level_setup(Grid*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object.cpp:167)                                                                                                                                                                                                          [..........]  0.00% CPU (    0.653ms)     7 hits 
+   3.   |   |-int restrict_matrix::transposeP(prolong_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/restrict_matrix.cpp:16)                                                                                                                                                                                          [..........]  0.13% CPU ( 1235.179ms)     7 hits 
+   4.   |   |-int saena_object::coarsen(Grid*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:1191)                                                                                                                                                                                                    [===.......] 34.41% CPU (339763.469ms)     7 hits 
+   5.   |   | +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)                             [..........]  2.21% CPU (21866.561ms)    77 hits 
+   6.   |   |   +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)                           [..........]  1.84% CPU (18179.885ms)   166 hits 
+   7.   |   |     +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)                         [..........]  0.92% CPU ( 9101.434ms)   388 hits 
+   8.   |   |       +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)                       [..........]  2.15% CPU (21182.623ms)   968 hits 
+   9.   |   |         +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)                     [..........]  2.47% CPU (24380.084ms)  1840 hits 
+  10.   |   |           +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)                   [..........]  2.74% CPU (27025.629ms)  6304 hits 
+  11.   |   |             +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)                 [..........]  3.59% CPU (35470.207ms)  9536 hits 
+  12.   |   |               +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)               [..........]  4.14% CPU (40895.250ms) 32000 hits 
+  13.   |   |                 +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)             [..........]  4.88% CPU (48228.527ms) 57856 hits 
+  14.   |   |                   +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)           [..........]  5.57% CPU (55016.273ms) 182224 hits 
+  15.   |   |                     +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)         [..........]  5.63% CPU (55622.684ms) 372152 hits 
+  16.   |   |                       +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)       [..........]  6.46% CPU (63773.477ms) 1119204 hits 
+  17.   |   |                         +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)     [=.........] 10.47% CPU (103387.062ms) 2293176 hits 
+  18.   |   |                           +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593)   [..........]  3.91% CPU (38635.910ms) 3346776 hits 
+  19.   |   |                             +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:593) [..........]  5.61% CPU (55433.910ms) 921438 hits 
+  20.   |   |-int saena_object::create_prolongation(saena_matrix*, std::vector<long unsigned int>&, prolong_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup1.cpp:29)                                                                                                                                [..........]  0.18% CPU ( 1815.861ms)     7 hits 
+  21.   |   +-int saena_object::find_aggregation(saena_matrix*, std::vector<long unsigned int>&, std::vector<unsigned int>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup1.cpp:142)                                                                                                                       [..........]  0.15% CPU ( 1462.648ms)     7 hits 
+  22.   +-int saena_object::solve_pcg(std::vector<double>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_solve.cpp:880)                                                                                                                                                                                         [..........]  2.00% CPU (19732.336ms)     1 hits 
+  23.     +-int saena_object::solve_coarsest_SuperLU(saena_matrix*, std::vector<double>&, std::vector<double>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_solve.cpp:102)                                                                                                                                     [..........]  0.38% CPU ( 3727.626ms)    76 hits 
+****** Nek++ and Saena outputs match on P0! ******
+
+Writing: "/uufs/chpc.utah.edu/common/home/u1013493/AllMeshes/cubenew0.fld" (0.0337214s, XML)
+L infinity error: 0.62742
+L 2 error:        0.162278
+H 1 error:        1.83306
+Time in ExpEval:  0.0336314
+

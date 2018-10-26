@@ -1,0 +1,36 @@
+mpirun -np 4 ../solvers/ADRSolver/ADRSolver-g -I GlobalSysSoln=PETScFull ../../solvers/ADRSolver/Tests/ImDiffusion_VarCoeff.xml
+job id:
+6250261
+
+
+mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/hexmesh.xml
+job id:
+6250262
+
+
+
+mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenew.xml
+job id:
+6250263
+
+------------------------------------------------
+
+mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/hexmesh.xml
+6253513
+
+mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenew.xml
+6253514
+
+mpirun -np 4 ./library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenewrefined.xml
+6253515
+
+
+
+
+
+
+
+mpirun -np 4 ./library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/hexmesh.xml
+
+rank 3: A_row_size = 201, A_row_offset = 12995, A_col_size = 278, A_col_offset = 277, B_row_offset = 277, B_col_size = 201, B_col_offset = 2336 
+
