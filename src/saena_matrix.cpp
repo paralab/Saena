@@ -36,8 +36,8 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
     // find number of general nonzeros of the input matrix
     struct stat st;
     if(stat(Aname, &st)){
-        if(rank==0) printf("Error: File does not exist!");
-        abort();
+        if(rank==0) printf("\nError: File does not exist!\n");
+//        abort();
     }
 
     nnz_g = st.st_size / (2*sizeof(index_t) + sizeof(value_t));
@@ -116,24 +116,7 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
 }
 
 
-saena_matrix::~saena_matrix() {
-//    if(freeBoolean){
-//        free(vIndex);
-//        free(vSend);
-//        free(vSendULong);
-//        free(vecValues);
-//        free(vecValuesULong);
-//        free(indicesP_local);
-//        free(indicesP_remote);
-//        free(iter_local_array);
-//        free(iter_remote_array);
-//        iter_local_array.clear();
-//        iter_local_array.shrink_to_fit();
-//        iter_remote_array.clear();
-//        iter_remote_array.shrink_to_fit();
-//        delete w_buff;
-//    }
-}
+saena_matrix::~saena_matrix() {}
 
 
 int saena_matrix::set(index_t row, index_t col, value_t val){

@@ -265,6 +265,7 @@ int saena_matrix::matrix_setup() {
         // *************************** scale ****************************
         // scale the matrix to have its diagonal entries all equal to 1.
 
+//        print_vector(entry, 0, "entry", comm);
         scale_matrix();
 //        print_vector(entry, 0, "entry", comm);
 
@@ -854,11 +855,11 @@ int saena_matrix::scale_matrix(){
 //    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
 //    print_vector(inv_diag, -1, "inv_diag", comm);
-//    inv_diag.assign(, 0);
     std::fill(inv_diag.begin(), inv_diag.end(), 1);
 
     MPI_Request* requests;
     MPI_Status* statuses;
+
     if(nprocs > 1){
         // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
         // put the values of thoss indices in vSend to send to other procs.
@@ -866,7 +867,7 @@ int saena_matrix::scale_matrix(){
         for(index_t i=0;i<vIndexSize;i++)
             vSend[i] = inv_sq_diag[(vIndex[i])];
 
-//    print_vector(vSend, -1, "vSend", comm);
+//        print_vector(vSend, -1, "vSend", comm);
 
         requests = new MPI_Request[numSendProc+numRecvProc];
         statuses = new MPI_Status[numSendProc+numRecvProc];
@@ -887,8 +888,11 @@ int saena_matrix::scale_matrix(){
 
 //    index_t* col_p = &col_local[0] - split[rank];
 #pragma omp parallel for
-    for(nnz_t i = 0; i < nnz_l_local; i++)
-        values_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]]; // D^{-1/2} * A * D^{-1/2}
+    for(nnz_t i = 0; i < nnz_l_local; i++) {
+        values_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]];//D^{-1/2} * A * D^{-1/2}
+    }
+
+//    print_vector(values_local, -1, "values_local", comm);
 
     if(nprocs > 1){
         // Wait for the receive communication to finish.
@@ -910,7 +914,6 @@ int saena_matrix::scale_matrix(){
             for (index_t j = 0; j < col_remote_size; ++j) {
                 for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
                     values_remote[iter] *= inv_sq_diag[row_remote[iter]] * vecValues[j]; // D^{-1/2} * A * D^{-1/2}
-//                w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
                 }
             }
         }
@@ -963,12 +966,13 @@ int saena_matrix::inverse_diag() {
         if(entry[i].row == entry[i].col){
             if(entry[i].val != 0){
                 temp = 1.0/entry[i].val;
-                inv_diag[entry[i].row-split[rank]] = temp;
+                inv_diag[entry[i].row-split[rank]]    = temp;
                 inv_sq_diag[entry[i].row-split[rank]] = sqrt(temp);
-                if(fabs(temp) > highest_diag_val)
+                if(fabs(temp) > highest_diag_val) {
                     highest_diag_val = fabs(temp);
-            }
-            else{
+                }
+//                if(rank==0) std::cout << i << "\t" << entry[i] << "\t" << temp << std::endl;
+            } else{
                 // there is no zero entry in the matrix (sparse), but just to be sure this part is added.
                 if(rank==0) printf("Error: there is a zero diagonal element (at row index = %u)\n", entry[i].row);
                 MPI_Finalize();
@@ -978,10 +982,12 @@ int saena_matrix::inverse_diag() {
     }
 
 //    print_vector(inv_diag, -1, "inv diag", comm);
+//    print_vector(inv_sq_diag, -1, "inv_sq_diag diag", comm);
 
-    for(auto i:inv_diag)
-        if(i==0)
-            if(rank==0) printf("inverse_diag: At least one diagonal entry is 0.\n");
+    for(auto i:inv_diag) {
+        if (i == 0)
+            if (rank == 0) printf("inverse_diag: At least one diagonal entry is 0.\n");
+    }
 
     temp = highest_diag_val;
     MPI_Allreduce(&temp, &highest_diag_val, 1, MPI_DOUBLE, MPI_MAX, comm);
