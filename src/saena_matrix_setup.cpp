@@ -478,7 +478,9 @@ int saena_matrix::set_off_on_diagonal(){
         nnz_l_remote = 0;
         recvCount.assign(nprocs, 0);
         nnzPerRow_local.assign(M, 0);
-        nnzPerRow_remote.assign(M, 0);
+        if(nprocs > 1){
+            nnzPerRow_remote.assign(M, 0);
+        }
 //        nnzPerRow.assign(M,0);
 //        nnzPerCol_local.assign(Mbig,0); // Nbig = Mbig, assuming A is symmetric.
 //        nnzPerCol_remote.assign(M,0);
