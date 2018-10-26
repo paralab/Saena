@@ -24,13 +24,18 @@ mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETS
 mpirun -np 4 ./library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenewrefined.xml
 6253515
 
+------------------------------------------------
+
+mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/hexmesh.xml
+6270440
+
+mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenew.xml
+6270441
 
 
 
 
 
 
-mpirun -np 4 ./library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/hexmesh.xml
 
-rank 3: A_row_size = 201, A_row_offset = 12995, A_col_size = 278, A_col_offset = 277, B_row_offset = 277, B_col_size = 201, B_col_offset = 2336 
 

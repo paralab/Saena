@@ -38,11 +38,11 @@ public:
     bool repartition = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
 //    bool shrink_cpu = true;
     bool dynamic_levels = true;
-    bool adaptive_coarsening = true;
+    bool adaptive_coarsening = false;
 
-    const index_t matmat_size_thre = 40000; // if(row * col) do the dense matmat default 40000
+    const index_t matmat_size_thre = 100000; // if(row * col) do the dense matmat default 100000
 //    const index_t min_size_threshold = 50; //default 50
-    const index_t matmat_nnz_thre = 100; //default 100
+    const index_t matmat_nnz_thre = 200; //default 200
 
     bool doSparsify = false;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid

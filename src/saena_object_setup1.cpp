@@ -152,52 +152,71 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
     create_strength_matrix(A, &S);
 //    S.print_entry(-1);
 
-    float connStrength_temp = connStrength;
     std::vector<unsigned long> aggArray; // vector of root nodes.
-    bool continue_agg = true;
 
+    aggregation_1_dist(&S, aggregate, aggArray);
 //    aggregation_2_dist(&S, aggregate, aggArray);
 
-    // new_size is the size of the new coarse matrix.
-    unsigned int new_size_local, new_size=0;
     double division = 0;
-    while(continue_agg){
-        aggregation_1_dist(&S, aggregate, aggArray);
-//        aggregation_2_dist(&S, aggregate, aggArray);
-        continue_agg = false;
+    unsigned int new_size_local, new_size=0;
 
-        new_size_local = aggArray.size();
-        MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, comm);
-        division = (double)A->Mbig / new_size;
-        if(rank==0) printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
-                           connStrength_temp, A->Mbig, new_size, division);
+    // new_size is the size of the new coarse matrix.
+    new_size_local = unsigned(aggArray.size());
+    MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, comm);
+    division = (double)A->Mbig / new_size;
+    if(rank==0) printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
+                       connStrength, A->Mbig, new_size, division);
 
-        if( division > 8 ){
-            connStrength_temp += 0.05;
-            if(connStrength_temp > 0.95)
-                continue_agg = false;
-            else{
-                aggArray.clear();
-                continue_agg = true;
-                S.erase_update();
-                S.setup_matrix(connStrength_temp);
-//                create_strength_matrix(A, &S);
-            }
-        } else if( division < 1.5 ){
-            connStrength_temp -= 0.05;
-            if(connStrength_temp < 0.2)
-                continue_agg = false;
-            else{
-                aggArray.clear();
-                continue_agg = true;
-                S.erase_update();
-                S.setup_matrix(connStrength_temp);
-//                create_strength_matrix(A, &S);
-            }
+    if(adaptive_coarsening){
+
+        float connStrength_temp = connStrength;
+        bool continue_agg = false;
+
+        if(division < 1.5 || division > 8) {
+            continue_agg = true;
         }
-        if(!adaptive_coarsening)
-            continue_agg = false;
+
+        while(continue_agg){
+
+            if( division > 8 ){
+
+                connStrength_temp += 0.05;
+                aggArray.clear();
+                S.erase_update();
+                S.setup_matrix(connStrength_temp);
+//                create_strength_matrix(A, &S);
+
+            } else if( division < 1.5 ){
+
+                connStrength_temp -= 0.05;
+                aggArray.clear();
+                S.erase_update();
+                S.setup_matrix(connStrength_temp);
+//                create_strength_matrix(A, &S);
+
+            }
+
+            aggregation_1_dist(&S, aggregate, aggArray);
+//            aggregation_2_dist(&S, aggregate, aggArray);
+
+            // new_size is the size of the new coarse matrix.
+            new_size_local = unsigned(aggArray.size());
+            MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, comm);
+            division = (double)A->Mbig / new_size;
+            if(rank==0) printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
+                               connStrength_temp, A->Mbig, new_size, division);
+
+            if (connStrength_temp < 0.2 || connStrength_temp > 0.95){
+                continue_agg = false;
+            }
+
+        }
+
     }
+
+
+
+
 
 //    if(rank==0) printf("\nfinal: connStrength = %f, current size = %u, new size = %u,  division = %d\n",
 //                       connStrength_temp, A->Mbig, new_size, division);
