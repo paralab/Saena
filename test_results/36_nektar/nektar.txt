@@ -32,9 +32,13 @@ mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETS
 mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenew.xml
 6270441
 
+------------------------------------------------
+mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/hexmesh.xml
+6275401
+6275410
 
-
-
+mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenew.xml
+6275400
 
 
 

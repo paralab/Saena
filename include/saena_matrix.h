@@ -238,6 +238,8 @@ public:
 
     int print_entry(int ran);
     int print_info(int ran);
+    int writeMatrixToFile();
+    int writeMatrixToFile(const char *folder_name);
 
     int set_zero();
     int erase();

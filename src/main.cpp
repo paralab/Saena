@@ -104,6 +104,8 @@ int main(int argc, char* argv[]){
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
+//    A.get_internal_matrix()->writeMatrixToFile();
+    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
 
     // *************************** set rhs ****************************
 

@@ -40,7 +40,7 @@ public:
     bool dynamic_levels = true;
     bool adaptive_coarsening = false;
 
-    const index_t matmat_size_thre = 100000; // if(row * col) do the dense matmat default 100000
+    const index_t matmat_size_thre = 1000000; // if(row * col) do the dense matmat default 1000000
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
 
@@ -154,7 +154,8 @@ public:
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);
 
-    int writeMatrixToFileA(saena_matrix* A, std::string name);
+//    to write saena matrix to a file use related function from saena_matrix class.
+//    int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);
     int writeMatrixToFileR(restrict_matrix* R, std::string name);
     int writeVectorToFileul(std::vector<unsigned long>& v, std::string name, MPI_Comm comm);
