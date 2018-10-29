@@ -1029,7 +1029,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
 
 //     print_vector(u, 0, "final u", comm);
 
-    if(rank==0) dollar::text(std::cout);
+//    if(rank==0) dollar::text(std::cout);
 
     return 0;
 }
