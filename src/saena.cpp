@@ -135,6 +135,30 @@ int saena::matrix::assemble_no_scale(){
 }
 
 
+int saena::matrix::assemble_writeToFile(){
+    assemble_writeToFile("");
+    return 0;
+}
+
+
+int saena::matrix::assemble_writeToFile(const char *folder_name){
+
+    if(!m_pImpl->assembled){
+        m_pImpl->repartition_nnz_initial();
+        m_pImpl->matrix_setup_no_scale();
+        if(m_pImpl->enable_shrink) m_pImpl->compute_matvec_dummy_time();
+        m_pImpl->writeMatrixToFile(folder_name);
+    }else{
+        m_pImpl->setup_initial_data2();
+        m_pImpl->repartition_nnz_update();
+        m_pImpl->matrix_setup_update();
+        m_pImpl->writeMatrixToFile(folder_name);
+    }
+
+    return 0;
+}
+
+
 int saena::matrix::assemble_band_matrix(){
     m_pImpl->matrix_setup();
 

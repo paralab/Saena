@@ -96,7 +96,9 @@ int main(int argc, char* argv[]){
 
     char* file_name(argv[1]);
     saena::matrix A (file_name, comm);
-    A.assemble();
+//    A.assemble();
+//    A.assemble_writeToFile();
+    A.assemble_writeToFile("writeMatrix");
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
@@ -104,8 +106,7 @@ int main(int argc, char* argv[]){
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
-//    A.get_internal_matrix()->writeMatrixToFile();
-    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
+//    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
 
     // *************************** set rhs ****************************
 
