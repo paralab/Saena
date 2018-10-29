@@ -95,7 +95,9 @@ int main(int argc, char* argv[]){
     double t1 = MPI_Wtime();
 
     char* file_name(argv[1]);
-    saena::matrix A (file_name, comm);
+    saena::matrix A (comm);
+//    A.read_file(file_name);
+    A.read_file(file_name, "tripattern");
     A.assemble();
 //    A.assemble_writeToFile("writeMatrix");
 

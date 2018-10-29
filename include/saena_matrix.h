@@ -173,7 +173,8 @@ public:
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
-    saena_matrix(char* Aname, MPI_Comm com);
+    int read_file(const char* Aname);
+    int read_file(const char* Aname, const std::string &input_type);
     ~saena_matrix();
 
     void set_comm(MPI_Comm com);

@@ -32,14 +32,18 @@ MPI_Comm saena::matrix::get_comm(){
     return m_pImpl->comm;
 }
 
-saena::matrix::matrix(char *name, MPI_Comm comm) {
-    m_pImpl = new saena_matrix(name, comm);
-}
-
-
 saena::matrix::~matrix(){
 //    m_pImpl->erase();
     delete m_pImpl;
+}
+
+
+int saena::matrix::read_file(char *name) {
+    m_pImpl->read_file(name);
+}
+
+int saena::matrix::read_file(char *name, const std::string &input_type) {
+    m_pImpl->read_file(name, input_type);
 }
 
 

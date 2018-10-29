@@ -17,10 +17,12 @@ namespace saena {
 
     class matrix {
     public:
-        matrix(MPI_Comm comm);
         matrix();
-        matrix(char* name, MPI_Comm comm); // read from file
+        matrix(MPI_Comm comm);
         ~matrix();
+
+        int read_file(char *name);
+        int read_file(char *name, const std::string &input_type);
 
         void set_comm(MPI_Comm comm);
 
