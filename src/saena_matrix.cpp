@@ -19,6 +19,96 @@ saena_matrix::saena_matrix(MPI_Comm com) {
     comm_old = com;
 }
 
+/*
+saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
+    // the following variables of saena_matrix class will be set in this function:
+    // Mbig", "nnz_g", "initial_nnz_l", "data"
+    // "data" is only required for repartition function.
+
+    read_from_file = true;
+    comm = com;
+    comm_old = com;
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // find number of general nonzeros of the input matrix
+    struct stat st;
+    if(stat(Aname, &st)){
+        if(rank==0) printf("\nError: File does not exist!\n");
+//        abort();
+    }
+
+    nnz_g = st.st_size / (2*sizeof(index_t) + sizeof(value_t));
+
+    // find initial local nonzero
+    initial_nnz_l = nnz_t(floor(1.0 * nnz_g / nprocs)); // initial local nnz
+    if (rank == nprocs - 1)
+        initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
+
+    if(verbose_saena_matrix){
+        MPI_Barrier(comm);
+        printf("saena_matrix: part 1. rank = %d, nnz_g = %lu, initial_nnz_l = %lu \n", rank, nnz_g, initial_nnz_l);
+        MPI_Barrier(comm);}
+
+//    printf("\nrank = %d, nnz_g = %lu, initial_nnz_l = %lu \n", rank, nnz_g, initial_nnz_l);
+
+    data_unsorted.resize(initial_nnz_l);
+    cooEntry_row* datap = &data_unsorted[0];
+
+    // *************************** read the matrix ****************************
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    int mpiopen = MPI_File_open(comm, Aname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if (mpiopen) {
+        if (rank == 0) std::cout << "Unable to open the matrix file!" << std::endl;
+        MPI_Finalize();
+    }
+
+    //offset = rank * initial_nnz_l * 24; // row index(long=8) + column index(long=8) + value(double=8) = 24
+    // the offset for the last process will be wrong if you use the above formula,
+    // because initial_nnz_l of the last process will be used, instead of the initial_nnz_l of the other processes.
+
+    offset = rank * nnz_t(floor(1.0 * nnz_g / nprocs)) * (2*sizeof(index_t) + sizeof(value_t));
+//    offset = rank * nnz_t(floor(1.0 * nnz_g / nprocs)) * sizeof(cooEntry);
+
+    MPI_File_read_at(fh, offset, datap, initial_nnz_l, cooEntry_row::mpi_datatype(), &status);
+
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+    //printf("process %d read %d lines of triples\n", rank, count);
+    MPI_File_close(&fh);
+
+//    print_vector(data_unsorted, -1, "data_unsorted", comm);
+//    printf("rank = %d \t\t\t before sort: data_unsorted size = %lu\n", rank, data_unsorted.size());
+
+    remove_duplicates();
+
+    // after removing duplicates, initial_nnz_l and nnz_g will be smaller, so update them.
+    initial_nnz_l = data.size();
+    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+    // *************************** find Mbig (global number of rows) ****************************
+    // Since data[] has row-major order, the last element on the last process is the number of rows.
+    // Broadcast it from the last process to the other processes.
+
+    cooEntry last_element = data.back();
+    Mbig = last_element.row + 1; // since indices start from 0, not 1.
+    MPI_Bcast(&Mbig, 1, MPI_UNSIGNED, nprocs-1, comm);
+
+    if(verbose_saena_matrix){
+        MPI_Barrier(comm);
+        printf("saena_matrix: part 2. rank = %d, nnz_g = %lu, initial_nnz_l = %lu, Mbig = %u \n", rank, nnz_g, initial_nnz_l, Mbig);
+        MPI_Barrier(comm);}
+
+    print_vector(data, -1, "data", comm);
+
+}
+*/
 
 saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
     // the following variables of saena_matrix class will be set in this function:
@@ -77,13 +167,6 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
 
     MPI_File_read_at(fh, offset, datap, initial_nnz_l, cooEntry_row::mpi_datatype(), &status);
 
-//    double val;
-//    if(rank==0)
-//        for(long i=0; i<initial_nnz_l; i++){
-//            val = data_unsorted[3*i+2];
-//            std::cout << datap[3*i] << "\t" << datap[3*i+1] << "\t" << val << std::endl;
-//        }
-
 //    int count;
 //    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
@@ -111,7 +194,7 @@ saena_matrix::saena_matrix(char* Aname, MPI_Comm com) {
         printf("saena_matrix: part 2. rank = %d, nnz_g = %lu, initial_nnz_l = %lu, Mbig = %u \n", rank, nnz_g, initial_nnz_l, Mbig);
         MPI_Barrier(comm);}
 
-//    print_vector(data, -1, "data", comm);
+    print_vector(data, -1, "data", comm);
 
 }
 
@@ -921,6 +1004,13 @@ int saena_matrix::print_info(int ran) {
 
 
 int saena_matrix::writeMatrixToFile(){
+    // the matrix file will be written in the HOME directory.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(rank==0) printf("The matrix file will be written in the HOME directory. \n");
     writeMatrixToFile("");
 }
 
@@ -955,7 +1045,7 @@ int saena_matrix::writeMatrixToFile(const char *folder_name){
 
     // sort row-wise
 //    std::vector<cooEntry_row> entry_temp1(entry.size());
-//    std::memcpy(&*entry_temp1.begin(), &*entry.begin(), entry.size());
+//    std::memcpy(&*entry_temp1.begin(), &*entry.begin(), entry.size() * sizeof(cooEntry));
 //    std::vector<cooEntry_row> entry_temp2;
 //    par::sampleSort(entry_temp1, entry_temp2, comm);
 

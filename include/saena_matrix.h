@@ -203,7 +203,7 @@ public:
 
     int repartition_nnz_update_Ac(); // based on nnz.
 
-    int set_rho();
+//    int set_rho();
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();

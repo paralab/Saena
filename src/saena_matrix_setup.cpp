@@ -125,12 +125,12 @@ int saena_matrix::remove_duplicates() {
     std::vector<cooEntry_row> data_sorted_row;
     par::sampleSort(data_unsorted, data_sorted_row, comm);
 
-    std::vector<cooEntry> data_sorted(data_sorted_row.size());
-    memcpy(&data_sorted[0], &data_sorted_row[0], data_sorted_row.size() * sizeof(cooEntry));
-
     // clear data_unsorted and free memory.
     data_unsorted.clear();
     data_unsorted.shrink_to_fit();
+
+    std::vector<cooEntry> data_sorted(data_sorted_row.size());
+    memcpy(&data_sorted[0], &data_sorted_row[0], data_sorted_row.size() * sizeof(cooEntry));
 
 //    printf("rank = %d \t\t\t after  sort: data_sorted size = %lu\n", rank, data_sorted.size());
 
@@ -428,12 +428,12 @@ int saena_matrix::matrix_setup_update() {
     return 0;
 }
 
-
+/*
 int saena_matrix::set_rho(){
 
     // computing rhoDA for the prolongation matrix: P = (I - 4/(3*rhoDA) * DA) * P_t
     // rhoDA = min( norm(DA , 1) , norm(DA , inf) )
-    /*
+
         double norm1_local = 0;
         for(unsigned long i=0; i<M; i++)
             norm1_local += abs(inv_diag[i]);
@@ -449,11 +449,10 @@ int saena_matrix::set_rho(){
             rhoDA = normInf;
         else
             rhoDA = norm1;
-    */
 
     return 0;
 }
-
+*/
 
 int saena_matrix::set_off_on_diagonal(){
     // set and exchange on-diagonal and off-diagonal elements
