@@ -258,8 +258,7 @@ int strength_matrix::setup_matrix(float connStrength){
 }
 
 
-strength_matrix::~strength_matrix(){
-}
+strength_matrix::~strength_matrix() = default;
 
 
 int strength_matrix::erase(){

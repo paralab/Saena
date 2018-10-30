@@ -5,7 +5,7 @@
 #include "iostream"
 
 
-saena_matrix_dense::saena_matrix_dense(){}
+saena_matrix_dense::saena_matrix_dense() = default;
 
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){

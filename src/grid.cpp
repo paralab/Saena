@@ -1,6 +1,6 @@
 #include <grid.h>
 
-Grid::Grid(){}
+Grid::Grid() = default;
 
 
 Grid::Grid(saena_matrix* A1, int maxLev, int currentLev){
@@ -11,4 +11,4 @@ Grid::Grid(saena_matrix* A1, int maxLev, int currentLev){
 }
 
 
-Grid::~Grid(){}
+Grid::~Grid() = default;
