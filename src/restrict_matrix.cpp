@@ -72,6 +72,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
     P->recvProcRank_t.shrink_to_fit();
     P->sendProcRank_t.clear();
     P->sendProcRank_t.shrink_to_fit();
+    P->recvProcCount_t.clear();
+    P->recvProcCount_t.shrink_to_fit();
+    P->sendProcCount_t.clear();
+    P->sendProcCount_t.shrink_to_fit();
 
     if(verbose_transposeP){
         MPI_Barrier(comm);
@@ -188,7 +192,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
     sendProcRank.clear();
     sendProcCount.clear();
     indicesP_local.clear();
-    indicesP_remote.clear();
+//    indicesP_remote.clear();
     entry_local.clear();
     entry_remote.clear();
     row_local.clear();
@@ -369,12 +373,12 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
 //        }
 //    }
 
-    indicesP_remote.resize(nnz_l_remote);
-    #pragma omp parallel for
-    for(nnz_t i = 0; i < nnz_l_remote; i++)
-        indicesP_remote[i] = i;
-    index_t *row_remoteP = &*row_remote.begin();
-    std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
+//    indicesP_remote.resize(nnz_l_remote);
+//    #pragma omp parallel for
+//    for(nnz_t i = 0; i < nnz_l_remote; i++)
+//        indicesP_remote[i] = i;
+//    index_t *row_remoteP = &*row_remote.begin();
+//    std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
 
 //    MPI_Barrier(comm);
 //    if(rank==1) cout << "nnz_l_remote = " << nnz_l_remote << "\t\trecvSize_t = " << recvSize_t << "\t\tvIndexSize_t = " << vIndexSize_t << endl;

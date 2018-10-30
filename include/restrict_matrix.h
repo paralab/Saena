@@ -65,7 +65,7 @@ public:
     std::vector<value_t> w_buff; // for matvec
 
     std::vector<nnz_t> indicesP_local;
-    std::vector<nnz_t> indicesP_remote;
+//    std::vector<nnz_t> indicesP_remote;
 
 //    bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
 
