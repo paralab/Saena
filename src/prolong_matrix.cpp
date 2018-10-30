@@ -53,8 +53,8 @@ int prolong_matrix::findLocalRemote(){
     entry_local.clear();
     entry_remote.clear();
     row_local.clear();
-    row_remote.clear();
-    col_remote.clear();
+//    row_remote.clear();
+//    col_remote.clear();
     vElementRep_local.clear();
     vElement_remote.clear();
     vElement_remote_t.clear();
@@ -80,11 +80,11 @@ int prolong_matrix::findLocalRemote(){
     } else{
         nnz_l_remote++;
         entry_remote.push_back(entry[0]);
-        row_remote.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
+//        row_remote.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
 //        col_remote2.push_back(entry[0].col);
 //        values_remote.push_back(entry[0].val);
         col_remote_size++; // number of remote columns
-        col_remote.push_back(col_remote_size-1);
+//        col_remote.push_back(col_remote_size-1);
 //        nnzPerCol_remote[col_remote_size-1]++;
         nnzPerCol_remote.push_back(1);
 
@@ -118,7 +118,7 @@ int prolong_matrix::findLocalRemote(){
             nnz_l_remote++;
 //            if(rank==2) printf("entry[i].row = %lu\n", entry[i].row+split[rank]);
             entry_remote.push_back(entry[i]);
-            row_remote.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
+//            row_remote.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
             // col_remote2 is the original col value. col_remote starts from 0.
 //            col_remote2.push_back(entry[i].col);
 //            values_remote.push_back(entry[i].val);
@@ -140,7 +140,7 @@ int prolong_matrix::findLocalRemote(){
                 (*(nnzPerCol_remote.end()-1))++;
             }
             // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-            col_remote.push_back(col_remote_size-1);
+//            col_remote.push_back(col_remote_size-1);
 //            nnzPerCol_remote[col_remote_size-1]++;
         }
     } // for i
@@ -307,11 +307,11 @@ int prolong_matrix::findLocalRemote(){
 //        }
 //    }
 
-    indicesP_remote.resize(nnz_l_remote);
-    for(nnz_t i=0; i<nnz_l_remote; i++)
-        indicesP_remote[i] = i;
-    index_t* row_remoteP = &*row_remote.begin();
-    std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
+//    indicesP_remote.resize(nnz_l_remote);
+//    for(nnz_t i=0; i<nnz_l_remote; i++)
+//        indicesP_remote[i] = i;
+//    index_t* row_remoteP = &*row_remote.begin();
+//    std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
     // todo: is this required?
 //    row_remote.clear();
 //    row_remote.shrink_to_fit();
