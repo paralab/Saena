@@ -153,6 +153,7 @@ public:
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);
+    int transpose_locally(std::vector<cooEntry> &A, nnz_t size, index_t row_offset, std::vector<cooEntry> &B);
 
 //    to write saena matrix to a file use related function from saena_matrix class.
 //    int writeMatrixToFileA(saena_matrix* A, std::string name);
