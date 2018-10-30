@@ -33,12 +33,22 @@ mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETS
 6270441
 
 ------------------------------------------------
+
 mpirun -np 10 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/hexmesh.xml
 6275401
 6275410
 
 mpirun -np 4 ../library/Demos/MultiRegions/myHelmholtz3D-g -I GlobalSysSoln=PETScFull ~/AllMeshes/cubenew.xml
 6275400
+
+------------------------------------------------
+
+cat mat-r0.mtx mat-r1.mtx mat-r2.mtx mat-r3.mtx > mat.mtx
+cat mat-r0.mtx mat-r1.mtx mat-r2.mtx mat-r3.mtx mat-r4.mtx mat-r5.mtx mat-r6.mtx mat-r7.mtx mat-r8.mtx mat-r9.mtx > mat.mtx
+
+------------------------------------------------
+
+
 
 
 

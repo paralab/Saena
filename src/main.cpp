@@ -91,13 +91,12 @@ int main(int argc, char* argv[]){
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 */
     // ******** 2 - initialize the matrix: read from file *************
-
     double t1 = MPI_Wtime();
 
     char* file_name(argv[1]);
     saena::matrix A (comm);
-//    A.read_file(file_name);
-    A.read_file(file_name, "tripattern");
+    A.read_file(file_name);
+//    A.read_file(file_name, "triangle");
     A.assemble();
 //    A.assemble_writeToFile("writeMatrix");
 
@@ -185,7 +184,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 100;
+    int vcycle_num            = 400;
     double relative_tolerance = 1e-12;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;

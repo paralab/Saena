@@ -21,7 +21,7 @@ saena_matrix::saena_matrix(MPI_Comm com) {
 
 
 int saena_matrix::read_file(const char* Aname){
-    read_file(Aname, nullptr);
+    read_file(Aname, "");
 }
 
 
@@ -92,7 +92,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                 unsigned int a, b, i = 0;
                 double c;
 
-                if(input_type.c_str() == nullptr){
+                if(input_type.empty()){
 
                     while(inFile >> a >> b >> c){
                         entry_temp1.resize(nnz);
@@ -1076,7 +1076,7 @@ int saena_matrix::writeMatrixToFile(){
 
 int saena_matrix::writeMatrixToFile(const char *folder_name){
     // Create txt files with name Ac-r0.txt for processor 0, Ac-r1.txt for processor 1, etc.
-    // Then, concatenate them in terminal: cat Ac-r0.txt Ac-r1.txt > Ac.txt
+    // Then, concatenate them in terminal: cat Ac-r0.mtx Ac-r1.mtx > Ac.mtx
     // row and column indices of txt files should start from 1, not 0.
     // write the files inside ${HOME}/folder_name
     // this is the default case for the sorting which is column-major.
@@ -1093,7 +1093,7 @@ int saena_matrix::writeMatrixToFile(const char *folder_name){
     outFileNameTxt += folder_name;
     outFileNameTxt += "/mat-r";
     outFileNameTxt += std::to_string(rank);
-    outFileNameTxt += ".txt";
+    outFileNameTxt += ".mtx";
     outFileTxt.open(outFileNameTxt);
 
     if(rank==0) std::cout << "\nWriting the matrix in: " << outFileNameTxt << std::endl;
