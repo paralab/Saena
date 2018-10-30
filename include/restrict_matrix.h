@@ -54,8 +54,8 @@ public:
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
-    int vIndexSize  = 0;
-    int recvSize    = 0;
+    index_t vIndexSize  = 0;
+    index_t recvSize    = 0;
     int numRecvProc = 0;
     int numSendProc = 0;
 
@@ -67,7 +67,7 @@ public:
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;
 
-    bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
+//    bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
 
     MPI_Comm comm;
 

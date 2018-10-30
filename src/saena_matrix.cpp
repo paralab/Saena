@@ -11,7 +11,7 @@
 #include "mpi.h"
 
 
-saena_matrix::saena_matrix(){}
+saena_matrix::saena_matrix() = default;
 
 
 saena_matrix::saena_matrix(MPI_Comm com) {

@@ -8,7 +8,7 @@
 #include "mpi.h"
 
 
-prolong_matrix::prolong_matrix(){}
+prolong_matrix::prolong_matrix() = default;
 
 
 prolong_matrix::prolong_matrix(MPI_Comm com){
@@ -31,7 +31,6 @@ prolong_matrix::~prolong_matrix(){
 
 
 int prolong_matrix::findLocalRemote(){
-
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);

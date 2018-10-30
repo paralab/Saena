@@ -10,7 +10,7 @@
 using namespace std;
 
 
-restrict_matrix::restrict_matrix(){}
+restrict_matrix::restrict_matrix() = default;
 
 
 int restrict_matrix::transposeP(prolong_matrix* P) { $
@@ -22,9 +22,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    unsigned long i;
-
-    arrays_defined = true;
+//    arrays_defined = true;
     Mbig = P->Nbig;
     Nbig = P->Mbig;
     split = P->split;
@@ -50,7 +48,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
     if(nprocs > 1) {
 //    MPI_Barrier(comm);
 //    if(rank==1) cout << "\nvSend_t: P->nnz_l_remote = " << P->nnz_l_remote << endl;
-        for (i = 0; i < P->nnz_l_remote; i++) { // all remote entries should be sent.
+        for (nnz_t i = 0; i < P->nnz_l_remote; i++) { // all remote entries should be sent.
             P->vSend_t[i] = cooEntry(P->entry_remote[i].row + split[rank], P->entry_remote[i].col,
                                      P->entry_remote[i].val);
 //        if(rank==1) printf("%lu\t %lu\t %f \tP_remote\n", P->entry_remote[i].row, P->entry_remote[i].col, P->entry_remote[i].val);
@@ -59,12 +57,12 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
 //        if(rank==0) printf("numRecvProc_t = %u \tnumSendProc_t = %u \n", P->numRecvProc_t, P->numSendProc_t);
 //        print_vector(P->recvProcCount_t, 0, "recvProcCount_t", comm);
 
-        for (i = 0; i < P->numRecvProc_t; i++) {
+        for (nnz_t i = 0; i < P->numRecvProc_t; i++) {
             MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i],
                       cooEntry::mpi_datatype(), P->recvProcRank_t[i], 1, comm, &(requests[i]));
         }
 
-        for (i = 0; i < P->numSendProc_t; i++) {
+        for (nnz_t i = 0; i < P->numSendProc_t; i++) {
             MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], cooEntry::mpi_datatype(),
                       P->sendProcRank_t[i], 1, comm, &(requests[P->numRecvProc_t + i]));
         }
@@ -80,16 +78,15 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
 
     entry.clear();
 
-    // todo: change push_back
     nnz_t iter = 0;
     for (index_t i = 0; i < P->M; ++i) {
         for (index_t j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter) {
 //            if(rank==1) cout << P->entry_local[P->indicesP_local[iter]].col << "\t" << P->entry_local[P->indicesP_local[iter]].col - P->splitNew[rank]
 //                             << "\t" << P->entry_local[P->indicesP_local[iter]].row << "\t" << P->entry_local[P->indicesP_local[iter]].row + P->split[rank]
 //                             << "\t" << P->entry_local[P->indicesP_local[iter]].val << endl;
-            entry.push_back(cooEntry(P->entry_local[P->indicesP_local[iter]].col - splitNew[rank],    // make row index local
-                                           P->entry_local[P->indicesP_local[iter]].row + split[rank], // make col index global
-                                           P->entry_local[P->indicesP_local[iter]].val));
+            entry.emplace_back(cooEntry(P->entry_local[P->indicesP_local[iter]].col - splitNew[rank],    // make row index local
+                                        P->entry_local[P->indicesP_local[iter]].row + split[rank], // make col index global
+                                        P->entry_local[P->indicesP_local[iter]].val));
         }
     }
 
@@ -102,8 +99,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
 //                cout << entry[iter].row << "\t" << entry[iter].col << "\t" << entry[iter].val << endl;}
 //    MPI_Barrier(comm);
 
-    // todo: try to add this.
-//    entry.shrink_to_fit();
+    // clear() is being called on entry(), so shrink_to_fit() in case it was bigger before.
+    entry.shrink_to_fit();
 
     if(verbose_transposeP){
         MPI_Barrier(comm);
@@ -119,9 +116,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
 
 //        MPI_Barrier(comm);
 //        if(rank==1) cout << "vecValues_t:" << endl;
-        for (i = 0; i < P->recvSize_t; i++) {
+        for (nnz_t i = 0; i < P->recvSize_t; i++) {
 //            if(rank==2) printf("%u \t%u \t%f \n", P->vecValues_t[i].row, P->vecValues_t[i].col, P->vecValues_t[i].val);
-            entry.push_back(cooEntry(P->vecValues_t[i].col - splitNew[rank], // make row index local
+            entry.emplace_back(cooEntry(P->vecValues_t[i].col - splitNew[rank], // make row index local
                                      P->vecValues_t[i].row,
                                      P->vecValues_t[i].val));
         }
@@ -157,7 +154,6 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
         printf("rank %d: transposeP part4\n", rank);
         MPI_Barrier(comm);
     }
-    // todo: check why is R so imbalanced for 289 size matrix on 8 processors. use the following print_entry function.
 
     // *********************** setup matvec ************************
 
@@ -189,31 +185,31 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
     row_remote.clear();
     col_remote.clear();
 
-    if(entry.size() != 0){
+    if(!entry.empty()){
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
         // local
         if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
             nnzPerRow_local[entry[0].row]++;
-            entry_local.push_back(entry[0]);
-            row_local.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
-//        col_local.push_back(entry[0].col);
-//        values_local.push_back(entry[0].val);
-            //vElement_local.push_back(col[0]);
-            vElementRep_local.push_back(1);
+            entry_local.emplace_back(entry[0]);
+            row_local.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
+//          col_local.emplace_back(entry[0].col);
+//          values_local.emplace_back(entry[0].val);
+            //vElement_local.emplace_back(col[0]);
+            vElementRep_local.emplace_back(1);
 
             // remote
         } else{
-            entry_remote.push_back(entry[0]);
-            row_remote.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
-//        col_remote2.push_back(entry[0].col);
-//        values_remote.push_back(entry[0].val);
+            entry_remote.emplace_back(entry[0]);
+            row_remote.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
+//            col_remote2.emplace_back(entry[0].col);
+//            values_remote.emplace_back(entry[0].val);
             col_remote_size++; // number of remote columns
-            col_remote.push_back(col_remote_size-1);
-//        nnzPerCol_remote[col_remote_size-1]++;
-            nnzPerCol_remote.push_back(1);
-            vElement_remote.push_back(entry[0].col);
-            vElementRep_remote.push_back(1);
+            col_remote.emplace_back(col_remote_size-1);
+//            nnzPerCol_remote[col_remote_size-1]++;
+            nnzPerCol_remote.emplace_back(1);
+            vElement_remote.emplace_back(entry[0].col);
+            vElementRep_remote.emplace_back(1);
             recvCount[lower_bound3(&split[0], &split[nprocs], entry[0].col)] = 1;
         }
 
@@ -227,36 +223,36 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
             // local
             if (entry[i].col >= split[rank] && entry[i].col < split[rank+1]) {
                 nnzPerRow_local[entry[i].row]++;
-                entry_local.push_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
-                row_local.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then erase. // todo: clear does not free memory. find a solution.
-//            col_local.push_back(entry[i].col);
-//            values_local.push_back(entry[i].val);
+                entry_local.emplace_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
+                row_local.emplace_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then erase. // todo: clear does not free memory. find a solution.
+//                col_local.emplace_back(entry[i].col);
+//                values_local.emplace_back(entry[i].val);
                 if (entry[i].col != entry[i-1].col)
-                    vElementRep_local.push_back(1);
+                    vElementRep_local.emplace_back(1);
                 else
                     vElementRep_local.back()++;
 
                 // remote
             } else {
-                entry_remote.push_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
-                row_remote.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
+                entry_remote.emplace_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
+                row_remote.emplace_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
                 // col_remote2 is the original col value. col_remote starts from 0.
-//                col_remote2.push_back(entry[i].col);
-//                values_remote.push_back(entry[i].val);
+//                col_remote2.emplace_back(entry[i].col);
+//                values_remote.emplace_back(entry[i].val);
 
                 if (entry[i].col != entry[i-1].col) {
                     col_remote_size++;
-                    vElement_remote.push_back(entry[i].col);
-                    vElementRep_remote.push_back(1);
+                    vElement_remote.emplace_back(entry[i].col);
+                    vElementRep_remote.emplace_back(1);
                     procNum = lower_bound3(&split[0], &split[nprocs], entry[i].col);
                     recvCount[procNum]++;
-                    nnzPerCol_remote.push_back(1);
+                    nnzPerCol_remote.emplace_back(1);
                 } else {
                     vElementRep_remote.back()++;
                     nnzPerCol_remote.back()++;
                 }
                 // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-                col_remote.push_back(col_remote_size-1);
+                col_remote.emplace_back(col_remote_size-1);
 //                nnzPerCol_remote[col_remote_size-1]++;
             }
         } // for i
@@ -292,16 +288,16 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
         for (int i = 0; i < nprocs; i++) {
             if (recvCount[i] != 0) {
                 numRecvProc++;
-                recvProcRank.push_back(i);
-                recvProcCount.push_back(recvCount[i]);
-//            sendProcCount_t.push_back(vIndexCount_t[i]); // use recvProcRank for it.
+                recvProcRank.emplace_back(i);
+                recvProcCount.emplace_back(recvCount[i]);
+//            sendProcCount_t.emplace_back(vIndexCount_t[i]); // use recvProcRank for it.
 //            if(rank==0) cout << i << "\trecvCount[i] = " << recvCount[i] << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
             }
             if (vIndexCount[i] != 0) {
                 numSendProc++;
-                sendProcRank.push_back(i);
-                sendProcCount.push_back(vIndexCount[i]);
-//                recvProcCount_t.push_back(recvCount_t[i]); // use sendProcRank for it.
+                sendProcRank.emplace_back(i);
+                sendProcCount.emplace_back(vIndexCount[i]);
+//                recvProcCount_t.emplace_back(recvCount_t[i]); // use sendProcRank for it.
             }
         }
 
@@ -316,8 +312,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
             vdispls[i] = vdispls[i - 1] + vIndexCount[i - 1];
             rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
         }
-        vIndexSize = vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
-        recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
+        vIndexSize = (index_t)vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
+        recvSize   = (index_t)rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
 //    for (int i=0; i<nprocs; i++)
 //        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
@@ -350,7 +346,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
     }
 
     indicesP_local.resize(nnz_l_local);
-    for(i=0; i<nnz_l_local; i++)
+    for(nnz_t i = 0; i < nnz_l_local; i++)
         indicesP_local[i] = i;
     index_t *row_localP = &*row_local.begin();
     std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
@@ -364,7 +360,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
 //    }
 
     indicesP_remote.resize(nnz_l_remote);
-#pragma omp parallel for
+    #pragma omp parallel for
     for(nnz_t i = 0; i < nnz_l_remote; i++)
         indicesP_remote[i] = i;
     index_t *row_remoteP = &*row_remote.begin();
@@ -492,15 +488,7 @@ int restrict_matrix::openmp_setup() {
 }
 
 
-restrict_matrix::~restrict_matrix(){
-//    if(arrays_defined){
-//        free(vIndex);
-//        free(vSend);
-//        free(vecValues);
-//        free(indicesP_local);
-//        free(indicesP_remote);
-//    }
-}
+restrict_matrix::~restrict_matrix(){}
 
 
 int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
