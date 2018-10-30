@@ -15,7 +15,7 @@
 
 
 // this version splits the matrices to have half nnz on each side.
-int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
+int saena_object::fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
@@ -60,7 +60,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 
 //    print_vector(A, -1, "A", comm);
 //    print_vector(B, -1, "B", comm);
-    if(rank==0) printf("rank %d: A: %ux%u, B: %ux%u, Ar*Bc: %u \n\n", rank, A_row_size, A_col_size, A_col_size, B_col_size, A_row_size*B_col_size);
+//    if(rank==0) printf("rank %d: A: %ux%u, B: %ux%u, Ar*Bc: %u \n\n", rank, A_row_size, A_col_size, A_col_size, B_col_size, A_row_size*B_col_size);
 //    printf("rank %d: A_row_size = %u, A_row_offset = %u, A_col_size = %u, A_col_offset = %u, B_col_size = %u, B_col_offset = %u \n\n",
 //            rank, A_row_size, A_row_offset, A_col_size, A_col_offset, B_col_size, B_col_offset);
 
@@ -638,7 +638,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 
 
 // this version splits the matrices by the middle row and column.
-int saena_object::fast_mm_row_col(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
+int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
@@ -1441,7 +1441,6 @@ int saena_object::coarsen(Grid *grid) {$
     } else { // nprocs == 1 -> serial
 
         index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
-
 
         nnzPerCol_right.assign(mat_recv_M, 0);
         for(nnz_t i = 0; i < R_tranpose.size(); i++){
