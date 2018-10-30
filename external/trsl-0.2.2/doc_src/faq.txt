@@ -1,0 +1,20 @@
+// (C) Copyright Renaud Detry   2007-2008.
+// Distributed under the Boost Software License, Version 1.0. (See
+// accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+/**
+ * @defgroup faq F.A.Q.
+ *
+ * @section faq_no_population_iterator What if my population data structure doesn't provide iterators?
+ *
+ * Write one :-). <a
+ * href="http://www.boost.org/libs/iterator/doc/iterator_facade.html"
+ * >Boost Iterator Facade</a> makes it really easy.
+ *
+ * However, keep in mind that pointers are indeed iterators. If your
+ * population data structure guarantees to store elements
+ * contiguously, and if you can get a pointer to the first element,
+ * you have iterators already. See @ref trsl_example2.cpp "trsl_example2.cpp"
+ * for an example with a C array.
+ */

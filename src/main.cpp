@@ -68,7 +68,7 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
 
     // ******** 1 - initialize the matrix: laplacian *************
-
+/*
     int mx(std::stoi(argv[1]));
     int my(std::stoi(argv[2]));
     int mz(std::stoi(argv[3]));
@@ -89,14 +89,16 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-
+*/
     // ******** 2 - initialize the matrix: read from file *************
-/*
     double t1 = MPI_Wtime();
 
     char* file_name(argv[1]);
-    saena::matrix A (file_name, comm);
+    saena::matrix A (comm);
+    A.read_file(file_name);
+//    A.read_file(file_name, "triangle");
     A.assemble();
+//    A.assemble_writeToFile("writeMatrix");
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
@@ -104,15 +106,16 @@ int main(int argc, char* argv[]){
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
-*/
+//    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
+
     // *************************** set rhs ****************************
 
     unsigned int num_local_row = A.get_num_local_rows();
-//    std::vector<double> rhs(num_local_row);
+    std::vector<double> rhs(num_local_row);
 
     // ********** 1 - set rhs: random **********
 
-//    generate_rhs_old(rhs);
+    generate_rhs_old(rhs);
 //    print_vector(rhs, -1, "rhs", comm);
 
     // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
@@ -123,8 +126,8 @@ int main(int argc, char* argv[]){
 
     // ********** 3 - set rhs: Laplacian **********
 
-    std::vector<double> rhs; // don't set the size for this method
-    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
+//    std::vector<double> rhs; // don't set the size for this method
+//    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
 //    print_vector(rhs, -1, "rhs", comm);
 
     // ********** 4 - set rhs: read from file **********
@@ -181,7 +184,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 100;
+    int vcycle_num            = 400;
     double relative_tolerance = 1e-12;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;
@@ -194,17 +197,17 @@ int main(int argc, char* argv[]){
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
 //    solver.set_multigrid_max_level(0); // 0 means only use direct solver, so no multigrid will be used.
 
-    if(rank==0) printf("usage: ./Saena x_size y_size z_size sparse_epsilon \n");
-    double sp_epsilon(std::atof(argv[4]));
-    if(rank==0) printf("\nsp_epsilon = %f \n", sp_epsilon);
-    solver.get_object()->sparse_epsilon = sp_epsilon;
+//    if(rank==0) printf("usage: ./Saena x_size y_size z_size sparse_epsilon \n");
+//    double sp_epsilon(std::atof(argv[4]));
+//    if(rank==0) printf("\nsp_epsilon = %f \n", sp_epsilon);
+//    solver.get_object()->sparse_epsilon = sp_epsilon;
 
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
-//    print_time(t1, t2, "Setup:", comm);
+    print_time(t1, t2, "Setup:", comm);
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);

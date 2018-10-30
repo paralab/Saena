@@ -1,0 +1,121 @@
+\hypertarget{group__version__history}{
+\subsection{Version History}
+\label{group__version__history}\index{Version History@{Version History}}
+}
+\hypertarget{group__version__history_version_history_v022}{}\subsubsection{Version 0.2.2}\label{group__version__history_version_history_v022}
+
+\begin{DoxyItemize}
+\item Added TRSL\_\-VERSION\_\-NR.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Renamed trsl::is\_\-picked\_\-systematic::isFirstPick to \hyperlink{classtrsl_1_1is__picked__systematic_a47828e07ba7bc503b503e069e145d68a}{trsl::is\_\-picked\_\-systematic::is\_\-first\_\-pick}.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Added \hyperlink{namespacetrsl_a412db7961cfc65236d71610635038225}{trsl::is\_\-first\_\-pick} to avoid awkward statements like {\ttfamily i.predicate().is\_\-first\_\-pick($\ast$i)}.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Added {\ttfamily index()} to \hyperlink{classtrsl_1_1reorder__iterator}{trsl::reorder\_\-iterator}.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Added {\ttfamily index()} to \hyperlink{classtrsl_1_1ppfilter__iterator}{trsl::ppfilter\_\-iterator}.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Changed \char`\"{}double quotes\char`\"{} include directives to use angle brackets instead.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Removed unnecessary include of \hyperlink{persistent__filter__iterator_8hpp}{trsl/persistent\_\-filter\_\-iterator.hpp} from \hyperlink{is__picked__systematic_8hpp}{trsl/is\_\-picked\_\-systematic.hpp}.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item For systematic sampling, \hyperlink{classtrsl_1_1ppfilter__iterator}{trsl::ppfilter\_\-iterator} should be used by default, and \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator} should be used only when it is guaranteed that the order in which the input population is presented is not following any pattern. To encourage this policy, \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator} has been replace by \hyperlink{classtrsl_1_1ppfilter__iterator}{trsl::ppfilter\_\-iterator} in the following examples: examples/trsl\_\-example1.cpp, examples/trsl\_\-example1plus.cpp, examples/ParticleCollection.cpp. Naturally, {\ttfamily std::list} had to be replaced with {\ttfamily std::vector} in examples/trsl\_\-example1.cpp.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Enhanced documentation.
+\end{DoxyItemize}\hypertarget{group__version__history_version_history_v021}{}\subsubsection{Version 0.2.1}\label{group__version__history_version_history_v021}
+
+\begin{DoxyItemize}
+\item Removed {\ttfamily const} on {\ttfamily predicate\_\-} in \hyperlink{classtrsl_1_1ppfilter__iterator}{trsl::ppfilter\_\-iterator}, to allow iterator assignment with {\ttfamily operator=}.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Added {\ttfamily isFirstPick()} to \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic}.
+\end{DoxyItemize}\hypertarget{group__version__history_version_history_v020}{}\subsubsection{Version 0.2.0}\label{group__version__history_version_history_v020}
+
+\begin{DoxyItemize}
+\item Restored default constructor in \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator} (\hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator} has been renamed \hyperlink{classtrsl_1_1reorder__iterator}{trsl::reorder\_\-iterator}, see below).
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Pulled \hyperlink{classtrsl_1_1reorder__iterator}{trsl::reorder\_\-iterator} out of the old \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator}. Added \hyperlink{namespacetrsl_aa23892a3c8929e627df1618c6b5dd2df}{trsl::sort\_\-iterator}.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator} uses a partial shuffle algorithm instead of std::random\_\-shuffle. It is thus efficient to iterate over a permutation of a subset that is much smaller than the population.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Fixed {\ttfamily operator==} bug in \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator}. Two \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator} are now equal if their base iterators are equal {\itshape and\/} if their predicates are equal.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Added a default constructor to \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic}. Note that a default-\/constructed \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic} is invalid.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Added \hyperlink{classtrsl_1_1ppfilter__iterator}{trsl::ppfilter\_\-iterator}.
+\end{DoxyItemize}\hypertarget{group__version__history_version_history_v011}{}\subsubsection{Version 0.1.1}\label{group__version__history_version_history_v011}
+Changes made to the code are:
+
+
+\begin{DoxyItemize}
+\item trsl::random\_\-permutation\_\-iterator::random\_\-permutation\_\-iterator(ElementIterator,ElementIterator,index\_\-t) now checks that the permutation size is smaller or equal to the population size, and throws an exception if it is not the case.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{error__handling_8hpp}{trsl/error\_\-handling.hpp}: TRSL exceptions.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{common_8hpp}{trsl/common.hpp}: random number wrappers.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic} and \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator} are now using functions from \hyperlink{common_8hpp}{trsl/common.hpp}. \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator} was previously using the random generator built in {\ttfamily std::random\_\-shuffle}, which is usually {\ttfamily rand}. \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic} was using {\ttfamily random}. Both will now use {\ttfamily rand} by default, and {\ttfamily random} if TRSL\_\-USE\_\-BSD\_\-BETTER\_\-RANDOM\_\-GENERATOR is defined. See \hyperlink{group__random}{Random Number Generators} for more details.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic} is now explicitly handling the case {\ttfamily sampleSize==0}.
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Removed default constructor in \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator}.
+\end{DoxyItemize}
+
+This release also features many documentation fixes (corrections, rephrasing and additions).\hypertarget{group__version__history_version_history_v010}{}\subsubsection{Version 0.1.0}\label{group__version__history_version_history_v010}
+Begins with \hyperlink{classtrsl_1_1is__picked__systematic}{trsl::is\_\-picked\_\-systematic}, \hyperlink{classtrsl_1_1persistent__filter__iterator}{trsl::persistent\_\-filter\_\-iterator}, \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{trsl::random\_\-permutation\_\-iterator}. 

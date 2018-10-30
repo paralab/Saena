@@ -1,0 +1,39 @@
+\hypertarget{sort__iterator_8hpp}{
+\subsection{sort\_\-iterator.hpp File Reference}
+\label{sort__iterator_8hpp}\index{sort\_\-iterator.hpp@{sort\_\-iterator.hpp}}
+}
+{\ttfamily \#include $<$trsl/reorder\_\-iterator.hpp$>$}\par
+{\ttfamily \#include $<$trsl/common.hpp$>$}\par
+{\ttfamily \#include $<$trsl/error\_\-handling.hpp$>$}\par
+{\ttfamily \#include $<$functional$>$}\par
+\subsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classtrsl_1_1detail_1_1at__index__comp}{trsl::detail::at\_\-index\_\-comp$<$ RandomIterator, Comparator $>$}
+\end{DoxyCompactItemize}
+\subsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \hyperlink{namespacetrsl}{trsl}
+
+
+\begin{DoxyCompactList}\small\item\em Public namespace. \item\end{DoxyCompactList}\item 
+namespace \hyperlink{namespacetrsl_1_1detail}{trsl::detail}
+
+
+\begin{DoxyCompactList}\small\item\em Implementation details. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$class ElementIterator , class ElementComparator $>$ }\\reorder\_\-iterator$<$ ElementIterator $>$ \hyperlink{namespacetrsl_aa23892a3c8929e627df1618c6b5dd2df}{trsl::sort\_\-iterator} (ElementIterator first, ElementIterator last, ElementComparator comp, unsigned permutationSize)
+\begin{DoxyCompactList}\small\item\em Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through the first {\ttfamily permutationSize} elements of a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. \item\end{DoxyCompactList}\item 
+{\footnotesize template$<$class ElementIterator , class ElementComparator $>$ }\\reorder\_\-iterator$<$ ElementIterator $>$ \hyperlink{namespacetrsl_aef0a3d23fddf651e4e6d01999da0e908}{trsl::sort\_\-iterator} (ElementIterator first, ElementIterator last, ElementComparator comp)
+\begin{DoxyCompactList}\small\item\em Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. \item\end{DoxyCompactList}\item 
+{\footnotesize template$<$class ElementIterator $>$ }\\reorder\_\-iterator$<$ ElementIterator $>$ \hyperlink{namespacetrsl_afa98318aa74d3477b81e603fcf1c285b}{trsl::sort\_\-iterator} (ElementIterator first, ElementIterator last)
+\begin{DoxyCompactList}\small\item\em Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+
+
+Definition in file \hyperlink{sort__iterator_8hpp_source}{sort\_\-iterator.hpp}.

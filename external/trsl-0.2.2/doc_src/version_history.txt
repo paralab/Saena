@@ -1,0 +1,109 @@
+// (C) Copyright Renaud Detry   2007-2008.
+// Distributed under the Boost Software License, Version 1.0. (See
+// accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+/**
+ * @defgroup version_history Version History
+ *
+ * @section version_history_v022 Version 0.2.2
+ *
+ * - Added TRSL_VERSION_NR.
+ *
+ * - Renamed trsl::is_picked_systematic::isFirstPick to
+ *   trsl::is_picked_systematic::is_first_pick.
+ *
+ * - Added trsl::is_first_pick to avoid awkward statements like <tt>i.predicate().is_first_pick(*i)</tt>.
+ *
+ * - Added <tt>index()</tt> to trsl::reorder_iterator.
+ *
+ * - Added <tt>index()</tt> to trsl::ppfilter_iterator.
+ *
+ * - Changed "double quotes" include directives to use angle brackets
+     instead.
+ *
+ * - Removed unnecessary include of
+ *   trsl/persistent_filter_iterator.hpp from
+ *   trsl/is_picked_systematic.hpp.
+ *
+ * - For systematic sampling, trsl::ppfilter_iterator should be used
+ *   by default, and trsl::persistent_filter_iterator should be used
+ *   only when it is guaranteed that the order in which the input
+ *   population is presented is not following any pattern. To
+ *   encourage this policy, trsl::persistent_filter_iterator has been
+ *   replace by trsl::ppfilter_iterator in the following examples:
+ *   examples/trsl_example1.cpp, examples/trsl_example1plus.cpp,
+ *   examples/ParticleCollection.cpp. Naturally, <tt>std::list</tt> had to be replaced
+ *   with <tt>std::vector</tt> in examples/trsl_example1.cpp.
+ *
+ * - Enhanced documentation.
+ *
+ * @section version_history_v021 Version 0.2.1
+ *
+ * - Removed <tt>const</tt> on @p predicate_ in
+ *   trsl::ppfilter_iterator, to allow iterator assignment with
+ *   <tt>operator=</tt>.
+ *
+ * - Added <tt>isFirstPick()</tt> to trsl::is_picked_systematic.
+ *
+ * @section version_history_v020 Version 0.2.0
+ *
+ * - Restored default constructor in trsl::random_permutation_iterator
+ *   (trsl::random_permutation_iterator has been renamed
+ *   trsl::reorder_iterator, see below).
+ *
+ * - Pulled trsl::reorder_iterator out of the old
+ *   trsl::random_permutation_iterator.  Added trsl::sort_iterator.
+ *
+ * - trsl::random_permutation_iterator uses a partial shuffle
+ *   algorithm instead of std::random_shuffle. It is thus efficient to
+ *   iterate over a permutation of a subset that is much smaller than
+ *   the population.
+ *
+ * - Fixed <tt>operator==</tt> bug in
+ *   trsl::persistent_filter_iterator. Two
+ *   trsl::persistent_filter_iterator are now equal if their base
+ *   iterators are equal <em>and</em> if their predicates are equal.
+ *
+ * - Added a default constructor to trsl::is_picked_systematic. Note
+ *   that a default-constructed trsl::is_picked_systematic is invalid.
+ *
+ * - Added trsl::ppfilter_iterator.
+ *
+ * @section version_history_v011 Version 0.1.1
+ *
+ * Changes made to the code are:
+ *
+ * -
+ * trsl::random_permutation_iterator::random_permutation_iterator(ElementIterator,ElementIterator,index_t)
+ * now checks that the permutation size is smaller or equal to the
+ * population size, and throws an exception if it is not the case.
+ * 
+ * - trsl/error_handling.hpp: TRSL exceptions.
+ *
+ * - trsl/common.hpp: random number wrappers.
+ *
+ * - trsl::is_picked_systematic and trsl::random_permutation_iterator
+ *   are now using functions from trsl/common.hpp.
+ *   trsl::random_permutation_iterator was previously using the random
+ *   generator built in <tt>std::random_shuffle</tt>, which is usually
+ *   <tt>rand</tt>. trsl::is_picked_systematic was using
+ *   <tt>random</tt>. Both will now use <tt>rand</tt> by default, and
+ *   <tt>random</tt> if TRSL_USE_BSD_BETTER_RANDOM_GENERATOR is
+ *   defined. See @ref random for more details.
+ *
+ * - trsl::is_picked_systematic is now explicitly handling the case @p
+ *   sampleSize==0.
+ *
+ * - Removed default constructor in trsl::random_permutation_iterator.
+ *
+ * This release also features many documentation fixes
+ * (corrections, rephrasing and additions).
+ *
+ * @section version_history_v010 Version 0.1.0
+ *
+ * Begins with trsl::is_picked_systematic,
+ * trsl::persistent_filter_iterator,
+ * trsl::random_permutation_iterator.
+ * 
+ */

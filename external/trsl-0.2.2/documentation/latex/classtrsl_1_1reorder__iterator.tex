@@ -1,0 +1,120 @@
+\hypertarget{classtrsl_1_1reorder__iterator}{
+\subsection{trsl::reorder\_\-iterator$<$ ElementIterator $>$ Class Template Reference}
+\label{classtrsl_1_1reorder__iterator}\index{trsl::reorder\_\-iterator@{trsl::reorder\_\-iterator}}
+}
+
+
+Provides an iterator over a permutation of a range.  
+
+
+{\ttfamily \#include $<$reorder\_\-iterator.hpp$>$}\subsubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_a0ca5109afb6b10ac6402ac297b7886a7}{
+typedef base\_\-t::index\_\-t {\bfseries index\_\-t}}
+\label{classtrsl_1_1reorder__iterator_a0ca5109afb6b10ac6402ac297b7886a7}
+
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_ab951531d25c6878c6db9fd317463a0a1}{
+typedef base\_\-t::index\_\-container {\bfseries index\_\-container}}
+\label{classtrsl_1_1reorder__iterator_ab951531d25c6878c6db9fd317463a0a1}
+
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_a7aaf0f2cf4ced83dbba7c3e98ae85b19}{
+typedef base\_\-t::index\_\-container\_\-ptr {\bfseries index\_\-container\_\-ptr}}
+\label{classtrsl_1_1reorder__iterator_a7aaf0f2cf4ced83dbba7c3e98ae85b19}
+
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_a5d6d4f3a1a97ea085499f04642b2b0b6}{
+typedef base\_\-t::index\_\-iterator {\bfseries index\_\-iterator}}
+\label{classtrsl_1_1reorder__iterator_a5d6d4f3a1a97ea085499f04642b2b0b6}
+
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_a4da0589d734ec35638812b9ba9739233}{
+typedef base\_\-t::element\_\-iterator {\bfseries element\_\-iterator}}
+\label{classtrsl_1_1reorder__iterator_a4da0589d734ec35638812b9ba9739233}
+
+\end{DoxyCompactItemize}
+\subsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_ae62a06846acf8580b22667dff10a9077}{
+\hyperlink{classtrsl_1_1reorder__iterator_ae62a06846acf8580b22667dff10a9077}{reorder\_\-iterator} (ElementIterator first, const index\_\-container\_\-ptr \&index\_\-collection)}
+\label{classtrsl_1_1reorder__iterator_ae62a06846acf8580b22667dff10a9077}
+
+\begin{DoxyCompactList}\small\item\em Constructs an iterator that will walk through the elements of the range that begins at {\ttfamily first}, follwing the order defined by {\ttfamily index\_\-collection}. \item\end{DoxyCompactList}\item 
+{\footnotesize template$<$class OtherElementIterator $>$ }\\\hyperlink{classtrsl_1_1reorder__iterator_a340ad08bd47c8c21ec094a6996652e0e}{reorder\_\-iterator} (\hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ OtherElementIterator $>$ const \&r, typename boost::enable\_\-if\_\-convertible$<$ OtherElementIterator, ElementIterator $>$::type $\ast$=0)
+\begin{DoxyCompactList}\small\item\em Allows conversion from a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} to a const \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}, won't allow conversion from a const \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} to a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}. \item\end{DoxyCompactList}\item 
+\hypertarget{classtrsl_1_1reorder__iterator_af8f78e62dfc60bdfb2b21e2c5632d295}{
+\hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ ElementIterator $>$ \hyperlink{classtrsl_1_1reorder__iterator_af8f78e62dfc60bdfb2b21e2c5632d295}{begin} () const }
+\label{classtrsl_1_1reorder__iterator_af8f78e62dfc60bdfb2b21e2c5632d295}
+
+\begin{DoxyCompactList}\small\item\em Returns a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} pointing to the begining of the permutation. \item\end{DoxyCompactList}\item 
+\hypertarget{classtrsl_1_1reorder__iterator_a34cefcb91f1ea859ea6a23223ca13e1b}{
+\hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ ElementIterator $>$ \hyperlink{classtrsl_1_1reorder__iterator_a34cefcb91f1ea859ea6a23223ca13e1b}{end} () const }
+\label{classtrsl_1_1reorder__iterator_a34cefcb91f1ea859ea6a23223ca13e1b}
+
+\begin{DoxyCompactList}\small\item\em Returns a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} pointing to the end of the permutation. \item\end{DoxyCompactList}\item 
+\hypertarget{classtrsl_1_1reorder__iterator_adf4d6b04596afd49fc45997eb5b5608e}{
+index\_\-t \hyperlink{classtrsl_1_1reorder__iterator_adf4d6b04596afd49fc45997eb5b5608e}{index} () const }
+\label{classtrsl_1_1reorder__iterator_adf4d6b04596afd49fc45997eb5b5608e}
+
+\begin{DoxyCompactList}\small\item\em Returns the index of the element that the iterator is currently pointing to. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_a20fcab840b5b397253540d4125ee2638}{
+index\_\-container\_\-ptr {\bfseries m\_\-index\_\-collection}}
+\label{classtrsl_1_1reorder__iterator_a20fcab840b5b397253540d4125ee2638}
+
+\end{DoxyCompactItemize}
+\subsubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_ac09f73e325921cc50ebcd96bed0f8096}{
+class {\bfseries boost::iterator\_\-core\_\-access}}
+\label{classtrsl_1_1reorder__iterator_ac09f73e325921cc50ebcd96bed0f8096}
+
+\item 
+\hypertarget{classtrsl_1_1reorder__iterator_a69bd04fe05ad8b7e3a03a9509db30ffc}{
+class {\bfseries reorder\_\-iterator}}
+\label{classtrsl_1_1reorder__iterator_a69bd04fe05ad8b7e3a03a9509db30ffc}
+
+\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+\subsubsection*{template$<$class ElementIterator$>$ class trsl::reorder\_\-iterator$<$ ElementIterator $>$}
+
+Provides an iterator over a permutation of a range. This class is a fork of \href{http://www.boost.org/libs/iterator/doc/permutation_iterator.html}{\tt boost::permutation\_\-iterator}. With \href{http://www.boost.org/libs/iterator/doc/permutation_iterator.html}{\tt boost::permutation\_\-iterator}, the user provides a population, and a range of index that defines a permutation over the population. It allows for much flexibility, but leaves the user responsible for storing an array of index. This class allows to store the array internally, in the same way as \href{http://www.boost.org/libs/utility/shared_container_iterator.html}{\tt boost::shared\_\-container\_\-iterator}.
+
+The index array is stored within the iterator, by means of a \href{http://www.boost.org/libs/smart_ptr/shared_ptr.htm}{\tt boost::shared\_\-ptr}; thus, all copies of a reorder iterator share the same index array. One drawback is that \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} copy is somewhat slower than ElementIterator copy. Incrementation is still plainly efficient, nevertheless.
+
+When iterating over a permutation of a population range using an index range, the iteration is actually performed over the index range; the population range is only used when dereferencing. Thus, every \hyperlink{classtrsl_1_1reorder__iterator}{trsl::reorder\_\-iterator} knows where it begins and where it ends, hence provided \hyperlink{classtrsl_1_1reorder__iterator_af8f78e62dfc60bdfb2b21e2c5632d295}{begin()} and \hyperlink{classtrsl_1_1reorder__iterator_a34cefcb91f1ea859ea6a23223ca13e1b}{end()} methods.
+
+TRSL provides several functions that generate reoder iterators for common reorderings. See \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{random\_\-permutation\_\-iterator()} and \hyperlink{namespacetrsl_aa23892a3c8929e627df1618c6b5dd2df}{sort\_\-iterator()}.
+
+{\ttfamily ElementIterator} should model {\itshape Random Access Iterator\/}. See the doc on \href{http://www.boost.org/libs/iterator/doc/permutation_iterator.html}{\tt boost::permutation\_\-iterator} for further details. \begin{Desc}
+\item[Examples: ]\par
+
+
+\hyperlink{trsl__example2_8cpp-example}{trsl\_\-example2.cpp}.\end{Desc}
+
+
+Definition at line 94 of file reorder\_\-iterator.hpp.
+
+\subsubsection{Constructor \& Destructor Documentation}
+\hypertarget{classtrsl_1_1reorder__iterator_a340ad08bd47c8c21ec094a6996652e0e}{
+\index{trsl::reorder\_\-iterator@{trsl::reorder\_\-iterator}!reorder\_\-iterator@{reorder\_\-iterator}}
+\index{reorder\_\-iterator@{reorder\_\-iterator}!trsl::reorder_iterator@{trsl::reorder\_\-iterator}}
+\paragraph[{reorder\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}template$<$class ElementIterator$>$ template$<$class OtherElementIterator $>$ {\bf trsl::reorder\_\-iterator}$<$ ElementIterator $>$::{\bf reorder\_\-iterator} ({\bf reorder\_\-iterator}$<$ OtherElementIterator $>$ const \& {\em r}, \/  typename boost::enable\_\-if\_\-convertible$<$ OtherElementIterator, ElementIterator $>$::type $\ast$ = {\ttfamily 0})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{classtrsl_1_1reorder__iterator_a340ad08bd47c8c21ec094a6996652e0e}
+
+
+Allows conversion from a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} to a const \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}, won't allow conversion from a const \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} to a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}. By ``const \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}'', we mean that the {\ttfamily ElementIterator} is const, e.g. {\ttfamily std::vector$<$Particle$>$::const\_\-iterator}. 
+
+Definition at line 141 of file reorder\_\-iterator.hpp.
+
+The documentation for this class was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{reorder__iterator_8hpp}{reorder\_\-iterator.hpp}\end{DoxyCompactItemize}

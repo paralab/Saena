@@ -1,0 +1,64 @@
+// (C) Copyright Renaud Detry   2007-2008.
+// Distributed under the Boost Software License, Version 1.0. (See
+// accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+/**
+ * @defgroup products Products
+ *
+ * This module presents the functionalities offered by TRSL.
+ *
+ * <hr>
+ *
+ * @section products_systematic_sampling Systematic Sampling
+ *
+ * Systematic sampling is provided through trsl::is_picked_systematic,
+ * a predicate functor to use in combination with
+ * trsl::persistent_filter_iterator to form a <em>sample
+ * iterator</em>.  The sample iterator accesses a population of
+ * elements through a range defined by a pair of Forward Iterators
+ * (begin/end), and provides on-the-fly iteration through a sample of
+ * the population.
+ *
+ * Systematic sampling may perform very badly if the order in which
+ * the input population is presented is following a pattern. If a
+ * pattern is likely to occur in the population, the user may want to
+ * pipe the sample iterator <em>after</em> a
+ * trsl::random_permutation_iterator, or use is_picked_systematic with
+ * ppfilter_iterator.  The resulting iterator effectively implements
+ * <em>probability sampling</em>.  The price to pay for probability
+ * sampling is a <em>Random Access Iterator</em>. While
+ * persistent_filter_iterator will work e.g. with <tt>std::list</tt>,
+ * ppfilter_iterator requires e.g. <tt>std::vector</tt> or
+ * <tt>std::deque</tt>.
+ *
+ * @sa @ref trsl_example1.cpp "trsl_example1.cpp" for a basic example.
+ *
+ * <dl><dt><b>Implementation:</b></dt><dd>trsl::is_picked_systematic, trsl::persistent_filter_iterator, trsl::ppfilter_iterator.</dd></dl>
+ *
+ * <hr>
+ *
+ * @section products_reorder Range Reordering
+ *
+ * Iteration through an index-based reordering of a range can be
+ * obtained with trsl::reorder_iterator. TRSL provides several
+ * functions that generate reorder iterators for common reorderings.
+ *
+ * @subsection products_permutation Random Permutation
+ *
+ * trsl::random_permutation_iterator provides an iterator over a
+ * random permutation of a range.
+ *
+ * <dl><dt><b>Implementation:</b></dt><dd>trsl::reorder_iterator, trsl::random_permutation_iterator.</dd></dl>
+ *
+ * @sa @ref trsl_example2.cpp "trsl_example2.cpp" for a basic example.
+ *
+ * @subsection products_sorting Sorted Permutation
+ *
+ * trsl::sort_iterator provides an iterator over a sorted permutation
+ * of a range.
+ *
+ * <dl><dt><b>Implementation:</b></dt><dd>trsl::reorder_iterator, trsl::sort_iterator.</dd></dl>
+ *
+ * <hr>
+ */

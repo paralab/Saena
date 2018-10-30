@@ -17,13 +17,14 @@ namespace saena {
 
     class matrix {
     public:
-        matrix(MPI_Comm comm);
         matrix();
-        matrix(char* name, MPI_Comm comm); // read from file
+        matrix(MPI_Comm comm);
         ~matrix();
 
+        int read_file(char *name);
+        int read_file(char *name, const std::string &input_type);
+
         void set_comm(MPI_Comm comm);
-        MPI_Comm get_comm();
 
         int set(index_t i, index_t j, value_t val); // set individual value
         int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local); // set multiple values
@@ -32,10 +33,15 @@ namespace saena {
 
         bool add_dup = true; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
+
         int assemble();
         int assemble_no_scale();
+        int assemble_writeToFile();
+        int assemble_writeToFile(const char *folder_name);
         int assemble_band_matrix();
+
         saena_matrix* get_internal_matrix();
+        MPI_Comm get_comm();
         index_t get_num_rows();
         index_t get_num_local_rows();
         nnz_t get_nnz();

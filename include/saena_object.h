@@ -38,8 +38,14 @@ public:
     bool repartition = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
 //    bool shrink_cpu = true;
     bool dynamic_levels = true;
-    bool adaptive_coarsening = true;
-//    bool doSparsify = false;
+    bool adaptive_coarsening = false;
+
+    const index_t matmat_size_thre = 1000000; // if(row * col) do the dense matmat default 1000000
+//    const index_t min_size_threshold = 50; //default 50
+    const index_t matmat_nnz_thre = 200; //default 200
+
+    bool doSparsify = false;
+    std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
     double sparse_epsilon = 1;
 
     int set_shrink_levels(std::vector<bool> sh_lev_vec);
@@ -78,19 +84,35 @@ public:
     int level_setup(Grid* grid);
     int coarsen(Grid *grid);
     int coarsen_old(Grid *grid);
-    int fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
-                index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                index_t B_row_offset, index_t B_col_size, index_t B_col_offset,
-                index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
-                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
 //    int coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
+
+    int fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
+                index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                index_t B_col_size, index_t B_col_offset,
+                index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
+                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
+                value_t *mempool, MPI_Comm comm);
+    int fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
+                index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                index_t B_col_size, index_t B_col_offset,
+                index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
+                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
+                value_t *mempool, MPI_Comm comm);
+
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
     int aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
+    int sparsify_trsl1(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
+    int sparsify_trsl2(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
+    int sparsify_drineas(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
+    int sparsify_majid(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
+    int sparsify_majid_with_dup(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
+//    double spars_prob(cooEntry a, double norm_frob_sq);
+    double spars_prob(cooEntry a);
 
     int solve(std::vector<value_t>& u);
     int solve_pcg(std::vector<value_t>& u);
@@ -131,9 +153,10 @@ public:
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);
-    int sparsify(std::vector<cooEntry> & A, MPI_Comm comm);
+    int transpose_locally(std::vector<cooEntry> &A, nnz_t size, index_t row_offset, std::vector<cooEntry> &B);
 
-    int writeMatrixToFileA(saena_matrix* A, std::string name);
+//    to write saena matrix to a file use related function from saena_matrix class.
+//    int writeMatrixToFileA(saena_matrix* A, std::string name);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);
     int writeMatrixToFileR(restrict_matrix* R, std::string name);
     int writeVectorToFileul(std::vector<unsigned long>& v, std::string name, MPI_Comm comm);

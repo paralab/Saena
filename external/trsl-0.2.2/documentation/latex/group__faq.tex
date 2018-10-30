@@ -1,0 +1,8 @@
+\hypertarget{group__faq}{
+\subsection{F.A.Q.}
+\label{group__faq}\index{F.A.Q.@{F.A.Q.}}
+}
+\hypertarget{group__faq_faq_no_population_iterator}{}\subsubsection{What if my population data structure doesn't provide iterators?}\label{group__faq_faq_no_population_iterator}
+Write one :-\/). \href{http://www.boost.org/libs/iterator/doc/iterator_facade.html}{\tt Boost Iterator Facade} makes it really easy.
+
+However, keep in mind that pointers are indeed iterators. If your population data structure guarantees to store elements contiguously, and if you can get a pointer to the first element, you have iterators already. See \hyperlink{trsl__example2_8cpp-example}{trsl\_\-example2.cpp} for an example with a C array. 

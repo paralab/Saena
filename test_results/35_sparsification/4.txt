@@ -1,0 +1,135 @@
+[u1013493@kp359:build]$ mpirun -np 1 ./Saena 5 5 5 4
+usage: ./Saena x_size y_size z_size sparse_epsilon 
+
+sp_epsilon = 4.000000 
+
+number of processes = 1, number of threads = 1
+
+_____________________________
+
+level = 0 
+number of procs = 1 
+matrix size 	= 125 
+nonzero 	= 725 
+density 	= 0.046400 
+
+connStrength = 0.30 
+current size = 125 
+new size     = 63 
+division     = 1.98
+
+original size without sparsification   	= 1803
+filtered Ac size before sparsification 	= 215
+sample size 				= 3436
+Ac size after sparsification 		= 149
+_____________________________
+
+level = 1 
+number of procs = 1 
+matrix size 	= 63 
+nonzero 	= 149 
+density 	= 0.037541 
+
+connStrength = 0.30 
+current size = 63 
+new size     = 43 
+division     = 1.47
+
+connStrength = 0.25 
+current size = 63 
+new size     = 43 
+division     = 1.47
+
+connStrength = 0.20 
+current size = 63 
+new size     = 43 
+division     = 1.47
+
+original size without sparsification   	= 214
+filtered Ac size before sparsification 	= 43
+sample size 				= 497
+Ac size after sparsification 		= 43
+_____________________________
+
+level = 2 
+number of procs = 1 
+matrix size 	= 43 
+nonzero 	= 43 
+density 	= 0.023256 
+
+connStrength = 0.30 
+current size = 43 
+new size     = 43 
+division     = 1.00
+
+connStrength = 0.25 
+current size = 43 
+new size     = 43 
+division     = 1.00
+
+connStrength = 0.20 
+current size = 43 
+new size     = 43 
+division     = 1.00
+
+original size without sparsification   	= 43
+filtered Ac size before sparsification 	= 43
+sample size 				= 164
+Ac size after sparsification 		= 42
+inverse_diag: At least one diagonal entry is 0.
+_____________________________
+
+level = 3 
+number of procs = 1 
+matrix size 	= 43 
+nonzero 	= 42 
+density 	= 0.022715 
+_____________________________
+
+number of levels = << 2 >> (the finest level is 0)
+
+******************************************************
+******************************************************
+
+initial residual = 4.060862e+00 
+
+Vcycle 1: 0.0079546558  	0.0019588587 
+Vcycle 2: 0.0004343769  	0.0546066202 
+Vcycle 3: 0.0000114458  	0.0263499588 
+Vcycle 4: 0.0000025901  	0.2262922140 
+Vcycle 5: 0.0000003402  	0.1313630506 
+Vcycle 6: 0.0000000260  	0.0763033336 
+Vcycle 7: 0.0000000114  	0.4383187035 
+Vcycle 8: 0.0000000005  	0.0451280473 
+Vcycle 9: 0.0000000001  	0.0995598890 
+Vcycle 10: 0.0000000000  	0.0403715989 
+
+******************************************************
+
+final:
+stopped at iteration    = 10 
+final absolute residual = 2.064096e-12
+relative residual       = 5.082900e-13 
+
+******************************************************
+
+Solve:
+min: 0.00956774
+ave: 0.00956774
+max: 0.00956774
+
+
+#####################################
+
+start level 0 of 2 
+start level 1 of 2 
+start level 2 of 2 
+
+time results:
+
+level 	local 		remote 		comm 		total
+0	1.53461e-05	1.06677e-06	-1.54768e-05	9.36091e-07
+1	5.44009e-06	1.00637e-06	-5.52595e-06	9.20519e-07
+2	3.4489e-06	1.00274e-06	-3.53926e-06	9.12387e-07
+[u1013493@kp359:build]$ 
+

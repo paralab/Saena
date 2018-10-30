@@ -184,6 +184,24 @@ public:
 //        return (cooEntry(row+1, col, val));
 //    }
 
+    value_t get_val() const
+    {
+        return val;
+    }
+
+//    value_t get_val_sq() const
+//    {
+//        return val * val;
+//    }
+
+    value_t get_val_sq() const
+    {
+        if(row == col){
+            return 10000000;
+        } else{
+            return val * val;
+        }
+    }
 
     static MPI_Datatype mpi_datatype()
     {

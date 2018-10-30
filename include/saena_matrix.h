@@ -173,7 +173,8 @@ public:
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
-    saena_matrix(char* Aname, MPI_Comm com);
+    int read_file(const char* Aname);
+    int read_file(const char* Aname, const std::string &input_type);
     ~saena_matrix();
 
     void set_comm(MPI_Comm com);
@@ -203,7 +204,7 @@ public:
 
     int repartition_nnz_update_Ac(); // based on nnz.
 
-    int set_rho();
+//    int set_rho();
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();
@@ -238,6 +239,8 @@ public:
 
     int print_entry(int ran);
     int print_info(int ran);
+    int writeMatrixToFile();
+    int writeMatrixToFile(const char *folder_name);
 
     int set_zero();
     int erase();

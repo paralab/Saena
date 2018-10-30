@@ -1,0 +1,78 @@
+\hypertarget{common_8hpp}{
+\subsection{common.hpp File Reference}
+\label{common_8hpp}\index{common.hpp@{common.hpp}}
+}
+{\ttfamily \#include $<$cstdlib$>$}\par
+{\ttfamily \#include $<$algorithm$>$}\par
+\subsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classtrsl_1_1detail_1_1identity}{trsl::detail::identity$<$ T $>$}
+\end{DoxyCompactItemize}
+\subsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \hyperlink{namespacetrsl}{trsl}
+
+
+\begin{DoxyCompactList}\small\item\em Public namespace. \item\end{DoxyCompactList}\item 
+namespace \hyperlink{namespacetrsl_1_1detail}{trsl::detail}
+
+
+\begin{DoxyCompactList}\small\item\em Implementation details. \item\end{DoxyCompactList}\item 
+namespace \hyperlink{namespacetrsl_1_1rand__gen}{trsl::rand\_\-gen}
+
+
+\begin{DoxyCompactList}\small\item\em Random number wrapper functions. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{common_8hpp_a8354faacbd063312d42a8febc67b5bc6}{TRSL\_\-VERSION}~\char`\"{}0.2.2\char`\"{}
+\begin{DoxyCompactList}\small\item\em Code version string. \item\end{DoxyCompactList}\item 
+\#define \hyperlink{common_8hpp_a271aec21de7813118df94f87fe884e60}{TRSL\_\-VERSION\_\-NR}~100020200
+\begin{DoxyCompactList}\small\item\em Code version number. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{namespacetrsl_1_1detail_a1a6c8c7485debc15ca6547d8e1e9ced9}{
+{\footnotesize template$<$typename RandomAccessIterator , typename RandomNumberGenerator $>$ }\\void {\bfseries trsl::detail::partial\_\-random\_\-shuffle} (RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last, RandomNumberGenerator \&rg)}
+\label{namespacetrsl_1_1detail_a1a6c8c7485debc15ca6547d8e1e9ced9}
+
+\item 
+\hypertarget{namespacetrsl_1_1rand__gen_a8b8ab155014f708c35fb7594c8d13a81}{
+unsigned int \hyperlink{namespacetrsl_1_1rand__gen_a8b8ab155014f708c35fb7594c8d13a81}{trsl::rand\_\-gen::uniform\_\-int} (unsigned int n)}
+\label{namespacetrsl_1_1rand__gen_a8b8ab155014f708c35fb7594c8d13a81}
+
+\begin{DoxyCompactList}\small\item\em Returns an integer in {\ttfamily \mbox{[}0,n\mbox{[}}. Used internally. \item\end{DoxyCompactList}\item 
+\hypertarget{namespacetrsl_1_1rand__gen_af0b1115635aac6b7eff68ca6e6846652}{
+{\footnotesize template$<$typename Real $>$ }\\Real \hyperlink{namespacetrsl_1_1rand__gen_af0b1115635aac6b7eff68ca6e6846652}{trsl::rand\_\-gen::uniform\_\-01} ()}
+\label{namespacetrsl_1_1rand__gen_af0b1115635aac6b7eff68ca6e6846652}
+
+\begin{DoxyCompactList}\small\item\em Returns a float in {\ttfamily \mbox{[}0,1\mbox{[}}. Used internally. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+
+
+Definition in file \hyperlink{common_8hpp_source}{common.hpp}.
+
+\subsubsection{Define Documentation}
+\hypertarget{common_8hpp_a8354faacbd063312d42a8febc67b5bc6}{
+\index{common.hpp@{common.hpp}!TRSL\_\-VERSION@{TRSL\_\-VERSION}}
+\index{TRSL\_\-VERSION@{TRSL\_\-VERSION}!common.hpp@{common.hpp}}
+\paragraph[{TRSL\_\-VERSION}]{\setlength{\rightskip}{0pt plus 5cm}\#define TRSL\_\-VERSION~\char`\"{}0.2.2\char`\"{}}\hfill}
+\label{common_8hpp_a8354faacbd063312d42a8febc67b5bc6}
+
+
+Code version string. Defined as {\itshape major\/}.{\itshape minor\/}.{\itshape bugfix\/}. 
+
+Definition at line 19 of file common.hpp.\hypertarget{common_8hpp_a271aec21de7813118df94f87fe884e60}{
+\index{common.hpp@{common.hpp}!TRSL\_\-VERSION\_\-NR@{TRSL\_\-VERSION\_\-NR}}
+\index{TRSL\_\-VERSION\_\-NR@{TRSL\_\-VERSION\_\-NR}!common.hpp@{common.hpp}}
+\paragraph[{TRSL\_\-VERSION\_\-NR}]{\setlength{\rightskip}{0pt plus 5cm}\#define TRSL\_\-VERSION\_\-NR~100020200}\hfill}
+\label{common_8hpp_a271aec21de7813118df94f87fe884e60}
+
+
+Code version number. Defined as 1{\itshape MMmmbbii\/}, where {\itshape MM\/} is the major release number, {\itshape mm\/} is the minor release number, {\itshape bb\/} is the bug-\/fix release number, and {\itshape ii\/} is the internal release number. 
+
+Definition at line 27 of file common.hpp.

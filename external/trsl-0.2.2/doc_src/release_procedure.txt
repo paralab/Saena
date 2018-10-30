@@ -1,0 +1,16 @@
+- Read documentation.
+- Spellcheck.
+- Indent.
+- make test, GCC Linux & Darwin.
+- Change version number in Doxyfile.
+- Change version_history (remove "in devel").
+- Change version number in common.hpp.
+- Add news in index.html.
+- svn commit -m "version 0.2.1"
+- svn cp https://trsl.svn.sourceforge.net/svnroot/trsl/trunk https://trsl.svn.sourceforge.net/svnroot/trsl/tags/trsl-0.2.1 -m "Tagging the 0.2.1 release."
+- svn export https://trsl.svn.sourceforge.net/svnroot/trsl/tags/trsl-0.2.1 /tmp/trsl-0.2.1
+- cd /tmp/trsl-0.2.1 && make doc
+- cd /tmp && tar vczf trsl-0.2.1.tar.gz trsl-0.2.1
+- Publish file release.
+- make publish
+- Edit version number (in devel).

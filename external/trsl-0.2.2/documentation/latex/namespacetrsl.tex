@@ -1,0 +1,172 @@
+\hypertarget{namespacetrsl}{
+\subsection{trsl Namespace Reference}
+\label{namespacetrsl}\index{trsl@{trsl}}
+}
+
+
+Public namespace.  
+\subsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \hyperlink{namespacetrsl_1_1detail}{detail}
+
+
+\begin{DoxyCompactList}\small\item\em Implementation details. \item\end{DoxyCompactList}\item 
+namespace \hyperlink{namespacetrsl_1_1rand__gen}{rand\_\-gen}
+
+
+\begin{DoxyCompactList}\small\item\em Random number wrapper functions. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classtrsl_1_1runtime__error}{runtime\_\-error}
+\begin{DoxyCompactList}\small\item\em Exception for runtime errors in TRSL. \item\end{DoxyCompactList}\item 
+class \hyperlink{classtrsl_1_1bad__parameter__value}{bad\_\-parameter\_\-value}
+\begin{DoxyCompactList}\small\item\em Thrown when a TRSL component receives a parameter that has a forbidden value. \item\end{DoxyCompactList}\item 
+class \hyperlink{classtrsl_1_1is__picked__systematic}{is\_\-picked\_\-systematic}
+\begin{DoxyCompactList}\small\item\em Functor to use with \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} for systematic sampling of a range. \item\end{DoxyCompactList}\item 
+class \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator}
+\begin{DoxyCompactList}\small\item\em Adaptation of \href{http://www.boost.org/libs/iterator/doc/filter_iterator.html}{\tt boost::filter\_\-iterator} to allow an element to be selected multiple times. \item\end{DoxyCompactList}\item 
+class \hyperlink{classtrsl_1_1ppfilter__iterator}{ppfilter\_\-iterator}
+\begin{DoxyCompactList}\small\item\em Random permutation, persistent filter iterator. \item\end{DoxyCompactList}\item 
+class \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}
+\begin{DoxyCompactList}\small\item\em Provides an iterator over a permutation of a range. \item\end{DoxyCompactList}\item 
+struct \hyperlink{structtrsl_1_1weight__accessor}{weight\_\-accessor}
+\begin{DoxyCompactList}\small\item\em Weight accessor that always returns 1. \item\end{DoxyCompactList}\item 
+class \hyperlink{classtrsl_1_1mp__weight__accessor}{mp\_\-weight\_\-accessor}
+\begin{DoxyCompactList}\small\item\em Method Pointer weight accessor. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$class Iterator $>$ }\\bool \hyperlink{namespacetrsl_a412db7961cfc65236d71610635038225}{is\_\-first\_\-pick} (const Iterator \&i)
+\begin{DoxyCompactList}\small\item\em Return whether {\ttfamily $\ast$i} has been picked already. \item\end{DoxyCompactList}\item 
+\hypertarget{namespacetrsl_ad8c5e8b27a1d741da83c4385fcbf97bb}{
+{\footnotesize template$<$class Predicate , class Iterator $>$ }\\\hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator}$<$ Predicate, Iterator $>$ {\bfseries make\_\-persistent\_\-filter\_\-iterator} (Predicate f, Iterator x, Iterator end=Iterator())}
+\label{namespacetrsl_ad8c5e8b27a1d741da83c4385fcbf97bb}
+
+\item 
+\hypertarget{namespacetrsl_ab88305e1f15b3fca3cbe4d001e9ceee1}{
+{\footnotesize template$<$class Predicate , class Iterator $>$ }\\\hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator}$<$ Predicate, Iterator $>$ {\bfseries make\_\-persistent\_\-filter\_\-iterator} (typename boost::iterators::enable\_\-if$<$ boost::is\_\-class$<$ Predicate $>$, Iterator $>$::type x, Iterator end=Iterator())}
+\label{namespacetrsl_ab88305e1f15b3fca3cbe4d001e9ceee1}
+
+\item 
+{\footnotesize template$<$class ElementIterator $>$ }\\\hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ ElementIterator $>$ \hyperlink{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{random\_\-permutation\_\-iterator} (ElementIterator first, ElementIterator last, unsigned permutationSize)
+\begin{DoxyCompactList}\small\item\em Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a random subset of size {\ttfamily permutationSize} of a random permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. \item\end{DoxyCompactList}\item 
+{\footnotesize template$<$class ElementIterator $>$ }\\\hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ ElementIterator $>$ \hyperlink{namespacetrsl_a1d987a0f24b3d75783119747c4a22723}{random\_\-permutation\_\-iterator} (ElementIterator first, ElementIterator last)
+\begin{DoxyCompactList}\small\item\em Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a random permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. \item\end{DoxyCompactList}\item 
+{\footnotesize template$<$class ElementIterator , class ElementComparator $>$ }\\\hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ ElementIterator $>$ \hyperlink{namespacetrsl_aa23892a3c8929e627df1618c6b5dd2df}{sort\_\-iterator} (ElementIterator first, ElementIterator last, ElementComparator comp, unsigned permutationSize)
+\begin{DoxyCompactList}\small\item\em Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through the first {\ttfamily permutationSize} elements of a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. \item\end{DoxyCompactList}\item 
+{\footnotesize template$<$class ElementIterator , class ElementComparator $>$ }\\\hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ ElementIterator $>$ \hyperlink{namespacetrsl_aef0a3d23fddf651e4e6d01999da0e908}{sort\_\-iterator} (ElementIterator first, ElementIterator last, ElementComparator comp)
+\begin{DoxyCompactList}\small\item\em Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. \item\end{DoxyCompactList}\item 
+{\footnotesize template$<$class ElementIterator $>$ }\\\hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator}$<$ ElementIterator $>$ \hyperlink{namespacetrsl_afa98318aa74d3477b81e603fcf1c285b}{sort\_\-iterator} (ElementIterator first, ElementIterator last)
+\begin{DoxyCompactList}\small\item\em Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+Public namespace. 
+
+\subsubsection{Function Documentation}
+\hypertarget{namespacetrsl_a412db7961cfc65236d71610635038225}{
+\index{trsl@{trsl}!is\_\-first\_\-pick@{is\_\-first\_\-pick}}
+\index{is\_\-first\_\-pick@{is\_\-first\_\-pick}!trsl@{trsl}}
+\paragraph[{is\_\-first\_\-pick}]{\setlength{\rightskip}{0pt plus 5cm}template$<$class Iterator $>$ bool trsl::is\_\-first\_\-pick (const Iterator \& {\em i})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{namespacetrsl_a412db7961cfc65236d71610635038225}
+
+
+Return whether {\ttfamily $\ast$i} has been picked already. This function calls {\ttfamily i.predicate().is\_\-first\_\-pick($\ast$i)}.
+
+When sampling from a population, elements with a large weight may be selected several times. This function checks if the element pointed by {\ttfamily $\ast$i} has been selected already, e.g. at {\ttfamily $\ast$(i-\/1)}.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em Iterator}]Will typically be trsl::pp\_\-filter\_\-iterator or trsl::persitent\_\-filter\_\-iterator.\item[{\em i}]Instance of pp\_\-filter\_\-iterator or persitent\_\-filter\_\-iterator. Should not be the end. \end{DoxyParams}
+
+
+Definition at line 321 of file is\_\-picked\_\-systematic.hpp.\hypertarget{namespacetrsl_a1d987a0f24b3d75783119747c4a22723}{
+\index{trsl@{trsl}!random\_\-permutation\_\-iterator@{random\_\-permutation\_\-iterator}}
+\index{random\_\-permutation\_\-iterator@{random\_\-permutation\_\-iterator}!trsl@{trsl}}
+\paragraph[{random\_\-permutation\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}template$<$class ElementIterator $>$ {\bf reorder\_\-iterator}$<$ElementIterator$>$ trsl::random\_\-permutation\_\-iterator (ElementIterator {\em first}, \/  ElementIterator {\em last})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{namespacetrsl_a1d987a0f24b3d75783119747c4a22723}
+
+
+Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a random permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. Performing a random permutation requires a series of random integers, these are provided by \hyperlink{namespacetrsl_1_1rand__gen_a8b8ab155014f708c35fb7594c8d13a81}{rand\_\-gen::uniform\_\-int}; see \hyperlink{group__random}{Random Number Generators} for further details.
+
+{\ttfamily ElementIterator} should model {\itshape Random Access Iterator\/}.
+
+Creating such a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} and iterating through it is generally much faster than re-\/ordering the population itself (or a copy thereof), especially when elements are large, have a complex copy-\/constructor, or a tall class hierarchy. 
+
+Definition at line 103 of file random\_\-permutation\_\-iterator.hpp.
+
+References random\_\-permutation\_\-iterator().\hypertarget{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}{
+\index{trsl@{trsl}!random\_\-permutation\_\-iterator@{random\_\-permutation\_\-iterator}}
+\index{random\_\-permutation\_\-iterator@{random\_\-permutation\_\-iterator}!trsl@{trsl}}
+\paragraph[{random\_\-permutation\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}template$<$class ElementIterator $>$ {\bf reorder\_\-iterator}$<$ElementIterator$>$ trsl::random\_\-permutation\_\-iterator (ElementIterator {\em first}, \/  ElementIterator {\em last}, \/  unsigned {\em permutationSize})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{namespacetrsl_afb566791dfade70af49beaa5b816e7ee}
+
+
+Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a random subset of size {\ttfamily permutationSize} of a random permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. The {\ttfamily permutationSize} should be smaller or equal to the size of the population. If it is not the case, a \hyperlink{classtrsl_1_1bad__parameter__value}{bad\_\-parameter\_\-value} is thrown.
+
+Performing a random permutation requires a series of random integers, these are provided by \hyperlink{namespacetrsl_1_1rand__gen_a8b8ab155014f708c35fb7594c8d13a81}{rand\_\-gen::uniform\_\-int}; see \hyperlink{group__random}{Random Number Generators} for further details.
+
+{\ttfamily ElementIterator} should model {\itshape Random Access Iterator\/}.
+
+Creating such a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} and iterating through it is generally much faster than re-\/ordering the population itself (or a copy thereof), especially when elements are large, have a complex copy-\/constructor, or a tall class hierarchy. \begin{Desc}
+\item[Examples: ]\par
+\hyperlink{trsl__example2_8cpp-example}{trsl\_\-example2.cpp}.\end{Desc}
+
+
+Definition at line 40 of file random\_\-permutation\_\-iterator.hpp.
+
+References trsl::rand\_\-gen::uniform\_\-int().
+
+Referenced by trsl::ppfilter\_\-iterator$<$ Predicate, ElementIterator $>$::ppfilter\_\-iterator(), and random\_\-permutation\_\-iterator().\hypertarget{namespacetrsl_afa98318aa74d3477b81e603fcf1c285b}{
+\index{trsl@{trsl}!sort\_\-iterator@{sort\_\-iterator}}
+\index{sort\_\-iterator@{sort\_\-iterator}!trsl@{trsl}}
+\paragraph[{sort\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}template$<$class ElementIterator $>$ {\bf reorder\_\-iterator}$<$ElementIterator$>$ trsl::sort\_\-iterator (ElementIterator {\em first}, \/  ElementIterator {\em last})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{namespacetrsl_afa98318aa74d3477b81e603fcf1c285b}
+
+
+Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. The population is sorted using {\ttfamily std::less$<$$>$()}, i.e. in ascending order.
+
+{\ttfamily ElementIterator} should model {\itshape Random Access Iterator\/}.
+
+Creating such a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} and iterating through it is generally much faster than re-\/ordering the population itself (or a copy thereof), especially when elements are large, have a complex copy-\/constructor, or a tall class hierarchy. 
+
+Definition at line 180 of file sort\_\-iterator.hpp.
+
+References sort\_\-iterator().\hypertarget{namespacetrsl_aef0a3d23fddf651e4e6d01999da0e908}{
+\index{trsl@{trsl}!sort\_\-iterator@{sort\_\-iterator}}
+\index{sort\_\-iterator@{sort\_\-iterator}!trsl@{trsl}}
+\paragraph[{sort\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}template$<$class ElementIterator , class ElementComparator $>$ {\bf reorder\_\-iterator}$<$ElementIterator$>$ trsl::sort\_\-iterator (ElementIterator {\em first}, \/  ElementIterator {\em last}, \/  ElementComparator {\em comp})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{namespacetrsl_aef0a3d23fddf651e4e6d01999da0e908}
+
+
+Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. A comparator is provided through {\ttfamily comp}. {\ttfamily Comparator} has to model \href{http://www.sgi.com/tech/stl/StrictWeakOrdering.html}{\tt Strict Weak Ordering}. In particular \href{http://www.sgi.com/tech/stl/less.html}{\tt {\ttfamily std::less$<$ElementType$>$()}} and \href{http://www.sgi.com/tech/stl/greater.html}{\tt {\ttfamily std::greater$<$ElementType$>$()}} can work, whereas \href{http://www.sgi.com/tech/stl/less_equal.html}{\tt {\ttfamily std::less\_\-equal$<$ElementType$>$()}} and \href{http://www.sgi.com/tech/stl/greater_equal.html}{\tt {\ttfamily std::greater\_\-equal$<$ElementType$>$()}} will {\itshape not\/}.
+
+{\ttfamily ElementIterator} should model {\itshape Random Access Iterator\/}.
+
+Creating such a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} and iterating through it is generally much faster than re-\/ordering the population itself (or a copy thereof), especially when elements are large, have a complex copy-\/constructor, or a tall class hierarchy. 
+
+Definition at line 153 of file sort\_\-iterator.hpp.
+
+References sort\_\-iterator().\hypertarget{namespacetrsl_aa23892a3c8929e627df1618c6b5dd2df}{
+\index{trsl@{trsl}!sort\_\-iterator@{sort\_\-iterator}}
+\index{sort\_\-iterator@{sort\_\-iterator}!trsl@{trsl}}
+\paragraph[{sort\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}template$<$class ElementIterator , class ElementComparator $>$ {\bf reorder\_\-iterator}$<$ElementIterator$>$ trsl::sort\_\-iterator (ElementIterator {\em first}, \/  ElementIterator {\em last}, \/  ElementComparator {\em comp}, \/  unsigned {\em permutationSize})\hspace{0.3cm}{\ttfamily  \mbox{[}inline\mbox{]}}}\hfill}
+\label{namespacetrsl_aa23892a3c8929e627df1618c6b5dd2df}
+
+
+Constructs a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} that will iterate through the first {\ttfamily permutationSize} elements of a sorted permutation of the population referenced by {\ttfamily first} and {\ttfamily last}. The {\ttfamily permutationSize} should be smaller or equal to the size of the population. If it is not the case, a \hyperlink{classtrsl_1_1bad__parameter__value}{bad\_\-parameter\_\-value} is thrown.
+
+A comparator is provided through {\ttfamily comp}. {\ttfamily Comparator} has to model \href{http://www.sgi.com/tech/stl/StrictWeakOrdering.html}{\tt Strict Weak Ordering}. In particular \href{http://www.sgi.com/tech/stl/less.html}{\tt {\ttfamily std::less$<$ElementType$>$()}} and \href{http://www.sgi.com/tech/stl/greater.html}{\tt {\ttfamily std::greater$<$ElementType$>$()}} will work, whereas \href{http://www.sgi.com/tech/stl/less_equal.html}{\tt {\ttfamily std::less\_\-equal$<$ElementType$>$()}} and \href{http://www.sgi.com/tech/stl/greater_equal.html}{\tt {\ttfamily std::greater\_\-equal$<$ElementType$>$()}} will {\itshape not\/}.
+
+{\ttfamily ElementIterator} should model {\itshape Random Access Iterator\/}.
+
+Creating such a \hyperlink{classtrsl_1_1reorder__iterator}{reorder\_\-iterator} and iterating through it is generally much faster than re-\/ordering the population itself (or a copy thereof), especially when elements are large, have a complex copy-\/constructor, or a tall class hierarchy. \begin{Desc}
+\item[Examples: ]\par
+\hyperlink{trsl__example2_8cpp-example}{trsl\_\-example2.cpp}.\end{Desc}
+
+
+Definition at line 76 of file sort\_\-iterator.hpp.
+
+Referenced by sort\_\-iterator().

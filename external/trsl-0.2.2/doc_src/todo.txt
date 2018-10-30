@@ -1,0 +1,32 @@
+// (C) Copyright Renaud Detry   2007-2008.
+// Distributed under the Boost Software License, Version 1.0. (See
+// accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+/**
+ * @defgroup todo To Do List
+ *
+ * <!--@section todo_short_term Short Term-->
+ * 
+ * @section todo_long_term Long Term
+ * 
+ * - Add debug stubs. One good thing to check for would be that
+ * is_picked_systematic doesn't return more elements than requested,
+ * and that it has returned the exact number of elements upon
+ * destruction.  This will call for an extra bool <em>beenCalled</em>
+ * to prevent errors in temporary instantiations of
+ * is_picked_systematic.
+ * 
+ * - Add a module for boost::filter_iterator explanation
+ * (e.g. interoperability, constness, etc...).
+ *
+ * - Allow passing a RandomNumberGenerator to the constructor of
+ * trsl::random_permutation_iterator.
+ *
+ * - Write an importance_sample_iterator.
+ *
+ *
+ * @section todo_open_questions Open Questions
+ * 
+ */
+ 

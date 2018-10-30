@@ -1,0 +1,66 @@
+\hypertarget{classtrsl_1_1persistent__filter__iterator}{
+\subsection{trsl::persistent\_\-filter\_\-iterator$<$ Predicate, Iterator $>$ Class Template Reference}
+\label{classtrsl_1_1persistent__filter__iterator}\index{trsl::persistent\_\-filter\_\-iterator@{trsl::persistent\_\-filter\_\-iterator}}
+}
+
+
+Adaptation of \href{http://www.boost.org/libs/iterator/doc/filter_iterator.html}{\tt boost::filter\_\-iterator} to allow an element to be selected multiple times.  
+
+
+{\ttfamily \#include $<$persistent\_\-filter\_\-iterator.hpp$>$}\subsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1persistent__filter__iterator_a30c6e3dba482f0820114287eabdcd534}{
+{\bfseries persistent\_\-filter\_\-iterator} (Predicate f, Iterator x, Iterator end\_\-=Iterator())}
+\label{classtrsl_1_1persistent__filter__iterator_a30c6e3dba482f0820114287eabdcd534}
+
+\item 
+\hypertarget{classtrsl_1_1persistent__filter__iterator_a47b88fccfeb56e738cac4c1dc5bf7a2c}{
+{\bfseries persistent\_\-filter\_\-iterator} (Iterator x, Iterator end\_\-=Iterator())}
+\label{classtrsl_1_1persistent__filter__iterator_a47b88fccfeb56e738cac4c1dc5bf7a2c}
+
+\item 
+\hypertarget{classtrsl_1_1persistent__filter__iterator_a6a1017615cc3f74632dc78c1f673f078}{
+{\footnotesize template$<$class OtherIterator $>$ }\\{\bfseries persistent\_\-filter\_\-iterator} (\hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator}$<$ Predicate, OtherIterator $>$ const \&t, typename boost::enable\_\-if\_\-convertible$<$ OtherIterator, Iterator $>$::type $\ast$=0)}
+\label{classtrsl_1_1persistent__filter__iterator_a6a1017615cc3f74632dc78c1f673f078}
+
+\item 
+\hypertarget{classtrsl_1_1persistent__filter__iterator_ada83003c314dea2661589bfb2ce1e293}{
+Predicate {\bfseries predicate} () const }
+\label{classtrsl_1_1persistent__filter__iterator_ada83003c314dea2661589bfb2ce1e293}
+
+\item 
+\hypertarget{classtrsl_1_1persistent__filter__iterator_a2b4e55f9f024dc22a6a7288d3ef53b2c}{
+Iterator {\bfseries end} () const }
+\label{classtrsl_1_1persistent__filter__iterator_a2b4e55f9f024dc22a6a7288d3ef53b2c}
+
+\end{DoxyCompactItemize}
+\subsubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classtrsl_1_1persistent__filter__iterator_ac09f73e325921cc50ebcd96bed0f8096}{
+class {\bfseries boost::iterator\_\-core\_\-access}}
+\label{classtrsl_1_1persistent__filter__iterator_ac09f73e325921cc50ebcd96bed0f8096}
+
+\end{DoxyCompactItemize}
+
+
+\subsubsection{Detailed Description}
+\subsubsection*{template$<$class Predicate, class Iterator$>$ class trsl::persistent\_\-filter\_\-iterator$<$ Predicate, Iterator $>$}
+
+Adaptation of \href{http://www.boost.org/libs/iterator/doc/filter_iterator.html}{\tt boost::filter\_\-iterator} to allow an element to be selected multiple times. The class \href{http://www.boost.org/libs/iterator/doc/filter_iterator.html}{\tt boost::filter\_\-iterator} is an example of \href{http://www.boost.org/libs/iterator/doc/iterator_adaptor.html}{\tt boost::iterator\_\-adaptor} that allows iterating through a range, skipping elements that don't verify a predicate. In \href{http://www.boost.org/libs/iterator/doc/filter_iterator.html}{\tt boost::filter\_\-iterator}, incrementing the iterator will {\itshape always\/} advance of at least one element. In \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator}, an incrementation will not advance to a next element until the predicate becomes false on the current element. This implies that the predicate has either some memory, or a pseudo-\/random behavior.
+
+A \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} thus iterates over a {\itshape virtual\/} range. Consequently, equality of two \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} is only verified if they point to the same element in the original range {\itshape and\/} if their predicates are equal. Predicates must thus implement {\ttfamily operator==}. To see whether two different \hyperlink{classtrsl_1_1persistent__filter__iterator}{persistent\_\-filter\_\-iterator} actually point to the same input range element, one can compare the underlying iterators available through the {\ttfamily base()} method.
+
+The doc on \href{http://www.boost.org/libs/iterator/doc/filter_iterator.html}{\tt boost::filter\_\-iterator} applies for this class, except for the small differences noted above. \begin{Desc}
+\item[Examples: ]\par
+
+
+\hyperlink{trsl__example2_8cpp-example}{trsl\_\-example2.cpp}.\end{Desc}
+
+
+Definition at line 93 of file persistent\_\-filter\_\-iterator.hpp.
+
+The documentation for this class was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{persistent__filter__iterator_8hpp}{persistent\_\-filter\_\-iterator.hpp}\end{DoxyCompactItemize}

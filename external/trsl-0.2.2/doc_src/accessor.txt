@@ -1,0 +1,105 @@
+// (C) Copyright Renaud Detry   2007-2008.
+// Distributed under the Boost Software License, Version 1.0. (See
+// accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+
+/**
+ * @defgroup accessor Accessors
+ *
+ * Accessors are usually called at least once for each element of the
+ * accessed collection. Hence, they should be designed carefully in
+ * every situation where performance is an issue. For example, one can
+ * gain a lot by having the compiler inline accessors.
+ * 
+ * @section accessor_accessor_types Accessor Types
+ * 
+ * This section describes different types of accessor.
+ * In the following, we assume elements to be <tt>Particle</tt>s.
+ * @code
+ * class Particle
+ * {
+ * public:
+ *   Particle(double weight, double x, double y) :
+ *     x_(x), y_(y), weight_(weight) {}
+ *   
+ *   void setWeight(const double weight) { weight_ = weight; }
+ *   double getWeight() const { return weight_; };
+ * 
+ * private:
+ *   double x_;
+ *   double y_;
+ *   double weight_;
+ * };
+ * @endcode
+ * 
+ * @subsection accessor_functor Functor
+ * 
+ * @code
+ * struct functor_weight_accessor {
+ *   double operator() (const Particle& p) const
+ *   { return p.getWeight(); }
+ * };
+ * @endcode
+ * 
+ * <dl>
+ * <dt>Accessor Type</dt>
+ * <dd><tt>functor_weight_accessor</tt></dd>
+ * <dt>Accessor object, to pass to the object that needs access</dt>
+ * <dd><tt>functor_weight_accessor()</tt></dd>
+ * </dl>
+ * 
+ * An example of functor accessor is trsl::weight_accessor, which
+ * always returns 1 &mdash; useful if elements have uniform weights.
+ * 
+ * @subsection accessor_functionpointer Function Pointer
+ * 
+ * @code
+ * double function_pointer_weight_accessor(const Particle& p)
+ * { return p.getWeight(); }
+ * @endcode
+ * 
+ * <dl>
+ * <dt>Accessor Type</dt>
+ * <dd><tt>std::pointer_to_unary_function<const Particle&, double></tt></dd>
+ * <dt>Accessor object, to pass to the object that needs access</dt>
+ * <dd><tt>std::ptr_fun(function_pointer_weight_accessor)</tt></dd>
+ * </dl>
+ * 
+ * @subsection accessor_methodpointer Method Pointer
+ * 
+ * <dl>
+ * <dt>Accessor Type</dt>
+ * <dd><tt>std::const_mem_fun_ref_t<double, Particle></tt></dd>
+ * <dt>Accessor object, to pass to the object that needs access</dt>
+ * <dd><tt>std::mem_fun_ref(&Particle::getWeight)</tt></dd>
+ * </dl>
+ * 
+ * Method pointer is currently the default in
+ * trsl::is_picked_systematic (but subject to change, see @ref
+ * accessor_discussion).  The implementation used in TRSL is not
+ * std::const_mem_fun_ref_t however, but trsl::mp_weight_accessor
+ * which allows a default construction without implying segfault when
+ * called &mdash; that comes with a price, see
+ * trsl::mp_weight_accessor.
+ * 
+ * <dl>
+ * <dt>Accessor Type</dt>
+ * <dd><tt>trsl::mp_weight_accessor<double, Particle></tt></dd>
+ * <dt>Accessor object, to pass to the object that needs access</dt>
+ * <dd><tt>&Particle::getWeight</tt> (implicit conversion)</dd>
+ * </dl>
+ * 
+ * The pointer to <tt>getWeight</tt> implicitly constructs a
+ * trsl::mp_weight_accessor. (Why does the std counterpart have an
+ * explicit constructor?)
+ * 
+ * @section accessor_discussion Discussion
+ * 
+ * I had the impression that GCC was able to inline fuctions
+ * from pointers. Performance tests on accessors (see
+ * <tt>tests/accessor_efficiency.cpp</tt>) tend to contradict this
+ * impression. With <tt>-03</tt> optimization, the functor accessor is
+ * twice as fast as other accessors. Please comment if you know more
+ * about this.
+ * 
+ */

@@ -1,0 +1,45 @@
+*---------------------------------*
+- Template Range Sampling Library -       http://trsl.sourceforge.net/
+*---------------------------------*
+
+
+* Requirements *
+
+ Purpose              Requirement            Reference
+----------------------------------------------------------------------
+ Use TRSL             Boost                  http://www.boost.org
+ Install TRSL         Boost+CMake            http://www.cmake.org
+ Compile examples     Boost+CMake
+ Compile tests        Boost+CMake
+ Extract doc          Doxygen                http://www.doxygen.org
+
+
+* Getting started *
+
+ Objective                                           Command
+----------------------------------------------------------------------
+ Compile examples & tests                            make build
+ Compile examples & tests, install TRSL headers      make install
+ Extract doc                                         make doc
+ Run tests (tests are silent if successful)          make test
+
+Install prefix is /usr/local by default. If you wish to install
+somewhere else, type
+
+  make INSTALL_PREFIX=/install/prefix clean install
+
+
+* Documentation *
+
+`make doc` will generate documentation locally; see
+documentation/html/index.html.
+
+Online documentation is regularly updated, see
+http://trsl.sourceforge.net/.
+
+
+* License *
+
+TRSL is distributed under the Boost Software License, Version
+1.0. (See accompanying file LICENSE_1_0.txt or copy at
+http://www.boost.org/LICENSE_1_0.txt)

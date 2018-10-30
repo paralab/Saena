@@ -42,9 +42,9 @@ public:
     std::vector<cooEntry> entry;
     std::vector<cooEntry> entry_local;
     std::vector<cooEntry> entry_remote;
-    std::vector<index_t> row_local;
-    std::vector<index_t> row_remote;
-    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
+    std::vector<index_t> row_local; //it will be used for finding the row-wise ordering. then, it will be freed.
+//    std::vector<index_t> row_remote;
+//    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
 //    std::vector<unsigned long> col_remote2; //original col index
 //    std::vector<double> values_local;
 //    std::vector<double> values_remote;
