@@ -68,6 +68,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
         }
     }
 
+    P->recvProcRank_t.clear();
+    P->recvProcRank_t.shrink_to_fit();
+    P->sendProcRank_t.clear();
+    P->sendProcRank_t.shrink_to_fit();
+
     if(verbose_transposeP){
         MPI_Barrier(comm);
         printf("rank %d: transposeP part2\n", rank);
@@ -134,6 +139,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) { $
 
     delete [] requests;
     delete [] statuses;
+
+    P->vSend_t.clear();
+    P->vSend_t.shrink_to_fit();
+    P->vecValues_t.clear();
+    P->vecValues_t.shrink_to_fit();
 
     std::sort(entry.begin(), entry.end());
 
