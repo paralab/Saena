@@ -1369,11 +1369,11 @@ int saena_object::coarsen(Grid *grid) {$
             MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
             MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
             MPI_Waitall(1, requests, statuses);
-//        printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
             mat_recv.resize(recv_size);
 
-//        print_vector(mat_recv, -1, "mat_recv", A->comm);
-//        print_vector(mat_send, -1, "mat_send", A->comm);
+//          print_vector(mat_recv, -1, "mat_recv", A->comm);
+//          print_vector(mat_send, -1, "mat_send", A->comm);
 
             // communicate data
             MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests+2);
@@ -1381,36 +1381,36 @@ int saena_object::coarsen(Grid *grid) {$
 
             owner = k%nprocs;
             mat_recv_M = P->splitNew[owner + 1] - P->splitNew[owner];
-//        printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
+//          printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
 
             nnzPerCol_right.assign(mat_recv_M, 0);
             for(nnz_t i = 0; i < mat_send.size(); i++){
                 nnzPerCol_right[mat_send[i].col - P->splitNew[owner]]++;
             }
-//        print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
 
             nnzPerColScan_right.resize(mat_recv_M+1);
             nnzPerColScan_right[0] = 0;
             for(nnz_t i = 0; i < mat_recv_M; i++){
                 nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
             }
-//        print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+//          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 
             fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                     &nnzPerColScan_right[0], &nnzPerColScan_right[1], mempool, A->comm);
 
-//        print_vector(AP, -1, "AP", A->comm);
+//          print_vector(AP, -1, "AP", A->comm);
 
             MPI_Waitall(3, requests+1, statuses+1);
 
             mat_recv.swap(mat_send);
             send_size = recv_size;
-//        print_vector(mat_send, -1, "mat_send", A->comm);
-//        print_vector(mat_recv, -1, "mat_recv", A->comm);
-//        prev_owner = owner;
-//        printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+//          print_vector(mat_send, -1, "mat_send", A->comm);
+//          print_vector(mat_recv, -1, "mat_recv", A->comm);
+//          prev_owner = owner;
+//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
         }
 
         mat_send.clear();
