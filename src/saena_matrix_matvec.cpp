@@ -98,7 +98,7 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
         // -----------
         // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
         // the corresponding vector element is saved in vecValues[0]. and so on.
-/*
+
         #pragma omp parallel
         {
             unsigned int i, l;
@@ -128,7 +128,7 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
             for (l = 0; l < levels; l++) {
                 if (thread_id % int(pow(2, l+1)) == 0) {
                     thread_partner = thread_id + int(pow(2, l));
-//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+//                    printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
                     if(thread_partner < num_threads){
                         for (i = 0; i < M; i++)
                             w_local[i] += w_buff[thread_partner * M + i];
@@ -137,15 +137,15 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
             #pragma omp barrier
             }
         }
-*/
+
         // basic remote loop without openmp
-        nnz_t iter = 0;
-        for (index_t j = 0; j < col_remote_size; ++j) {
-            for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+//        nnz_t iter = 0;
+//        for (index_t j = 0; j < col_remote_size; ++j) {
+//            for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
 //                if(rank==0 && row_remote[iter]==8) printf("%u \t%u \t%f \t%f \t%f \n", row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j], values_remote[iter] * vecValues[j]);
-                w[row_remote[iter]] += values_remote[iter] * vecValues[j];
-            }
-        }
+//                w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+//            }
+//        }
 
         MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
         delete [] requests;

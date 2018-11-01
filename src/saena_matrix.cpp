@@ -235,7 +235,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 //                print_vector(entry_temp1, 0, "entry_temp1", comm);
 
                 for (nnz_t i = 0; i < entry_temp1.size(); i++) {
-//                std::cout << entry_temp1[i] << std::endl;
+//                    std::cout << entry_temp1[i] << std::endl;
                     outFile.write((char *) &entry_temp1[i].row, sizeof(index_t));
                     outFile.write((char *) &entry_temp1[i].col, sizeof(index_t));
                     outFile.write((char *) &entry_temp1[i].val, sizeof(value_t));
@@ -247,7 +247,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
         }
 
     } else {
-        if(file_extension != "bin" && rank==0) printf("The extension of file should be either mtx (market matrix)"
+        if(file_extension != "bin" && rank==0) printf("The extension of file should be either mtx (matrix market)"
                                                       " or bin (binary) or dat (dense)! \n");
     }
 

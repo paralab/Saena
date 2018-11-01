@@ -19,18 +19,12 @@ int saena_matrix::shrink_cpu(){
     MPI_Comm_rank(comm, &rank);
     bool verbose_shrink = false;
 
-//    MPI_Barrier(comm);
-//    if(rank==0) printf("\n****************************\n");
-//    if(rank==0) printf("***********SHRINK***********\n");
-//    if(rank==0) printf("****************************\n\n");
-//    MPI_Barrier(comm);
-
+//    MPI_Barrier(comm); if(rank==0) printf("***********SHRINK***********\n"); MPI_Barrier(comm);
 //    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, nnz_l); MPI_Barrier(comm);
-
 //    print_vector(entry, -1, "entry", comm);
 
     // assume cpu_shrink_thre2 is 4 (it is simpler to explain)
-    // 1 - create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
+    // create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
     int color = rank / cpu_shrink_thre2;
     MPI_Comm_split(comm, color, rank, &comm_horizontal);
 
@@ -42,108 +36,13 @@ int saena_matrix::shrink_cpu(){
 //    printf("rank = %d, rank_new = %d on Ac->comm_horizontal \n", rank, rank_new);
 //    MPI_Barrier(comm_horizontal);
 
-/*
-    // 2 - update the number of rows on process 4k, and resize "entry".
-    unsigned int Ac_M_neighbors_total = 0;
-    unsigned int Ac_nnz_neighbors_total = 0;
-    MPI_Reduce(&M, &Ac_M_neighbors_total, 1, MPI_UNSIGNED, MPI_SUM, 0, comm_horizontal);
-    MPI_Reduce(&nnz_l, &Ac_nnz_neighbors_total, 1, MPI_UNSIGNED, MPI_SUM, 0, comm_horizontal);
-
-    if(rank_new == 0){
-        M = Ac_M_neighbors_total;
-        entry.resize(Ac_nnz_neighbors_total);
-//        printf("rank = %d, Ac_M_neighbors = %d \n", rank, Ac_M_neighbors_total);
-//        printf("rank = %d, Ac_nnz_neighbors = %d \n", rank, Ac_nnz_neighbors_total);
-    }
-
-    // last cpu that its right neighbors are going be shrinked to.
-    auto last_root_cpu = (unsigned int)floor(nprocs/cpu_shrink_thre2) * cpu_shrink_thre2;
-//    printf("last_root_cpu = %u\n", last_root_cpu);
-
-    int neigbor_rank;
-    unsigned int A_recv_nnz = 0; // set to 0 just to avoid "not initialized" warning
-    unsigned long offset = nnz_l; // put the data on root from its neighbors at the end of entry[] which is of size nnz_l
-    if(nprocs_new > 1) { // if there is no neighbor, skip.
-        for (neigbor_rank = 1; neigbor_rank < cpu_shrink_thre2; neigbor_rank++) {
-
-//            if( rank == last_root_cpu && (rank + neigbor_rank >= nprocs) )
-//                stop_forloop = true;
-            // last row of cpus should stop to avoid passing the last neighbor cpu.
-//            if( rank >= last_root_cpu){
-//                MPI_Bcast(&stop_forloop, 1, MPI_CXX_BOOL, 0, Ac->comm_horizontal);
-//                printf("rank = %d, neigbor_rank = %d, stop_forloop = %d \n", rank, neigbor_rank, stop_forloop);
-//                if (stop_forloop)
-//                    break;}
-
-            if( rank == last_root_cpu && (rank + neigbor_rank >= nprocs) )
-                break;
-
-            // 3 - send and receive size of Ac.
-            if (rank_new == 0)
-                MPI_Recv(&A_recv_nnz, 1, MPI_UNSIGNED, neigbor_rank, 0, comm_horizontal, MPI_STATUS_IGNORE);
-
-            if (rank_new == neigbor_rank)
-                MPI_Send(&nnz_l, 1, MPI_UNSIGNED, 0, 0, comm_horizontal);
-
-            // 4 - send and receive Ac.
-            if (rank_new == 0) {
-//                printf("rank = %d, neigbor_rank = %d, recv size = %u, offset = %lu \n", rank, neigbor_rank, A_recv_nnz, offset);
-                MPI_Recv(&*(entry.begin() + offset), A_recv_nnz, cooEntry::mpi_datatype(), neigbor_rank, 1,
-                         comm_horizontal, MPI_STATUS_IGNORE);
-                offset += A_recv_nnz; // set offset for the next iteration
-            }
-
-            if (rank_new == neigbor_rank) {
-//                printf("rank = %d, neigbor_rank = %d, send size = %u, offset = %lu \n", rank, neigbor_rank, Ac->nnz_l, offset);
-                MPI_Send(&*entry.begin(), nnz_l, cooEntry::mpi_datatype(), 0, 1, comm_horizontal);
-            }
-
-            // update local index for rows
-//        if(rank_new == 0)
-//            for(i=0; i < A_recv_nnz; i++)
-//                Ac->entry[offset + i].row += Ac->split[rank + neigbor_rank] - Ac->split[rank];
-        }
-    }
-
-    // even though the entries are sorted before shrinking, after shrinking they still need to be sorted locally,
-    // because remote elements damage sorting after shrinking.
-    std::sort(entry.begin(), entry.end());
-*/
-//    MPI_Barrier(comm); MPI_Barrier(Ac->comm_horizontal);
-//    if(rank == 2){
-//        std::cout << "\nafter shrinking: rank = " << rank << ", size = " << Ac->entry.size() <<std::endl;
-//        for(i=0; i < Ac->entry.size(); i++)
-//            std::cout << i << "\t" << Ac->entry[i]  <<std::endl;}
-//    MPI_Barrier(comm); MPI_Barrier(Ac->comm_horizontal);
-
-//    Ac->active_old_comm = true; // this is used for prolong and post-smooth
     active = false;
     if(rank_new == 0){
         active = true;
 //        printf("active: rank = %d, rank_new = %d \n", rank, rank_new);
     }
-/*
-    // 5 - update 4k.nnz_l and split. nnz_g stays the same, so no need to update.
-    if(active){
-        nnz_l = entry.size();
-        split_old = split; // save the old split for shrinking rhs and u
-        split.clear();
-        for(i = 0; i < nprocs+1; i++){
-//            if(rank==0) printf("P->splitNew[i] = %lu\n", P_splitNew[i]);
-            if( i % cpu_shrink_thre2 == 0){
-                split.push_back( P_splitNew[i] );
-            }
-        }
-        split.push_back( P_splitNew[nprocs] );
-        // assert M == split[rank+1] - split[rank]
 
-//        if(rank==0) {
-//            printf("Ac split after shrinking: \n");
-//            for (int i = 0; i < Ac->split.size(); i++)
-//                printf("%lu \n", Ac->split[i]);}
-    }
-*/
-    // 6 - create a new comm including only processes with 4k rank.
+    // create a new comm including only processes with 4k rank.
     MPI_Group bigger_group;
     MPI_Comm_group(comm, &bigger_group);
     total_active_procs = (unsigned int)ceil((double)nprocs / cpu_shrink_thre2); // note: this is ceiling, not floor.
@@ -157,23 +56,9 @@ int saena_matrix::shrink_cpu(){
 //    for(i=0; i<ranks.size(); i++)
 //        if(rank==0) std::cout << ranks[i] << std::endl;
 
-//    MPI_Comm new_comm;
     MPI_Group group_new;
     MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
     MPI_Comm_create_group(comm, group_new, 0, &comm);
-//    comm = new_comm;
-
-//    if(Ac->active) {
-//        int rankkk;
-//        MPI_Comm_rank(Ac->comm, &rankkk);
-//        MPI_Barrier(Ac->comm);
-//        if (rankkk == 4) {
-//                std::cout << "\ninside cpu_shrink, after shrinking" << std::endl;
-//            std::cout << "\nrank = " << rank << ", size = " << Ac->entry.size() << std::endl;
-//            for (i = 0; i < Ac->entry.size(); i++)
-//                std::cout << i << "\t" << Ac->entry[i] << std::endl;}
-//        MPI_Barrier(Ac->comm);
-//    }
 
     std::vector<index_t> split_temp = split;
     split.clear();
@@ -191,25 +76,6 @@ int saena_matrix::shrink_cpu(){
 
 //    print_vector(split, -1, "split", comm);
 
-    // 7 - update 4k.nnz_g
-//    if(Ac->active)
-//        MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED, MPI_SUM, Ac->comm);
-
-//    if(Ac->active){
-//        MPI_Comm_size(Ac->comm, &nprocs);
-//        MPI_Comm_rank(Ac->comm, &rank);
-//        printf("\n\nrank = %d, nprocs = %d, M = %u, nnz_l = %u, nnz_g = %u, Ac->split[rank+1] = %lu, Ac->split[rank] = %lu \n",
-//               rank, nprocs, Ac->M, Ac->nnz_l, Ac->nnz_g, Ac->split[rank+1], Ac->split[rank]);
-//    }
-
-//    free(&bigger_group);
-//    free(&group_new);
-//    free(&comm_new2);
-//    if(active)
-//        MPI_Comm_free(&new_comm);
-
-//    last_M_shrink = Mbig;
-//    shrinked = true;
     return 0;
 }
 
@@ -219,13 +85,8 @@ int saena_matrix::shrink_cpu_minor(){
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-    bool verbose_shrink = false;
 
-//    MPI_Barrier(comm);
-//    if(rank==0) printf("\n****************************\n");
-//    if(rank==0) printf("********MINOR SHRINK********\n");
-//    if(rank==0) printf("****************************\n\n");
-//    MPI_Barrier(comm);
+//    MPI_Barrier(comm); if(rank==0) printf("********MINOR SHRINK********\n"); MPI_Barrier(comm);
 
     shrinked_minor = true;
 
