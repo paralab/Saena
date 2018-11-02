@@ -91,7 +91,7 @@ int main(int argc, char* argv[]){
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 */
     // ******** 2 - initialize the matrix: read from file *************
-    
+
     double t1 = MPI_Wtime();
 
     char* file_name(argv[1]);
@@ -133,7 +133,6 @@ int main(int argc, char* argv[]){
     // ********** 4 - set rhs: read from file **********
 
     char* Vname(argv[2]);
-//    char* Vname(argv[3]);
     saena::read_vector_file(rhs, A, Vname, comm);
 //    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
 
@@ -205,6 +204,7 @@ int main(int argc, char* argv[]){
 //    solver.get_object()->writeMatrixToFileA(A.get_internal_matrix(), mat_name);
 
     // *************************** check correctness of the solution ****************************
+
     // A is scaled. read it from the file and don't scale.
 /*
     saena::matrix AA (file_name, comm);
