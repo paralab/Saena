@@ -436,4 +436,7 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
     return 0;
 }
 
+int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm);
+
+
 #endif //SAENA_AUXFUNCTIONS_H

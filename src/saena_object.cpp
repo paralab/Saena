@@ -9,6 +9,7 @@
 #include "ietl_saena.h"
 #include "dollar.hpp"
 
+#include <sys/stat.h>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
