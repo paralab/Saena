@@ -418,7 +418,7 @@ int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<index_t>& P_splitNe
     Ac->last_M_shrink = Ac->Mbig;
     Ac->shrinked = true;
 
-    MPI_Barrier(comm); if(rank==0) printf("shrinking done!\n"); MPI_Barrier(comm);
+//    MPI_Barrier(comm); if(rank==0) printf("shrinking done!\n"); MPI_Barrier(comm);
 
     return 0;
 }

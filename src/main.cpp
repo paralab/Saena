@@ -68,7 +68,7 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
 
     // ******** 1 - initialize the matrix: laplacian *************
-/*
+
     int mx(std::stoi(argv[1]));
     int my(std::stoi(argv[2]));
     int mz(std::stoi(argv[3]));
@@ -89,9 +89,9 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
-    // ******** 2 - initialize the matrix: read from file *************
 
+    // ******** 2 - initialize the matrix: read from file *************
+/*
     double t1 = MPI_Wtime();
 
     char* file_name(argv[1]);
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]){
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
     print_time(t1, t2, "Matrix Assemble:", comm);
-
+*/
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
 //    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
@@ -128,12 +128,12 @@ int main(int argc, char* argv[]){
     // ********** 3 - set rhs: Laplacian **********
 
     // don't set the size for this method
-//    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
+    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
 
     // ********** 4 - set rhs: read from file **********
 
-    char* Vname(argv[2]);
-    saena::read_vector_file(rhs, A, Vname, comm);
+//    char* Vname(argv[2]);
+//    saena::read_vector_file(rhs, A, Vname, comm);
 //    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
 
     // set rhs
