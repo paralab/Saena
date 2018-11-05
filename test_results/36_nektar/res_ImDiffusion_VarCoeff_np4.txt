@@ -1,0 +1,368 @@
+=======================================================================
+	        EquationType: UnsteadyDiffusion
+	        Session Name: ../solvers/ADRSolver/Tests/ImDiffusion_VarCoeff
+	        Spatial Dim.: 2
+	  Max SEM Exp. Order: 12
+	      Num. Processes: 4
+	      Expansion Dim.: 2
+	     Projection Type: Continuous Galerkin
+	           Advection: explicit
+	           Diffusion: implicit
+	           Time Step: 0.0001
+	        No. of Steps: 200
+	 Checkpoints (steps): 200
+	    Integration Type: DIRKOrder3
+=======================================================================
+Initial Conditions:
+  - Field u: sin(wavefreq*x)*cos(wavefreq*y)
+renaming "../solvers/ADRSolver/Tests/ImDiffusion_VarCoeff_0.chk" -> "../solvers/ADRSolver/TestsImDiffusion_VarCoeff_0.bak255.chk"
+Writing: "../solvers/ADRSolver/Tests/ImDiffusion_VarCoeff_0.chk" (0.0254076s, XML)
+
+time=4.35867e-05
+
+time=4.35867e-05
+
+time=4.35867e-05
+
+time=4.35867e-05
+
+number of processes = 4, number of threads = 1
+
+_____________________________
+
+level = 0 
+number of procs = 4 
+matrix size 	= 483 
+nonzero 	= 7951 
+density 	= 0.034082 
+
+connStrength = 0.30 
+current size = 483 
+new size     = 207 
+division     = 2.33
+_____________________________
+
+level = 1 
+number of procs = 4 
+matrix size 	= 207 
+nonzero 	= 14963 
+density 	= 0.349203 
+
+connStrength = 0.30 
+current size = 207 
+new size     = 69 
+division     = 3.00
+_____________________________
+
+level = 2 
+number of procs = 4 
+matrix size 	= 69 
+nonzero 	= 4761 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 69 
+new size     = 27 
+division     = 2.56
+_____________________________
+
+level = 3 
+number of procs = 4 
+matrix size 	= 27 
+nonzero 	= 729 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 27 
+new size     = 16 
+division     = 1.69
+_____________________________
+
+level = 4 
+number of procs = 4 
+matrix size 	= 16 
+nonzero 	= 256 
+density 	= 1.000000 
+_____________________________
+
+number of levels = << 4 >> (the finest level is 0)
+
+******************************************************
+
+ solver1.set_matrix() took 0 second(s) on P0. Size = 23353
+
+ solver1.set_matrix() took 0 second(s) on P1. Size = 21780
+
+ solver1.set_matrix() took 0 second(s) on P2. Size = 4356
+
+ solver1.set_matrix() took 0 second(s) on P3. Size = 5929
+******************************************************
+
+initial residual = 2.071189e+02 
+
+Vcycle 1: 5.9524397675  	0.0287392343 
+Vcycle 2: 2.7511790412  	0.4621935120 
+Vcycle 3: 2.8854550446  	1.0488067121 
+Vcycle 4: 1.5314357849  	0.5307432489 
+Vcycle 5: 0.9711370002  	0.6341349796 
+Vcycle 6: 0.8539235298  	0.8793028477 
+Vcycle 7: 0.4966030695  	0.5815544978 
+Vcycle 8: 0.4756144117  	0.9577355455 
+Vcycle 9: 0.3400054031  	0.7148761577 
+Vcycle 10: 0.2505422169  	0.7368771629 
+Vcycle 11: 0.1846827682  	0.7371323306 
+Vcycle 12: 0.1541017409  	0.8344132067 
+Vcycle 13: 0.1064272891  	0.6906300250 
+Vcycle 14: 0.1070639648  	1.0059822596 
+Vcycle 15: 0.0825246691  	0.7707978055 
+Vcycle 16: 0.0567025202  	0.6870978190 
+Vcycle 17: 0.0484905869  	0.8551751632 
+Vcycle 18: 0.0396239840  	0.8171479552 
+Vcycle 19: 0.0306639312  	0.7738729973 
+Vcycle 20: 0.0209676123  	0.6837874826 
+Vcycle 21: 0.0153244302  	0.7308619592 
+Vcycle 22: 0.0117757518  	0.7684299940 
+Vcycle 23: 0.0105871912  	0.8990671124 
+Vcycle 24: 0.0092142088  	0.8703166560 
+Vcycle 25: 0.0076798162  	0.8334753729 
+Vcycle 26: 0.0075721400  	0.9859793351 
+Vcycle 27: 0.0090988778  	1.2016256614 
+Vcycle 28: 0.0086285609  	0.9483104505 
+Vcycle 29: 0.0083726269  	0.9703387451 
+Vcycle 30: 0.0096276110  	1.1498913170 
+Vcycle 31: 0.0088903363  	0.9234208008 
+Vcycle 32: 0.0090222721  	1.0148403600 
+Vcycle 33: 0.0095486070  	1.0583373000 
+Vcycle 34: 0.0094303958  	0.9876200585 
+Vcycle 35: 0.0106707808  	1.1315305242 
+Vcycle 36: 0.0125438633  	1.1755337843 
+Vcycle 37: 0.0114797807  	0.9151710593 
+Vcycle 38: 0.0123193626  	1.0731357110 
+Vcycle 39: 0.0100394981  	0.8149364874 
+Vcycle 40: 0.0116245558  	1.1578821691 
+Vcycle 41: 0.0122863865  	1.0569338529 
+Vcycle 42: 0.0120929404  	0.9842552483 
+Vcycle 43: 0.0093285913  	0.7714080279 
+Vcycle 44: 0.0100549070  	1.0778590962 
+Vcycle 45: 0.0074005002  	0.7360088109 
+Vcycle 46: 0.0076092346  	1.0282054524 
+Vcycle 47: 0.0053733947  	0.7061675642 
+Vcycle 48: 0.0051088564  	0.9507688737 
+Vcycle 49: 0.0041689406  	0.8160222626 
+Vcycle 50: 0.0035604136  	0.8540331843 
+Vcycle 51: 0.0027233297  	0.7648914029 
+Vcycle 52: 0.0025428129  	0.9337146732 
+Vcycle 53: 0.0019816507  	0.7793143913 
+Vcycle 54: 0.0018426187  	0.9298403135 
+Vcycle 55: 0.0015733920  	0.8538890621 
+Vcycle 56: 0.0011200482  	0.7118685233 
+Vcycle 57: 0.0008815344  	0.7870503922 
+Vcycle 58: 0.0008019251  	0.9096923227 
+Vcycle 59: 0.0006483940  	0.8085468987 
+Vcycle 60: 0.0006123396  	0.9443942345 
+Vcycle 61: 0.0006319907  	1.0320919450 
+Vcycle 62: 0.0006233457  	0.9863209414 
+Vcycle 63: 0.0007648978  	1.2270843627 
+Vcycle 64: 0.0006736509  	0.8807071294 
+Vcycle 65: 0.0006708899  	0.9959014038 
+Vcycle 66: 0.0007269244  	1.0835226857 
+Vcycle 67: 0.0006994013  	0.9621376221 
+Vcycle 68: 0.0005987083  	0.8560297319 
+Vcycle 69: 0.0007082978  	1.1830431084 
+Vcycle 70: 0.0008781401  	1.2397893902 
+Vcycle 71: 0.0007833627  	0.8920703249 
+Vcycle 72: 0.0008942217  	1.1415167969 
+Vcycle 73: 0.0009622921  	1.0761225393 
+Vcycle 74: 0.0010298032  	1.0701565129 
+Vcycle 75: 0.0008087838  	0.7853771091 
+Vcycle 76: 0.0008065514  	0.9972398285 
+Vcycle 77: 0.0005928813  	0.7350817807 
+Vcycle 78: 0.0005239166  	0.8836787653 
+Vcycle 79: 0.0004563795  	0.8710919000 
+Vcycle 80: 0.0003989829  	0.8742350204 
+Vcycle 81: 0.0003525673  	0.8836651123 
+Vcycle 82: 0.0003007093  	0.8529132184 
+Vcycle 83: 0.0002801489  	0.9316269486 
+Vcycle 84: 0.0002434782  	0.8691028551 
+Vcycle 85: 0.0001871145  	0.7685062171 
+Vcycle 86: 0.0001887566  	1.0087758191 
+Vcycle 87: 0.0001753403  	0.9289228166 
+Vcycle 88: 0.0001395653  	0.7959680280 
+Vcycle 89: 0.0001326770  	0.9506449697 
+Vcycle 90: 0.0001318002  	0.9933913778 
+Vcycle 91: 0.0001020664  	0.7744020268 
+Vcycle 92: 0.0000894599  	0.8764875213 
+Vcycle 93: 0.0001039110  	1.1615375942 
+Vcycle 94: 0.0000881147  	0.8479819949 
+Vcycle 95: 0.0001038981  	1.1791235724 
+Vcycle 96: 0.0001041319  	1.0022503770 
+Vcycle 97: 0.0001125272  	1.0806221617 
+Vcycle 98: 0.0001105003  	0.9819874472 
+Vcycle 99: 0.0001521083  	1.3765416795 
+Vcycle 100: 0.0001663526  	1.0936457671 
+Vcycle 101: 0.0001796400  	1.0798748626 
+Vcycle 102: 0.0002112976  	1.1762278689 
+Vcycle 103: 0.0002346524  	1.1105302426 
+Vcycle 104: 0.0002655692  	1.1317558633 
+Vcycle 105: 0.0001951814  	0.7349548639 
+Vcycle 106: 0.0002597025  	1.3305701870 
+Vcycle 107: 0.0002049525  	0.7891816652 
+Vcycle 108: 0.0001940745  	0.9469244470 
+Vcycle 109: 0.0001549927  	0.7986247888 
+Vcycle 110: 0.0001347752  	0.8695581322 
+Vcycle 111: 0.0001129092  	0.8377597681 
+Vcycle 112: 0.0000774300  	0.6857721509 
+Vcycle 113: 0.0000831276  	1.0735835209 
+Vcycle 114: 0.0000425674  	0.5120729337 
+Vcycle 115: 0.0000418734  	0.9836969014 
+Vcycle 116: 0.0000306792  	0.7326667032 
+Vcycle 117: 0.0000239548  	0.7808137680 
+Vcycle 118: 0.0000160642  	0.6706042126 
+Vcycle 119: 0.0000153776  	0.9572612380 
+Vcycle 120: 0.0000115118  	0.7486051532 
+Vcycle 121: 0.0000097795  	0.8495210612 
+Vcycle 122: 0.0000108163  	1.1060167568 
+Vcycle 123: 0.0000088381  	0.8171087347 
+Vcycle 124: 0.0000079676  	0.9015116904 
+Vcycle 125: 0.0000073453  	0.9218903776 
+Vcycle 126: 0.0000065470  	0.8913256222 
+Vcycle 127: 0.0000053385  	0.8154126839 
+Vcycle 128: 0.0000055349  	1.0367856324 
+Vcycle 129: 0.0000038610  	0.6975634409 
+Vcycle 130: 0.0000041184  	1.0666827591 
+Vcycle 131: 0.0000026040  	0.6322791931 
+Vcycle 132: 0.0000016979  	0.6520300990 
+Vcycle 133: 0.0000021582  	1.2711389545 
+Vcycle 134: 0.0000010033  	0.4648672695 
+Vcycle 135: 0.0000008053  	0.8026986589 
+Vcycle 136: 0.0000006239  	0.7746715380 
+Vcycle 137: 0.0000005157  	0.8266173589 
+Vcycle 138: 0.0000005272  	1.0223345973 
+Vcycle 139: 0.0000003516  	0.6667943495 
+Vcycle 140: 0.0000003508  	0.9979733637 
+Vcycle 141: 0.0000002874  	0.8192080738 
+Vcycle 142: 0.0000002173  	0.7560601351 
+Vcycle 143: 0.0000001585  	0.7294188258 
+Vcycle 144: 0.0000001859  	1.1728100044 
+Vcycle 145: 0.0000001517  	0.8162280367 
+Vcycle 146: 0.0000001727  	1.1383310664 
+Vcycle 147: 0.0000001276  	0.7385537616 
+Vcycle 148: 0.0000000884  	0.6931205544 
+Vcycle 149: 0.0000000849  	0.9597292677 
+Vcycle 150: 0.0000000575  	0.6777815739 
+Vcycle 151: 0.0000000561  	0.9747469910 
+Vcycle 152: 0.0000000293  	0.5222019818 
+Vcycle 153: 0.0000000274  	0.9359496584 
+Vcycle 154: 0.0000000204  	0.7443599926 
+Vcycle 155: 0.0000000138  	0.6756767190 
+Vcycle 156: 0.0000000143  	1.0386099090 
+Vcycle 157: 0.0000000062  	0.4342176706 
+Vcycle 158: 0.0000000087  	1.3936112231 
+Vcycle 159: 0.0000000059  	0.6839017401 
+Vcycle 160: 0.0000000038  	0.6430376255 
+Vcycle 161: 0.0000000036  	0.9522823900 
+Vcycle 162: 0.0000000026  	0.7254157149 
+Vcycle 163: 0.0000000023  	0.8591645713 
+Vcycle 164: 0.0000000017  	0.7578762400 
+Vcycle 165: 0.0000000018  	1.0488929683 
+Vcycle 166: 0.0000000010  	0.5400864215 
+Vcycle 167: 0.0000000011  	1.1244076330 
+Vcycle 168: 0.0000000009  	0.8321954957 
+Vcycle 169: 0.0000000006  	0.7040322800 
+Vcycle 170: 0.0000000009  	1.4399499200 
+Vcycle 171: 0.0000000004  	0.4430668168 
+Vcycle 172: 0.0000000006  	1.5842809329 
+Vcycle 173: 0.0000000004  	0.6763506443 
+Vcycle 174: 0.0000000003  	0.7053436724 
+Vcycle 175: 0.0000000003  	0.9910392937 
+Vcycle 176: 0.0000000001  	0.4370486651 
+Vcycle 177: 0.0000000002  	1.4917751935 
+Vcycle 178: 0.0000000001  	0.6102291833 
+Vcycle 179: 0.0000000000  	0.4091707228 
+Vcycle 180: 0.0000000001  	1.4936361827 
+Vcycle 181: 0.0000000000  	0.4965643343 
+Vcycle 182: 0.0000000000  	0.5749866649 
+Vcycle 183: 0.0000000000  	1.4016614208 
+Vcycle 184: 0.0000000000  	0.2814192368 
+Vcycle 185: 0.0000000000  	1.1974069072 
+Vcycle 186: 0.0000000000  	0.7466438773 
+Vcycle 187: 0.0000000000  	0.3790264270 
+Vcycle 188: 0.0000000000  	1.2937476408 
+Vcycle 189: 0.0000000000  	0.4131382768 
+Vcycle 190: 0.0000000000  	0.4624840607 
+Vcycle 191: 0.0000000000  	1.5299723340 
+Vcycle 192: 0.0000000000  	0.3946964956 
+Vcycle 193: 0.0000000000  	0.6622769580 
+Vcycle 194: 0.0000000000  	1.1917787876 
+Vcycle 195: 0.0000000000  	0.3476673550 
+Vcycle 196: 0.0000000000  	1.0443645083 
+Vcycle 197: 0.0000000000  	0.7944550938 
+Vcycle 198: 0.0000000000  	0.3689825324 
+Vcycle 199: 0.0000000000  	1.4797954572 
+Vcycle 200: 0.0000000000  	0.4365485459 
+Vcycle 201: 0.0000000000  	0.4268820282 
+Vcycle 202: 0.0000000000  	1.4688244664 
+Vcycle 203: 0.0000000000  	0.4312179206 
+Vcycle 204: 0.0000000000  	0.6070273349 
+Vcycle 205: 0.0000000000  	1.2603992919 
+Vcycle 206: 0.0000000000  	0.3878128911 
+Vcycle 207: 0.0000000000  	1.1067786377 
+Vcycle 208: 0.0000000000  	0.6039551222 
+Vcycle 209: 0.0000000000  	0.3811655489 
+Vcycle 210: 0.0000000000  	1.1437282616 
+Vcycle 211: 0.0000000000  	0.7770285686 
+Vcycle 212: 0.0000000000  	0.4887023464 
+Vcycle 213: 0.0000000000  	0.5853333219 
+Vcycle 214: 0.0000000000  	1.6821319205 
+Vcycle 215: 0.0000000000  	0.2777282968 
+Vcycle 216: 0.0000000000  	0.9331958651 
+Vcycle 217: 0.0000000000  	1.1065983197 
+Vcycle 218: 0.0000000000  	0.5331135627 
+Vcycle 219: 0.0000000000  	0.7662845371 
+Vcycle 220: 0.0000000000  	0.9964938458 
+Vcycle 221: 0.0000000000  	1.1714140994 
+Vcycle 222: 0.0000000000  	0.6585701257 
+
+******************************************************
+
+final:
+stopped at iteration    = 222 
+final absolute residual = 1.808438e-17
+relative residual       = 8.731397e-20 
+
+******************************************************
+****** Nek++ and Saena outputs match on P1! ******
+
+****** Nek++ and Saena outputs match on P3! ******
+
+****** Nek++ and Saena outputs match on P2! ******
+
+
+time=7.17933e-05
+
+time=7.17933e-05
+
+time=7.17933e-05
+   1.   |-int saena_object::setup(saena_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object.cpp:42)                                                                                                                                                                                [..........]  2.96% CPU (   16.865ms)     1 hits 
+   2.   | +-int saena_object::level_setup(Grid*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object.cpp:167)                                                                                                                                                                               [..........]  0.04% CPU (    0.217ms)     4 hits 
+   3.   |   |-int restrict_matrix::transposeP(prolong_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/restrict_matrix.cpp:16)                                                                                                                                                               [..........]  0.84% CPU (    4.814ms)     4 hits 
+   4.   |   |-int saena_object::coarsen(Grid*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:1199)                                                                                                                                                                         [..........]  6.43% CPU (   36.655ms)     4 hits 
+   5.   |   | +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, value_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:646) [..........]  1.12% CPU (    6.354ms)    20 hits 
+   6.   |   |-int saena_object::create_prolongation(saena_matrix*, std::vector<long unsigned int>&, prolong_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup1.cpp:29)                                                                                                     [..........]  1.26% CPU (    7.168ms)     4 hits 
+   7.   |   +-int saena_object::find_aggregation(saena_matrix*, std::vector<long unsigned int>&, std::vector<unsigned int>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup1.cpp:142)                                                                                            [..........]  1.49% CPU (    8.515ms)     4 hits 
+   8.   +-int saena_object::solve_pcg(std::vector<double>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_solve.cpp:880)                                                                                                                                                              [======....] 67.14% CPU (  382.527ms)     1 hits 
+   9.     +-int saena_object::solve_coarsest_SuperLU(saena_matrix*, std::vector<double>&, std::vector<double>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_solve.cpp:102)                                                                                                          [=.........] 18.71% CPU (  106.610ms)   222 hits 
+****** Nek++ and Saena outputs match on P0! ******
+
+
+time=7.17933e-05
+
+number of processes = 4, number of threads = 1
+
+_____________________________
+
+level = 0 
+number of procs = 4 
+matrix size 	= 483 
+nonzero 	= 7951 
+density 	= 0.034082 
