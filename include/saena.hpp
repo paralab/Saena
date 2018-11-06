@@ -100,6 +100,7 @@ namespace saena {
         int switch_to_dense(bool val);
         int set_dense_threshold(float thre);
         double get_dense_threshold();
+        MPI_Comm get_orig_comm();
 
         // before calling solve function, vector "u" is the initial guess.
         // After calling solve, it will be the solution.

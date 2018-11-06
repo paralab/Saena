@@ -396,6 +396,12 @@ double saena::amg::get_dense_threshold(){
     return m_pImpl->dense_threshold;
 }
 
+
+MPI_Comm saena::amg::get_orig_comm(){
+    return m_pImpl->get_orig_comm();
+}
+
+
 int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());

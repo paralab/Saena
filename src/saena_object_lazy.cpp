@@ -126,7 +126,7 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
         previous_dot = current_dot;
         dotProduct(r, r, &current_dot, comm);
         // print the "absolute residual" and the "convergence factor":
-        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
+//        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
 //        if(rank==0) printf("Vcycle %lu: aboslute residual = %.10f \n", i+1, sqrt(current_dot));
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
@@ -330,7 +330,7 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
 */
 
 
-int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new){$
+int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new){
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
@@ -455,7 +455,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new
         previous_dot = current_dot;
         dotProduct(r, r, &current_dot, comm);
         // print the "absolute residual" and the "convergence factor":
-        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
+//        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
 //        if(rank==0) printf("Vcycle %lu: aboslute residual = %.10f \n", i+1, sqrt(current_dot));
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
@@ -669,7 +669,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new
 */
 
 
-int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new){$
+int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new){
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
@@ -800,7 +800,7 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new
         previous_dot = current_dot;
         dotProduct(r, r, &current_dot, comm);
         // print the "absolute residual" and the "convergence factor":
-        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
+//        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
 //        if(rank==0) printf("Vcycle %lu: aboslute residual = %.10f \n", i+1, sqrt(current_dot));
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;

@@ -99,7 +99,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 }
 
 
-int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){$
+int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
@@ -877,7 +877,7 @@ int saena_object::solve(std::vector<value_t>& u){
 }
 
 
-int saena_object::solve_pcg(std::vector<value_t>& u){$
+int saena_object::solve_pcg(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
@@ -1034,7 +1034,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
 
 //     print_vector(u, 0, "final u", comm);
 
-    if(rank==0) dollar::text(std::cout);
+//    if(rank==0) dollar::text(std::cout);
 
     return 0;
 }
