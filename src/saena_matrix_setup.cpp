@@ -11,6 +11,22 @@
 #include "mpi.h"
 
 
+int saena_matrix::assemble() {
+
+    if(!assembled){
+        repartition_nnz_initial();
+        matrix_setup();
+        if(enable_shrink) compute_matvec_dummy_time();
+    }else{
+        setup_initial_data2();
+        repartition_nnz_update();
+        matrix_setup_update();
+    }
+
+    return 0;
+}
+
+
 int saena_matrix::setup_initial_data(){
     // parameters needed for this function:
     // comm, data_coo

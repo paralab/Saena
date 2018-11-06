@@ -9,6 +9,7 @@
 #include "ietl_saena.h"
 #include "dollar.hpp"
 
+#include <sys/stat.h>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -39,7 +40,12 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
 }
 
 
-int saena_object::setup(saena_matrix* A) { $
+MPI_Comm saena_object::get_orig_comm(){
+    return grids[0].A->comm;
+}
+
+
+int saena_object::setup(saena_matrix* A) {
     int nprocs, rank, rank_new;
     MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
@@ -164,7 +170,7 @@ int saena_object::setup(saena_matrix* A) { $
 }
 
 
-int saena_object::level_setup(Grid* grid){$
+int saena_object::level_setup(Grid* grid){
 
     int nprocs, rank;
     MPI_Comm_size(grid->A->comm, &nprocs);

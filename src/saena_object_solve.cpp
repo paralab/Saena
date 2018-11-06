@@ -99,7 +99,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 }
 
 
-int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){$
+int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
@@ -877,7 +877,7 @@ int saena_object::solve(std::vector<value_t>& u){
 }
 
 
-int saena_object::solve_pcg(std::vector<value_t>& u){$
+int saena_object::solve_pcg(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
@@ -904,6 +904,8 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
     if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition u!\n");
 
     // ************** solve **************
+
+    double t1 = MPI_Wtime();
 
 //    double temp;
 //    dot(rhs, rhs, &temp, comm);
@@ -983,7 +985,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
         previous_dot = current_dot;
         dotProduct(r, r, &current_dot, comm);
         // print the "absolute residual" and the "convergence factor":
-        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
+//        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
 //        if(rank==0) printf("Vcycle %lu: aboslute residual = %.10f \n", i+1, sqrt(current_dot));
         if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
             break;
@@ -1004,6 +1006,9 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
     // only do the following if the end of the previous for loop was reached.
     if(i == vcycle_num)
         i--;
+
+    double t_dif = MPI_Wtime() - t1;
+    print_time(t_dif, "solve_pcg", comm);
 
     if(rank==0){
         std::cout << "\n******************************************************" << std::endl;
@@ -1029,7 +1034,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){$
 
 //     print_vector(u, 0, "final u", comm);
 
-    if(rank==0) dollar::text(std::cout);
+//    if(rank==0) dollar::text(std::cout);
 
     return 0;
 }

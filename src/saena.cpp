@@ -396,6 +396,12 @@ double saena::amg::get_dense_threshold(){
     return m_pImpl->dense_threshold;
 }
 
+
+MPI_Comm saena::amg::get_orig_comm(){
+    return m_pImpl->get_orig_comm();
+}
+
+
 int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
@@ -968,6 +974,55 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     A.assemble_band_matrix();
 //    printf("rank %d: M = %u, Mbig = %u, nnz_l = %lu, nnz_g = %lu \n",
 //           rank, A.get_num_local_rows(), A.get_num_rows(), A.get_local_nnz(), A.get_nnz());
+
+    return 0;
+}
+
+
+int saena::read_vector_file(std::vector<value_t>& v, saena::matrix &A, char *file, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // check if the size of rhs match the number of rows of A
+//    struct stat st;
+//    stat(file, &st);
+//    unsigned int rhs_size = st.st_size / sizeof(double);
+//    if(rhs_size != A->Mbig){
+//        if(rank==0) printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
+//        if(rank==0) printf("Number of rows of LHS = %d\n", A->Mbig);
+//        if(rank==0) printf("Size of RHS = %d\n", rhs_size);
+//        MPI_Finalize();
+//        return -1;
+//    }
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
+        MPI_Finalize();
+        return -1;
+    }
+
+    // define the size of v as the local number of rows on each process
+//    std::vector <double> v(A.M);
+    v.resize(A.get_num_local_rows());
+    double* vp = &(*(v.begin()));
+
+    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
+    offset = A.get_internal_matrix()->split[rank] * 8; // value(double=8)
+    MPI_File_read_at(fh, offset, vp, A.get_num_local_rows(), MPI_DOUBLE, &status);
+
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+    //printf("process %d read %d lines of triples\n", rank, count);
+    MPI_File_close(&fh);
+
+    print_vector(v, -1, "v", comm);
 
     return 0;
 }

@@ -377,10 +377,10 @@ void setIJV(char* file_name, index_t* I,index_t* J, value_t* V, nnz_t nnz_g, nnz
 int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, double* dot, MPI_Comm comm);
 
 
-double print_time(double t1, double t2, std::string function_name, MPI_Comm comm);
+double print_time(double t_start, double t_end, std::string function_name, MPI_Comm comm);
 
 
-int print_time_average(double t1, double t2, std::string function_name, int iter, MPI_Comm comm);
+double print_time(double t_diff, std::string function_name, MPI_Comm comm);
 
 
 int writeVectorToFiled(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm);
@@ -435,5 +435,8 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
 
     return 0;
 }
+
+int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm);
+
 
 #endif //SAENA_AUXFUNCTIONS_H

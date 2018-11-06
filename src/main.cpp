@@ -68,7 +68,7 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
 
     // ******** 1 - initialize the matrix: laplacian *************
-/*
+
     int mx(std::stoi(argv[1]));
     int my(std::stoi(argv[2]));
     int mz(std::stoi(argv[3]));
@@ -89,8 +89,9 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-*/
+
     // ******** 2 - initialize the matrix: read from file *************
+/*
     double t1 = MPI_Wtime();
 
     char* file_name(argv[1]);
@@ -103,7 +104,7 @@ int main(int argc, char* argv[]){
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
     print_time(t1, t2, "Matrix Assemble:", comm);
-
+*/
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
 //    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
@@ -111,70 +112,38 @@ int main(int argc, char* argv[]){
     // *************************** set rhs ****************************
 
     unsigned int num_local_row = A.get_num_local_rows();
-    std::vector<double> rhs(num_local_row);
+    std::vector<double> rhs;
 
     // ********** 1 - set rhs: random **********
 
-    generate_rhs_old(rhs);
-//    print_vector(rhs, -1, "rhs", comm);
+//    rhs.resize(num_local_row);
+//    generate_rhs_old(rhs);
 
     // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
 
+//    rhs.resize(num_local_row);
 //    for(index_t i = 0; i < A.get_num_local_rows(); i++)
 //        rhs[i] = i + 1 + A.get_internal_matrix()->split[rank];
-//    print_vector(rhs, -1, "rhs", comm);
 
     // ********** 3 - set rhs: Laplacian **********
 
-//    std::vector<double> rhs; // don't set the size for this method
-//    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
-//    print_vector(rhs, -1, "rhs", comm);
+    // don't set the size for this method
+    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
 
     // ********** 4 - set rhs: read from file **********
-/*
-    char* Vname(argv[2]);
-//    char* Vname(argv[3]);
 
-    // check if the size of rhs match the number of rows of A
-    struct stat st;
-    stat(Vname, &st);
-    unsigned int rhs_size = st.st_size / sizeof(double);
-    if(rhs_size != A.get_internal_matrix()->Mbig){
-        if(rank==0) printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
-        if(rank==0) printf("Number of rows of LHS = %d\n", A.get_internal_matrix()->Mbig);
-        if(rank==0) printf("Size of RHS = %d\n", rhs_size);
-        MPI_Finalize();
-        return -1;
-    }
-
-    MPI_Status status;
-    MPI_File fh;
-    MPI_Offset offset;
-
-    int mpiopen = MPI_File_open(comm, Vname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    if(mpiopen){
-        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
-        MPI_Finalize();
-        return -1;
-    }
-
-    // define the size of v as the local number of rows on each process
-    std::vector <double> v(num_local_row);
-    double* vp = &(*(v.begin()));
-
-    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A.get_internal_matrix()->split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh, offset, vp, num_local_row, MPI_DOUBLE, &status);
-
-//    int count;
-//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
-    //printf("process %d read %d lines of triples\n", rank, count);
-    MPI_File_close(&fh);
+//    char* Vname(argv[2]);
+//    saena::read_vector_file(rhs, A, Vname, comm);
+//    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
 
     // set rhs
 //    A.get_internal_matrix()->matvec(v, rhs);
-    rhs = v;
-*/
+//    rhs = v;
+
+    // ********** print rhs **********
+
+//    print_vector(rhs, -1, "rhs", comm);
+
     // *************************** set u0 ****************************
 
     std::vector<double> u(num_local_row, 0);
@@ -235,6 +204,7 @@ int main(int argc, char* argv[]){
 //    solver.get_object()->writeMatrixToFileA(A.get_internal_matrix(), mat_name);
 
     // *************************** check correctness of the solution ****************************
+
     // A is scaled. read it from the file and don't scale.
 /*
     saena::matrix AA (file_name, comm);

@@ -5,8 +5,21 @@
 #include "saena_matrix.h"
 #include "strength_matrix.h"
 #include <math.h>
+#include <sys/stat.h>
 
 class saena_matrix;
+
+
+bool row_major (const cooEntry& node1, const cooEntry& node2)
+{
+    if(node1.row < node2.row)
+        return (true);
+    else if(node1.row == node2.row)
+        return(node1.col <= node2.col);
+    else
+        return false;
+}
+
 
 // todo: replace strength_matrix with two other arguments: S->M and S->nnzPerRow
 int randomVector(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm) {
@@ -258,14 +271,35 @@ int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, value_t* dot, M
 }
 
 
-double print_time(double t1, double t2, std::string function_name, MPI_Comm comm){
+double print_time(double t_start, double t_end, std::string function_name, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
     double min, max, average;
-    double t_dif = t2 - t1;
+    double t_dif = t_end - t_start;
+
+    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    average /= nprocs;
+
+    if (rank==0)
+        std::cout << std::endl << function_name << "\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+
+    return average;
+}
+
+
+double print_time(double t_dif, std::string function_name, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    double min, max, average;
+//    double t_dif = t2 - t1;
 
     MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
     MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
@@ -399,12 +433,50 @@ int generate_rhs_old(std::vector<value_t>& rhs){
 }
 
 
-bool row_major (const cooEntry& node1, const cooEntry& node2)
-{
-    if(node1.row < node2.row)
-        return (true);
-    else if(node1.row == node2.row)
-        return(node1.col <= node2.col);
-    else
-        return false;
+int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // check if the size of rhs match the number of rows of A
+    struct stat st;
+    stat(file, &st);
+    unsigned int rhs_size = st.st_size / sizeof(double);
+    if(rhs_size != A->Mbig){
+        if(rank==0) printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
+        if(rank==0) printf("Number of rows of LHS = %d\n", A->Mbig);
+        if(rank==0) printf("Size of RHS = %d\n", rhs_size);
+        MPI_Finalize();
+        return -1;
+    }
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
+        MPI_Finalize();
+        return -1;
+    }
+
+    // define the size of v as the local number of rows on each process
+//    std::vector <double> v(A.M);
+    v.resize(A->M);
+    double* vp = &(*(v.begin()));
+
+    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
+    offset = A->split[rank] * 8; // value(double=8)
+    MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
+
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+    //printf("process %d read %d lines of triples\n", rank, count);
+    MPI_File_close(&fh);
+
+    print_vector(v, -1, "v", comm);
+
+    return 0;
 }

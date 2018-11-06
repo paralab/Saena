@@ -1,0 +1,483 @@
+Solving 3D Helmholtz:
+  - Communication: Parallel MPI (28 processes)
+  - Solver type  : PETScFull
+  - Lambda       : 1
+  - No. modes    : 4
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+************************************
+solve_pcg_update3() experiment
+************************************
+
+
+number of processes = 28, number of threads = 1
+
+_____________________________
+
+level = 0 
+number of procs = 28 
+matrix size 	= 38983 
+nonzero 	= 1603041 
+density 	= 0.001055 
+
+connStrength = 0.30 
+current size = 38983 
+new size     = 14821 
+division     = 2.63
+_____________________________
+
+level = 1 
+number of procs = 28 
+matrix size 	= 14821 
+nonzero 	= 9912087 
+density 	= 0.045124 
+
+connStrength = 0.30 
+current size = 14821 
+new size     = 5240 
+division     = 2.83
+_____________________________
+
+level = 2 
+number of procs = 28 
+matrix size 	= 5240 
+nonzero 	= 12159784 
+density 	= 0.442857 
+
+connStrength = 0.30 
+current size = 5240 
+new size     = 1547 
+division     = 3.39
+_____________________________
+
+level = 3 
+number of procs = 28 
+matrix size 	= 1547 
+nonzero 	= 2272403 
+density 	= 0.949521 
+
+connStrength = 0.30 
+current size = 1547 
+new size     = 589 
+division     = 2.63
+_____________________________
+
+level = 4 
+number of procs = 28 
+matrix size 	= 589 
+nonzero 	= 346921 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 589 
+new size     = 331 
+division     = 1.78
+_____________________________
+
+level = 5 
+number of procs = 28 
+matrix size 	= 331 
+nonzero 	= 109561 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 331 
+new size     = 244 
+division     = 1.36
+_____________________________
+
+level = 6 
+number of procs = 28 
+matrix size 	= 244 
+nonzero 	= 59536 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 244 
+new size     = 204 
+division     = 1.20
+_____________________________
+
+level = 7 
+number of procs = 28 
+matrix size 	= 204 
+nonzero 	= 41616 
+density 	= 1.000000 
+
+connStrength = 0.30 
+current size = 204 
+new size     = 187 
+division     = 1.09
+_____________________________
+
+level = 8 
+number of procs = 28 
+matrix size 	= 187 
+nonzero 	= 34969 
+density 	= 1.000000 
+_____________________________
+
+number of levels = << 7 >> (the finest level is 0)
+
+******************************************************
+
+ solver1.set_matrix() took 100 second(s) on P0. Size = 98580
+
+ solver1.set_matrix() took 
+ solver1.set_matrix() took 100 second(s) on P2. Size = 98558
+ solver1.set_matrix() took 100 second(s) on P3. Size = 102304
+
+ solver1.set_matrix() took 100 second(s) on P4. Size = 104185
+
+ solver1.set_matrix() took 100 second(s) on P5. Size = 91417
+
+ solver1.set_matrix() took 100 second(s) on P6. Size = 99441
+
+ solver1.set_matrix() took 100 second(s) on P7. Size = 98702
+
+ solver1.set_matrix() took 100 second(s) on P8. Size = 105429
+
+ solver1.set_matrix() took 100 second(s) on P9. Size = 101768
+
+ solver1.set_matrix() took 100 second(s) on P10. Size = 103722
+
+ solver1.set_matrix() took 100 second(s) on P11. Size = 110132
+
+ solver1.set_matrix() took 100 second(s) on P12. Size = 104752
+
+ solver1.set_matrix() took 100 second(s) on P13. Size = 119097
+
+ solver1.set_matrix() took 100 second(s) on P14. Size = 108930
+
+ solver1.set_matrix() took 100 second(s) on P15. Size = 114243
+
+ solver1.set_matrix() took 100 second(s) on P16. Size = 109659
+
+ solver1.set_matrix() took 100 second(s) on P17. Size = 84793
+
+ solver1.set_matrix() took 100 second(s) on P18. Size = 108006
+
+ solver1.set_matrix() took 100 second(s) on P19. Size = 95906
+
+ solver1.set_matrix() took 100 second(s) on P20. Size = 110579
+
+ solver1.set_matrix() took 100 second(s) on P21. Size = 118136
+
+ solver1.set_matrix() took 100 second(s) on P22. Size = 108181
+
+ solver1.set_matrix() took 100 second(s) on P23. Size = 109154
+
+ solver1.set_matrix() took 100 second(s) on P24. Size = 112647
+
+ solver1.set_matrix() took 100 second(s) on P25. Size = 113460
+
+ solver1.set_matrix() took 100 second(s) on P26. Size = 105256
+
+ solver1.set_matrix() took 100 second(s) on P27. Size = 93124
+100 second(s) on P1. Size = 95385
+
+******************************************************
+
+initial residual = 9.380069e-01 
+
+Vcycle 1: 0.1995433889  	0.2127312483 
+Vcycle 2: 0.0494799440  	0.2479658400 
+Vcycle 3: 0.0181501208  	0.3668177301 
+Vcycle 4: 0.0148996206  	0.8209102739 
+Vcycle 5: 0.0074958587  	0.5030905769 
+Vcycle 6: 0.0034174379  	0.4559101332 
+Vcycle 7: 0.0024883662  	0.7281379198 
+Vcycle 8: 0.0015540042  	0.6245078306 
+Vcycle 9: 0.0007411421  	0.4769241245 
+Vcycle 10: 0.0003733269  	0.5037184031 
+Vcycle 11: 0.0002699431  	0.7230743924 
+Vcycle 12: 0.0001597037  	0.5916200016 
+Vcycle 13: 0.0000816918  	0.5115207709 
+Vcycle 14: 0.0000555861  	0.6804365849 
+Vcycle 15: 0.0000351942  	0.6331472635 
+Vcycle 16: 0.0000178078  	0.5059885029 
+Vcycle 17: 0.0000088850  	0.4989396454 
+Vcycle 18: 0.0000053561  	0.6028225996 
+Vcycle 19: 0.0000036034  	0.6727592361 
+Vcycle 20: 0.0000017204  	0.4774290997 
+Vcycle 21: 0.0000009642  	0.5604788553 
+Vcycle 22: 0.0000007166  	0.7432270036 
+Vcycle 23: 0.0000003939  	0.5496087531 
+Vcycle 24: 0.0000002179  	0.5532548116 
+Vcycle 25: 0.0000001397  	0.6409262306 
+Vcycle 26: 0.0000001007  	0.7210809967 
+Vcycle 27: 0.0000000604  	0.6002331764 
+Vcycle 28: 0.0000000368  	0.6084263494 
+Vcycle 29: 0.0000000302  	0.8222513416 
+Vcycle 30: 0.0000000201  	0.6645044652 
+Vcycle 31: 0.0000000110  	0.5456958210 
+Vcycle 32: 0.0000000075  	0.6857515039 
+Vcycle 33: 0.0000000051  	0.6826411018 
+Vcycle 34: 0.0000000027  	0.5222323158 
+Vcycle 35: 0.0000000015  	0.5696833302 
+Vcycle 36: 0.0000000010  	0.6778102775 
+Vcycle 37: 0.0000000006  	0.6065940509 
+Vcycle 38: 0.0000000003  	0.4991049185 
+Vcycle 39: 0.0000000002  	0.5981092768 
+Vcycle 40: 0.0000000001  	0.7385702197 
+Vcycle 41: 0.0000000001  	0.5494138718 
+Vcycle 42: 0.0000000000  	0.5463305665 
+Vcycle 43: 0.0000000000  	0.6819228368 
+Vcycle 44: 0.0000000000  	0.6832718399 
+Vcycle 45: 0.0000000000  	0.5894356257 
+Vcycle 46: 0.0000000000  	0.6006397959 
+Vcycle 47: 0.0000000000  	0.7139584037 
+Vcycle 48: 0.0000000000  	0.5870074728 
+Vcycle 49: 0.0000000000  	0.5441187682 
+Vcycle 50: 0.0000000000  	0.6906105755 
+Vcycle 51: 0.0000000000  	0.6687686295 
+Vcycle 52: 0.0000000000  	0.5352151192 
+Vcycle 53: 0.0000000000  	0.5860907266 
+Vcycle 54: 0.0000000000  	0.6970713929 
+Vcycle 55: 0.0000000000  	0.6291176557 
+Vcycle 56: 0.0000000000  	0.5834795157 
+Vcycle 57: 0.0000000000  	0.5964531527 
+Vcycle 58: 0.0000000000  	0.6445609923 
+Vcycle 59: 0.0000000000  	0.6391637249 
+Vcycle 60: 0.0000000000  	0.5797707899 
+Vcycle 61: 0.0000000000  	0.5919774859 
+Vcycle 62: 0.0000000000  	0.6300518357 
+Vcycle 63: 0.0000000000  	0.6015321529 
+Vcycle 64: 0.0000000000  	0.6184897542 
+Vcycle 65: 0.0000000000  	0.5646061574 
+Vcycle 66: 0.0000000000  	0.6095807229 
+Vcycle 67: 0.0000000000  	0.6572539137 
+Vcycle 68: 0.0000000000  	0.5284901866 
+Vcycle 69: 0.0000000000  	0.5921453527 
+Vcycle 70: 0.0000000000  	0.6818155128 
+Vcycle 71: 0.0000000000  	0.6100598069 
+Vcycle 72: 0.0000000000  	0.5607483249 
+Vcycle 73: 0.0000000000  	0.6328460648 
+Vcycle 74: 0.0000000000  	0.6763100710 
+Vcycle 75: 0.0000000000  	0.5556233023 
+Vcycle 76: 0.0000000000  	0.5874471011 
+Vcycle 77: 0.0000000000  	0.6483343049 
+Vcycle 78: 0.0000000000  	0.5979978761 
+Vcycle 79: 0.0000000000  	0.5919770241 
+Vcycle 80: 0.0000000000  	0.6161439481 
+Vcycle 81: 0.0000000000  	0.5740530596 
+Vcycle 82: 0.0000000000  	0.6034136034 
+Vcycle 83: 0.0000000000  	0.6122756116 
+
+******************************************************
+
+final:
+stopped at iteration    = 83 
+final absolute residual = 7.925306e-20
+relative residual       = 8.449091e-20 
+
+******************************************************
+****** Nek++ and Saena outputs match on P3! ******
+
+****** Nek++ and Saena outputs match on P18! ******
+
+****** Nek++ and Saena outputs match on P19! ******
+
+****** Nek++ and Saena outputs match on P26! ******
+
+****** Nek++ and Saena outputs match on P27! ******
+
+****** Nek++ and Saena outputs match on P1! ******
+
+****** Nek++ and Saena outputs match on P2! ******
+
+****** Nek++ and Saena outputs match on P4! ******
+
+****** Nek++ and Saena outputs match on P5! ******
+
+****** Nek++ and Saena outputs match on P6! ******
+
+****** Nek++ and Saena outputs match on P7! ******
+
+****** Nek++ and Saena outputs match on P8! ******
+
+****** Nek++ and Saena outputs match on P9! ******
+
+****** Nek++ and Saena outputs match on P10! ******
+
+****** Nek++ and Saena outputs match on P11! ******
+
+****** Nek++ and Saena outputs match on P12! ******
+
+****** Nek++ and Saena outputs match on P13! ******
+
+****** Nek++ and Saena outputs match on P14! ******
+
+****** Nek++ and Saena outputs match on P15! ******
+
+****** Nek++ and Saena outputs match on P16! ******
+
+****** Nek++ and Saena outputs match on P17! ******
+
+****** Nek++ and Saena outputs match on P20! ******
+
+****** Nek++ and Saena outputs match on P21! ******
+
+****** Nek++ and Saena outputs match on P22! ******
+
+****** Nek++ and Saena outputs match on P23! ******
+
+****** Nek++ and Saena outputs match on P24! ******
+
+****** Nek++ and Saena outputs match on P25! ******
+
+   1.   |-int saena_object::setup(saena_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object.cpp:42)                                                                                                                                                                                        [..........]  0.93% CPU ( 1036.005ms)     1 hits 
+   2.   | +-int saena_object::level_setup(Grid*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object.cpp:167)                                                                                                                                                                                       [..........]  0.00% CPU (    0.634ms)     8 hits 
+   3.   |   |-int restrict_matrix::transposeP(prolong_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/restrict_matrix.cpp:16)                                                                                                                                                                       [..........]  0.47% CPU (  520.910ms)     8 hits 
+   4.   |   |-int saena_object::coarsen(Grid*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:1199)                                                                                                                                                                                 [====......] 44.68% CPU (49714.898ms)     8 hits 
+   5.   |   | +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, value_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:646)         [=.........] 15.67% CPU (17441.426ms)   232 hits 
+   6.   |   |   +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, value_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:646)       [=.........] 11.64% CPU (12958.074ms)    12 hits 
+   7.   |   |     +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, value_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:646)     [..........]  8.83% CPU ( 9824.110ms)    32 hits 
+   8.   |   |       +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, value_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:646)   [..........]  4.51% CPU ( 5015.315ms)   128 hits 
+   9.   |   |         +-int saena_object::fast_mm(cooEntry*, cooEntry*, std::vector<cooEntry>&, nnz_t, nnz_t, index_t, index_t, index_t, index_t, index_t, index_t, index_t*, index_t*, index_t*, index_t*, value_t*, MPI_Comm) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup2.cpp:646) [..........]  1.37% CPU ( 1519.443ms)   256 hits 
+  10.   |   |-int saena_object::create_prolongation(saena_matrix*, std::vector<long unsigned int>&, prolong_matrix*) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup1.cpp:29)                                                                                                             [..........]  0.69% CPU (  763.160ms)     8 hits 
+  11.   |   +-int saena_object::find_aggregation(saena_matrix*, std::vector<long unsigned int>&, std::vector<unsigned int>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_setup1.cpp:142)                                                                                                    [..........]  0.64% CPU (  716.860ms)     8 hits 
+  12.   +-int saena_object::solve_pcg(std::vector<double>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_solve.cpp:880)                                                                                                                                                                      [..........]  9.52% CPU (10596.208ms)     1 hits 
+  13.     +-int saena_object::solve_coarsest_SuperLU(saena_matrix*, std::vector<double>&, std::vector<double>&) (/uufs/chpc.utah.edu/common/home/u1013493/nektar++/library/MultiRegions/Saena_Public/src/saena_object_solve.cpp:102)                                                                                                                  [..........]  1.05% CPU ( 1170.773ms)    83 hits 
+****** Nek++ and Saena outputs match on P0! ******
+
+Writing: "/uufs/chpc.utah.edu/common/home/u1013493/AllMeshes/intercostal-tet0.fld" (0.0296516s, XML)
+L infinity error: 1.07613
+L 2 error:        0.981888
+H 1 error:        5.29175
+Time in ExpEval:  0.0196639

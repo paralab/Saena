@@ -26,7 +26,7 @@
 //#include <cassert>
 
 
-int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){$
+int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){
     // formula for the prolongation matrix from Irad Yavneh's paper:
     // P = (I - 4/(3*rhoDA) * DA) * P_t
 
@@ -139,7 +139,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
 }// end of saena_object::create_prolongation
 
 
-int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew){$
+int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew){
     // finding aggregation is written in an adaptive way. An aggregation_2_dist is being created first. If it is too small,
     // or too big it will be recreated until an aggregation_2_dist with size within the acceptable range is produced.
 
