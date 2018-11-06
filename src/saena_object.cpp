@@ -40,6 +40,11 @@ void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int
 }
 
 
+MPI_Comm saena_object::get_orig_comm(){
+    return grids[0].A->comm;
+}
+
+
 int saena_object::setup(saena_matrix* A) { $
     int nprocs, rank, rank_new;
     MPI_Comm_size(A->comm, &nprocs);
