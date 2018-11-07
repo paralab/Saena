@@ -178,7 +178,7 @@ int saena_matrix::repartition_nnz_initial(){
 
         // todo: check if data is sorted row-major, then remove lower_bound and add if statement.
         std::vector<int> send_size_array(nprocs, 0);
-        // add the first element to local histogram (H_l).
+        // add the first element to send_size_array
         send_size_array[least_proc]++;
 
         for (nnz_t i = 1; i < initial_nnz_l; i++){
@@ -271,8 +271,13 @@ int saena_matrix::repartition_nnz_update(){
 //    if (rank==1) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
 
     std::vector<int> send_size_array(nprocs, 0);
-    for (nnz_t i = 0; i < initial_nnz_l; i++){
-        least_proc += lower_bound2(&split[least_proc], &split[last_proc], data[i].row);
+    // add the first element to send_size_array
+    send_size_array[least_proc]++;
+
+    for (nnz_t i = 1; i < initial_nnz_l; i++){
+        if(data[i].row >= split[least_proc+1]) {
+            least_proc += lower_bound2(&split[least_proc], &split[last_proc], data[i].row);
+        }
         send_size_array[least_proc]++;
     }
 
@@ -319,7 +324,6 @@ int saena_matrix::repartition_nnz_update(){
     data.shrink_to_fit();
 
 //    print_entry(0);
-
 //    MPI_Barrier(comm); printf("repartition: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l); MPI_Barrier(comm);
 
     if(verbose_repartition_update && rank==0) printf("repartition - step 4!\n");
