@@ -154,10 +154,7 @@ int saena_matrix::remove_duplicates() {
     memcpy(&data_sorted[0], &data_sorted_row[0], data_sorted_row.size() * sizeof(cooEntry));
 
 //    printf("rank = %d \t\t\t after  sort: data_sorted size = %lu\n", rank, data_sorted.size());
-    print_vector(data_sorted, -1, "data_sorted", comm);
-
-    // todo: "data" vector can completely be avoided. function repartition should be changed to use a vector of cooEntry
-    // todo: (which is "data_sorted" here), instead of "data" (which is a vector of unsigned long of size 3*nnz).
+//    print_vector(data_sorted, -1, "data_sorted", comm);
 
     // size of data may be smaller because of duplicates. In that case its size will be reduced after finding the exact size.
     data.resize(data_sorted.size());

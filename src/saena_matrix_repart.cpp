@@ -103,11 +103,13 @@ int saena_matrix::repartition_nnz_initial(){
 
     // H_l is the histogram of (local) nnz of buckets
     std::vector<index_t> H_l(n_buckets, 0);
+    H_l[least_bucket]++; // add the first element to local histogram (H_l) here.
 
-    for(nnz_t i = 0; i < initial_nnz_l; i++){
-//        H_l[lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[i].row)]++;
-        least_bucket += lower_bound2(&firstSplit[least_bucket], &firstSplit[last_bucket], data[i].row);
-//        if (rank==0) std::cout << "row = " << data[i].row << ", least_bucket = " << least_bucket << std::endl;
+    for(nnz_t i = 1; i < initial_nnz_l; i++){
+        if(data[i].row >= firstSplit[least_bucket+1]){
+            least_bucket += lower_bound2(&firstSplit[least_bucket], &firstSplit[last_bucket], data[i].row);
+//            if (rank==0) std::cout << "row = " << data[i].row << ", least_bucket = " << least_bucket << std::endl;
+        }
         H_l[least_bucket]++;
     }
 
@@ -167,16 +169,23 @@ int saena_matrix::repartition_nnz_initial(){
 
     if(nprocs != 1){
         index_t least_proc, last_proc;
-        least_proc = lower_bound2(&split[0], &split[nprocs], data[0].row);
-        last_proc  = lower_bound2(&split[0], &split[nprocs], data.back().row);
+        least_proc = (index_t) lower_bound2(&split[0], &split[nprocs], data[0].row);
+        last_proc  = (index_t) lower_bound2(&split[0], &split[nprocs], data.back().row);
         last_proc++;
 
 //        if (rank==1) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
+//        print_vector(split, 1, "split", comm);
 
         // todo: check if data is sorted row-major, then remove lower_bound and add if statement.
         std::vector<int> send_size_array(nprocs, 0);
-        for (nnz_t i = 0; i < initial_nnz_l; i++){
-            least_proc += lower_bound2(&split[least_proc], &split[last_proc], data[i].row);
+        // add the first element to local histogram (H_l).
+        send_size_array[least_proc]++;
+
+        for (nnz_t i = 1; i < initial_nnz_l; i++){
+            if(data[i].row >= split[least_proc+1]){
+                least_proc += lower_bound2(&split[least_proc], &split[last_proc], data[i].row);
+            }
+//            if(rank==2) printf("row = %u, %u \n", data[i].row, least_proc);
             send_size_array[least_proc]++;
         }
 
