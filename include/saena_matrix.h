@@ -257,8 +257,8 @@ public:
     int set_zero();
     int erase();
     int erase2();
-    int erase_update_local(); // use this for coarsen2()
-    int erase_keep_remote2(); // use this for coarsen2()
+    int erase_update_local(); // use this for coarsen_update_Ac()
+    int erase_keep_remote2(); // use this for coarsen_update_Ac()
     int erase_after_shrink();
     int erase_after_decide_shrinking();
     int destroy();

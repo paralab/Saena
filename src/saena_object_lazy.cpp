@@ -1033,11 +1033,11 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         if(A.nnz_g != B.nnz_g)
             if(rank==0) std::cout << "error: local_diff(): A.nnz_g != B.nnz_g" << std::endl;
 
-        C.clear();
+//        C.clear();
         C.resize(A.nnz_l_local);
         index_t loc_size = 0;
         for(nnz_t i = 0; i < A.nnz_l_local; i++){
-            if(!almost_zero(A.values_local[i]-B.values_local[i])){
+            if(!almost_zero(A.values_local[i] - B.values_local[i])){
 //                if(rank==1) printf("%u \t%u \t%f \n", A.row_local[i], A.col_local[i], A.values_local[i]-B.values_local[i]);
                 C[loc_size] = cooEntry(A.row_local[i], A.col_local[i], B.values_local[i]-A.values_local[i]);
                 loc_size++;
@@ -1074,10 +1074,10 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     // Then, updates Ac with the delta_Ac. Finally, it saves delta_Ac in diff for doing the same operation
     // for the next level.
 
-    saena_matrix *A = grid->A;
-    prolong_matrix *P = &grid->P;
+    saena_matrix *A    = grid->A;
+    prolong_matrix *P  = &grid->P;
     restrict_matrix *R = &grid->R;
-    saena_matrix *Ac = &grid->Ac;
+    saena_matrix *Ac   = &grid->Ac;
 
     MPI_Comm comm = A->comm;
 //    Ac->active_old_comm = true;
@@ -1099,10 +1099,12 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     // Some local and remote elements of RA_temp are computed here using local R and local A.
     // Note: A local means whole entries of A on this process, not just the diagonal block.
 
+    std::sort(diff.begin(), diff.end(), row_major);
+
     // alloacted memory for AMaxM, instead of A.M to avoid reallocation of memory for when receiving data from other procs.
     unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*A->M);
     std::fill(&AnnzPerRow[0], &AnnzPerRow[A->M], 0);
-    for(nnz_t i=0; i<diff.size(); i++){
+    for(nnz_t i = 0; i < diff.size(); i++){
 //        if(rank==0) printf("%u\n", diff[i].row);
         AnnzPerRow[diff[i].row]++;
     }
@@ -1116,21 +1118,13 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     // alloacted memory for AMaxM+1, instead of A.M+1 to avoid reallocation of memory for when receiving data from other procs.
     unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(A->M+1));
     AnnzPerRowScan[0] = 0;
-    for(index_t i=0; i<A->M; i++){
+    for(index_t i = 0; i < A->M; i++){
         AnnzPerRowScan[i+1] = AnnzPerRowScan[i] + AnnzPerRow[i];
 //        if(rank==1) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i+A->split[rank], AnnzPerRow[i], AnnzPerRowScan[i+1]);
     }
 
     if(verbose_coarsen2){
         MPI_Barrier(comm); printf("coarsen2: step 1: rank = %d\n", rank); MPI_Barrier(comm);}
-
-    // find row-wise ordering for A and save it in indicesP
-//    std::vector<nnz_t> indicesP(A->nnz_l_local);
-//    for(nnz_t i=0; i<A->nnz_l; i++)
-//        indicesP[i] = i;
-//    std::sort(&indicesP[0], &indicesP[A->nnz_l_local], sort_indices2(&*A->entry.begin()));
-
-    std::sort(diff.begin(), diff.end(), row_major);
 
     index_t jstart, jend;
     if(!R->entry_local.empty()) {
@@ -1173,19 +1167,13 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     for(nnz_t i=0; i<RA_temp.entry.size(); i++){
 //        RA.entry.push_back(RA_temp.entry[i]);
         RA.entry[entry_size] = RA_temp.entry[i];
-//        if(rank==1) std::cout << RA_temp.entry[i] << std::endl;
         while(i<RA_temp.entry.size()-1 && RA_temp.entry[i] == RA_temp.entry[i+1]){ // values of entries with the same row and col should be added.
 //            RA.entry.back().val += RA_temp.entry[i+1].val;
             RA.entry[entry_size].val += RA_temp.entry[i+1].val;
             i++;
-//            if(rank==1) std::cout << RA_temp.entry[i+1].val << std::endl;
         }
 //        if(rank==1) std::cout << std::endl << "final: " << std::endl << RA.entry[RA.entry.size()-1].val << std::endl;
         entry_size++;
-        // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
-//        if( abs(RA.entry.back().val) < 1e-6)
-//            RA.entry.pop_back();
-//        if(rank==1) std::cout << "final: " << std::endl << RA.entry.back().val << std::endl;
     }
 
     RA.entry.resize(entry_size);

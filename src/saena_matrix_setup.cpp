@@ -102,7 +102,11 @@ int saena_matrix::setup_initial_data2(){
     initial_nnz_l = data.size();
     nnz_t nnz_g_temp = nnz_g;
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
-    if(rank == 0 && (nnz_g_temp != nnz_g) ) printf("error: number of global nonzeros is changed during the matrix update!\n");
+    if((nnz_g_temp != nnz_g) && rank == 0){
+        printf("error: number of global nonzeros is changed during the matrix update!\n");
+        MPI_Finalize();
+        return -1;
+    }
 
     return 0;
 }

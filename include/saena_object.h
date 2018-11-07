@@ -87,7 +87,6 @@ public:
     int coarsen(Grid *grid);
     int coarsen_old(Grid *grid);
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
-//    int coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* R, saena_matrix* Ac);
 
     int fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
