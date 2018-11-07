@@ -255,9 +255,13 @@ int saena_matrix::repartition_nnz_update(){
 
     if(verbose_repartition_update && rank==0) printf("repartition - step 1!\n");
 
-    density = (nnz_g / double(Mbig)) / (Mbig);
+    // *************************** setup_initial_data2 ****************************
+
+    setup_initial_data2();
 
     // *************************** exchange data ****************************
+
+    density = (nnz_g / double(Mbig)) / (Mbig);
 
 //    print_vector(data, -1, "data", comm);
     std::sort(data.begin(), data.end(), row_major);
