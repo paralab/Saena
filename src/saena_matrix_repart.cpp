@@ -60,8 +60,8 @@ int saena_matrix::repartition_nnz_initial(){
 //    if (rank==0) std::cout << "n_buckets = " << n_buckets << ", Mbig = " << Mbig << std::endl;
 
     std::vector<index_t > splitOffset(n_buckets);
-    auto baseOffset = index_t(floor(1.0*Mbig/n_buckets));
-    float offsetRes = float(1.0*Mbig/n_buckets) - baseOffset;
+    auto baseOffset = index_t(floor(1.0 * Mbig / n_buckets));
+    float offsetRes = float(1.0 * Mbig / n_buckets) - baseOffset;
 //    if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
     float offsetResSum = 0;
     splitOffset[0] = 0;
@@ -87,8 +87,6 @@ int saena_matrix::repartition_nnz_initial(){
 
     splitOffset.clear();
     splitOffset.shrink_to_fit();
-
-//    print_vector(firstSplit, 0, "firstSplit", comm);
 
 //    print_vector(data, -1, "data", comm);
 //    std::sort(data.begin(), data.end(), row_major);
