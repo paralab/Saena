@@ -46,7 +46,7 @@ int saena_matrix::setup_initial_data(){
     index_t Mbig_local = 0;
 
     data_unsorted.resize(data_coo.size());
-    for(it=data_coo.begin(); it!=data_coo.end(); ++it){
+    for(it = data_coo.begin(); it != data_coo.end(); ++it){
         data_unsorted[iter] = *it;
         ++iter;
 
@@ -84,8 +84,7 @@ int saena_matrix::setup_initial_data2(){
     // parameters being set in this function:
     // Mbig, initial_nnz_l, nnz_g, data
 
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
+    int rank;
     MPI_Comm_rank(comm, &rank);
 
 //    std::cout << rank << " : " << __func__ << initial_nnz_l << std::endl;
@@ -94,7 +93,7 @@ int saena_matrix::setup_initial_data2(){
     nnz_t iter = 0;
 
     data_unsorted.resize(data_coo.size());
-    for(it=data_coo.begin(); it!=data_coo.end(); ++it){
+    for(it = data_coo.begin(); it != data_coo.end(); ++it){
         data_unsorted[iter] = *it;
         ++iter;
     }

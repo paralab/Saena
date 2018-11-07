@@ -70,10 +70,9 @@ int saena::matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local
 }
 
 int saena::matrix::set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, value_t* val){
-// ordering of val should be first columns, then rows.
+    // ordering of val should be column-major.
     unsigned int ii, jj;
     nnz_t iter = 0;
-
     //todo: add openmp
     for(jj = 0; jj < size_y; jj++) {
         for(ii = 0; ii < size_x; ii++) {
@@ -93,7 +92,6 @@ int saena::matrix::set(index_t i, index_t j, unsigned int size_x, unsigned int s
 
 int saena::matrix::set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local){
     nnz_t ii;
-
     for(ii = 0; ii < nnz_local; ii++) {
         if(val[ii] != 0){
             if(!add_dup)

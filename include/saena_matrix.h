@@ -35,6 +35,7 @@ private:
     bool verbose_saena_matrix = false;
     bool verbose_repartition  = false;
     bool verbose_matrix_setup = false;
+    bool verbose_repartition_update = false;
 
 public:
     std::set<cooEntry_row> data_coo;

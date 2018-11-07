@@ -107,7 +107,7 @@ int saena_matrix::repartition_nnz_initial(){
     // H_l is the histogram of (local) nnz of buckets
     std::vector<index_t> H_l(n_buckets, 0);
 
-    for(nnz_t i=0; i<initial_nnz_l; i++){
+    for(nnz_t i = 0; i < initial_nnz_l; i++){
 //        H_l[lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[i].row)]++;
         least_bucket += lower_bound2(&firstSplit[least_bucket], &firstSplit[last_bucket], data[i].row);
 //        if (rank==0) std::cout << "row = " << data[i].row << ", least_bucket = " << least_bucket << std::endl;
@@ -140,7 +140,7 @@ int saena_matrix::repartition_nnz_initial(){
     index_t procNum = 0;
     split.resize(nprocs+1);
     split[0]=0;
-    for (index_t i=1; i<n_buckets; i++){
+    for (index_t i = 1; i < n_buckets; i++){
         //if (rank==0) std::cout << "(procNum+1)*nnz_g/nprocs = " << (procNum+1)*nnz_g/nprocs << std::endl;
         if (H_g_scan[i] > ((procNum+1)*nnz_g/nprocs)){
             procNum++;
@@ -176,11 +176,10 @@ int saena_matrix::repartition_nnz_initial(){
 
 //        if (rank==1) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
 
+        // todo: check if data is sorted row-major, then remove lower_bound and add if statement.
         std::vector<int> send_size_array(nprocs, 0);
-        for (nnz_t i=0; i<initial_nnz_l; i++){
-//            least_proc = lower_bound2(&split[0], &split[nprocs], data[i].row);
+        for (nnz_t i = 0; i < initial_nnz_l; i++){
             least_proc += lower_bound2(&split[least_proc], &split[last_proc], data[i].row);
-//            if (rank==1) std::cout << "least_proc:" << least_proc << std::endl;
             send_size_array[least_proc]++;
         }
 
@@ -201,7 +200,7 @@ int saena_matrix::repartition_nnz_initial(){
 
         std::vector<int> recv_offset(nprocs);
         recv_offset[0] = 0;
-        for (int i=1; i<nprocs; i++)
+        for (int i = 1; i < nprocs; i++)
             recv_offset[i] = recv_size_array[i-1] + recv_offset[i-1];
 
 //        print_vector(recv_offset, 0, "recv_offset", comm);
@@ -244,13 +243,11 @@ int saena_matrix::repartition_nnz_update(){
     // the following variables of SaenaMatrix class will be set in this function:
     // "nnz_l", "M", "split", "entry"
 
-    bool repartition_verbose = false;
-
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(repartition_verbose && rank==0) printf("repartition - step 1!\n");
+    if(verbose_repartition_update && rank==0) printf("repartition - step 1!\n");
 
     density = (nnz_g / double(Mbig)) / (Mbig);
 
@@ -268,7 +265,7 @@ int saena_matrix::repartition_nnz_update(){
 //    if (rank==1) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
 
     std::vector<int> send_size_array(nprocs, 0);
-    for (nnz_t i=0; i<initial_nnz_l; i++){
+    for (nnz_t i = 0; i < initial_nnz_l; i++){
         least_proc += lower_bound2(&split[least_proc], &split[last_proc], data[i].row);
         send_size_array[least_proc]++;
     }
@@ -289,24 +286,25 @@ int saena_matrix::repartition_nnz_update(){
 
     std::vector<int> recv_offset(nprocs);
     recv_offset[0] = 0;
-    for (int i=1; i<nprocs; i++)
+    for (int i = 1; i < nprocs; i++)
         recv_offset[i] = recv_size_array[i-1] + recv_offset[i-1];
 
 //    print_vector(recv_offset, 0, "recv_offset", comm);
 
-    if(repartition_verbose && rank==0) printf("repartition - step 2!\n");
+    if(verbose_repartition_update && rank==0) printf("repartition - step 2!\n");
 
     unsigned long nnz_l_temp = recv_offset[nprocs-1] + recv_size_array[nprocs-1];
 //    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
     if(nnz_l_temp != nnz_l) printf("error: number of local nonzeros is changed on processor %d during the matrix update!\n", rank);
 
-    if(repartition_verbose && rank==0) printf("repartition - step 3!\n");
+    if(verbose_repartition_update && rank==0) printf("repartition - step 3!\n");
 
 //    entry.clear();
     entry.resize(nnz_l_temp);
     entry.shrink_to_fit();
 
-    MPI_Alltoallv(&data[0], &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(), &entry[0], &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
+    MPI_Alltoallv(&data[0],  &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
+                  &entry[0], &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
 
     std::sort(entry.begin(), entry.end());
 
@@ -318,7 +316,7 @@ int saena_matrix::repartition_nnz_update(){
 
 //    MPI_Barrier(comm); printf("repartition: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l); MPI_Barrier(comm);
 
-    if(repartition_verbose && rank==0) printf("repartition - step 4!\n");
+    if(verbose_repartition_update && rank==0) printf("repartition - step 4!\n");
 
     return 0;
 }

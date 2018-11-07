@@ -905,7 +905,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
     // ************** solve **************
 
-    double t1 = MPI_Wtime();
+//    double t1 = MPI_Wtime();
 
 //    double temp;
 //    dot(rhs, rhs, &temp, comm);
@@ -1007,8 +1007,8 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     if(i == vcycle_num)
         i--;
 
-    double t_dif = MPI_Wtime() - t1;
-    print_time(t_dif, "solve_pcg", comm);
+//    double t_dif = MPI_Wtime() - t1;
+//    print_time(t_dif, "solve_pcg", comm);
 
     if(rank==0){
         std::cout << "\n******************************************************" << std::endl;
