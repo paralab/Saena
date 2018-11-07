@@ -5,9 +5,7 @@
 #include <fstream>
 #include <cstring>
 #include <algorithm>
-//#include <sys/stat.h>
 #include <omp.h>
-//#include <printf.h>
 #include "mpi.h"
 
 
@@ -45,15 +43,14 @@ int saena_matrix::repartition_nnz_initial(){
     // definition of buckets: bucket[i] = [ firstSplit[i] , firstSplit[i+1] ). Number of buckets = n_buckets
     int n_buckets = 0;
 
-    if (Mbig > nprocs*nprocs){
+    if (Mbig > nprocs*nprocs) {
         if (nprocs < 1000)
             n_buckets = nprocs*nprocs;
         else
             n_buckets = 1000*nprocs;
-    }
-    else if(nprocs <= Mbig){
+    } else if(nprocs <= Mbig) {
         n_buckets = Mbig;
-    } else{ // nprocs > Mbig
+    } else { // nprocs > Mbig
         // it may be better to set nprocs=Mbig and work only with the first Mbig processors.
         if(rank == 0)
             std::cout << "number of tasks cannot be greater than the number of rows of the matrix." << std::endl;
@@ -98,8 +95,8 @@ int saena_matrix::repartition_nnz_initial(){
 //    print_vector(data, -1, "data", comm);
 
     index_t least_bucket, last_bucket;
-    least_bucket = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[0].row);
-    last_bucket  = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data.back().row);
+    least_bucket = (index_t) lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[0].row);
+    last_bucket  = (index_t) lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data.back().row);
     last_bucket++;
 
 //    if (rank==0) std::cout << "least_bucket:" << least_bucket << ", last_bucket = " << last_bucket << std::endl;

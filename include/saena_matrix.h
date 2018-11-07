@@ -22,7 +22,16 @@ typedef unsigned long nnz_t;
 typedef double value_t;
 
 class saena_matrix {
-// A matrix of this class has column-major order: ordered first column-wise, then row-wise.
+// A matrix of this class has column-major order.
+
+    // Steps of creating a matrix of this class:
+//    parameter	        type	                    reason
+//    -----------------------------------------------------------------------------------
+//    data_coo	        std::set<cooEntry_row>		add entries by set()
+//    data_unsorted	    std::vector<cooEntry_row>	switch from std::set to std::vector
+//    data_sorted_row   std::vector<cooEntry_row>	sort row-major
+//    data_sorted	    std::vector<cooEntry>		switch from cooEntry_row to cooEntry
+//    data		        std::vector<cooEntry>		remove duplicates
 
 private:
     std::vector<cooEntry_row> data_unsorted;
