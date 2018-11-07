@@ -20,6 +20,12 @@ saena_matrix::saena_matrix(MPI_Comm com) {
 }
 
 
+void saena_matrix::set_comm(MPI_Comm com){
+    comm = com;
+    comm_old = com;
+}
+
+
 int saena_matrix::read_file(const char* Aname){
     read_file(Aname, "");
 }
@@ -389,8 +395,8 @@ int saena_matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local)
 
 int saena_matrix::set2(index_t row, index_t col, value_t val){
 
-    // todo: if there are duplicates with different values on two different processors, what should happen?
-    // todo: which one should be removed? Hari said "do it randomly".
+    // if there are duplicates with different values on two different processors, what should happen?
+    // which one should be removed? Hari said "do it randomly".
 
     cooEntry_row temp_old;
     cooEntry_row temp_new = cooEntry_row(row, col, val);
@@ -527,12 +533,6 @@ int saena_matrix::set3(unsigned int* row, unsigned int* col, double* val, unsign
     return 0;
 }
 */
-
-
-void saena_matrix::set_comm(MPI_Comm com){
-    comm = com;
-    comm_old = com;
-}
 
 
 int saena_matrix::destroy(){
@@ -929,6 +929,52 @@ int saena_matrix::erase_after_decide_shrinking() {
 }
 
 
+int saena_matrix::erase_lazy_update(){
+
+    entry.clear();
+    split.clear();
+    split_old.clear();
+    values_local.clear();
+    row_local.clear();
+    values_remote.clear();
+    row_remote.clear();
+    col_local.clear();
+    col_remote.clear();
+    col_remote2.clear();
+    nnzPerRow_local.clear();
+    nnzPerCol_remote.clear();
+    inv_diag.clear();
+    vdispls.clear();
+    rdispls.clear();
+    recvProcRank.clear();
+    recvProcCount.clear();
+    sendProcRank.clear();
+    sendProcCount.clear();
+    vElementRep_remote.clear();
+    vIndex.clear();
+    vSend.clear();
+    vecValues.clear();
+    vSendULong.clear();
+    vecValuesULong.clear();
+    indicesP_local.clear();
+    indicesP_remote.clear();
+    recvCount.clear();
+    recvCountScan.clear();
+    sendCount.clear();
+    sendCountScan.clear();
+    iter_local_array.clear();
+    iter_remote_array.clear();
+    iter_local_array2.clear();
+    iter_remote_array2.clear();
+    vElement_remote.clear();
+    w_buff.clear();
+
+    freeBoolean = false;
+
+    return 0;
+}
+
+
 int saena_matrix::set_zero(){
 
 #pragma omp parallel for
@@ -1002,12 +1048,12 @@ int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
 
-    printf("jacobi!!!\n");
+//    printf("jacobi!!!\n");
 
     for(int j = 0; j < iter; j++){
         matvec(u, temp);
 
-#pragma omp parallel for
+        #pragma omp parallel for
         for(index_t i = 0; i < M; i++){
             temp[i] -= rhs[i];
             temp[i] *= inv_diag[i] * jacobi_omega;
@@ -1026,17 +1072,17 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
 
 //    eig_max_of_invdiagXA *= 10;
 
-    double alpha = 0.25 * eig_max_of_invdiagXA; //homg: 0.25 * eig_max
+    double alpha = 0.25 * eig_max_of_invdiagXA; // homg: 0.25 * eig_max
     double beta = eig_max_of_invdiagXA;
-    double delta = (beta - alpha)/2;
-    double theta = (beta + alpha)/2;
+    double delta = (beta - alpha) / 2;
+    double theta = (beta + alpha) / 2;
     double s1 = theta/delta;
     double rhok = 1/s1;
     double rhokp1, d1, d2;
 
     // first loop
     residual(u, rhs, res);
-#pragma omp parallel for
+    #pragma omp parallel for
     for(index_t i = 0; i < u.size(); i++){
         d[i] = (-res[i] * inv_diag[i]) / theta;
         u[i] += d[i];
@@ -1051,7 +1097,7 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
         rhok   = rhokp1;
         residual(u, rhs, res);
 
-#pragma omp parallel for
+        #pragma omp parallel for
         for(index_t j = 0; j < u.size(); j++){
             d[j] = ( d1 * d[j] ) + ( d2 * (-res[j] * inv_diag[j]));
             u[j] += d[j];
