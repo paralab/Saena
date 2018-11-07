@@ -202,6 +202,12 @@ int saena::matrix::erase(){
     return 0;
 }
 
+int saena::matrix::erase_lazy_update(){
+    m_pImpl->erase_lazy_update();
+    return 0;
+}
+
+
 void saena::matrix::destroy(){
     m_pImpl->erase();
 //    m_pImpl->~matrix();
