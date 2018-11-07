@@ -45,23 +45,23 @@ int saena_matrix::setup_initial_data(){
     nnz_t iter = 0;
     index_t Mbig_local = 0;
 
+    // read this: https://stackoverflow.com/questions/5034211/c-copy-set-to-vector
     data_unsorted.resize(data_coo.size());
     for(it = data_coo.begin(); it != data_coo.end(); ++it){
         data_unsorted[iter] = *it;
         ++iter;
 
         temp = *it;
-        if(temp.row > Mbig_local)
-            Mbig_local = temp.row;
+        if(temp.col > Mbig_local)
+            Mbig_local = temp.col;
     }
 
     // Mbig is the size of the matrix, which is the maximum of rows and columns.
-    // up to here Mbig_local is the maximum of rows.
-    // data[3*iter+1] is the maximum of columns, since it is sorted based on columns.
+    // Up to here Mbig_local is the maximum of cols.
+    // last element's row is the maximum of rows, since data_coo is sorted row-major.
 
-    iter--;
-    if(data_unsorted[iter].col > Mbig_local)
-        Mbig_local = data_unsorted[iter].col;
+    if(data_unsorted.back().row > Mbig_local)
+        Mbig_local = data_unsorted[iter].row;
 
     MPI_Allreduce(&Mbig_local, &Mbig, 1, MPI_UNSIGNED, MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
@@ -144,6 +144,12 @@ int saena_matrix::remove_duplicates() {
     data_unsorted.clear();
     data_unsorted.shrink_to_fit();
 
+    if(data_sorted_row.empty()) {
+        printf("error: data has no element on process %d! \n", rank);
+        MPI_Finalize();
+        return -1;}
+
+    // switch from cooEntry_row to cooEntry.
     std::vector<cooEntry> data_sorted(data_sorted_row.size());
     memcpy(&data_sorted[0], &data_sorted_row[0], data_sorted_row.size() * sizeof(cooEntry));
 
@@ -179,11 +185,6 @@ int saena_matrix::remove_duplicates() {
 
     data.resize(data_size);
     data.shrink_to_fit();
-
-    if(data.empty()) {
-        printf("error: data has no element on process %d! \n", rank);
-        MPI_Finalize();
-        return -1;}
 
     // receive first element of your left neighbor and check if it is equal to your last element.
     cooEntry first_element_neighbor;
