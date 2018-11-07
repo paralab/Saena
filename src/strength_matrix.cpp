@@ -188,36 +188,37 @@ int strength_matrix::setup_matrix(float connStrength){
 
          numRecvProc = 0;
          numSendProc = 0;
-         for(int i=0; i<nprocs; i++){
-             if(recvCount[i]!=0){
+         for(int j = 0; j < nprocs; j++){
+             if(recvCount[j] != 0){
                  numRecvProc++;
-                 recvProcRank.push_back(i);
-                 recvProcCount.push_back(2*recvCount[i]); // make them double size for prolongation the communication in the aggregation_2_dist function.
+                 recvProcRank.push_back(j);
+                 recvProcCount.push_back(2*recvCount[j]); // make them double size for prolongation the communication in the aggregation_2_dist function.
              }
-             if(vIndexCount[i]!=0){
+             if(vIndexCount[j] != 0){
                  numSendProc++;
-                 sendProcRank.push_back(i);
-                 sendProcCount.push_back(2*vIndexCount[i]); // make them double size for prolongation the communication in the aggregation_2_dist function.
+                 sendProcRank.push_back(j);
+                 sendProcCount.push_back(2*vIndexCount[j]); // make them double size for prolongation the communication in the aggregation_2_dist function.
              }
          }
 
-//    if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
+//        if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
 
          vdispls.resize(nprocs);
          rdispls.resize(nprocs);
          vdispls[0] = 0;
          rdispls[0] = 0;
 
-         for (int i=1; i<nprocs; i++){
-             vdispls[i] = vdispls[i-1] + vIndexCount[i-1];
-             rdispls[i] = rdispls[i-1] + recvCount[i-1];
+         for (int j = 1; j < nprocs; j++){
+             vdispls[j] = vdispls[j-1] + vIndexCount[j-1];
+             rdispls[j] = rdispls[j-1] + recvCount[j-1];
          }
+
          vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
          recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
 
          vIndex.resize(vIndexSize);
-         MPI_Alltoallv(&*vElement_remote.begin(), &recvCount[0], &*rdispls.begin(), MPI_UNSIGNED,
-                       &vIndex[0], &vIndexCount[0], &*vdispls.begin(), MPI_UNSIGNED, comm);
+         MPI_Alltoallv(&*vElement_remote.begin(), &recvCount[0],   &*rdispls.begin(), MPI_UNSIGNED,
+                       &vIndex[0],                &vIndexCount[0], &*vdispls.begin(), MPI_UNSIGNED, comm);
 
          // vSend = vector values to send to other procs
          // vecValues = vector values that received from other procs
@@ -226,22 +227,22 @@ int strength_matrix::setup_matrix(float connStrength){
          vecValues.resize(2*recvSize); // make them double size for prolongation the communication in the aggregation_2_dist function.
 
          // make them double size for prolongation the communication in the aggregation_2_dist function.
-         for (int i=1; i<nprocs; i++){
-             vdispls[i] = 2*vdispls[i];
-             rdispls[i] = 2*rdispls[i];
+         for (int j = 1; j < nprocs; j++){
+             vdispls[j] = 2*vdispls[j];
+             rdispls[j] = 2*rdispls[j];
          }
 
 //         print_vector(vIndex, -1, "vIndex", comm);
 
          // change the indices from global to local
          #pragma omp parallel for
-         for (unsigned int i=0; i<vIndexSize; i++)
-             vIndex[i] -= split[rank];
+         for (unsigned int j = 0; j < vIndexSize; j++)
+             vIndex[j] -= split[rank];
     }
 
     indicesP_local.resize(nnz_l_local);
-    for(i=0; i<nnz_l_local; i++)
-        indicesP_local[i] = i;
+    for(unsigned int j = 0; j < nnz_l_local; j++)
+        indicesP_local[j] = j;
 
     index_t *row_localP = &*row_local.begin();
     std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));

@@ -22,6 +22,7 @@ typedef unsigned long nnz_t;
 typedef double value_t;
 
 class saena_matrix {
+
 // A matrix of this class has column-major order.
 
     // Steps of creating a matrix of this class:
