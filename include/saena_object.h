@@ -157,9 +157,9 @@ public:
     int update1(saena_matrix* A_new);
     int update2(saena_matrix* A_new);
     int update3(saena_matrix* A_new);
-    int solve_pcg_update1(std::vector<value_t>& u);
-    int solve_pcg_update2(std::vector<value_t>& u);
-    int solve_pcg_update3(std::vector<value_t>& u);
+//    int solve_pcg_update1(std::vector<value_t>& u);
+//    int solve_pcg_update2(std::vector<value_t>& u);
+//    int solve_pcg_update3(std::vector<value_t>& u);
 
 //    to write saena matrix to a file use related function from saena_matrix class.
 //    int writeMatrixToFileA(saena_matrix* A, std::string name);

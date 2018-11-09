@@ -81,7 +81,8 @@ int saena_object::update3(saena_matrix* A_new){
     return 0;
 }
 
-
+//int saena_object::solve_pcg_update1
+/*
 int saena_object::solve_pcg_update1(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
@@ -236,6 +237,7 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u){
 
     return 0;
 }
+*/
 
 //int saena_object::solve_pcg_update1
 /*
@@ -391,7 +393,8 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
 }
 */
 
-
+//int saena_object::solve_pcg_update2
+/*
 int saena_object::solve_pcg_update2(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
@@ -546,7 +549,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u){
 
     return 0;
 }
-
+*/
 
 //int saena_object::solve_pcg_update2
 /*
@@ -711,7 +714,8 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new
 }
 */
 
-
+//int saena_object::solve_pcg_update3
+/*
 int saena_object::solve_pcg_update3(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
@@ -866,7 +870,7 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u){
 
     return 0;
 }
-
+*/
 
 //int saena_object::solve_pcg_update3
 /*

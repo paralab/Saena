@@ -428,6 +428,8 @@ int saena::amg::update3(saena::matrix* A_ne){
 }
 
 
+//int saena::amg::solve_pcg_update1 & 2 & 3
+/*
 int saena::amg::solve_pcg_update1(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
@@ -450,6 +452,7 @@ int saena::amg::solve_pcg_update3(std::vector<value_t>& u, saena::options* opts)
     m_pImpl->solve_pcg_update3(u);
     return 0;
 }
+*/
 
 
 void saena::amg::save_to_file(char* name, unsigned long* agg){

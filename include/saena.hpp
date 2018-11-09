@@ -115,9 +115,9 @@ namespace saena {
         int update1(saena::matrix* A_ne); // only update the finest level A, which is the input matrix.
         int update2(saena::matrix* A_ne); // updates grids[i].A for all levels, using the previously made grids[i].P and R.
         int update3(saena::matrix* A_ne); // like update 2, but only update local parts of As.
-        int solve_pcg_update1(std::vector<value_t>& u, saena::options* opts);
-        int solve_pcg_update2(std::vector<value_t>& u, saena::options* opts);
-        int solve_pcg_update3(std::vector<value_t>& u, saena::options* opts);
+//        int solve_pcg_update1(std::vector<value_t>& u, saena::options* opts);
+//        int solve_pcg_update2(std::vector<value_t>& u, saena::options* opts);
+//        int solve_pcg_update3(std::vector<value_t>& u, saena::options* opts);
 
         void save_to_file(char* name, unsigned long* agg); // to save aggregates to a file.
         unsigned long* load_from_file(char* name); // to load aggregates from a file.
