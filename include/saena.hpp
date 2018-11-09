@@ -111,11 +111,13 @@ namespace saena {
         // and one wants to solve B*x = rhs instead of A*x = rhs, then solve_pcg_update can be used and B can be passed as the third argument.
 //        int solve_pcg_update(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update, but updates the LHS with A_new.
-        int solve_pcg_update1(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
-        // similar to solve_pcg_update, but updates grids[i].A for all levels, using the previously made grids[i].P and R.
-        int solve_pcg_update2(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
-        // similar to solve_pcg_update3, but does R*A*P only for the local (diagonal blocks).
-        int solve_pcg_update3(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
+
+        int update1(saena::matrix* A_ne); // only update the finest level A, which is the input matrix.
+        int update2(saena::matrix* A_ne); // updates grids[i].A for all levels, using the previously made grids[i].P and R.
+        int update3(saena::matrix* A_ne); // like update 2, but only update local parts of As.
+        int solve_pcg_update1(std::vector<value_t>& u, saena::options* opts);
+        int solve_pcg_update2(std::vector<value_t>& u, saena::options* opts);
+        int solve_pcg_update3(std::vector<value_t>& u, saena::options* opts);
 
         void save_to_file(char* name, unsigned long* agg); // to save aggregates to a file.
         unsigned long* load_from_file(char* name); // to load aggregates from a file.

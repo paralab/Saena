@@ -410,26 +410,44 @@ int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts){
 }
 
 
-int saena::amg::solve_pcg_update1(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
-    m_pImpl->solve_pcg_update1(u, A_new->get_internal_matrix());
+int saena::amg::update1(saena::matrix* A_ne){
+    m_pImpl->update1(A_ne);
     return 0;
 }
 
 
-int saena::amg::solve_pcg_update2(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
-    m_pImpl->solve_pcg_update2(u, A_new->get_internal_matrix());
+int saena::amg::update2(saena::matrix* A_ne){
+    m_pImpl->update2(A_ne);
     return 0;
 }
 
 
-int saena::amg::solve_pcg_update3(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new){
+int saena::amg::update3(saena::matrix* A_ne){
+    m_pImpl->update3(A_ne);
+    return 0;
+}
+
+
+int saena::amg::solve_pcg_update1(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
-    m_pImpl->solve_pcg_update3(u, A_new->get_internal_matrix());
+    m_pImpl->solve_pcg_update1(u);
+    return 0;
+}
+
+
+int saena::amg::solve_pcg_update2(std::vector<value_t>& u, saena::options* opts){
+    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->solve_pcg_update2(u);
+    return 0;
+}
+
+
+int saena::amg::solve_pcg_update3(std::vector<value_t>& u, saena::options* opts){
+    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->solve_pcg_update3(u);
     return 0;
 }
 
