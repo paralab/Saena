@@ -411,19 +411,19 @@ int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts){
 
 
 int saena::amg::update1(saena::matrix* A_ne){
-    m_pImpl->update1(A_ne);
+    m_pImpl->update1(A_ne->get_internal_matrix());
     return 0;
 }
 
 
 int saena::amg::update2(saena::matrix* A_ne){
-    m_pImpl->update2(A_ne);
+    m_pImpl->update2(A_ne->get_internal_matrix());
     return 0;
 }
 
 
 int saena::amg::update3(saena::matrix* A_ne){
-    m_pImpl->update3(A_ne);
+    m_pImpl->update3(A_ne->get_internal_matrix());
     return 0;
 }
 
