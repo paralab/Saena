@@ -19,7 +19,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 3; // fine grid is level 0.
+    int max_level = 2; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -117,9 +117,6 @@ public:
 
     int solve(std::vector<value_t>& u);
     int solve_pcg(std::vector<value_t>& u);
-    int solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new);
-    int solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new);
-    int solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new);
     int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int smooth(Grid* grid, std::string smoother, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
     int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
@@ -155,6 +152,14 @@ public:
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size, index_t row_offset, std::vector<cooEntry> &B);
+
+    // lazy update functions
+    int update1(saena_matrix* A_new);
+    int update2(saena_matrix* A_new);
+    int update3(saena_matrix* A_new);
+    int solve_pcg_update1(std::vector<value_t>& u);
+    int solve_pcg_update2(std::vector<value_t>& u);
+    int solve_pcg_update3(std::vector<value_t>& u);
 
 //    to write saena matrix to a file use related function from saena_matrix class.
 //    int writeMatrixToFileA(saena_matrix* A, std::string name);

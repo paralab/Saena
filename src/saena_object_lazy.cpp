@@ -10,12 +10,7 @@
 #include <mpi.h>
 
 
-int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new){
-
-    MPI_Comm comm = grids[0].A->comm;
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+int saena_object::update1(saena_matrix* A_new){
 
     // ************** update grids[0].A **************
 //    this part is specific to solve_pcg_update2(), in comparison to solve_pcg().
@@ -26,6 +21,73 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
 
     grids[0].A = A_new;
+
+    return 0;
+}
+
+
+int saena_object::update2(saena_matrix* A_new){
+
+    // ************** update grids[i].A for all levels i **************
+
+    // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
+    // do the same for the next level matrices.
+    A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
+
+    double eigen_temp;
+    grids[0].A = A_new;
+    for(int i = 0; i < max_level; i++){
+        if(grids[i].A->active) {
+            eigen_temp = grids[i].Ac.eig_max_of_invdiagXA;
+            grids[i].Ac.erase();
+            coarsen(&grids[i]);
+            grids[i + 1].A = &grids[i].Ac;
+            grids[i].Ac.eig_max_of_invdiagXA = eigen_temp;
+//            Grid(&grids[i].Ac, max_level, i + 1);
+        }
+    }
+
+    return 0;
+}
+
+
+int saena_object::update3(saena_matrix* A_new){
+
+    // ************** update grids[i].A for all levels i **************
+
+    // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
+    // do the same for the next level matrices.
+    A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
+
+    std::vector<cooEntry> A_diff;
+    local_diff(*grids[0].A, *A_new, A_diff);
+//    print_vector(A_diff, -1, "A_diff", grids[0].A->comm);
+//    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
+
+    grids[0].A = A_new;
+    for(int i = 0; i < max_level; i++){
+        if(grids[i].A->active) {
+//            if(rank==0) printf("_____________________________________\nlevel = %lu \n", i);
+//            grids[i].Ac.print_entry(-1);
+            coarsen_update_Ac(&grids[i], A_diff);
+//            grids[i].Ac.print_entry(-1);
+//            print_vector(A_diff, -1, "A_diff", grids[i].Ac.comm);
+//            print_vector(grids[i+1].A->split, 0, "split", grids[i+1].A->comm);
+        }
+    }
+
+//    saena_matrix* B = grids[0].Ac->get_internal_matrix();
+
+    return 0;
+}
+
+
+int saena_object::solve_pcg_update1(std::vector<value_t>& u){
+
+    MPI_Comm comm = grids[0].A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
     // ************** check u size **************
 
@@ -330,31 +392,12 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
 */
 
 
-int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new){
+int saena_object::solve_pcg_update2(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
-    // ************** update grids[i].A for all levels i **************
-
-    // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
-    // do the same for the next level matrices.
-    A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
-
-    double eigen_temp;
-    grids[0].A = A_new;
-    for(int i = 0; i < max_level; i++){
-        if(grids[i].A->active) {
-            eigen_temp = grids[i].Ac.eig_max_of_invdiagXA;
-            grids[i].Ac.erase();
-            coarsen(&grids[i]);
-            grids[i + 1].A = &grids[i].Ac;
-            grids[i].Ac.eig_max_of_invdiagXA = eigen_temp;
-//            Grid(&grids[i].Ac, max_level, i + 1);
-        }
-    }
 
     // ************** check u size **************
 
@@ -669,37 +712,12 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new
 */
 
 
-int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new){
+int saena_object::solve_pcg_update3(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
-    // ************** update grids[i].A for all levels i **************
-
-    // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
-    // do the same for the next level matrices.
-    A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
-
-    std::vector<cooEntry> A_diff;
-    local_diff(*grids[0].A, *A_new, A_diff);
-//    print_vector(A_diff, -1, "A_diff", grids[0].A->comm);
-//    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
-
-    grids[0].A = A_new;
-    for(int i = 0; i < max_level; i++){
-        if(grids[i].A->active) {
-//            if(rank==0) printf("_____________________________________\nlevel = %lu \n", i);
-//            grids[i].Ac.print_entry(-1);
-            coarsen_update_Ac(&grids[i], A_diff);
-//            grids[i].Ac.print_entry(-1);
-//            print_vector(A_diff, -1, "A_diff", grids[i].Ac.comm);
-//            print_vector(grids[i+1].A->split, 0, "split", grids[i+1].A->comm);
-        }
-    }
-
-//    saena_matrix* B = grids[0].Ac->get_internal_matrix();
 
     // ************** check u size **************
 
