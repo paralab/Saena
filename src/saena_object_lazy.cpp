@@ -1115,11 +1115,14 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
                P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
     }
 
-    prolong_matrix RA_temp(comm); // RA_temp is being used to remove duplicates while pushing back to RA.
+    if(Ac->active)
+        Ac->scale_back_matrix();
 
     // ************************************* RA_temp - A local *************************************
     // Some local and remote elements of RA_temp are computed here using local R and local A.
     // Note: A local means whole entries of A on this process, not just the diagonal block.
+
+    prolong_matrix RA_temp(comm); // RA_temp is being used to remove duplicates while pushing back to RA.
 
     std::sort(diff.begin(), diff.end(), row_major);
 

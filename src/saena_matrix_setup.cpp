@@ -864,6 +864,10 @@ int saena_matrix::openmp_setup() {
 
 int saena_matrix::scale_matrix(){
 
+    // scale matrix: A = D^{-1/2} * A * D^{-1/2}
+    // values_local, values_remote and entry are being updated.
+    // A[i] *= D^{-1/2}[row[i]] * D^{-1/2}[col[i]]
+
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -875,8 +879,8 @@ int saena_matrix::scale_matrix(){
 //    print_vector(inv_diag, -1, "inv_diag", comm);
     std::fill(inv_diag.begin(), inv_diag.end(), 1);
 
-    MPI_Request* requests;
-    MPI_Status* statuses;
+    MPI_Request* requests = nullptr;
+    MPI_Status* statuses  = nullptr;
 
     if(nprocs > 1){
         // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
@@ -916,7 +920,7 @@ int saena_matrix::scale_matrix(){
         // Wait for the receive communication to finish.
         MPI_Waitall(numRecvProc, requests, statuses);
 
-//    print_vector(vecValues, -1, "vecValues", comm);
+//        print_vector(vecValues, -1, "vecValues", comm);
 
         // remote loop
         // -----------
@@ -932,6 +936,118 @@ int saena_matrix::scale_matrix(){
             for (index_t j = 0; j < col_remote_size; ++j) {
                 for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
                     values_remote[iter] *= inv_sq_diag[row_remote[iter]] * vecValues[j]; // D^{-1/2} * A * D^{-1/2}
+                }
+            }
+        }
+    }
+
+    // update the entry vector
+    entry.clear();
+    entry.resize(nnz_l);
+
+    // todo: change the local and remote parameters to cooEntry class to be able to use memcpy here.
+//    memcpy(&*entry.begin(), );
+
+    // copy local entries
+#pragma omp parallel for
+    for(nnz_t i = 0; i < nnz_l_local; i++)
+        entry[i] = cooEntry(row_local[i]+split[rank], col_local[i], values_local[i]);
+
+    if(nprocs > 1){
+        // copy remote entries
+#pragma omp parallel for
+        for(nnz_t i = 0; i < nnz_l_remote; i++)
+            entry[nnz_l_local + i] = cooEntry(row_remote[i]+split[rank], col_remote2[i], values_remote[i]);
+    }
+
+    std::sort(entry.begin(), entry.end());
+
+    if(nprocs > 1){
+        MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
+        delete [] requests;
+        delete [] statuses;
+    }
+
+//    MPI_Barrier(comm); if(rank==0) printf("end of saena_matrix::scale()\n"); MPI_Barrier(comm);
+
+    return 0;
+}
+
+
+int saena_matrix::scale_back_matrix(){
+
+    // scale back matrix: A = D^{1/2} * A * D^{1/2}
+    // values_local, values_remote and entry are being updated.
+    // A[i] /= D^{-1/2}[row[i]] * D^{-1/2}[col[i]]
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
+
+//    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
+
+//    print_vector(inv_diag, -1, "inv_diag", comm);
+    std::fill(inv_diag.begin(), inv_diag.end(), 1);
+
+    MPI_Request* requests = nullptr;
+    MPI_Status* statuses  = nullptr;
+
+    if(nprocs > 1){
+        // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
+        // put the values of thoss indices in vSend to send to other procs.
+#pragma omp parallel for
+        for(index_t i=0;i<vIndexSize;i++)
+            vSend[i] = inv_sq_diag[(vIndex[i])];
+
+//        print_vector(vSend, -1, "vSend", comm);
+
+        requests = new MPI_Request[numSendProc+numRecvProc];
+        statuses = new MPI_Status[numSendProc+numRecvProc];
+
+        // receive and put the remote parts of v in vecValues.
+        // they are received in order: first put the values from the lowest rank matrix, and so on.
+        for(int i = 0; i < numRecvProc; i++)
+            MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+
+        for(int i = 0; i < numSendProc; i++)
+            MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+    }
+
+    // local loop
+    // ----------
+    // compute the on-diagonal part of matvec on each thread and save it in w_local.
+    // then, do a reduction on w_local on all threads, based on a binary tree.
+
+//    index_t* col_p = &col_local[0] - split[rank];
+#pragma omp parallel for
+    for(nnz_t i = 0; i < nnz_l_local; i++) {
+        values_local[i] /= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]];//D^{-1/2} * A * D^{-1/2}
+    }
+
+//    print_vector(values_local, -1, "values_local", comm);
+
+    if(nprocs > 1){
+        // Wait for the receive communication to finish.
+        MPI_Waitall(numRecvProc, requests, statuses);
+
+//        print_vector(vecValues, -1, "vecValues", comm);
+
+        // remote loop
+        // -----------
+        // the col_index of the matrix entry does not matter. do the matvec on the first non-zero col// D^{-1/2} * A * D^{-1/2}umn (j=0).
+        // the corresponding vector element is saved in vecValues[0]. and so on.
+
+#pragma omp parallel
+        {
+            unsigned int i, l;
+            int thread_id = omp_get_thread_num();
+            nnz_t iter = iter_remote_array[thread_id];
+#pragma omp for
+            for (index_t j = 0; j < col_remote_size; ++j) {
+                for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                    values_remote[iter] /= inv_sq_diag[row_remote[iter]] * vecValues[j]; // D^{-1/2} * A * D^{-1/2}
                 }
             }
         }
