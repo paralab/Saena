@@ -17,6 +17,9 @@ int saena_object::update1(saena_matrix* A_new){
 //    the difference between this function and solve_pcg(): the finest level matrix (original LHS) is updated with
 //    the new one.
 
+    std::vector<cooEntry> A_diff;
+    local_diff(*grids[0].A, *A_new, A_diff);
+
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
 
