@@ -19,7 +19,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 10; // fine grid is level 0.
+    int max_level = 8; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -32,7 +32,7 @@ public:
     int postSmooth = 3;
     std::string direct_solver = "SuperLU"; // options: 1- CG, 2- SuperLU
     std::vector<Grid> grids;
-    float connStrength = 0.3; // connection strength parameter: control coarsening aggressiveness
+    float connStrength = 0.2; // connection strength parameter: control coarsening aggressiveness
     int CG_max_iter = 150; //150
     double CG_tol = 1e-14;
     bool repartition = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
