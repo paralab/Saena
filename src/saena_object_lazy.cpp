@@ -1069,6 +1069,14 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 
         print_vector(C, -1, "local_diff", A.comm);
 
+        // remote diff
+        if(rank==1) printf("\nremote diff:\n");
+        for(nnz_t i = 0; i < A.nnz_l_remote; i++){
+            if(!almost_zero(A.values_remote[i] - B.values_remote[i])){
+                if(rank==1) printf("%u \t%u \t%f \n", A.row_remote[i], A.col_remote[i], A.values_remote[i]-B.values_remote[i]);
+            }
+        }
+
         // this part sets the parameters needed to be set until the end of repartition().
 //        C.Mbig = A.Mbig;
 //        C.M = A.M;
