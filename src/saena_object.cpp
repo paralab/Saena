@@ -133,7 +133,7 @@ int saena_object::setup(saena_matrix* A) {
                      (grids[i+1].row_reduction_min > row_reduction_up_thrshld) ||
                      (grids[i+1].row_reduction_min < row_reduction_down_thrshld) ) {
 
-                    max_level = grids[i].currentLevel + 1;
+                    max_level = grids[i].currentLevel;
 //                    grids.resize(max_level);
                     if(rank==0) printf("max_level is set to %d \n", max_level);
                 }
