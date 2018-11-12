@@ -105,6 +105,7 @@ int saena_object::setup(saena_matrix* A) {
             }
 
             if (verbose_setup) {
+                MPI_Comm_rank(grids[i].Ac.comm, &rank);
                 if (rank == 0) {
 //                    MPI_Comm_size(grids[i].Ac.comm, &nprocs);
                     printf("_____________________________\n\n");
