@@ -1067,6 +1067,8 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         }
         C.resize(loc_size);
 
+        print_vector(C, -1, "local_diff", A.comm);
+
         // this part sets the parameters needed to be set until the end of repartition().
 //        C.Mbig = A.Mbig;
 //        C.M = A.M;
