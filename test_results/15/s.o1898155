@@ -73,7 +73,7 @@ _____________________________
 
 size of matrix level 1: 135789
 nnz level 1: 1409371
-row_reduction_min = 0.212170, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.212170, row_reduction_up_thrshld = 0.900000
 rank = 9, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2131, Ac.nnz_l = 22542 
 rank = 10, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2147, Ac.nnz_l = 22887 
 rank = 8, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2104, Ac.nnz_l = 22221 
@@ -176,7 +176,7 @@ _____________________________
 
 size of matrix level 2: 22999
 nnz level 2: 455671
-row_reduction_min = 0.169373, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.169373, row_reduction_up_thrshld = 0.900000
 rank = 12, M = 2102, nnz_l = 22009, nnz_g = 1409371, Ac.M = 347, Ac.nnz_l = 7448 
 rank = 8, M = 2104, nnz_l = 22221, nnz_g = 1409371, Ac.M = 340, Ac.nnz_l = 7187 
 rank = 19, M = 2113, nnz_l = 22459, nnz_g = 1409371, Ac.M = 345, Ac.nnz_l = 7457 
@@ -268,7 +268,7 @@ _____________________________
 
 size of matrix level 3: 5958
 nnz level 3: 124264
-row_reduction_min = 0.259055, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.259055, row_reduction_up_thrshld = 0.900000
 rank = 9, M = 335, nnz_l = 7070, nnz_g = 455671, Ac.M = 70, Ac.nnz_l = 2042 
 rank = 10, M = 339, nnz_l = 7215, nnz_g = 455671, Ac.M = 65, Ac.nnz_l = 1802 
 rank = 11, M = 325, nnz_l = 6970, nnz_g = 455671, Ac.M = 68, Ac.nnz_l = 2035 
@@ -382,7 +382,7 @@ _____________________________
 
 size of matrix level 4: 3647
 nnz level 4: 34655
-row_reduction_min = 0.612118, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.612118, row_reduction_up_thrshld = 0.900000
 
 Aggregation: level 4
 min: 0.00150919
@@ -475,7 +475,7 @@ _____________________________
 
 size of matrix level 5: 3320
 nnz level 5: 15276
-row_reduction_min = 0.910337, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.910337, row_reduction_up_thrshld = 0.900000
 
 Setup:
 min: 2.18058

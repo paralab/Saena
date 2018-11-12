@@ -87,7 +87,7 @@ _____________________________
 
 size of matrix level 1: 135789
 nnz level 1: 1409371
-row_reduction_min = 0.212170, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.212170, row_reduction_up_thrshld = 0.900000
 rank = 11, M = 10000, nnz_l = 49880, nnz_g = 3184024, Ac.M = 2110, Ac.nnz_l = 22224 
 rank = 10, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2147, Ac.nnz_l = 22887 
 rank = 8, M = 10000, nnz_l = 49870, nnz_g = 3184024, Ac.M = 2104, Ac.nnz_l = 22221 
@@ -179,7 +179,7 @@ _____________________________
 
 size of matrix level 2: 22999
 nnz level 2: 455671
-row_reduction_min = 0.169373, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.169373, row_reduction_up_thrshld = 0.900000
 rank = 10, M = 2147, nnz_l = 22887, nnz_g = 1409371, Ac.M = 339, Ac.nnz_l = 7215 
 rank = 15, M = 2123, nnz_l = 22545, nnz_g = 1409371, Ac.M = 334, Ac.nnz_l = 7125 
 rank = 12, M = 2102, nnz_l = 22009, nnz_g = 1409371, Ac.M = 347, Ac.nnz_l = 7448 
@@ -273,7 +273,7 @@ _____________________________
 
 size of matrix level 3: 5958
 nnz level 3: 124264
-row_reduction_min = 0.259055, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.259055, row_reduction_up_thrshld = 0.900000
 rank = 13, M = 340, nnz_l = 7383, nnz_g = 455671, Ac.M = 71, Ac.nnz_l = 2206 
 rank = 12, M = 347, nnz_l = 7448, nnz_g = 455671, Ac.M = 66, Ac.nnz_l = 1818 
 rank = 8, M = 340, nnz_l = 7187, nnz_g = 455671, Ac.M = 61, Ac.nnz_l = 1547 
@@ -382,7 +382,7 @@ _____________________________
 
 size of matrix level 4: 3647
 nnz level 4: 34655
-row_reduction_min = 0.612118, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.612118, row_reduction_up_thrshld = 0.900000
 
 Aggregation: level 4
 min: 0.00172901
@@ -415,7 +415,7 @@ _____________________________
 
 size of matrix level 5: 3255
 nnz level 5: 6225
-row_reduction_min = 0.892514, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.892514, row_reduction_up_thrshld = 0.900000
 
 Aggregation: level 5
 min: 0.000718832
@@ -448,7 +448,7 @@ _____________________________
 
 size of matrix level 6: 3211
 nnz level 6: 3421
-row_reduction_min = 0.986482, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.986482, row_reduction_up_thrshld = 0.900000
 
 Setup:
 min: 2.09937

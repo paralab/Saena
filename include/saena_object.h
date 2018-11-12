@@ -24,7 +24,8 @@ public:
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
     // which means the number of rows was not reduced much.
-    double row_reduction_threshold = 0.90;
+    double row_reduction_up_thrshld = 0.90;
+    double row_reduction_down_thrshld = 0.10;
     int vcycle_num = 500;
     double relative_tolerance = 1e-10;
     std::string smoother = "chebyshev"; // choices: "jacobi", "chebyshev"

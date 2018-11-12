@@ -102,16 +102,16 @@ int saena_object::setup(saena_matrix* A) {
 //                    double t2 = omp_get_wtime();
 //                    if(verbose_level_setup) print_time(t1, t2, "find_eig(): ", A->comm);
                 }
-            }
 
-            if (verbose_setup) {
-                MPI_Comm_rank(grids[i].Ac.comm, &rank_new);
-                if (rank_new == 0) {
+                if (verbose_setup) {
+                    MPI_Comm_rank(grids[i].Ac.comm, &rank_new);
+                    if (rank_new == 0) {
 //                    MPI_Comm_size(grids[i].Ac.comm, &nprocs);
-                    printf("_____________________________\n\n");
-                    printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
-                           grids[i + 1].currentLevel, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
-                           grids[i + 1].A->density);
+                        printf("_____________________________\n\n");
+                        printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
+                               grids[i + 1].currentLevel, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
+                               grids[i + 1].A->density);
+                    }
                 }
             }
 
@@ -122,16 +122,20 @@ int saena_object::setup(saena_matrix* A) {
 //                total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
                 grids[i+1].row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
 
-//                if(rank==0) printf("row_reduction_min = %f, total_row_reduction = %f\n", row_reduction_min, total_row_reduction);
+                if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold);
 //                if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
 //                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
 //                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
-//                if(rank==0) printf("row_reduction_min = %f, row_reduction_threshold = %f \n", row_reduction_min, row_reduction_threshold);
+//                if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f \n", row_reduction_min, row_reduction_up_thrshld);
 //                if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
 
-                if ( (grids[i].Ac.Mbig < least_row_threshold) || (grids[i+1].row_reduction_min > row_reduction_threshold) ) {
+                if ( (grids[i].Ac.Mbig < least_row_threshold) ||
+                     (grids[i+1].row_reduction_min > row_reduction_up_thrshld) ||
+                     (grids[i+1].row_reduction_min < row_reduction_down_thrshld) ) {
+
                     max_level = grids[i].currentLevel + 1;
 //                    grids.resize(max_level);
+                    if(rank==0) printf("max_level is set to %d \n", max_level);
                 }
             }
         }
@@ -151,7 +155,7 @@ int saena_object::setup(saena_matrix* A) {
     float row_reduction_min_send = grids[i].row_reduction_min;
     MPI_Allreduce(&row_reduction_min_send, &grids[i].row_reduction_min, 1, MPI_FLOAT, MPI_MAX, grids[0].A->comm);
     // delete the coarsest level, if the size is not reduced much.
-    if (grids[i].row_reduction_min > row_reduction_threshold) {
+    if (grids[i].row_reduction_min > row_reduction_up_thrshld) {
         grids.pop_back();
         max_level--;
         // todo: when destroy() is written, delete P and R by that.

@@ -40,7 +40,7 @@ _____________________________
 
 size of matrix level 1: 2144040
 nnz level 1: 22685264
-row_reduction_min = 0.209379, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.209379, row_reduction_up_thrshld = 0.900000
 
 Aggregation: level 1
 min: 0.156398
@@ -70,7 +70,7 @@ _____________________________
 
 size of matrix level 2: 331908
 nnz level 2: 7393520
-row_reduction_min = 0.154805, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.154805, row_reduction_up_thrshld = 0.900000
 
 Aggregation: level 2
 min: 0.0212522
@@ -100,7 +100,7 @@ _____________________________
 
 size of matrix level 3: 56907
 nnz level 3: 2056147
-row_reduction_min = 0.171454, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.171454, row_reduction_up_thrshld = 0.900000
 
 Aggregation: level 3
 min: 0.0200701
@@ -130,7 +130,7 @@ _____________________________
 
 size of matrix level 4: 17160
 nnz level 4: 288030
-row_reduction_min = 0.301545, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.301545, row_reduction_up_thrshld = 0.900000
 
 Aggregation: level 4
 min: 0.00466704
@@ -160,7 +160,7 @@ _____________________________
 
 size of matrix level 5: 13270
 nnz level 5: 46886
-row_reduction_min = 0.773310, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.773310, row_reduction_up_thrshld = 0.900000
 
 Aggregation: level 5
 min: 0.0024972
@@ -190,7 +190,7 @@ _____________________________
 
 size of matrix level 6: 12874
 nnz level 6: 17708
-row_reduction_min = 0.970158, row_reduction_threshold = 0.900000 
+row_reduction_min = 0.970158, row_reduction_up_thrshld = 0.900000
 
 Setup:
 min: 36.8466
