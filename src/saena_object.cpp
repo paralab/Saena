@@ -122,7 +122,7 @@ int saena_object::setup(saena_matrix* A) {
 //                total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
                 grids[i+1].row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
 
-                if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold);
+//                if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold);
 //                if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
 //                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
 //                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
@@ -135,7 +135,7 @@ int saena_object::setup(saena_matrix* A) {
 
                     max_level = grids[i].currentLevel;
 //                    grids.resize(max_level);
-                    if(rank==0) printf("max_level is set to %d \n", max_level);
+//                    if(rank==0) printf("max_level is set to %d \n", max_level);
                 }
             }
         }
