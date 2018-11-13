@@ -227,7 +227,6 @@ int saena_matrix::matrix_setup() {
     // before using this function the following parameters of saena_matrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
-    // todo: here: check if there is another if(active) before calling this function.
     if(active) {
         int nprocs, rank;
         MPI_Comm_size(comm, &nprocs);

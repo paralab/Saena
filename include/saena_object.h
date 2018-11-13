@@ -149,7 +149,6 @@ public:
     int find_eig(saena_matrix& A);
 //    int find_eig_Elemental(saena_matrix& A);
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
-    int matrix_diff(saena_matrix &A, saena_matrix &B);
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
     int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);

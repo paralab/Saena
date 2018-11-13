@@ -1092,8 +1092,9 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 
-        if(A.nnz_g != B.nnz_g)
+        if(A.nnz_g != B.nnz_g){
             if(rank==0) std::cout << "error: local_diff(): A.nnz_g != B.nnz_g" << std::endl;
+        }
 
 //        A.print_entry(-1);
 //        B.print_entry(-1);
@@ -1110,9 +1111,10 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         }
         C.resize(loc_size);
 
-        print_vector(C, -1, "local_diff", A.comm);
+//        print_vector(C, -1, "local_diff", A.comm);
 
         // remote diff
+        // -----------------------------------------
 //        std::vector<cooEntry> remote_diff;
 //        if(rank==1) printf("\nremote diff:\n");
 //        for(nnz_t i = 0; i < A.nnz_l_remote; i++){
@@ -1124,6 +1126,7 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 //        print_vector(remote_diff, -1, "remote_diff", A.comm);
 
         // this part sets the parameters needed to be set until the end of repartition().
+        // -----------------------------------------
 //        C.Mbig = A.Mbig;
 //        C.M = A.M;
 //        C.split = A.split;
@@ -1140,38 +1143,6 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 //        std::sort(&C.indicesP_local[0], &C.indicesP_local[C.nnz_l_local], sort_indices(row_localP));
 
 //        C.matrix_setup();
-    }
-
-    return 0;
-}
-
-
-int saena_object::matrix_diff(saena_matrix &A, saena_matrix &B){
-
-    if(A.active){
-
-        MPI_Comm comm = A.comm;
-        int nprocs, rank;
-        MPI_Comm_size(comm, &nprocs);
-        MPI_Comm_rank(comm, &rank);
-
-        if(A.nnz_g != B.nnz_g)
-            if(rank==0) std::cout << "error: matrix_diff(): A.nnz_g != B.nnz_g" << std::endl;
-
-//        A.print_entry(-1);
-//        B.print_entry(-1);
-
-        MPI_Barrier(comm);
-        if(rank==0) printf("\nmatrix_diff: \n");
-        MPI_Barrier(comm);
-
-        if(rank==1){
-            for(nnz_t i = 0; i < A.nnz_l; i++){
-                if(!almost_zero(A.entry[i].val - B.entry[i].val)){
-                    std::cout << A.entry[i] << "\t" << B.entry[i] << "\t" << A.entry[i].val - B.entry[i].val << std::endl;
-                }
-            }
-        }
     }
 
     return 0;

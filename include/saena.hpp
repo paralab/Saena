@@ -141,6 +141,7 @@ namespace saena {
     int laplacian3D_set_rhs_zero(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
     int laplacian3D_old(saena::matrix* A, unsigned int dof_local);
     int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth);
+    int matrix_diff(saena::matrix &A, saena::matrix &B);
 
     int read_vector_file(std::vector<value_t>& v, saena::matrix &A, char *file, MPI_Comm comm);
 }
