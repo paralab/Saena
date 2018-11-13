@@ -241,10 +241,10 @@ int saena_matrix::repartition_nnz_initial(){
 
 
 int saena_matrix::repartition_nnz_update(){
-    // before using this function these variables of SaenaMatrix should be set:
+    // before using this function these variables of saena_matrix should be set:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
 
-    // the following variables of SaenaMatrix class will be set in this function:
+    // the following variables of saena_matrix class will be set in this function:
     // "nnz_l", "M", "split", "entry"
 
     int nprocs, rank;
@@ -1170,14 +1170,14 @@ int saena_matrix::repartition_nnz_update_Ac(){
                 temp_new = entry_temp[i];
                 temp_new.val += temp_old.val;
 
-                std::set<cooEntry>::iterator hint = p.first;
+                auto hint = p.first; // std::set<cooEntry>::iterator
                 hint++;
                 entry_set.erase(p.first);
                 entry_set.insert(hint, temp_new);
             }
             else{
-                if(rank==0) printf("Error: entry to update is not available in repartition5()! \n");
-                std::cout << entry_temp[i] << std::endl;
+                printf("Error: entry to update is not available in saena_matrix::repartition_nnz_update_Ac(): \n");
+                std::cout << "this entry:" << entry_temp[i] << std::endl << std::endl;
             }
         }
     }

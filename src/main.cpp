@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 
     // *************************** AMG - Solve ****************************
-
+/*
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]){
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
     print_time(t1, t2, "Solve:", comm);
-
+*/
 //    print_vector(u, -1, "u", comm);
 
     // write the Laplacian matrix to file.
@@ -347,6 +347,31 @@ int main(int argc, char* argv[]){
         }
     }
 */
+
+    // *************************** test for lazy update functions ****************************
+
+    saena_matrix* A_saena = A.get_internal_matrix();
+    std::vector<index_t> rown(A.get_local_nnz());
+    std::vector<index_t> coln(A.get_local_nnz());
+    std::vector<value_t> valn(A.get_local_nnz());
+    for(nnz_t i = 0; i < A.get_local_nnz(); i++){
+        rown[i] = A_saena->entry[i].row;
+        coln[i] = A_saena->entry[i].col;
+        valn[i] = 3* A_saena->entry[i].val;
+//        valn[i] = 0.33;
+//        if(i<50 && rank==1) printf("%f \t%f \n", A_saena->entry[i].val, valn[i]);
+    }
+
+    saena::matrix A_new(comm);
+    A_new.set(&rown[0], &coln[0], &valn[0], rown.size());
+    A_new.assemble();
+//    solver.update1(&A_new);
+
+//    if(rank==1){
+//        for(nnz_t i = 0; i < 50; i++){
+//            std::cout << A.get_internal_matrix()->entry[i] << "\t" << A_new.get_internal_matrix()->entry[i] << std::endl;
+//        }
+//    }
 
     // *************************** finalize ****************************
 

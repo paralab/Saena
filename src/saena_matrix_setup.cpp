@@ -421,19 +421,13 @@ int saena_matrix::matrix_setup_update() {
     values_local.clear();
     values_remote.clear();
 
-    if(!entry.empty()){
-        if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
-            values_local.push_back(entry[0].val);
-        } else {
-            values_remote.push_back(entry[0].val);
-        }
-    }
-
-    for (nnz_t i = 1; i < nnz_l; i++) {
-        if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
-            values_local.push_back(entry[i].val);
-        } else {
-            values_remote.push_back(entry[i].val);
+    if(!entry.empty()) {
+        for (nnz_t i = 0; i < nnz_l; i++) {
+            if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
+                values_local.emplace_back(entry[i].val);
+            } else {
+                values_remote.emplace_back(entry[i].val);
+            }
         }
     }
 
@@ -1094,23 +1088,25 @@ int saena_matrix::inverse_diag() {
     inv_diag.assign(M, 0);
     inv_sq_diag.assign(M, 0);
 
-    for(nnz_t i=0; i<nnz_l; i++){
+    if(!entry.empty()) {
+        for (nnz_t i = 0; i < nnz_l; i++) {
 //        if(rank==4) printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
 
-        if(entry[i].row == entry[i].col){
-            if(entry[i].val != 0){
-                temp = 1.0/entry[i].val;
-                inv_diag[entry[i].row-split[rank]]    = temp;
-                inv_sq_diag[entry[i].row-split[rank]] = sqrt(temp);
-                if(fabs(temp) > highest_diag_val) {
-                    highest_diag_val = fabs(temp);
+            if (entry[i].row == entry[i].col) {
+                if (entry[i].val != 0) {
+                    temp = 1.0 / entry[i].val;
+                    inv_diag[entry[i].row - split[rank]] = temp;
+                    inv_sq_diag[entry[i].row - split[rank]] = sqrt(temp);
+                    if (fabs(temp) > highest_diag_val) {
+                        highest_diag_val = fabs(temp);
+                    }
+                } else {
+                    // there is no zero entry in the matrix (sparse), but just to be sure, this part is added.
+                    if (rank == 0)
+                        printf("Error: there is a zero diagonal element (at row index = %u)\n", entry[i].row);
+                    MPI_Finalize();
+                    return -1;
                 }
-//                if(rank==0) std::cout << i << "\t" << entry[i] << "\t" << temp << std::endl;
-            } else{
-                // there is no zero entry in the matrix (sparse), but just to be sure this part is added.
-                if(rank==0) printf("Error: there is a zero diagonal element (at row index = %u)\n", entry[i].row);
-                MPI_Finalize();
-                return -1;
             }
         }
     }

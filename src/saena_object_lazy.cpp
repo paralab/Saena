@@ -13,12 +13,27 @@
 int saena_object::update1(saena_matrix* A_new){
 
     // ************** update grids[0].A **************
-//    this part is specific to solve_pcg_update2(), in comparison to solve_pcg().
 //    the difference between this function and solve_pcg(): the finest level matrix (original LHS) is updated with
 //    the new one.
 
+    MPI_Comm comm = grids[0].A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    //todo: delete this part!
+//    if(rank==0){
+//        for(nnz_t i = 0; i < A_new->nnz_l; i++){
+//            std::cout << grids[0].A->entry[i] << "\t" << A_new->entry[i] << std::endl;
+//        }
+//    }
+
     std::vector<cooEntry> A_diff;
     local_diff(*grids[0].A, *A_new, A_diff);
+
+
+
+
 
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
@@ -56,7 +71,32 @@ int saena_object::update2(saena_matrix* A_new){
 
 int saena_object::update3(saena_matrix* A_new){
 
-    // ************** update grids[i].A for all levels i **************
+    // 1- replace grids[0].A with A_new.
+    // 2- for grids[i].A for i = 1,2,... update parts of the diagonal blocks **************
+
+    // steps of update3:
+    // ------------------------------------------------
+//    A_diff = local(grids[0].A) - local(A_new)
+//    grids[0].A = A_new
+//
+//    for(int i = 0; i < max_level; i++){
+//        if(grids[i].A->active) {
+//            // after A_diff is used in coarsen_update_Ac, it will be updated at the end of that function
+//            // to be the diff for the next level.
+//            coarsen_update_Ac(&grids[i], A_diff);
+//        }
+//    }
+//
+//    grids[i].Ac->entry_temp  <- coarsen_update_Ac(&grids[i], A_diff);
+//    Ac->repartition_nnz_update_Ac();
+//    std::set<cooEntry> entry_set(entry.begin(), entry.end());
+//    add entry_temp to entry_set. (entry_temp are duplicates in entry_set. So, add duplicates.)
+//    entry <- entry_set
+//    Ac->matrix_setup();
+//    Ac->entry_temp is actually diff which should be used for the next level:
+//    diff.clear();
+//    diff.swap(Ac->entry_temp);
+    // ------------------------------------------------
 
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     // do the same for the next level matrices.
@@ -67,19 +107,16 @@ int saena_object::update3(saena_matrix* A_new){
 //    print_vector(A_diff, -1, "A_diff", grids[0].A->comm);
 //    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
 
-    grids[0].A = A_new;
+    grids[0].A = A_new; // the whole matrix A for level 0 should be updated with the updated matrix.
     for(int i = 0; i < max_level; i++){
         if(grids[i].A->active) {
 //            if(rank==0) printf("_____________________________________\nlevel = %lu \n", i);
 //            grids[i].Ac.print_entry(-1);
-            coarsen_update_Ac(&grids[i], A_diff);
+            coarsen_update_Ac(&grids[i], A_diff); // A_diff will be updated inside coarsen_update_Ac to be the diff for the next level.
 //            grids[i].Ac.print_entry(-1);
 //            print_vector(A_diff, -1, "A_diff", grids[i].Ac.comm);
-//            print_vector(grids[i+1].A->split, 0, "split", grids[i+1].A->comm);
         }
     }
-
-//    saena_matrix* B = grids[0].Ac->get_internal_matrix();
 
     return 0;
 }
@@ -1058,12 +1095,15 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         if(A.nnz_g != B.nnz_g)
             if(rank==0) std::cout << "error: local_diff(): A.nnz_g != B.nnz_g" << std::endl;
 
+//        A.print_entry(-1);
+//        B.print_entry(-1);
+
 //        C.clear();
         C.resize(A.nnz_l_local);
         index_t loc_size = 0;
         for(nnz_t i = 0; i < A.nnz_l_local; i++){
             if(!almost_zero(A.values_local[i] - B.values_local[i])){
-//                if(rank==1) printf("%u \t%u \t%f \n", A.row_local[i], A.col_local[i], A.values_local[i]-B.values_local[i]);
+//                if(rank==1) printf("%u \t%u \t%f \t%f \n", A.row_local[i], A.col_local[i], A.values_local[i], B.values_local[i]);
                 C[loc_size] = cooEntry(A.row_local[i], A.col_local[i], B.values_local[i]-A.values_local[i]);
                 loc_size++;
             }
@@ -1073,16 +1113,15 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         print_vector(C, -1, "local_diff", A.comm);
 
         // remote diff
-        std::vector<cooEntry> remote_diff;
-        if(rank==1) printf("\nremote diff:\n");
-        for(nnz_t i = 0; i < A.nnz_l_remote; i++){
-            if(!almost_zero(A.values_remote[i] - B.values_remote[i])){
-                if(rank==1) printf("%u \t%u \t%f \n", A.row_remote[i], A.col_remote[i], A.values_remote[i]-B.values_remote[i]);
-                remote_diff.emplace_back(cooEntry(A.row_remote[i], A.col_remote[i], B.values_remote[i]-A.values_remote[i]));
-            }
-        }
-
-        print_vector(remote_diff, -1, "remote_diff", A.comm);
+//        std::vector<cooEntry> remote_diff;
+//        if(rank==1) printf("\nremote diff:\n");
+//        for(nnz_t i = 0; i < A.nnz_l_remote; i++){
+//            if(!almost_zero(A.values_remote[i] - B.values_remote[i])){
+//                if(rank==1) printf("%u \t%u \t%f \n", A.row_remote[i], A.col_remote[i], A.values_remote[i]-B.values_remote[i]);
+//                remote_diff.emplace_back(cooEntry(A.row_remote[i], A.col_remote[i], B.values_remote[i]-A.values_remote[i]));
+//            }
+//        }
+//        print_vector(remote_diff, -1, "remote_diff", A.comm);
 
         // this part sets the parameters needed to be set until the end of repartition().
 //        C.Mbig = A.Mbig;
@@ -1107,6 +1146,286 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 }
 
 
+int saena_object::matrix_diff(saena_matrix &A, saena_matrix &B){
+
+    if(A.active){
+
+        MPI_Comm comm = A.comm;
+        int nprocs, rank;
+        MPI_Comm_size(comm, &nprocs);
+        MPI_Comm_rank(comm, &rank);
+
+        if(A.nnz_g != B.nnz_g)
+            if(rank==0) std::cout << "error: matrix_diff(): A.nnz_g != B.nnz_g" << std::endl;
+
+//        A.print_entry(-1);
+//        B.print_entry(-1);
+
+        MPI_Barrier(comm);
+        if(rank==0) printf("\nmatrix_diff: \n");
+        MPI_Barrier(comm);
+
+        if(rank==1){
+            for(nnz_t i = 0; i < A.nnz_l; i++){
+                if(!almost_zero(A.entry[i].val - B.entry[i].val)){
+                    std::cout << A.entry[i] << "\t" << B.entry[i] << "\t" << A.entry[i].val - B.entry[i].val << std::endl;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
+
+    // This function computes delta_Ac = RAP in which A is diff = diag_block(A) - diag_block(A_new) at each level.
+    // Then, updates Ac with the delta_Ac. Finally, it saves delta_Ac in diff for doing the same operation
+    // for the next level.
+
+    saena_matrix *A    = grid->A;
+    prolong_matrix *P  = &grid->P;
+    restrict_matrix *R = &grid->R;
+    saena_matrix *Ac   = &grid->Ac;
+
+    MPI_Comm comm = A->comm;
+//    Ac->active_old_comm = true;
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(verbose_coarsen2){
+        MPI_Barrier(comm);
+        printf("start of coarsen2: rank = %d, nprocs: %d, P.nnz_l = %lu, P.nnz_g = %lu, R.nnz_l = %lu,"
+               " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n\n", rank, nprocs,
+               P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
+    }
+
+    if(Ac->active)
+        Ac->scale_back_matrix();
+
+    // ************************************* RA_temp - A local *************************************
+    // Some local and remote elements of RA_temp are computed here using local R and local A.
+    // Note: A local means whole entries of A on this process, not just the diagonal block.
+
+    prolong_matrix RA_temp(comm); // RA_temp is being used to remove duplicates while pushing back to RA.
+
+    std::sort(diff.begin(), diff.end(), row_major);
+
+    // alloacted memory for AMaxM, instead of A.M to avoid reallocation of memory for when receiving data from other procs.
+    unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*A->M);
+    std::fill(&AnnzPerRow[0], &AnnzPerRow[A->M], 0);
+    for(nnz_t i = 0; i < diff.size(); i++){
+//        if(rank==0) printf("%u\n", diff[i].row);
+        AnnzPerRow[diff[i].row]++;
+    }
+
+//    MPI_Barrier(A->comm);
+//    if(rank==0){
+//        printf("rank = %d, AnnzPerRow: \n", rank);
+//        for(long i=0; i<A->M; i++)
+//            printf("%lu \t%u \n", i, AnnzPerRow[i]);}
+
+    // alloacted memory for AMaxM+1, instead of A.M+1 to avoid reallocation of memory for when receiving data from other procs.
+    unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(A->M+1));
+    AnnzPerRowScan[0] = 0;
+    for(index_t i = 0; i < A->M; i++){
+        AnnzPerRowScan[i+1] = AnnzPerRowScan[i] + AnnzPerRow[i];
+//        if(rank==1) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i+A->split[rank], AnnzPerRow[i], AnnzPerRowScan[i+1]);
+    }
+
+    if(verbose_coarsen2){
+        MPI_Barrier(comm); printf("coarsen2: step 1: rank = %d\n", rank); MPI_Barrier(comm);}
+
+    index_t jstart, jend;
+    if(!R->entry_local.empty()) {
+        for (index_t i = 0; i < R->nnz_l_local; i++) {
+//            if(rank==0) std::cout << "i=" << i << "\tR[" << R->entry_local[i].row << ", " << R->entry_local[i].col
+//                                  << "]=" << R->entry_local[i].val << std::endl;
+            jstart = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]];
+            jend   = AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1];
+            if(jend - jstart == 0) continue;
+            for (index_t j = jstart; j < jend; j++) {
+//                if(rank==0) std::cout << "i=" << i << ", j=" << j
+//                                      << "   \tdiff[" << diff[j].row
+//                                      << ", " << diff[j].col << "]=\t" << diff[j].val
+//                                      << "         \tR[" << R->entry_local[i].row << ", " << R->entry_local[i].col
+//                                      << "]=\t" << R->entry_local[i].val << std::endl;
+                RA_temp.entry.emplace_back(cooEntry(R->entry_local[i].row,
+                                                 diff[j].col,
+                                                 R->entry_local[i].val * diff[j].val));
+            }
+        }
+    }
+
+//    print_vector(RA_temp.entry, -1, "RA_temp.entry", comm);
+
+    free(AnnzPerRow);
+    free(AnnzPerRowScan);
+
+    if(verbose_coarsen2){
+        MPI_Barrier(comm); printf("coarsen2: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
+
+    std::sort(RA_temp.entry.begin(), RA_temp.entry.end());
+
+//    print_vector(RA_temp.entry, -1, "RA_temp.entry: after sort", comm);
+
+    prolong_matrix RA(comm);
+
+    // remove duplicates.
+    unsigned long entry_size = 0;
+    for(nnz_t i=0; i<RA_temp.entry.size(); i++){
+        RA.entry.push_back(RA_temp.entry[i]);
+        while(i<RA_temp.entry.size()-1 && RA_temp.entry[i] == RA_temp.entry[i+1]){ // values of entries with the same row and col should be added.
+            RA.entry.back().val += RA_temp.entry[i+1].val;
+            i++;
+        }
+//        if(rank==1) std::cout << std::endl << "final: " << std::endl << RA.entry[RA.entry.size()-1].val << std::endl;
+        entry_size++;
+    }
+
+//    print_vector(RA.entry, -1, "RA.entry", comm);
+
+    if(verbose_coarsen2){
+        MPI_Barrier(comm); printf("coarsen2: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
+
+    // ************************************* RAP_temp - P local *************************************
+    // Some local and remote elements of RAP_temp are computed here.
+    // Note: P local means whole entries of P on this process, not just the diagonal block.
+
+    prolong_matrix RAP_temp(comm); // RAP_temp is being used to remove duplicates while pushing back to RAP.
+
+    unsigned int* PnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*P->M);
+    std::fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
+    for(nnz_t i=0; i<P->nnz_l_local; i++){
+//        if(rank==1) printf("%u\n", P->entry_local[i].row);
+        PnnzPerRow[P->entry_local[i].row]++;
+    }
+
+//    if(rank==1) for(long i=0; i<P->M; i++) std::cout << PnnzPerRow[i] << std::endl;
+
+    unsigned int* PnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(P->M+1));
+    PnnzPerRowScan[0] = 0;
+    for(nnz_t i = 0; i < P->M; i++){
+        PnnzPerRowScan[i+1] = PnnzPerRowScan[i] + PnnzPerRow[i];
+//        if(rank==2) printf("i=%lu, PnnzPerRow=%d, PnnzPerRowScan = %d\n", i, PnnzPerRow[i], PnnzPerRowScan[i]);
+    }
+
+    long procNum = 0;
+    std::vector<nnz_t> left_block_nnz(nprocs, 0);
+    if(!RA.entry.empty()){
+        for (nnz_t i = 0; i < RA.entry.size(); i++) {
+            procNum = lower_bound2(&P->split[0], &P->split[nprocs], RA.entry[i].col);
+            left_block_nnz[procNum]++;
+//        if(rank==1) printf("rank=%d, col = %lu, procNum = %ld \n", rank, R->entry_remote[0].col, procNum);
+        }
+    }
+
+    std::vector<nnz_t> left_block_nnz_scan(nprocs+1);
+    left_block_nnz_scan[0] = 0;
+    for(int i = 0; i < nprocs; i++)
+        left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
+
+//    print_vector(left_block_nnz_scan, -1, "left_block_nnz_scan", comm);
+
+    // find row-wise ordering for A and save it in indicesP
+//    std::vector<nnz_t> indicesP_Prolong(P->nnz_l_local);
+//    for(nnz_t i=0; i<P->nnz_l_local; i++)
+//        indicesP_Prolong[i] = i;
+//    std::sort(&indicesP_Prolong[0], &indicesP_Prolong[P->nnz_l], sort_indices2(&*P->entry.begin()));
+
+    //....................
+    // note: Here we want to multiply local RA by local P, but whole RA.entry is local because of how it was made earlier in this function.
+    //....................
+
+    for(nnz_t i=left_block_nnz_scan[rank]; i<left_block_nnz_scan[rank+1]; i++){
+        for(nnz_t j = PnnzPerRowScan[RA.entry[i].col - P->split[rank]]; j < PnnzPerRowScan[RA.entry[i].col - P->split[rank] + 1]; j++){
+
+//            if(rank==3) std::cout << RA.entry[i].row + P->splitNew[rank] << "\t" << P->entry[indicesP_Prolong[j]].col << "\t" << RA.entry[i].val * P->entry[indicesP_Prolong[j]].val << std::endl;
+
+            RAP_temp.entry.emplace_back(cooEntry(RA.entry[i].row + P->splitNew[rank],  // Ac.entry should have global indices at the end.
+                                                 P->entry_local[P->indicesP_local[j]].col,
+                                                 RA.entry[i].val * P->entry_local[P->indicesP_local[j]].val));
+        }
+    }
+
+//    print_vector(RAP_temp.entry, 0, "RAP_temp.entry", comm);
+
+    free(PnnzPerRow);
+    free(PnnzPerRowScan);
+
+    if(verbose_coarsen2){
+        MPI_Barrier(comm); printf("coarsen2: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
+
+    std::sort(RAP_temp.entry.begin(), RAP_temp.entry.end());
+
+//    print_vector(RAP_temp.entry, 0, "RAP_temp.entry: after sort", comm);
+
+    // erase_keep_remote() was called on Ac, so the remote elements are already in Ac.
+    // Now resize it to store new local entries.
+    Ac->entry_temp.resize(RAP_temp.entry.size());
+
+    // remove duplicates.
+    entry_size = 0;
+    for(nnz_t i=0; i<RAP_temp.entry.size(); i++){
+//        Ac->entry.push_back(RAP_temp.entry[i]);
+        Ac->entry_temp[entry_size] = RAP_temp.entry[i];
+        while(i<RAP_temp.entry.size()-1 && RAP_temp.entry[i] == RAP_temp.entry[i+1]){ // values of entries with the same row and col should be added.
+//            if(rank==0) std::cout << Ac->entry_temp[entry_size] << std::endl;
+            Ac->entry_temp[entry_size].val += RAP_temp.entry[i+1].val;
+            i++;
+        }
+        entry_size++;
+        // todo: pruning. don't hard code tol.
+//        if( abs(Ac->entry.back().val) < 1e-6)
+//            Ac->entry.pop_back();
+    }
+
+    Ac->entry_temp.resize(entry_size);
+    Ac->entry_temp.shrink_to_fit();
+//    print_vector(Ac->entry_temp, -1, "Ac->entry_temp", Ac->comm);
+//    if(rank==0) printf("rank %d: entry_size = %lu \n", rank, entry_size);
+
+    if(verbose_coarsen2){
+        MPI_Barrier(comm); printf("coarsen2: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
+
+    // ********** setup matrix **********
+
+    // decide to partition based on number of rows or nonzeros.
+//    if(switch_repartition && Ac->density >= repartition_threshold)
+//        Ac->repartition4(); // based on number of rows
+//    else
+    Ac->repartition_nnz_update_Ac(); // based on number of nonzeros
+
+    // Ac->entry_temp is actually diff which should be used for the next level
+    diff.clear();
+    diff.swap(Ac->entry_temp);
+
+    if(verbose_coarsen2){
+        MPI_Barrier(comm); printf("coarsen2: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
+
+//    repartition_u_shrink_prepare(grid);
+
+//    if(Ac->shrinked)
+//        Ac->shrink_cpu();
+
+    // todo: try to reduce matrix_setup() for this case.
+    if(Ac->active) {
+        Ac->matrix_setup();
+//        Ac->matrix_setup_update();
+    }
+
+    if(verbose_coarsen2){
+        MPI_Barrier(comm); printf("end of coarsen2:  rank = %d\n", rank); MPI_Barrier(comm);}
+
+    return 0;
+} // end of coarsen_update_Ac()
+
+
+//int saena_object::coarsen_update_Ac -> implemented based on the older version of matmat.
+/*
 int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
 
     // This function computes delta_Ac = RAP in which A is diff = diag_block(A) - diag_block(A_new) at each level.
@@ -1299,7 +1618,6 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     // remove duplicates.
     entry_size = 0;
     for(nnz_t i=0; i<RAP_temp.entry.size(); i++){
-//        std::cout << RAP_temp.entry[i] << std::endl;
 //        Ac->entry.push_back(RAP_temp.entry[i]);
         Ac->entry_temp[entry_size] = RAP_temp.entry[i];
         while(i<RAP_temp.entry.size()-1 && RAP_temp.entry[i] == RAP_temp.entry[i+1]){ // values of entries with the same row and col should be added.
@@ -1308,7 +1626,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
             i++;
         }
         entry_size++;
-        // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
+        // todo: pruning. don't hard code tol.
 //        if( abs(Ac->entry.back().val) < 1e-6)
 //            Ac->entry.pop_back();
     }
@@ -1329,255 +1647,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
 //    else
     Ac->repartition_nnz_update_Ac(); // based on number of nonzeros
 
-    diff.clear();
-    diff.swap(Ac->entry_temp);
-
-    if(verbose_coarsen2){
-        MPI_Barrier(comm); printf("coarsen2: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
-
-//    repartition_u_shrink_prepare(grid);
-
-//    if(Ac->shrinked)
-//        Ac->shrink_cpu();
-
-    // todo: try to reduce matrix_setup() for this case.
-    if(Ac->active)
-        Ac->matrix_setup();
-
-    if(verbose_coarsen2){
-        MPI_Barrier(comm); printf("end of coarsen2:  rank = %d\n", rank); MPI_Barrier(comm);}
-
-    return 0;
-} // end of coarsen_update_Ac()
-
-
-//int saena_object::coarsen_update_Ac -> implemented based on the older version of matmat.
-/*
-int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
-
-    // This function computes delta_Ac = RAP in which A is diff = diag_block(A) - diag_block(A_new) at each level.
-    // Then, updates Ac with the delta_Ac. Finally, it saves delta_Ac in diff for doing the same operation
-    // for the next level.
-
-    saena_matrix *A    = grid->A;
-    prolong_matrix *P  = &grid->P;
-    restrict_matrix *R = &grid->R;
-    saena_matrix *Ac   = &grid->Ac;
-
-    MPI_Comm comm = A->comm;
-//    Ac->active_old_comm = true;
-
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    if(verbose_coarsen2){
-        MPI_Barrier(comm);
-        printf("start of coarsen2: rank = %d, nprocs: %d, P.nnz_l = %lu, P.nnz_g = %lu, R.nnz_l = %lu,"
-               " R.nnz_g = %lu, R.M = %u, R->nnz_l_local = %lu, R->nnz_l_remote = %lu \n\n", rank, nprocs,
-               P->nnz_l, P->nnz_g, R->nnz_l, R->nnz_g, R->M, R->nnz_l_local, R->nnz_l_remote);
-    }
-
-    prolong_matrix RA_temp(comm); // RA_temp is being used to remove duplicates while pushing back to RA.
-
-    // ************************************* RA_temp - A local *************************************
-    // Some local and remote elements of RA_temp are computed here using local R and local A.
-    // Note: A local means whole entries of A on this process, not just the diagonal block.
-
-    std::sort(diff.begin(), diff.end(), row_major);
-
-    // alloacted memory for AMaxM, instead of A.M to avoid reallocation of memory for when receiving data from other procs.
-    unsigned int* AnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*A->M);
-    std::fill(&AnnzPerRow[0], &AnnzPerRow[A->M], 0);
-    for(nnz_t i = 0; i < diff.size(); i++){
-//        if(rank==0) printf("%u\n", diff[i].row);
-        AnnzPerRow[diff[i].row]++;
-    }
-
-//    MPI_Barrier(A->comm);
-//    if(rank==0){
-//        printf("rank = %d, AnnzPerRow: \n", rank);
-//        for(long i=0; i<A->M; i++)
-//            printf("%lu \t%u \n", i, AnnzPerRow[i]);}
-
-    // alloacted memory for AMaxM+1, instead of A.M+1 to avoid reallocation of memory for when receiving data from other procs.
-    unsigned int* AnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(A->M+1));
-    AnnzPerRowScan[0] = 0;
-    for(index_t i = 0; i < A->M; i++){
-        AnnzPerRowScan[i+1] = AnnzPerRowScan[i] + AnnzPerRow[i];
-//        if(rank==1) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i+A->split[rank], AnnzPerRow[i], AnnzPerRowScan[i+1]);
-    }
-
-    if(verbose_coarsen2){
-        MPI_Barrier(comm); printf("coarsen2: step 1: rank = %d\n", rank); MPI_Barrier(comm);}
-
-    index_t jstart, jend;
-    if(!R->entry_local.empty()) {
-        for (index_t i = 0; i < R->nnz_l_local; i++) {
-//            if(rank==0) std::cout << "i=" << i << "\tR[" << R->entry_local[i].row << ", " << R->entry_local[i].col
-//                                  << "]=" << R->entry_local[i].val << std::endl;
-            jstart = AnnzPerRowScan[R->entry_local[i].col - P->split[rank]];
-            jend   = AnnzPerRowScan[R->entry_local[i].col - P->split[rank] + 1];
-            if(jend - jstart == 0) continue;
-            for (index_t j = jstart; j < jend; j++) {
-//                if(rank==0) std::cout << "i=" << i << ", j=" << j
-//                                      << "   \tdiff[" << diff[j].row
-//                                      << ", " << diff[j].col << "]=\t" << diff[j].val
-//                                      << "         \tR[" << R->entry_local[i].row << ", " << R->entry_local[i].col
-//                                      << "]=\t" << R->entry_local[i].val << std::endl;
-                RA_temp.entry.push_back(cooEntry(R->entry_local[i].row,
-                                                 diff[j].col,
-                                                 R->entry_local[i].val * diff[j].val));
-            }
-        }
-    }
-
-//    print_vector(RA_temp.entry, -1, "RA_temp.entry", comm);
-
-    free(AnnzPerRow);
-    free(AnnzPerRowScan);
-
-    if(verbose_coarsen2){
-        MPI_Barrier(comm); printf("coarsen2: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
-
-    std::sort(RA_temp.entry.begin(), RA_temp.entry.end());
-
-//    print_vector(RA_temp.entry, -1, "RA_temp.entry: after sort", comm);
-
-    prolong_matrix RA(comm);
-    RA.entry.resize(RA_temp.entry.size());
-
-    // remove duplicates.
-    unsigned long entry_size = 0;
-    for(nnz_t i=0; i<RA_temp.entry.size(); i++){
-//        RA.entry.push_back(RA_temp.entry[i]);
-        RA.entry[entry_size] = RA_temp.entry[i];
-        while(i<RA_temp.entry.size()-1 && RA_temp.entry[i] == RA_temp.entry[i+1]){ // values of entries with the same row and col should be added.
-//            RA.entry.back().val += RA_temp.entry[i+1].val;
-            RA.entry[entry_size].val += RA_temp.entry[i+1].val;
-            i++;
-        }
-//        if(rank==1) std::cout << std::endl << "final: " << std::endl << RA.entry[RA.entry.size()-1].val << std::endl;
-        entry_size++;
-    }
-
-    RA.entry.resize(entry_size);
-    RA.entry.shrink_to_fit();
-
-//    print_vector(RA.entry, -1, "RA.entry", comm);
-
-    if(verbose_coarsen2){
-        MPI_Barrier(comm); printf("coarsen2: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
-
-    // ************************************* RAP_temp - P local *************************************
-    // Some local and remote elements of RAP_temp are computed here.
-    // Note: P local means whole entries of P on this process, not just the diagonal block.
-
-    prolong_matrix RAP_temp(comm); // RAP_temp is being used to remove duplicates while pushing back to RAP.
-
-    unsigned int* PnnzPerRow = (unsigned int*)malloc(sizeof(unsigned int)*P->M);
-    std::fill(&PnnzPerRow[0], &PnnzPerRow[P->M], 0);
-    for(nnz_t i=0; i<P->nnz_l_local; i++){
-//        if(rank==1) printf("%u\n", P->entry_local[i].row);
-        PnnzPerRow[P->entry_local[i].row]++;
-    }
-
-//    if(rank==1) for(long i=0; i<P->M; i++) std::cout << PnnzPerRow[i] << std::endl;
-
-    unsigned int* PnnzPerRowScan = (unsigned int*)malloc(sizeof(unsigned int)*(P->M+1));
-    PnnzPerRowScan[0] = 0;
-    for(nnz_t i = 0; i < P->M; i++){
-        PnnzPerRowScan[i+1] = PnnzPerRowScan[i] + PnnzPerRow[i];
-//        if(rank==2) printf("i=%lu, PnnzPerRow=%d, PnnzPerRowScan = %d\n", i, PnnzPerRow[i], PnnzPerRowScan[i]);
-    }
-
-    long procNum = 0;
-    std::vector<nnz_t> left_block_nnz(nprocs, 0);
-    if(!RA.entry.empty()){
-        for (nnz_t i = 0; i < RA.entry.size(); i++) {
-            procNum = lower_bound2(&P->split[0], &P->split[nprocs], RA.entry[i].col);
-            left_block_nnz[procNum]++;
-//        if(rank==1) printf("rank=%d, col = %lu, procNum = %ld \n", rank, R->entry_remote[0].col, procNum);
-        }
-    }
-
-    std::vector<nnz_t> left_block_nnz_scan(nprocs+1);
-    left_block_nnz_scan[0] = 0;
-    for(int i = 0; i < nprocs; i++)
-        left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
-
-//    print_vector(left_block_nnz_scan, -1, "left_block_nnz_scan", comm);
-
-    // find row-wise ordering for A and save it in indicesP
-//    std::vector<nnz_t> indicesP_Prolong(P->nnz_l_local);
-//    for(nnz_t i=0; i<P->nnz_l_local; i++)
-//        indicesP_Prolong[i] = i;
-//    std::sort(&indicesP_Prolong[0], &indicesP_Prolong[P->nnz_l], sort_indices2(&*P->entry.begin()));
-
-    //....................
-    // note: Here we want to multiply local RA by local P, but whole RA.entry is local because of how it was made earlier in this function.
-    //....................
-
-    for(nnz_t i=left_block_nnz_scan[rank]; i<left_block_nnz_scan[rank+1]; i++){
-        for(nnz_t j = PnnzPerRowScan[RA.entry[i].col - P->split[rank]]; j < PnnzPerRowScan[RA.entry[i].col - P->split[rank] + 1]; j++){
-
-//            if(rank==3) std::cout << RA.entry[i].row + P->splitNew[rank] << "\t" << P->entry[indicesP_Prolong[j]].col << "\t" << RA.entry[i].val * P->entry[indicesP_Prolong[j]].val << std::endl;
-
-            RAP_temp.entry.emplace_back(cooEntry(RA.entry[i].row + P->splitNew[rank],  // Ac.entry should have global indices at the end.
-                                                 P->entry_local[P->indicesP_local[j]].col,
-                                                 RA.entry[i].val * P->entry_local[P->indicesP_local[j]].val));
-        }
-    }
-
-//    print_vector(RAP_temp.entry, 0, "RAP_temp.entry", comm);
-
-    free(PnnzPerRow);
-    free(PnnzPerRowScan);
-
-    if(verbose_coarsen2){
-        MPI_Barrier(comm); printf("coarsen2: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
-
-    std::sort(RAP_temp.entry.begin(), RAP_temp.entry.end());
-
-//    print_vector(RAP_temp.entry, 0, "RAP_temp.entry: after sort", comm);
-
-    // erase_keep_remote() was called on Ac, so the remote elements are already in Ac.
-    // Now resize it to store new local entries.
-    Ac->entry_temp.resize(RAP_temp.entry.size());
-
-    // remove duplicates.
-    entry_size = 0;
-    for(nnz_t i=0; i<RAP_temp.entry.size(); i++){
-//        std::cout << RAP_temp.entry[i] << std::endl;
-//        Ac->entry.push_back(RAP_temp.entry[i]);
-        Ac->entry_temp[entry_size] = RAP_temp.entry[i];
-        while(i<RAP_temp.entry.size()-1 && RAP_temp.entry[i] == RAP_temp.entry[i+1]){ // values of entries with the same row and col should be added.
-//            if(rank==0) std::cout << Ac->entry_temp[entry_size] << std::endl;
-            Ac->entry_temp[entry_size].val += RAP_temp.entry[i+1].val;
-            i++;
-        }
-        entry_size++;
-        // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
-//        if( abs(Ac->entry.back().val) < 1e-6)
-//            Ac->entry.pop_back();
-    }
-
-    Ac->entry_temp.resize(entry_size);
-    Ac->entry_temp.shrink_to_fit();
-//    print_vector(Ac->entry_temp, -1, "Ac->entry_temp", Ac->comm);
-//    if(rank==0) printf("rank %d: entry_size = %lu \n", rank, entry_size);
-
-    if(verbose_coarsen2){
-        MPI_Barrier(comm); printf("coarsen2: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
-
-    // ********** setup matrix **********
-
-    // decide to partition based on number of rows or nonzeros.
-//    if(switch_repartition && Ac->density >= repartition_threshold)
-//        Ac->repartition4(); // based on number of rows
-//    else
-    Ac->repartition_nnz_update_Ac(); // based on number of nonzeros
-
+    // Ac->entry_temp is actually diff which should be used for the next level
     diff.clear();
     diff.swap(Ac->entry_temp);
 
@@ -1599,7 +1669,6 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     return 0;
 } // end of coarsen_update_Ac()
 */
-
 
 // int saena_object::coarsen2
 /*
