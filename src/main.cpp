@@ -349,7 +349,7 @@ int main(int argc, char* argv[]){
 */
 
     // *************************** test for lazy update functions ****************************
-
+/*
     saena_matrix* A_saena = A.get_internal_matrix();
     std::vector<index_t> rown(A.get_local_nnz());
     std::vector<index_t> coln(A.get_local_nnz());
@@ -357,7 +357,7 @@ int main(int argc, char* argv[]){
     for(nnz_t i = 0; i < A.get_local_nnz(); i++){
         rown[i] = A_saena->entry[i].row;
         coln[i] = A_saena->entry[i].col;
-        valn[i] = 3* A_saena->entry[i].val;
+        valn[i] = 2 * A_saena->entry[i].val;
 //        valn[i] = 0.33;
 //        if(i<50 && rank==1) printf("%f \t%f \n", A_saena->entry[i].val, valn[i]);
     }
@@ -365,14 +365,17 @@ int main(int argc, char* argv[]){
     saena::matrix A_new(comm);
     A_new.set(&rown[0], &coln[0], &valn[0], rown.size());
     A_new.assemble();
+//    A_new.assemble_no_scale();
 //    solver.update1(&A_new);
+
+//    solver.get_object()->matrix_diff(*solver.get_object()->grids[0].A, *A_new.get_internal_matrix());
 
 //    if(rank==1){
 //        for(nnz_t i = 0; i < 50; i++){
 //            std::cout << A.get_internal_matrix()->entry[i] << "\t" << A_new.get_internal_matrix()->entry[i] << std::endl;
 //        }
 //    }
-
+*/
     // *************************** finalize ****************************
 
 //    if(rank==0) dollar::text(std::cout);
