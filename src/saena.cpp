@@ -502,7 +502,7 @@ int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
 //        B.print_entry(-1);
 
         MPI_Barrier(comm);
-        if(rank==0) printf("\nmatrix_diff: \n");
+        printf("\nmatrix_diff: \n");
         MPI_Barrier(comm);
 
         if(rank==1){
