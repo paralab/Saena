@@ -127,6 +127,8 @@ namespace saena {
         bool verbose = false;
         int set_verbose(bool verb);
 
+        int matrix_diff(saena::matrix &A, saena::matrix &B);
+
         int set_multigrid_max_level(int max); // 0 means only use direct solver, so no multigrid will be used.
 
     protected:

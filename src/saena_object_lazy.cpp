@@ -1149,37 +1149,6 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 }
 
 
-int saena_object::matrix_diff(saena_matrix &A, saena_matrix &B){
-
-    if(A.active){
-        MPI_Comm comm = A.comm;
-        int nprocs, rank;
-        MPI_Comm_size(comm, &nprocs);
-        MPI_Comm_rank(comm, &rank);
-
-        if(A.nnz_g != B.nnz_g)
-            if(rank==0) std::cout << "error: matrix_diff(): A.nnz_g != B.nnz_g" << std::endl;
-
-//        A.print_entry(-1);
-//        B.print_entry(-1);
-
-        MPI_Barrier(comm);
-        if(rank==0) printf("\nmatrix_diff: \n");
-        MPI_Barrier(comm);
-
-        if(rank==1){
-            for(nnz_t i = 0; i < A.nnz_l; i++){
-                if(!almost_zero(A.entry[i].val - B.entry[i].val)){
-                    std::cout << A.entry[i] << "\t" << B.entry[i] << "\t" << A.entry[i].val - B.entry[i].val << std::endl;
-                }
-            }
-        }
-    }
-
-    return 0;
-}
-
-
 int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
 
     // This function computes delta_Ac = RAP in which A is diff = diag_block(A) - diag_block(A_new) at each level.
