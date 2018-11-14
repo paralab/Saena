@@ -210,6 +210,7 @@ public:
     int setup_initial_data2();
     int repartition_nnz_update(); // based on nnz.
     int matrix_setup_update();
+    int matrix_setup_update_no_scale();
 
     int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
     int repartition_row(); // based on M.   use this for repartitioning A's after they are created.

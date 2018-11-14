@@ -433,10 +433,43 @@ int saena_matrix::matrix_setup_update() {
     inv_diag.resize(M);
     inverse_diag();
 
+//    scale_matrix();
+
+    return 0;
+}
+
+
+int saena_matrix::matrix_setup_update_no_scale() {
+    // update values_local, values_remote and inv_diag.
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+//    assembled = true;
+
+    // todo: check if instead of clearing and pushing back, it is possible to only update the values.
+    values_local.clear();
+    values_remote.clear();
+
+    if(!entry.empty()) {
+        for (nnz_t i = 0; i < nnz_l; i++) {
+            if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
+                values_local.emplace_back(entry[i].val);
+            } else {
+                values_remote.emplace_back(entry[i].val);
+            }
+        }
+    }
+
+    inv_diag.resize(M);
+    inverse_diag();
+
     scale_matrix();
 
     return 0;
 }
+
 
 /*
 int saena_matrix::set_rho(){
