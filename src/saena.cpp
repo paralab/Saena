@@ -484,15 +484,18 @@ int saena::amg::set_multigrid_max_level(int max){
 }
 
 
-int saena::amg::matrix_diff(saena::matrix &A, saena::matrix &B){
+int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
 
-    if(A.active){
-        MPI_Comm comm = A.comm;
+    saena_matrix *A = A1.get_internal_matrix();
+    saena_matrix *B = B1.get_internal_matrix();
+
+    if(A->active){
+        MPI_Comm comm = A->comm;
         int nprocs, rank;
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 
-        if(A.nnz_g != B.nnz_g)
+        if(A->nnz_g != B->nnz_g)
             if(rank==0) std::cout << "error: matrix_diff(): A.nnz_g != B.nnz_g" << std::endl;
 
 //        A.print_entry(-1);
@@ -503,9 +506,9 @@ int saena::amg::matrix_diff(saena::matrix &A, saena::matrix &B){
         MPI_Barrier(comm);
 
         if(rank==1){
-            for(nnz_t i = 0; i < A.nnz_l; i++){
-                if(!almost_zero(A.entry[i].val - B.entry[i].val)){
-                    std::cout << A.entry[i] << "\t" << B.entry[i] << "\t" << A.entry[i].val - B.entry[i].val << std::endl;
+            for(nnz_t i = 0; i < A->nnz_l; i++){
+                if(!almost_zero(A->entry[i].val - B->entry[i].val)){
+                    std::cout << A->entry[i] << "\t" << B->entry[i] << "\t" << A->entry[i].val - B->entry[i].val << std::endl;
                 }
             }
         }
