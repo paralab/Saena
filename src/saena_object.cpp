@@ -121,7 +121,7 @@ int saena_object::setup(saena_matrix* A) {
 //                total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
                 grids[i+1].row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
 
-                if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold); MPI_Barrier(grids[i].Ac.comm);}
+//                if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold); MPI_Barrier(grids[i].Ac.comm);}
 //                if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
 //                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
 //                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
@@ -143,8 +143,7 @@ int saena_object::setup(saena_matrix* A) {
 //                        grids.pop_back();
                         // todo: when destroy() for P and R is written, delete them by that.
                     }
-//                    grids.resize(max_level);
-                    if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("rank %d: max_level is set to %d \n", rank, max_level); MPI_Barrier(grids[i].Ac.comm);}
+//                    if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("rank %d: max_level is set to %d \n", rank, max_level); MPI_Barrier(grids[i].Ac.comm);}
                 }
             }
         }
@@ -156,7 +155,7 @@ int saena_object::setup(saena_matrix* A) {
     int max_level_send = max_level;
     MPI_Allreduce(&max_level_send, &max_level, 1, MPI_INT, MPI_MIN, grids[0].A->comm);
     grids.resize(max_level);
-    
+
 //    printf("rank = %d, max_level = %d\n", rank, max_level);
 //    printf("i = %u, max_level = %u \n", i, max_level);
 

@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 
     // *************************** AMG - Solve ****************************
-/*
+
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]){
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
     print_time(t1, t2, "Solve:", comm);
-*/
+
 //    print_vector(u, -1, "u", comm);
 
 // *************************** write the Laplacian matrix to file ****************************
