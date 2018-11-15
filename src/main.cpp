@@ -194,7 +194,8 @@ int main(int argc, char* argv[]){
 */
 //    print_vector(u, -1, "u", comm);
 
-    // write the Laplacian matrix to file.
+// *************************** write the Laplacian matrix to file ****************************
+
 //    std::string mat_name = "3DLap";
 //    mat_name += std::to_string(mx);
 //    mat_name += "-";
@@ -370,11 +371,12 @@ int main(int argc, char* argv[]){
 
 //    solver.get_object()->matrix_diff(*solver.get_object()->grids[0].A, *A_new.get_internal_matrix());
 
-//    if(rank==1){
-//        for(nnz_t i = 0; i < 50; i++){
+    if(rank==0){
+        for(nnz_t i = 0; i < 50; i++){
 //            std::cout << A.get_internal_matrix()->entry[i] << "\t" << A_new.get_internal_matrix()->entry[i] << std::endl;
-//        }
-//    }
+            std::cout << A_saena->entry[i] << "\t" << A_new.get_internal_matrix()->entry[i] << std::endl;
+        }
+    }
 */
     // *************************** finalize ****************************
 

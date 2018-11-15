@@ -91,12 +91,11 @@ int saena_object::setup(saena_matrix* A) {
             if (shrink_level_vector.size()>i+1) if(shrink_level_vector[i+1]) grids[i].A->enable_shrink_next_level = true;
             if (shrink_values_vector.size()>i+1) grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
             level_setup(&grids[i]); // create P, R and Ac for grid[i]
-            grids[i + 1] = Grid(&grids[i].Ac, max_level, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i])
+            grids[i + 1] = Grid(&grids[i].Ac, max_level, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i]) // todo: use emplace_back for grids.
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
 
             if(grids[i].Ac.active) {
                 if (smoother == "chebyshev") {
-//                    printf("find_eig() start!\n");
 //                    double t1 = omp_get_wtime();
                     find_eig(grids[i].Ac);
 //                    double t2 = omp_get_wtime();
@@ -122,7 +121,7 @@ int saena_object::setup(saena_matrix* A) {
 //                total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
                 grids[i+1].row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
 
-//                if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold);
+                if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold); MPI_Barrier(grids[i].Ac.comm);}
 //                if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
 //                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
 //                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
@@ -133,9 +132,19 @@ int saena_object::setup(saena_matrix* A) {
                      (grids[i+1].row_reduction_min > row_reduction_up_thrshld) ||
                      (grids[i+1].row_reduction_min < row_reduction_down_thrshld) ) {
 
-                    max_level = grids[i].currentLevel;
+                    if(grids[i].Ac.Mbig < least_row_threshold) {
+                        max_level = grids[i].currentLevel + 1;
+                    }
+
+                    if(grids[i+1].row_reduction_min > row_reduction_up_thrshld ||
+                       grids[i+1].row_reduction_min < row_reduction_down_thrshld){
+                        max_level = grids[i].currentLevel;
+//                        grids.resize(max_level);
+//                        grids.pop_back();
+                        // todo: when destroy() for P and R is written, delete them by that.
+                    }
 //                    grids.resize(max_level);
-//                    if(rank==0) printf("max_level is set to %d \n", max_level);
+                    if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("rank %d: max_level is set to %d \n", rank, max_level); MPI_Barrier(grids[i].Ac.comm);}
                 }
             }
         }
@@ -147,9 +156,11 @@ int saena_object::setup(saena_matrix* A) {
     int max_level_send = max_level;
     MPI_Allreduce(&max_level_send, &max_level, 1, MPI_INT, MPI_MIN, grids[0].A->comm);
     grids.resize(max_level);
+    
 //    printf("rank = %d, max_level = %d\n", rank, max_level);
 //    printf("i = %u, max_level = %u \n", i, max_level);
 
+/*
     // grids[i+1].row_reduction_min is 0 by default. for the active processors in the last grid, it will be non-zero.
     // that's why MPI_MAX is used in the following MPI_Allreduce.
     float row_reduction_min_send = grids[i].row_reduction_min;
@@ -158,10 +169,8 @@ int saena_object::setup(saena_matrix* A) {
     if (grids[i].row_reduction_min > row_reduction_up_thrshld) {
         grids.pop_back();
         max_level--;
-        // todo: when destroy() is written, delete P and R by that.
-//        grids[i].P.destroy();
-//        grids[i].R.destroy();
     }
+*/
 
     if(verbose_setup && rank==0){
         printf("_____________________________\n\n");
