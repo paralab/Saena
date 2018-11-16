@@ -1580,6 +1580,7 @@ int saena_object::coarsen(Grid *grid) {
         // *******************************************************
         // version 1: without sparsification
         // *******************************************************
+        // since RAP_row_sorted is sorted in row-major order, Ac->entry will be the same.
 
         // remove duplicates.
         cooEntry temp;
@@ -1599,13 +1600,13 @@ int saena_object::coarsen(Grid *grid) {
 
         // remove duplicates.
         // compute Frobenius norm squared (norm_frob_sq).
-        cooEntry temp;
+        cooEntry_row temp;
         double max_val = 0;
         double norm_frob_sq_local = 0, norm_frob_sq = 0;
-        std::vector<cooEntry> Ac_orig;
+        std::vector<cooEntry_row> Ac_orig;
 //        nnz_t no_sparse_size = 0;
         for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
-            temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
+            temp = cooEntry_row(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
             while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
                 temp.val += RAP_row_sorted[i+1].val;
                 i++;
@@ -1641,6 +1642,7 @@ int saena_object::coarsen(Grid *grid) {
         nnz_t sample_size;
         MPI_Allreduce(&sample_size_local, &sample_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
+/*
         if(sparsifier == "TRSL"){
 
             sparsify_trsl1(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
@@ -1653,6 +1655,13 @@ int saena_object::coarsen(Grid *grid) {
 
             sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
 
+        }else{
+            printf("\nerror: wrong sparsifier!");
+        }
+*/
+
+        if(sparsifier == "majid"){
+            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
         }else{
             printf("\nerror: wrong sparsifier!");
         }

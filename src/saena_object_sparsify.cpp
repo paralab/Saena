@@ -31,6 +31,8 @@ is_picked, std::vector<cooEntry>::const_iterator
 > sample_iterator2;
 
 
+//int saena_object::sparsify_trsl1(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm)
+/*
 int saena_object::sparsify_trsl1(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm) { $
 
     int rank, nprocs;
@@ -195,9 +197,10 @@ int saena_object::sparsify_drineas(std::vector<cooEntry> & A, std::vector<cooEnt
 
     return 0;
 }
+*/
 
 
-int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm){
+int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -215,7 +218,7 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     std::mt19937 rng; //Mersenne Twister: Good quality random number generator
     rng.seed(std::random_device{}()); //Initialize with non-deterministic seeds
 
-    std::vector<cooEntry> A_spars_not_sorted;
+    std::vector<cooEntry_row> A_spars_not_sorted;
     std::vector<bool> chosen(A.size(), false);
     nnz_t iter, selected = 0, selected_global = 0;
 
@@ -262,7 +265,12 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     }
 
 //    std::sort(A_spars_not_sorted.begin(), A_spars_not_sorted.end());
-    par::sampleSort(A_spars_not_sorted, A_spars, comm);
+
+    std::vector<cooEntry_row> A_spars_row_sorted;
+    par::sampleSort(A_spars_not_sorted, A_spars_row_sorted, comm);
+    A_spars.resize(A_spars_row_sorted.size());
+    memcpy(&A_spars[0], &A_spars_row_sorted[0], A_spars_row_sorted.size() * sizeof(cooEntry));
+
 
     nnz_t orig_sz_global, A_sz = A.size();
     MPI_Allreduce(&A_sz, &orig_sz_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
