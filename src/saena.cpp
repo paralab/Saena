@@ -484,6 +484,12 @@ int saena::amg::set_multigrid_max_level(int max){
 }
 
 
+int saena::amg::set_sample_sz_percent(double s_sz_prcnt){
+    m_pImpl->sample_sz_percent = s_sz_prcnt;
+    return 0;
+}
+
+
 int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
 
     saena_matrix *A = A1.get_internal_matrix();

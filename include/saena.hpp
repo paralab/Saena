@@ -131,6 +131,8 @@ namespace saena {
 
         int set_multigrid_max_level(int max); // 0 means only use direct solver, so no multigrid will be used.
 
+        int set_sample_sz_percent(double s_sz_prcnt);
+
     protected:
         saena_object* m_pImpl;
     };

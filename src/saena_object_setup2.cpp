@@ -1632,8 +1632,8 @@ int saena_object::coarsen(Grid *grid) {
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
 
-//        auto sample_size = Ac_orig.size();
-        auto sample_size = nnz_t(0.8 * Ac_orig.size());
+        auto sample_size = Ac_orig.size();
+//        auto sample_size = nnz_t(0.8 * Ac_orig.size());
 //        auto sample_size = nnz_t(Ac->Mbig * Ac->Mbig * A->density);
 //        if(rank==0) printf("sample_size     = %lu \n", sample_size);
 

@@ -225,9 +225,12 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
         }
     }
 
-    double max_prob_inv = norm_frob_sq / max_val / max_val;
-    double prob, rand, rand_factor = 1;
     index_t A_passes = 2; // one pass was done to add the diagonal entries.
+
+    if(rank==0) printf("A_pass %u: selected: %lu (diagonal entries) \n", A_passes-1, i);
+
+    double max_prob_inv = norm_frob_sq / max_val / max_val;
+    double prob, rand, rand_factor = 10;
     iter = 0;
     while(i < sample_size){
 
@@ -259,7 +262,7 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     std::sort(A_spars.begin(), A_spars.end());
 
     if(rank==0){
-        printf("\nfinal: A_passes = %u, original size = %lu, sparsified size = %lu \n", A_passes, A.size(), A_spars.size());
+        printf("final: \nA_pass %u: selected: %lu, original size = %lu \n", A_passes, A_spars.size(), A.size());
     }
 //    print_vector(A_spars, -1, "A_spars", comm);
 
