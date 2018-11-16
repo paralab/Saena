@@ -200,16 +200,20 @@ int saena_object::sparsify_drineas(std::vector<cooEntry> & A, std::vector<cooEnt
 */
 
 
-int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm){
+int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq,
+                  nnz_t sample_size, double max_val, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
 //    MPI_Barrier(comm);
+    nnz_t orig_sz_global, A_sz = A.size();
+    MPI_Allreduce(&A_sz, &orig_sz_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
     if(rank==1){
         std::cout << "\n" << __func__ << ":" << std::endl;
-        printf("original size (local) = %lu, sample_size (global) = %lu, norm_frob_sq = %f\n", A.size(), sample_size, norm_frob_sq);
+        printf("original (local) = %lu, original (global) = %lu, sample_size (global) = %lu, norm_frob_sq = %f\n",
+                A_sz, orig_sz_global, sample_size, norm_frob_sq);
     }
 //    MPI_Barrier(comm);
 //    print_vector(A, -1, "A", comm);
@@ -271,9 +275,9 @@ int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEn
     A_spars.resize(A_spars_row_sorted.size());
     memcpy(&A_spars[0], &A_spars_row_sorted[0], A_spars_row_sorted.size() * sizeof(cooEntry));
 
+    sample_prcnt_numer += selected_global;
+    sample_prcnt_denom += orig_sz_global;
 
-    nnz_t orig_sz_global, A_sz = A.size();
-    MPI_Allreduce(&A_sz, &orig_sz_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
     if(rank==1){
         printf("final: \nA_pass %u: \tselected (local): %lu \tselected (global): %lu \n\t\toriginal (local): %lu \toriginal (global): %lu \n\t\tset percent:  %f \n\t\tact percent:  %f \n",
                 A_passes, selected, selected_global, A_sz, orig_sz_global, sample_sz_percent, (double)selected_global/orig_sz_global);

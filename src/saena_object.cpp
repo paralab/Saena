@@ -174,6 +174,7 @@ int saena_object::setup(saena_matrix* A) {
     if(verbose_setup && rank==0){
         printf("_____________________________\n\n");
         printf("number of levels = << %d >> (the finest level is 0)\n", max_level);
+        printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
         printf("\n******************************************************\n");
     }
 

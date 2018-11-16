@@ -51,6 +51,9 @@ public:
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
     double sparse_epsilon = 1;
     double sample_sz_percent = 1.0;
+    double sample_sz_percent_final = 1.0; // = sample_prcnt_numer / sample_prcnt_denom
+    nnz_t sample_prcnt_numer = 0;
+    nnz_t sample_prcnt_denom = 0;
 
     int set_shrink_levels(std::vector<bool> sh_lev_vec);
     std::vector<bool> shrink_level_vector;
