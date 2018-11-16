@@ -171,6 +171,7 @@ int main(int argc, char* argv[]){
 //    if(rank==0) printf("\nsp_epsilon = %f \n", sp_epsilon);
 //    solver.get_object()->sparse_epsilon = sp_epsilon;
 
+    solver.set_sample_sz_percent(1);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 

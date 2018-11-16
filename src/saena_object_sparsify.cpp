@@ -262,7 +262,8 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     std::sort(A_spars.begin(), A_spars.end());
 
     if(rank==0){
-        printf("final: \nA_pass %u: selected: %lu, original size = %lu \n", A_passes, A_spars.size(), A.size());
+        printf("final: \nA_pass %u: selected: %lu\n           original: %lu\n           percent:  %f \n",
+                A_passes, A_spars.size(), A.size(), sample_sz_percent);
     }
 //    print_vector(A_spars, -1, "A_spars", comm);
 
