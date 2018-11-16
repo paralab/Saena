@@ -171,7 +171,11 @@ int main(int argc, char* argv[]){
 //    if(rank==0) printf("\nsp_epsilon = %f \n", sp_epsilon);
 //    solver.get_object()->sparse_epsilon = sp_epsilon;
 
-    solver.set_sample_sz_percent(1);
+    // receive sparsifivation factor from input and set it.
+    double sm_sz_prct(std::stof(argv[4]));
+    if(rank==0) printf("sm_sz_prct = %f \n", sm_sz_prct);
+    solver.set_sample_sz_percent(sm_sz_prct);
+
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
