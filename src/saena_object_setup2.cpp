@@ -1575,7 +1575,7 @@ int saena_object::coarsen(Grid *grid) {
     // form Ac
     // *******************************************************
 
-    if(!doSparsify){
+    if(!doSparsify || fabs(sample_sz_percent - 1) < 1e-4){
 
         // *******************************************************
         // version 1: without sparsification
