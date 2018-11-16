@@ -4,6 +4,7 @@
 #include "saena_matrix.h"
 #include "aux_functions.h"
 #include "dollar.hpp"
+#include "parUtils.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -202,12 +203,91 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
-    MPI_Barrier(comm);
-    if(rank==0){
+//    MPI_Barrier(comm);
+    if(rank==1){
         std::cout << "\n" << __func__ << ":" << std::endl;
-        printf("original size = %lu, sample_size = %lu, norm_frob_sq = %f\n", A.size(), sample_size, norm_frob_sq);
+        printf("original size (local) = %lu, sample_size (global) = %lu, norm_frob_sq = %f\n", A.size(), sample_size, norm_frob_sq);
     }
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
+//    print_vector(A, -1, "A", comm);
+
+    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max). Type of random number distribution
+    std::mt19937 rng; //Mersenne Twister: Good quality random number generator
+    rng.seed(std::random_device{}()); //Initialize with non-deterministic seeds
+
+    std::vector<cooEntry> A_spars_not_sorted;
+    std::vector<bool> chosen(A.size(), false);
+    nnz_t iter, selected = 0, selected_global = 0;
+
+    for(iter = 0; iter < A.size(); iter++){
+        if(A[iter].row == A[iter].col){
+            A_spars_not_sorted.emplace_back(A[iter]);
+            chosen[iter] = true;
+            selected++;
+        }
+    }
+
+    MPI_Allreduce(&selected, &selected_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+//    if(rank==1) printf("A_pass %u: \tselected: %lu \tselected_global: %lu (diagonal entries) \n", 1, selected, selected_global);
+
+    index_t A_passes = 3; // one pass was done to add the diagonal entries.
+    double max_prob_inv = norm_frob_sq / max_val / max_val;
+    double prob, rand, rand_factor = 10;
+    iter = 0;
+    while(selected_global < sample_size){
+
+        if( !chosen[iter] && A[iter].row < A[iter].col ){ // upper triangle
+
+            rand = dist(rng) * rand_factor;
+            prob = max_prob_inv * ( A[iter].val * ( A[iter].val / norm_frob_sq ));
+            if(rand < prob){
+                A_spars_not_sorted.emplace_back(A[iter]);
+                A_spars_not_sorted.emplace_back(A[iter].col, A[iter].row, A[iter].val);
+                selected += 2;
+                chosen[iter] = true;
+            }
+
+        }
+
+        iter++;
+        if(iter >= A.size()){
+            MPI_Allreduce(&selected, &selected_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+//            if(rank==1) printf("A_pass %u: \tselected: %lu \n", A_passes, selected);
+            iter -= A.size();
+            A_passes++;
+            rand_factor /= 10;
+        }
+
+    }
+
+//    std::sort(A_spars_not_sorted.begin(), A_spars_not_sorted.end());
+    par::sampleSort(A_spars_not_sorted, A_spars, comm);
+
+    nnz_t orig_sz_global, A_sz = A.size();
+    MPI_Allreduce(&A_sz, &orig_sz_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    if(rank==1){
+        printf("final: \nA_pass %u: \tselected (local): %lu \tselected (global): %lu \n\t\toriginal (local): %lu \toriginal (global): %lu \n\t\tset percent:  %f \n\t\tact percent:  %f \n",
+                A_passes, selected, selected_global, A_sz, orig_sz_global, sample_sz_percent, (double)selected_global/orig_sz_global);
+    }
+//    print_vector(A_spars, -1, "A_spars", comm);
+
+    return 0;
+}
+
+
+int saena_object::sparsify_majid_serial(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+//    MPI_Barrier(comm);
+//    if(rank==0){
+//        std::cout << "\n" << __func__ << ":" << std::endl;
+//        printf("original size = %lu, sample_size = %lu, norm_frob_sq = %f\n", A.size(), sample_size, norm_frob_sq);
+//    }
+//    MPI_Barrier(comm);
 //    print_vector(A, -1, "A", comm);
 
     std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max). Type of random number distribution
@@ -225,7 +305,7 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
         }
     }
 
-    index_t A_passes = 2; // one pass was done to add the diagonal entries.
+    index_t A_passes = 3; // one pass was done to add the diagonal entries.
 
     if(rank==0) printf("A_pass %u: \tselected: %lu (diagonal entries) \n", A_passes-1, i);
 
@@ -263,7 +343,7 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
 
     if(rank==0){
         printf("final: \nA_pass %u: \tselected: %lu \n\t\toriginal: %lu \n\t\tpercent:  %f \n",
-                A_passes, A_spars.size(), A.size(), sample_sz_percent);
+               A_passes, A_spars.size(), A.size(), sample_sz_percent);
     }
 //    print_vector(A_spars, -1, "A_spars", comm);
 

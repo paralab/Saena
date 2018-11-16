@@ -1601,7 +1601,7 @@ int saena_object::coarsen(Grid *grid) {
         // compute Frobenius norm squared (norm_frob_sq).
         cooEntry temp;
         double max_val = 0;
-        double norm_frob_sq = 0;
+        double norm_frob_sq_local = 0, norm_frob_sq = 0;
         std::vector<cooEntry> Ac_orig;
 //        nnz_t no_sparse_size = 0;
         for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
@@ -1614,13 +1614,15 @@ int saena_object::coarsen(Grid *grid) {
 //            if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
 //            if(temp.val * temp.val > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
             Ac_orig.emplace_back( temp );
-            norm_frob_sq += temp.val * temp.val;
+            norm_frob_sq_local += temp.val * temp.val;
             if( fabs(temp.val) > max_val){
                 max_val = temp.val;
             }
 //            }
 //            no_sparse_size++; //todo: just for test. delete this later!
         }
+
+        MPI_Allreduce(&norm_frob_sq_local, &norm_frob_sq, 1, MPI_DOUBLE, MPI_SUM, comm);
 
 //        if(rank==0) printf("\noriginal size   = %lu\n", Ac_orig.size());
 //        if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
@@ -1633,9 +1635,11 @@ int saena_object::coarsen(Grid *grid) {
         RAP_row_sorted.shrink_to_fit();
 
 //        auto sample_size = Ac_orig.size();
-        auto sample_size = nnz_t(sample_sz_percent * Ac_orig.size());
+        auto sample_size_local = nnz_t(sample_sz_percent * Ac_orig.size());
 //        auto sample_size = nnz_t(Ac->Mbig * Ac->Mbig * A->density);
 //        if(rank==0) printf("sample_size     = %lu \n", sample_size);
+        nnz_t sample_size;
+        MPI_Allreduce(&sample_size_local, &sample_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
         if(sparsifier == "TRSL"){
 
