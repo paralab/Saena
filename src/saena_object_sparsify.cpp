@@ -210,11 +210,11 @@ int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEn
 //    MPI_Barrier(comm);
     nnz_t orig_sz_global, A_sz = A.size();
     MPI_Allreduce(&A_sz, &orig_sz_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
-    if(rank==1){
-        std::cout << "\n" << __func__ << ":" << std::endl;
-        printf("original (local) = %lu, original (global) = %lu, sample_size (global) = %lu, norm_frob_sq = %f\n",
-                A_sz, orig_sz_global, sample_size, norm_frob_sq);
-    }
+//    if(rank==1){
+//        std::cout << "\n" << __func__ << ":" << std::endl;
+//        printf("original (local) = %lu, original (global) = %lu, sample_size (global) = %lu, norm_frob_sq = %f\n",
+//                A_sz, orig_sz_global, sample_size, norm_frob_sq);
+//    }
 //    MPI_Barrier(comm);
 //    print_vector(A, -1, "A", comm);
 
@@ -278,10 +278,10 @@ int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEn
     sample_prcnt_numer += selected_global;
     sample_prcnt_denom += orig_sz_global;
 
-    if(rank==1){
-        printf("final: \nA_pass %u: \tselected (local): %lu \tselected (global): %lu \n\t\toriginal (local): %lu \toriginal (global): %lu \n\t\tset percent:  %f \n\t\tact percent:  %f \n",
-                A_passes, selected, selected_global, A_sz, orig_sz_global, sample_sz_percent, (double)selected_global/orig_sz_global);
-    }
+//    if(rank==1){
+//        printf("final: \nA_pass %u: \tselected (local): %lu \tselected (global): %lu \n\t\toriginal (local): %lu \toriginal (global): %lu \n\t\tset percent:  %f \n\t\tact percent:  %f \n",
+//                A_passes, selected, selected_global, A_sz, orig_sz_global, sample_sz_percent, (double)selected_global/orig_sz_global);
+//    }
 //    print_vector(A_spars, -1, "A_spars", comm);
 
     return 0;

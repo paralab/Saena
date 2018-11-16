@@ -1660,10 +1660,12 @@ int saena_object::coarsen(Grid *grid) {
         }
 */
 
-        if(sparsifier == "majid"){
-            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
-        }else{
-            printf("\nerror: wrong sparsifier!");
+        if(Ac->active_minor) {
+            if (sparsifier == "majid") {
+                sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, Ac->comm);
+            } else {
+                printf("\nerror: wrong sparsifier!");
+            }
         }
 
     }
