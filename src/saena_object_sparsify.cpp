@@ -202,7 +202,12 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
-    if(rank==0) std::cout << "\n" << __func__ << ":" << std::endl;
+    MPI_Barrier(comm);
+    if(rank==0){
+        std::cout << "\n" << __func__ << ":" << std::endl;
+        printf("original size = %lu, sample_size = %lu, norm_frob_sq = %f\n", A.size(), sample_size, norm_frob_sq);
+    }
+    MPI_Barrier(comm);
 //    print_vector(A, -1, "A", comm);
 
     std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max). Type of random number distribution
@@ -210,27 +215,32 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
     rng.seed(std::random_device{}()); //Initialize with non-deterministic seeds
 
     std::vector<bool> chosen(A.size(), false);
+    nnz_t iter, i = 0;
+
+    for(iter = 0; iter < A.size(); iter++){
+        if(A[iter].row == A[iter].col){
+            A_spars.emplace_back(A[iter]);
+            chosen[iter] = true;
+            i++;
+        }
+    }
+
     double max_prob_inv = norm_frob_sq / max_val / max_val;
     double prob, rand, rand_factor = 1;
-    index_t A_passes = 1;
-    nnz_t iter = 0, i = 0;
+    index_t A_passes = 2; // one pass was done to add the diagonal entries.
+    iter = 0;
     while(i < sample_size){
 
-        if( !chosen[iter] && A[iter].row >= A[iter].col ){
+        if( !chosen[iter] && A[iter].row < A[iter].col ){ // upper triangle
 
-            prob = max_prob_inv * ( A[iter].val * ( A[iter].val / norm_frob_sq ));
             rand = dist(rng) * rand_factor;
+            prob = max_prob_inv * ( A[iter].val * ( A[iter].val / norm_frob_sq ));
 //            if(rank==0 && !chosen[iter]) printf("prob = %.8f, \trand = %.8f, \tA.row = %u, \tA.col = %u \n",
 //                                            prob, rand, A[iter].row, A[iter].col);
-            if( (rand < prob) || (A[iter].row == A[iter].col) ){
-                if(A[iter].row == A[iter].col){
-                    A_spars.emplace_back(A[iter]);
-                    i++;
-                }else{ // A[iter].row > A[iter].col
-                    A_spars.emplace_back(A[iter]);
-                    A_spars.emplace_back(A[iter].col, A[iter].row, A[iter].val);
-                    i += 2;
-                }
+            if(rand < prob){
+                A_spars.emplace_back(A[iter]);
+                A_spars.emplace_back(A[iter].col, A[iter].row, A[iter].val);
+                i += 2;
                 chosen[iter] = true;
             }
 
@@ -238,21 +248,20 @@ int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>
 
         iter++;
         if(iter >= A.size()){
+            if(rank==0) printf("A_pass %u: selected: %lu \n", A_passes, i);
             iter -= A.size();
             A_passes++;
             rand_factor /= 10;
-//            if(rank==0) printf("\nA_pass %u: \n", A_passes);
         }
 
     }
 
     std::sort(A_spars.begin(), A_spars.end());
 
+    if(rank==0){
+        printf("\nfinal: A_passes = %u, original size = %lu, sparsified size = %lu \n", A_passes, A.size(), A_spars.size());
+    }
 //    print_vector(A_spars, -1, "A_spars", comm);
-    if(rank==0) printf("original size   = %lu\n", A.size());
-//    if(rank==0) printf("sample size     = %lu\n", sample_size);
-    if(rank==0) printf("sparsified size = %lu\n", A_spars.size());
-    if(rank==0) printf("A_passes        = %u\n", A_passes);
 
     return 0;
 }

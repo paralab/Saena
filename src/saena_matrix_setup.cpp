@@ -103,7 +103,7 @@ int saena_matrix::setup_initial_data2(){
     nnz_t nnz_g_temp = nnz_g;
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
     if((nnz_g_temp != nnz_g) && rank == 0){
-        printf("error: number of global nonzeros is changed during the matrix update!\n");
+        printf("error: number of global nonzeros is changed during the matrix update:\nbefore: %lu \tafter: %lu", nnz_g, nnz_g_temp);
         MPI_Finalize();
         return -1;
     }
@@ -430,10 +430,10 @@ int saena_matrix::matrix_setup_update() {
         }
     }
 
-    inv_diag.resize(M);
+//    inv_diag.resize(M);
     inverse_diag();
 
-//    scale_matrix();
+    scale_matrix();
 
     return 0;
 }

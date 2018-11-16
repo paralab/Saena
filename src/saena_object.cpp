@@ -179,6 +179,8 @@ int saena_object::setup(saena_matrix* A) {
 
 //    MPI_Barrier(grids[0].A->comm); printf("rank %d: setup done!\n", rank); MPI_Barrier(grids[0].A->comm);
 
+    if(rank==0) dollar::text(std::cout);
+
     return 0;
 }
 

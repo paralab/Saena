@@ -643,7 +643,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t *mempool, MPI_Comm comm){
+                          value_t *mempool, MPI_Comm comm){fast_mm
     // This function has three parts:
     // 1- A is horizontal (row > col)
     // 2- A is vertical
@@ -1632,7 +1632,8 @@ int saena_object::coarsen(Grid *grid) {
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
 
-        auto sample_size = nnz_t(0.8 * Ac_orig.size());
+        auto sample_size = Ac_orig.size();
+//        auto sample_size = nnz_t(0.8 * Ac_orig.size());
 //        auto sample_size = nnz_t(Ac->Mbig * Ac->Mbig * A->density);
 //        if(rank==0) printf("sample_size     = %lu \n", sample_size);
 

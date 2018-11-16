@@ -42,6 +42,11 @@ int saena_object::update2(saena_matrix* A_new){
 
     // ************** update grids[i].A for all levels i **************
 
+    MPI_Comm comm = A_new->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     // do the same for the next level matrices.
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
@@ -58,6 +63,8 @@ int saena_object::update2(saena_matrix* A_new){
 //            Grid(&grids[i].Ac, max_level, i + 1);
         }
     }
+
+//    if(rank==0) dollar::text(std::cout);
 
     return 0;
 }
@@ -92,6 +99,11 @@ int saena_object::update3(saena_matrix* A_new){
 //    diff.swap(Ac->entry_temp);
     // ------------------------------------------------
 
+    MPI_Comm comm = A_new->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     // do the same for the next level matrices.
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
@@ -104,7 +116,8 @@ int saena_object::update3(saena_matrix* A_new){
     grids[0].A = A_new; // the whole matrix A for level 0 should be updated with the updated matrix.
     for(int i = 0; i < max_level; i++){
         if(grids[i].A->active) {
-//            if(rank==0) printf("_____________________________________\nlevel = %lu \n", i);
+//            if(rank==0) printf("_____________________________________\nlevel = %d \n", i);
+//            print_vector(A_diff, 1, "A_diff", grids[0].A->comm);
 //            grids[i].Ac.print_entry(-1);
             coarsen_update_Ac(&grids[i], A_diff); // A_diff will be updated inside coarsen_update_Ac to be the diff for the next level.
 //            grids[i].Ac.print_entry(-1);

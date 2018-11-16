@@ -931,6 +931,9 @@ int saena_matrix::erase_after_decide_shrinking() {
 
 int saena_matrix::erase_lazy_update(){
 
+    data_coo.clear();
+
+    /*
     entry.clear();
     values_local.clear();
     row_local.clear();
@@ -966,7 +969,7 @@ int saena_matrix::erase_lazy_update(){
     iter_remote_array2.clear();
     vElement_remote.clear();
     w_buff.clear();
-
+*/
     return 0;
 }
 

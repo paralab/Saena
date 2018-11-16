@@ -47,7 +47,7 @@ public:
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
 
-    bool doSparsify = false;
+    bool doSparsify = true;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
     double sparse_epsilon = 1;
 
