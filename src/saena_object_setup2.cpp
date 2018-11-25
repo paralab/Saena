@@ -1805,6 +1805,10 @@ int saena_object::coarsen(Grid *grid) {
     comm = grid->A->comm;
     if(verbose_coarsen){MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
 
+//    grid->A->writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
+//    grid->P.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
+//    grid->R.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
+
     return 0;
 } // coarsen()
 

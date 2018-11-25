@@ -1,6 +1,10 @@
 #include <prolong_matrix.h>
 #include <restrict_matrix.h>
 
+
+#include "parUtils.h" // for writeMatrixToFile()
+#include <fstream> // for writeMatrixToFile()
+
 #include "dollar.hpp"
 #include <iostream>
 #include <algorithm>
@@ -693,6 +697,74 @@ int restrict_matrix::print_info(int ran){
             MPI_Barrier(comm);
         }
     }
+
+    return 0;
+}
+
+
+int restrict_matrix::writeMatrixToFile(){
+    // the matrix file will be written in the HOME directory.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(rank==0) printf("The matrix file will be written in the HOME directory. \n");
+    writeMatrixToFile("");
+}
+
+
+int restrict_matrix::writeMatrixToFile(const char *folder_name){
+    // Create txt files with name R-r0.txt for processor 0, R-r1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat R-r0.mtx R-r1.mtx > R.mtx
+    // row and column indices of txt files should start from 1, not 0.
+    // write the files inside ${HOME}/folder_name
+    // this is the default case for the sorting which is column-major.
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    const char* homeDir = getenv("HOME");
+
+    std::ofstream outFileTxt;
+    std::string outFileNameTxt = homeDir;
+    outFileNameTxt += "/";
+    outFileNameTxt += folder_name;
+    outFileNameTxt += "/R-r";
+    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".mtx";
+    outFileTxt.open(outFileNameTxt);
+
+    if(rank==0) std::cout << "\nWriting the restriction matrix in: " << outFileNameTxt << std::endl;
+
+    std::vector<cooEntry> entry_temp1;
+
+    for(nnz_t i = 0; i < entry.size(); i++){
+        entry_temp1.emplace_back( entry[i].row + splitNew[rank], entry[i].col, entry[i].val );
+    }
+
+    std::vector<cooEntry> entry_temp2;
+    par::sampleSort(entry_temp1, entry_temp2, comm);
+
+    // sort row-wise
+//    std::vector<cooEntry_row> entry_temp1(entry.size());
+//    std::memcpy(&*entry_temp1.begin(), &*entry.begin(), entry.size() * sizeof(cooEntry));
+//    std::vector<cooEntry_row> entry_temp2;
+//    par::sampleSort(entry_temp1, entry_temp2, comm);
+
+    // first line of the file: row_size col_size nnz
+    if(rank==0) {
+        outFileTxt << Mbig << "\t" << Mbig << "\t" << nnz_g << std::endl;
+    }
+
+    for (nnz_t i = 0; i < entry_temp2.size(); i++) {
+//        if(rank==0) std::cout  << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
+        outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t" << entry_temp2[i].val << std::endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
 
     return 0;
 }

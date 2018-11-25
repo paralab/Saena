@@ -1190,8 +1190,8 @@ int saena_matrix::writeMatrixToFile(){
 
 
 int saena_matrix::writeMatrixToFile(const char *folder_name){
-    // Create txt files with name Ac-r0.txt for processor 0, Ac-r1.txt for processor 1, etc.
-    // Then, concatenate them in terminal: cat Ac-r0.mtx Ac-r1.mtx > Ac.mtx
+    // Create txt files with name mat-r0.txt for processor 0, mat-r1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat mat-r0.mtx mat-r1.mtx > mat.mtx
     // row and column indices of txt files should start from 1, not 0.
     // write the files inside ${HOME}/folder_name
     // this is the default case for the sorting which is column-major.

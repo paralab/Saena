@@ -102,11 +102,16 @@ public:
     prolong_matrix();
     prolong_matrix(MPI_Comm com);
     ~prolong_matrix();
+
     int findLocalRemote();
     int openmp_setup();
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+
     int print_entry(int ran);
     int print_info(int ran);
+
+    int writeMatrixToFile();
+    int writeMatrixToFile(const char *folder_name);
 };
 
 #endif //SAENA_PROLONG_MATRIX_H
