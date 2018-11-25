@@ -106,7 +106,7 @@ int main(int argc, char* argv[]){
 //    A.get_internal_matrix()->print_info(0);
 //    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
 
-    petsc_viewer(A.get_internal_matrix(), comm);
+    petsc_viewer(A.get_internal_matrix());
 
     // *************************** set rhs ****************************
 

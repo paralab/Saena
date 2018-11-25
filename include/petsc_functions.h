@@ -8,6 +8,6 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat J, Mat jac, void *ctx);
 
 PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx);
 
-int petsc_viewer(saena_matrix *A, MPI_Comm comm);
+int petsc_viewer(saena_matrix *A);
 
 #endif //SAENA_PETSC_FUNCTIONS_H
