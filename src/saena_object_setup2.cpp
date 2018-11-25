@@ -1818,10 +1818,10 @@ int saena_object::coarsen_old(Grid *grid){
     // todo: to improve the performance of this function, consider using the arrays used for RA also for RAP.
     // todo: this way allocating and freeing memory will be halved.
 
-    saena_matrix *A = grid->A;
-    prolong_matrix *P = &grid->P;
+    saena_matrix *A    = grid->A;
+    prolong_matrix *P  = &grid->P;
     restrict_matrix *R = &grid->R;
-    saena_matrix *Ac = &grid->Ac;
+    saena_matrix *Ac   = &grid->Ac;
 
     MPI_Comm comm = A->comm;
 //    Ac->active_old_comm = true;
