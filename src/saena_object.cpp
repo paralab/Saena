@@ -66,6 +66,8 @@ int saena_object::setup(saena_matrix* A) {
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
                    nprocs, A->Mbig, A->nnz_g, A->density);}
 
+    if(fabs(sample_sz_percent - 1) < 1e-4) doSparsify = false;
+
     if(verbose_setup_steps && rank==0) printf("setup: find_eig()\n");
     if(smoother=="chebyshev"){
 //        double t1 = omp_get_wtime();

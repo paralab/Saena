@@ -1575,7 +1575,7 @@ int saena_object::coarsen(Grid *grid) {
     // form Ac
     // *******************************************************
 
-    if(!doSparsify || fabs(sample_sz_percent - 1) < 1e-4){
+    if(!doSparsify){
 
         // *******************************************************
         // version 1: without sparsification
@@ -1663,6 +1663,7 @@ int saena_object::coarsen(Grid *grid) {
         if(Ac->active_minor) {
             if (sparsifier == "majid") {
                 sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, Ac->comm);
+//                sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, P->splitNew, Ac->comm);
             } else {
                 printf("\nerror: wrong sparsifier!");
             }
@@ -1670,7 +1671,7 @@ int saena_object::coarsen(Grid *grid) {
 
     }
 
-//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 

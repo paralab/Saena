@@ -272,6 +272,7 @@ int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEn
 
     std::vector<cooEntry_row> A_spars_row_sorted;
     par::sampleSort(A_spars_not_sorted, A_spars_row_sorted, comm);
+//    par::sampleSort(A_spars_not_sorted, A_spars_row_sorted, splitNew, comm);
     A_spars.resize(A_spars_row_sorted.size());
     memcpy(&A_spars[0], &A_spars_row_sorted[0], A_spars_row_sorted.size() * sizeof(cooEntry));
 
