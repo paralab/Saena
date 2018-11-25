@@ -10,4 +10,6 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx);
 
 int petsc_viewer(saena_matrix *A);
 
+int petsc_coarsen(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+
 #endif //SAENA_PETSC_FUNCTIONS_H

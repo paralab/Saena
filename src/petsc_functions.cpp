@@ -195,3 +195,20 @@ int petsc_saena_matrix(saena_matrix *A, Mat &B){
     PetscFinalize();
     return 0;
 }
+
+
+int petsc_coarsen(saena_matrix *A, saena_matrix *B, saena_matrix *C){
+
+    PetscInitialize(0, nullptr, nullptr, nullptr);
+    MPI_Comm comm = A->comm;
+
+    Mat A2, B2, C2;
+
+    petsc_saena_matrix(A, A2);
+
+    MatDestroy(&A2);
+    MatDestroy(&B2);
+    MatDestroy(&C2);
+    PetscFinalize();
+    return 0;
+}
