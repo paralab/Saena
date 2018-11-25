@@ -1227,7 +1227,7 @@ int saena_matrix::writeMatrixToFile(const char *folder_name){
     if(rank==0) {
         outFileTxt << Mbig << "\t" << Mbig << "\t" << nnz_g << std::endl;
     }
-    
+
     for (nnz_t i = 0; i < entry_temp2.size(); i++) {
 //        if(rank==0) std::cout  << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
         outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t" << entry_temp2[i].val << std::endl;

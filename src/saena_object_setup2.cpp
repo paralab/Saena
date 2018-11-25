@@ -1671,7 +1671,7 @@ int saena_object::coarsen(Grid *grid) {
 
     }
 
-    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 

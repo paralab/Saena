@@ -172,9 +172,9 @@ int main(int argc, char* argv[]){
 //    solver.get_object()->sparse_epsilon = sp_epsilon;
 
     // receive sparsifivation factor from input and set it.
-    double sm_sz_prct(std::stof(argv[4]));
-    if(rank==0) printf("sm_sz_prct = %f \n", sm_sz_prct);
-    solver.set_sample_sz_percent(sm_sz_prct);
+//    double sm_sz_prct(std::stof(argv[4]));
+//    if(rank==0) printf("sm_sz_prct = %f \n", sm_sz_prct);
+//    solver.set_sample_sz_percent(sm_sz_prct);
 
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -198,16 +198,6 @@ int main(int argc, char* argv[]){
     print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
-
-// *************************** write the Laplacian matrix to file ****************************
-
-//    std::string mat_name = "3DLap";
-//    mat_name += std::to_string(mx);
-//    mat_name += "-";
-//    mat_name += std::to_string(my);
-//    mat_name += "-";
-//    mat_name += std::to_string(mz);
-//    solver.get_object()->writeMatrixToFileA(A.get_internal_matrix(), mat_name);
 
     // *************************** check correctness of the solution ****************************
 

@@ -19,7 +19,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 5; // fine grid is level 0.
+    int max_level = 1; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -47,7 +47,7 @@ public:
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
 
-    bool doSparsify = true;
+    bool doSparsify = false;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
     double sparse_epsilon = 1;
     double sample_sz_percent = 1.0;
