@@ -134,3 +134,43 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
     ierr = MatNullSpaceDestroy(&nullspace);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+
+
+int petsc_viewer(saena_matrix *A, MPI_Comm comm){
+
+    PetscInitialize(0, nullptr, nullptr, nullptr);
+
+    PetscErrorCode ierr;
+    PetscViewer    viewer;
+
+    Mat C_p2;
+    MatCreate(comm, &C_p2);
+    MatSetSizes(C_p2, A->M, A->M, A->Mbig, A->Mbig);
+
+    // for serial
+//    MatSetType(C_p2,MATSEQAIJ);
+//    MatSeqAIJSetPreallocation(C_p2, 7, NULL);
+
+    MatSetType(C_p2, MATMPIAIJ);
+    MatMPIAIJSetPreallocation(C_p2, 80, NULL, 80, NULL);
+
+    for(unsigned long i = 0; i < A->nnz_l; i++){
+        MatSetValue(C_p2, A->entry[i].row, A->entry[i].col, A->entry[i].val, INSERT_VALUES);
+    }
+
+    MatAssemblyBegin(C_p2,MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(C_p2,MAT_FINAL_ASSEMBLY);
+
+    ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,0,"",300,0,1000,1000,&viewer);
+    MatView(C_p2,viewer);
+
+    // PetscViewer    viewer;
+    PetscViewerASCIIOpen(PETSC_COMM_WORLD, "mat.m", &viewer);
+    PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+    MatView(C_p2, viewer);
+    PetscViewerPopFormat(viewer);
+    PetscViewerDestroy(&viewer);
+
+    ierr = PetscFinalize();
+    return 0;
+}

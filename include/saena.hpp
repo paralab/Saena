@@ -138,7 +138,7 @@ namespace saena {
     };
 
 
-    // second argument is dof on each processor
+    // second argument is degree-of-freedom on each processor
     int laplacian2D_old(saena::matrix* A, unsigned int dof_local);
     int laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz);
     int laplacian3D_set_rhs(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);

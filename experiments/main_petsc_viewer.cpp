@@ -33,28 +33,15 @@ static char help[] = "Solves 3D Laplacian using multigrid.\n\n";
 
 #include <petsc.h>
 #include "saena.hpp"
-#include <include/saena_object.h>
+//#include <include/saena_object.h>
 //#include "string"
 #include "grid.h"
-//#include <El.hpp>
 
 extern PetscErrorCode ComputeMatrix(KSP,Mat,Mat,void*);
 extern PetscErrorCode ComputeRHS(KSP,Vec,void*);
 
 int laplacian3D_PETSc(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
 
-/*
-int dot(std::vector<double>& r, std::vector<double>& s, double* dot, MPI_Comm comm){
-
-    long i;
-    double dot_l = 0;
-    for(i=0; i<r.size(); i++)
-        dot_l += r[i] * s[i];
-    MPI_Allreduce(&dot_l, dot, 1, MPI_DOUBLE, MPI_SUM, comm);
-
-    return 0;
-}
-*/
 
 int main(int argc,char **argv)
 {
@@ -76,7 +63,6 @@ int main(int argc,char **argv)
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
-    if(rank==0) printf("\nnumber of processes = %d\n", nprocs);
 
 //    if(argc != 4)
 //        if(rank==0) printf("error: input: <x_grid_size> <y_grid_size> <z_grid_size>\n\n");
@@ -113,13 +99,13 @@ int main(int argc,char **argv)
     ierr = KSPGetOperators(ksp,NULL,&J);CHKERRQ(ierr);
     ierr = VecDuplicate(b,&r);CHKERRQ(ierr);
 */
-        //******************************* View Matrix *******************************
+    //******************************* View Matrix *******************************
 
 //    ierr = KSPGetOperators(ksp,&A,NULL);CHKERRQ(ierr);
 //    ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,0,"",300,0,1000,1000,&viewer);
 //    MatView(A,viewer);
 
-        //******************************* The rest of the PETSc example *******************************
+    //******************************* The rest of the PETSc example *******************************
 
 /*
     ierr = MatMult(J,x,r);CHKERRQ(ierr);
@@ -189,14 +175,16 @@ int main(int argc,char **argv)
     //******************************* Create Matrix in Saena *******************************
     //*****************************************************************************************
 
-    //todo: find_eig() is turned off in matrix_setup() function for this experiment. it had an issue for some grid sizes.
+    int mx2(std::stoi(argv[1]));
+    int my2(std::stoi(argv[2]));
+    int mz2(std::stoi(argv[3]));
 
-//    saena::matrix A_saena(comm);
-//    saena::laplacian3D(&A_saena, mx, my, mz, comm);
+    saena::matrix A_saena(comm);
+    saena::laplacian3D(&A_saena, mx2, my2, mz2);
 
-    char *file_name(argv[1]);
-    saena::matrix A_saena(file_name, comm);
-    A_saena.assemble();
+//    char *file_name(argv[1]);
+//    A_saena.read_file(file_name);
+//    A_saena.assemble();
 
 //    saena_matrix* A_saena2 = A_saena.get_internal_matrix();
 //    if(rank==0) printf("\nSaena Laplacian:\nMbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu\n\n",
@@ -210,7 +198,8 @@ int main(int argc,char **argv)
 
 //    saena_object* A_ob = solver.get_object();
 //    Grid gg = A_ob->grids[5];
-    saena_matrix* A_saena2 = solver.get_object()->grids[5].A;
+//    saena_matrix *A_saena2 = solver.get_object()->grids[5].A;
+    saena_matrix *A_saena2 = A_saena.get_internal_matrix();
 
     Mat C_p2;
     MatCreate(comm, &C_p2);
@@ -223,21 +212,22 @@ int main(int argc,char **argv)
     MatSetType(C_p2, MATMPIAIJ);
     MatMPIAIJSetPreallocation(C_p2, 80, NULL, 80, NULL);
 
-    for(unsigned long i = 0; i < A_saena2->nnz_l; i++)
+    for(unsigned long i = 0; i < A_saena2->nnz_l; i++){
         MatSetValue(C_p2, A_saena2->entry[i].row, A_saena2->entry[i].col, A_saena2->entry[i].val, INSERT_VALUES);
+    }
 
     MatAssemblyBegin(C_p2,MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(C_p2,MAT_FINAL_ASSEMBLY);
 
-//    ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,0,"",300,0,1000,1000,&viewer);
-//    MatView(C_p2,viewer);
+    ierr = PetscViewerDrawOpen(PETSC_COMM_WORLD,0,"",300,0,1000,1000,&viewer);
+    MatView(C_p2,viewer);
 
     // PetscViewer    viewer;
-     PetscViewerASCIIOpen(PETSC_COMM_WORLD, "mat.m", &viewer);
-     PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-     MatView(C_p2, viewer);
-     PetscViewerPopFormat(viewer);
-     PetscViewerDestroy(&viewer);
+    PetscViewerASCIIOpen(PETSC_COMM_WORLD, "mat.m", &viewer);
+    PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+    MatView(C_p2, viewer);
+    PetscViewerPopFormat(viewer);
+    PetscViewerDestroy(&viewer);
 
     //******************************* destroy and finalize *******************************
 
@@ -246,6 +236,8 @@ int main(int argc,char **argv)
     return ierr;
 }
 
+//PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
+/*
 PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
 {
     PetscErrorCode ierr;
@@ -278,16 +270,18 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
     ierr = VecAssemblyBegin(b);CHKERRQ(ierr);
     ierr = VecAssemblyEnd(b);CHKERRQ(ierr);
 
-    /* force right hand side to be consistent for singular matrix */
-    /* note this is really a hack, normally the model would provide you with a consistent right handside */
+    // force right hand side to be consistent for singular matrix
+    // note this is really a hack, normally the model would provide you with a consistent right handside
 
     ierr = MatNullSpaceCreate(PETSC_COMM_WORLD,PETSC_TRUE,0,0,&nullspace);CHKERRQ(ierr);
     ierr = MatNullSpaceRemove(nullspace,b);CHKERRQ(ierr);
     ierr = MatNullSpaceDestroy(&nullspace);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+*/
 
-
+//PetscErrorCode ComputeMatrix(KSP ksp, Mat J,Mat jac, void *ctx)
+/*
 PetscErrorCode ComputeMatrix(KSP ksp, Mat J,Mat jac, void *ctx)
 {
     PetscErrorCode ierr;
@@ -389,8 +383,10 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat J,Mat jac, void *ctx)
 
     PetscFunctionReturn(0);
 }
+*/
 
-
+//int laplacian3D_PETSc(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm)
+/*
 int laplacian3D_PETSc(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm)
 {
 
@@ -541,3 +537,4 @@ int laplacian3D_PETSc(saena::matrix* A, unsigned int mx, unsigned int my, unsign
 
     return 0;
 }
+ */

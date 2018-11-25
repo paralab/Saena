@@ -2,6 +2,7 @@
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "saena.hpp"
+#include "petsc_functions.h"
 
 #include <iostream>
 #include <algorithm>
@@ -78,36 +79,34 @@ int main(int argc, char* argv[]){
         if(rank==0) printf("3D Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
         MPI_Barrier(comm);}
 
-    // timing the matrix setup phase
     double t1 = MPI_Wtime();
 
     saena::matrix A(comm);
     saena::laplacian3D(&A, mx, my, mz);
 //    saena::laplacian2D_old(&A, mx);
 //    saena::laplacian3D_old(&A, mx);
-//    A.print_entry(-1);
-
-    double t2 = MPI_Wtime();
-    if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 
     // ******** 2 - initialize the matrix: read from file *************
 /*
-    double t1 = MPI_Wtime();
-
     char* file_name(argv[1]);
     saena::matrix A (comm);
     A.read_file(file_name);
 //    A.read_file(file_name, "triangle");
     A.assemble();
 //    A.assemble_writeToFile("writeMatrix");
+*/
+
+    // ********** print matrix and time **********
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
     print_time(t1, t2, "Matrix Assemble:", comm);
-*/
+
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
 //    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
+
+    petsc_viewer(A.get_internal_matrix(), comm);
 
     // *************************** set rhs ****************************
 
