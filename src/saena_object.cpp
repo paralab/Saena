@@ -246,6 +246,7 @@ int saena_object::level_setup(Grid* grid){
 
     // **************************** coarsen ****************************
 
+    MPI_Barrier(grid->A->comm);
     t1 = MPI_Wtime();
 //    t1 = omp_get_wtime();
     coarsen(grid);
