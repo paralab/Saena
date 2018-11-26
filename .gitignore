@@ -1,7 +1,6 @@
 build
 .idea
 cmake-build-debug
-CMakeLists.txt
 external_old
 data/FloridaCollection/readBinary4
 data/FloridaCollection/triangle_matrix_print
