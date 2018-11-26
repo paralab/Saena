@@ -45,7 +45,7 @@ MPI_Comm saena_object::get_orig_comm(){
 }
 
 
-int saena_object::setup(saena_matrix* A) {
+int saena_object::setup(saena_matrix* A) { $
     int nprocs, rank, rank_new;
     MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
@@ -182,7 +182,7 @@ int saena_object::setup(saena_matrix* A) {
 
 //    MPI_Barrier(grids[0].A->comm); printf("rank %d: setup done!\n", rank); MPI_Barrier(grids[0].A->comm);
 
-//    if(rank==0) dollar::text(std::cout);
+    if(rank==0) dollar::text(std::cout);
 
     return 0;
 }

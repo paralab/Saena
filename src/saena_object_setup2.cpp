@@ -645,7 +645,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t *mempool, MPI_Comm comm){
+                          value_t *mempool, MPI_Comm comm){ $
     // This function has three parts:
     // 1- A is horizontal (row > col)
     // 2- A is vertical
@@ -1185,7 +1185,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 }
 
 
-int saena_object::coarsen(Grid *grid) {
+int saena_object::coarsen(Grid *grid) { $
 
     // Output: Ac = R * A * P
     // Steps:
