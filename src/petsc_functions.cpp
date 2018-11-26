@@ -170,10 +170,101 @@ int petsc_viewer(saena_matrix *A){
 }
 
 
+int petsc_prolong_matrix(prolong_matrix *P, Mat &B){
+
+//    PetscInitialize(0, nullptr, nullptr, nullptr);
+
+    MPI_Comm comm = P->comm;
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    std::vector<int> nnz_per_row_diag(P->M, 0);
+    for(nnz_t i = 0; i < P->entry_local.size(); i++){
+        nnz_per_row_diag[P->entry_local[i].row]++;
+    }
+
+    std::vector<int> nnz_per_row_off_diag(P->M, 0);
+    for(nnz_t i = 0; i < P->entry_remote.size(); i++){
+        nnz_per_row_off_diag[P->entry_remote[i].row]++;
+    }
+
+    MatCreate(comm, &B);
+    MatSetSizes(B, P->M, P->splitNew[rank+1] - P->splitNew[rank], P->Mbig, P->Nbig);
+
+    // for serial
+//    MatSetType(B,MATSEQAIJ);
+//    MatSeqAIJSetPreallocation(B, 7, NULL);
+
+    MatSetType(B, MATMPIAIJ);
+    MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
+
+    for(unsigned long i = 0; i < P->nnz_l; i++){
+        MatSetValue(B, P->entry[i].row + P->split[rank], P->entry[i].col, P->entry[i].val, INSERT_VALUES);
+    }
+
+    MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(B,   MAT_FINAL_ASSEMBLY);
+
+//    PetscFinalize();
+    return 0;
+}
+
+
+int petsc_restrict_matrix(restrict_matrix *R, Mat &B){
+
+//    PetscInitialize(0, nullptr, nullptr, nullptr);
+
+    MPI_Comm comm = R->comm;
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    std::vector<int> nnz_per_row_diag(R->M, 0);
+    for(nnz_t i = 0; i < R->entry_local.size(); i++){
+        nnz_per_row_diag[R->entry_local[i].row]++;
+    }
+
+    std::vector<int> nnz_per_row_off_diag(R->M, 0);
+    for(nnz_t i = 0; i < R->entry_remote.size(); i++){
+        nnz_per_row_off_diag[R->entry_remote[i].row]++;
+    }
+
+    MatCreate(comm, &B);
+    MatSetSizes(B, R->M, R->split[rank+1] - R->split[rank], R->Mbig, R->Nbig);
+
+    // for serial
+//    MatSetType(B,MATSEQAIJ);
+//    MatSeqAIJSetPreallocation(B, 7, NULL);
+
+    MatSetType(B, MATMPIAIJ);
+    MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
+
+    for(unsigned long i = 0; i < R->nnz_l; i++){
+        MatSetValue(B, R->entry[i].row + R->splitNew[rank], R->entry[i].col, R->entry[i].val, INSERT_VALUES);
+    }
+
+    MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(B,   MAT_FINAL_ASSEMBLY);
+
+//    PetscFinalize();
+    return 0;
+}
+
+
 int petsc_saena_matrix(saena_matrix *A, Mat &B){
 
-    PetscInitialize(0, nullptr, nullptr, nullptr);
+//    PetscInitialize(0, nullptr, nullptr, nullptr);
+
     MPI_Comm comm = A->comm;
+
+    std::vector<int> nnz_per_row_diag(A->M, 0);
+    for(nnz_t i = 0; i < A->nnz_l_local; i++){
+        nnz_per_row_diag[A->row_local[i]]++;
+    }
+
+    std::vector<int> nnz_per_row_off_diag(A->M, 0);
+    for(nnz_t i = 0; i < A->nnz_l_remote; i++){
+        nnz_per_row_off_diag[A->row_remote[i]]++;
+    }
 
     MatCreate(comm, &B);
     MatSetSizes(B, A->M, A->M, A->Mbig, A->Mbig);
@@ -183,7 +274,7 @@ int petsc_saena_matrix(saena_matrix *A, Mat &B){
 //    MatSeqAIJSetPreallocation(B, 7, NULL);
 
     MatSetType(B, MATMPIAIJ);
-    MatMPIAIJSetPreallocation(B, 80, NULL, 80, NULL);
+    MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
     for(unsigned long i = 0; i < A->nnz_l; i++){
         MatSetValue(B, A->entry[i].row, A->entry[i].col, A->entry[i].val, INSERT_VALUES);
@@ -192,23 +283,35 @@ int petsc_saena_matrix(saena_matrix *A, Mat &B){
     MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(B,   MAT_FINAL_ASSEMBLY);
 
-    PetscFinalize();
+//    PetscFinalize();
     return 0;
 }
 
 
-int petsc_coarsen(saena_matrix *A, saena_matrix *B, saena_matrix *C){
+int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
+
+    // todo: petsc has a MatGalerkin() function for coarsening. check this link:
+    // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatGalerkin.html
+    // manual for MatMatMatMult():
+    // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatMatMatMult.html
 
     PetscInitialize(0, nullptr, nullptr, nullptr);
-    MPI_Comm comm = A->comm;
+//    MPI_Comm comm = A->comm;
 
-    Mat A2, B2, C2;
+    Mat R2, A2, P2, RA, RAP;
+//    Mat A2;
 
+    petsc_restrict_matrix(R, R2);
     petsc_saena_matrix(A, A2);
+    petsc_prolong_matrix(P, P2);
 
+//    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+
+    MatDestroy(&R2);
     MatDestroy(&A2);
-    MatDestroy(&B2);
-    MatDestroy(&C2);
+    MatDestroy(&P2);
+//    MatDestroy(&RA);
+//    MatDestroy(&RAP);
     PetscFinalize();
     return 0;
 }

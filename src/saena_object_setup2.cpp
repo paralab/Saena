@@ -8,6 +8,8 @@
 #include "parUtils.h"
 #include "dollar.hpp"
 
+#include "petsc_functions.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -1195,10 +1197,10 @@ int saena_object::coarsen(Grid *grid) {
     //    Again, remove duplicates.
     // 5- Not complete yet: Sparsify Ac.
 
-    saena_matrix *A = grid->A;
-    prolong_matrix *P = &grid->P;
+    saena_matrix *A    = grid->A;
+    prolong_matrix *P  = &grid->P;
     restrict_matrix *R = &grid->R;
-    saena_matrix *Ac = &grid->Ac;
+    saena_matrix *Ac   = &grid->Ac;
 
     MPI_Comm comm = A->comm;
 //    Ac->active_old_comm = true;
@@ -1805,9 +1807,12 @@ int saena_object::coarsen(Grid *grid) {
     comm = grid->A->comm;
     if(verbose_coarsen){MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
 
+    //
 //    grid->A->writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
 //    grid->P.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
 //    grid->R.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
+
+    petsc_coarsen(&grid->R, grid->A, &grid->P);
 
     return 0;
 } // coarsen()
