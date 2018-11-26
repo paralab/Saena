@@ -319,16 +319,20 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatMatMatMult.html
 
     PetscInitialize(0, nullptr, nullptr, nullptr);
-//    MPI_Comm comm = A->comm;
+    MPI_Comm comm = A->comm;
 
     Mat R2, A2, P2, RAP;
     petsc_restrict_matrix(R, R2);
     petsc_saena_matrix(A, A2);
     petsc_prolong_matrix(P, P2);
 
+    MPI_Barrier(comm);
+    double t1 = MPI_Wtime();
     MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+    t1 = MPI_Wtime() - t1;
+    print_time(t1, "PETSc MatMatMatMult", comm);
 
-    petsc_viewer(RAP);
+//    petsc_viewer(RAP);
 
     MatDestroy(&R2);
     MatDestroy(&A2);

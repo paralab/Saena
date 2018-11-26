@@ -246,11 +246,14 @@ int saena_object::level_setup(Grid* grid){
 
     // **************************** coarsen ****************************
 
-    t1 = omp_get_wtime();
+    t1 = MPI_Wtime();
+//    t1 = omp_get_wtime();
     coarsen(grid);
 //    coarsen_old(grid);
-    t2 = omp_get_wtime();
+//    t2 = omp_get_wtime();
+    t2 = MPI_Wtime();
     if(verbose_level_setup) print_time(t1, t2, "Coarsening: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    print_time(t1, t2, "Coarsening: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after coarsen!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    if(grid->Ac.active) print_vector(grid->Ac.split, 1, "grid->Ac.split", grid->Ac.comm);

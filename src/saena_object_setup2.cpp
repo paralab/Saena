@@ -1665,7 +1665,6 @@ int saena_object::coarsen(Grid *grid) {
         if(Ac->active_minor) {
             if (sparsifier == "majid") {
                 sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, Ac->comm);
-//                sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, P->splitNew, Ac->comm);
             } else {
                 printf("\nerror: wrong sparsifier!");
             }
@@ -1812,7 +1811,7 @@ int saena_object::coarsen(Grid *grid) {
 //    grid->P.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
 //    grid->R.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
 
-    petsc_viewer(Ac);
+//    petsc_viewer(Ac);
     petsc_coarsen(&grid->R, grid->A, &grid->P);
 
     return 0;
