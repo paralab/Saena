@@ -137,10 +137,21 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
 
 
 int petsc_viewer(saena_matrix *A){
+    // usage when petsc_viewer is called inside main:
+    // mpirun -np 4 ./Saena 3 3 3 -draw_pause -1
 
     PetscInitialize(0, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
-    PetscViewer    viewer;
+
+    std::vector<int> nnz_per_row_diag(A->M, 0);
+    for(nnz_t i = 0; i < A->nnz_l_local; i++){
+        nnz_per_row_diag[A->row_local[i]]++;
+    }
+
+    std::vector<int> nnz_per_row_off_diag(A->M, 0);
+    for(nnz_t i = 0; i < A->nnz_l_remote; i++){
+        nnz_per_row_off_diag[A->row_remote[i]]++;
+    }
 
     Mat B;
     MatCreate(comm, &B);
@@ -151,7 +162,7 @@ int petsc_viewer(saena_matrix *A){
 //    MatSeqAIJSetPreallocation(B, 7, NULL);
 
     MatSetType(B, MATMPIAIJ);
-    MatMPIAIJSetPreallocation(B, 80, NULL, 80, NULL);
+    MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
     for(unsigned long i = 0; i < A->nnz_l; i++){
         MatSetValue(B, A->entry[i].row, A->entry[i].col, A->entry[i].val, INSERT_VALUES);
@@ -160,8 +171,10 @@ int petsc_viewer(saena_matrix *A){
     MatAssemblyBegin(B,MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(B,MAT_FINAL_ASSEMBLY);
 
+    PetscViewer viewer;
     PetscViewerDrawOpen(PETSC_COMM_WORLD, 0, "", 300, 0, 1000, 1000, &viewer);
-    MatView(B,viewer);
+    PetscViewerDrawSetPause(viewer, -1);
+    MatView(B, viewer);
     PetscViewerDestroy(&viewer);
 
     MatDestroy(&B);
@@ -298,20 +311,17 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     PetscInitialize(0, nullptr, nullptr, nullptr);
 //    MPI_Comm comm = A->comm;
 
-    Mat R2, A2, P2, RA, RAP;
-//    Mat A2;
-
+    Mat R2, A2, P2, RAP;
     petsc_restrict_matrix(R, R2);
     petsc_saena_matrix(A, A2);
     petsc_prolong_matrix(P, P2);
 
-//    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
 
     MatDestroy(&R2);
     MatDestroy(&A2);
     MatDestroy(&P2);
-//    MatDestroy(&RA);
-//    MatDestroy(&RAP);
+    MatDestroy(&RAP);
     PetscFinalize();
     return 0;
 }

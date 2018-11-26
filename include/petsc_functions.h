@@ -11,6 +11,7 @@ PetscErrorCode ComputeMatrix(KSP ksp, Mat J, Mat jac, void *ctx);
 PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx);
 
 int petsc_viewer(saena_matrix *A);
+int petsc_viewer(saena_matrix *A);
 
 int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P);
 

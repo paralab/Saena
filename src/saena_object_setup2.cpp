@@ -1812,7 +1812,8 @@ int saena_object::coarsen(Grid *grid) {
 //    grid->P.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
 //    grid->R.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
 
-    petsc_coarsen(&grid->R, grid->A, &grid->P);
+//    petsc_viewer(grid->A);
+//    petsc_coarsen(&grid->R, grid->A, &grid->P);
 
     return 0;
 } // coarsen()
