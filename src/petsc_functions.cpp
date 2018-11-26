@@ -326,9 +326,9 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     petsc_saena_matrix(A, A2);
     petsc_prolong_matrix(P, P2);
 
-    petsc_viewer(A2);
-
     MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+
+    petsc_viewer(RAP);
 
     MatDestroy(&R2);
     MatDestroy(&A2);
