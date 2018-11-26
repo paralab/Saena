@@ -136,9 +136,19 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
 }
 
 
+int petsc_viewer(Mat &A){
+
+    PetscViewer viewer;
+    PetscViewerDrawOpen(PETSC_COMM_WORLD, 0, "", 300, 0, 1000, 1000, &viewer);
+    PetscViewerDrawSetPause(viewer, -1);
+    MatView(A, viewer);
+    PetscViewerDestroy(&viewer);
+
+    return 0;
+}
+
+
 int petsc_viewer(saena_matrix *A){
-    // usage when petsc_viewer is called inside main:
-    // mpirun -np 4 ./Saena 3 3 3 -draw_pause -1
 
     PetscInitialize(0, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
@@ -315,6 +325,8 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     petsc_restrict_matrix(R, R2);
     petsc_saena_matrix(A, A2);
     petsc_prolong_matrix(P, P2);
+
+    petsc_viewer(A2);
 
     MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
 
