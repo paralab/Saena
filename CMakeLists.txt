@@ -20,7 +20,7 @@
 #cmake ..; \
 #make -j28
 
-# GFORTRAN_LIB="/usr/lib64/libgfortran.so.3" ..
+#GFORTRAN_LIB="/usr/lib64/libgfortran.so.3" ..
 
 cmake_minimum_required(VERSION 3.3)
 project(Saena)
@@ -178,7 +178,7 @@ include_directories(
 # -----------------------------------------------------------------------
 #PETSc
 
-set(PETSC_DIR "~/softwares/petsc-3.8.0")
+set(PETSC_DIR "~/softwares/petsc-3.8.4")
 set(PETSC_LIB ${PETSC_DIR}/arch-linux2-c-debug/lib/libpetsc.so)
 include_directories(
         ${PETSC_DIR}/include

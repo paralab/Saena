@@ -1344,7 +1344,7 @@ int saena_object::coarsen(Grid *grid) { $
         int left_neighbor  = rank - 1;
         if (left_neighbor < 0)
             left_neighbor += nprocs;
-//    if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
+//        if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
 
         int owner;
         unsigned long send_size = R_tranpose.size();

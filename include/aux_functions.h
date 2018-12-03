@@ -111,7 +111,7 @@ int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, 
 int randomVector4(std::vector<unsigned long>& V, long size);
 
 
-// the order of this class is called "column-major order"
+// the order of this class is "column-major order"
 class cooEntry{
 public:
     index_t row;
@@ -226,7 +226,7 @@ std::ostream & operator<<(std::ostream & stream, const cooEntry & item);
 bool row_major (const cooEntry& node1, const cooEntry& node2);
 
 
-// the order of this class is called "row-major order"
+// the order of this class is "row-major order".
 class cooEntry_row{
 public:
     index_t row;
@@ -401,8 +401,8 @@ bool almost_zero(T val){
 
 template<class T>
 int print_vector(const std::vector<T> &v, const int ran, const std::string &name, MPI_Comm comm){
-    // if ran >= 0 print_entry the vector elements on proc with rank = ran
-    // otherwise print_entry the vector elements on all processors in order. (first on proc 0, then proc 1 and so on.)
+    // if ran >= 0 print the vector elements on proc with rank = ran
+    // otherwise print the vector elements on all processors in order. (first on proc 0, then proc 1 and so on.)
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
