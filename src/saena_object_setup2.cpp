@@ -676,10 +676,14 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
     index_t B_row_offset = A_col_offset;
 
     int verbose_rank = 0;
+#ifdef _DEBUG_
     if(rank==verbose_rank && verbose_matmat) printf("\nfast_mm: start \n");
+#endif
 
     if(A_nnz == 0 || B_nnz == 0){
+#ifdef _DEBUG_
         if(rank==verbose_rank && verbose_matmat) printf("\nskip: A_nnz == 0 || B_nnz == 0\n\n");
+#endif
         return 0;
     }
 
@@ -751,22 +755,21 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 #ifdef _DEBUG_
         if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 1: step 1 \n");}
 #endif
+
         index_t C_index=0;
         for(nnz_t j = 0; j < B_col_size; j++) { // columns of B
             for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
                 for (nnz_t i = nnzPerColScan_leftStart[B[k].row - B_row_offset];
                      i < nnzPerColScan_leftEnd[B[k].row - B_row_offset]; i++) { // nonzeros in column B[k].row of A
 
-                     C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+                    C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+                    C_temp[C_index] += B[k].val * A[i].val;
 
 #ifdef _DEBUG_
 //                    if (rank == 0) std::cout << "A: " << A[i] << "\tB: " << B[k] << "\tC_index: " << C_index
 //                                   << "\tA_row_offset = " << A_row_offset
 //                                   << "\tB_col_offset = " << B_col_offset << std::endl;
-#endif
-                    C_temp[C_index] += B[k].val * A[i].val;
 
-#ifdef _DEBUG_
 //                    if(rank==1 && A[i].row == 0 && B[j].col == 0) std::cout << "A: " << A[i] << "\tB: " << B[j]
 //                         << "\tC: " << C_temp[(A[i].row-A_row_offset) + A_row_size * (B[j].col-B_col_offset)]
 //                         << "\tA*B: " << B[j].val * A[i].val << std::endl;
@@ -1906,7 +1909,7 @@ int saena_object::coarsen(Grid *grid) { $
 //    grid->R.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
 
 //    petsc_viewer(Ac);
-//    petsc_coarsen(&grid->R, grid->A, &grid->P);
+    petsc_coarsen(&grid->R, grid->A, &grid->P);
 
     return 0;
 } // coarsen()
