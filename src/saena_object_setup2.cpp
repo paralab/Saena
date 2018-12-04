@@ -854,7 +854,6 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //            if(rank==0) printf("nnzPerColScan_middle[%lu] = %u, \tnnzPerColScan_middle[%lu] = %u, \tnnzPerColScan_rightStart = %u \n",
 //                    i, nnzPerColScan_middle[i], i+1, nnzPerColScan_middle[i+1], nnzPerColScan_rightStart[i]);
         }
-git 
 
 #ifdef _DEBUG_
 //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
