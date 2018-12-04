@@ -33,7 +33,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 IF(NOT CMAKE_BUILD_TYPE)
     SET(CMAKE_BUILD_TYPE Debug)
 ENDIF()
-#set(CMAKE_BUILD_TYPE Debug)
+
+#IF(CMAKE_BUILD_TYPE STREQUAL Debug)
+#    add_definitions(-D_DEBUG_)
+#ENDIF()
+
+# uncomment the following line and set verbose commands to true in header files to print debugging information.
+#add_definitions(-D_DEBUG_)
 
 # -----------------------------------------------------------------------
 # OpenMP
