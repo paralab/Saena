@@ -1270,9 +1270,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    if(A->active_old_comm)
 //        printf("rank = %d, nprocs = %d active\n", rank1, nprocs1);
 
+#ifdef _DEBUG_
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
 //    print_vector(R->entry, -1, "R->entry", comm);
+#endif
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1319,6 +1321,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     A->enable_shrink_next_level = false;
     Ac->split = P->splitNew;
 
+#ifdef _DEBUG_
 //    MPI_Barrier(comm);
 //    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
 //           rank, Ac->Mbig, Ac->M, Ac->nnz_g, Ac->nnz_l, Ac->density);
@@ -1327,7 +1330,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    if(verbose_coarsen){
 //        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %lu, Ac->nnz_g = %lu \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
 
-#ifdef _DEBUG_
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("triple_mat_mult: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
@@ -1340,9 +1342,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
             break;
         }
     }
-
-//    int nprocs_updated;
-//    MPI_Comm_size(Ac->comm, &nprocs_updated);
 
 #ifdef _DEBUG_
     if(verbose_coarsen){
@@ -1358,8 +1357,10 @@ int saena_object::triple_mat_mult(Grid *grid) {
     std::vector<cooEntry> R_tranpose(R->entry.size());
     transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], R_tranpose);
 
+#ifdef _DEBUG_
 //    print_vector(R->entry, -1, "R->entry", comm);
 //    print_vector(R_tranpose, -1, "R_tranpose", comm);
+#endif
 
     std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
 //    unsigned int *AnnzPerCol_p = &nnzPerCol_left[0] - A[0].col;
@@ -1367,8 +1368,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //        if(rank==0) printf("A[i].col = %u, \tA_col_size = %u \n", A[i].col - A_col_offset, A_col_size);
         nnzPerCol_left[A->entry[i].col]++;
     }
+
+#ifdef _DEBUG_
 //    print_vector(A->entry, 1, "A->entry", comm);
 //    print_vector(nnzPerCol_left, 1, "nnzPerCol_left", comm);
+#endif
 
     std::vector<index_t> nnzPerColScan_left(A->Mbig+1);
     nnzPerColScan_left[0] = 0;
@@ -1394,9 +1398,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
     std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
     std::vector<index_t> nnzPerColScan_right;
 
+#ifdef _DEBUG_
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
 
-#ifdef _DEBUG_
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("triple_mat_mult: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
@@ -1411,7 +1415,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
         int left_neighbor  = rank - 1;
         if (left_neighbor < 0)
             left_neighbor += nprocs;
-//        if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
+//            if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
 
         int owner;
         unsigned long send_size = R_tranpose.size();
