@@ -57,7 +57,7 @@ int saena_object::update2(saena_matrix* A_new){
         if(grids[i].A->active) {
             eigen_temp = grids[i].Ac.eig_max_of_invdiagXA;
             grids[i].Ac.erase();
-            coarsen(&grids[i]);
+            triple_mat_mult(&grids[i]);
             grids[i + 1].A = &grids[i].Ac;
             grids[i].Ac.eig_max_of_invdiagXA = eigen_temp;
 //            Grid(&grids[i].Ac, max_level, i + 1);
@@ -621,7 +621,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new
         if(grids[i].A->active) {
             eigen_temp = grids[i].Ac.eig_max_of_invdiagXA;
             grids[i].Ac.erase();
-            coarsen(&grids[i]);
+            triple_mat_mult(&grids[i]);
             grids[i + 1].A = &grids[i].Ac;
             grids[i].Ac.eig_max_of_invdiagXA = eigen_temp;
 //            Grid(&grids[i].Ac, max_level, i + 1);
@@ -2002,7 +2002,7 @@ int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* 
         Ac->matrix_setup();
 
     if(verbose_coarsen2){
-        MPI_Barrier(comm); printf("end of coarsen: step 6: rank = %d", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("end of triple_mat_mult: step 6: rank = %d", rank); MPI_Barrier(comm);}
 
     return 0;
 } // end of SaenaObject::coarsen

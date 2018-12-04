@@ -88,9 +88,9 @@ public:
 
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
     int setup(saena_matrix* A);
-    int level_setup(Grid* grid);
     int coarsen(Grid *grid);
-    int coarsen_old(Grid *grid);
+    int triple_mat_mult(Grid *grid);
+    int triple_mat_mult_old(Grid *grid);
     int coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
 
     int fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,

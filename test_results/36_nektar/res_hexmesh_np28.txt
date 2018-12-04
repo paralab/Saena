@@ -329,9 +329,9 @@ relative residual       = 8.053089e-20
 ******************************************************
 
    1.   |-int saena_object::setup(saena_matrix*) 	[..........]  0.05% CPU ( 1321.751ms)     1 hits 
-   2.   | +-int saena_object::level_setup        	[..........]  0.00% CPU (    0.482ms)     3 hits 
+   2.   | +-int saena_object::coarsen        	[..........]  0.00% CPU (    0.482ms)     3 hits
    3.   |   |-int restrict_matrix::transposeP   	[..........]  0.05% CPU ( 1140.377ms)     3 hits 
-   4.   |   |-int saena_object::coarsen          	[..........]  2.53% CPU (61644.750ms)     3 hits 
+   4.   |   |-int saena_object::triple_mat_mult          	[..........]  2.53% CPU (61644.750ms)     3 hits
    5.   |   | +-int saena_object::fast_mm        	[..........]  2.59% CPU (63060.109ms)    75 hits 
    6.   |   |   +-int saena_object::fast_mm      	[..........]  1.55% CPU (37711.184ms)    12 hits 
    7.   |   |     +-int saena_object::fast_mm   	[..........]  1.32% CPU (32267.844ms)    48 hits 
