@@ -1275,7 +1275,7 @@ int saena_object::coarsen(Grid *grid) { $
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
     if (verbose_coarsen) {
         MPI_Barrier(comm);
         if (rank == 0) printf("start of coarsen nprocs: %d \n", nprocs);
@@ -1290,7 +1290,7 @@ int saena_object::coarsen(Grid *grid) { $
                R->nnz_l);
         MPI_Barrier(comm);
     }
-#endif
+//#endif
 
     Ac->Mbig = P->Nbig;
     Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
@@ -1324,10 +1324,10 @@ int saena_object::coarsen(Grid *grid) { $
 //    if(verbose_coarsen){
 //        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %lu, Ac->nnz_g = %lu \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
     // ********** minor shrinking **********
     for(index_t i = 0; i < Ac->split.size()-1; i++){
@@ -1341,10 +1341,10 @@ int saena_object::coarsen(Grid *grid) { $
 //    int nprocs_updated;
 //    MPI_Comm_size(Ac->comm, &nprocs_updated);
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
     // *******************************************************
     // multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
@@ -1393,10 +1393,10 @@ int saena_object::coarsen(Grid *grid) { $
 
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
     // mempool to be used for dense matmat in fast_mm
     value_t *mempool = new value_t[matmat_size_thre];
@@ -1522,10 +1522,10 @@ int saena_object::coarsen(Grid *grid) { $
 //    nnzPerColScan_left.shrink_to_fit();
 //    nnzPerColScan_right.shrink_to_fit();
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
     // *******************************************************
     // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
@@ -1540,10 +1540,10 @@ int saena_object::coarsen(Grid *grid) { $
         P_tranpose[i].col += P->split[rank];
     }
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 //    print_vector(P->entry, -1, "P->entry", comm);
 //    print_vector(P_tranpose, -1, "P_tranpose", comm);
-#endif
+//#endif
 
     // compute nnzPerColScan_left for P_tranpose
     nnzPerCol_left.assign(P->M, 0);
@@ -1560,9 +1560,9 @@ int saena_object::coarsen(Grid *grid) { $
     nnzPerCol_left.clear();
     nnzPerCol_left.shrink_to_fit();
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 //    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
-#endif
+//#endif
 
     // compute nnzPerColScan_left for AP
     nnzPerCol_right.assign(P->Nbig, 0);
@@ -1570,9 +1570,9 @@ int saena_object::coarsen(Grid *grid) { $
         nnzPerCol_right[AP[i].col]++;
     }
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 //    print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
-#endif
+//#endif
 
     nnzPerColScan_right.resize(P->Nbig+1);
     nnzPerColScan_right[0] = 0;
@@ -1583,9 +1583,9 @@ int saena_object::coarsen(Grid *grid) { $
     nnzPerCol_right.clear();
     nnzPerCol_right.shrink_to_fit();
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 //    print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
-#endif
+//#endif
 
     // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
     std::vector<cooEntry> RAP_temp;
@@ -1604,11 +1604,11 @@ int saena_object::coarsen(Grid *grid) { $
     nnzPerColScan_right.shrink_to_fit();
     delete[] mempool;
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
     // remove local duplicates.
     // Entries should be sorted in row-major order first, since the matrix should be partitioned based on rows.
@@ -1625,11 +1625,11 @@ int saena_object::coarsen(Grid *grid) { $
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 //    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
-#endif
+//#endif
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -1640,13 +1640,13 @@ int saena_object::coarsen(Grid *grid) { $
     RAP_temp_row.clear();
     RAP_temp_row.shrink_to_fit();
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 //    print_vector(RAP_row_sorted, -1, "RAP_row_sorted", A->comm);
 //    MPI_Barrier(comm); printf("rank %d: RAP_row_sorted.size = %lu \n", rank, RAP_row_sorted.size()); MPI_Barrier(comm);
 
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
 //    std::vector<cooEntry> RAP_sorted(RAP_row_sorted.size());
 //    memcpy(&RAP_sorted[0], &RAP_row_sorted[0], RAP_row_sorted.size() * sizeof(cooEntry));
@@ -1752,16 +1752,16 @@ int saena_object::coarsen(Grid *grid) { $
 
     }
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
     // *******************************************************
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
 /*
 //    std::cout << "\n";
 //    for(nnz_t i = 0; i < A->entry.size(); i++){
@@ -1811,7 +1811,7 @@ int saena_object::coarsen(Grid *grid) { $
 //    and so on. then compare the multiplication from Julia with the following:
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
 */
-#endif
+//#endif
 
     // *******************************************************
     // setup matrix
@@ -1823,10 +1823,10 @@ int saena_object::coarsen(Grid *grid) { $
     Ac->nnz_l = Ac->entry.size();
     MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("coarsen: step 10: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
     if(Ac->active_minor){
         comm = Ac->comm;
@@ -1846,10 +1846,10 @@ int saena_object::coarsen(Grid *grid) { $
 //            MPI_Barrier(Ac->comm); if(rank_new==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
         }
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
         if(verbose_coarsen){
             MPI_Barrier(comm); printf("coarsen: step 11: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
         // decide to partition based on number of rows or nonzeros.
 //    if(switch_repartition && Ac->density >= repartition_threshold)
@@ -1864,10 +1864,10 @@ int saena_object::coarsen(Grid *grid) { $
 //            repartition_u_shrink_minor_prepare(grid);
 //        }
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
         if(verbose_coarsen){
             MPI_Barrier(comm); printf("coarsen: step 12: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
         repartition_u_shrink_prepare(grid);
 
@@ -1875,10 +1875,10 @@ int saena_object::coarsen(Grid *grid) { $
             Ac->shrink_cpu();
         }
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
         if(verbose_coarsen){
             MPI_Barrier(comm); printf("coarsen: step 13: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
         if(Ac->active){
             Ac->matrix_setup();
@@ -1897,9 +1897,9 @@ int saena_object::coarsen(Grid *grid) { $
     }
     comm = grid->A->comm;
 
-#ifdef _DEBUG_
+//#ifdef _DEBUG_
     if(verbose_coarsen){MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
+//#endif
 
 //    grid->A->writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
 //    grid->P.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
