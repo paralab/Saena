@@ -39,7 +39,7 @@ ENDIF()
 #ENDIF()
 
 # uncomment the following line and set verbose commands to true in header files to print debugging information.
-#add_definitions(-D_DEBUG_)
+add_definitions(-D_DEBUG_)
 
 # -----------------------------------------------------------------------
 # OpenMP

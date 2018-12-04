@@ -690,7 +690,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //    MPI_Barrier(comm); printf("rank %d: A_row_size = %u, A_row_offset = %u, A_col_size = %u, A_col_offset = %u, B_row_offset = %u, B_col_size = %u, B_col_offset = %u \n\n",
 //            rank, A_row_size, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size, B_col_offset);
 
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
     if(rank==verbose_rank){
 
         if(verbose_matmat_A){
@@ -729,7 +729,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 //            std::cout << i << "\t" << nnzPerColScan_leftEnd[i] << std::endl;
 //        }
     }
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
 #endif
 
 //    index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
@@ -866,7 +866,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         // B2: start: nnzPerColScan_middle,                  end: nnzPerColScan_rightEnd
 
 #ifdef _DEBUG_
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
         if(rank==verbose_rank){
 
             if(verbose_matmat_A) {
@@ -932,7 +932,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
             }
         }
 //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
-//        MPI_Barrier(comm);
+        MPI_Barrier(comm);
 #endif
 
         std::vector<cooEntry> C1, C2;
@@ -1103,7 +1103,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         // B2: start: nnzPerColScan_rightStart[B_col_size/2], end: nnzPerColScan_rightEnd[B_col_size/2]
 
 #ifdef _DEBUG_
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
         if(rank==verbose_rank){
 
             if(verbose_matmat_A) {
@@ -1161,7 +1161,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 }
             }
         }
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
 #endif
 
         std::vector<cooEntry> C_temp;
