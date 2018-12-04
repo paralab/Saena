@@ -8,8 +8,6 @@
 #include "parUtils.h"
 #include "dollar.hpp"
 
-#include "petsc_functions.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -1908,12 +1906,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
     if(verbose_coarsen){MPI_Barrier(comm); printf("end of triple_mat_mult: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
-//    grid->A->writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
-//    grid->P.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
-//    grid->R.writeMatrixToFile("Dropbox/Projects/Saena/test_results/37_compare_matmult");
-
+    // view matrix Ac
+    // --------------
 //    petsc_viewer(Ac);
-    petsc_coarsen(&grid->R, grid->A, &grid->P);
 
     return 0;
 } // triple_mat_mult()

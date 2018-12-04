@@ -9,6 +9,8 @@
 #include "ietl_saena.h"
 #include "dollar.hpp"
 
+#include "petsc_functions.h"
+
 #include <sys/stat.h>
 #include <cstdio>
 #include <cstdlib>
@@ -262,6 +264,10 @@ int saena_object::coarsen(Grid *grid){
 
 //    printf("rank = %d, M = %u, nnz_l = %lu, nnz_g = %lu, Ac.M = %u, Ac.nnz_l = %lu \n",
 //           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l);
+
+    // **************************** triple_mat_mult in PETSc ****************************
+    // this part is only for experiments.
+    petsc_coarsen(&grid->R, grid->A, &grid->P);
 
     return 0;
 }
