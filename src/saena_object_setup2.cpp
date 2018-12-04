@@ -15,14 +15,14 @@
 #include <fstream>
 #include <mpi.h>
 
-/*
+
 // this version splits the matrices to have half nnz on each side.
 int saena_object::fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t **mempool, MPI_Comm comm){
+                          value_t *mempool, MPI_Comm comm){
 
     // This function has three parts:
     // 1- A is horizontal (row > col)
@@ -637,7 +637,7 @@ int saena_object::fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C
 
     return 0;
 }
-*/
+
 
 // this version splits the matrices by the middle row and column.
 int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
@@ -645,7 +645,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t **mempool, MPI_Comm comm){
+                          value_t *mempool, MPI_Comm comm){
 
     // This function has three parts:
     // 1- A is horizontal (row > col)
@@ -745,11 +745,8 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 #endif
 
         // initialize
-        value_t **C_temp = mempool;
-//        std::fill(&C_temp[0], &C_temp[A_row_size * B_col_size], 0);
-        for(int i = 0; i < A_row_size; i++){
-            std::fill(&C_temp[i][0], &C_temp[i][B_col_size], 0);
-        }
+        value_t *C_temp = mempool;
+        std::fill(&C_temp[0], &C_temp[A_row_size * B_col_size], 0);
 
 #ifdef _DEBUG_
         if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 1: step 1 \n");}
@@ -761,9 +758,8 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 for (nnz_t i = nnzPerColScan_leftStart[B[k].row - B_row_offset];
                      i < nnzPerColScan_leftEnd[B[k].row - B_row_offset]; i++) { // nonzeros in column B[k].row of A
 
-//                    C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
-//                    C_temp[C_index] += B[k].val * A[i].val;
-                    C_temp[A[i].row - A_row_offset][B[k].col - B_col_offset] += B[k].val * A[i].val;
+                    C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+                    C_temp[C_index] += B[k].val * A[i].val;
 
 #ifdef _DEBUG_
 //                    if (rank == 0) std::cout << "A: " << A[i] << "\tB: " << B[k] << "\tC_index: " << C_index
@@ -788,8 +784,8 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         for(index_t j = 0; j < B_col_size; j++) {
             for(index_t i = 0; i < A_row_size; i++) {
 //                if(rank==0) std::cout << i + A_row_size*j << "\t" << C_temp[i + A_row_size*j] << std::endl;
-                if (C_temp[i][j] != 0) {
-                    C.emplace_back( cooEntry( i+A_row_offset, j+B_col_offset, C_temp[i][j] ) );
+                if (C_temp[i + A_row_size*j] != 0) {
+                    C.emplace_back( cooEntry( i+A_row_offset, j+B_col_offset, C_temp[i + A_row_size*j] ) );
                 }
             }
         }
@@ -1406,17 +1402,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     // mempool to be used for dense matmat in fast_mm
-    // ---------------------------------------
-    // 1-dimensional
-//    value_t *mempool = new value_t[matmat_size_thre];
-
-    // 2-dimensional
-    auto **mempool = new value_t*[1000];
-    for(int i = 0; i < 1000; i++){
-        mempool[i] = new value_t[1000];
-    }
-
-    // ---------------------------------------
+    value_t *mempool = new value_t[matmat_size_thre];
 
     std::vector<cooEntry> AP;
 
@@ -1619,11 +1605,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     nnzPerColScan_left.shrink_to_fit();
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
-
-    for(int i = 0; i < 1000; i++){
-        delete [] mempool[i];
-    }
-    delete [] mempool;
+    delete[] mempool;
 
 #ifdef _DEBUG_
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
