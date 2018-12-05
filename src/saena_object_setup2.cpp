@@ -645,7 +645,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t *mempool, MPI_Comm comm){
+                          value_t *mempool, MPI_Comm comm){$
 
     // This function has three parts:
     // 1- A is horizontal (row > col)
@@ -806,17 +806,17 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         // prepare splits of matrix A by column
         nnz_t A1_nnz = 0, A2_nnz;
 
-        for(nnz_t i = 0; i < A_col_size; i++){
-            for(nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
-                if(A[j].col - A_col_offset < A_col_size_half) {
-                    A1_nnz++;
-                }
-            }
-        }
-
-//        for(nnz_t i = 0; i < A_col_size_half; i++){
-//            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+//        for(nnz_t i = 0; i < A_col_size; i++){
+//            for(nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
+//                if(A[j].col - A_col_offset < A_col_size_half) {
+//                    A1_nnz++;
+//                }
+//            }
 //        }
+
+        for(nnz_t i = 0; i < A_col_size_half; i++){
+            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+        }
 
         A2_nnz = A_nnz - A1_nnz;
 
@@ -824,14 +824,15 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         nnz_t B1_nnz = 0, B2_nnz;
 
         std::vector<index_t> nnzPerCol_middle(B_col_size, 0);
-//        index_t *nnzPerCol_middle_p = &nnzPerCol_middle[B[0].col - B_col_offset];
+        // to avoid subtraction in the following for loop " - B_col_offset"
+        index_t *nnzPerCol_middle_p = &nnzPerCol_middle[0] - B_col_offset;
 
         index_t B_row_threshold = B_row_size_half + B_row_offset;
         for(nnz_t i = 0; i < B_col_size; i++){
             for(nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
                 if(B[j].row < B_row_threshold){ // B[j].row - B_row_offset < B_row_size_half
-                    nnzPerCol_middle[B[j].col - B_col_offset]++;
-//                    nnzPerCol_middle_p[B[j].col]++;
+//                    nnzPerCol_middle[B[j].col - B_col_offset]++;
+                    nnzPerCol_middle_p[B[j].col]++;
                     B1_nnz++;
                 }
             }
@@ -976,12 +977,34 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 #endif
 
         // take care of the special cases when either C1 or C2 is empty.
-        nnz_t i=0;
+//        nnz_t i = 0;
+//        if(C1.empty()){
+//            while(i < C2.size()){
+//                C.emplace_back(C2[i]);
+//                i++;
+//            }
+//
+//#ifdef _DEBUG_
+//            if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
+//#endif
+//            return 0;
+//        }
+//
+//        if(C2.empty()) {
+//            while (i < C1.size()) {
+//                C.emplace_back(C1[i]);
+//                i++;
+//            }
+//#ifdef _DEBUG_
+//            if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
+//#endif
+//            return 0;
+//        }
+
         if(C1.empty()){
-            while(i < C2.size()){
-                C.emplace_back(C2[i]);
-                i++;
-            }
+            nnz_t C_init_size = C.size();
+            C.resize(C.size() + C2.size());
+            memcpy(&C[C_init_size], &C2[0], C2.size() * sizeof(cooEntry));
 
 #ifdef _DEBUG_
             if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
@@ -989,11 +1012,11 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
             return 0;
         }
 
-        if(C2.empty()) {
-            while (i < C1.size()) {
-                C.emplace_back(C1[i]);
-                i++;
-            }
+        if(C2.empty()){
+            nnz_t C_init_size = C.size();
+            C.resize(C.size() + C1.size());
+            memcpy(&C[C_init_size], &C1[0], C1.size() * sizeof(cooEntry));
+
 #ifdef _DEBUG_
             if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
 #endif
@@ -1005,7 +1028,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 #endif
 
         // merge C1 and C2
-        i = 0;
+        nnz_t i = 0;
         nnz_t j = 0;
         while(i < C1.size() && j < C2.size()){
             if(C1[i] < C2[j]){
@@ -1249,7 +1272,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 }
 
 
-int saena_object::triple_mat_mult(Grid *grid) {
+int saena_object::triple_mat_mult(Grid *grid) {$
 
     // Output: Ac = R * A * P
     // Steps:
