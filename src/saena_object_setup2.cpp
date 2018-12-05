@@ -832,8 +832,8 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         for(nnz_t i = 0; i < B_col_size; i++){
             for(nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
                 if(B[j].row < B_row_threshold){ // B[j].row - B_row_offset < B_row_size_half
-//                    nnzPerCol_middle[B[j].col - B_col_offset]++;
-                    nnzPerCol_middle_p[B[j].col]++;
+                    nnzPerCol_middle[B[j].col - B_col_offset]++;
+//                    nnzPerCol_middle_p[B[j].col]++;
                     B1_nnz++;
                 }
             }
