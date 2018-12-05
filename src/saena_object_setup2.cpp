@@ -844,8 +844,12 @@ int saena_object::fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &
 
         std::vector<index_t> nnzPerColScan_middle(B_col_size + 1);
         nnzPerColScan_middle[0] = 0;
+//        for(nnz_t i = 0; i < B_col_size; i++){
+//            nnzPerColScan_middle[i+1] = nnzPerColScan_middle[i] + nnzPerCol_middle[i];
+//        }
+
         for(nnz_t i = 0; i < B_col_size; i++){
-            nnzPerColScan_middle[i+1] = nnzPerColScan_middle[i] + nnzPerCol_middle[i];
+            nnzPerColScan_middle[i] = nnzPerColScan_rightStart[i] + nnzPerCol_middle[i];
         }
 
         B2_nnz = B_nnz - B1_nnz;
@@ -860,11 +864,11 @@ int saena_object::fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &
         if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 1 \n");}
 #endif
 
-        for(nnz_t i = 0; i < B_col_size; i++){
-            nnzPerColScan_middle[i] = nnzPerColScan_middle[i+1] + nnzPerColScan_rightStart[i] - nnzPerColScan_middle[i];
+//        for(nnz_t i = 0; i < B_col_size; i++){
+//            nnzPerColScan_middle[i] = nnzPerColScan_middle[i+1] + nnzPerColScan_rightStart[i] - nnzPerColScan_middle[i];
 //            if(rank==0) printf("nnzPerColScan_middle[%lu] = %u, \tnnzPerColScan_middle[%lu] = %u, \tnnzPerColScan_rightStart = %u \n",
 //                    i, nnzPerColScan_middle[i], i+1, nnzPerColScan_middle[i+1], nnzPerColScan_rightStart[i]);
-        }
+//        }
 
 #ifdef _DEBUG_
 //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
@@ -1124,6 +1128,10 @@ int saena_object::fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &
             nnzPerColScan_middle[i+1] = nnzPerColScan_middle[i] + nnzPerCol_middle[i];
         }
 
+//        for(nnz_t i = 0; i < B_col_size; i++){
+//            nnzPerColScan_middle[i] = nnzPerColScan_leftStart[i] + nnzPerCol_middle[i];
+//        }
+
         A2_nnz = A_nnz - A1_nnz;
 
         nnzPerCol_middle.clear();
@@ -1132,6 +1140,7 @@ int saena_object::fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &
 #ifdef _DEBUG_
         if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 2 \n");
 #endif
+
         for(nnz_t i = 0; i < A_col_size; i++){
             nnzPerColScan_middle[i] = nnzPerColScan_middle[i+1] + nnzPerColScan_leftStart[i] - nnzPerColScan_middle[i];
 //            if(rank==0) printf("nnzPerColScan_middle[%lu] = %u \n", i, nnzPerColScan_middle[i]);
@@ -1545,8 +1554,12 @@ int saena_object::fast_mm_part2(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
 
         std::vector<index_t> nnzPerColScan_middle(B_col_size + 1);
         nnzPerColScan_middle[0] = 0;
+//        for(nnz_t i = 0; i < B_col_size; i++){
+//            nnzPerColScan_middle[i+1] = nnzPerColScan_middle[i] + nnzPerCol_middle[i];
+//        }
+
         for(nnz_t i = 0; i < B_col_size; i++){
-            nnzPerColScan_middle[i+1] = nnzPerColScan_middle[i] + nnzPerCol_middle[i];
+            nnzPerColScan_middle[i] = nnzPerColScan_rightStart[i] + nnzPerCol_middle[i];
         }
 
         B2_nnz = B_nnz - B1_nnz;
@@ -1561,11 +1574,11 @@ int saena_object::fast_mm_part2(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
         if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 1 \n");}
 #endif
 
-        for(nnz_t i = 0; i < B_col_size; i++){
-            nnzPerColScan_middle[i] = nnzPerColScan_middle[i+1] + nnzPerColScan_rightStart[i] - nnzPerColScan_middle[i];
+//        for(nnz_t i = 0; i < B_col_size; i++){
+//            nnzPerColScan_middle[i] = nnzPerColScan_middle[i+1] + nnzPerColScan_rightStart[i] - nnzPerColScan_middle[i];
 //            if(rank==0) printf("nnzPerColScan_middle[%lu] = %u, \tnnzPerColScan_middle[%lu] = %u, \tnnzPerColScan_rightStart = %u \n",
 //                    i, nnzPerColScan_middle[i], i+1, nnzPerColScan_middle[i+1], nnzPerColScan_rightStart[i]);
-        }
+//        }
 
 #ifdef _DEBUG_
         //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
@@ -1841,6 +1854,10 @@ int saena_object::fast_mm_part3(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
         nnzPerColScan_middle[i+1] = nnzPerColScan_middle[i] + nnzPerCol_middle[i];
     }
 
+//    for(nnz_t i = 0; i < B_col_size; i++){
+//        nnzPerColScan_middle[i] = nnzPerColScan_leftStart[i] + nnzPerCol_middle[i];
+//    }
+
     A2_nnz = A_nnz - A1_nnz;
 
     nnzPerCol_middle.clear();
@@ -1849,6 +1866,7 @@ int saena_object::fast_mm_part3(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
 #ifdef _DEBUG_
     if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 2 \n");
 #endif
+
     for(nnz_t i = 0; i < A_col_size; i++){
         nnzPerColScan_middle[i] = nnzPerColScan_middle[i+1] + nnzPerColScan_leftStart[i] - nnzPerColScan_middle[i];
 //            if(rank==0) printf("nnzPerColScan_middle[%lu] = %u \n", i, nnzPerColScan_middle[i]);
