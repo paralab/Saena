@@ -799,7 +799,7 @@ int saena_object::fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &
         if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
 #endif
 
-    } else if(A_row_size <= A_col_size) {
+    } else if( (4*A_row_size) <= A_col_size) {
 
 #ifdef _DEBUG_
         if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: start \n");}
