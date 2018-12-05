@@ -806,7 +806,6 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         // prepare splits of matrix A by column
         nnz_t A1_nnz = 0, A2_nnz;
 
-/*
         for(nnz_t i = 0; i < A_col_size; i++){
             for(nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
                 if(A[j].col - A_col_offset < A_col_size_half) {
@@ -814,11 +813,10 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 }
             }
         }
-*/
 
-        for(nnz_t i = 0; i < A_col_size_half; i++){
-            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
-        }
+//        for(nnz_t i = 0; i < A_col_size_half; i++){
+//            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+//        }
 
         A2_nnz = A_nnz - A1_nnz;
 
@@ -826,7 +824,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         nnz_t B1_nnz = 0, B2_nnz;
 
         std::vector<index_t> nnzPerCol_middle(B_col_size, 0);
-        index_t *nnzPerCol_middle_p = &nnzPerCol_middle[B[0].col - B_col_offset];
+//        index_t *nnzPerCol_middle_p = &nnzPerCol_middle[B[0].col - B_col_offset];
 
         index_t B_row_threshold = B_row_size_half + B_row_offset;
         for(nnz_t i = 0; i < B_col_size; i++){
