@@ -674,6 +674,8 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
     MPI_Comm_rank(comm, &rank);
 
     index_t B_row_offset = A_col_offset;
+    index_t A_col_size_half = A_col_size/2;
+    index_t B_row_size_half = A_col_size_half;
 
     int verbose_rank = 0;
 #ifdef _DEBUG_
@@ -804,12 +806,18 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         // prepare splits of matrix A by column
         nnz_t A1_nnz = 0, A2_nnz;
 
+/*
         for(nnz_t i = 0; i < A_col_size; i++){
             for(nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
-                if(A[j].col - A_col_offset < A_col_size/2) {
+                if(A[j].col - A_col_offset < A_col_size_half) {
                     A1_nnz++;
                 }
             }
+        }
+*/
+
+        for(nnz_t i = 0; i < A_col_size_half; i++){
+            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
         }
 
         A2_nnz = A_nnz - A1_nnz;
@@ -818,11 +826,14 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         nnz_t B1_nnz = 0, B2_nnz;
 
         std::vector<index_t> nnzPerCol_middle(B_col_size, 0);
+        index_t *nnzPerCol_middle_p = &nnzPerCol_middle[B[0].col - B_col_offset];
 
+        index_t B_row_threshold = B_row_size_half + B_row_offset;
         for(nnz_t i = 0; i < B_col_size; i++){
             for(nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
-                if(B[j].row - B_row_offset < A_col_size/2){ // A_col_size/2 is middle row of B too.
-                    nnzPerCol_middle[B[j].col - B_col_offset]++;
+                if(B[j].row < B_row_threshold){ // B[j].row - B_row_offset < B_row_size_half
+//                    nnzPerCol_middle[B[j].col - B_col_offset]++;
+                    nnzPerCol_middle_p[B[j].col]++;
                     B1_nnz++;
                 }
             }
@@ -859,10 +870,10 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
         if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 2 \n");}
 #endif
 
-        // A1: start: nnzPerColScan_leftStart,               end: nnzPerColScan_leftEnd
-        // A2: start: nnzPerColScan_leftStart[A_col_size/2], end: nnzPerColScan_leftEnd[A_col_size/2]
-        // B1: start: nnzPerColScan_rightStart,              end: nnzPerColScan_middle
-        // B2: start: nnzPerColScan_middle,                  end: nnzPerColScan_rightEnd
+        // A1: start: nnzPerColScan_leftStart,                  end: nnzPerColScan_leftEnd
+        // A2: start: nnzPerColScan_leftStart[A_col_size_half], end: nnzPerColScan_leftEnd[A_col_size_half]
+        // B1: start: nnzPerColScan_rightStart,                 end: nnzPerColScan_middle
+        // B2: start: nnzPerColScan_middle,                     end: nnzPerColScan_rightEnd
 
 #ifdef _DEBUG_
 //        MPI_Barrier(comm);
@@ -942,7 +953,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 #endif
 
         fast_mm(&A[0], &B[0], C1, A1_nnz, B1_nnz,
-                A_row_size, A_row_offset, A_col_size/2, A_col_offset,
+                A_row_size, A_row_offset, A_col_size_half, A_col_offset,
                 B_col_size, B_col_offset,
                 nnzPerColScan_leftStart,  nnzPerColScan_leftEnd, // A1
                 nnzPerColScan_rightStart, &nnzPerColScan_middle[0], mempool, comm); // B1
@@ -953,9 +964,9 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 #endif
 
         fast_mm(&A[0], &B[0], C2, A2_nnz, B2_nnz,
-                A_row_size, A_row_offset, A_col_size-A_col_size/2, A_col_offset+A_col_size/2,
+                A_row_size, A_row_offset, A_col_size-A_col_size_half, A_col_offset+A_col_size_half,
                 B_col_size, B_col_offset,
-                &nnzPerColScan_leftStart[A_col_size/2], &nnzPerColScan_leftEnd[A_col_size/2], // A2
+                &nnzPerColScan_leftStart[A_col_size_half], &nnzPerColScan_leftEnd[A_col_size_half], // A2
                 &nnzPerColScan_middle[0], nnzPerColScan_rightEnd, mempool, comm); // B2
 
 #ifdef _DEBUG_
