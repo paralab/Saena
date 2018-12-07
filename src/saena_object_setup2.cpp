@@ -17,7 +17,7 @@
 
 
 // this version splits the matrices to have half nnz on each side.
-int saena_object::fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
+int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
@@ -640,7 +640,7 @@ int saena_object::fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C
 
 
 // this version splits the matrices by the middle row and column.
-int saena_object::fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
+int saena_object::fast_mm_col(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
@@ -1295,7 +1295,7 @@ int saena_object::fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &
 
 
 
-int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
+int saena_object::fast_mm_split(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
@@ -1400,7 +1400,7 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
                 nnzPerColScan_leftStart,  nnzPerColScan_leftEnd, // A1
                 nnzPerColScan_rightStart, nnzPerColScan_rightEnd, mempool, comm); // B1
 
-    } else if( (2*A_row_size) <= (1*A_col_size) ) {
+    } else if( A_row_size <= A_col_size ) {
 
         fast_mm_part2(&A[0], &B[0], C, A_nnz, B_nnz,
                       A_row_size, A_row_offset, A_col_size, A_col_offset,
