@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <string>
-#include <algorithm>
 #include <vector>
 #include <cmath>
 #include <mpi.h>
@@ -100,15 +99,6 @@ long upper_bound2(T *left, T *right, T val){
         return std::distance(first, right+1);
 }
 */
-
-
-int randomVector(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm);
-
-int randomVector2(std::vector<double>& V);
-
-int randomVector3(std::vector<unsigned long>& V, long size, strength_matrix* S, MPI_Comm comm);
-
-int randomVector4(std::vector<unsigned long>& V, long size);
 
 
 // the order of this class is "column-major order"

@@ -452,9 +452,9 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
     std::vector<unsigned long> initialWeight(size);
 //    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
 
-//    randomVector(initialWeight, S->Mbig, S, comm);
-    randomVector3(initialWeight, S->Mbig, S, comm);
-//    randomVector4(initialWeight, S->Mbig);
+//    S->randomVector(initialWeight, S->Mbig, comm);
+    S->randomVector3(initialWeight, comm);
+//    S->randomVector4(initialWeight, S->Mbig);
 
 //    print_vector(initialWeight, -1, "initialWeight", comm);
 
@@ -931,9 +931,9 @@ int saena_object::aggregation_2_dist(strength_matrix *S, std::vector<unsigned lo
     std::vector<unsigned long> initialWeight(size);
 //    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
 
-//    randomVector(initialWeight, S->Mbig, S, comm);
-    randomVector3(initialWeight, S->Mbig, S, comm);
-//    randomVector4(initialWeight, S->Mbig);
+//    S->randomVector(initialWeight, S->Mbig, comm);
+    S->randomVector3(initialWeight, comm);
+//    S->randomVector4(initialWeight, S->Mbig);
 
 //    print_vector(initialWeight, -1, "initialWeight", comm);
 

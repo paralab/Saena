@@ -79,6 +79,11 @@ public:
     int print_info(int ran);
     int save_to_disk();
 
+    int randomVector(std::vector<unsigned long>& V, long size, MPI_Comm comm);
+    int randomVector2(std::vector<double>& V);
+    int randomVector3(std::vector<unsigned long>& V, MPI_Comm comm);
+    int randomVector4(std::vector<unsigned long>& V, long size);
+
 };
 
 #endif //SAENA_STRENGTH_MATRIX_H

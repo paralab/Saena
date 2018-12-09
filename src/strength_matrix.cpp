@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cstring>
 #include "mpi.h"
+#include <algorithm>
+#include <random>
 
 
 /*
@@ -489,6 +491,168 @@ int strength_matrix::save_to_disk(){
     for(nnz_t i = 0; i < nnz_l; i++){
 
     }
+
+    return 0;
+}
+
+
+int strength_matrix::randomVector(std::vector<unsigned long>& V, long size, MPI_Comm comm) {
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+//    for (unsigned long i=0; i<V.size(); i++){
+//        srand (i);
+//        V[i] = rand()%(V.size());
+//    }
+
+    unsigned long max_weight = ( (1UL<<63) - 1);
+
+    unsigned long i;
+    unsigned int max_degree_local = 0;
+    for(i=0; i<M; i++){
+        if(nnzPerRow[i] > max_degree_local)
+            max_degree_local = nnzPerRow[i];
+    }
+
+    unsigned int max_degree;
+    MPI_Allreduce(&max_degree_local, &max_degree, 1, MPI_UNSIGNED, MPI_MAX, comm);
+    max_degree++;
+//    printf("rank = %d, max degree local = %lu, max degree = %lu \n", rank, max_degree_local, max_degree);
+
+    //Type of random number distribution
+//    std::uniform_real_distribution<float> dist(-1.0,1.0); //(min, max)
+    unsigned int max_rand = ( (1UL<<32) - 1);
+    std::uniform_int_distribution<unsigned int> dist(0,max_rand); //(min, max)
+
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    std::vector<double> rand(M);
+    for (i = 0; i < V.size(); i++){
+        V[i] = ((unsigned long)(max_degree - nnzPerRow[i])<<32) + dist(rng);
+//        V[i] = V[i] << 32;
+//        V[i] += dist(rng);
+//        if(rank==0) cout << i << "\tnnzPerRow = " << nnzPerRow[i] << "\t weight = " << V[i] << endl;
+    }
+
+    // to have one node with the highest weight possible, so that node will be a root and consequently P and R won't be zero matrices.
+    // the median index is being chosen here.
+    if (V.size() != 0)
+        V[ floor(V.size()/2) ] = max_weight;
+
+    return 0;
+}
+
+int strength_matrix::randomVector2(std::vector<double>& V){
+
+//    int rank;
+//    MPI_Comm_rank(comm, &rank);
+
+//    for (unsigned long i=0; i<V.size(); i++){
+//        srand (i);
+//        V[i] = rand()%(V.size());
+//    }
+
+    //Type of random number distribution
+    std::uniform_real_distribution<double> dist(0.0,1.0); //(min, max)
+
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    for (unsigned long i=0; i<V.size(); i++){
+        V[i] = dist(rng);
+    }
+
+    return 0;
+}
+
+int strength_matrix::randomVector3(std::vector<unsigned long>& V, MPI_Comm comm) {
+    // This function DOES NOT generate a random vector. It computes the maximum degree of all the nodes.
+    // (degree of node i = number of nonzeros on row i)
+    // Then assign to a higher degree, a lower weight ( weight(node i) = max_degree - degree(node i) )
+    // This method is similar to Yavneh's paper, in which nodes with lower degrees become coarse nodes first,
+    // then nodes with higher degrees.
+    // Yavneh's paper: Non-Galerkin Multigrid Based on Sparsified Smoothed Aggregation - pages: A51-A52
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+//    for (unsigned long i=0; i<V.size(); i++){
+//        srand (i);
+//        V[i] = rand()%(V.size());
+//    }
+
+    unsigned long i;
+    unsigned long max_degree_local = 0;
+    for(i = 0; i < M; i++){
+        if(nnzPerRow[i] > max_degree_local)
+            max_degree_local = nnzPerRow[i];
+    }
+
+    unsigned long max_degree;
+    MPI_Allreduce(&max_degree_local, &max_degree, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+    max_degree++;
+//    printf("rank = %d, max degree local = %lu, max degree = %lu \n", rank, max_degree_local, max_degree);
+
+    //Type of random number distribution
+//    std::uniform_real_distribution<double> dist(-1.0,1.0); //(min, max)
+
+    //Mersenne Twister: Good quality random number generator
+//    std::mt19937 rng;
+
+    //Initialize with non-deterministic seeds
+//    rng.seed(std::random_device{}());
+
+    std::vector<double> rand(M);
+    for (i = 0; i < V.size(); i++){
+        V[i] = max_degree - nnzPerRow[i];
+//        if(rank==1) std::cout << i << "\tnnzPerRow = " << nnzPerRow[i] << "\t weight = " << V[i] << std::endl;
+    }
+//        rand[i] = dist(rng);
+
+    // to have one node with the highest weight possible, so that node will be a root and
+    // consequently P and R won't be zero matrices. the median index is being chosen here.
+//    if (V.size() >= 2)
+//        V[ floor(V.size()/2) ] = size + 1;
+//    else if(V.size() == 1)
+//        V[0] = size + 1;
+
+    return 0;
+}
+
+int strength_matrix::randomVector4(std::vector<unsigned long>& V, long size) {
+
+//    int rank;
+//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+//    for (unsigned long i=0; i<V.size(); i++){
+//        srand (i);
+//        V[i] = rand()%(V.size());
+//    }
+
+    //Type of random number distribution
+    std::uniform_int_distribution<unsigned long> dist(1, size); //(min, max)
+
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng;
+
+    //Initialize with non-deterministic seeds
+    rng.seed(std::random_device{}());
+
+    for (unsigned long i = 0; i < V.size(); i++)
+        V[i] = dist(rng);
+
+    // to have one node with the highest weight possible, so that node will be a root and consequently P and R won't be zero matrices.
+    // the median index is being chosen here.
+    if (V.size() != 0)
+        V[ floor(V.size()/2) ] = size + 1;
 
     return 0;
 }
