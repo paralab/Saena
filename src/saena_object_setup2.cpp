@@ -1443,28 +1443,34 @@ int saena_object::fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
 #endif
 
     std::vector<index_t> nnzPerRow_left(A_row_size, 0);
+    index_t *nnzPerRow_left_p = &nnzPerRow_left[0] - A_row_offset;
     for(nnz_t i = 0; i < A_col_size; i++){
         for(nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
-            nnzPerRow_left[A[j].row]++;
+            nnzPerRow_left_p[A[j].row]++;
         }
     }
 
     // initialize
-    value_t *C_temp = mempool;
+    value_t *C_temp = &mempool[0];
     std::fill(&C_temp[0], &C_temp[A_row_size * B_col_size], 0);
 
 #ifdef _DEBUG_
     if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 1: step 1 \n");}
 #endif
 
-    index_t C_index=0;
+    index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
+    index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
+    value_t *C_temp_p = C_temp - A_row_offset - (A_row_size * B_col_offset);
+
+//    index_t C_index=0;
     for(nnz_t j = 0; j < B_col_size; j++) { // columns of B
         for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
-            for (nnz_t i = nnzPerColScan_leftStart[B[k].row - B_row_offset];
-                 i < nnzPerColScan_leftEnd[B[k].row - B_row_offset]; i++) { // nonzeros in column B[k].row of A
+            for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row];
+                 i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
 
-                C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
-                C_temp[C_index] += B[k].val * A[i].val;
+//                C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+//                C_temp[C_index] += B[k].val * A[i].val;
+                C_temp_p[A[i].row + A_row_size * B[k].col] += B[k].val * A[i].val;
 
 #ifdef _DEBUG_
                 //                    if (rank == 0) std::cout << "A: " << A[i] << "\tB: " << B[k] << "\tC_index: " << C_index
