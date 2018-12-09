@@ -68,8 +68,10 @@ int main(int argc, char* argv[]){
 */
     // *************************** initialize the matrix ****************************
 
-    // ******** 1 - initialize the matrix: laplacian *************
+    double t1 = MPI_Wtime();
 
+    // ******** 1 - initialize the matrix: laplacian *************
+/*
     int mx(std::stoi(argv[1]));
     int my(std::stoi(argv[2]));
     int mz(std::stoi(argv[3]));
@@ -79,22 +81,21 @@ int main(int argc, char* argv[]){
         if(rank==0) printf("3D Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
         MPI_Barrier(comm);}
 
-    double t1 = MPI_Wtime();
 
     saena::matrix A(comm);
     saena::laplacian3D(&A, mx, my, mz);
 //    saena::laplacian2D_old(&A, mx);
 //    saena::laplacian3D_old(&A, mx);
-
+*/
     // ******** 2 - initialize the matrix: read from file *************
-/*
+
     char* file_name(argv[1]);
     saena::matrix A (comm);
     A.read_file(file_name);
 //    A.read_file(file_name, "triangle");
     A.assemble();
 //    A.assemble_writeToFile("writeMatrix");
-*/
+
 
     // ********** print matrix and time **********
 
@@ -115,8 +116,8 @@ int main(int argc, char* argv[]){
 
     // ********** 1 - set rhs: random **********
 
-//    rhs.resize(num_local_row);
-//    generate_rhs_old(rhs);
+    rhs.resize(num_local_row);
+    generate_rhs_old(rhs);
 
     // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
 
@@ -127,7 +128,7 @@ int main(int argc, char* argv[]){
     // ********** 3 - set rhs: Laplacian **********
 
     // don't set the size for this method
-    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
+//    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
 
     // ********** 4 - set rhs: read from file **********
 

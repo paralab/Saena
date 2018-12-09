@@ -1,0 +1,73 @@
+./Saena <x grid size> <y grid size> <z grid size>
+
+------------------------------
+
+./Saena 50 50 50
+
+number of procs = 1 
+matrix size     = 125000 
+nonzero         = 860000 
+
+triple_mat_mult: level 0
+ave: 13.9899
+
+PETSc MatMatMatMult
+ave: 6.99409
+
+------------------------------
+
+./Saena 40 40 40
+
+triple_mat_mult: level 0
+ave: 4.4093
+
+PETSc MatMatMatMult
+ave: 2.13944
+
+------------------------------
+
+./Saena 30 30 30
+
+triple_mat_mult: level 0
+ave: 0.898336
+
+PETSc MatMatMatMult
+ave: 0.390265
+
+------------------------------
+
+change part2 criteria for the previous case (30 * 30 * 30):
+
+(2*A_row_size) <= (A_col_size)
+ave: 0.760585
+
+(3*A_row_size) <= (A_col_size)
+ave: 0.736605
+
+(4*A_row_size) <= (A_col_size)
+ave: 0.709014
+
+(5*A_row_size) <= (A_col_size)
+ave: 0.771944
+
+(6*A_row_size) <= (A_col_size)
+ave: 0.681715
+
+(7*A_row_size) <= (A_col_size)
+ave: 0.691959
+
+(8*A_row_size) <= (A_col_size)
+ave: 0.695354
+
+------------------------------
+
+(A_row_size) <= (2*A_col_size)
+ave: 1.18231
+
+(A_row_size) <= (3*A_col_size)
+ave: 1.17192
+
+(A_row_size) <= (4*A_col_size)
+ave: 1.64509
+
+------------------------------
