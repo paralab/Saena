@@ -1,6 +1,5 @@
 #include <aux_functions.h>
 #include "saena_matrix.h"
-#include "strength_matrix.h"
 
 #include <iostream>
 #include <random>
