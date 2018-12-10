@@ -1426,6 +1426,78 @@ int saena_object::fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nn
 }
 
 int saena_object::fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
+                                index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                                index_t B_col_size, index_t B_col_offset,
+                                index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
+                                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
+                                value_t *mempool, MPI_Comm comm) {
+
+#ifdef _DEBUG_
+    if(rank==verbose_rank && (verbose_matmat || verbose_matmat_recursive)){printf("fast_mm: case 1: start \n");}
+#endif
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    index_t B_row_offset = A_col_offset;
+
+    // initialize
+    value_t *C_temp = mempool;
+    std::fill(&C_temp[0], &C_temp[A_row_size * B_col_size], 0);
+
+#ifdef _DEBUG_
+    if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 1: step 1 \n");}
+#endif
+
+    index_t C_index=0;
+    for(nnz_t j = 0; j < B_col_size; j++) { // columns of B
+        for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
+            for (nnz_t i = nnzPerColScan_leftStart[B[k].row - B_row_offset];
+                 i < nnzPerColScan_leftEnd[B[k].row - B_row_offset]; i++) { // nonzeros in column B[k].row of A
+
+                C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+                C_temp[C_index] += B[k].val * A[i].val;
+
+#ifdef _DEBUG_
+                //                    if (rank == 0) std::cout << "A: " << A[i] << "\tB: " << B[k] << "\tC_index: " << C_index
+//                                   << "\tA_row_offset = " << A_row_offset
+//                                   << "\tB_col_offset = " << B_col_offset << std::endl;
+
+//                    if(rank==1 && A[i].row == 0 && B[j].col == 0) std::cout << "A: " << A[i] << "\tB: " << B[j]
+//                         << "\tC: " << C_temp[(A[i].row-A_row_offset) + A_row_size * (B[j].col-B_col_offset)]
+//                         << "\tA*B: " << B[j].val * A[i].val << std::endl;
+#endif
+            }
+        }
+    }
+
+#ifdef _DEBUG_
+    //        print_vector(C_temp, -1, "C_temp", comm);
+        if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 1: step 2 \n");}
+#endif
+
+    // add the new elements to C
+    // add the entries in column-major order
+    for(index_t j = 0; j < B_col_size; j++) {
+        for(index_t i = 0; i < A_row_size; i++) {
+//                if(rank==0) std::cout << i + A_row_size*j << "\t" << C_temp[i + A_row_size*j] << std::endl;
+            if (C_temp[i + A_row_size*j] != 0) {
+                C.emplace_back( cooEntry( i+A_row_offset, j+B_col_offset, C_temp[i + A_row_size*j] ) );
+            }
+        }
+    }
+
+#ifdef _DEBUG_
+    //        print_vector(C, -1, "C", comm);
+        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
+#endif
+
+    return 0;
+}
+
+/*
+int saena_object::fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
@@ -1522,13 +1594,13 @@ int saena_object::fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
 
     return 0;
 }
-
+*/
 int saena_object::fast_mm_part2(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t *mempool, MPI_Comm comm){$
+                          value_t *mempool, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
@@ -1821,7 +1893,7 @@ int saena_object::fast_mm_part3(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t *mempool, MPI_Comm comm){$
+                          value_t *mempool, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
@@ -2042,7 +2114,7 @@ int saena_object::fast_mm_part3(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
 
 
 
-int saena_object::triple_mat_mult(Grid *grid) {$
+int saena_object::triple_mat_mult(Grid *grid) {
 
     // Output: Ac = R * A * P
     // Steps:
