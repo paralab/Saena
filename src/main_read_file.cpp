@@ -24,17 +24,20 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 4){
-        if(rank == 0)
-            std::cout << "This is how to make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
+    if(argc != 2){
+        if(rank == 0) {
+            std::cout << "Usage: ./Saena <MatrixA>" << std::endl;
+        }
         MPI_Finalize();
         return -1;
     }
 
-    // *************************** initialize the matrix: Laplacian ****************************
+    // *************************** initialize the matrix ****************************
 
     double t1 = MPI_Wtime();
 
+    // ******** 1 - initialize the matrix: laplacian *************
+/*
     int mx(std::stoi(argv[1]));
     int my(std::stoi(argv[2]));
     int mz(std::stoi(argv[3]));
@@ -42,13 +45,22 @@ int main(int argc, char* argv[]){
     if(verbose){
         MPI_Barrier(comm);
         if(rank==0) printf("3D Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
-        MPI_Barrier(comm);
-    }
+        MPI_Barrier(comm);}
+
 
     saena::matrix A(comm);
     saena::laplacian3D(&A, mx, my, mz);
 //    saena::laplacian2D_old(&A, mx);
 //    saena::laplacian3D_old(&A, mx);
+*/
+    // ******** 2 - initialize the matrix: read from file *************
+
+    char* file_name(argv[1]);
+    saena::matrix A (comm);
+    A.read_file(file_name);
+//    A.read_file(file_name, "triangle");
+    A.assemble();
+//    A.assemble_writeToFile("writeMatrix");
 
     // ********** print matrix and time **********
 
@@ -62,11 +74,36 @@ int main(int argc, char* argv[]){
 
 //    petsc_viewer(A.get_internal_matrix());
 
-    // *************************** set rhs: Laplacian ****************************
+    // *************************** set rhs ****************************
 
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs;
-    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
+
+    // ********** 1 - set rhs: random **********
+
+    rhs.resize(num_local_row);
+    generate_rhs_old(rhs);
+
+    // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
+
+//    rhs.resize(num_local_row);
+//    for(index_t i = 0; i < A.get_num_local_rows(); i++)
+//        rhs[i] = i + 1 + A.get_internal_matrix()->split[rank];
+
+    // ********** 3 - set rhs: Laplacian **********
+
+    // don't set the size for this method
+//    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
+
+    // ********** 4 - set rhs: read from file **********
+
+//    char* Vname(argv[2]);
+//    saena::read_vector_file(rhs, A, Vname, comm);
+//    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
+
+    // set rhs
+//    A.get_internal_matrix()->matvec(v, rhs);
+//    rhs = v;
 
     // ********** print rhs **********
 
