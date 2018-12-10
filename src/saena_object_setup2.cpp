@@ -645,7 +645,7 @@ int saena_object::fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t *mempool, MPI_Comm comm){$
+                          value_t *mempool, MPI_Comm comm){
 
     // Compute: C = A * B
     // This function has three parts:
@@ -1506,7 +1506,7 @@ int saena_object::fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
                           index_t B_col_size, index_t B_col_offset,
                           index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                           index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                          value_t *mempool, MPI_Comm comm){$
+                          value_t *mempool, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
