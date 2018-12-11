@@ -149,6 +149,22 @@ double print_time(double t_dif, std::string function_name, MPI_Comm comm){
 }
 
 
+double print_time_ave(double t_dif, std::string function_name, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    double average;
+    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    average /= nprocs;
+
+    if (rank==0)
+        std::cout << std::endl << function_name << "\n" << average << std::endl;
+
+    return average;
+}
+
 //template <class T>
 //int SaenaObject::writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
 int writeVectorToFiled(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {

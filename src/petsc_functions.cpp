@@ -330,7 +330,7 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     double t1 = MPI_Wtime();
     MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
     t1 = MPI_Wtime() - t1;
-    print_time(t1, "PETSc MatMatMatMult", comm);
+    print_time_ave(t1, "PETSc MatMatMatMult", comm);
 
 //    petsc_viewer(RAP);
 

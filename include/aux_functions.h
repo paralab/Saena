@@ -373,6 +373,9 @@ double print_time(double t_start, double t_end, std::string function_name, MPI_C
 double print_time(double t_diff, std::string function_name, MPI_Comm comm);
 
 
+double print_time_ave(double t_diff, std::string function_name, MPI_Comm comm);
+
+
 int writeVectorToFiled(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm);
 
 

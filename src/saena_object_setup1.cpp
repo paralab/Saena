@@ -164,8 +164,10 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
     new_size_local = unsigned(aggArray.size());
     MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, comm);
     division = (double)A->Mbig / new_size;
-    if(rank==0) printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
-                       connStrength, A->Mbig, new_size, division);
+//    if(rank==0) {
+//        printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
+//               connStrength, A->Mbig, new_size, division);
+//    }
 
     if(adaptive_coarsening){
 
