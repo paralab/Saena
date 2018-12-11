@@ -81,8 +81,12 @@ int saena_object::setup(saena_matrix* A) { $
     if(verbose_setup_steps && rank==0) printf("setup: generate_dense_matrix()\n");
     A->switch_to_dense = switch_to_dense;
     A->dense_threshold = dense_threshold;
-    if(switch_to_dense && A->density > dense_threshold)
+    if(switch_to_dense && A->density > dense_threshold) {
         A->generate_dense_matrix();
+    }
+
+    mempool1 = new value_t[matmat_size_thre];
+//    mempool2 = new index_t[A->Mbig];
 
     if(verbose_setup_steps && rank==0) printf("setup: first Grid\n");
     grids.resize(max_level+1);
@@ -174,6 +178,8 @@ int saena_object::setup(saena_matrix* A) { $
         max_level--;
     }
 */
+
+    delete[] mempool1;
 
     if(verbose_setup && rank==0){
         printf("_____________________________\n\n");

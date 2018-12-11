@@ -67,6 +67,10 @@ public:
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to switch to the dense structure.
                                  // dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
 
+    // memory pool used in triple_mat_mult
+    value_t *mempool1;
+    index_t *mempool2;
+
     bool verbose                  = false;
     bool verbose_setup            = true;
     bool verbose_setup_steps      = false;

@@ -2299,7 +2299,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     // mempool to be used for dense matmat in fast_mm
-    value_t *mempool = new value_t[matmat_size_thre];
+//    value_t *mempool = new value_t[matmat_size_thre];
 
     std::vector<cooEntry> AP;
 
@@ -2365,7 +2365,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
             fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], mempool, A->comm);
+                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], mempool1, A->comm);
 
 //          print_vector(AP, -1, "AP", A->comm);
 
@@ -2406,7 +2406,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
         fast_mm(&A->entry[0], &R_tranpose[0], AP, A->entry.size(), R_tranpose.size(),
                 A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                &nnzPerColScan_right[0], &nnzPerColScan_right[1], mempool, A->comm);
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], mempool1, A->comm);
 
         R_tranpose.clear();
         R_tranpose.shrink_to_fit();
@@ -2492,7 +2492,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
             P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
             &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-            &nnzPerColScan_right[0], &nnzPerColScan_right[1], mempool, A->comm);
+            &nnzPerColScan_right[0], &nnzPerColScan_right[1], mempool1, A->comm);
 
     AP.clear();
     AP.shrink_to_fit();
@@ -2502,7 +2502,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
     nnzPerColScan_left.shrink_to_fit();
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
-    delete[] mempool;
 
 #ifdef _DEBUG_
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
