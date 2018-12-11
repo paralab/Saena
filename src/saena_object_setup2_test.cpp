@@ -381,7 +381,9 @@ int saena_object::fast_mm_part2(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
     // prepare splits of matrix B by row
     nnz_t B1_nnz = 0, B2_nnz;
 
-    std::vector<index_t> nnzPerCol_middle(B_col_size, 0);
+//    std::vector<index_t> nnzPerCol_middle(B_col_size, 0);
+    index_t *nnzPerCol_middle = &mempool2[0];
+    std::fill(&nnzPerCol_middle[0], &nnzPerCol_middle[B_col_size], 0);
     // to avoid subtraction in the following for loop " - B_col_offset"
     index_t *nnzPerCol_middle_p = &nnzPerCol_middle[0] - B_col_offset;
 
@@ -410,8 +412,8 @@ int saena_object::fast_mm_part2(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
         nnzPerColScan_middle[i] = nnzPerColScan_rightStart[i] + nnzPerCol_middle[i];
     }
 
-    nnzPerCol_middle.clear();
-    nnzPerCol_middle.shrink_to_fit();
+//    nnzPerCol_middle.clear();
+//    nnzPerCol_middle.shrink_to_fit();
 
 #ifdef _DEBUG_
     //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
@@ -646,7 +648,7 @@ int saena_object::fast_mm_part3(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    index_t A_col_size_half = A_col_size/2;
+//    index_t A_col_size_half = A_col_size/2;
     index_t B_col_size_half = B_col_size/2;
 
 
@@ -680,7 +682,9 @@ int saena_object::fast_mm_part3(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
     nnz_t A1_nnz = 0, A2_nnz;
     index_t A_row_threshold = A_row_size_half + A_row_offset;
 
-    std::vector<index_t> nnzPerCol_middle(A_col_size, 0);
+//    std::vector<index_t> nnzPerCol_middle(A_col_size, 0);
+    index_t *nnzPerCol_middle = &mempool2[0];
+    std::fill(&nnzPerCol_middle[0], &nnzPerCol_middle[A_col_size], 0);
     // to avoid subtraction in the following for loop " - B_col_offset"
     index_t *nnzPerCol_middle_p = &nnzPerCol_middle[0] - A_col_offset;
 
@@ -705,8 +709,8 @@ int saena_object::fast_mm_part3(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
         nnzPerColScan_middle[i] = nnzPerColScan_leftStart[i] + nnzPerCol_middle[i];
     }
 
-    nnzPerCol_middle.clear();
-    nnzPerCol_middle.shrink_to_fit();
+//    nnzPerCol_middle.clear();
+//    nnzPerCol_middle.shrink_to_fit();
 
 #ifdef _DEBUG_
     if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 2 \n");
