@@ -238,8 +238,9 @@ int saena_object::fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
     if(rank==verbose_rank && (verbose_matmat || verbose_matmat_recursive)){printf("fast_mm: case 1: start \n");}
 #endif
 
-    std::vector<index_t> nnzPerRow_left(A_row_size, 0);
-//    std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
+//    std::vector<index_t> nnzPerRow_left(A_row_size, 0);
+    index_t *nnzPerRow_left = &mempool2[0];
+    std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
     index_t *nnzPerRow_left_p = &nnzPerRow_left[0] - A_row_offset;
     for(nnz_t i = 0; i < A_col_size; i++){
         for(nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
@@ -247,31 +248,34 @@ int saena_object::fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
         }
     }
 
-//    print_vector(nnzPerRow_left, -1, "nnzPerRow_left", comm);
-
     index_t *new_row_idx = &nnzPerRow_left[0];
     index_t *new_row_idx_p = &new_row_idx[0] - A_row_offset;
-    std::vector<index_t> orig_row_idx;
+//    std::vector<index_t> orig_row_idx;
+    index_t *orig_row_idx = &mempool2[A_row_size];
     index_t A_nnz_row_sz = 0;
-    for(nnz_t i = 0; i < A_row_size; i++){
+    for(index_t i = 0; i < A_row_size; i++){
         if(new_row_idx[i]){
             new_row_idx[i] = A_nnz_row_sz;
+//            orig_row_idx.emplace_back(i + A_row_offset);
+            orig_row_idx[A_nnz_row_sz] = i + A_row_offset;
             A_nnz_row_sz++;
-            orig_row_idx.emplace_back(i + A_row_offset);
         }
     }
 
 //    print_vector(new_row_idx, -1, "new_row_idx", comm);
 
-    std::vector<index_t> new_col_idx(B_col_size);
+//    std::vector<index_t> new_col_idx(B_col_size);
+    index_t *new_col_idx = &mempool2[A_row_size * 2];
     index_t *orig_col_idx_p = &new_col_idx[0] - B_col_offset;
-    std::vector<index_t> orig_col_idx;
+//    std::vector<index_t> orig_col_idx;
+    index_t *orig_col_idx = &mempool2[A_row_size * 2 + B_col_size];
     index_t B_nnz_col_sz = 0;
-    for(nnz_t i = 0; i < B_col_size; i++){
+    for(index_t i = 0; i < B_col_size; i++){
         if(nnzPerColScan_rightEnd[i] != nnzPerColScan_rightStart[i]){
             new_col_idx[i] = B_nnz_col_sz;
+//            orig_col_idx.emplace_back(i + B_col_offset);
+            orig_col_idx[B_nnz_col_sz] = i + B_col_offset;
             B_nnz_col_sz++;
-            orig_col_idx.emplace_back(i + B_col_offset);
         }
     }
 
