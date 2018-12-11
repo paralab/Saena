@@ -86,7 +86,7 @@ int saena_object::setup(saena_matrix* A) { $
     }
 
     mempool1 = new value_t[matmat_size_thre];
-//    mempool2 = new index_t[A->Mbig];
+    mempool2 = new index_t[A->Mbig * 4];
 
     if(verbose_setup_steps && rank==0) printf("setup: first Grid\n");
     grids.resize(max_level+1);
@@ -180,6 +180,7 @@ int saena_object::setup(saena_matrix* A) { $
 */
 
     delete[] mempool1;
+    delete[] mempool2;
 
     if(verbose_setup && rank==0){
         printf("_____________________________\n\n");

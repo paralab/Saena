@@ -102,13 +102,13 @@ public:
                 index_t B_col_size, index_t B_col_offset,
                 index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                 index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                value_t *mempool, MPI_Comm comm);
+                value_t *mempool1, index_t *mempool2, MPI_Comm comm);
     int fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                 index_t B_col_size, index_t B_col_offset,
                 index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                 index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                value_t *mempool, MPI_Comm comm);
+                value_t *mempool1, index_t *mempool2, MPI_Comm comm);
 
 
     int fast_mm(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
@@ -116,25 +116,25 @@ public:
                 index_t B_col_size, index_t B_col_offset,
                 index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                 index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                value_t *mempool, MPI_Comm comm);
+                value_t *mempool1, index_t *mempool2, MPI_Comm comm);
     int fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
-                index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                index_t B_col_size, index_t B_col_offset,
-                index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
-                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                value_t *mempool, MPI_Comm comm);
+                      index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                      index_t B_col_size, index_t B_col_offset,
+                      index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
+                      index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
+                      value_t *mempool1, index_t *mempool2, MPI_Comm comm);
     int fast_mm_part2(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                       index_t B_col_size, index_t B_col_offset,
                       index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                       index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                      value_t *mempool, MPI_Comm comm);
+                      value_t *mempool1, index_t *mempool2, MPI_Comm comm);
     int fast_mm_part3(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                       index_t B_col_size, index_t B_col_offset,
                       index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
                       index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd,
-                      value_t *mempool, MPI_Comm comm);
+                      value_t *mempool1, index_t *mempool2, MPI_Comm comm);
 
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
