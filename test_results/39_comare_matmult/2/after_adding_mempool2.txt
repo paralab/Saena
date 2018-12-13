@@ -1,0 +1,179 @@
+[u1013493@kp306:build]$ ./Saena_read_file ../data/bcsstk17.mtx
+
+level = 0 
+number of procs = 1 
+matrix size     = 10974 
+nonzero         = 219812 
+density         = 0.001825 
+
+triple_mat_mult: level 0
+0.283668
+
+PETSc MatMatMatMult
+0.79413
+
+--------------------------------------
+[u1013493@kp306:build]$ ./Saena_read_file ../data/bcsstk25.mtx
+
+level = 0 
+number of procs = 1 
+matrix size     = 15439 
+nonzero         = 133840 
+density         = 0.000561 
+
+triple_mat_mult: level 0
+0.295211
+
+PETSc MatMatMatMult
+0.442703
+
+--------------------------------------
+[u1013493@kp306:build]$ ./Saena_read_file ../data/nopoly.mtx
+
+level = 0 
+number of procs = 1 
+matrix size     = 10774 
+nonzero         = 40808 
+density         = 0.000352 
+
+triple_mat_mult: level 0
+0.0861621
+
+PETSc MatMatMatMult
+0.0470345
+
+--------------------------------------
+[u1013493@kp306:build]$ ./Saena_read_file ../data/crystm03.mtx
+
+level = 0 
+number of procs = 1 
+matrix size     = 24696 
+nonzero         = 304233 
+density         = 0.000499 
+
+triple_mat_mult: level 0
+1.56163
+
+PETSc MatMatMatMult
+1.55654
+_____________________________
+
+[u1013493@kp306:build]$ ./Saena 40 40 40
+
+level = 0 
+number of procs = 1 
+matrix size     = 64000 
+nonzero         = 438400 
+density         = 0.000107 
+
+triple_mat_mult: level 0
+2.8153
+
+PETSc MatMatMatMult
+2.27817
+_____________________________
+
+[u1013493@kp306:build]$ ./Saena 50 50 50
+
+level = 0 
+number of procs = 1 
+matrix size     = 125000 
+nonzero         = 860000 
+density         = 0.000055 
+
+triple_mat_mult: level 0
+6.4053
+
+PETSc MatMatMatMult
+7.52423
+_____________________________
+
+[u1013493@kp306:build]$ ./Saena 60 60 60
+
+level = 0 
+number of procs = 1 
+matrix size     = 216000 
+nonzero         = 1490400 
+density         = 0.000032 
+
+triple_mat_mult: level 0
+11.8619
+
+PETSc MatMatMatMult
+22.9839
+_____________________________
+
+[u1013493@kp306:build]$ ./Saena_read_file ../data/Lin.mtx 
+
+number of procs = 1 
+matrix size     = 256000 
+nonzero         = 1011200 
+density         = 0.000015 
+
+triple_mat_mult: level 0
+9.70915
+
+PETSc MatMatMatMult
+62.0519
+_____________________________
+
+[u1013493@kp306:build]$ mpirun -np 4 ./Saena_read_file ../data/Lin.mtx
+
+level = 0 
+number of procs = 4 
+matrix size     = 256000 
+nonzero         = 1011200 
+density         = 0.000015 
+
+triple_mat_mult: level 0
+3.18954
+
+PETSc MatMatMatMult
+4.50183
+_____________________________
+
+[u1013493@kp306:build]$ mpirun -np 10 ./Saena_read_file ../data/Lin.mtx 
+
+level = 0 
+number of procs = 10 
+matrix size     = 256000 
+nonzero         = 1011200 
+density         = 0.000015 
+
+triple_mat_mult: level 0
+1.51762
+
+PETSc MatMatMatMult
+0.624326
+_____________________________
+
+[u1013493@kp306:build]$ ./Saena_read_file ../data/thermomech_dM.mtx 
+
+level = 0 
+number of procs = 1 
+matrix size     = 204316 
+nonzero         = 813716 
+density         = 0.000019 
+
+triple_mat_mult: level 0
+9.70551
+
+PETSc MatMatMatMult
+3.5709
+_____________________________
+
+[u1013493@kp306:build]$ mpirun -np 4 ./Saena_read_file ../data/thermomech_dM.mtx 
+
+level = 0 
+number of procs = 4 
+matrix size     = 204316 
+nonzero         = 813716 
+density         = 0.000019 
+
+triple_mat_mult: level 0
+7.29849
+
+PETSc MatMatMatMult
+1.86426
+_____________________________
+

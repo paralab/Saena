@@ -1,0 +1,94 @@
+./Saena ../data/4225s32x64o1mu1.bin
+
+level = 0 
+number of procs = 1 
+matrix size     = 4225 
+nonzero         = 35225 
+density         = 0.001973 
+
+triple_mat_mult: level 0
+min: 0.042413
+ave: 0.042413
+max: 0.042413
+
+
+PETSc MatMatMatMult
+min: 0.0437479
+ave: 0.0437479
+max: 0.0437479
+
+_____________________________
+
+level = 1 
+number of procs = 1 
+matrix size     = 1280 
+nonzero         = 23972 
+density         = 0.014631 
+
+triple_mat_mult: level 1
+min: 0.00785875
+ave: 0.00785875
+max: 0.00785875
+
+
+PETSc MatMatMatMult
+min: 0.0534258
+ave: 0.0534258
+max: 0.0534258
+
+_____________________________
+
+level = 2 
+number of procs = 1 
+matrix size     = 471 
+nonzero         = 9279 
+density         = 0.041827 
+
+triple_mat_mult: level 2
+min: 0.00261474
+ave: 0.00261474
+max: 0.00261474
+
+
+PETSc MatMatMatMult
+min: 0.0321896
+ave: 0.0321896
+max: 0.0321896
+
+_____________________________
+
+level = 3 
+number of procs = 1 
+matrix size     = 313 
+nonzero         = 3231 
+density         = 0.032980 
+
+triple_mat_mult: level 3
+min: 0.000821829
+ave: 0.000821829
+max: 0.000821829
+
+
+PETSc MatMatMatMult
+min: 0.0099287
+ave: 0.0099287
+max: 0.0099287
+
+_____________________________
+
+level = 4 
+number of procs = 1 
+matrix size     = 275 
+nonzero         = 617 
+density         = 0.008159 
+
+triple_mat_mult: level 4
+min: 0.000417471
+ave: 0.000417471
+max: 0.000417471
+
+
+PETSc MatMatMatMult
+min: 0.00238538
+ave: 0.00238538
+max: 0.00238538
