@@ -1,31 +1,6 @@
-#cd external/parmetis-4.0.3/metis; \
-#make config prefix=./install_folder ;\
-#make -j28 install ;\
-#cd ../; \
-#make config prefix=./install_folder ;\
-#make -j28 install ;\
-#cd ../../; \
-#mkdir build; cd build; \
-#mkdir build_zfp; cd build_zfp; \
-#cmake ../../external/zfp-0.5.3; \
-#make -j28; \
-#cd ..; \
-#mkdir build_superlu; cd build_superlu; \
-#cmake ../../external/SuperLU_DIST_5.4.0 \
-#-DXSDK_INDEX_SIZE=64 \
-#-Denable_blaslib=OFF \
-#-DCMAKE_INSTALL_PREFIX=. ;\
-#make -j28 install; \
-#cd ..; \
-#cmake ..; \
-#make -j28
-
-#GFORTRAN_LIB="/usr/lib64/libgfortran.so.3" ..
-
 cmake_minimum_required(VERSION 3.3)
 project(Saena)
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -43,7 +18,6 @@ message(--\ Saena:\ CMAKE_BUILD_TYPE:\ ${CMAKE_BUILD_TYPE})
 IF(CMAKE_BUILD_TYPE STREQUAL Debug)
     add_definitions(-D__DEBUG__)
 ENDIF()
-
 
 # -----------------------------------------------------------------------
 # OpenMP
@@ -63,39 +37,17 @@ include_directories(${MPI_INCLUDE_PATH})
 # -----------------------------------------------------------------------
 # Dependencies
 
-# Metis/Parmetis
-#add_subdirectory(external/parmetis-4.0.3/metis)
-#add_subdirectory(external/parmetis-4.0.3)
-
-#message("++++ CMAKE_INSTALL_PREFIX after parmetis: " ${CMAKE_INSTALL_PREFIX})
-#message("-----------CMAKE_SOURCE_DIR: " ${CMAKE_SOURCE_DIR})
-
 set(PARMETIS_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3)
 set(METIS_LIBRARY ${PARMETIS_ROOT_DIR}/metis/build/install_folder/lib/libmetis.a)
 set(PARMETIS_LIBRARY ${PARMETIS_ROOT_DIR}/build/install_folder/lib/libparmetis.a)
-#set(PARMETIS_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3)
 set(METIS_INCLUDE_DIR ${PARMETIS_ROOT_DIR}/metis/build/install_folder/include)
 set(PARMETIS_INCLUDE_DIR ${PARMETIS_ROOT_DIR}/build/install_folder/include)
-#set(METIS_LIBRARY ${PARMETIS_ROOT_DIR}/metis/build/install_folder/lib/libmetis.a)
-#set(PARMETIS_LIBRARY ${PARMETIS_ROOT_DIR}/build/install_folder/lib/libparmetis.a)
-
-#add_subdirectory(external/zfp-0.5.3)
-#add_subdirectory(external/SuperLU_DIST_5.4.0)
 
 # -----------------------------------------------------------------------
 # BLAS
 
 find_package(BLAS REQUIRED)
 message(STATUS BLAS found: ${BLAS_LIBRARIES})
-
-# BLAS_INCLUDE_DIR does not get found by find_package(BLAS), so find it by the following command:
-#find_path(BLAS_INCLUDE_DIR cblas.h
-#        /usr/include
-#        /usr/local/include
-#        $ENV{BLAS_HOME}/include)
-
-#message(STATUS BLAS_include found: ${BLAS_INCLUDE_DIR})
-#include_directories(${BLAS_INCLUDE_DIR})
 
 # -----------------------------------------------------------------------
 # LAPACK
@@ -107,11 +59,6 @@ include_directories(${LAPACK_INCLUDE_PATH})
 
 # -----------------------------------------------------------------------
 # SuperLU
-
-#message("-----------CMAKE_CURRENT_SOURCE_DIR: " ${CMAKE_CURRENT_SOURCE_DIR})
-#message("-----------CMAKE_SOURCE_DIR: " ${CMAKE_SOURCE_DIR})
-#message("-----------CMAKE_CURRENT_BINARY_DIR: " ${CMAKE_CURRENT_BINARY_DIR})
-#message("-----------CMAKE_BINARY_DIR: " ${CMAKE_BINARY_DIR})
 
 set(SuperLU_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SuperLU_DIST_5.4.0)
 set(SuperLU_DIST_LIB ${CMAKE_BINARY_DIR}/build_superlu/lib/libsuperlu_dist.a)
@@ -176,10 +123,6 @@ set(DOLLAR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/dollar")
 include_directories(
         ${DOLLAR_DIR}
 )
-
-#add_definitions($=)
-#set(DOLLAR_DISABLE "-D$=")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DOLLAR_DISABLE}")
 
 # -----------------------------------------------------------------------
 # trsl: for sampling
