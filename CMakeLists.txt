@@ -5,15 +5,20 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# -----------------------------------------------------------------------
+# Build Type
+
+set(CMAKE_BUILD_TYPE Debug)
+
 #IF(NOT CMAKE_BUILD_TYPE)
 #        SET(CMAKE_BUILD_TYPE Debug)
 #ENDIF()
-set(CMAKE_BUILD_TYPE Debug)
-#set(CMAKE_BUILD_TYPE Release)
 
+#set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-message(--\ Saena:\ CMAKE_BUILD_TYPE:\ ${CMAKE_BUILD_TYPE})
+
+#message(--\ Saena:\ CMAKE_BUILD_TYPE:\ ${CMAKE_BUILD_TYPE})
 
 IF(CMAKE_BUILD_TYPE STREQUAL Debug)
     add_definitions(-D__DEBUG__)
@@ -109,7 +114,7 @@ include_directories(
 # -----------------------------------------------------------------------
 #PETSc
 
-set(PETSC_DIR "~/softwares/petsc-3.8.4")
+#set(PETSC_DIR "~/softwares/petsc-3.8.4")
 set(PETSC_LIB ${PETSC_DIR}/arch-linux2-c-debug/lib/libpetsc.so)
 include_directories(
         ${PETSC_DIR}/include
