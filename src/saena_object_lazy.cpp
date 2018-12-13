@@ -47,6 +47,9 @@ int saena_object::update2(saena_matrix* A_new){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    mempool1 = new value_t[matmat_size_thre];
+    mempool2 = new index_t[grids[0].A->Mbig * 4];
+
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     // do the same for the next level matrices.
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
@@ -63,6 +66,9 @@ int saena_object::update2(saena_matrix* A_new){
 //            Grid(&grids[i].Ac, max_level, i + 1);
         }
     }
+
+    delete[] mempool1;
+    delete[] mempool2;
 
 //    if(rank==0) dollar::text(std::cout);
 

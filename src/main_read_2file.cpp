@@ -154,19 +154,19 @@ int main(int argc, char* argv[]){
     solver.solve_pcg(u, &opts);
 
     t2 = MPI_Wtime();
-    print_time(t1, t2, "Solve:", comm);
+//    print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
 
     // *************************** lazy update ****************************
 
-    t1 = MPI_Wtime();
+//    t1 = MPI_Wtime();
 
-    solver.update2(&A2);
+    solver.update3(&A2);
     solver.solve_pcg(u, &opts);
 
-    t2 = MPI_Wtime();
-    print_time(t1, t2, "Solve update:", comm);
+//    t2 = MPI_Wtime();
+//    print_time(t1, t2, "Solve update:", comm);
 
     // *************************** test for lazy update functions ****************************
 /*

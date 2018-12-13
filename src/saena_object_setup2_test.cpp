@@ -49,8 +49,8 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    int verbose_rank = 0;
 #ifdef __DEBUG__
+    int verbose_rank = 0;
     if(rank==verbose_rank && verbose_matmat) printf("\nfast_mm: start \n");
 #endif
 
@@ -495,22 +495,51 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 1 \n");
 #endif
 
-    fast_mm(&A[0], &B[0], C1, A1_nnz, B1_nnz,
-            A_row_size, A_row_offset, A_col_size_half, A_col_offset,
-            B_col_size, B_col_offset,
-            nnzPerColScan_leftStart,  nnzPerColScan_leftEnd, // A1
-            nnzPerColScan_rightStart, &nnzPerColScan_middle[0], comm); // B1
+    if(A1_nnz == 0 || B1_nnz == 0){
+#ifdef __DEBUG__
+        if(rank==verbose_rank && verbose_matmat){
+            if(A1_nnz == 0){
+                printf("\nskip: A1_nnz == 0\n\n");
+            } else {
+                printf("\nskip: B1_nnz == 0\n\n");
+            }
+        }
+#endif
+    } else {
+
+        fast_mm(&A[0], &B[0], C1, A1_nnz, B1_nnz,
+                A_row_size, A_row_offset, A_col_size_half, A_col_offset,
+                B_col_size, B_col_offset,
+                nnzPerColScan_leftStart,  nnzPerColScan_leftEnd, // A1
+                nnzPerColScan_rightStart, &nnzPerColScan_middle[0], comm); // B1
+
+    }
+
 
     // C2 = A2 * B2
 #ifdef __DEBUG__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 2 \n");
 #endif
 
-    fast_mm(&A[0], &B[0], C2, A2_nnz, B2_nnz,
-            A_row_size, A_row_offset, A_col_size-A_col_size_half, A_col_offset+A_col_size_half,
-            B_col_size, B_col_offset,
-            &nnzPerColScan_leftStart[A_col_size_half], &nnzPerColScan_leftEnd[A_col_size_half], // A2
-            &nnzPerColScan_middle[0], nnzPerColScan_rightEnd, comm); // B2
+    if(A2_nnz == 0 || B2_nnz == 0){
+#ifdef __DEBUG__
+        if(rank==verbose_rank && verbose_matmat){
+            if(A2_nnz == 0){
+                printf("\nskip: A2_nnz == 0\n\n");
+            } else {
+                printf("\nskip: B2_nnz == 0\n\n");
+            }
+        }
+#endif
+    } else {
+
+        fast_mm(&A[0], &B[0], C2, A2_nnz, B2_nnz,
+                A_row_size, A_row_offset, A_col_size-A_col_size_half, A_col_offset+A_col_size_half,
+                B_col_size, B_col_offset,
+                &nnzPerColScan_leftStart[A_col_size_half], &nnzPerColScan_leftEnd[A_col_size_half], // A2
+                &nnzPerColScan_middle[0], nnzPerColScan_rightEnd, comm); // B2
+
+    }
 
 #ifdef __DEBUG__
     //        print_vector(C1, -1, "C1", comm);
@@ -732,41 +761,104 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 #ifdef __DEBUG__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 1 \n");
 #endif
-    fast_mm(&A[0], &B[0], C_temp, A1_nnz, B1_nnz,
-            A_row_size_half, A_row_offset, A_col_size, A_col_offset,
-            B_col_size_half, B_col_offset,
-            nnzPerColScan_leftStart,  &nnzPerColScan_middle[0], // A1
-            nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+
+    if(A1_nnz == 0 || B1_nnz == 0){
+#ifdef __DEBUG__
+        if(rank==verbose_rank && verbose_matmat){
+            if(A1_nnz == 0){
+                printf("\nskip: A1_nnz == 0\n\n");
+            } else {
+                printf("\nskip: B1_nnz == 0\n\n");
+            }
+        }
+#endif
+    } else {
+
+        fast_mm(&A[0], &B[0], C_temp, A1_nnz, B1_nnz,
+                A_row_size_half, A_row_offset, A_col_size, A_col_offset,
+                B_col_size_half, B_col_offset,
+                nnzPerColScan_leftStart,  &nnzPerColScan_middle[0], // A1
+                nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+
+    }
+
 
     // C2 = A2 * B1:
 #ifdef __DEBUG__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 2 \n");
 #endif
-    fast_mm(&A[0], &B[0], C_temp, A2_nnz, B1_nnz,
-            A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset,
-            B_col_size_half, B_col_offset,
-            &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
-            nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+
+    if(A2_nnz == 0 || B1_nnz == 0){
+#ifdef __DEBUG__
+        if(rank==verbose_rank && verbose_matmat){
+            if(A2_nnz == 0){
+                printf("\nskip: A2_nnz == 0\n\n");
+            } else {
+                printf("\nskip: B1_nnz == 0\n\n");
+            }
+        }
+#endif
+    } else {
+
+        fast_mm(&A[0], &B[0], C_temp, A2_nnz, B1_nnz,
+                A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset,
+                B_col_size_half, B_col_offset,
+                &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
+                nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+
+    }
+
 
     // C3 = A1 * B2:
 #ifdef __DEBUG__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 3 \n");
 #endif
-    fast_mm(&A[0], &B[0], C_temp, A1_nnz, B2_nnz,
-            A_row_size_half, A_row_offset, A_col_size, A_col_offset,
-            B_col_size-B_col_size_half, B_col_offset+B_col_size_half,
-            nnzPerColScan_leftStart,  &nnzPerColScan_middle[0], // A1
-            &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half], comm); // B2
+
+    if(A1_nnz == 0 || B2_nnz == 0){
+#ifdef __DEBUG__
+        if(rank==verbose_rank && verbose_matmat){
+            if(A1_nnz == 0){
+                printf("\nskip: A1_nnz == 0\n\n");
+            } else {
+                printf("\nskip: B2_nnz == 0\n\n");
+            }
+        }
+#endif
+    } else {
+
+        fast_mm(&A[0], &B[0], C_temp, A1_nnz, B2_nnz,
+                A_row_size_half, A_row_offset, A_col_size, A_col_offset,
+                B_col_size-B_col_size_half, B_col_offset+B_col_size_half,
+                nnzPerColScan_leftStart,  &nnzPerColScan_middle[0], // A1
+                &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half], comm); // B2
+
+    }
+
 
     // C4 = A2 * B2
 #ifdef __DEBUG__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 4 \n");
 #endif
-    fast_mm(&A[0], &B[0], C_temp, A2_nnz, B2_nnz,
-            A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset,
-            B_col_size-B_col_size_half, B_col_offset+B_col_size_half,
-            &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
-            &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half], comm); // B2
+
+    if(A2_nnz == 0 || B2_nnz == 0){
+#ifdef __DEBUG__
+        if(rank==verbose_rank && verbose_matmat){
+            if(A2_nnz == 0){
+                printf("\nskip: A2_nnz == 0\n\n");
+            } else {
+                printf("\nskip: B2_nnz == 0\n\n");
+            }
+        }
+#endif
+    } else {
+
+        fast_mm(&A[0], &B[0], C_temp, A2_nnz, B2_nnz,
+                A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset,
+                B_col_size-B_col_size_half, B_col_offset+B_col_size_half,
+                &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
+                &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half], comm); // B2
+
+    }
 
     // C1 = A1 * B1:
 //        fast_mm(A1, B1, C_temp, A_row_size_half, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size_half, B_col_offset, comm);
