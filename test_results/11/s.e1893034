@@ -1,8 +1,0 @@
-ModuleCmd_Switch.c(172):ERROR:152: Module 'PrgEnv-cray' is currently not loaded
-_pmiu_daemon(SIGCHLD): [NID 00014] [c0-0c0s7n0] [Tue Oct 17 10:03:09 2017] PE RANK 58 exit signal Segmentation fault
-_pmiu_daemon(SIGCHLD): [NID 00794] [c5-0c0s2n2] [Tue Oct 17 10:03:09 2017] PE RANK 183 exit signal Segmentation fault
-_pmiu_daemon(SIGCHLD): [NID 00037] [c0-0c1s2n1] [Tue Oct 17 10:03:09 2017] PE RANK 131 exit signal Segmentation fault
-_pmiu_daemon(SIGCHLD): [NID 00011] [c0-0c0s5n1] [Tue Oct 17 10:03:09 2017] PE RANK 34 exit signal Segmentation fault
-_pmiu_daemon(SIGCHLD): [NID 00818] [c5-0c1s6n2] [Tue Oct 17 10:03:09 2017] PE RANK 211 exit signal Segmentation fault
-_pmiu_daemon(SIGCHLD): [NID 00033] [c0-0c1s0n1] [Tue Oct 17 10:03:09 2017] PE RANK 101 exit signal Segmentation fault
-[NID 00011] 2017-10-17 10:03:09 Apid 13601425: initiated application termination
