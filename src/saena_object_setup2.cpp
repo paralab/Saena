@@ -2207,7 +2207,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
             if(kend - kstart == 0) continue; // if there isno nonzero on this row of A, then skip.
             for (k = kstart; k < kend; k++) {
 //                if(rank==1) std::cout << "R = " << R->entry_remote[j] << "\tA = " << Arecv[indicesPRecv[k]] << std::endl;
-                RA_temp.entry.push_back(cooEntry(R->entry_remote[j].row,
+                RA_temp.entry.emplace_back(cooEntry(R->entry_remote[j].row,
                                                  Arecv[indices_row_wise[k]].col,
                                                  R->entry_remote[j].val * Arecv[indices_row_wise[k]].val));
             }
@@ -2427,7 +2427,6 @@ int saena_object::triple_mat_mult_old(Grid *grid){
             i++;
         }
         entry_size++;
-        // todo: pruning. don't hard code tol. does this make the matrix non-symmetric?
 //        if( abs(Ac->entry.back().val) < 1e-6)
 //            Ac->entry.pop_back();
     }
