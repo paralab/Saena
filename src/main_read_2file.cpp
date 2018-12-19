@@ -64,7 +64,7 @@ int main(int argc, char* argv[]){
 
     char* file_name2(argv[2]);
     saena::matrix A2 (comm);
-    A2.read_file(file_name);
+    A2.read_file(file_name2);
     A2.assemble();
 
     // ********** print matrix and time **********
@@ -148,12 +148,12 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Solve ****************************
 
-    t1 = MPI_Wtime();
+//    t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
     solver.solve_pcg(u, &opts);
 
-    t2 = MPI_Wtime();
+//    t2 = MPI_Wtime();
 //    print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
@@ -162,7 +162,8 @@ int main(int argc, char* argv[]){
 
 //    t1 = MPI_Wtime();
 
-    solver.update3(&A2);
+//    std::fill(u.begin(), u.end(), 0);
+    solver.update1(&A2);
     solver.solve_pcg(u, &opts);
 
 //    t2 = MPI_Wtime();

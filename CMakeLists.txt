@@ -8,20 +8,22 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # -----------------------------------------------------------------------
 # Build Type
 
-set(CMAKE_BUILD_TYPE Debug)
-
 #IF(NOT CMAKE_BUILD_TYPE)
-#        SET(CMAKE_BUILD_TYPE Debug)
+#        SET(CMAKE_BUILD_TYPE Release)
 #ENDIF()
 
+set(CMAKE_BUILD_TYPE Debug)
 #set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 #message(--\ Saena:\ CMAKE_BUILD_TYPE:\ ${CMAKE_BUILD_TYPE})
 
+#IF(CMAKE_BUILD_TYPE STREQUAL Release)
+#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+#ENDIF()
+
 IF(CMAKE_BUILD_TYPE STREQUAL Debug)
-    add_definitions(-D__DEBUG__)
+    add_definitions(-D__DEBUG1__)
 ENDIF()
 
 # -----------------------------------------------------------------------
@@ -29,7 +31,7 @@ ENDIF()
 
 find_package(OpenMP)
 if(OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
@@ -42,11 +44,18 @@ include_directories(${MPI_INCLUDE_PATH})
 # -----------------------------------------------------------------------
 # Dependencies
 
-set(PARMETIS_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3)
-set(METIS_LIBRARY ${PARMETIS_ROOT_DIR}/metis/build/install_folder/lib/libmetis.a)
-set(PARMETIS_LIBRARY ${PARMETIS_ROOT_DIR}/build/install_folder/lib/libparmetis.a)
-set(METIS_INCLUDE_DIR ${PARMETIS_ROOT_DIR}/metis/build/install_folder/include)
-set(PARMETIS_INCLUDE_DIR ${PARMETIS_ROOT_DIR}/build/install_folder/include)
+#set(PARMETIS_ROOT_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3)
+#set(METIS_LIBRARY        ${PARMETIS_ROOT_DIR}/metis/build/install_folder/lib/libmetis.a)
+#set(PARMETIS_LIBRARY     ${PARMETIS_ROOT_DIR}/build/install_folder/lib/libparmetis.a)
+#set(METIS_INCLUDE_DIR    ${PARMETIS_ROOT_DIR}/metis/build/install_folder/include)
+#set(PARMETIS_INCLUDE_DIR ${PARMETIS_ROOT_DIR}/build/install_folder/include)
+
+set(METIS_LIBRARY        ${CMAKE_BINARY_DIR}/build_metis/lib/libmetis.a)
+set(PARMETIS_LIBRARY     ${CMAKE_BINARY_DIR}/build_parmetis/lib/libparmetis.a)
+set(METIS_INCLUDE_DIR    ${CMAKE_BINARY_DIR}/build_metis/include)
+set(PARMETIS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/build_parmetis/include)
+#set(METIS_INCLUDE_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/metis/include)
+#set(PARMETIS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/include)
 
 # -----------------------------------------------------------------------
 # BLAS
@@ -114,7 +123,7 @@ include_directories(
 # -----------------------------------------------------------------------
 #PETSc
 
-#set(PETSC_DIR "~/softwares/petsc-3.8.4")
+set(PETSC_DIR "~/softwares/petsc-3.8.4")
 set(PETSC_LIB ${PETSC_DIR}/arch-linux2-c-debug/lib/libpetsc.so)
 include_directories(
         ${PETSC_DIR}/include
@@ -187,12 +196,12 @@ set(SOURCE_FILES ${SOURCE_FILES}
 
 # -----------------------------------------------------------------------
 
-add_executable(Saena           src/main.cpp           ${SOURCE_FILES} ${HEADER_FILES})
-add_executable(Saena_read_file src/main_read_file.cpp ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena           src/main.cpp           ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_read_file src/main_read_file.cpp ${SOURCE_FILES} ${HEADER_FILES})
 add_executable(Saena2_read_file src/main_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 # -----------------------------------------------------------------------
 
-target_link_libraries(Saena            ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
-target_link_libraries(Saena_read_file  ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
+#target_link_libraries(Saena            ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
+#target_link_libraries(Saena_read_file  ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
 target_link_libraries(Saena2_read_file ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})

@@ -884,9 +884,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    for(int i = 0; i < 10; i++){
-//        std::cout <<  grids[0].A->entry[i] << std::endl;
-//    }
+    std::fill(u.begin(), u.end(), 0);
 
     // ************** check u size **************
 

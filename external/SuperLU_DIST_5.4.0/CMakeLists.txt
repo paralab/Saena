@@ -208,7 +208,7 @@ endif()
 
 # added by Majid
 set(PARMETIS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../parmetis-4.0.3)
-set(PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/build)
+set(PARMETIS_BUILD_DIR ${CMAKE_BINARY_DIR}/../build_parmetis)
 set(TPL_PARMETIS_INCLUDE_DIRS "${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include")
 set(TPL_PARMETIS_LIBRARIES "${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a")
 

@@ -2,9 +2,10 @@
 #include "saena_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
+#include "parUtils.h"
 #include "dollar.hpp"
-#include <cstdio>
 
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <mpi.h>
@@ -88,13 +89,13 @@ int saena_object::update3(saena_matrix* A_new){
 //
 //    for(int i = 0; i < max_level; i++){
 //        if(grids[i].A->active) {
-//            // after A_diff is used in coarsen_update_Ac, it will be updated at the end of that function
-//            // to be the diff for the next level.
-//            coarsen_update_Ac(&grids[i], A_diff);
+//            // after A_diff is used in triple_mat_mult_update_Ac, it will be updated at the end of that function to
+//            // be the diff for the next level.
+//            triple_mat_mult_update_Ac(&grids[i], A_diff);
 //        }
 //    }
 //
-//    grids[i].Ac->entry_temp  <- coarsen_update_Ac(&grids[i], A_diff);
+//    grids[i].Ac->entry_temp  <- triple_mat_mult_update_Ac(&grids[i], A_diff);
 //    Ac->repartition_nnz_update_Ac();
 //    std::set<cooEntry> entry_set(entry.begin(), entry.end());
 //    add entry_temp to entry_set. (entry_temp are duplicates in entry_set. So, add duplicates.)
@@ -119,20 +120,27 @@ int saena_object::update3(saena_matrix* A_new){
 //    print_vector(A_diff, -1, "A_diff", grids[0].A->comm);
 //    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
 
+    mempool1 = new value_t[matmat_size_thre];
+    mempool2 = new index_t[grids[0].A->Mbig * 4];
+
     grids[0].A = A_new; // the whole matrix A for level 0 should be updated with the updated matrix.
     for(int i = 0; i < max_level; i++){
         if(grids[i].A->active) {
 //            if(rank==0) printf("_____________________________________\nlevel = %d \n", i);
 //            print_vector(A_diff, 1, "A_diff", grids[0].A->comm);
 //            grids[i].Ac.print_entry(-1);
-            coarsen_update_Ac(&grids[i], A_diff); // A_diff will be updated inside coarsen_update_Ac to be the diff for the next level.
+            triple_mat_mult_update_Ac(&grids[i], A_diff); // A_diff will be updated inside triple_mat_mult_update_Ac to be the diff for the next level.
 //            grids[i].Ac.print_entry(-1);
 //            print_vector(A_diff, -1, "A_diff", grids[i].Ac.comm);
         }
     }
 
+    delete[] mempool1;
+    delete[] mempool2;
+
     return 0;
 }
+
 
 //int saena_object::solve_pcg_update1
 /*
@@ -952,7 +960,7 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new
         if(grids[i].A->active) {
 //            if(rank==0) printf("_____________________________________\nlevel = %lu \n", i);
 //            grids[i].Ac.print_entry(-1);
-            coarsen_update_Ac(&grids[i], A_diff);
+            triple_mat_mult_update_Ac(&grids[i], A_diff);
 //            grids[i].Ac.print_entry(-1);
 //            print_vector(A_diff, -1, "A_diff", grids[i].Ac.comm);
 //            print_vector(grids[i+1].A->split, 0, "split", grids[i+1].A->comm);
@@ -1117,7 +1125,7 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         index_t loc_size = 0;
         for(nnz_t i = 0; i < A.nnz_l_local; i++){
             if(!almost_zero(A.values_local[i] - B.values_local[i])){
-//                if(rank==1) printf("%u \t%u \t%f \t%f \n", A.row_local[i], A.col_local[i], A.values_local[i], B.values_local[i]);
+//                if(rank==0) printf("%u \t%u \t%f \t%f \n", A.row_local[i], A.col_local[i], A.values_local[i], B.values_local[i]);
                 C[loc_size] = cooEntry(A.row_local[i], A.col_local[i], B.values_local[i]-A.values_local[i]);
                 loc_size++;
             }
@@ -1162,7 +1170,598 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 }
 
 
-int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
+int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &diff) {
+
+    // Output: Ac = R * A * P
+    // Steps:
+    // 1- Compute AP = A * P. To do that use the transpose of R_i, instead of P. Pass all R_j's to all the processors,
+    //    Then, multiply local A_i by R_jon each process.
+    // 2- Compute RAP = R * AP. Use transpose of P_i instead of R. It is done locally. So multiply P_i * (AP)_i.
+    // 3- Sort and remove local duplicates.
+    // 4- Do a parallel sort based on row-major order. A modified version of par::sampleSort from usort is used here.
+    //    Again, remove duplicates.
+    // 5- Not complete yet: Sparsify Ac.
+
+    saena_matrix *A    = grid->A;
+    prolong_matrix *P  = &grid->P;
+    restrict_matrix *R = &grid->R;
+    saena_matrix *Ac   = &grid->Ac;
+
+    MPI_Comm comm = A->comm;
+//    Ac->active_old_comm = true;
+
+//    int rank1, nprocs1;
+//    MPI_Comm_size(comm, &nprocs1);
+//    MPI_Comm_rank(comm, &rank1);
+//    if(A->active_old_comm)
+//        printf("rank = %d, nprocs = %d active\n", rank1, nprocs1);
+
+#ifdef __DEBUG1__
+//    print_vector(A->entry, -1, "A->entry", comm);
+//    print_vector(P->entry, -1, "P->entry", comm);
+//    print_vector(R->entry, -1, "R->entry", comm);
+#endif
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    MPI_Barrier(comm); printf("rank %d: diff.size = %lu \n", rank, diff.size()); MPI_Barrier(comm);
+
+#ifdef __DEBUG1__
+    if (verbose_coarsen) {
+        MPI_Barrier(comm);
+        if (rank == 0) printf("start of triple_mat_mult nprocs: %d \n", nprocs);
+        MPI_Barrier(comm);
+        printf("rank %d: A.Mbig = %u, \tA.M = %u, \tA.nnz_g = %lu, \tA.nnz_l = %lu \n", rank, A->Mbig, A->M, A->nnz_g,
+               A->nnz_l);
+        MPI_Barrier(comm);
+        printf("rank %d: P.Mbig = %u, \tP.M = %u, \tP.nnz_g = %lu, \tP.nnz_l = %lu \n", rank, P->Mbig, P->M, P->nnz_g,
+               P->nnz_l);
+        MPI_Barrier(comm);
+        printf("rank %d: R.Mbig = %u, \tR.M = %u, \tR.nnz_g = %lu, \tR.nnz_l = %lu \n", rank, R->Mbig, R->M, R->nnz_g,
+               R->nnz_l);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    Ac->Mbig = P->Nbig;
+    Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
+    Ac->M_old = Ac->M;
+    Ac->comm = A->comm;
+    Ac->comm_old = A->comm;
+    Ac->last_M_shrink = A->last_M_shrink;
+    Ac->last_density_shrink = A->last_density_shrink;
+//    Ac->last_nnz_shrink = A->last_nnz_shrink;
+//    Ac->enable_shrink = A->enable_shrink;
+//    Ac->enable_shrink = A->enable_shrink_next_level;
+    Ac->active_old_comm = true;
+    Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
+    Ac->switch_to_dense = switch_to_dense;
+    Ac->dense_threshold = dense_threshold;
+
+    Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
+    if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
+        Ac->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
+
+    //return these to default, since they have been used in the above part.
+    A->cpu_shrink_thre2_next_level = -1;
+    A->enable_shrink_next_level = false;
+    Ac->split = P->splitNew;
+
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm);
+//    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
+//           rank, Ac->Mbig, Ac->M, Ac->nnz_g, Ac->nnz_l, Ac->density);
+//    MPI_Barrier(comm);
+
+//    if(verbose_coarsen){
+//        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %lu, Ac->nnz_g = %lu \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // ********** minor shrinking **********
+    for(index_t i = 0; i < Ac->split.size()-1; i++){
+        if(Ac->split[i+1] - Ac->split[i] == 0){
+//            printf("rank %d: shrink minor in triple_mat_mult: i = %d, split[i] = %d, split[i+1] = %d\n", rank, i, Ac->split[i], Ac->split[i+1]);
+            Ac->shrink_cpu_minor();
+            break;
+        }
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // *******************************************************
+    // multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
+    // *******************************************************
+    // this is an overlapped version of this multiplication, similar to dense_matvec.
+
+    // local transpose of R is being used to compute A*P. So R is transposed locally here.
+    std::vector<cooEntry> R_tranpose(R->entry.size());
+    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], R_tranpose);
+
+#ifdef __DEBUG1__
+//    print_vector(R->entry, -1, "R->entry", comm);
+//    print_vector(R_tranpose, -1, "R_tranpose", comm);
+#endif
+
+    std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
+//    unsigned int *AnnzPerCol_p = &nnzPerCol_left[0] - A[0].col;
+    for(nnz_t i = 0; i < diff.size(); i++){
+//        if(rank==0) printf("A[i].col = %u, \tA_col_size = %u \n", A[i].col - A_col_offset, A_col_size);
+//        nnzPerCol_left[A->entry[i].col]++;
+        nnzPerCol_left[diff[i].col]++;
+    }
+
+#ifdef __DEBUG1__
+//    print_vector(A->entry, 1, "A->entry", comm);
+//    print_vector(nnzPerCol_left, 1, "nnzPerCol_left", comm);
+#endif
+
+    std::vector<index_t> nnzPerColScan_left(A->Mbig+1);
+    nnzPerColScan_left[0] = 0;
+    for(nnz_t i = 0; i < A->Mbig; i++){
+        nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
+    }
+
+    nnzPerCol_left.clear();
+//    nnzPerCol_left.shrink_to_fit();
+
+//    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
+
+    // this is done in the for loop for all R_i's, including the local one.
+//    std::vector<unsigned int> nnzPerCol_right(R->M, 0); // range of rows of R is range of cols of R_transpose.
+//    for(nnz_t i = 0; i < R_tranpose.size(); i++){
+//        nnzPerCol_right[R_tranpose[i].col]++;
+//    }
+//    std::vector<nnz_t> nnzPerColScan_right(P->M+1);
+//    nnzPerColScan_right[0] = 0;
+//    for(nnz_t i = 0; i < P->M; i++){
+//        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
+//    }
+
+    std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
+    std::vector<index_t> nnzPerColScan_right;
+
+#ifdef __DEBUG1__
+//    print_vector(P->splitNew, -1, "P->splitNew", comm);
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    std::vector<cooEntry> AP;
+
+    index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
+
+    nnzPerCol_right.assign(mat_recv_M, 0);
+    for(nnz_t i = 0; i < R_tranpose.size(); i++){
+        nnzPerCol_right[R_tranpose[i].col - P->splitNew[rank]]++;
+    }
+//    print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+
+    nnzPerColScan_right.resize(mat_recv_M+1);
+    nnzPerColScan_right[0] = 0;
+    for(nnz_t i = 0; i < mat_recv_M; i++){
+        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
+    }
+//    print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+
+    fast_mm(&diff[0], &R_tranpose[0], AP, diff.size(), R_tranpose.size(),
+            A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
+            &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+            &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+    R_tranpose.clear();
+    R_tranpose.shrink_to_fit();
+
+    std::sort(AP.begin(), AP.end());
+//    print_vector(AP, -1, "AP", A->comm);
+
+//    nnzPerCol_right.clear();
+//    nnzPerColScan_left.clear();
+//    nnzPerColScan_right.clear();
+//    nnzPerCol_right.shrink_to_fit();
+//    nnzPerColScan_left.shrink_to_fit();
+//    nnzPerColScan_right.shrink_to_fit();
+
+#ifdef __DEBUG1__
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // *******************************************************
+    // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
+    // *******************************************************
+
+    // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
+    std::vector<cooEntry> P_tranpose(P->entry.size());
+    transpose_locally(P->entry, P->entry.size(), P_tranpose);
+
+    // convert the indices to global
+    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+        P_tranpose[i].col += P->split[rank];
+    }
+
+#ifdef __DEBUG1__
+//    print_vector(P->entry, -1, "P->entry", comm);
+//    print_vector(P_tranpose, -1, "P_tranpose", comm);
+#endif
+
+    // compute nnzPerColScan_left for P_tranpose
+    nnzPerCol_left.assign(P->M, 0);
+    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
+    }
+
+    nnzPerColScan_left.resize(P->M+1);
+    nnzPerColScan_left[0] = 0;
+    for(nnz_t i = 0; i < P->M; i++){
+        nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
+    }
+
+    nnzPerCol_left.clear();
+    nnzPerCol_left.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
+#endif
+
+    // compute nnzPerColScan_left for AP
+    nnzPerCol_right.assign(P->Nbig, 0);
+    for(nnz_t i = 0; i < AP.size(); i++){
+        nnzPerCol_right[AP[i].col]++;
+    }
+
+#ifdef __DEBUG1__
+//    print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+#endif
+
+    nnzPerColScan_right.resize(P->Nbig+1);
+    nnzPerColScan_right[0] = 0;
+    for(nnz_t i = 0; i < P->Nbig; i++){
+        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
+    }
+
+    nnzPerCol_right.clear();
+    nnzPerCol_right.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//    print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
+
+    // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
+    std::vector<cooEntry> RAP_temp;
+    fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
+            P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
+            &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+            &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+    AP.clear();
+    AP.shrink_to_fit();
+    P_tranpose.clear();
+    P_tranpose.shrink_to_fit();
+    nnzPerColScan_left.clear();
+    nnzPerColScan_left.shrink_to_fit();
+    nnzPerColScan_right.clear();
+    nnzPerColScan_right.shrink_to_fit();
+
+    MPI_Barrier(comm); printf("rank %d: RAP_temp.size = %lu \n", rank, RAP_temp.size()); MPI_Barrier(comm);
+
+#ifdef __DEBUG1__
+//    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // remove local duplicates.
+    // Entries should be sorted in row-major order first, since the matrix should be partitioned based on rows.
+    // So cooEntry_row is used here. Remove local duplicates and put them in RAP_temp_row.
+    std::vector<cooEntry_row> RAP_temp_row;
+    for(nnz_t i=0; i<RAP_temp.size(); i++){
+        RAP_temp_row.emplace_back(cooEntry_row( RAP_temp[i].row, RAP_temp[i].col, RAP_temp[i].val ));
+        while(i<RAP_temp.size()-1 && RAP_temp[i] == RAP_temp[i+1]){ // values of entries with the same row and col should be added.
+            RAP_temp_row.back().val += RAP_temp[i+1].val;
+            i++;
+        }
+    }
+
+    RAP_temp.clear();
+    RAP_temp.shrink_to_fit();
+
+    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
+
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
+//    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
+//    print_vector(P->splitNew, -1, "P->splitNew", comm);
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // sort globally
+    // -------------
+    std::vector<cooEntry_row> RAP_row_sorted;
+    par::sampleSort(RAP_temp_row, RAP_row_sorted, P->splitNew, comm);
+
+    RAP_temp_row.clear();
+    RAP_temp_row.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//    print_vector(RAP_row_sorted, -1, "RAP_row_sorted", A->comm);
+//    MPI_Barrier(comm); printf("rank %d: RAP_row_sorted.size = %lu \n", rank, RAP_row_sorted.size()); MPI_Barrier(comm);
+
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+//    std::vector<cooEntry> RAP_sorted(RAP_row_sorted.size());
+//    memcpy(&RAP_sorted[0], &RAP_row_sorted[0], RAP_row_sorted.size() * sizeof(cooEntry));
+//    RAP_row_sorted.clear();
+//    RAP_row_sorted.shrink_to_fit();
+
+    // *******************************************************
+    // form Ac
+    // *******************************************************
+
+    if(!doSparsify){
+
+        // *******************************************************
+        // version 1: without sparsification
+        // *******************************************************
+        // since RAP_row_sorted is sorted in row-major order, Ac->entry will be the same.
+
+        // remove duplicates.
+        cooEntry temp;
+        for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
+            temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
+            while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+                temp.val += RAP_row_sorted[i+1].val;
+                i++;
+            }
+            Ac->entry_temp.emplace_back( temp );
+        }
+
+        RAP_row_sorted.clear();
+        RAP_row_sorted.shrink_to_fit();
+
+    }else{
+
+        // remove duplicates.
+        // compute Frobenius norm squared (norm_frob_sq).
+        cooEntry_row temp;
+        double max_val = 0;
+        double norm_frob_sq_local = 0, norm_frob_sq = 0;
+        std::vector<cooEntry_row> Ac_orig;
+//        nnz_t no_sparse_size = 0;
+        for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
+            temp = cooEntry_row(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
+            while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+                temp.val += RAP_row_sorted[i+1].val;
+                i++;
+            }
+
+//            if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
+//            if(temp.val * temp.val > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
+            Ac_orig.emplace_back( temp );
+            norm_frob_sq_local += temp.val * temp.val;
+            if( fabs(temp.val) > max_val){
+                max_val = temp.val;
+            }
+//            }
+//            no_sparse_size++; //todo: just for test. delete this later!
+        }
+
+        MPI_Allreduce(&norm_frob_sq_local, &norm_frob_sq, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+//        if(rank==0) printf("\noriginal size   = %lu\n", Ac_orig.size());
+//        if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
+//        if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
+
+//        std::sort(Ac_orig.begin(), Ac_orig.end());
+//        print_vector(Ac_orig, -1, "Ac_orig", A->comm);
+
+        RAP_row_sorted.clear();
+        RAP_row_sorted.shrink_to_fit();
+
+//        auto sample_size = Ac_orig.size();
+        auto sample_size_local = nnz_t(sample_sz_percent * Ac_orig.size());
+//        auto sample_size = nnz_t(Ac->Mbig * Ac->Mbig * A->density);
+//        if(rank==0) printf("sample_size     = %lu \n", sample_size);
+        nnz_t sample_size;
+        MPI_Allreduce(&sample_size_local, &sample_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+/*
+        if(sparsifier == "TRSL"){
+
+            sparsify_trsl1(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
+
+        }else if(sparsifier == "drineas"){
+
+            sparsify_drineas(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
+
+        }else if(sparsifier == "majid"){
+
+            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
+
+        }else{
+            printf("\nerror: wrong sparsifier!");
+        }
+*/
+
+        if(Ac->active_minor) {
+            if (sparsifier == "majid") {
+                sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, Ac->comm);
+            } else {
+                printf("\nerror: wrong sparsifier!");
+            }
+        }
+
+    }
+
+#ifdef __DEBUG1__
+//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // *******************************************************
+    // use this part to print data to be used in Julia, to check the solution.
+    // *******************************************************
+#ifdef __DEBUG1__
+/*
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < A->entry.size(); i++){
+//        std::cout << A->entry[i].row+1 << ", ";
+//    }
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < A->entry.size(); i++){
+//        std::cout << A->entry[i].col+1 << ", ";
+//    }
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < A->entry.size(); i++){
+//        std::cout << A->entry[i].val << ", ";
+//    }
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < R_tranpose.size(); i++){
+//        std::cout << R_tranpose[i].row+1 << ", ";
+//    }
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < R_tranpose.size(); i++){
+//        std::cout << R_tranpose[i].col+1 << ", ";
+//    }
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < R_tranpose.size(); i++){
+//        std::cout << R_tranpose[i].val << ", ";
+//    }
+//    std::cout << "\n";
+//    print_vector(A->entry, -1, "A->entry", A->comm);
+//    print_vector(R_tranpose, -1, "R_tranpose", A->comm);
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+//        std::cout << P_tranpose[i].row+1 << ", ";
+//    }
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+//        std::cout << P_tranpose[i].col+1 << ", ";
+//    }
+//    std::cout << "\n";
+//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+//        std::cout << P_tranpose[i].val << ", ";
+//    }
+//
+//    do this for Julia:
+//    I = [1, 2, 3, 5, 1, 2, 4, 6, 1, 3, 4, 7, 2, 3, 4, 8, 1, 5, 6, 7, 2, 5, 6, 8, 3, 5, 7, 8, 4, 6, 7, 8];
+//    J = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8];
+//    V = [1, -0.333333, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, -0.333333, 1];
+//    A = sparse(I, J ,V)
+//    and so on. then compare the multiplication from Julia with the following:
+//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+*/
+#endif
+
+    // *******************************************************
+    // setup matrix
+    // *******************************************************
+    // Update this description: Shrinking gets decided inside repartition_nnz() or repartition_row() functions,
+    // then repartition happens.
+    // Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
+
+//    Ac->nnz_l = Ac->entry.size();
+//    MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+#ifdef __DEBUG1__
+    if(verbose_coarsen){
+        MPI_Barrier(comm); printf("triple_mat_mult: step 10: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    if(Ac->active_minor){
+//        comm = Ac->comm;
+//        int rank_new;
+//        MPI_Comm_rank(Ac->comm, &rank_new);
+//        Ac->print_info(-1);
+//        Ac->print_entry(-1);
+
+        // ********** decide about shrinking **********
+        //---------------------------------------------
+//        if(Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1){
+//            MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
+//            Ac->matrix_setup_dummy();
+//            Ac->compute_matvec_dummy_time();
+//            Ac->decide_shrinking(A->matvec_dummy_time);
+//            Ac->erase_after_decide_shrinking();
+//            MPI_Barrier(Ac->comm); if(rank_new==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
+//        }
+
+#ifdef __DEBUG1__
+        if(verbose_coarsen){
+            MPI_Barrier(comm); printf("triple_mat_mult: step 11: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+        // decide to partition based on number of rows or nonzeros.
+//    if(switch_repartition && Ac->density >= repartition_threshold)
+//        if(switch_repartition && Ac->density >= repartition_threshold){
+//            if(rank==0) printf("equi-ROW partition for the next level: density = %f, repartition_threshold = %f \n", Ac->density, repartition_threshold);
+//            Ac->repartition_row(); // based on number of rows
+//        }else{
+//            Ac->repartition_nnz(); // based on number of nonzeros
+//        }
+
+        Ac->repartition_nnz_update_Ac(); // based on number of nonzeros
+
+#ifdef __DEBUG1__
+        if(verbose_coarsen){
+            MPI_Barrier(comm); printf("triple_mat_mult: step 12: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+        // Ac->entry_temp is actually diff which should be used for the next level
+        diff.clear();
+        diff.swap(Ac->entry_temp);
+
+//        repartition_u_shrink_prepare(grid);
+
+#ifdef __DEBUG1__
+        if(verbose_coarsen){
+            MPI_Barrier(comm); printf("triple_mat_mult: step 13: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+        if(Ac->active){
+            Ac->matrix_setup();
+
+//            if(Ac->shrinked && Ac->enable_dummy_matvec)
+//                Ac->compute_matvec_dummy_time();
+
+//            if(switch_to_dense && Ac->density > dense_threshold){
+//                if(rank==0) printf("Switch to dense: density = %f, dense_threshold = %f \n", Ac->density, dense_threshold);
+//                Ac->generate_dense_matrix();
+//            }
+        }
+
+//        Ac->print_info(-1);
+//        Ac->print_entry(-1);
+    }
+//    comm = grid->A->comm;
+
+#ifdef __DEBUG1__
+    if(verbose_coarsen){MPI_Barrier(comm); printf("end of triple_mat_mult: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // view matrix Ac
+    // --------------
+//    petsc_viewer(Ac);
+
+    return 0;
+} // triple_mat_mult()
+
+
+//int saena_object::triple_mat_mult_update_Ac -> implemented based on the older version of matmat. newer.
+/*
+int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
 
     // This function computes delta_Ac = RAP in which A is diff = diag_block(A) - diag_block(A_new) at each level.
     // Then, updates Ac with the delta_Ac. Finally, it saves delta_Ac in diff for doing the same operation
@@ -1405,10 +2004,10 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
         MPI_Barrier(comm); printf("end of coarsen2:  rank = %d\n", rank); MPI_Barrier(comm);}
 
     return 0;
-} // end of coarsen_update_Ac()
+} // end of triple_mat_mult_update_Ac()
+*/
 
-
-//int saena_object::coarsen_update_Ac -> implemented based on the older version of matmat.
+//int saena_object::triple_mat_mult_update_Ac -> implemented based on the older version of matmat. older.
 /*
 int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
 
@@ -1651,7 +2250,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
         MPI_Barrier(comm); printf("end of coarsen2:  rank = %d\n", rank); MPI_Barrier(comm);}
 
     return 0;
-} // end of coarsen_update_Ac()
+} // end of triple_mat_mult_update_Ac()
 */
 
 // int saena_object::coarsen2

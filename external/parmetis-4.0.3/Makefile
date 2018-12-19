@@ -20,7 +20,7 @@ cputype = $(shell uname -m | sed "s/\\ /_/g")
 systype = $(shell uname -s)
 
 #BUILDDIR = build/$(systype)-$(cputype)
-BUILDDIR = build
+BUILDDIR = build_parmetis
 
 # Process configuration options.
 CONFIG_FLAGS = -DCMAKE_VERBOSE_MAKEFILE=1
@@ -47,7 +47,7 @@ ifneq ($(openmp), not-set)
     CONFIG_FLAGS += -DOPENMP=$(openmp)
 endif
 ifneq ($(prefix), not-set)
-    CONFIG_FLAGS += -DCMAKE_INSTALL_PREFIX=$(prefix)
+    CONFIG_FLAGS += -DCMAKE_INSTALL_PREFIX=$(prefix)/$(BUILDDIR)
 endif
 ifneq ($(shared), not-set)
     CONFIG_FLAGS += -DSHARED=1
@@ -60,8 +60,9 @@ ifneq ($(cxx), not-set)
 endif
 
 define run-config
-mkdir -p $(BUILDDIR)
-cd $(BUILDDIR) && cmake $(CURDIR) $(CONFIG_FLAGS)
+rm -rf $(prefix)/$(BUILDDIR)
+mkdir -p $(prefix)/$(BUILDDIR)
+cd $(prefix)/$(BUILDDIR) && cmake $(CURDIR) $(CONFIG_FLAGS)
 endef
 
 all clean install:

@@ -19,7 +19,7 @@ SuperLUroot = /home/boss/Dropbox/Projects/Saena/build/build_superlu
 DSUPERLULIB = $(SuperLUroot)/SRC/libsuperlu_dist.a
 INCLUDEDIR  = $(SuperLUroot)/include
 
-LIBS 	    = $(DSUPERLULIB) /usr/lib/x86_64-linux-gnu/libopenblas.so /home/boss/Dropbox/Projects/Saena/external/SuperLU_DIST_5.4.0/../parmetis-4.0.3/build/libparmetis/libparmetis.a /home/boss/Dropbox/Projects/Saena/external/SuperLU_DIST_5.4.0/../parmetis-4.0.3/build/libmetis/libmetis.a
+LIBS 	    = $(DSUPERLULIB) /usr/lib/x86_64-linux-gnu/libopenblas.so /home/boss/Dropbox/Projects/Saena/build/build_superlu/../build_parmetis/libparmetis/libparmetis.a /home/boss/Dropbox/Projects/Saena/build/build_superlu/../build_parmetis/libmetis/libmetis.a
 LIBS 	    += 
 
 #
