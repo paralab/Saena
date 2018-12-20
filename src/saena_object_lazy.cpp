@@ -129,8 +129,7 @@ int saena_object::update3(saena_matrix* A_new){
 //            if(rank==0) printf("_____________________________________\nlevel = %d \n", i);
 //            print_vector(A_diff, 1, "A_diff", grids[0].A->comm);
 //            grids[i].Ac.print_entry(-1);
-            if(!A_diff.empty())
-                triple_mat_mult_update_Ac(&grids[i], A_diff); // A_diff will be updated inside triple_mat_mult_update_Ac to be the diff for the next level.
+            triple_mat_mult_update_Ac(&grids[i], A_diff); // A_diff will be updated inside triple_mat_mult_update_Ac to be the diff for the next level.
 //            grids[i].Ac.print_entry(-1);
 //            print_vector(A_diff, -1, "A_diff", grids[i].Ac.comm);
         }
@@ -1198,9 +1197,11 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
 //        printf("rank = %d, nprocs = %d active\n", rank1, nprocs1);
 
 #ifdef __DEBUG1__
+//    print_vector(A->split, -1, "A->split", comm);
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
 //    print_vector(R->entry, -1, "R->entry", comm);
+//    print_vector(diff, -1, "diff", comm);
 #endif
 
     int nprocs, rank;
@@ -1279,45 +1280,48 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
         MPI_Barrier(comm); printf("triple_mat_mult: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
-    // *******************************************************
-    // multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
-    // *******************************************************
-    // this is an overlapped version of this multiplication, similar to dense_matvec.
+    std::vector<cooEntry_row> RAP_temp_row; // this is defined here to take care of diff being empty.
+    if(!diff.empty()) {
 
-    // local transpose of R is being used to compute A*P. So R is transposed locally here.
-    std::vector<cooEntry> R_tranpose(R->entry.size());
-    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], R_tranpose);
+        // *******************************************************
+        // multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
+        // *******************************************************
+        // this is an overlapped version of this multiplication, similar to dense_matvec.
+
+        // local transpose of R is being used to compute A*P. So R is transposed locally here.
+        std::vector<cooEntry> R_tranpose(R->entry.size());
+        transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], R_tranpose);
 
 #ifdef __DEBUG1__
 //    print_vector(R->entry, -1, "R->entry", comm);
 //    print_vector(R_tranpose, -1, "R_tranpose", comm);
 #endif
 
-    std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
+        std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
 //    unsigned int *AnnzPerCol_p = &nnzPerCol_left[0] - A[0].col;
-    for(nnz_t i = 0; i < diff.size(); i++){
+        for (nnz_t i = 0; i < diff.size(); i++) {
 //        if(rank==0) printf("A[i].col = %u, \tA_col_size = %u \n", A[i].col - A_col_offset, A_col_size);
 //        nnzPerCol_left[A->entry[i].col]++;
-        nnzPerCol_left[diff[i].col]++;
-    }
+            nnzPerCol_left[diff[i].col]++;
+        }
 
 #ifdef __DEBUG1__
 //    print_vector(diff, -1, "diff", comm);
 //    print_vector(nnzPerCol_left, 1, "nnzPerCol_left", comm);
 #endif
 
-    std::vector<index_t> nnzPerColScan_left(A->Mbig+1);
-    nnzPerColScan_left[0] = 0;
-    for(nnz_t i = 0; i < A->Mbig; i++){
-        nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
-    }
+        std::vector<index_t> nnzPerColScan_left(A->Mbig + 1);
+        nnzPerColScan_left[0] = 0;
+        for (nnz_t i = 0; i < A->Mbig; i++) {
+            nnzPerColScan_left[i + 1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
+        }
 
-    nnzPerCol_left.clear();
+        nnzPerCol_left.clear();
 //    nnzPerCol_left.shrink_to_fit();
 
 //    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
 
-    // this is done in the for loop for all R_i's, including the local one.
+        // this is done in the for loop for all R_i's, including the local one.
 //    std::vector<unsigned int> nnzPerCol_right(R->M, 0); // range of rows of R is range of cols of R_transpose.
 //    for(nnz_t i = 0; i < R_tranpose.size(); i++){
 //        nnzPerCol_right[R_tranpose[i].col]++;
@@ -1328,42 +1332,45 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
 //        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
 //    }
 
-    std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
-    std::vector<index_t> nnzPerColScan_right;
+        std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
+        std::vector<index_t> nnzPerColScan_right;
 
 #ifdef __DEBUG1__
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
 
-    if(verbose_coarsen){
-        MPI_Barrier(comm); printf("triple_mat_mult: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
+        if (verbose_coarsen) {
+            MPI_Barrier(comm);
+            printf("triple_mat_mult: step 4: rank = %d\n", rank);
+            MPI_Barrier(comm);
+        }
 #endif
 
-    std::vector<cooEntry> AP;
+        std::vector<cooEntry> AP;
 
-    index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
+        index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
 
-    nnzPerCol_right.assign(mat_recv_M, 0);
-    for(nnz_t i = 0; i < R_tranpose.size(); i++){
-        nnzPerCol_right[R_tranpose[i].col - P->splitNew[rank]]++;
-    }
+        nnzPerCol_right.assign(mat_recv_M, 0);
+        for (nnz_t i = 0; i < R_tranpose.size(); i++) {
+            nnzPerCol_right[R_tranpose[i].col - P->splitNew[rank]]++;
+        }
 //    print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
 
-    nnzPerColScan_right.resize(mat_recv_M+1);
-    nnzPerColScan_right[0] = 0;
-    for(nnz_t i = 0; i < mat_recv_M; i++){
-        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
-    }
+        nnzPerColScan_right.resize(mat_recv_M + 1);
+        nnzPerColScan_right[0] = 0;
+        for (nnz_t i = 0; i < mat_recv_M; i++) {
+            nnzPerColScan_right[i + 1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
+        }
 //    print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 
-    fast_mm(&diff[0], &R_tranpose[0], AP, diff.size(), R_tranpose.size(),
-            A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
-            &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-            &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+        fast_mm(&diff[0], &R_tranpose[0], AP, diff.size(), R_tranpose.size(),
+                A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
+                &nnzPerColScan_left[0], &nnzPerColScan_left[1],
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
-    R_tranpose.clear();
-    R_tranpose.shrink_to_fit();
+        R_tranpose.clear();
+        R_tranpose.shrink_to_fit();
 
-    std::sort(AP.begin(), AP.end());
+        std::sort(AP.begin(), AP.end());
 
 //    nnzPerCol_right.clear();
 //    nnzPerColScan_left.clear();
@@ -1375,115 +1382,132 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
 #ifdef __DEBUG1__
 //    printf("rank %d: AP.size = %lu \n", rank, AP.size());
 //    print_vector(AP, -1, "AP", A->comm);
-    if(verbose_coarsen){
-        MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
+        if (verbose_coarsen) {
+            MPI_Barrier(comm);
+            printf("triple_mat_mult: step 5: rank = %d\n", rank);
+            MPI_Barrier(comm);
+        }
 #endif
 
-    // *******************************************************
-    // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
-    // *******************************************************
+        // *******************************************************
+        // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
+        // *******************************************************
 
-    // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
-    std::vector<cooEntry> P_tranpose(P->entry.size());
-    transpose_locally(P->entry, P->entry.size(), P_tranpose);
+        // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
+        std::vector<cooEntry> P_tranpose(P->entry.size());
+        transpose_locally(P->entry, P->entry.size(), P_tranpose);
 
-    // convert the indices to global
-    for(nnz_t i = 0; i < P_tranpose.size(); i++){
-        P_tranpose[i].col += P->split[rank];
-    }
+        // convert the indices to global
+        for (nnz_t i = 0; i < P_tranpose.size(); i++) {
+            P_tranpose[i].col += P->split[rank];
+        }
 
 #ifdef __DEBUG1__
 //    print_vector(P->entry, -1, "P->entry", comm);
 //    print_vector(P_tranpose, -1, "P_tranpose", comm);
 #endif
 
-    // compute nnzPerColScan_left for P_tranpose
-    nnzPerCol_left.assign(P->M, 0);
-    for(nnz_t i = 0; i < P_tranpose.size(); i++){
-        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
-    }
+        // compute nnzPerColScan_left for P_tranpose
+        nnzPerCol_left.assign(P->M, 0);
+        for (nnz_t i = 0; i < P_tranpose.size(); i++) {
+            nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
+        }
 
-    nnzPerColScan_left.resize(P->M+1);
-    nnzPerColScan_left[0] = 0;
-    for(nnz_t i = 0; i < P->M; i++){
-        nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
-    }
+        nnzPerColScan_left.resize(P->M + 1);
+        nnzPerColScan_left[0] = 0;
+        for (nnz_t i = 0; i < P->M; i++) {
+            nnzPerColScan_left[i + 1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
+        }
 
-    nnzPerCol_left.clear();
-    nnzPerCol_left.shrink_to_fit();
+        nnzPerCol_left.clear();
+        nnzPerCol_left.shrink_to_fit();
 
 #ifdef __DEBUG1__
 //    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
 #endif
 
-    // compute nnzPerColScan_left for AP
-    nnzPerCol_right.assign(P->Nbig, 0);
-    for(nnz_t i = 0; i < AP.size(); i++){
-        nnzPerCol_right[AP[i].col]++;
-    }
+        // compute nnzPerColScan_left for AP
+        nnzPerCol_right.assign(P->Nbig, 0);
+        for (nnz_t i = 0; i < AP.size(); i++) {
+            nnzPerCol_right[AP[i].col]++;
+        }
 
 #ifdef __DEBUG1__
 //    print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
 #endif
 
-    nnzPerColScan_right.resize(P->Nbig+1);
-    nnzPerColScan_right[0] = 0;
-    for(nnz_t i = 0; i < P->Nbig; i++){
-        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
-    }
+        nnzPerColScan_right.resize(P->Nbig + 1);
+        nnzPerColScan_right[0] = 0;
+        for (nnz_t i = 0; i < P->Nbig; i++) {
+            nnzPerColScan_right[i + 1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
+        }
 
-    nnzPerCol_right.clear();
-    nnzPerCol_right.shrink_to_fit();
+        nnzPerCol_right.clear();
+        nnzPerCol_right.shrink_to_fit();
 
 #ifdef __DEBUG1__
 //    print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-    // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
-    std::vector<cooEntry> RAP_temp;
-    fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
-            P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
-            &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-            &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+        // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
+        std::vector<cooEntry> RAP_temp;
+        fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
+                P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
+                &nnzPerColScan_left[0], &nnzPerColScan_left[1],
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
-    AP.clear();
-    AP.shrink_to_fit();
-    P_tranpose.clear();
-    P_tranpose.shrink_to_fit();
-    nnzPerColScan_left.clear();
-    nnzPerColScan_left.shrink_to_fit();
-    nnzPerColScan_right.clear();
-    nnzPerColScan_right.shrink_to_fit();
+        AP.clear();
+        AP.shrink_to_fit();
+        P_tranpose.clear();
+        P_tranpose.shrink_to_fit();
+        nnzPerColScan_left.clear();
+        nnzPerColScan_left.shrink_to_fit();
+        nnzPerColScan_right.clear();
+        nnzPerColScan_right.shrink_to_fit();
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm); printf("rank %d: RAP_temp.size = %lu \n", rank, RAP_temp.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
-    if(verbose_coarsen){
-        MPI_Barrier(comm); printf("triple_mat_mult: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
+        if (verbose_coarsen) {
+            MPI_Barrier(comm);
+            printf("triple_mat_mult: step 6: rank = %d\n", rank);
+            MPI_Barrier(comm);
+        }
 #endif
 
-    // remove local duplicates.
-    // Entries should be sorted in row-major order first, since the matrix should be partitioned based on rows.
-    // So cooEntry_row is used here. Remove local duplicates and put them in RAP_temp_row.
-    std::vector<cooEntry_row> RAP_temp_row;
-    for(nnz_t i=0; i<RAP_temp.size(); i++){
-        RAP_temp_row.emplace_back(cooEntry_row( RAP_temp[i].row, RAP_temp[i].col, RAP_temp[i].val ));
-        while(i<RAP_temp.size()-1 && RAP_temp[i] == RAP_temp[i+1]){ // values of entries with the same row and col should be added.
-            RAP_temp_row.back().val += RAP_temp[i+1].val;
-            i++;
+        // remove local duplicates.
+        // Entries should be sorted in row-major order first, since the matrix should be partitioned based on rows.
+        // So cooEntry_row is used here. Remove local duplicates and put them in RAP_temp_row.
+//        std::vector<cooEntry_row> RAP_temp_row; // this is defined earlier to take care of diff being empty.
+        for (nnz_t i = 0; i < RAP_temp.size(); i++) {
+            RAP_temp_row.emplace_back(cooEntry_row(RAP_temp[i].row, RAP_temp[i].col, RAP_temp[i].val));
+            while (i < RAP_temp.size() - 1 &&
+                   RAP_temp[i] == RAP_temp[i + 1]) { // values of entries with the same row and col should be added.
+                RAP_temp_row.back().val += RAP_temp[i + 1].val;
+                i++;
+            }
         }
-    }
 
-    RAP_temp.clear();
-    RAP_temp.shrink_to_fit();
+        RAP_temp.clear();
+        RAP_temp.shrink_to_fit();
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
-    if(verbose_coarsen){
-        MPI_Barrier(comm); printf("triple_mat_mult: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
+        if (verbose_coarsen) {
+            MPI_Barrier(comm);
+            printf("triple_mat_mult: step 7: rank = %d\n", rank);
+            MPI_Barrier(comm);
+        }
 #endif
+    }
+
+    // RAP_temp_row is empty on at least one process par::sampleSort will crash.
+    // add a dummy entry to it. first diagonal entry is being added here.
+    if(RAP_temp_row.empty()){
+        RAP_temp_row.emplace_back(A->split[rank], A->split[rank], 0);
+    }
 
     // sort globally
     // -------------
