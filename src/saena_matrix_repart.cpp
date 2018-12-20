@@ -1108,8 +1108,13 @@ int saena_matrix::repartition_nnz_update_Ac(){
 //    if (rank==0) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
 
     std::vector<int> send_size_array(nprocs, 0);
-    for (nnz_t i=0; i<entry_temp.size(); i++){
-        least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry_temp[i].row);
+    // add the first element to send_size_array
+    send_size_array[least_proc]++;
+    for (nnz_t i = 1; i < entry_temp.size(); i++){
+//        least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry_temp[i].row);
+        if(entry_temp[i].row >= split[least_proc+1]){
+            least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry_temp[i].row);
+        }
         send_size_array[least_proc]++;
     }
 
@@ -1150,6 +1155,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
     MPI_Alltoallv(&entry_old[0],  &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
                   &entry_temp[0], &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
 
+//    print_vector(entry_temp, -1, "entry_temp", comm);
     if(repartition_verbose && rank==0) printf("repartition5 - step 4!\n");
 
     // copy the entries into a std::set to have O(logn) (?) for finding elements, since it will be sorted.

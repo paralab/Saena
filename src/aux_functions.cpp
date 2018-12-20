@@ -328,7 +328,7 @@ int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_C
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
 
-    print_vector(v, -1, "v", comm);
+//    print_vector(v, -1, "v", comm);
 
     return 0;
 }

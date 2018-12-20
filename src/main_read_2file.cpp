@@ -104,7 +104,7 @@ int main(int argc, char* argv[]){
 
     char* Vname(argv[3]);
     saena::read_vector_file(rhs, A, Vname, comm);
-    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
+//    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
 
     // set rhs
 //    A.get_internal_matrix()->matvec(v, rhs);

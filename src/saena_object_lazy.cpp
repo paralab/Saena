@@ -1227,29 +1227,29 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     if(Ac->active)
         Ac->scale_back_matrix();
 
-    Ac->Mbig = P->Nbig;
-    Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
-    Ac->M_old = Ac->M;
-    Ac->comm = A->comm;
-    Ac->comm_old = A->comm;
-    Ac->last_M_shrink = A->last_M_shrink;
-    Ac->last_density_shrink = A->last_density_shrink;
+//    Ac->Mbig = P->Nbig;
+//    Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
+//    Ac->M_old = Ac->M;
+//    Ac->comm = A->comm;
+//    Ac->comm_old = A->comm;
+//    Ac->last_M_shrink = A->last_M_shrink;
+//    Ac->last_density_shrink = A->last_density_shrink;
 //    Ac->last_nnz_shrink = A->last_nnz_shrink;
 //    Ac->enable_shrink = A->enable_shrink;
 //    Ac->enable_shrink = A->enable_shrink_next_level;
-    Ac->active_old_comm = true;
-    Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
-    Ac->switch_to_dense = switch_to_dense;
-    Ac->dense_threshold = dense_threshold;
+//    Ac->active_old_comm = true;
+//    Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
+//    Ac->switch_to_dense = switch_to_dense;
+//    Ac->dense_threshold = dense_threshold;
 
-    Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
-    if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
-        Ac->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
+//    Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1;
+//    if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
+//        Ac->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
 
     //return these to default, since they have been used in the above part.
-    A->cpu_shrink_thre2_next_level = -1;
-    A->enable_shrink_next_level = false;
-    Ac->split = P->splitNew;
+//    A->cpu_shrink_thre2_next_level = -1;
+//    A->enable_shrink_next_level = false;
+//    Ac->split = P->splitNew;
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
@@ -1265,13 +1265,13 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
 #endif
 
     // ********** minor shrinking **********
-    for(index_t i = 0; i < Ac->split.size()-1; i++){
-        if(Ac->split[i+1] - Ac->split[i] == 0){
+//    for(index_t i = 0; i < Ac->split.size()-1; i++){
+//        if(Ac->split[i+1] - Ac->split[i] == 0){
 //            printf("rank %d: shrink minor in triple_mat_mult: i = %d, split[i] = %d, split[i+1] = %d\n", rank, i, Ac->split[i], Ac->split[i+1]);
-            Ac->shrink_cpu_minor();
-            break;
-        }
-    }
+//            Ac->shrink_cpu_minor();
+//            break;
+//        }
+//    }
 
 #ifdef __DEBUG1__
     if(verbose_coarsen){
@@ -1476,7 +1476,6 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     RAP_temp.shrink_to_fit();
 
 #ifdef __DEBUG1__
-//    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
@@ -1732,6 +1731,7 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
 
         if(Ac->active){
             Ac->matrix_setup();
+//            Ac->matrix_setup_update();
 
 //            if(Ac->shrinked && Ac->enable_dummy_matvec)
 //                Ac->compute_matvec_dummy_time();

@@ -1116,15 +1116,25 @@ int saena_matrix::inverse_diag() {
     int rank;
     MPI_Comm_rank(comm, &rank);
 
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm);
+//    if(rank==0) printf("inverse_diag!!!\n");
+//    print_vector(split, 0, "split", comm);
+//    print_entry(-1);
+//    print_vector(inv_diag, -1, "inv diag", comm);
+//    print_vector(inv_sq_diag, -1, "inv_sq_diag diag", comm);
+//    MPI_Barrier(comm);
+#endif
+
     double temp;
     inv_diag.assign(M, 0);
     inv_sq_diag.assign(M, 0);
 
     if(!entry.empty()) {
         for (nnz_t i = 0; i < nnz_l; i++) {
-//        if(rank==4) printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
 
             if (entry[i].row == entry[i].col) {
+//                if(rank==0) std::cout << i << "\t" << entry[i] << std::endl;
                 if ( !almost_zero(entry[i].val) ) {
                     temp = 1.0 / entry[i].val;
                     inv_diag[entry[i].row - split[rank]] = temp;
@@ -1143,12 +1153,17 @@ int saena_matrix::inverse_diag() {
         }
     }
 
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm);
 //    print_vector(inv_diag, -1, "inv diag", comm);
 //    print_vector(inv_sq_diag, -1, "inv_sq_diag diag", comm);
+//    MPI_Barrier(comm);
+#endif
 
     for(auto i:inv_diag) {
-        if (i == 0)
-            if (rank == 0) printf("inverse_diag: At least one diagonal entry is 0.\n");
+        if (i == 0){
+            printf("rank %d: inverse_diag: At least one diagonal entry is 0.\n", rank);
+        }
     }
 
     temp = highest_diag_val;
