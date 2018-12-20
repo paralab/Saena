@@ -162,8 +162,8 @@ int main(int argc, char* argv[]){
 
 //    t1 = MPI_Wtime();
 
-//    std::fill(u.begin(), u.end(), 0);
-    solver.update1(&A2);
+    std::fill(u.begin(), u.end(), 0);
+    solver.update2(&A2);
     solver.solve_pcg(u, &opts);
 
 //    t2 = MPI_Wtime();

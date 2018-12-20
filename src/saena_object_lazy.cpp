@@ -1126,7 +1126,7 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         for(nnz_t i = 0; i < A.nnz_l_local; i++){
             if(!almost_zero(A.values_local[i] - B.values_local[i])){
 //                if(rank==0) printf("%u \t%u \t%f \t%f \n", A.row_local[i], A.col_local[i], A.values_local[i], B.values_local[i]);
-                C[loc_size] = cooEntry(A.row_local[i], A.col_local[i], B.values_local[i]-A.values_local[i]);
+                C[loc_size] = cooEntry(A.row_local[i] + A.split[rank], A.col_local[i], B.values_local[i]-A.values_local[i]);
                 loc_size++;
             }
         }
@@ -1206,9 +1206,8 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    MPI_Barrier(comm); printf("rank %d: diff.size = %lu \n", rank, diff.size()); MPI_Barrier(comm);
-
 #ifdef __DEBUG1__
+//    MPI_Barrier(comm); printf("rank %d: diff.size = %lu \n", rank, diff.size()); MPI_Barrier(comm);
     if (verbose_coarsen) {
         MPI_Barrier(comm);
         if (rank == 0) printf("start of triple_mat_mult nprocs: %d \n", nprocs);
@@ -1451,9 +1450,8 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
 
-    MPI_Barrier(comm); printf("rank %d: RAP_temp.size = %lu \n", rank, RAP_temp.size()); MPI_Barrier(comm);
-
 #ifdef __DEBUG1__
+//    MPI_Barrier(comm); printf("rank %d: RAP_temp.size = %lu \n", rank, RAP_temp.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("triple_mat_mult: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
@@ -1474,9 +1472,8 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
 
-    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
-
 #ifdef __DEBUG1__
+//    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);

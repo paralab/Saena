@@ -1125,7 +1125,7 @@ int saena_matrix::inverse_diag() {
 //        if(rank==4) printf("%u \t%lu \t%lu \t%f \n", i, entry[i].row, entry[i].col, entry[i].val);
 
             if (entry[i].row == entry[i].col) {
-                if (entry[i].val != 0) {
+                if ( !almost_zero(entry[i].val) ) {
                     temp = 1.0 / entry[i].val;
                     inv_diag[entry[i].row - split[rank]] = temp;
                     inv_sq_diag[entry[i].row - split[rank]] = sqrt(temp);

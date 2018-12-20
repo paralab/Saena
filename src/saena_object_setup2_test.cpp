@@ -285,8 +285,8 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
         }
     }
 
-    printf("A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
-            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
+//    printf("A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
+//            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 
     // initialize
     value_t *C_temp = &mempool1[0];
