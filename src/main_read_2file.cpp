@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 3){
+    if(argc != 4){
         if(rank == 0) {
             std::cout << "Usage: ./Saena <MatrixA> <MatrixB>" << std::endl;
         }
@@ -86,8 +86,8 @@ int main(int argc, char* argv[]){
 
     // ********** 1 - set rhs: random **********
 
-    rhs.resize(num_local_row);
-    generate_rhs_old(rhs);
+//    rhs.resize(num_local_row);
+//    generate_rhs_old(rhs);
 
     // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
 
@@ -102,9 +102,9 @@ int main(int argc, char* argv[]){
 
     // ********** 4 - set rhs: read from file **********
 
-//    char* Vname(argv[2]);
-//    saena::read_vector_file(rhs, A, Vname, comm);
-//    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
+    char* Vname(argv[3]);
+    saena::read_vector_file(rhs, A, Vname, comm);
+    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
 
     // set rhs
 //    A.get_internal_matrix()->matvec(v, rhs);
@@ -162,8 +162,7 @@ int main(int argc, char* argv[]){
 
 //    t1 = MPI_Wtime();
 
-    std::fill(u.begin(), u.end(), 0);
-    solver.update2(&A2);
+    solver.update3(&A2);
     solver.solve_pcg(u, &opts);
 
 //    t2 = MPI_Wtime();

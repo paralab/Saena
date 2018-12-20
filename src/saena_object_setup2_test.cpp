@@ -256,13 +256,11 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
 
     index_t *A_new_row_idx   = &nnzPerRow_left[0];
     index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
-//    std::vector<index_t> orig_row_idx;
     index_t *orig_row_idx = &mempool2[A_row_size];
     index_t A_nnz_row_sz = 0;
     for(index_t i = 0; i < A_row_size; i++){
         if(A_new_row_idx[i]){
             A_new_row_idx[i] = A_nnz_row_sz;
-//            orig_row_idx.emplace_back(i + A_row_offset);
             orig_row_idx[A_nnz_row_sz] = i + A_row_offset;
             A_nnz_row_sz++;
         }
@@ -270,16 +268,13 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
 
 //    print_vector(A_new_row_idx, -1, "A_new_row_idx", comm);
 
-//    std::vector<index_t> B_new_col_idx(B_col_size);
     index_t *B_new_col_idx   = &mempool2[A_row_size * 2];
     index_t *B_new_col_idx_p = &B_new_col_idx[0] - B_col_offset;
-//    std::vector<index_t> orig_col_idx;
     index_t *orig_col_idx = &mempool2[A_row_size * 2 + B_col_size];
     index_t B_nnz_col_sz = 0;
     for(index_t i = 0; i < B_col_size; i++){
         if(nnzPerColScan_rightEnd[i] != nnzPerColScan_rightStart[i]){
             B_new_col_idx[i] = B_nnz_col_sz;
-//            orig_col_idx.emplace_back(i + B_col_offset);
             orig_col_idx[B_nnz_col_sz] = i + B_col_offset;
             B_nnz_col_sz++;
         }
@@ -290,7 +285,6 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
 
     // initialize
     value_t *C_temp = &mempool1[0];
-//    std::fill(&C_temp[0], &C_temp[A_nnz_row_sz * B_col_size], 0);
     std::fill(&C_temp[0], &C_temp[A_nnz_row_sz * B_nnz_col_sz], 0);
 
 #ifdef __DEBUG1__
@@ -300,7 +294,6 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
     index_t temp;
     const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
     const index_t *nnzPerColScan_leftEnd_p   = &nnzPerColScan_leftEnd[0] - B_row_offset;
-//    value_t *C_temp_p = C_temp - (A_nnz_row_sz * B_col_offset);
 
     for(nnz_t j = 0; j < B_col_size; j++) { // columns of B
 
