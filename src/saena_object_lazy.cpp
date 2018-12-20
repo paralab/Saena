@@ -129,7 +129,8 @@ int saena_object::update3(saena_matrix* A_new){
 //            if(rank==0) printf("_____________________________________\nlevel = %d \n", i);
 //            print_vector(A_diff, 1, "A_diff", grids[0].A->comm);
 //            grids[i].Ac.print_entry(-1);
-            triple_mat_mult_update_Ac(&grids[i], A_diff); // A_diff will be updated inside triple_mat_mult_update_Ac to be the diff for the next level.
+            if(!A_diff.empty())
+                triple_mat_mult_update_Ac(&grids[i], A_diff); // A_diff will be updated inside triple_mat_mult_update_Ac to be the diff for the next level.
 //            grids[i].Ac.print_entry(-1);
 //            print_vector(A_diff, -1, "A_diff", grids[i].Ac.comm);
         }
@@ -1301,7 +1302,7 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     }
 
 #ifdef __DEBUG1__
-//    print_vector(A->entry, 1, "A->entry", comm);
+//    print_vector(diff, -1, "diff", comm);
 //    print_vector(nnzPerCol_left, 1, "nnzPerCol_left", comm);
 #endif
 
@@ -1363,7 +1364,6 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     R_tranpose.shrink_to_fit();
 
     std::sort(AP.begin(), AP.end());
-//    print_vector(AP, -1, "AP", A->comm);
 
 //    nnzPerCol_right.clear();
 //    nnzPerColScan_left.clear();
@@ -1373,6 +1373,8 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
 //    nnzPerColScan_right.shrink_to_fit();
 
 #ifdef __DEBUG1__
+//    printf("rank %d: AP.size = %lu \n", rank, AP.size());
+//    print_vector(AP, -1, "AP", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
