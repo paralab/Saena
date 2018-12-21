@@ -1395,8 +1395,11 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
         // *******************************************************
 
         // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
-        std::vector<cooEntry> P_tranpose(P->entry.size());
-        transpose_locally(P->entry, P->entry.size(), P_tranpose);
+//        std::vector<cooEntry> P_tranpose(P->entry.size());
+//        transpose_locally(P->entry, P->entry.size(), P_tranpose);
+
+        std::vector<cooEntry> P_tranpose(P->entry_local.size());
+        transpose_locally(P->entry_local, P->entry_local.size(), P_tranpose);
 
         // convert the indices to global
         for (nnz_t i = 0; i < P_tranpose.size(); i++) {
