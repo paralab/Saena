@@ -1086,13 +1086,14 @@ int saena_matrix::repartition_nnz_update_Ac(){
 
     density = (nnz_g / double(Mbig)) / (Mbig);
 
-//    MPI_Barrier(comm);
-//    printf("repartition5 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu, entry_temp.size = %lu \n",
-//           rank, Mbig, M, nnz_g, nnz_l, entry_temp.size());
-//    MPI_Barrier(comm);
-
-//    print_vector(split, 0, "split", comm);
+#ifdef __DEBUG1__
+    MPI_Barrier(comm);
+    printf("repartition5 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu, entry_temp.size before repart = %lu \n",
+           rank, Mbig, M, nnz_g, nnz_l, entry_temp.size());
+    MPI_Barrier(comm);
+    print_vector(split, 0, "split", comm);
 //    print_vector(entry, -1, "entry", comm);
+#endif
 
     // *************************** exchange data ****************************
 
@@ -1180,10 +1181,9 @@ int saena_matrix::repartition_nnz_update_Ac(){
                 hint++;
                 entry_set.erase(p.first);
                 entry_set.insert(hint, temp_new);
-            }
-            else{
-                printf("Error: entry to update is not available in saena_matrix::repartition_nnz_update_Ac(): \n");
-                std::cout << "this entry:" << entry_temp[i] << std::endl << std::endl;
+            } else {
+                std::cout << "error on rank " << rank << ": entry to update is not available in repartition_nnz_update_Ac(): \n"
+                          << "this entry: " << entry_temp[i] << std::endl << std::endl;
             }
         }
     }
