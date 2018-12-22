@@ -217,18 +217,23 @@ public:
 
     int repartition_nnz_update_Ac(); // based on nnz.
 
-//    int set_rho();
+    // for update3 for lazy-update
+    int matrix_setup_lazy_update();
+
+    //    int set_rho();
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();
     int scale_matrix();
     int scale_back_matrix();
 
+    // dummy functions to decide if shrinking is.
     int set_off_on_diagonal_dummy();
 //    int find_sortings_dummy();
     int matrix_setup_dummy();
     int matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w);
     int compute_matvec_dummy_time();
+
     int decide_shrinking(std::vector<double> &prev_time);
     int shrink_cpu();
     int shrink_cpu_minor();

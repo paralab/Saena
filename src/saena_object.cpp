@@ -9,7 +9,7 @@
 #include "ietl_saena.h"
 #include "dollar.hpp"
 
-#include "petsc_functions.h"
+//#include "petsc_functions.h"
 
 #include <sys/stat.h>
 #include <cstdio>

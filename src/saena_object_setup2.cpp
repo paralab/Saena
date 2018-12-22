@@ -2120,7 +2120,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 
     // todo: after adding "R_remote block size" part, the current idea seems more efficient than this idea:
     // todo: change the algorithm so every processor sends data only to the next one and receives from the previous one in each iteration.
-    long tag1 = 0;
+//    long tag1 = 0;
     for(int i = 1; i < nprocs; i++) {
         // send A to the right processor, receive A from the left processor.
         // "left" decreases by one in each iteration. "right" increases by one.

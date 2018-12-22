@@ -35,6 +35,17 @@ if (NOT enable_combblaslib)
   SET(XSDK_ENABLE_CXX OFF)
 endif()
 
+# Majid:
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+
+if (CMAKE_VERSION VERSION_LESS 2.8.12)
+    add_definitions(-fPIC)
+else()
+    add_compile_options(-fPIC)
+endif()
+
 ######################################################################
 #
 # IDEAS: xSDK standards module
@@ -112,7 +123,6 @@ if (NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr/local)
 endif()
 
-
 if(NOT MSVC)
   include(GNUInstallDirs)
   set(default_install_inc_dir ${CMAKE_INSTALL_INCLUDEDIR})
@@ -129,14 +139,13 @@ set(INSTALL_INC_DIR "${default_install_inc_dir}" CACHE STRING "The folder where 
 set(INSTALL_LIB_DIR "${default_install_lib_dir}" CACHE STRING "The folder where libraries will be installed.")
 set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where runtime files will be installed.")
 
-
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
 
-set(XSDK_INDEX_SIZE 64)
-if(XSDK_INDEX_SIZE EQUAL 64)
-    message("-- Using 64 bit integer for index size")
+set(XSDK_INDEX_SIZE 32)
+if(XSDK_INDEX_SIZE EQUAL 32)
+    message("-- Using 32 bit integer for index size")
 endif()	
 set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
