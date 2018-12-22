@@ -65,6 +65,8 @@ int saena_object::update2(saena_matrix* A_new){
             grids[i + 1].A = &grids[i].Ac;
             grids[i].Ac.eig_max_of_invdiagXA = eigen_temp;
 //            Grid(&grids[i].Ac, max_level, i + 1);
+        } else {
+            break;
         }
     }
 

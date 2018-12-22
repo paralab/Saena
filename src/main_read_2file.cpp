@@ -161,7 +161,7 @@ int main(int argc, char* argv[]){
     // *************************** lazy update ****************************
 
 //    t1 = MPI_Wtime();
-    solver.update3(&A2);
+    solver.update2(&A2);
     solver.solve_pcg(u, &opts);
 
 //    t2 = MPI_Wtime();

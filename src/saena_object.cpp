@@ -57,7 +57,6 @@ int saena_object::setup(saena_matrix* A) { $
     if(rank==0 && omp_get_thread_num()==0)
         printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
 
-    int i;
 //    float row_reduction_min;
 //    float total_row_reduction;
 //    index_t M_current;
@@ -93,9 +92,9 @@ int saena_object::setup(saena_matrix* A) { $
     grids[0] = Grid(A, max_level, 0); // pass A to grids[0]
 
     if(verbose_setup_steps && rank==0) printf("setup: other Grids\n");
-    for(i = 0; i < max_level; i++){
+    for(int i = 0; i < max_level; i++){
 //        MPI_Barrier(grids[0].A->comm); printf("rank = %d, level setup; before if\n", rank); MPI_Barrier(grids[0].A->comm);
-        if(grids[i].A->active) {
+//        if(grids[i].A->active) {
             if (shrink_level_vector.size()>i+1) if(shrink_level_vector[i+1]) grids[i].A->enable_shrink_next_level = true;
             if (shrink_values_vector.size()>i+1) grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
             coarsen(&grids[i]); // create P, R and Ac for grid[i]
@@ -154,7 +153,7 @@ int saena_object::setup(saena_matrix* A) { $
 //                    if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("rank %d: max_level is set to %d \n", rank, max_level); MPI_Barrier(grids[i].Ac.comm);}
                 }
             }
-        }
+//        }
         if(!grids[i].Ac.active)
             break;
     }
@@ -166,6 +165,28 @@ int saena_object::setup(saena_matrix* A) { $
 
 //    printf("rank = %d, max_level = %d\n", rank, max_level);
 //    printf("i = %u, max_level = %u \n", i, max_level);
+
+    // set the "active" flag to false to next levels after the first not active processor.
+//    for(int l = 0; l < max_level; ++l){
+//        if(!grids[l].A->active) {
+//            for (int k = l+1; k < max_level; ++k) {
+//                printf("rank = %d level %d\n", rank, k);
+//                grids[k].Ac.active = false;
+//            }
+//            break;
+//        }
+//    }
+
+//    MPI_Barrier(A->comm);
+//    for(int l = 0; l < max_level; ++l){
+//        printf("\nlevel = %d\n", l);
+//        if(grids[l].Ac.active) {
+//            printf("rank = %d active\n", rank);
+//        } else {
+//            printf("rank = %d not active\n", rank);
+//        }
+//        MPI_Barrier(A->comm);
+//    }
 
 /*
     // grids[i+1].row_reduction_min is 0 by default. for the active processors in the last grid, it will be non-zero.
@@ -182,11 +203,15 @@ int saena_object::setup(saena_matrix* A) { $
     delete[] mempool1;
     delete[] mempool2;
 
-    if(verbose_setup && rank==0){
-        printf("_____________________________\n\n");
-        printf("number of levels = << %d >> (the finest level is 0)\n", max_level);
-        if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
-        printf("\n******************************************************\n");
+    if(verbose_setup){
+        MPI_Barrier(A->comm);
+        if(!rank){
+            printf("_____________________________\n\n");
+            printf("number of levels = << %d >> (the finest level is 0)\n", max_level);
+            if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
+            printf("\n******************************************************\n");
+        }
+        MPI_Barrier(A->comm);
     }
 
 //    MPI_Barrier(grids[0].A->comm); printf("rank %d: setup done!\n", rank); MPI_Barrier(grids[0].A->comm);
