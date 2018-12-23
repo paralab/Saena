@@ -442,9 +442,9 @@ int saena_matrix::matrix_setup_update() {
 int saena_matrix::matrix_setup_update_no_scale() {
     // update values_local, values_remote and inv_diag.
 
-    int rank, nprocs;
+    int rank;
     MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_size(comm, &nprocs);
 
 //    assembled = true;
 
