@@ -289,9 +289,13 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     auto* nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
     auto* colind = (int_t *) intMalloc_dist(nnz_loc);
 
+    // Do this line to avoid this subtraction for each entry in the next "for" loop.
+    int *nnz_per_row_p = &nnz_per_row[0] - fst_row;
+
     for(nnz_t i = 0; i < nnz_loc; i++){
         nzval_loc[i] = entry_temp[i].val;
-        nnz_per_row[entry_temp[i].row - fst_row]++;
+//        nnz_per_row[entry_temp[i].row - fst_row]++;
+        nnz_per_row_p[entry_temp[i].row]++;
         colind[i] = entry_temp[i].col;
     }
 
@@ -667,7 +671,6 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 //            scale_vector(u, grid->A->inv_sq_diag);
 
 #ifdef __DEBUG1__
-
             t2 = omp_get_wtime();
             func_name = "vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
             if (verbose) print_time(t1, t2, func_name, comm);
