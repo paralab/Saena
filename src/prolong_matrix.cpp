@@ -65,37 +65,37 @@ int prolong_matrix::findLocalRemote(){
 
     std::vector<int> vIndexCount_t(nprocs, 0);
 
-    //todo: here: change push_back
+    //todo: here: change emplace_back
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
     // local
     if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) {
         nnzPerRow_local[entry[0].row]++;
         nnz_l_local++;
-        entry_local.push_back(entry[0]);
-        row_local.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
-//        col_local.push_back(entry[0].col);
-//        values_local.push_back(entry[0].val);
-        //vElement_local.push_back(col[0]);
-        vElementRep_local.push_back(1);
+        entry_local.emplace_back(entry[0]);
+        row_local.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
+//        col_local.emplace_back(entry[0].col);
+//        values_local.emplace_back(entry[0].val);
+        //vElement_local.emplace_back(col[0]);
+        vElementRep_local.emplace_back(1);
 
     // remote
     } else{
         nnz_l_remote++;
-        entry_remote.push_back(entry[0]);
-//        row_remote.push_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
-//        col_remote2.push_back(entry[0].col);
-//        values_remote.push_back(entry[0].val);
+        entry_remote.emplace_back(entry[0]);
+//        row_remote.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
+//        col_remote2.emplace_back(entry[0].col);
+//        values_remote.emplace_back(entry[0].val);
         col_remote_size++; // number of remote columns
-//        col_remote.push_back(col_remote_size-1);
+//        col_remote.emplace_back(col_remote_size-1);
 //        nnzPerCol_remote[col_remote_size-1]++;
-        nnzPerCol_remote.push_back(1);
+        nnzPerCol_remote.emplace_back(1);
 
-        vElement_remote.push_back(entry[0].col);
-        vElementRep_remote.push_back(1);
+        vElement_remote.emplace_back(entry[0].col);
+        vElementRep_remote.emplace_back(1);
         recvCount[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
 
-//        nnzPerCol_remote_t.push_back(1);
-        vElement_remote_t.push_back(nnz_l_remote-1);
+//        nnzPerCol_remote_t.emplace_back(1);
+        vElement_remote_t.emplace_back(nnz_l_remote-1);
         vIndexCount_t[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
 //        recvCount_t[lower_bound2(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
     }
@@ -106,12 +106,12 @@ int prolong_matrix::findLocalRemote(){
         if (entry[i].col >= splitNew[rank] && entry[i].col < splitNew[rank+1]) {
             nnzPerRow_local[entry[i].row]++;
             nnz_l_local++;
-            entry_local.push_back(entry[i]);
-            row_local.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear.
-//            col_local.push_back(entry[i].col);
-//            values_local.push_back(entry[i].val);
+            entry_local.emplace_back(entry[i]);
+            row_local.emplace_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear.
+//            col_local.emplace_back(entry[i].col);
+//            values_local.emplace_back(entry[i].val);
             if (entry[i].col != entry[i-1].col)
-                vElementRep_local.push_back(1);
+                vElementRep_local.emplace_back(1);
             else
                 (*(vElementRep_local.end()-1))++;
 
@@ -119,30 +119,30 @@ int prolong_matrix::findLocalRemote(){
         } else {
             nnz_l_remote++;
 //            if(rank==2) printf("entry[i].row = %lu\n", entry[i].row+split[rank]);
-            entry_remote.push_back(entry[i]);
-//            row_remote.push_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
+            entry_remote.emplace_back(entry[i]);
+//            row_remote.emplace_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
             // col_remote2 is the original col value. col_remote starts from 0.
-//            col_remote2.push_back(entry[i].col);
-//            values_remote.push_back(entry[i].val);
+//            col_remote2.emplace_back(entry[i].col);
+//            values_remote.emplace_back(entry[i].val);
             procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
             vIndexCount_t[procNum]++;
 //            recvCount_t[procNum]++;
-            vElement_remote_t.push_back((index_t)nnz_l_remote-1); // todo: is (unsigned long) required here?
-//            nnzPerCol_remote_t.push_back(1);
+            vElement_remote_t.emplace_back((index_t)nnz_l_remote-1); // todo: is (unsigned long) required here?
+//            nnzPerCol_remote_t.emplace_back(1);
 
             if (entry[i].col != entry[i-1].col) {
                 col_remote_size++;
-                vElement_remote.push_back(entry[i].col);
-                vElementRep_remote.push_back(1);
+                vElement_remote.emplace_back(entry[i].col);
+                vElementRep_remote.emplace_back(1);
                 procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
                 recvCount[procNum]++;
-                nnzPerCol_remote.push_back(1);
+                nnzPerCol_remote.emplace_back(1);
             } else {
                 (*(vElementRep_remote.end()-1))++;
                 (*(nnzPerCol_remote.end()-1))++;
             }
             // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-//            col_remote.push_back(col_remote_size-1);
+//            col_remote.emplace_back(col_remote_size-1);
 //            nnzPerCol_remote[col_remote_size-1]++;
         }
     } // for i
@@ -181,16 +181,16 @@ int prolong_matrix::findLocalRemote(){
         for (int i = 0; i < nprocs; i++) {
             if (recvCount[i] != 0) {
                 numRecvProc++;
-                recvProcRank.push_back(i);
-                recvProcCount.push_back(recvCount[i]);
-//            sendProcCount_t.push_back(vIndexCount_t[i]); // use recvProcRank for it.
+                recvProcRank.emplace_back(i);
+                recvProcCount.emplace_back(recvCount[i]);
+//            sendProcCount_t.emplace_back(vIndexCount_t[i]); // use recvProcRank for it.
 //            if(rank==0) cout << i << "\trecvCount[i] = " << recvCount[i] << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
             }
             if (vIndexCount[i] != 0) {
                 numSendProc++;
-                sendProcRank.push_back(i);
-                sendProcCount.push_back(vIndexCount[i]);
-//            recvProcCount_t.push_back(recvCount_t[i]); // use sendProcRank for it.
+                sendProcRank.emplace_back(i);
+                sendProcCount.emplace_back(vIndexCount[i]);
+//            recvProcCount_t.emplace_back(recvCount_t[i]); // use sendProcRank for it.
             }
         }
 
@@ -234,14 +234,14 @@ int prolong_matrix::findLocalRemote(){
         for (int i = 0; i < nprocs; i++) {
             if (recvCount_t[i] != 0) {
                 numRecvProc_t++;
-                recvProcRank_t.push_back(i);
-                recvProcCount_t.push_back(recvCount_t[i]);
+                recvProcRank_t.emplace_back(i);
+                recvProcCount_t.emplace_back(recvCount_t[i]);
 //            if(rank==2) cout << i << "\trecvCount_t[i] = " << recvCount_t[i] << endl;
             }
             if (vIndexCount_t[i] != 0) {
                 numSendProc_t++;
-                sendProcRank_t.push_back(i);
-                sendProcCount_t.push_back(vIndexCount_t[i]);
+                sendProcRank_t.emplace_back(i);
+                sendProcCount_t.emplace_back(vIndexCount_t[i]);
 //            if(rank==1) cout << i << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
             }
         }

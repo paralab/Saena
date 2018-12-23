@@ -567,23 +567,23 @@ int saena_matrix::set_off_on_diagonal(){
                 nnzPerRow_local[entry[0].row - split[rank]]++;
 //                nnzPerCol_local[col[0]]++;
                 nnz_l_local++;
-                values_local.push_back(entry[0].val);
-                row_local.push_back(entry[0].row - split[rank]);
-                col_local.push_back(entry[0].col);
-                //vElement_local.push_back(col[0]);
-//                vElementRep_local.push_back(1);
+                values_local.emplace_back(entry[0].val);
+                row_local.emplace_back(entry[0].row - split[rank]);
+                col_local.emplace_back(entry[0].col);
+                //vElement_local.emplace_back(col[0]);
+//                vElementRep_local.emplace_back(1);
 
             } else {
                 nnz_l_remote++;
                 nnzPerRow_remote[entry[0].row - split[rank]]++;
-                values_remote.push_back(entry[0].val);
-                row_remote.push_back(entry[0].row - split[rank]);
+                values_remote.emplace_back(entry[0].val);
+                row_remote.emplace_back(entry[0].row - split[rank]);
                 col_remote_size++;
-                col_remote.push_back(col_remote_size - 1);
-                col_remote2.push_back(entry[0].col);
-                nnzPerCol_remote.push_back(1);
-                vElement_remote.push_back(entry[0].col);
-                vElementRep_remote.push_back(1);
+                col_remote.emplace_back(col_remote_size - 1);
+                col_remote2.emplace_back(entry[0].col);
+                nnzPerCol_remote.emplace_back(1);
+                vElement_remote.emplace_back(entry[0].col);
+                vElementRep_remote.emplace_back(1);
 //                if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[0].col, lower_bound3(&split[0], &split[nprocs], entry[0].col));
                 recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
             }
@@ -597,36 +597,36 @@ int saena_matrix::set_off_on_diagonal(){
                     nnz_l_local++;
 //                    nnzPerCol_local[col[i]]++;
                     nnzPerRow_local[entry[i].row - split[rank]]++;
-                    values_local.push_back(entry[i].val);
-                    row_local.push_back(entry[i].row - split[rank]);
-                    col_local.push_back(entry[i].col);
+                    values_local.emplace_back(entry[i].val);
+                    row_local.emplace_back(entry[i].row - split[rank]);
+                    col_local.emplace_back(entry[i].col);
 
 //                    if (entry[i].col != entry[i - 1].col)
-//                        vElementRep_local.push_back(1);
+//                        vElementRep_local.emplace_back(1);
 //                    else
 //                        vElementRep_local.back()++;
                 } else {
                     nnz_l_remote++;
                     nnzPerRow_remote[entry[i].row - split[rank]]++;
-                    values_remote.push_back(entry[i].val);
-                    row_remote.push_back(entry[i].row - split[rank]);
+                    values_remote.emplace_back(entry[i].val);
+                    row_remote.emplace_back(entry[i].row - split[rank]);
                     // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
-                    col_remote2.push_back(entry[i].col);
+                    col_remote2.emplace_back(entry[i].col);
 
                     if (entry[i].col != entry[i - 1].col) {
                         col_remote_size++;
-                        vElement_remote.push_back(entry[i].col);
-                        vElementRep_remote.push_back(1);
+                        vElement_remote.emplace_back(entry[i].col);
+                        vElementRep_remote.emplace_back(1);
                         procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
 //                        if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[i].col, procNum);
                         recvCount[procNum]++;
-                        nnzPerCol_remote.push_back(1);
+                        nnzPerCol_remote.emplace_back(1);
                     } else {
                         vElementRep_remote.back()++;
                         nnzPerCol_remote.back()++;
                     }
                     // the original col values are not being used. the ordering starts from 0, and goes up by 1.
-                    col_remote.push_back(col_remote_size - 1);
+                    col_remote.emplace_back(col_remote_size - 1);
                 }
             } // for i
         }
@@ -662,13 +662,13 @@ int saena_matrix::set_off_on_diagonal(){
             for (int i = 0; i < nprocs; i++) {
                 if (recvCount[i] != 0) {
                     numRecvProc++;
-                    recvProcRank.push_back(i);
-                    recvProcCount.push_back(recvCount[i]);
+                    recvProcRank.emplace_back(i);
+                    recvProcCount.emplace_back(recvCount[i]);
                 }
                 if (sendCount[i] != 0) {
                     numSendProc++;
-                    sendProcRank.push_back(i);
-                    sendProcCount.push_back(sendCount[i]);
+                    sendProcRank.emplace_back(i);
+                    sendProcCount.emplace_back(sendCount[i]);
                 }
             }
 //            if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << std::endl;

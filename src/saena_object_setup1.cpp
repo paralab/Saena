@@ -81,11 +81,11 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     for (index_t i = 0; i < A->M; ++i) {
         for (index_t j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
             if(A->row_local[A->indicesP_local[iter]] == A->col_local[A->indicesP_local[iter]]-A->split[rank]){ // diagonal element
-                PEntryTemp.push_back(cooEntry(A->row_local[A->indicesP_local[iter]],
+                PEntryTemp.emplace_back(cooEntry(A->row_local[A->indicesP_local[iter]],
                                               aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
                                               1 - omega));
             }else{
-                PEntryTemp.push_back(cooEntry(A->row_local[A->indicesP_local[iter]],
+                PEntryTemp.emplace_back(cooEntry(A->row_local[A->indicesP_local[iter]],
                                               aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
                                               -omega * A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]]));
             }
@@ -96,14 +96,14 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     MPI_Waitall(A->numRecvProc, requests, statuses);
 
     // remote
-    // ------
+    // ------saena_object
     iter = 0;
     for (index_t i = 0; i < A->col_remote_size; ++i) {
         for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
-            PEntryTemp.push_back(cooEntry(A->row_remote[iter],
+            PEntryTemp.emplace_back(cooEntry(A->row_remote[iter],
                                           A->vecValuesULong[A->col_remote[iter]],
                                           -omega * A->values_remote[iter] * A->inv_diag[A->row_remote[iter]]));
-//            P->values.push_back(A->values_remote[iter]);
+//            P->values.emplace_back(A->values_remote[iter]);
 //            std::cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t"
 //                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << std::endl;
         }
@@ -117,7 +117,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
 //    P->entry.resize(PEntryTemp.size());
     // remove duplicates.
     for(index_t i=0; i<PEntryTemp.size(); i++){
-        P->entry.push_back(PEntryTemp[i]);
+        P->entry.emplace_back(PEntryTemp[i]);
         while(i<PEntryTemp.size()-1 && PEntryTemp[i] == PEntryTemp[i+1]){ // values of entries with the same row and col should be added.
             P->entry.back().val += PEntryTemp[i+1].val;
             i++;
@@ -354,15 +354,15 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 //
 //            // diagonal entry
 //            if(i == A->col_local[A->indicesP_local[iter]]){
-//                STi.push_back(iter2); // iter2 is actually i, but it was giving an error for using i.
-//                STj.push_back(A->col_local[A->indicesP_local[iter]]);
-//                STval.push_back(1);
+//                STi.emplace_back(iter2); // iter2 is actually i, but it was giving an error for using i.
+//                STj.emplace_back(A->col_local[A->indicesP_local[iter]]);
+//                STval.emplace_back(1);
 //                continue;
 //            }
 //
-//            STi.push_back(iter2); // iter2 is actually i, but it was giving an error for using i.
-//            STj.push_back(A->col_local[A->indicesP_local[iter]]);
-//            STval.push_back( -A->values_local[A->indicesP_local[iter]] / maxPerRow[A->col_local[A->indicesP_local[iter]]] );
+//            STi.emplace_back(iter2); // iter2 is actually i, but it was giving an error for using i.
+//            STj.emplace_back(A->col_local[A->indicesP_local[iter]]);
+//            STval.emplace_back( -A->values_local[A->indicesP_local[iter]] / maxPerRow[A->col_local[A->indicesP_local[iter]]] );
 //        }
 //    }
 
@@ -385,9 +385,9 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 //    iter = 0;
 //    for (i = 0; i < A->col_remote_size; ++i) {
 //        for (unsigned int j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
-//            STi.push_back(A->row_remote[A->indicesP_remote[iter]]);
-//            STj.push_back(A->col_remote2[A->indicesP_remote[iter]]);
-//            STval.push_back( -A->values_remote[A->indicesP_remote[iter]] / A->vecValues[A->col_remote[A->indicesP_remote[iter]]] );
+//            STi.emplace_back(A->row_remote[A->indicesP_remote[iter]]);
+//            STj.emplace_back(A->col_remote2[A->indicesP_remote[iter]]);
+//            STval.emplace_back( -A->values_remote[A->indicesP_remote[iter]] / A->vecValues[A->col_remote[A->indicesP_remote[iter]]] );
 //        }
 //    }
 
@@ -494,7 +494,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
         if(S->nnzPerRow[i] == 1){
             weight[i] = ( 2UL<<wOffset | initialWeight[i] );
             root_distance[i] = 0;
-            aggArray.push_back(aggregate[i]);
+            aggArray.emplace_back(aggregate[i]);
 //            if(rank==0) std::cout << "boundary: " << i+S->split[rank] << std::endl;
         }else{
             weight[i] = ( 1UL<<wOffset | initialWeight[i] ); // status of each node is initialized to 1 and its weight to initialWeight.
@@ -725,7 +725,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
                 if (aggregate[i] == i + S->split[rank]) {
                     weight[i] = ( (2UL<<wOffset) | (weight[i]&weightMax) ); // change aggStatus of a root to 2.
                     root_distance[i] = 0;
-                    aggArray.push_back(aggregate[i]);
+                    aggArray.emplace_back(aggregate[i]);
 //                        if(rank==0) std::cout << "\nroot " << "i = " << i+S->split[rank] << "\t weight = " << (weight[i]&weightMax) << std::endl;
 
                     // this node should become an "ASSIGNED".
@@ -834,7 +834,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
     // keep at least one root node on each proc
 //    if(aggArray.empty()){
 //        printf("rank %d = aggArray.empty \n", rank);
-//        aggArray.push_back(0+S->split[rank]);
+//        aggArray.emplace_back(0+S->split[rank]);
 //        aggregate[0] = 0+S->split[rank];}
 
     // *************************** update aggregate to new indices ****************************
@@ -973,7 +973,7 @@ int saena_object::aggregation_2_dist(strength_matrix *S, std::vector<unsigned lo
         if(S->nnzPerRow[i] == 1){
             weight[i] = ( 2UL<<wOffset | initialWeight[i] );
             root_distance[i] = 0;
-            aggArray.push_back(aggregate[i]);
+            aggArray.emplace_back(aggregate[i]);
 //            if(rank==0) std::cout << "boundary: " << i+S->split[rank] << std::endl;
         }else{
             weight[i] = ( 1UL<<wOffset | initialWeight[i] ); // status of each node is initialized to 1 and its weight to initialWeight.
@@ -1382,7 +1382,7 @@ int saena_object::aggregation_2_dist(strength_matrix *S, std::vector<unsigned lo
                 if (aggregate[i] == i + S->split[rank]) { // this node is a root.
                     weight[i] = ( (2UL<<wOffset) | (weight[i]&weightMax) ); // change aggStatus of a root to 2.
                     root_distance[i] = 0;
-                    aggArray.push_back(aggregate[i]);
+                    aggArray.emplace_back(aggregate[i]);
 //                    if(rank==0) std::cout << "\nroot " << "i = " << i+S->split[rank] << "\t weight = " << (weight[i]&weightMax) << std::endl;
                 } else if ( !dist1or2undecided[i] ){
 //                    if(rank==0) std::cout << "assign " << "i = " << i+S->split[rank] << "\taggregate[i] = " << aggregate[i] << "\taggStatus[i] = " << (weight[i]>>wOffset) << std::endl;
@@ -1489,7 +1489,7 @@ int saena_object::aggregation_2_dist(strength_matrix *S, std::vector<unsigned lo
     // keep at least one root node on each proc
 //    if(aggArray.empty()){
 //        printf("rank %d = aggArray.empty \n", rank);
-//        aggArray.push_back(0+S->split[rank]);
+//        aggArray.emplace_back(0+S->split[rank]);
 //        aggregate[0] = 0+S->split[rank];}
 
     // *************************** update aggregate to new indices ****************************
@@ -1678,7 +1678,7 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
             isAggRemote[i] = false;
         }else{
             isAggRemote[i] = true;
-            aggregateRemote.push_back(aggregate[i]);
+            aggregateRemote.emplace_back(aggregate[i]);
         }
     }
 
@@ -1726,13 +1726,13 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
         for (int i = 0; i < nprocs; i++) {
             if (recvCount[i] != 0) {
                 numRecvProc++;
-                recvProcRank.push_back(i);
-                recvProcCount.push_back(recvCount[i]);
+                recvProcRank.emplace_back(i);
+                recvProcCount.emplace_back(recvCount[i]);
             }
             if (vIndexCount[i] != 0) {
                 numSendProc++;
-                sendProcRank.push_back(i);
-                sendProcCount.push_back(vIndexCount[i]);
+                sendProcRank.emplace_back(i);
+                sendProcCount.emplace_back(vIndexCount[i]);
             }
         }
 

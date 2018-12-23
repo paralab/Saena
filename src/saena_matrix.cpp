@@ -486,7 +486,7 @@ int saena_matrix::set3(unsigned int row, unsigned int col, double val){
         }
     }else{
         printf("\nAttention: the structure of the matrix is being changed, so matrix.assemble() is required to call after being done calling matrix.set()!\n\n");
-        entry.push_back(send_buf);
+        entry.emplace_back(send_buf);
         std::sort(&*entry.begin(), &*entry.end());
         nnz_g++;
         nnz_l++;
@@ -519,7 +519,7 @@ int saena_matrix::set3(unsigned int* row, unsigned int* col, double* val, unsign
             }
         }else{
             printf("\nAttention: the structure of the matrix is being changed, so matrix.assemble() is required to call after being done calling matrix.set()!\n\n");
-            entry.push_back(temp);
+            entry.emplace_back(temp);
             std::sort(&*entry.begin(), &*entry.end());
             nnz_g++;
             nnz_l++;
@@ -1046,8 +1046,6 @@ int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>
 
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
-
-//    printf("jacobi!!!\n");
 
     for(int j = 0; j < iter; j++){
         matvec(u, temp);

@@ -340,10 +340,10 @@ int saena_object::shrink_cpu_A(saena_matrix* Ac, std::vector<index_t>& P_splitNe
         for(i = 0; i < nprocs+1; i++){
 //            if(rank==0) printf("P->splitNew[i] = %lu\n", P_splitNew[i]);
             if( i % Ac->cpu_shrink_thre2 == 0){
-                Ac->split.push_back( P_splitNew[i] );
+                Ac->split.emplace_back( P_splitNew[i] );
             }
         }
-        Ac->split.push_back( P_splitNew[nprocs] );
+        Ac->split.emplace_back( P_splitNew[nprocs] );
         // assert M == split[rank+1] - split[rank]
 
         print_vector(Ac->split, 0, "Ac->split after shrinking:", Ac->comm);
@@ -966,7 +966,7 @@ int saena_object::unshrink_u(Grid* grid, std::vector<value_t>& u) {
             MPI_Recv(&*u.begin(), recv_size, MPI_DOUBLE, 0, 0, grid->Ac.comm_horizontal, MPI_STATUS_IGNORE);
 //            MPI_Recv(&*u.begin(), u.size(), MPI_DOUBLE, 0, 0, grid->Ac.comm_horizontal, MPI_STATUS_IGNORE);
 //            MPI_Irecv(&*u.begin(), u.size(), MPI_DOUBLE, 0, 0, grid->Ac.comm_horizontal, &requests[0]);
-//            reqs.push_back(req);
+//            reqs.emplace_back(req);
         }
 
         if(rank_horizontal == 0){
@@ -974,7 +974,7 @@ int saena_object::unshrink_u(Grid* grid, std::vector<value_t>& u) {
 //            printf("un-shrink: rank = %d, neigbor_rank = %d, send_size = %u, offset = %lu \n", rank, neigbor_rank, send_size, offset);
             MPI_Send(&*(u.begin() + offset), send_size, MPI_DOUBLE, neigbor_rank, 0, grid->Ac.comm_horizontal);
 //            MPI_Isend(&*u.begin() + offset, send_size, MPI_DOUBLE, neigbor_rank, 0, grid->Ac.comm_horizontal, &requests[neigbor_rank - 1]);
-//            reqs.push_back(req);
+//            reqs.emplace_back(req);
             offset += send_size; // set offset for the next iteration
         }
     }

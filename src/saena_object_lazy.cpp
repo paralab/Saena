@@ -1879,7 +1879,7 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     // remove duplicates.
     unsigned long entry_size = 0;
     for(nnz_t i=0; i<RA_temp.entry.size(); i++){
-        RA.entry.push_back(RA_temp.entry[i]);
+        RA.entry.emplace_back(RA_temp.entry[i]);
         while(i<RA_temp.entry.size()-1 && RA_temp.entry[i] == RA_temp.entry[i+1]){ // values of entries with the same row and col should be added.
             RA.entry.back().val += RA_temp.entry[i+1].val;
             i++;
@@ -1972,7 +1972,7 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     // remove duplicates.
     entry_size = 0;
     for(nnz_t i=0; i<RAP_temp.entry.size(); i++){
-//        Ac->entry.push_back(RAP_temp.entry[i]);
+//        Ac->entry.emplace_back(RAP_temp.entry[i]);
         Ac->entry_temp[entry_size] = RAP_temp.entry[i];
         while(i<RAP_temp.entry.size()-1 && RAP_temp.entry[i] == RAP_temp.entry[i+1]){ // values of entries with the same row and col should be added.
 //            if(rank==0) std::cout << Ac->entry_temp[entry_size] << std::endl;
@@ -2103,7 +2103,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
 //                                      << ", " << diff[j].col << "]=\t" << diff[j].val
 //                                      << "         \tR[" << R->entry_local[i].row << ", " << R->entry_local[i].col
 //                                      << "]=\t" << R->entry_local[i].val << std::endl;
-                RA_temp.entry.push_back(cooEntry(R->entry_local[i].row,
+                RA_temp.entry.emplace_back(cooEntry(R->entry_local[i].row,
                                                  diff[j].col,
                                                  R->entry_local[i].val * diff[j].val));
             }
@@ -2127,7 +2127,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     // remove duplicates.
     unsigned long entry_size = 0;
     for(nnz_t i=0; i<RA_temp.entry.size(); i++){
-        RA.entry.push_back(RA_temp.entry[i]);
+        RA.entry.emplace_back(RA_temp.entry[i]);
         while(i<RA_temp.entry.size()-1 && RA_temp.entry[i] == RA_temp.entry[i+1]){ // values of entries with the same row and col should be added.
             RA.entry.back().val += RA_temp.entry[i+1].val;
             i++;
@@ -2220,7 +2220,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     // remove duplicates.
     entry_size = 0;
     for(nnz_t i=0; i<RAP_temp.entry.size(); i++){
-//        Ac->entry.push_back(RAP_temp.entry[i]);
+//        Ac->entry.emplace_back(RAP_temp.entry[i]);
         Ac->entry_temp[entry_size] = RAP_temp.entry[i];
         while(i<RAP_temp.entry.size()-1 && RAP_temp.entry[i] == RAP_temp.entry[i+1]){ // values of entries with the same row and col should be added.
 //            if(rank==0) std::cout << Ac->entry_temp[entry_size] << std::endl;
@@ -2355,7 +2355,7 @@ int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* 
             for (nnz_t j = jstart; j < jend; j++) {
 //            if(rank==0) std::cout << A->entry[indicesP[j]].row << "\t" << A->entry[indicesP[j]].col << "\t" << A->entry[indicesP[j]].val
 //                             << "\t" << R->entry_local[i].col << "\t" << R->entry_local[i].col - P->split[rank] << std::endl;
-                RA_temp.entry.push_back(cooEntry(R->entry_local[i].row,
+                RA_temp.entry.emplace_back(cooEntry(R->entry_local[i].row,
                                                  A->entry[indicesP[j]].col,
                                                  R->entry_local[i].val * A->entry[indicesP[j]].val));
             }
@@ -2388,7 +2388,7 @@ int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* 
     // todo: here
     // remove duplicates.
     for(nnz_t i=0; i<RA_temp.entry.size(); i++){
-        RA.entry.push_back(RA_temp.entry[i]);
+        RA.entry.emplace_back(RA_temp.entry[i]);
 //        if(rank==1) std::cout << std::endl << "start:" << std::endl << RA_temp.entry[i].val << std::endl;
         while(i<RA_temp.entry.size()-1 && RA_temp.entry[i] == RA_temp.entry[i+1]){ // values of entries with the same row and col should be added.
             RA.entry.back().val += RA_temp.entry[i+1].val;
@@ -2537,7 +2537,7 @@ int saena_object::coarsen2(saena_matrix* A, prolong_matrix* P, restrict_matrix* 
     // todo:here
     // remove duplicates.
     for(nnz_t i=0; i<RAP_temp.entry.size(); i++){
-        Ac->entry.push_back(RAP_temp.entry[i]);
+        Ac->entry.emplace_back(RAP_temp.entry[i]);
         while(i<RAP_temp.entry.size()-1 && RAP_temp.entry[i] == RAP_temp.entry[i+1]){ // values of entries with the same row and col should be added.
             Ac->entry.back().val += RAP_temp.entry[i+1].val;
             i++;

@@ -122,25 +122,25 @@ int strength_matrix::setup_matrix(float connStrength){
         nnzPerRow_local[r[0]]++;
         nnz_l_local++;
 
-        values_local.push_back(v[0]);
-        row_local.push_back(r[0]);
-        col_local.push_back(c[0]);
+        values_local.emplace_back(v[0]);
+        row_local.emplace_back(r[0]);
+        col_local.emplace_back(c[0]);
 
-        //vElement_local.push_back(col[0]);
-        vElementRep_local.push_back(1);
+        //vElement_local.emplace_back(col[0]);
+        vElementRep_local.emplace_back(1);
 
     } else{
         nnz_l_remote++;
 
-        values_remote.push_back(v[0]);
-        row_remote.push_back(r[0]);
+        values_remote.emplace_back(v[0]);
+        row_remote.emplace_back(r[0]);
         col_remote_size++; // number of remote columns
-        col_remote.push_back(col_remote_size-1);
-        col_remote2.push_back(c[0]);
-        nnzPerCol_remote.push_back(1);
+        col_remote.emplace_back(col_remote_size-1);
+        col_remote2.emplace_back(c[0]);
+        nnzPerCol_remote.emplace_back(1);
 
-        vElement_remote.push_back(c[0]);
-        vElementRep_remote.push_back(1);
+        vElement_remote.emplace_back(c[0]);
+        vElementRep_remote.emplace_back(1);
         recvCount[lower_bound2(&split[0], &split[nprocs], c[0])] = 1;
     }
 
@@ -151,35 +151,35 @@ int strength_matrix::setup_matrix(float connStrength){
             nnzPerRow_local[r[i]]++;
             nnz_l_local++;
 
-            values_local.push_back(v[i]);
-            row_local.push_back(r[i]);
-            col_local.push_back(c[i]);
+            values_local.emplace_back(v[i]);
+            row_local.emplace_back(r[i]);
+            col_local.emplace_back(c[i]);
 
 //            if (col[i] != col[i - 1]) {
-//                vElementRep_local.push_back(1);
+//                vElementRep_local.emplace_back(1);
 //            } else {
 //                (*(vElementRep_local.end()-1))++;
 //            }
         } else {
             nnz_l_remote++;
-            values_remote.push_back(v[i]);
-            row_remote.push_back(r[i]);
+            values_remote.emplace_back(v[i]);
+            row_remote.emplace_back(r[i]);
             // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
-            col_remote2.push_back(c[i]);
+            col_remote2.emplace_back(c[i]);
 
             if (c[i] != c[i - 1]) {
                 col_remote_size++;
-                vElement_remote.push_back(c[i]);
-                vElementRep_remote.push_back(1);
+                vElement_remote.emplace_back(c[i]);
+                vElementRep_remote.emplace_back(1);
                 procNum = lower_bound2(&split[0], &split[nprocs], c[i]);
                 recvCount[procNum]++;
-                nnzPerCol_remote.push_back(1);
+                nnzPerCol_remote.emplace_back(1);
             } else {
                 vElementRep_remote.back()++;
                 nnzPerCol_remote.back()++;
             }
             // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-            col_remote.push_back(col_remote_size-1);
+            col_remote.emplace_back(col_remote_size-1);
 //            nnzPerCol_remote[col_remote_size-1]++;
         }
     } // for i
@@ -193,13 +193,13 @@ int strength_matrix::setup_matrix(float connStrength){
          for(int j = 0; j < nprocs; j++){
              if(recvCount[j] != 0){
                  numRecvProc++;
-                 recvProcRank.push_back(j);
-                 recvProcCount.push_back(2*recvCount[j]); // make them double size for prolongation the communication in the aggregation_2_dist function.
+                 recvProcRank.emplace_back(j);
+                 recvProcCount.emplace_back(2*recvCount[j]); // make them double size for prolongation the communication in the aggregation_2_dist function.
              }
              if(vIndexCount[j] != 0){
                  numSendProc++;
-                 sendProcRank.push_back(j);
-                 sendProcCount.push_back(2*vIndexCount[j]); // make them double size for prolongation the communication in the aggregation_2_dist function.
+                 sendProcRank.emplace_back(j);
+                 sendProcCount.emplace_back(2*vIndexCount[j]); // make them double size for prolongation the communication in the aggregation_2_dist function.
              }
          }
 

@@ -248,7 +248,7 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
                                  * cos(2*PETSC_PI*(((double)j+0.5)*Hy))
                                  * cos(2*PETSC_PI*(((double)k+0.5)*Hz))
                                  * Hx * Hy * Hz;
-                rhs.push_back(val);
+                rhs.emplace_back(val);
             }
         }
     }
