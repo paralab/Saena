@@ -1076,8 +1076,9 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
     double delta = (beta - alpha) / 2;
     double theta = (beta + alpha) / 2;
     double s1 = theta/delta;
+    double twos1 = 2 * s1; // to avoid the multiplication in the "for loop.
     double rhok = 1/s1;
-    double rhokp1, d1, d2;
+    double rhokp1, two_rhokp1, d1, d2;
 
     // first loop
     residual(u, rhs, res);
@@ -1090,9 +1091,10 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
     }
 
     for(int i = 1; i < iter; i++){
-        rhokp1 = 1 / (2*s1 - rhok);
+        rhokp1 = 1 / (twos1 - rhok);
+        two_rhokp1 = 2 * rhokp1;
         d1     = rhokp1 * rhok;
-        d2     = 2*rhokp1 / delta;
+        d2     = two_rhokp1 / delta;
         rhok   = rhokp1;
         residual(u, rhs, res);
 
