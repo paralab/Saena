@@ -896,14 +896,26 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         return -1;
     }
 
-    if(verbose_solve) if(rank == 0) printf("solve_pcg: check u size!\n");
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: check u size!\n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     // ************** repartition u **************
 
     if(repartition)
         repartition_u(u);
 
-    if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition u!\n");
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition u!\n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     // ************** solve **************
 
@@ -949,7 +961,13 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     std::vector<value_t> rho(grids[0].A->M, 0);
     vcycle(&grids[0], rho, r);
 
-    if(verbose_solve) if(rank == 0) printf("solve_pcg: first vcycle!\n");
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(verbose_solve) if(rank == 0) printf("solve_pcg: first vcycle!\n");
+        MPI_Barrier(comm);
+    }
+#endif
 
 //    for(i = 0; i < r.size(); i++)
 //        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
@@ -1019,7 +1037,13 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         std::cout << "******************************************************" << std::endl;
     }
 
-    if(verbose_solve) if(rank == 0) printf("solve_pcg: solve!\n");
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(verbose_solve) if(rank == 0) printf("solve_pcg: solve!\n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     // ************** scale u **************
 
@@ -1032,7 +1056,13 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     if(repartition)
         repartition_back_u(u);
 
-    if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition back u!\n");
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition back u!\n");
+        MPI_Barrier(comm);
+    }
+#endif
 
 //     print_vector(u, 0, "final u", comm);
 
