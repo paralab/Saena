@@ -1094,17 +1094,16 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     }
 
 
-    MPI_Barrier(comm);
-    printf("rank %d here222\n", rank);
-    MPI_Barrier(comm);
-
+//    MPI_Barrier(comm);
+//    printf("rank %d here222\n", rank);
+//    MPI_Barrier(comm);
 
     std::vector<value_t> rho(grids[0].A->M, 0);
     vcycle(&grids[0], rho, r);
 
-    MPI_Barrier(comm);
-    printf("rank %d here333\n", rank);
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
+//    printf("rank %d here333\n", rank);
+//    MPI_Barrier(comm);
 
 #ifdef __DEBUG1__
     if(verbose_solve){

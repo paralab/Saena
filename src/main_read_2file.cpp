@@ -163,9 +163,9 @@ int main(int argc, char* argv[]){
 //    t1 = MPI_Wtime();
     solver.update3(&A2);
 
-    MPI_Barrier(comm);
-    printf("here111\n");
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
+//    printf("here111\n");
+//    MPI_Barrier(comm);
 
     solver.solve_pcg(u, &opts);
 
