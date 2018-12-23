@@ -1018,6 +1018,14 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: start!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
     std::fill(u.begin(), u.end(), 0);
 
     // ************** check u size **************
@@ -1093,16 +1101,16 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     }
 
 
-//    MPI_Barrier(comm);
-//    printf("rank %d here222\n", rank);
-//    MPI_Barrier(comm);
+    MPI_Barrier(comm);
+    printf("rank %d here222\n", rank);
+    MPI_Barrier(comm);
 
     std::vector<value_t> rho(grids[0].A->M, 0);
     vcycle(&grids[0], rho, r);
 
-//    MPI_Barrier(comm);
-//    printf("rank %d here333\n", rank);
-//    MPI_Barrier(comm);
+    MPI_Barrier(comm);
+    printf("rank %d here333\n", rank);
+    MPI_Barrier(comm);
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -1202,12 +1210,12 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 #ifdef __DEBUG1__
     if(verbose_solve){
         MPI_Barrier(comm);
-        if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition back u!\n");
+        if(rank == 0) printf("solve_pcg: end!\n");
         MPI_Barrier(comm);
+
+//        print_vector(u, 0, "final u", comm);
     }
 #endif
-
-//     print_vector(u, 0, "final u", comm);
 
 //    if(rank==0) dollar::text(std::cout);
 
