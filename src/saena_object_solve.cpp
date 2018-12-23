@@ -537,19 +537,25 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         std::vector<value_t> uCorr;
         std::vector<value_t> temp;
 
+#ifdef __DEBUG1__
         if(verbose_vcycle){
             MPI_Barrier(comm);
             if(rank==0) printf("rank = %d: vcycle level = %d, A->M = %u, u.size = %lu, rhs.size = %lu \n",
-                   rank, grid->currentLevel, grid->A->M, u.size(), rhs.size());
+                               rank, grid->currentLevel, grid->A->M, u.size(), rhs.size());
             MPI_Barrier(comm);}
+#endif
+
 
         // **************************************** 0. direct-solve the coarsest level ****************************************
 
         if (grid->currentLevel == max_level) {
+
+#ifdef __DEBUG1__
             if(verbose_vcycle){
                 MPI_Barrier(comm);
                 if(rank==0) std::cout << "vcycle: solving the coarsest level using " << direct_solver << std::endl;
                 MPI_Barrier(comm);}
+#endif
 
             res.resize(grid->A->M);
 
@@ -573,12 +579,14 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             func_name = "vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
             if (verbose) print_time(t1, t2, func_name, comm);
 
+#ifdef __DEBUG1__
             if(verbose_vcycle_residuals){
                 grid->A->residual(u, rhs, res);
                 dotProduct(res, res, &dot, comm);
                 if(rank==0) std::cout << "\nlevel = " << grid->currentLevel
                                       << ", after coarsest level = " << sqrt(dot) << std::endl;
             }
+#endif
 
             // print the solution
             // ------------------
@@ -610,10 +618,12 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         // **************************************** 1. pre-smooth ****************************************
 
+#ifdef __DEBUG1__
         if(verbose_vcycle){
             MPI_Barrier(comm);
             if(rank==0) printf("vcycle: presmooth\n");
             MPI_Barrier(comm);}
+#endif
 
 //        MPI_Barrier(grid->A->comm);
         t1 = omp_get_wtime();
@@ -630,27 +640,33 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         // **************************************** 2. compute residual ****************************************
 
+#ifdef __DEBUG1__
         if(verbose_vcycle){
             MPI_Barrier(comm);
             if(rank==0) printf("vcycle: residual\n");
             MPI_Barrier(comm);}
+#endif
 
         grid->A->residual(u, rhs, res);
 
 //        print_vector(res, -1, "res", comm);
 
+#ifdef __DEBUG1__
         if(verbose_vcycle_residuals){
             dotProduct(res, res, &dot, comm);
             if(rank==0) std::cout << "level = " << grid->currentLevel << ", after pre-smooth  = " << sqrt(dot) << std::endl;
         }
+#endif
 
         // **************************************** 3. restrict ****************************************
 
+#ifdef __DEBUG1__
         if(verbose_vcycle){
             MPI_Barrier(comm);
             if(rank==0) printf("vcycle: restrict\n");
             printf("grid->Ac.M_old = %u \n", grid->Ac.M_old);
             MPI_Barrier(comm);}
+#endif
 
         t1 = omp_get_wtime();
 
@@ -666,11 +682,13 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             MPI_Comm_size(comm, &nprocs);
             MPI_Comm_rank(comm, &rank);
 
+#ifdef __DEBUG1__
             if (verbose_vcycle) {
                 MPI_Barrier(comm);
                 if (rank == 0) printf("vcycle: repartition_u_shrink\n");
                 MPI_Barrier(comm);
             }
+#endif
 
 //            MPI_Barrier(comm); printf("before repartition_u_shrink: res_coarse.size = %ld \n", res_coarse.size()); MPI_Barrier(comm);
 //            if (grid->Ac.shrinked && nprocs > 1)
@@ -687,11 +705,14 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
             // **************************************** 4. recurse ****************************************
 
+
+#ifdef __DEBUG1__
             if (verbose_vcycle) {
                 MPI_Barrier(comm);
                 if (rank == 0) printf("vcycle: recurse\n");
                 MPI_Barrier(comm);
             }
+#endif
 
             // scale rhs of the next level
             scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag);
@@ -714,21 +735,25 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         t1 = omp_get_wtime();
 
+#ifdef __DEBUG1__
         if (verbose_vcycle) {
             MPI_Barrier(comm);
             if (rank == 0) printf("vcycle: repartition_back_u_shrink\n");
             MPI_Barrier(comm);
         }
+#endif
 
         if(nprocs > 1 && grid->Ac.active_minor)
             repartition_back_u_shrink(uCorrCoarse, *grid);
 
 //        print_vector(uCorrCoarse, -1, "uCorrCoarse", grid->A->comm);
 
+#ifdef __DEBUG1__
         if(verbose_vcycle){
             MPI_Barrier(comm);
             if(rank==0) printf("vcycle: prolong\n");
             MPI_Barrier(comm);}
+#endif
 
         uCorr.resize(grid->A->M);
         grid->P.matvec(uCorrCoarse, uCorr);
@@ -744,29 +769,35 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         // **************************************** 6. correct ****************************************
 
+#ifdef __DEBUG1__
         if(verbose_vcycle){
             MPI_Barrier(comm);
             if(rank==0) printf("vcycle: correct\n");
             MPI_Barrier(comm);}
+#endif
 
-#pragma omp parallel for
+        #pragma omp parallel for
         for (index_t i = 0; i < u.size(); i++)
             u[i] -= uCorr[i];
 
 //        print_vector(u, 0, "u after correction", grid->A->comm);
 
+#ifdef __DEBUG1__
         if(verbose_vcycle_residuals){
             grid->A->residual(u, rhs, res);
             dotProduct(res, res, &dot, comm);
             if(rank==0) std::cout << "level = " << grid->currentLevel << ", after correction  = " << sqrt(dot) << std::endl;
         }
+#endif
 
         // **************************************** 7. post-smooth ****************************************
 
+#ifdef __DEBUG1__
         if(verbose_vcycle){
             MPI_Barrier(comm);
             if(rank==0) printf("vcycle: post-smooth\n");
             MPI_Barrier(comm);}
+#endif
 
         t1 = omp_get_wtime();
 
@@ -780,11 +811,13 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 //        if(rank==1) std::cout << "\n7. post-smooth: u, currentLevel = " << grid->currentLevel << std::endl;
 //        print_vector(u, 0, "u post-smooth", grid->A->comm);
 
+#ifdef __DEBUG1__
         if(verbose_vcycle_residuals){
             grid->A->residual(u, rhs, res);
             dotProduct(res, res, &dot, comm);
             if(rank==0) std::cout << "level = " << grid->currentLevel << ", after post-smooth = " << sqrt(dot) << std::endl;
         }
+#endif
 
     } // end of if(active)
 
