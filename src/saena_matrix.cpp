@@ -1018,7 +1018,7 @@ int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, s
         #pragma omp parallel for
         for(index_t i = 0; i < M; i++)
             res[i] = -rhs[i];
-    } else{
+    } else {
         matvec(u, res);
 
         #pragma omp parallel for
