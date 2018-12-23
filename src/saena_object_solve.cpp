@@ -24,6 +24,13 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
     MPI_Comm_rank(comm, &rank);
 
     if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest_CG()\n");
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0)
+        MPI_Barrier(comm);
+    }
+#endif
 
     // since u is zero, res = -rhs, and the residual in this function is the negative of what I have in this library.
     std::vector<value_t> res = rhs;
@@ -40,7 +47,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
     std::vector<value_t> dir(A->M);
     dir = res;
 
-    double dot2;
+//    double dot2;
     std::vector<value_t> res2(A->M);
 
     double factor, dot_prev;
@@ -68,6 +75,13 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 
         if(verbose_solve_coarse && rank==0)
             std::cout << "sqrt(dot)/sqrt(initial_dot) = " << sqrt(dot/initial_dot) << "  \tCG_tol = " << CG_tol << std::endl;
+#ifdef __DEBUG1__
+        if(verbose_solve_coarse) {
+            MPI_Barrier(comm);
+            if(rank==0)
+                MPI_Barrier(comm);
+        }
+#endif
 
 //        A->residual(u, rhs, res2);
 //        dotProduct(res2, res2, &dot2, comm);
@@ -106,8 +120,16 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest_SuperLU()\n");
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0){
+            printf("start of solve_coarsest_SuperLU()\n");
+        }
+        MPI_Barrier(comm);
 //    print_vector(rhs, -1, "rhs passed to superlu", comm);
+    }
+#endif
 
     superlu_dist_options_t options;
     SuperLUStat_t stat;
@@ -177,7 +199,16 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     /* ------------------------------------------------------------
        INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
-    if(verbose_solve_coarse && rank==0) printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
+
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0){
+            printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
+        }
+        MPI_Barrier(comm);
+    }
+#endif
 
     superlu_gridinit(comm, nprow, npcol, &grid);
 
@@ -186,15 +217,21 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 //    printf("iam = %d, nprow = %d, npcol = %d \n", iam, nprow, npcol);
 //    if ( iam >= nprow * npcol )	goto out;
 
-    if ( verbose_solve_coarse && !iam ) {
-        int v_major, v_minor, v_bugfix;
-        superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
-        printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(!iam){
+            int v_major, v_minor, v_bugfix;
+            superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+            printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
 //        printf("Input matrix file:\t%s\n", *cpp);
-        printf("Process grid:\t\t%d X %d\n", nprow, npcol);
-        fflush(stdout);
+            printf("Process grid:\t\t%d X %d\n", nprow, npcol);
+            fflush(stdout);
+        }
+        MPI_Barrier(comm);
     }
+#endif
 
 #if ( VAMPIR>=1 )
     VT_traceoff();
@@ -213,16 +250,28 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 //                                   nzval_loc, colind, rowptr,
 //                                   SLU_NR_loc, SLU_D, SLU_GE);
 
-    if(verbose_solve_coarse && rank==0) printf("PASS THE MATRIX FROM SAENA. \n");
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0) printf("PASS THE MATRIX FROM SAENA. \n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     m = A->Mbig;
     m_loc = A->M;
     n = m;
     nnz_loc = A->nnz_l;
     ldb = m_loc;
-    if(verbose_solve_coarse && rank==0)
-        printf("m = %d, m_loc = %d, n = %d, nnz_g = %ld, nnz_loc = %d, ldb = %d \n",
-               m, m_loc, n, A->nnz_g, nnz_loc, ldb);
+
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0) printf("m = %d, m_loc = %d, n = %d, nnz_g = %ld, nnz_loc = %d, ldb = %d \n",
+                           m, m_loc, n, A->nnz_g, nnz_loc, ldb);
+        MPI_Barrier(comm);
+    }
+#endif
 
     // CSR format (compressed row)
     // sort entries in row-major
@@ -312,22 +361,35 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     options.ReplaceTinyPivot = YES;
 #endif
 
-    if (verbose_solve_coarse && !iam) {
-        print_sp_ienv_dist(&options);
-        print_options_dist(&options);
-        fflush(stdout);
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(!iam){
+            print_sp_ienv_dist(&options);
+            print_options_dist(&options);
+            fflush(stdout);
+        }
+        MPI_Barrier(comm);
+        if(rank==0) printf("SOLVE THE LINEAR SYSTEM. \n");
+        MPI_Barrier(comm);
+
     }
+#endif
 
 //    m = A_SLU.nrow;
 //    n = A_SLU.ncol;
-
-    if(verbose_solve_coarse && rank==0) printf("SOLVE THE LINEAR SYSTEM. \n");
 
     // Initialize ScalePermstruct and LUstruct.
     ScalePermstructInit(m, n, &ScalePermstruct);
     LUstructInit(n, &LUstruct);
 
-    if(verbose_solve_coarse && rank==0) printf("SOLVE THE LINEAR SYSTEM: step 1 \n");
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0) printf("SOLVE THE LINEAR SYSTEM: step 1 \n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     // Initialize the statistics variables.
     PStatInit(&stat);
@@ -335,7 +397,13 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     pdgssvx(&options, &A_SLU, &ScalePermstruct, b, ldb, nrhs, &grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    if(verbose_solve_coarse && rank==0) printf("SOLVE THE LINEAR SYSTEM: step 2 \n");
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0) printf("SOLVE THE LINEAR SYSTEM: step 2 \n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     // put the solution in u
     // b points to rhs. after calling pdgssvx it will contain the solution.
@@ -343,19 +411,35 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
 //    print_vector(u, -1, "u computed in superlu", comm);
 
-    if(verbose_solve_coarse && rank==0) printf("SOLVE THE LINEAR SYSTEM: step 3 \n");
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0) printf("SOLVE THE LINEAR SYSTEM: step 3 \n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     // Check the accuracy of the solution.
 //    pdinf_norm_error(iam, ((NRformat_loc *)A_SLU.Store)->m_loc,
 //                     nrhs, b, ldb, xtrue, ldx, &grid);
 
-    if(verbose_solve_coarse) PStatPrint(&options, &stat, &grid); // Print the statistics.
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        PStatPrint(&options, &stat, &grid); // Print the statistics.
+    }
+#endif
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------*/
 
-    if(verbose_solve_coarse && rank==0) printf("DEALLOCATE STORAGE. \n");
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0) printf("DEALLOCATE STORAGE. \n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A_SLU);
@@ -386,7 +470,13 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     CHECK_MALLOC(iam, "Exit main()");
 #endif
 
-    if(verbose_solve_coarse && rank==0) printf("end of solve_coarsest_SuperLU()\n");
+#ifdef __DEBUG1__
+    if(verbose_solve_coarse) {
+        MPI_Barrier(comm);
+        if(rank==0) printf("end of solve_coarsest_SuperLU()\n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     return 0;
 }
@@ -1003,8 +1093,18 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         return 0;
     }
 
+
+    MPI_Barrier(comm);
+    printf("rank %d here222\n", rank);
+    MPI_Barrier(comm);
+
+
     std::vector<value_t> rho(grids[0].A->M, 0);
     vcycle(&grids[0], rho, r);
+
+    MPI_Barrier(comm);
+    printf("rank %d here333\n", rank);
+    MPI_Barrier(comm);
 
 #ifdef __DEBUG1__
     if(verbose_solve){
