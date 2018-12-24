@@ -8,7 +8,7 @@
 #include "parUtils.h"
 #include "dollar.hpp"
 
-#include "petsc_functions.h"
+//#include "petsc_functions.h"
 
 #include <cstdio>
 #include <cstdlib>
