@@ -80,10 +80,10 @@ public:
     bool verbose_matmat_recursive = false;
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
-    bool verbose_solve            = true;
-    bool verbose_vcycle           = true;
+    bool verbose_solve            = false;
+    bool verbose_vcycle           = false;
     bool verbose_vcycle_residuals = false;
-    bool verbose_solve_coarse     = true;
+    bool verbose_solve_coarse     = false;
 
     saena_object();
     ~saena_object();

@@ -281,13 +281,10 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
     index_t fst_row = A->split[rank];
     std::vector<int> nnz_per_row(m_loc, 0);
-//    std::vector<int> rowptr(m_loc+1);
-//    std::vector<int> colind(nnz_loc);
-//    std::vector<double> nzval_loc(nnz_loc);
 
-    auto* rowptr = (int_t *) intMalloc_dist(m_loc+1);
+    auto* rowptr    = (int_t *) intMalloc_dist(m_loc+1);
     auto* nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
-    auto* colind = (int_t *) intMalloc_dist(nnz_loc);
+    auto* colind    = (int_t *) intMalloc_dist(nnz_loc);
 
     // Do this line to avoid this subtraction for each entry in the next "for" loop.
     int *nnz_per_row_p = &nnz_per_row[0] - fst_row;
@@ -305,9 +302,6 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
         rowptr[i+1] = rowptr[i] + nnz_per_row[i];
 
 //    A->print_entry(-1);
-//    print_vector(rowptr, -1, "rowptr", comm);
-//    print_vector(colind, -1, "colind", comm);
-//    print_vector(nzval_loc, -1, "nzval_loc", comm);
 //    if(rank==0){
 //        printf("\nmatrix entries in row-major format to be passed to SuperLU:\n");
 //        for(nnz_t i = 0; i < nnz_loc; i++)
@@ -1103,17 +1097,8 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         return 0;
     }
 
-
-    MPI_Barrier(comm);
-    printf("rank %d here222\n", rank);
-    MPI_Barrier(comm);
-
     std::vector<value_t> rho(grids[0].A->M, 0);
     vcycle(&grids[0], rho, r);
-
-    MPI_Barrier(comm);
-    printf("rank %d here333\n", rank);
-    MPI_Barrier(comm);
 
 #ifdef __DEBUG1__
     if(verbose_solve){

@@ -125,7 +125,7 @@ int main(int argc, char* argv[]){
 //    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 400;
     double relative_tolerance = 1e-12;
-    std::string smoother      = "jacobi"; // choices: "jacobi", "chebyshev"
+    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;
     int postSmooth            = 3;
 
@@ -162,11 +162,6 @@ int main(int argc, char* argv[]){
 
 //    t1 = MPI_Wtime();
     solver.update3(&A2);
-
-//    MPI_Barrier(comm);
-//    printf("here111\n");
-//    MPI_Barrier(comm);
-
     solver.solve_pcg(u, &opts);
 
 //    t2 = MPI_Wtime();

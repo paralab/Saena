@@ -1511,10 +1511,10 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
 #endif
     }
 
-    // RAP_temp_row is empty on at least one process par::sampleSort will crash.
+    // if RAP_temp_row is empty on at least one process, par::sampleSort will crash.
     // add a dummy entry to it. first diagonal entry is being added here.
     if(RAP_temp_row.empty()){
-        RAP_temp_row.emplace_back(A->split[rank], A->split[rank], 0);
+        RAP_temp_row.emplace_back(P->splitNew[rank], P->splitNew[rank], 0);
     }
 
     // sort globally
