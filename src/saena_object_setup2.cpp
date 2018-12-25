@@ -1297,7 +1297,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // Output: Ac = R * A * P
     // Steps:
     // 1- Compute AP = A * P. To do that use the transpose of R_i, instead of P. Pass all R_j's to all the processors,
-    //    Then, multiply local A_i by R_jon each process.
+    //    Then, multiply local A_i by R_j on each process.
     // 2- Compute RAP = R * AP. Use transpose of P_i instead of R. It is done locally. So multiply P_i * (AP)_i.
     // 3- Sort and remove local duplicates.
     // 4- Do a parallel sort based on row-major order. A modified version of par::sampleSort from usort is used here.
@@ -1444,6 +1444,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
 //    }
     std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
+    index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
     std::vector<index_t> nnzPerColScan_right;
 
 #ifdef __DEBUG1__
@@ -1461,8 +1462,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
     if(nprocs > 1){
         int right_neighbor = (rank + 1)%nprocs;
         int left_neighbor  = rank - 1;
-        if (left_neighbor < 0)
+        if (left_neighbor < 0){
             left_neighbor += nprocs;
+        }
 //            if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
 
         int owner;
@@ -1505,12 +1507,14 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //          printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
 
             nnzPerCol_right.assign(mat_recv_M, 0);
+            nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[owner];
             for(nnz_t i = 0; i < mat_send.size(); i++){
-                nnzPerCol_right[mat_send[i].col - P->splitNew[owner]]++;
+//                nnzPerCol_right[mat_send[i].col - P->splitNew[owner]]++;
+                nnzPerCol_right_p[mat_send[i].col]++;
             }
 //          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
 
-            nnzPerColScan_right.resize(mat_recv_M+1);
+            nnzPerColScan_right.resize(mat_recv_M + 1);
             nnzPerColScan_right[0] = 0;
             for(nnz_t i = 0; i < mat_recv_M; i++){
                 nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
@@ -1547,8 +1551,10 @@ int saena_object::triple_mat_mult(Grid *grid) {
         index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
 
         nnzPerCol_right.assign(mat_recv_M, 0);
+        nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[rank];
         for(nnz_t i = 0; i < R_tranpose.size(); i++){
-            nnzPerCol_right[R_tranpose[i].col - P->splitNew[rank]]++;
+//            nnzPerCol_right[R_tranpose[i].col - P->splitNew[rank]]++;
+            nnzPerCol_right_p[R_tranpose[i].col]++;
         }
 //        print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
 
@@ -1602,8 +1608,10 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
     // compute nnzPerColScan_left for P_tranpose
     nnzPerCol_left.assign(P->M, 0);
+    index_t *nnzPerCol_left_p = &nnzPerCol_left[0] - P->split[rank];
     for(nnz_t i = 0; i < P_tranpose.size(); i++){
-        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
+//        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
+        nnzPerCol_left_p[P_tranpose[i].col]++;
     }
 
     nnzPerColScan_left.resize(P->M+1);
@@ -1667,12 +1675,17 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // remove local duplicates.
     // Entries should be sorted in row-major order first, since the matrix should be partitioned based on rows.
     // So cooEntry_row is used here. Remove local duplicates and put them in RAP_temp_row.
+    nnz_t size_minus_1 = 0;
+    if(!RAP_temp.empty()){
+        size_minus_1 = RAP_temp.size() - 1;
+    }
+
     std::vector<cooEntry_row> RAP_temp_row;
-    for(nnz_t i=0; i<RAP_temp.size(); i++){
+    for(nnz_t i = 0; i < RAP_temp.size(); i++){
         RAP_temp_row.emplace_back(cooEntry_row( RAP_temp[i].row, RAP_temp[i].col, RAP_temp[i].val ));
-        while(i<RAP_temp.size()-1 && RAP_temp[i] == RAP_temp[i+1]){ // values of entries with the same row and col should be added.
-            RAP_temp_row.back().val += RAP_temp[i+1].val;
+        while(i < size_minus_1 && RAP_temp[i] == RAP_temp[i+1]){ // values of entries with the same row and col should be added.
             i++;
+            RAP_temp_row.back().val += RAP_temp[i].val;
         }
     }
 
@@ -1712,6 +1725,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // form Ac
     // *******************************************************
 
+    size_minus_1 = 0;
+    if(!RAP_row_sorted.empty()){
+        size_minus_1 = RAP_row_sorted.size() - 1;
+    }
+
     if(!doSparsify){
 
         // *******************************************************
@@ -1723,9 +1741,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
         cooEntry temp;
         for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
             temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
-            while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-                temp.val += RAP_row_sorted[i+1].val;
-                i++;
+            while(i < size_minus_1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+                ++i;
+                temp.val += RAP_row_sorted[i].val;
             }
             Ac->entry.emplace_back( temp );
         }
@@ -1742,11 +1760,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
         double norm_frob_sq_local = 0, norm_frob_sq = 0;
         std::vector<cooEntry_row> Ac_orig;
 //        nnz_t no_sparse_size = 0;
-        for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
+        for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
             temp = cooEntry_row(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
-            while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-                temp.val += RAP_row_sorted[i+1].val;
-                i++;
+            while(i < size_minus_1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+                ++i;
+                temp.val += RAP_row_sorted[i].val;
             }
 
 //            if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
