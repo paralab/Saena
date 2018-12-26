@@ -183,9 +183,9 @@ public:
 //    int find_eig_Elemental(saena_matrix& A);
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
-    int transpose_locally(std::vector<cooEntry> &A, nnz_t size);
-    int transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B);
-    int transpose_locally(std::vector<cooEntry> &A, nnz_t size, index_t row_offset, std::vector<cooEntry> &B);
+    int transpose_locally(std::vector<cooEntry> &A);
+    int transpose_locally(std::vector<cooEntry> &A, std::vector<cooEntry> &B);
+    int transpose_locally(std::vector<cooEntry> &A, index_t row_offset, std::vector<cooEntry> &B);
 
     // lazy update functions
     int update1(saena_matrix* A_new);

@@ -1310,6 +1310,12 @@ int saena_object::triple_mat_mult(Grid *grid) {
     saena_matrix *Ac   = &grid->Ac;
 
     MPI_Comm comm = A->comm;
+
+#ifdef __DEBUG1__
+//    print_vector(A->entry, -1, "A->entry", comm);
+//    print_vector(P->entry, -1, "P->entry", comm);
+//    print_vector(R->entry, -1, "R->entry", comm);
+
 //    Ac->active_old_comm = true;
 
 //    int rank1, nprocs1;
@@ -1317,11 +1323,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    MPI_Comm_rank(comm, &rank1);
 //    if(A->active_old_comm)
 //        printf("rank = %d, nprocs = %d active\n", rank1, nprocs1);
-
-#ifdef __DEBUG1__
-//    print_vector(A->entry, -1, "A->entry", comm);
-//    print_vector(P->entry, -1, "P->entry", comm);
-//    print_vector(R->entry, -1, "R->entry", comm);
 #endif
 
     int nprocs, rank;
@@ -1346,28 +1347,28 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     Ac->Mbig = P->Nbig;
-    Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
+    Ac->split = P->splitNew;
+    Ac->M = Ac->split[rank+1] - Ac->split[rank];
     Ac->M_old = Ac->M;
     Ac->comm = A->comm;
     Ac->comm_old = A->comm;
-    Ac->last_M_shrink = A->last_M_shrink;
-    Ac->last_density_shrink = A->last_density_shrink;
-//    Ac->last_nnz_shrink = A->last_nnz_shrink;
-//    Ac->enable_shrink = A->enable_shrink;
-//    Ac->enable_shrink = A->enable_shrink_next_level;
     Ac->active_old_comm = true;
+
+    // set dense matvec parameters.
     Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
     Ac->switch_to_dense = switch_to_dense;
     Ac->dense_threshold = dense_threshold;
 
+    // set shrink parameters.
+    Ac->last_M_shrink = A->last_M_shrink;
+    Ac->last_density_shrink = A->last_density_shrink;
     Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
     if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
         Ac->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
 
     //return these to default, since they have been used in the above part.
-    A->cpu_shrink_thre2_next_level = -1;
-    A->enable_shrink_next_level = false;
-    Ac->split = P->splitNew;
+//    A->cpu_shrink_thre2_next_level = -1;
+//    A->enable_shrink_next_level = false;
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
@@ -1383,9 +1384,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     // ********** minor shrinking **********
+    // if there will be no Ac entry on any processor, remove that processor from the communicator.
     for(index_t i = 0; i < Ac->split.size()-1; i++){
         if(Ac->split[i+1] - Ac->split[i] == 0){
-//            printf("rank %d: shrink minor in triple_mat_mult: i = %d, split[i] = %d, split[i+1] = %d\n", rank, i, Ac->split[i], Ac->split[i+1]);
             Ac->shrink_cpu_minor();
             break;
         }
@@ -1397,13 +1398,12 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     // *******************************************************
-    // multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
+    // multiply: AP = A_i * P_j. in which P_j = R_j_tranpose for 0 <= j < nprocs.
     // *******************************************************
-    // this is an overlapped version of this multiplication, similar to dense_matvec.
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> R_tranpose(R->entry.size());
-    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], R_tranpose);
+    transpose_locally(R->entry, R->splitNew[rank], R_tranpose);
 
 #ifdef __DEBUG1__
 //    print_vector(R->entry, -1, "R->entry", comm);
@@ -1449,13 +1449,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
 #ifdef __DEBUG1__
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
-
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("triple_mat_mult: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
-
-    // mempool to be used for dense matmat in fast_mm
-//    value_t *mempool = new value_t[matmat_size_thre];
 
     std::vector<cooEntry> AP;
 
@@ -1465,7 +1461,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
         if (left_neighbor < 0){
             left_neighbor += nprocs;
         }
-//            if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
 
         int owner;
         unsigned long send_size = R_tranpose.size();
@@ -1594,7 +1589,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
     // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
-    transpose_locally(P->entry, P->entry.size(), P_tranpose);
+    transpose_locally(P->entry, P_tranpose);
 
     // convert the indices to global
     for(nnz_t i = 0; i < P_tranpose.size(); i++){
@@ -2588,26 +2583,26 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 } // triple_mat_mult_old()
 
 
-int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size){
+int saena_object::transpose_locally(std::vector<cooEntry> &A){
 
-    transpose_locally(A, size, 0, A);
-
-    return 0;
-}
-
-
-int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B){
-
-    transpose_locally(A, size, 0, B);
+    transpose_locally(A, 0, A);
 
     return 0;
 }
 
 
-int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, index_t row_offset, std::vector<cooEntry> &B){
+int saena_object::transpose_locally(std::vector<cooEntry> &A, std::vector<cooEntry> &B){
 
-    for(nnz_t i = 0; i < size; i++){
-        B[i] = cooEntry(A[i].col, A[i].row+row_offset, A[i].val);
+    transpose_locally(A, 0, B);
+
+    return 0;
+}
+
+
+int saena_object::transpose_locally(std::vector<cooEntry> &A, index_t row_offset, std::vector<cooEntry> &B){
+
+    for(nnz_t i = 0; i < A.size(); i++){
+        B[i] = cooEntry(A[i].col, A[i].row + row_offset, A[i].val);
     }
 
     std::sort(B.begin(), B.end());

@@ -18,16 +18,8 @@ The matrices are partitioned on multiple processors by row blocks (Figure~\ref{f
 
 \subsection{Part 1}
 
-In this part we compute $B := A \times P$. We assume the same partition of rows of $A$ on its columns. The same partition of rows of $R$ is assumed on columns of $P$ (Figure~\ref{fig:part1}).
-
-\begin{figure}[tbh]
- \centering
- \includegraphics[width=5.5cm,height=3cm]{./figures/part1.pdf}
- \caption{}
- \label{fig:part1}
-\end{figure}
-
-Here we consider doing \matmult on processor $P1$. To compute $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (we only consider the nonzeros).
+In this part, we compute $B := A \times P$. We assume the same partition of rows of $A$ on its columns. The same partition of rows of $R$ is assumed on columns of $P$ (Figure~\ref{fig:part1b}).
+Here we consider doing \matmult ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros).
 
 \begin{figure}[tbh]
  \centering
@@ -36,7 +28,7 @@ Here we consider doing \matmult on processor $P1$. To compute $B(i, j)$, we need
  \label{fig:part1b}
 \end{figure}
 
-Column $j$ is distributed between processors, so we will be able to perform the last summation at the end. (explain this part more and show why this method is not good). To avoid this, we can use the fact that $R$ is the transpose of $P$ and we already have computed it. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$).
+Column $j$ is distributed between all the processors, so we will be able to perform  summation $B_{ij} = \sum_{k} A_{ik} P_{kj}$, after communicating all nonzeros of column $j$ and performing the multiplication. (explain this part clearer and show why this method is not good). To avoid that, we can use the fact that $R$ is the transpose of $P$ and we already have computed it. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$).
 
 \begin{figure}[tbh]
  \centering
@@ -45,7 +37,7 @@ Column $j$ is distributed between processors, so we will be able to perform the 
  \label{fig:part1c}
 \end{figure}
 
-$A_i$ is row block of $A$ on processor $i$.
+Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion using MPI. $B_{i}$ is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_i$.
 
 \begin{algorithm}[H] 
   %\footnotesize
@@ -53,12 +45,11 @@ $A_i$ is row block of $A$ on processor $i$.
   \begin{algorithmic}[1]
     \Require $A_i$, $R$
     \Ensure  $B_i$ (result of $A_i \times P$)
-    \State $RT_i \leftarrow$ compute transpose of $R_i$ (locally)
-    \State $R2 \leftarrow RT_i$
+    \State $R1 \leftarrow$ compute transpose of $R_i$ (locally)
     \For{$k=myrank:myrank+nprocs$}
-      \State $R1 \leftarrow\ Irecv\ RT\ from\ right\ neighbor$
-      \State $Isend(R2)\ to\ left\ neighbor$
-      \State $B_j \leftarrow A_i \times R2$
+      \State $R2 \leftarrow\ Irecv\ transpose\ of\ R\ from\ right\ neighbor$
+      \State $Isend(R1)\ to\ left\ neighbor$
+      \State $B_{ik} \leftarrow A_i \times R1$
       \State $wait\ for\ Isend\ and\ Irecv\ to\ finish$
       \State $swap(R1,R2)$
     \EndFor
@@ -66,5 +57,40 @@ $A_i$ is row block of $A$ on processor $i$.
 \end{algorithm}
 
 
-
 \subsection{Part 2}
+
+Now we explain how to do the second \matmult: $R \times B$, in which $B = A \times P$. Figure~\ref{fig:part2d} shows an example on processor $P1$. The blocks of $R$ on processor $P1$ should be multiplied with the corresponding blocks of $B$ with the same color. To do that we need to communicate whole $B$ between all the processors.
+
+\begin{figure}[tbh]
+ \centering
+ \includegraphics[width=5.5cm,height=3cm]{./figures/part2d.pdf}
+ \caption{}
+ \label{fig:part2d}
+\end{figure}
+
+To avoid this expensive communication, we again can use the fact that we already have computed the transpose of $R$. We only perform the multplication of the green blocks on processor $P1$ in Figure~\ref{fig:part2e}, which can be done locally.
+
+\begin{figure}[tbh]
+ \centering
+ \includegraphics[width=5.5cm,height=3cm]{./figures/part2e.pdf}
+ \caption{}
+ \label{fig:part2e}
+\end{figure}
+
+Using this method, we need to add duplicates twice (explain duplicates). Once, after doing the multplication; Second time, after sorting the result globally and putting the entries on the correct processors. Algorithm~\ref{alg:part2} shows how we have implemented it. Note that each sub-block of $R_i$ should be multiplied by whole $B_i$, in contrary to the naive method, in which each sub-block of $R_i$ is multiplied by only one other sub-block of $B_i$.
+
+\begin{algorithm}[H] 
+  %\footnotesize
+  \caption{Part 2: $Ac = R \times B$} \label{alg:part2} 
+  \begin{algorithmic}[1]
+    \Require $P_i$, $B_i$
+    \Ensure  $Ac_i$
+    \State $PT_i \leftarrow$ compute transpose of $P_i$ (locally)
+    \For{$k=0:nprocs$}
+      \State $Ac_i \leftarrow\ PT_{ik} \times B_i$
+    \EndFor
+    \State locally sort $Ac_i$ and add duplicates
+    \State globallly sort $Ac_i$ and add duplicates
+  \end{algorithmic}
+\end{algorithm}
+
