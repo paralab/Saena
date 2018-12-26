@@ -1345,29 +1345,31 @@ int saena_object::triple_mat_mult(Grid *grid) {
     }
 #endif
 
+    // set some of Ac parameters
+    // -------------------------
     Ac->Mbig = P->Nbig;
-    Ac->M = P->splitNew[rank+1] - P->splitNew[rank];
+    Ac->split = P->splitNew;
+    Ac->M = Ac->split[rank+1] - Ac->split[rank];
     Ac->M_old = Ac->M;
+
     Ac->comm = A->comm;
     Ac->comm_old = A->comm;
-    Ac->last_M_shrink = A->last_M_shrink;
-    Ac->last_density_shrink = A->last_density_shrink;
-//    Ac->last_nnz_shrink = A->last_nnz_shrink;
-//    Ac->enable_shrink = A->enable_shrink;
-//    Ac->enable_shrink = A->enable_shrink_next_level;
     Ac->active_old_comm = true;
+
+    // set dense parameters
     Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
     Ac->switch_to_dense = switch_to_dense;
     Ac->dense_threshold = dense_threshold;
 
+    // set shrink parameters
+    Ac->last_M_shrink = A->last_M_shrink;
+    Ac->last_density_shrink = A->last_density_shrink;
     Ac->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
     if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
         Ac->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
-
     //return these to default, since they have been used in the above part.
     A->cpu_shrink_thre2_next_level = -1;
     A->enable_shrink_next_level = false;
-    Ac->split = P->splitNew;
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
@@ -1383,6 +1385,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     // ********** minor shrinking **********
+    // -------------------------------------
     for(index_t i = 0; i < Ac->split.size()-1; i++){
         if(Ac->split[i+1] - Ac->split[i] == 0){
 //            printf("rank %d: shrink minor in triple_mat_mult: i = %d, split[i] = %d, split[i+1] = %d\n", rank, i, Ac->split[i], Ac->split[i+1]);
@@ -1397,9 +1400,8 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     // *******************************************************
-    // multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
+    // part 1: multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
-    // this is an overlapped version of this multiplication, similar to dense_matvec.
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> R_tranpose(R->entry.size());
@@ -1411,9 +1413,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
-//    unsigned int *AnnzPerCol_p = &nnzPerCol_left[0] - A[0].col;
     for(nnz_t i = 0; i < A->entry.size(); i++){
-//        if(rank==0) printf("A[i].col = %u, \tA_col_size = %u \n", A[i].col - A_col_offset, A_col_size);
         nnzPerCol_left[A->entry[i].col]++;
     }
 
@@ -1443,9 +1443,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    for(nnz_t i = 0; i < P->M; i++){
 //        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
 //    }
-    std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
-    index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
-    std::vector<index_t> nnzPerColScan_right;
 
 #ifdef __DEBUG1__
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
@@ -1454,9 +1451,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
         MPI_Barrier(comm); printf("triple_mat_mult: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
-    // mempool to be used for dense matmat in fast_mm
-//    value_t *mempool = new value_t[matmat_size_thre];
-
+    std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
+    index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
+    std::vector<index_t> nnzPerColScan_right;
     std::vector<cooEntry> AP;
 
     if(nprocs > 1){
@@ -1465,7 +1462,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
         if (left_neighbor < 0){
             left_neighbor += nprocs;
         }
-//            if(rank==0) printf("left_neighbor = %d, right_neighbor = %d\n", left_neighbor, right_neighbor);
 
         int owner;
         unsigned long send_size = R_tranpose.size();
@@ -1495,9 +1491,10 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
             mat_recv.resize(recv_size);
 
+#ifdef __DEBUG1__
 //          print_vector(mat_recv, -1, "mat_recv", A->comm);
 //          print_vector(mat_send, -1, "mat_send", A->comm);
-
+#endif
             // communicate data
             MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests+2);
             MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+3);
@@ -1509,33 +1506,39 @@ int saena_object::triple_mat_mult(Grid *grid) {
             nnzPerCol_right.assign(mat_recv_M, 0);
             nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[owner];
             for(nnz_t i = 0; i < mat_send.size(); i++){
-//                nnzPerCol_right[mat_send[i].col - P->splitNew[owner]]++;
                 nnzPerCol_right_p[mat_send[i].col]++;
+//                nnzPerCol_right[mat_send[i].col - P->splitNew[owner]]++;
             }
-//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
 
             nnzPerColScan_right.resize(mat_recv_M + 1);
             nnzPerColScan_right[0] = 0;
             for(nnz_t i = 0; i < mat_recv_M; i++){
                 nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
             }
+
+#ifdef __DEBUG1__
+//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
 
             fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                     &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
-//          print_vector(AP, -1, "AP", A->comm);
-
             MPI_Waitall(3, requests+1, statuses+1);
 
             mat_recv.swap(mat_send);
             send_size = recv_size;
+
+#ifdef __DEBUG1__
+//          print_vector(AP, -1, "AP", A->comm);
 //          print_vector(mat_send, -1, "mat_send", A->comm);
 //          print_vector(mat_recv, -1, "mat_recv", A->comm);
 //          prev_owner = owner;
 //          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+#endif
+
         }
 
         mat_send.clear();
@@ -1574,22 +1577,15 @@ int saena_object::triple_mat_mult(Grid *grid) {
     }
 
     std::sort(AP.begin(), AP.end());
-//    print_vector(AP, -1, "AP", A->comm);
-
-//    nnzPerCol_right.clear();
-//    nnzPerColScan_left.clear();
-//    nnzPerColScan_right.clear();
-//    nnzPerCol_right.shrink_to_fit();
-//    nnzPerColScan_left.shrink_to_fit();
-//    nnzPerColScan_right.shrink_to_fit();
 
 #ifdef __DEBUG1__
+//    print_vector(AP, -1, "AP", A->comm);
     if(verbose_coarsen){
         MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
     // *******************************************************
-    // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
+    // part 2: multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
     // *******************************************************
 
     // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
@@ -1610,11 +1606,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
     nnzPerCol_left.assign(P->M, 0);
     index_t *nnzPerCol_left_p = &nnzPerCol_left[0] - P->split[rank];
     for(nnz_t i = 0; i < P_tranpose.size(); i++){
-//        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
         nnzPerCol_left_p[P_tranpose[i].col]++;
+//        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
     }
 
-    nnzPerColScan_left.resize(P->M+1);
+    nnzPerColScan_left.resize(P->M + 1);
     nnzPerColScan_left[0] = 0;
     for(nnz_t i = 0; i < P->M; i++){
         nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
@@ -1657,6 +1653,8 @@ int saena_object::triple_mat_mult(Grid *grid) {
             &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
             &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
+    // free memory
+    // -----------
     AP.clear();
     AP.shrink_to_fit();
     P_tranpose.clear();
@@ -1780,12 +1778,14 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
         MPI_Allreduce(&norm_frob_sq_local, &norm_frob_sq, 1, MPI_DOUBLE, MPI_SUM, comm);
 
+#ifdef __DEBUG1__
 //        if(rank==0) printf("\noriginal size   = %lu\n", Ac_orig.size());
 //        if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
 //        if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
 
 //        std::sort(Ac_orig.begin(), Ac_orig.end());
 //        print_vector(Ac_orig, -1, "Ac_orig", A->comm);
+#endif
 
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
@@ -1832,61 +1832,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #endif
 
     // *******************************************************
-    // use this part to print data to be used in Julia, to check the solution.
-    // *******************************************************
-#ifdef __DEBUG1__
-/*
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < A->entry.size(); i++){
-//        std::cout << A->entry[i].row+1 << ", ";
-//    }
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < A->entry.size(); i++){
-//        std::cout << A->entry[i].col+1 << ", ";
-//    }
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < A->entry.size(); i++){
-//        std::cout << A->entry[i].val << ", ";
-//    }
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < R_tranpose.size(); i++){
-//        std::cout << R_tranpose[i].row+1 << ", ";
-//    }
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < R_tranpose.size(); i++){
-//        std::cout << R_tranpose[i].col+1 << ", ";
-//    }
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < R_tranpose.size(); i++){
-//        std::cout << R_tranpose[i].val << ", ";
-//    }
-//    std::cout << "\n";
-//    print_vector(A->entry, -1, "A->entry", A->comm);
-//    print_vector(R_tranpose, -1, "R_tranpose", A->comm);
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
-//        std::cout << P_tranpose[i].row+1 << ", ";
-//    }
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
-//        std::cout << P_tranpose[i].col+1 << ", ";
-//    }
-//    std::cout << "\n";
-//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
-//        std::cout << P_tranpose[i].val << ", ";
-//    }
-//
-//    do this for Julia:
-//    I = [1, 2, 3, 5, 1, 2, 4, 6, 1, 3, 4, 7, 2, 3, 4, 8, 1, 5, 6, 7, 2, 5, 6, 8, 3, 5, 7, 8, 4, 6, 7, 8];
-//    J = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8];
-//    V = [1, -0.333333, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, 1, -0.333333, -0.333333, -0.333333, -0.333333, 1];
-//    A = sparse(I, J ,V)
-//    and so on. then compare the multiplication from Julia with the following:
-//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-*/
-#endif
-
-    // *******************************************************
     // setup matrix
     // *******************************************************
     // Update this description: Shrinking gets decided inside repartition_nnz() or repartition_row() functions,
@@ -1905,8 +1850,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
         comm = Ac->comm;
         int rank_new;
         MPI_Comm_rank(Ac->comm, &rank_new);
+
+#ifdef __DEBUG1__
 //        Ac->print_info(-1);
 //        Ac->print_entry(-1);
+#endif
 
         // ********** decide about shrinking **********
         //---------------------------------------------
@@ -1961,8 +1909,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
             }
         }
 
+#ifdef __DEBUG1__
 //        Ac->print_info(-1);
 //        Ac->print_entry(-1);
+#endif
+
     }
     comm = grid->A->comm;
 
