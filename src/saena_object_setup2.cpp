@@ -1480,10 +1480,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
         auto *statuses = new MPI_Status[4];
 
         for(int k = rank; k < rank+nprocs; k++){
-            // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
-            // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor processor.
+            // This is overlapped. Both local and remote loops are done here.
+            // The first iteration is the local loop. The rest are remote.
+            // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor.
             // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
-            // receive R_tranpose from the right_neighbor processor. And so on.
+            // receive R_tranpose from the right_neighbor. And so on.
             // --------------------------------------------------------------------
 
             // communicate size
@@ -1509,7 +1510,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
             nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[owner];
             for(nnz_t i = 0; i < mat_send.size(); i++){
                 nnzPerCol_right_p[mat_send[i].col]++;
-//                nnzPerCol_right[mat_send[i].col - P->splitNew[owner]]++;
             }
 
             nnzPerColScan_right.resize(mat_recv_M + 1);
@@ -1558,16 +1558,19 @@ int saena_object::triple_mat_mult(Grid *grid) {
         nnzPerCol_right.assign(mat_recv_M, 0);
         nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[rank];
         for(nnz_t i = 0; i < R_tranpose.size(); i++){
-//            nnzPerCol_right[R_tranpose[i].col - P->splitNew[rank]]++;
             nnzPerCol_right_p[R_tranpose[i].col]++;
         }
-//        print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
 
         nnzPerColScan_right.resize(mat_recv_M+1);
         nnzPerColScan_right[0] = 0;
         for(nnz_t i = 0; i < mat_recv_M; i++){
             nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
         }
+
+#ifdef __DEBUG1__
+//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+//          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
 
         fast_mm(&A->entry[0], &R_tranpose[0], AP, A->entry.size(), R_tranpose.size(),
                 A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
