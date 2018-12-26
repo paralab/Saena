@@ -26,7 +26,7 @@
 %\acmISBN{123-4567-24-567/08/06}
 
 %Conference
-\acmConference[HPDC'19]{ACM Symposium on High-Performance Parallel and Distributed Computing}{June 2019}{Phoenix, Arizona, USA}
+\acmConference[ICS'19]{International Conference on Supercomputing}{June 2019}{Phoenix, Arizona, USA}
 \acmYear{2019}
 \copyrightyear{2019}
 
@@ -38,7 +38,7 @@
 
 \begin{document}
 
-\title{Improving Matrix-Matrix Multiplication in Algebraic Multigrid Context}
+\title{Improving Performance and Scalability of Algebraic Multigrid through Randomized Sparsification}
 
 \author{Majid Rasouli}
 \affiliation{%
@@ -66,7 +66,11 @@
 
 
 \begin{abstract}
-This is abstract.
+Algebraic Multigrid (AMG) is a popular linear system solver and preconditioner
+for large sparse linear systems, especially the ones obtained from the discretization of elliptic operators. Its scalability and performance, however, suffers from higher density in coarser levels of multigrid, which causes higher cost for different operations in the process, including matrix-vector and matrix-matrix product.
+In this paper, we use randomized sparsification to increase sparsity of coarse
+matrices at different levels of the Multigrid hierarchy. We have also implemented
+a new way for both steps of matrix-matrix product, i.e. communication and computation, to have a faster setup phase for multigrid.
 \end{abstract}
 
 %
@@ -106,7 +110,7 @@ This is abstract.
 \ccsdesc[100]{Networks~Network reliability}
 \fi
 
-\keywords{algebraic multigrid, AMG, sparse, matrix-matrix product, parallel}
+\keywords{algebraic multigrid, AMG, sparse, sparsification, matvec, matrix-matrix product, parallel}
 
 \maketitle
 
