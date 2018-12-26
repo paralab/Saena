@@ -1406,12 +1406,12 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // *******************************************************
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
-    std::vector<cooEntry> R_tranpose(R->entry.size());
-    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], R_tranpose);
+    std::vector<cooEntry> mat_send(R->entry.size());
+    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], mat_send);
 
 #ifdef __DEBUG1__
 //    print_vector(R->entry, -1, "R->entry", comm);
-//    print_vector(R_tranpose, -1, "R_tranpose", comm);
+//    print_vector(R_tranpose, -1, "mat_send", comm);
 #endif
 
     std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
@@ -1453,9 +1453,17 @@ int saena_object::triple_mat_mult(Grid *grid) {
         MPI_Barrier(comm); printf("triple_mat_mult: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
-    std::vector<index_t> nnzPerCol_right; // range of rows of R is range of cols of R_transpose.
+    // compute the maximum size for nnzPerCol_right and nnzPerColScan_right
+    index_t mat_recv_M_max = 0;
+    for(index_t i = 0; i < nprocs; i++){
+        if(P->splitNew[i+1] - P->splitNew[i] > mat_recv_M_max){
+            mat_recv_M_max = P->splitNew[i+1] - P->splitNew[i];
+        }
+    }
+
+    std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
-    std::vector<index_t> nnzPerColScan_right;
+    std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
     std::vector<cooEntry> AP;
 
     if(nprocs > 1){
@@ -1466,15 +1474,10 @@ int saena_object::triple_mat_mult(Grid *grid) {
         }
 
         int owner;
-        unsigned long send_size = R_tranpose.size();
+        unsigned long send_size = mat_send.size();
         unsigned long recv_size;
+        std::vector<cooEntry> mat_recv;
         index_t mat_recv_M;
-
-        std::vector<cooEntry> mat_recv = R_tranpose;
-        std::vector<cooEntry> mat_send = R_tranpose;
-
-        R_tranpose.clear();
-        R_tranpose.shrink_to_fit();
 
         auto *requests = new MPI_Request[4];
         auto *statuses = new MPI_Status[4];
@@ -1506,13 +1509,12 @@ int saena_object::triple_mat_mult(Grid *grid) {
             mat_recv_M = P->splitNew[owner + 1] - P->splitNew[owner];
 //          printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
 
-            nnzPerCol_right.assign(mat_recv_M, 0);
+            std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
             nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[owner];
             for(nnz_t i = 0; i < mat_send.size(); i++){
                 nnzPerCol_right_p[mat_send[i].col]++;
             }
 
-            nnzPerColScan_right.resize(mat_recv_M + 1);
             nnzPerColScan_right[0] = 0;
             for(nnz_t i = 0; i < mat_recv_M; i++){
                 nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
@@ -1543,8 +1545,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
         }
 
-        mat_send.clear();
-        mat_send.shrink_to_fit();
         mat_recv.clear();
         mat_recv.shrink_to_fit();
 
@@ -1555,13 +1555,12 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
         index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
 
-        nnzPerCol_right.assign(mat_recv_M, 0);
+        std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
         nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[rank];
-        for(nnz_t i = 0; i < R_tranpose.size(); i++){
-            nnzPerCol_right_p[R_tranpose[i].col]++;
+        for(nnz_t i = 0; i < mat_send.size(); i++){
+            nnzPerCol_right_p[mat_send[i].col]++;
         }
 
-        nnzPerColScan_right.resize(mat_recv_M+1);
         nnzPerColScan_right[0] = 0;
         for(nnz_t i = 0; i < mat_recv_M; i++){
             nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
@@ -1572,16 +1571,17 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-        fast_mm(&A->entry[0], &R_tranpose[0], AP, A->entry.size(), R_tranpose.size(),
+        fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
                 A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
-        R_tranpose.clear();
-        R_tranpose.shrink_to_fit();
     }
 
     std::sort(AP.begin(), AP.end());
+
+    mat_send.clear();
+    mat_send.shrink_to_fit();
 
 #ifdef __DEBUG1__
 //    print_vector(AP, -1, "AP", A->comm);
