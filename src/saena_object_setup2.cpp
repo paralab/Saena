@@ -1310,6 +1310,12 @@ int saena_object::triple_mat_mult(Grid *grid) {
     saena_matrix *Ac   = &grid->Ac;
 
     MPI_Comm comm = A->comm;
+
+#ifdef __DEBUG1__
+//    print_vector(A->entry, -1, "A->entry", comm);
+//    print_vector(P->entry, -1, "P->entry", comm);
+//    print_vector(R->entry, -1, "R->entry", comm);
+
 //    Ac->active_old_comm = true;
 
 //    int rank1, nprocs1;
@@ -1317,11 +1323,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    MPI_Comm_rank(comm, &rank1);
 //    if(A->active_old_comm)
 //        printf("rank = %d, nprocs = %d active\n", rank1, nprocs1);
-
-#ifdef __DEBUG1__
-//    print_vector(A->entry, -1, "A->entry", comm);
-//    print_vector(P->entry, -1, "P->entry", comm);
-//    print_vector(R->entry, -1, "R->entry", comm);
 #endif
 
     int nprocs, rank;
@@ -1388,7 +1389,8 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // -------------------------------------
     for(index_t i = 0; i < Ac->split.size()-1; i++){
         if(Ac->split[i+1] - Ac->split[i] == 0){
-//            printf("rank %d: shrink minor in triple_mat_mult: i = %d, split[i] = %d, split[i+1] = %d\n", rank, i, Ac->split[i], Ac->split[i+1]);
+//            printf("rank %d: shrink minor in triple_mat_mult: i = %d, split[i] = %d, split[i+1] = %d\n",
+//                    rank, i, Ac->split[i], Ac->split[i+1]);
             Ac->shrink_cpu_minor();
             break;
         }
@@ -1431,6 +1433,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     nnzPerCol_left.clear();
 //    nnzPerCol_left.shrink_to_fit();
 
+#ifdef __DEBUG1__
 //    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
 
     // this is done in the for loop for all R_i's, including the local one.
@@ -1444,7 +1447,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
 //    }
 
-#ifdef __DEBUG1__
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
 
     if(verbose_coarsen){
