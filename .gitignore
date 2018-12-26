@@ -10,3 +10,8 @@ external/dollar/.Rhistory
 *.directory
 test_results/
 papers/Saena.pptx
+HPDC19.aux
+HPDC19.log
+HPDC19.out
+HPDC19.pdf
+HPDC19.synctex.gz
