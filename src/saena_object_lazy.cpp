@@ -1540,101 +1540,22 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     // *******************************************************
     // form Ac
     // *******************************************************
+    // since RAP_row_sorted is sorted in row-major order, Ac->entry will be the same.
 
-    if(!doSparsify){
-
-        // *******************************************************
-        // version 1: without sparsification
-        // *******************************************************
-        // since RAP_row_sorted is sorted in row-major order, Ac->entry will be the same.
-
-        // remove duplicates.
-        cooEntry temp;
-        for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
-            temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
-            while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-                temp.val += RAP_row_sorted[i+1].val;
-                i++;
-            }
-            Ac->entry_temp.emplace_back( temp );
+    // remove duplicates.
+    cooEntry temp;
+    for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
+        temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
+        while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+            temp.val += RAP_row_sorted[i+1].val;
+            i++;
         }
-
-        RAP_row_sorted.clear();
-        RAP_row_sorted.shrink_to_fit();
-
-    }else{
-
-        // remove duplicates.
-        // compute Frobenius norm squared (norm_frob_sq).
-        cooEntry_row temp;
-        double max_val = 0;
-        double norm_frob_sq_local = 0, norm_frob_sq = 0;
-        std::vector<cooEntry_row> Ac_orig;
-//        nnz_t no_sparse_size = 0;
-        for(nnz_t i=0; i<RAP_row_sorted.size(); i++){
-            temp = cooEntry_row(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
-            while(i<RAP_row_sorted.size()-1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
-                temp.val += RAP_row_sorted[i+1].val;
-                i++;
-            }
-
-//            if( fabs(val_temp) > sparse_epsilon / 2 / Ac->Mbig)
-//            if(temp.val * temp.val > sparse_epsilon * sparse_epsilon / (4 * Ac->Mbig * Ac->Mbig) ){
-            Ac_orig.emplace_back( temp );
-            norm_frob_sq_local += temp.val * temp.val;
-            if( fabs(temp.val) > max_val){
-                max_val = temp.val;
-            }
-//            }
-//            no_sparse_size++; //todo: just for test. delete this later!
-        }
-
-        MPI_Allreduce(&norm_frob_sq_local, &norm_frob_sq, 1, MPI_DOUBLE, MPI_SUM, comm);
-
-//        if(rank==0) printf("\noriginal size   = %lu\n", Ac_orig.size());
-//        if(rank==0) printf("\noriginal size without sparsification   \t= %lu\n", no_sparse_size);
-//        if(rank==0) printf("filtered Ac size before sparsification \t= %lu\n", Ac_orig.size());
-
-//        std::sort(Ac_orig.begin(), Ac_orig.end());
-//        print_vector(Ac_orig, -1, "Ac_orig", A->comm);
-
-        RAP_row_sorted.clear();
-        RAP_row_sorted.shrink_to_fit();
-
-//        auto sample_size = Ac_orig.size();
-        auto sample_size_local = nnz_t(sample_sz_percent * Ac_orig.size());
-//        auto sample_size = nnz_t(Ac->Mbig * Ac->Mbig * A->density);
-//        if(rank==0) printf("sample_size     = %lu \n", sample_size);
-        nnz_t sample_size;
-        MPI_Allreduce(&sample_size_local, &sample_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
-
-/*
-        if(sparsifier == "TRSL"){
-
-            sparsify_trsl1(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
-
-        }else if(sparsifier == "drineas"){
-
-            sparsify_drineas(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
-
-        }else if(sparsifier == "majid"){
-
-            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
-
-        }else{
-            printf("\nerror: wrong sparsifier!");
-        }
-*/
-
-        if(Ac->active_minor) {
-            if (sparsifier == "majid") {
-                sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, Ac->comm);
-            } else {
-                printf("\nerror: wrong sparsifier!");
-            }
-        }
-
+        Ac->entry_temp.emplace_back( temp );
     }
+
+    RAP_row_sorted.clear();
+    RAP_row_sorted.shrink_to_fit();
+
 
 #ifdef __DEBUG1__
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);

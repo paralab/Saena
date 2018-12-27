@@ -5,9 +5,14 @@ To compute the coarse matrix $Ac$, a triple matrix multiplication should be done
 \begin{equation}
  Ac = R \times A \times P
 \end{equation}
-in which $R = P^T$. We do it in two parts, performing matrix-matrix multiplications (\matmult) twice: first $A \times P$, then $R \times B$, in which $B = A \times P$.
+in which $R = P^T$.
 
-The matrices are partitioned on multiple processors by row blocks (Figure~\ref{fig:partition}). Matrices $A$ and $P$ have the same number of rows and consequently are partitioned the same way. $R$ has less number of rows and has a different partition.
+This section includes two parts: We first explain how the communication is being done between processors. Then, assuming we have the required data, we describe doing the multiplication locallly on one processor.
+
+\subsection{Communication}
+\label{sec:comm}
+
+Matrices are partitioned on multiple processors by row blocks (Figure~\ref{fig:partition}). Matrices $A$ and $P$ have the same number of rows and consequently are partitioned the same way. $R$ has less number of rows and has a different partition.
 
 \begin{figure}[tbh]
  \centering
@@ -16,7 +21,9 @@ The matrices are partitioned on multiple processors by row blocks (Figure~\ref{f
  \label{fig:partition}
 \end{figure}
 
-\subsection{Part 1}
+The triple matrix product is being done in two parts: first $A \times P$, then $R \times B$, in which $B = A \times P$, so performing matrix-matrix multiplications (\matmult) twice.
+
+\subsubsection{Part 1}
 
 In this part, we compute $B := A \times P$. We assume the same partition of rows of $A$ on its columns. The same partition of rows of $R$ is assumed on columns of $P$ (Figure~\ref{fig:part1b}).
 Here we consider doing \matmult ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros).
@@ -57,7 +64,7 @@ Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion using MPI.
 \end{algorithm}
 
 
-\subsection{Part 2}
+\subsubsection{Part 2}
 
 Now we explain how to do the second \matmult: $R \times B$, in which $B = A \times P$. Figure~\ref{fig:part2d} shows an example on processor $P1$. The blocks of $R$ on processor $P1$ should be multiplied with the corresponding blocks of $B$ with the same color. To do that we need to communicate whole $B$ between all the processors.
 
@@ -94,3 +101,7 @@ Using this method, we need to add duplicates twice (explain duplicates). Once, a
   \end{algorithmic}
 \end{algorithm}
 
+\subsection{Computation}
+\label{sec:comp}
+
+I will add this part soon.
