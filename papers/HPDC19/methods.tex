@@ -101,7 +101,18 @@ Using this method, we need to add duplicates twice (explain duplicates). Once, a
   \end{algorithmic}
 \end{algorithm}
 
+
 \subsection{Computation}
 \label{sec:comp}
+Here we assume that the data is available locally, so we discuss it as a serial implementation. The comptutation is done recursively, splitting matrices until we reach a threshold, then we perform the multiplication. We split the matrices in two ways: split by half based on the matrix size, split by half based on number of nonzeros.
 
-I will add this part soon.
+\subsubsection{Case 1}
+\label{sec:case1}
+Do the multiplication. First, save the result in a dense matrix, then add nonzeros to the final matrix.
+
+\subsubsection{Case 2}
+\label{sec:case2}
+A's row is less than its col: split
+
+\subsubsection{Case 3}
+\label{sec:case3}

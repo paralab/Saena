@@ -76,8 +76,8 @@ public:
     bool verbose_setup_steps      = false;
     bool verbose_level_setup      = false;
     bool verbose_coarsen          = false;
-    bool verbose_matmat           = true;
-    bool verbose_matmat_recursive = true;
+    bool verbose_matmat           = false;
+    bool verbose_matmat_recursive = false;
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
     bool verbose_solve            = false;
