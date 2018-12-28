@@ -43,7 +43,7 @@ public:
 
     MPI_Comm get_orig_comm();
 
-    const index_t matmat_size_thre = 1000000; // if(row * col) do the dense matmat default 1000000
+    const index_t matmat_size_thre = 200; // if(row * col) do the dense matmat default 1000000
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
 
@@ -76,8 +76,8 @@ public:
     bool verbose_setup_steps      = false;
     bool verbose_level_setup      = false;
     bool verbose_coarsen          = false;
-    bool verbose_matmat           = false;
-    bool verbose_matmat_recursive = false;
+    bool verbose_matmat           = true;
+    bool verbose_matmat_recursive = true;
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
     bool verbose_solve            = false;
@@ -96,16 +96,18 @@ public:
     int triple_mat_mult_old(Grid *grid);
     int triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
 
-    int fast_mm_nnz(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
-                index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                index_t B_col_size, index_t B_col_offset,
-                index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
-                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
-    int fast_mm_orig(cooEntry *A, cooEntry *B, std::vector<cooEntry> &C, nnz_t A_nnz, nnz_t B_nnz,
-                index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                index_t B_col_size, index_t B_col_offset,
-                index_t *nnzPerColScan_leftStart, index_t *nnzPerColScan_leftEnd,
-                index_t *nnzPerColScan_rightStart, index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
+    int fast_mm_nnz(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+                    nnz_t A_nnz, nnz_t B_nnz,
+                    index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                    index_t B_col_size, index_t B_col_offset,
+                    const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
+                    const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
+    int fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+                     nnz_t A_nnz, nnz_t B_nnz,
+                     index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                     index_t B_col_size, index_t B_col_offset,
+                     const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
+                     const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
 
 
     int fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,

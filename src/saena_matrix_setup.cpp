@@ -480,6 +480,10 @@ int saena_matrix::matrix_setup_lazy_update() {
 
 //    assembled = true;
 
+    if(entry.size() != nnz_l){
+        printf("nnz_l has changed in the update process!\n");
+    }
+
     // todo: check if instead of clearing and pushing back, it is possible to only update the values.
     values_local.clear();
     values_remote.clear();
@@ -1145,6 +1149,7 @@ int saena_matrix::scale_back_matrix(){
 
 
 int saena_matrix::inverse_diag() {
+
     int rank;
     MPI_Comm_rank(comm, &rank);
 
