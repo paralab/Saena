@@ -21,12 +21,12 @@ Matrices are partitioned on multiple processors by row blocks (Figure~\ref{fig:p
  \label{fig:partition}
 \end{figure}
 
-The triple matrix product is being done in two parts: first $A \times P$, then $R \times B$, in which $B = A \times P$, so performing matrix-matrix multiplications (\matmult) twice.
+The triple matrix product is being done in two parts: first $A \times P$, then $R \times B$, in which $B = A \times P$, so performing matrix-matrix multiplications (\mm~) twice.
 
 \subsubsection{Part 1}
 
 In this part, we compute $B := A \times P$. We assume the same partition of rows of $A$ on its columns. The same partition of rows of $R$ is assumed on columns of $P$ (Figure~\ref{fig:part1b}).
-Here we consider doing \matmult ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros).
+Here we consider doing \mm ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros).
 
 \begin{figure}[tbh]
  \centering
@@ -66,7 +66,7 @@ Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion using MPI.
 
 \subsubsection{Part 2}
 
-Now we explain how to do the second \matmult: $R \times B$, in which $B = A \times P$. Figure~\ref{fig:part2d} shows an example on processor $P1$. The blocks of $R$ on processor $P1$ should be multiplied with the corresponding blocks of $B$ with the same color. To do that we need to communicate whole $B$ between all the processors.
+Now we explain how to do the second \mm: $R \times B$, in which $B = A \times P$. Figure~\ref{fig:part2d} shows an example on processor $P1$. The blocks of $R$ on processor $P1$ should be multiplied with the corresponding blocks of $B$ with the same color. To do that we need to communicate whole $B$ between all the processors.
 
 \begin{figure}[tbh]
  \centering
@@ -104,15 +104,58 @@ Using this method, we need to add duplicates twice (explain duplicates). Once, a
 
 \subsection{Computation}
 \label{sec:comp}
-Here we assume that the data is available locally, so we discuss it as a serial implementation. The comptutation is done recursively, splitting matrices until we reach a threshold, then we perform the multiplication. We split the matrices in two ways: split by half based on the matrix size, split by half based on number of nonzeros.
+Here we assume that the data is available locally, so we discuss it as a serial implementation. We have implemented comptutation in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size, split by half based on number of nonzeros. 
+
+The recursive function, \recmm, includes three cases:
+\begin{enumerate}
+ \item Case 1: threshold is reached: do the multiplication.
+ \item Case 2: A is horizontal.
+ \item Case 3: A is vertical.
+\end{enumerate}
+
+First we explain the first method, splitting based on the matrix sizes.
 
 \subsubsection{Case 1}
 \label{sec:case1}
-Do the multiplication. First, save the result in a dense matrix, then add nonzeros to the final matrix.
+If the stop condition for recursion is satisfied, we do the multiplication. 
+First, we save the result in a dense matrix, then we add the nonzeros to the final matrix. The advantage of using the dense matrix is avoiding a sorting and then adding the duplicates at the end.
 
 \subsubsection{Case 2}
 \label{sec:case2}
-A's row is less than its col: split
+When A is horizontal, i.e. its row size is less than or equal to its column size, we halve A by column based on its cloumn size (Figure\ref{fig:case2}). Since row size of B eqauls column size of A, we halve B by row, so it will a smiliar split, but horizontally.
+
+\begin{algorithm}[H] 
+  %\footnotesize
+  \caption{Case 2: $C = \recmm2(A, B)$} \label{alg:case2} 
+  \begin{algorithmic}[1]
+    \Require $A$, $B$
+    \Ensure  $C$
+    \State $(A1, A2) = \spr(A)$
+    \State $(B1, B2) = \spc(B)$
+    \State $C1 \leftarrow \recmm(A1,B1)$
+    \State $C2 \leftarrow \recmm(A2,B2)$
+    \State $C \leftarrow \textsc{mergesort}(C1, C2)$
+  \end{algorithmic}
+\end{algorithm}
 
 \subsubsection{Case 3}
 \label{sec:case3}
+When A is vertical, i.e. its column size is greater than its column size, we halve A by row based on its cloumn size and halve B by column (Figure\ref{fig:case3}). In contrary to the previous case, column size of B is not related to row size of A, so they are splitted independently.
+
+\begin{algorithm}[H] 
+  %\footnotesize
+  \caption{Case 3: $C = \recmm3(A, B)$} \label{alg:case3} 
+  \begin{algorithmic}[1]
+    \Require $A$, $B$
+    \Ensure  $C$
+    \State $(A1, A2) = \spr(A)$
+    \State $(B1, B2) = \spc(B)$
+    \State $C \leftarrow \recmm(A1,B1)$
+    \State $C \leftarrow \recmm(A2,B1)$
+    \State $C \leftarrow \recmm(A1,B2)$
+    \State $C \leftarrow \recmm(A2,B2)$
+    \State $\textsc{sort}(C)$
+  \end{algorithmic}
+\end{algorithm}
+
+Explain why we prefer case 2 over case 3, so we have changed condition for case 2 to: when A's row size is less than or equal to \textbf{a multiple of} its column size.
