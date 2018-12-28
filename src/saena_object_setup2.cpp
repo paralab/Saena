@@ -469,7 +469,7 @@ int saena_object::fast_mm_nnz(const cooEntry *A, const cooEntry *B, std::vector<
 
         // prepare splits of matrix A by row
         nnz_t A1_nnz = 0, A2_nnz;
-        index_t A_row_size_half = B_col_size_half;
+        index_t A_row_size_half = A_row_size/2;
 
         std::vector<index_t> nnzPerCol_middle(A_col_size, 0);
         for(nnz_t i = 0; i < A_col_size; i++){
