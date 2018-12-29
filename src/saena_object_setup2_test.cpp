@@ -238,7 +238,7 @@ int saena_object::fast_mm_part1(cooEntry *A, cooEntry *B, std::vector<cooEntry> 
 }
 */
 
-/*
+
 int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                                 const nnz_t A_nnz, const nnz_t B_nnz,
                                 const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
@@ -912,11 +912,11 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
     return 0;
 }
-*/
+
 // =======================================================
 // Method 2: split matrices by half based on number of nonzeros.
 // =======================================================
-
+/*
 int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                                 const nnz_t A_nnz, const nnz_t B_nnz,
                                 const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
@@ -1647,3 +1647,4 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
     return 0;
 }
+*/
