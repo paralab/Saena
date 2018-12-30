@@ -159,7 +159,7 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
 }
 
 // =======================================================
-// Method 1: split matrices by half based on the number of rows and columns.
+// Method 1: split matrices by half based on matrix size.
 // =======================================================
 
 // C_temp is of size A_row_size * B_col_size.

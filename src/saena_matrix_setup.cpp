@@ -499,7 +499,7 @@ int saena_matrix::matrix_setup_lazy_update() {
     }
 
 //    inv_diag.resize(M);
-    inverse_diag();
+//    inverse_diag();
 
 //    scale_matrix();
 
@@ -991,7 +991,7 @@ int saena_matrix::scale_matrix(){
 
 #pragma omp parallel
         {
-            unsigned int i, l;
+            unsigned int i;
             int thread_id = omp_get_thread_num();
             nnz_t iter = iter_remote_array[thread_id];
 #pragma omp for
@@ -1051,7 +1051,7 @@ int saena_matrix::scale_back_matrix(){
 //    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
 //    print_vector(inv_diag, -1, "inv_diag", comm);
-    std::fill(inv_diag.begin(), inv_diag.end(), 1);
+//    std::fill(inv_diag.begin(), inv_diag.end(), 1); // todo: this is not the original inv_diag.
 
     MPI_Request* requests = nullptr;
     MPI_Status* statuses  = nullptr;
@@ -1103,7 +1103,7 @@ int saena_matrix::scale_back_matrix(){
 
 #pragma omp parallel
         {
-            unsigned int i, l;
+            unsigned int i;
             int thread_id = omp_get_thread_num();
             nnz_t iter = iter_remote_array[thread_id];
 #pragma omp for

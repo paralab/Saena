@@ -227,7 +227,7 @@ public:
     int scale_matrix();
     int scale_back_matrix();
 
-    // dummy functions to decide if shrinking is.
+    // dummy functions to decide if shrinking should happen
     int set_off_on_diagonal_dummy();
 //    int find_sortings_dummy();
     int matrix_setup_dummy();

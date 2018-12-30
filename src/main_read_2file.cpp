@@ -66,6 +66,7 @@ int main(int argc, char* argv[]){
     saena::matrix A2 (comm);
     A2.read_file(file_name2);
     A2.assemble();
+//    A2.assemble_no_scale();
 
     // ********** print matrix and time **********
 
