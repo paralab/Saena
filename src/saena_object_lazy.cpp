@@ -30,6 +30,8 @@ int saena_object::update1(saena_matrix* A_new){
 //    std::vector<cooEntry> A_diff;
 //    local_diff(*grids[0].A, *A_new, A_diff);
 
+    A_new->assemble();
+
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's.
     // Since we only need an upper bound, this is good enough.
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
@@ -50,6 +52,8 @@ int saena_object::update2(saena_matrix* A_new){
 
     mempool1 = new value_t[matmat_size_thre];
     mempool2 = new index_t[grids[0].A->Mbig * 4];
+
+    A_new->assemble();
 
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     // do the same for the next level matrices.
@@ -112,6 +116,8 @@ int saena_object::update3(saena_matrix* A_new){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    A_new->assemble_no_scale();
 
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     // do the same for the next level matrices.

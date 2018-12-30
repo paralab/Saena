@@ -158,11 +158,12 @@ int main(int argc, char* argv[]){
     char* file_name2(argv[2]);
     saena::matrix A2 (comm);
     A2.read_file(file_name2);
+    // assemble matrix inside update functions.
 //    A2.assemble(); // use this for update1 and update2
-    A2.assemble_no_scale(); // use this for update3
+//    A2.assemble_no_scale(); // use this for update3
 
 //    t1 = MPI_Wtime();
-    solver.update3(&A2);
+    solver.update2(&A2);
     solver.solve_pcg(u, &opts);
 //    t2 = MPI_Wtime();
 //    print_time(t1, t2, "Solve update:", comm);
