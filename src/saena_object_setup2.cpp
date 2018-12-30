@@ -1803,23 +1803,21 @@ int saena_object::triple_mat_mult(Grid *grid) {
         nnz_t sample_size;
         MPI_Allreduce(&sample_size_local, &sample_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
-/*
-        if(sparsifier == "TRSL"){
-
-            sparsify_trsl1(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
-
-        }else if(sparsifier == "drineas"){
-
-            sparsify_drineas(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
-
-        }else if(sparsifier == "majid"){
-
-            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
-
-        }else{
-            printf("\nerror: wrong sparsifier!");
-        }
-*/
+//        if(sparsifier == "TRSL"){
+//
+//            sparsify_trsl1(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
+//
+//        }else if(sparsifier == "drineas"){
+//
+//            sparsify_drineas(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
+//
+//        }else if(sparsifier == "majid"){
+//
+//            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
+//
+//        }else{
+//            printf("\nerror: wrong sparsifier!");
+//        }
 
         if(Ac->active_minor) {
             if (sparsifier == "majid") {
