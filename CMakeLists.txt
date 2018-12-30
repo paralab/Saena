@@ -36,7 +36,7 @@ if(OPENMP_FOUND)
 endif()
 
 # -----------------------------------------------------------------------
-# MPI - part 1/2
+# MPI
 
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
@@ -49,13 +49,13 @@ include_directories(${MPI_INCLUDE_PATH})
 #set(PARMETIS_LIBRARY     ${PARMETIS_ROOT_DIR}/build/install_folder/lib/libparmetis.a)
 #set(METIS_INCLUDE_DIR    ${PARMETIS_ROOT_DIR}/metis/build/install_folder/include)
 #set(PARMETIS_INCLUDE_DIR ${PARMETIS_ROOT_DIR}/build/install_folder/include)
+#set(METIS_INCLUDE_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/metis/include)
+#set(PARMETIS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/include)
 
 set(METIS_LIBRARY        ${CMAKE_BINARY_DIR}/build_metis/lib/libmetis.a)
 set(PARMETIS_LIBRARY     ${CMAKE_BINARY_DIR}/build_parmetis/lib/libparmetis.a)
 set(METIS_INCLUDE_DIR    ${CMAKE_BINARY_DIR}/build_metis/include)
 set(PARMETIS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/build_parmetis/include)
-#set(METIS_INCLUDE_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/metis/include)
-#set(PARMETIS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/include)
 
 # -----------------------------------------------------------------------
 # BLAS
@@ -85,7 +85,6 @@ include_directories(
 # IETL: eigensolver
 
 include_directories(external/ietl)
-
 set(HEADER_FILES ${HEADER_FILES}
         include/ietl_saena.h
         )
@@ -123,11 +122,13 @@ include_directories(
 # -----------------------------------------------------------------------
 #PETSc
 
-set(PETSC_DIR "~/softwares/petsc-3.8.4")
-set(PETSC_LIB ${PETSC_DIR}/arch-linux2-c-debug/lib/libpetsc.so)
+set(PETSC_DIR "~/Software/petsc-3.8.4")
+#set(PETSC_ARCH "arch-linux2-c-debug")
+set(PETSC_ARCH "arch-linux2-c-opt")
+set(PETSC_LIB ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so)
 include_directories(
         ${PETSC_DIR}/include
-        ${PETSC_DIR}/arch-linux2-c-debug/include
+        ${PETSC_DIR}/${PETSC_ARCH}/include
 )
 
 # -----------------------------------------------------------------------
