@@ -507,6 +507,79 @@ int saena_matrix::matrix_setup_lazy_update() {
 }
 
 
+int saena_matrix::update_diag_lazy(){
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm);
+//    if(rank==0) printf("update_diag_lazy!!!\n");
+//    print_vector(split, 0, "split", comm);
+//    print_entry(-1);
+//    print_vector(inv_diag, -1, "inv diag", comm);
+//    print_vector(inv_sq_diag, -1, "inv_sq_diag diag", comm);
+//    MPI_Barrier(comm);
+#endif
+
+    std::vector<value_t> inv_sq_diag_old = inv_sq_diag;
+
+    double temp;
+//    inv_diag.assign(M, 0);
+//    inv_sq_diag.assign(M, 0);
+
+    if(!entry.empty()) {
+        for (nnz_t i = 0; i < nnz_l; i++) {
+
+            if (entry[i].row == entry[i].col) {
+//                if(rank==0) std::cout << i << "\t" << entry[i] << std::endl;
+                if ( !almost_zero(entry[i].val) ) {
+                    temp = 1.0 / entry[i].val;
+//                    inv_diag_original[entry[i].row - split[rank]] = temp; // this line is different from inverse_diag()
+                    inv_sq_diag[entry[i].row - split[rank]] = sqrt(temp);
+//                    if (fabs(temp) > highest_diag_val) {
+//                        highest_diag_val = fabs(temp);
+//                    }
+                } else {
+                    // there is no zero entry in the matrix (sparse), but just to be sure, this part is added.
+                    if (rank == 0)
+                        printf("Error: there is a zero diagonal element (at row index = %u)\n", entry[i].row);
+                    MPI_Finalize();
+                    return -1;
+                }
+            }
+        }
+    }
+
+//    if(rank==0){
+//        printf("inv_sq_diag_old and inv_sq_diag\n");
+//        for(index_t i = 0; i < M; i++){
+//            std::cout << inv_sq_diag_old[i] << "\t" << inv_sq_diag[i] << std::endl;
+//        }
+//    }
+
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm);
+//    print_vector(inv_diag, -1, "inv diag", comm);
+//    print_vector(inv_sq_diag, -1, "inv_sq_diag diag", comm);
+//    MPI_Barrier(comm);
+#endif
+
+//    for(auto i:inv_diag) {
+//        if (i == 0){
+//            printf("rank %d: inverse_diag: At least one diagonal entry is 0.\n", rank);
+//        }
+//    }
+
+//    temp = highest_diag_val;
+//    MPI_Allreduce(&temp, &highest_diag_val, 1, MPI_DOUBLE, MPI_MAX, comm);
+//    if(rank==0) printf("\ninverse_diag: highest_diag_val = %f \n", highest_diag_val);
+
+    return 0;
+}
+
+
+// int saena_matrix::set_rho()
 /*
 int saena_matrix::set_rho(){
 
@@ -532,6 +605,7 @@ int saena_matrix::set_rho(){
     return 0;
 }
 */
+
 
 int saena_matrix::set_off_on_diagonal(){
     // set and exchange on-diagonal and off-diagonal elements
@@ -1176,9 +1250,9 @@ int saena_matrix::inverse_diag() {
                     temp = 1.0 / entry[i].val;
                     inv_diag[entry[i].row - split[rank]] = temp;
                     inv_sq_diag[entry[i].row - split[rank]] = sqrt(temp);
-                    if (fabs(temp) > highest_diag_val) {
-                        highest_diag_val = fabs(temp);
-                    }
+//                    if (fabs(temp) > highest_diag_val) {
+//                        highest_diag_val = fabs(temp);
+//                    }
                 } else {
                     // there is no zero entry in the matrix (sparse), but just to be sure, this part is added.
                     if (rank == 0)
@@ -1203,8 +1277,8 @@ int saena_matrix::inverse_diag() {
         }
     }
 
-    temp = highest_diag_val;
-    MPI_Allreduce(&temp, &highest_diag_val, 1, MPI_DOUBLE, MPI_MAX, comm);
+//    temp = highest_diag_val;
+//    MPI_Allreduce(&temp, &highest_diag_val, 1, MPI_DOUBLE, MPI_MAX, comm);
 //    if(rank==0) printf("\ninverse_diag: highest_diag_val = %f \n", highest_diag_val);
 
     return 0;

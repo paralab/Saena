@@ -65,8 +65,8 @@ int main(int argc, char* argv[]){
     char* file_name2(argv[2]);
     saena::matrix A2 (comm);
     A2.read_file(file_name2);
-    A2.assemble();
-//    A2.assemble_no_scale();
+//    A2.assemble();
+    A2.assemble_no_scale();
 
     // ********** print matrix and time **********
 
@@ -162,10 +162,10 @@ int main(int argc, char* argv[]){
     // *************************** lazy update ****************************
 
 //    t1 = MPI_Wtime();
-    solver.update3(&A2);
-    MPI_Barrier(comm);
-    printf("here\n");
-    MPI_Barrier(comm);
+    solver.update2(&A2);
+//    MPI_Barrier(comm);
+//    printf("here\n");
+//    MPI_Barrier(comm);
     solver.solve_pcg(u, &opts);
 
 //    t2 = MPI_Wtime();
