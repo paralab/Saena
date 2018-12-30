@@ -26,6 +26,21 @@ int saena_matrix::assemble() {
 }
 
 
+int saena_matrix::assemble_no_scale() {
+
+    if(!assembled){
+        repartition_nnz_initial();
+        matrix_setup_no_scale();
+        if(enable_shrink) compute_matvec_dummy_time();
+    }else{
+        repartition_nnz_update();
+        matrix_setup_update();
+    }
+
+    return 0;
+}
+
+
 int saena_matrix::setup_initial_data(){
     // parameters needed for this function:
     // comm, data_coo

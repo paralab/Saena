@@ -112,16 +112,7 @@ int saena::matrix::assemble() {
 
 
 int saena::matrix::assemble_no_scale(){
-
-    if(!m_pImpl->assembled){
-        m_pImpl->repartition_nnz_initial();
-        m_pImpl->matrix_setup_no_scale();
-        if(m_pImpl->enable_shrink) m_pImpl->compute_matvec_dummy_time();
-    }else{
-        m_pImpl->repartition_nnz_update();
-        m_pImpl->matrix_setup_update_no_scale();
-    }
-
+    m_pImpl->assemble_no_scale();
     return 0;
 }
 

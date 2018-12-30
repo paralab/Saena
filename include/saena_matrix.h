@@ -200,6 +200,7 @@ public:
 //    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
 
     int assemble();
+    int assemble_no_scale();
     int setup_initial_data();
     int remove_duplicates();
     int repartition_nnz_initial(); // based on nnz.
