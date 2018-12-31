@@ -117,7 +117,7 @@ int saena_object::update3(saena_matrix* A_new){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    A_new->assemble_no_scale();
+//    A_new->assemble_no_scale();
 
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
     // do the same for the next level matrices.
@@ -128,7 +128,7 @@ int saena_object::update3(saena_matrix* A_new){
 //    A_new->scale_back_matrix();
     local_diff(*grids[0].A, *A_new, A_diff);
     A_new->scale_matrix();
-//    grids[0].A->scale_matrix();
+    grids[0].A->scale_matrix();
 //    print_vector(A_diff, -1, "A_diff", grids[0].A->comm);
 //    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
 
@@ -1670,15 +1670,10 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
         // scale back, add new entries, scale again inside matrix_setup_lazy_update
         // also, update inv_sq_diag with the new matrix in update_diag_lazy.
 
-//        printf("triple_mat_mult: lazy 1: rank = %d\n", rank);
         Ac->scale_back_matrix();
-//        printf("triple_mat_mult: lazy 2: rank = %d\n", rank);
         Ac->repartition_nnz_update_Ac(); // based on number of nonzeros. update Ac->entry with Ac->entry_temp
-//        printf("triple_mat_mult: lazy 3: rank = %d\n", rank);
         Ac->update_diag_lazy();
-//        printf("triple_mat_mult: lazy 4: rank = %d\n", rank);
         Ac->scale_matrix();
-//        printf("triple_mat_mult: lazy 5: rank = %d\n", rank);
 
         // Ac->entry_temp is actually diff which should be used for the next level
         diff.clear();

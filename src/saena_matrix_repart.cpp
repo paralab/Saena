@@ -6,6 +6,7 @@
 #include <cstring>
 #include <algorithm>
 #include <omp.h>
+#include <iomanip>
 #include "mpi.h"
 
 
@@ -1187,7 +1188,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
                 msg += ": entry to update is not available in repartition_nnz_update_Ac(): ";
                 msg += std::to_string(entry_temp[i].row); msg += " "; msg += std::to_string(entry_temp[i].col);
                 msg += " "; msg += std::to_string(entry_temp[i].val);
-                std::cout << msg << std::endl;
+                std::cout << std::setprecision(12) << msg << std::endl;
 //                std::cout << "error on rank " << rank << ": entry to update is not available in repartition_nnz_update_Ac(): \n"
 //                          << "this entry: " << entry_temp[i] << std::endl << std::endl;
             }
