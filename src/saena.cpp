@@ -24,6 +24,12 @@ saena::matrix::matrix() {
     m_pImpl = new saena_matrix();
 }
 
+// copy constructor
+saena::matrix::matrix(const saena::matrix &B){
+    m_pImpl = new saena_matrix(*B.m_pImpl);
+    add_dup = B.add_dup;
+}
+
 void saena::matrix::set_comm(MPI_Comm comm) {
     m_pImpl->set_comm(comm);
 }

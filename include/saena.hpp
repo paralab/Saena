@@ -19,6 +19,7 @@ namespace saena {
     public:
         matrix();
         matrix(MPI_Comm comm);
+        matrix(const matrix &B); // copy constructor
         ~matrix();
 
         int read_file(char *name);
