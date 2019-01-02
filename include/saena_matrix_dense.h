@@ -12,7 +12,7 @@ class saena_matrix;
 
 class saena_matrix_dense {
 
-private:
+//private:
 
 public:
 
@@ -29,6 +29,9 @@ public:
     saena_matrix_dense(const saena_matrix_dense &B); // copy constructor
 //    saena_matrix_dense(char* Aname, MPI_Comm com);
     ~saena_matrix_dense();
+
+    saena_matrix_dense& operator=(const saena_matrix_dense &B);
+
     int erase();
 
     int set(index_t row, index_t col, value_t val);
