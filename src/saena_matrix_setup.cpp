@@ -1293,8 +1293,12 @@ int saena_matrix::inverse_diag() {
 }
 
 
+
 int saena_matrix::generate_dense_matrix() {
+    // uncomment to enable DENSE
+/*
     dense_matrix.convert_saena_matrix(this);
     dense_matrix_generated = true;
+*/
     return 0;
 }

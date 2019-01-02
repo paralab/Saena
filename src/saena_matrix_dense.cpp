@@ -47,7 +47,6 @@ saena_matrix_dense::saena_matrix_dense(const saena_matrix_dense &B){
     }
 
     allocated = true;
-
     split = B.split;
 }
 
