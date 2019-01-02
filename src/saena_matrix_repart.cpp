@@ -1158,6 +1158,8 @@ int saena_matrix::repartition_nnz_update_Ac(){
     MPI_Alltoallv(&entry_old[0],  &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
                   &entry_temp[0], &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
 
+    std::sort(entry_temp.begin(), entry_temp.end());
+
 //    print_vector(entry_temp, -1, "entry_temp", comm);
     if(repartition_verbose && rank==0) printf("repartition5 - step 4!\n");
 

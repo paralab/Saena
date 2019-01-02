@@ -53,6 +53,7 @@ namespace saena {
 
         int erase();
         int erase_lazy_update();
+        int erase_no_shrink_to_fit();
         void destroy();
 
     protected:

@@ -1566,7 +1566,6 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     RAP_row_sorted.clear();
     RAP_row_sorted.shrink_to_fit();
 
-
 #ifdef __DEBUG1__
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if(verbose_coarsen){

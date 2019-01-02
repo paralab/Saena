@@ -271,6 +271,7 @@ public:
     int erase_after_shrink();
     int erase_after_decide_shrinking();
     int erase_lazy_update();
+    int erase_no_shrink_to_fit();
     int destroy();
 };
 

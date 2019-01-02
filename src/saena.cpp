@@ -198,6 +198,10 @@ int saena::matrix::erase_lazy_update(){
     return 0;
 }
 
+int saena::matrix::erase_no_shrink_to_fit(){
+    m_pImpl->erase_no_shrink_to_fit();
+    return 0;
+}
 
 void saena::matrix::destroy(){
     m_pImpl->erase();
