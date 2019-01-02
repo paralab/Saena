@@ -137,6 +137,8 @@ namespace saena {
 
         int set_sample_sz_percent(double s_sz_prcnt);
 
+        int lazy_update_counter = 0; // note: for lazy update project. delete it when done.
+
     protected:
         saena_object* m_pImpl;
     };
