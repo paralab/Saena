@@ -541,6 +541,8 @@ int saena_matrix::destroy(){
 
 
 int saena_matrix::erase(){
+
+    data_coo.clear();
 //    data.clear();
 //    data.shrink_to_fit();
 
@@ -609,6 +611,8 @@ int saena_matrix::erase(){
 
 
 int saena_matrix::erase2(){
+
+    data_coo.clear();
 //    data.clear();
 //    data.shrink_to_fit();
 
@@ -969,11 +973,12 @@ int saena_matrix::erase_lazy_update(){
 
 
 int saena_matrix::erase_no_shrink_to_fit(){
+
+    data_coo.clear();
 //    data.clear();
 //    data.shrink_to_fit();
 
 //    printf("erase1\n");
-//    data_coo.clear();
     entry.clear();
     split.clear();
     split_old.clear();
