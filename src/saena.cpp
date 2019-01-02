@@ -30,6 +30,13 @@ saena::matrix::matrix(const saena::matrix &B){
     add_dup = B.add_dup;
 }
 
+saena::matrix& saena::matrix::operator=(const saena::matrix &B){
+    delete m_pImpl;
+    m_pImpl = new saena_matrix(*B.m_pImpl);
+    add_dup = B.add_dup;
+    return *this;
+}
+
 void saena::matrix::set_comm(MPI_Comm comm) {
     m_pImpl->set_comm(comm);
 }

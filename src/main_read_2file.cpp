@@ -176,9 +176,6 @@ int main(int argc, char* argv[]){
     solver.update2(&A3);
     solver.solve_pcg(u, &opts);
 
-//    saena::matrix A_assign(comm);
-//    A_assign = A;
-
     // *************************** test for lazy update functions ****************************
 /*
     saena_matrix* A_saena = A.get_internal_matrix();

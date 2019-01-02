@@ -18,9 +18,11 @@ namespace saena {
     class matrix {
     public:
         matrix();
-        matrix(MPI_Comm comm);
+        explicit matrix(MPI_Comm comm);
         matrix(const matrix &B); // copy constructor
         ~matrix();
+
+        matrix& operator=(const matrix &B);
 
         int read_file(char *name);
         int read_file(char *name, const std::string &input_type);

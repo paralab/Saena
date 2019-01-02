@@ -162,17 +162,18 @@ public:
 //    double highest_diag_val = 1e-10; // todo: check if this is still required.
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
 
-
     // dense matrix parameters
+    // ***********************************************************
     // search for "uncomment to enable DENSE" to enable the dense part
 /*    saena_matrix_dense dense_matrix; */ // uncomment to enable DENSE
     bool switch_to_dense = false;
     bool dense_matrix_generated = false;
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to also generate dense_matrix for this matrix.
     int generate_dense_matrix();
-
+    // ***********************************************************
 
     // zfp parameters
+    // ***********************************************************
 /*    zfp_field* field; // array meta data
     zfp_stream* zfp;    // compressed stream
     bitstream* stream;  // bit stream to write to or read from
@@ -189,13 +190,15 @@ public:
 */
     int allocate_zfp();
     int deallocate_zfp();
+    // ***********************************************************
 
 
     saena_matrix();
-    saena_matrix(MPI_Comm com);
+    explicit saena_matrix(MPI_Comm com);
+    ~saena_matrix();
+
     int read_file(const char* Aname);
     int read_file(const char* Aname, const std::string &input_type);
-    ~saena_matrix();
 
     void set_comm(MPI_Comm com);
 
