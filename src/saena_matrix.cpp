@@ -592,7 +592,7 @@ int saena_matrix::erase(){
 //    vElementRep_local.shrink_to_fit();
     vElementRep_remote.shrink_to_fit();
 
-//    deallocate_zfp();
+    deallocate_zfp();
 
     M = 0;
     Mbig = 0;
@@ -694,7 +694,7 @@ int saena_matrix::erase2(){
     vElement_remote.shrink_to_fit();
     w_buff.shrink_to_fit();
 
-//    deallocate_zfp();
+    deallocate_zfp();
 
 //    M = 0;
 //    Mbig = 0;
@@ -1029,7 +1029,7 @@ int saena_matrix::erase_no_shrink_to_fit(){
 //    vElementRep_local.shrink_to_fit();
 //    vElementRep_remote.shrink_to_fit();
 
-//    deallocate_zfp();
+    deallocate_zfp();
 
 //    printf("erase6\n");
 

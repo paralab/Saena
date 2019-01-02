@@ -162,13 +162,14 @@ public:
 //    double highest_diag_val = 1e-10; // todo: check if this is still required.
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
 
+    // dense matrix parameters
     saena_matrix_dense dense_matrix;
     bool switch_to_dense = false;
     bool dense_matrix_generated = false;
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to also generate dense_matrix for this matrix.
 
     // zfp parameters
-    zfp_field* field; // array meta data
+/*    zfp_field* field; // array meta data
     zfp_stream* zfp;    // compressed stream
     bitstream* stream;  // bit stream to write to or read from
 //    unsigned char *send_buffer; // storage for compressed stream
@@ -181,6 +182,7 @@ public:
     zfp_field* field2;  // array meta data
     zfp_stream* zfp2;   // compressed stream
     bitstream* stream2; // bit stream to write to or read from
+*/
     int allocate_zfp();
     int deallocate_zfp();
 

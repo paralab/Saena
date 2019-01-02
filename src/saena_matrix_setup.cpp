@@ -814,35 +814,13 @@ int saena_matrix::set_off_on_diagonal(){
 //            printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
 //               rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);
 
-//            allocate_zfp();
+            allocate_zfp();
         }
     }
 
     return 0;
 }
 
-
-int saena_matrix::allocate_zfp(){
-
-    zfp_send_bufsize = rate / 2 * (unsigned)ceil(vIndexSize/4.0); // rate/8 * 4 * ceil(size/4). This is in bytes.
-    zfp_recv_bufsize = rate / 2 * (unsigned)ceil(recvSize/4.0);
-    zfp_send_buffer = (double*)malloc(zfp_send_bufsize);
-    zfp_recv_buffer = (double*)malloc(zfp_recv_bufsize);
-    free_zfp_buff = true;
-
-    return 0;
-}
-
-int saena_matrix::deallocate_zfp(){
-
-    if(free_zfp_buff){
-        free(zfp_send_buffer);
-        free(zfp_recv_buffer);
-        free_zfp_buff = false;
-    }
-
-    return 0;
-}
 
 int saena_matrix::find_sortings(){
     //find the sorting on rows on both local and remote data, which will be used in matvec

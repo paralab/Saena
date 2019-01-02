@@ -193,7 +193,7 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_object_setup2_test.cpp
 
         src/petsc_functions.cpp
-        )
+        src/saena_matrix_zfp.cpp)
 
 # -----------------------------------------------------------------------
 
