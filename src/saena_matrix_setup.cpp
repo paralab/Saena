@@ -142,7 +142,7 @@ int saena_matrix::remove_duplicates() {
     // clear data_coo and free memory.
     // Using move semantics, the address of data_coo is swapped with data_temp. So data_coo will be empty
     // and data_temp will be deleted when this function is finished.
-    std::set<cooEntry_row> data_temp = std::move(data_coo);
+//    std::set<cooEntry_row> data_temp = std::move(data_coo);
 
     // since shrink_to_fit() does not work for std::set, set.erase() is being used, not sure if it frees memory.
 //    data_coo.erase(data_coo.begin(), data_coo.end());
