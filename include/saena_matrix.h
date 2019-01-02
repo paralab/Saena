@@ -162,11 +162,14 @@ public:
 //    double highest_diag_val = 1e-10; // todo: check if this is still required.
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
 
+
     // dense matrix parameters
     saena_matrix_dense dense_matrix;
     bool switch_to_dense = false;
     bool dense_matrix_generated = false;
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to also generate dense_matrix for this matrix.
+    int generate_dense_matrix();
+
 
     // zfp parameters
 /*    zfp_field* field; // array meta data
@@ -185,6 +188,7 @@ public:
 */
     int allocate_zfp();
     int deallocate_zfp();
+
 
     saena_matrix();
     saena_matrix(MPI_Comm com);
@@ -259,8 +263,6 @@ public:
     int inverse_diag();
     int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
     int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
-
-    int generate_dense_matrix();
 
     int print_entry(int ran);
     int print_info(int ran);

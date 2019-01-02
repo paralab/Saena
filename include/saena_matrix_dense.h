@@ -26,6 +26,7 @@ public:
     saena_matrix_dense();
     saena_matrix_dense(index_t M, index_t Nbig);
     saena_matrix_dense(index_t M, index_t Nbig, MPI_Comm comm);
+    saena_matrix_dense(const saena_matrix_dense &B); // copy constructor
 //    saena_matrix_dense(char* Aname, MPI_Comm com);
     ~saena_matrix_dense();
     int erase();

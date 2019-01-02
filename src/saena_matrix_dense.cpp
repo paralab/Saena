@@ -13,8 +13,9 @@ saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
     Nbig = Nbig1;
 
     entry = new value_t*[M];
-    for(index_t i = 0; i < M; i++)
+    for(index_t i = 0; i < M; i++){
         entry[i] = new value_t[Nbig];
+    }
 
     allocated = true;
 }
@@ -26,10 +27,28 @@ saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1
     comm = comm1;
 
     entry = new value_t*[M];
-    for(index_t i = 0; i < M; i++)
+    for(index_t i = 0; i < M; i++){
         entry[i] = new value_t[Nbig];
+    }
 
     allocated = true;
+}
+
+
+// copy constructor
+saena_matrix_dense::saena_matrix_dense(const saena_matrix_dense &B){
+    M = B.M;
+    Nbig = B.Nbig;
+    comm = B.comm;
+
+    entry = new value_t*[M];
+    for(index_t i = 0; i < M; i++){
+        entry[i] = new value_t[Nbig];
+    }
+
+    allocated = true;
+
+    split = B.split;
 }
 
 
@@ -127,7 +146,7 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
         return -1;
     }
 
-    MPI_Status sendRecvStatus;
+//    MPI_Status sendRecvStatus;
     int right_neighbor = (rank + 1)%nprocs;
     int left_neighbor = rank - 1;
     if (left_neighbor < 0)
