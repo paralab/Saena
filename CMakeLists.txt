@@ -180,6 +180,7 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_matrix_setup.cpp
         src/saena_matrix_matvec.cpp
         src/saena_matrix_shrink.cpp
+        src/saena_matrix_zfp.cpp
 
         src/saena_object.cpp
         src/saena_object_setup1.cpp
@@ -193,7 +194,7 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_object_setup2_test.cpp
 
         src/petsc_functions.cpp
-        src/saena_matrix_zfp.cpp)
+        )
 
 # -----------------------------------------------------------------------
 
