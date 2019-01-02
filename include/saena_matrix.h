@@ -168,19 +168,21 @@ public:
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to also generate dense_matrix for this matrix.
 
     // zfp parameters
-    zfp_field* field;  /* array meta data */
-    zfp_stream* zfp;   /* compressed stream */
-    bitstream* stream; /* bit stream to write to or read from */
-//    unsigned char *send_buffer; /* storage for compressed stream */
+    zfp_field* field; // array meta data
+    zfp_stream* zfp;    // compressed stream
+    bitstream* stream;  // bit stream to write to or read from
+//    unsigned char *send_buffer; // storage for compressed stream
 //    unsigned char *recv_buffer;
     bool free_zfp_buff = false;
-    double *zfp_send_buffer; /* storage for compressed stream */
+    double *zfp_send_buffer; // storage for compressed stream
     double *zfp_recv_buffer;
     unsigned rate = 64;
     unsigned zfp_send_bufsize = 0, zfp_recv_bufsize = 0;
-    zfp_field* field2;  /* array meta data */
-    zfp_stream* zfp2;   /* compressed stream */
-    bitstream* stream2; /* bit stream to write to or read from */
+    zfp_field* field2;  // array meta data
+    zfp_stream* zfp2;   // compressed stream
+    bitstream* stream2; // bit stream to write to or read from
+    int allocate_zfp();
+    int deallocate_zfp();
 
     saena_matrix();
     saena_matrix(MPI_Comm com);

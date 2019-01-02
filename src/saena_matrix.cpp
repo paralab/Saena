@@ -590,10 +590,7 @@ int saena_matrix::erase(){
 //    vElementRep_local.shrink_to_fit();
     vElementRep_remote.shrink_to_fit();
 
-    if(free_zfp_buff){
-        free(zfp_send_buffer);
-        free(zfp_recv_buffer);
-    }
+    deallocate_zfp();
 
     M = 0;
     Mbig = 0;
@@ -693,10 +690,7 @@ int saena_matrix::erase2(){
     vElement_remote.shrink_to_fit();
     w_buff.shrink_to_fit();
 
-    if(free_zfp_buff){
-        free(zfp_send_buffer);
-        free(zfp_recv_buffer);
-    }
+    deallocate_zfp();
 
 //    M = 0;
 //    Mbig = 0;
@@ -978,7 +972,7 @@ int saena_matrix::erase_no_shrink_to_fit(){
 //    data.clear();
 //    data.shrink_to_fit();
 
-    printf("erase1\n");
+//    printf("erase1\n");
 //    data_coo.clear();
     entry.clear();
     split.clear();
@@ -986,18 +980,18 @@ int saena_matrix::erase_no_shrink_to_fit(){
     values_local.clear();
     row_local.clear();
     values_remote.clear();
-    printf("erase2\n");
+//    printf("erase2\n");
     row_remote.clear();
     col_local.clear();
     col_remote.clear();
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    printf("erase3\n");
+//    printf("erase3\n");
     inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
-    printf("erase4\n");
+//    printf("erase4\n");
     recvProcRank.clear();
     recvProcCount.clear();
     sendProcRank.clear();
@@ -1005,7 +999,7 @@ int saena_matrix::erase_no_shrink_to_fit(){
     sendProcCount.clear();
 //    vElementRep_local.clear();
     vElementRep_remote.clear();
-    printf("erase5\n");
+//    printf("erase5\n");
 
 //    entry.shrink_to_fit();
 //    split.shrink_to_fit();
@@ -1030,11 +1024,9 @@ int saena_matrix::erase_no_shrink_to_fit(){
 //    vElementRep_local.shrink_to_fit();
 //    vElementRep_remote.shrink_to_fit();
 
-    if(free_zfp_buff){
-        free(zfp_send_buffer);
-        free(zfp_recv_buffer);
-    }
-    printf("erase6\n");
+    deallocate_zfp();
+
+//    printf("erase6\n");
 
     M = 0;
     Mbig = 0;
@@ -1047,7 +1039,7 @@ int saena_matrix::erase_no_shrink_to_fit(){
     numRecvProc = 0;
     numSendProc = 0;
     assembled = false;
-    printf("erase7\n");
+//    printf("erase7\n");
 
     return 0;
 }

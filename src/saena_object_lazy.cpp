@@ -131,6 +131,7 @@ int saena_object::update3(saena_matrix* A_new){
     grids[0].A->scale_matrix();
 //    print_vector(A_diff, -1, "A_diff", grids[0].A->comm);
 //    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
+//    printf("A_diff.size = %lu\n", A_diff.size());
 
     mempool1 = new value_t[matmat_size_thre];
     mempool2 = new index_t[grids[0].A->Mbig * 4];

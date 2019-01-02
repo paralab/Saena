@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 4){
+    if(argc != 5){
         if(rank == 0) {
             std::cout << "Usage: ./Saena <MatrixA> <MatrixB>" << std::endl;
         }
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]){
 
     // ********** 4 - set rhs: read from file **********
 
-    char* Vname(argv[3]);
+    char* Vname(argv[4]);
     saena::read_vector_file(rhs, A, Vname, comm);
 //    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
 
@@ -159,20 +159,21 @@ int main(int argc, char* argv[]){
     saena::matrix A2 (comm);
     A2.read_file(file_name2);
     // assemble matrix inside update functions.
-//    A2.assemble(); // use this for update1 and update2
-    A2.assemble_no_scale(); // use this for update3
+    A2.assemble(); // use this for update1 and update2
+//    A2.assemble_no_scale(); // use this for update3
 
 //    t1 = MPI_Wtime();
-    solver.update3(&A2);
+    solver.update2(&A2);
     solver.solve_pcg(u, &opts);
 //    t2 = MPI_Wtime();
 //    print_time(t1, t2, "Solve update:", comm);
 
-    A2.erase();
-    A2.read_file(file_name2);
-//    A2.assemble(); // use this for update1 and update2
-    A2.assemble_no_scale(); // use this for update3
-    solver.update3(&A2);
+    char* file_name3(argv[3]);
+    saena::matrix A3 (comm);
+    A3.read_file(file_name3);
+    A3.assemble(); // use this for update1 and update2
+//    A3.assemble_no_scale(); // use this for update3
+    solver.update2(&A3);
     solver.solve_pcg(u, &opts);
 
     // *************************** test for lazy update functions ****************************
