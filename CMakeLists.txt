@@ -132,6 +132,14 @@ include_directories(
 )
 
 # -----------------------------------------------------------------------
+#CombBLAS
+
+set(COMBBLAS_DIR /home/majidrp/Software/CombBLAS_beta_16_2)
+#include_directories("${COMBBLAS_DIR}")
+include_directories("${COMBBLAS_DIR}/install/include")
+set(COMBBLAS_LIB ${COMBBLAS_DIR}/install/lib/libCombBLAS.a)
+
+# -----------------------------------------------------------------------
 # dollar (profiler)
 
 set(DOLLAR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/dollar")
@@ -163,6 +171,7 @@ set(HEADER_FILES ${HEADER_FILES}
         include/aux_functions.h
         include/grid.h
         include/petsc_functions.h
+        include/combblas_functions.h
         )
 
 set(SOURCE_FILES ${SOURCE_FILES}
@@ -194,16 +203,17 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_object_setup2_test.cpp
 
         src/petsc_functions.cpp
+        src/combblas_functions.cpp
         )
 
 # -----------------------------------------------------------------------
 
-#add_executable(Saena           src/main.cpp           ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Saena           src/main.cpp           ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena_read_file src/main_read_file.cpp ${SOURCE_FILES} ${HEADER_FILES})
-add_executable(Saena2_read_file src/main_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena2_read_file src/main_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 # -----------------------------------------------------------------------
 
-#target_link_libraries(Saena            ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
+target_link_libraries(Saena            ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
 #target_link_libraries(Saena_read_file  ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
-target_link_libraries(Saena2_read_file ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
+#target_link_libraries(Saena2_read_file ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
