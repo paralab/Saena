@@ -22,5 +22,6 @@ public:
 
 int combblas_matmult_DoubleBuff();
 int combblas_matmult_Synch();
+int combblas_GalerkinNew();
 
 #endif //SAENA_COMBBLAS_FUNCTIONS_H
