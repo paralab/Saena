@@ -6,7 +6,7 @@ int combblas_matmult_DoubleBuff(){
 //    MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-
+/*
     string Aname = "/home/majidrp/Dropbox/Projects/Saena/data/CombBLAS/rmat_scale16_A.mtx";
     string Bname = "/home/majidrp/Dropbox/Projects/Saena/data/CombBLAS/rmat_scale16_B.mtx";
     typedef PlusTimesSRing<ElementType, ElementType> PTDOUBLEDOUBLE;
@@ -42,7 +42,7 @@ int combblas_matmult_DoubleBuff(){
         cout<<"Double buffered multiplications finished"<<endl;
         printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)ITERATIONS);
     }
-
+*/
     return 0;
 }
 

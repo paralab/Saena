@@ -2,7 +2,9 @@
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "saena.hpp"
+
 #include "petsc_functions.h"
+//#include "combblas_functions.h"
 
 #include <iostream>
 #include <algorithm>
@@ -301,6 +303,13 @@ int main(int argc, char* argv[]){
         }
     }
 */
+
+    // *************************** CombBLAS ****************************
+
+//    combblas_matmult_DoubleBuff();
+//    int combblas_matmult_Synch();
+//    int combblas_GalerkinNew();
+
     // *************************** finalize ****************************
 
 //    if(rank==0) dollar::text(std::cout);
