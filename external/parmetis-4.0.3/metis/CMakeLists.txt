@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 project(METIS)
 
 set(GKLIB_PATH "GKlib" CACHE PATH "path to GKlib")
-set(SHARED FALSE CACHE BOOL "build a shared library")
+# Majid changed this to True, because of conflict with metis in petsc:
+set(SHARED True CACHE BOOL "build a shared library") 
 
 if(MSVC)
   set(METIS_INSTALL FALSE)
