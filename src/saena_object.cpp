@@ -302,7 +302,7 @@ int saena_object::coarsen(Grid *grid){
 
 //#ifdef __DEBUG1__
     MPI_Barrier(grid->A->comm);
-    double t1 = MPI_Wtime();
+    double t11 = MPI_Wtime();
 //    t1 = omp_get_wtime();
 //#endif
 
@@ -311,9 +311,9 @@ int saena_object::coarsen(Grid *grid){
 
 //#ifdef __DEBUG1__
 //    t2 = omp_get_wtime();
-    double t2 = MPI_Wtime();
-    if(verbose_level_setup) print_time(t1, t2, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
-    print_time_ave(t2-t1, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    double t22 = MPI_Wtime();
+    if(verbose_level_setup) print_time(t11, t22, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    print_time_ave(t22-t11, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after triple_mat_mult!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    if(grid->Ac.active) print_vector(grid->Ac.split, 1, "grid->Ac.split", grid->Ac.comm);
