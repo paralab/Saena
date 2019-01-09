@@ -2163,6 +2163,16 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // part 1: multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
+    saena_matrix B(comm);
+    for(int i = 0; i < A->entry.size(); i++){
+        if(A->entry[i].row < P->Nbig){
+            B.set(A->entry[i].row, A->entry[i].col, A->entry[i].val);
+        }
+    }
+    B.assemble_no_scale();
+    A = &B;
+
+
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> mat_send(R->entry.size());
     transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], mat_send);
