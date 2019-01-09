@@ -300,23 +300,16 @@ int saena_object::coarsen(Grid *grid){
 
     // **************************** triple_mat_mult ****************************
 
-#ifdef __DEBUG1__
+//#ifdef __DEBUG1__
     MPI_Barrier(grid->A->comm);
     t1 = MPI_Wtime();
 //    t1 = omp_get_wtime();
-#endif
-
-    MPI_Barrier(grid->A->comm);
-    t1 = MPI_Wtime();
+//#endif
 
     triple_mat_mult(grid);
 //    triple_mat_mult_old(grid);
 
-    t2 = MPI_Wtime();
-    if(verbose_level_setup) print_time(t1, t2, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
-    print_time_ave(t2-t1, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
-
-#ifdef __DEBUG1__
+//#ifdef __DEBUG1__
 //    t2 = omp_get_wtime();
     t2 = MPI_Wtime();
     if(verbose_level_setup) print_time(t1, t2, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
@@ -328,7 +321,7 @@ int saena_object::coarsen(Grid *grid){
 
 //    printf("rank = %d, M = %u, nnz_l = %lu, nnz_g = %lu, Ac.M = %u, Ac.nnz_l = %lu \n",
 //           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l);
-#endif
+//#endif
 
     // **************************** triple_mat_mult in PETSc ****************************
     // this part is only for experiments.
