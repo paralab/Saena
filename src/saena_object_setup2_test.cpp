@@ -653,20 +653,17 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
                                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
                                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){
 
+#ifdef __DEBUG1__
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
-//    index_t A_col_size_half = A_col_size/2;
-    index_t B_col_size_half = B_col_size/2;
-
-
-#ifdef __DEBUG1__
     int verbose_rank = 0;
     if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
 #endif
 
     // prepare splits of matrix B by column
+//    index_t A_col_size_half = A_col_size/2;
+    index_t B_col_size_half = B_col_size/2;
     nnz_t B1_nnz = 0, B2_nnz;
 
     for(nnz_t i = 0; i < B_col_size_half; i++){
@@ -895,10 +892,10 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
 //        if(rank==0 && verbose_matmat) printf("fast_mm: case 3: step 4 \n");
 
+    // sort and remove duplicates
+    // --------------------------
     std::sort(C_temp.begin(), C_temp.end());
-
     nnz_t C_temp_size_minus1 = C_temp.size()-1;
-    // remove duplicates.
     for(nnz_t i = 0; i < C_temp.size(); i++){
         C.emplace_back(C_temp[i]);
         while(i < C_temp_size_minus1 && C_temp[i] == C_temp[i+1]){ // values of entries with the same row and col should be added.

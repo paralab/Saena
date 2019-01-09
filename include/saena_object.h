@@ -215,4 +215,3 @@ public:
 };
 
 #endif //SAENA_SAENA_OBJECT_H
-
