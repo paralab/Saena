@@ -2347,6 +2347,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
         MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
+    if(rank==0) dollar::text(std::cout);
+    dollar::clear();
+
     // *******************************************************
     // part 2: multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
     // *******************************************************
@@ -2426,6 +2429,9 @@ int saena_object::triple_mat_mult(Grid *grid) {
     nnzPerColScan_left.shrink_to_fit();
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
+
+    if(rank==0) dollar::text(std::cout);
+    dollar::clear();
 
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
