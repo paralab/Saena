@@ -26,7 +26,7 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
                           const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                           const index_t B_col_size, const index_t B_col_offset,
                           const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                          const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){
+                          const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){$
 
     // =======================================================
     // Compute: C = A * B
@@ -245,7 +245,7 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
                                 const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                                 const index_t B_col_size, const index_t B_col_offset,
                                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                                const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){
+                                const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){$
 
     index_t B_row_offset = A_col_offset;
 
@@ -383,7 +383,7 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
                                 const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                                 const index_t B_col_size, const index_t B_col_offset,
                                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                                const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){
+                                const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){$
 
 #ifdef __DEBUG1__
     int rank, nprocs;
@@ -660,7 +660,7 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
                                 const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                                 const index_t B_col_size, const index_t B_col_offset,
                                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                                const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){
+                                const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){$
 
 #ifdef __DEBUG1__
     int rank, nprocs;
