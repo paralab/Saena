@@ -26,7 +26,7 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
                           const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                           const index_t B_col_size, const index_t B_col_offset,
                           const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                          const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){$
+                          const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){
 
     // =======================================================
     // Compute: C = A * B
