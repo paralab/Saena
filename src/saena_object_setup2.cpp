@@ -2314,12 +2314,11 @@ int saena_object::triple_mat_mult(Grid *grid) {
     saena_matrix *Ac   = &grid->Ac;
 
     MPI_Comm comm = A->comm;
-
-#ifdef __DEBUG1__
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+#ifdef __DEBUG1__
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
 //    print_vector(R->entry, -1, "R->entry", comm);
