@@ -350,9 +350,9 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
         //        MPI_Barrier(comm);
     if(rank==verbose_rank){
 
-        printf("fast_mm: case 2: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
-       "A_size: (%u, %u, %u), B_size: (%u, %u) \n",
-        A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size_half, A_col_size, B_col_size);
+//        printf("fast_mm: case 2: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
+//       "A_size: (%u, %u, %u), B_size: (%u, %u) \n",
+//        A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size_half, A_col_size, B_col_size);
 
         if(verbose_matmat_A) {
             std::cout << "\nranges of A:" << std::endl;
@@ -667,9 +667,9 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
         //        MPI_Barrier(comm);
         if(rank==verbose_rank){
 
-            printf("fast_mm: case 3: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
-                   "A_size: (%u, %u), B_size: (%u, %u, %u) \n",
-                   A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size, B_col_size, B_col_size_half);
+//            printf("fast_mm: case 3: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
+//                   "A_size: (%u, %u), B_size: (%u, %u, %u) \n",
+//                   A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size, B_col_size, B_col_size_half);
 
             if(verbose_matmat_A) {
                 // print entries of A1:
