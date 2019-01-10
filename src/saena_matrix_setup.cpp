@@ -1279,11 +1279,11 @@ int saena_matrix::inverse_diag() {
 //    MPI_Barrier(comm);
 #endif
 
-    for(auto i:inv_diag) {
-        if (i == 0){
-            printf("rank %d: inverse_diag: At least one diagonal entry is 0.\n", rank);
-        }
-    }
+//    for(auto i:inv_diag) {
+//        if (i == 0){
+//            printf("rank %d: inverse_diag: At least one diagonal entry is 0.\n", rank);
+//        }
+//    }
 
 //    temp = highest_diag_val;
 //    MPI_Allreduce(&temp, &highest_diag_val, 1, MPI_DOUBLE, MPI_MAX, comm);

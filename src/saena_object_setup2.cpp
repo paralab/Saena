@@ -2163,6 +2163,8 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // part 1: multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
+
+
     saena_matrix B(comm);
     B.Mbig = A->Mbig;
     B.M = A->M;
@@ -2175,8 +2177,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
     }
 
     A = &B;
-
-
 
 
 
@@ -2348,10 +2348,14 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
+        double t1 = MPI_Wtime();
         fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
                 A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+        double t2 = MPI_Wtime();
+        printf("\nfast_mm of AP = %f\n", t2-t1);
+        return 0;
 
     }
 
