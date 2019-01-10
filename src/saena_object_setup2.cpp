@@ -2164,7 +2164,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // *******************************************************
 
 
-
+/*
     saena_matrix B(comm);
     B.Mbig = A->Mbig;
     B.M = A->M;
@@ -2177,7 +2177,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     }
 
     A = &B;
-
+*/
 
 
 
