@@ -17,7 +17,7 @@
 
 
 // this version splits the matrices by the middle row and column.
-int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+int saena_object::fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                                const nnz_t A_nnz, const nnz_t B_nnz,
                                const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                                const index_t B_col_size, const index_t B_col_offset,
@@ -2324,7 +2324,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 #ifdef SPLIT_SIZE
     if(rank==0) printf("\nfast_mm: split based on matrix size\n");
 #endif
-    
+
 #ifdef __DEBUG1__
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
