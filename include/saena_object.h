@@ -6,6 +6,10 @@
 #include <vector>
 #include <string>
 
+// set one of the following to set fast_mm split based on nnz or matrix size
+#define SPLIT_SIZE
+//#define SPLIT_NNZ
+
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
@@ -96,12 +100,6 @@ public:
     int triple_mat_mult_old(Grid *grid);
     int triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
 
-    int fast_mm_nnz(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-                    nnz_t A_nnz, nnz_t B_nnz,
-                    index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                    index_t B_col_size, index_t B_col_offset,
-                    const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                    const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
     int fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                      nnz_t A_nnz, nnz_t B_nnz,
                      index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,

@@ -21,7 +21,7 @@
 // 2- split matrices by half based on number of nonzeros.
 // =======================================================
 
-int saena_object::fast_mm_nnz(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+int saena_object::fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                           const nnz_t A_nnz, const nnz_t B_nnz,
                           const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                           const index_t B_col_size, const index_t B_col_offset,
@@ -516,7 +516,7 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
         }
     }
 //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
 #endif
 
     // =======================================================
