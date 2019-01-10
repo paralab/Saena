@@ -17,7 +17,7 @@
 
 
 // this version splits the matrices to have half nnz on each side.
-int saena_object::fast_mm_nnz(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                               const nnz_t A_nnz, const nnz_t B_nnz,
                               const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                               const index_t B_col_size, const index_t B_col_offset,
@@ -2163,8 +2163,8 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // part 1: multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
-
-
+    // test multiplying a submatrix of A with P
+/*
     saena_matrix B(comm);
     B.Mbig = A->Mbig;
     B.M = A->M;
@@ -2177,9 +2177,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     }
 
     A = &B;
-
-
-
+*/
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> mat_send(R->entry.size());
@@ -2347,14 +2345,14 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-        double t1 = MPI_Wtime();
+//        double t1 = MPI_Wtime();
         fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
                 A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
-        double t2 = MPI_Wtime();
-        printf("\nfast_mm of AP = %f \tP->Nbig = %u \n", t2-t1, P->Nbig);
-        return 0;
+//        double t2 = MPI_Wtime();
+//        printf("\nfast_mm of AP = %f \tP->Nbig = %u \n", t2-t1, P->Nbig);
+//        return 0;
 
     }
 
