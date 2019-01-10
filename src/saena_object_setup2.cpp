@@ -350,9 +350,9 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
         //        MPI_Barrier(comm);
     if(rank==verbose_rank){
 
-//        printf("fast_mm: case 2: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
-//       "A_size: (%u, %u, %u), B_size: (%u) \n",
-//        A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_half, B_col_size);
+        printf("fast_mm: case 2: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
+       "A_size: (%u, %u, %u), B_size: (%u, %u) \n",
+        A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size_half, A_col_size, B_col_size);
 
         if(verbose_matmat_A) {
             std::cout << "\nranges of A:" << std::endl;
@@ -618,6 +618,7 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
 
         B2_nnz = B_nnz - B1_nnz;
 #endif
+
         // =======================================================
 
 #ifdef __DEBUG1__
@@ -666,9 +667,9 @@ int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooE
         //        MPI_Barrier(comm);
         if(rank==verbose_rank){
 
-//            printf("fast_mm: case 3: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
-//                   "A_size: (%u, %u), B_size: (%u, %u) \n",
-//                   A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, B_col_size, B_col_size_half);
+            printf("fast_mm: case 3: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
+                   "A_size: (%u, %u), B_size: (%u, %u, %u) \n",
+                   A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size, B_col_size, B_col_size_half);
 
             if(verbose_matmat_A) {
                 // print entries of A1:
@@ -2617,8 +2618,8 @@ int saena_object::triple_mat_mult(Grid *grid) {
         MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
     // *******************************************************
     // part 2: multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
@@ -2700,8 +2701,8 @@ int saena_object::triple_mat_mult(Grid *grid) {
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
 
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);

@@ -7,8 +7,8 @@
 #include <string>
 
 // set one of the following to set fast_mm split based on nnz or matrix size
-#define SPLIT_SIZE
-//#define SPLIT_NNZ
+#define SPLIT_NNZ
+//#define SPLIT_SIZE
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;

@@ -395,17 +395,62 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
 
     index_t B_row_offset = A_col_offset;
     index_t A_col_size_half = A_col_size/2;
-    index_t B_row_size_half = A_col_size_half;
+
+    // split based on matrix size
+    // =======================================================
+
+#ifdef SPLIT_SIZE
+    // prepare splits of matrix A by column
+        nnz_t A1_nnz = 0, A2_nnz;
+        for(nnz_t i = 0; i < A_col_size_half; i++){
+            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+        }
+
+        A2_nnz = A_nnz - A1_nnz;
+#endif
+
+    // =======================================================
+    // split based on nnz
+    // =======================================================
+
+#ifdef SPLIT_NNZ
 
     // prepare splits of matrix A by column
     nnz_t A1_nnz = 0, A2_nnz;
-    for(nnz_t i = 0; i < A_col_size_half; i++){
-        A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+    auto A_half_nnz = (nnz_t)ceil(A_nnz/2);
+//        index_t A_col_size_half = A_col_size/2;
+
+    if(A_nnz > matmat_nnz_thre){
+        for (nnz_t i = 0; i < A_col_size; i++) {
+            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+            if (A1_nnz >= A_half_nnz) {
+                A_col_size_half = A[nnzPerColScan_leftStart[i]].col + 1 - A_col_offset; // this is called once! don't optimize.
+                break;
+            }
+        }
+    } else { // A_col_half will stay A_col_size/2
+        for (nnz_t i = 0; i < A_col_size_half; i++) {
+            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+        }
+    }
+
+    // if A is not being splitted at all following "half nnz method", then swtich to "half size method".
+    if(A_col_size_half == A_col_size){
+        A_col_size_half = A_col_size/2;
+        A1_nnz = 0;
+        for (nnz_t i = 0; i < A_col_size_half; i++) {
+            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+        }
     }
 
     A2_nnz = A_nnz - A1_nnz;
+#endif
+
+    // =======================================================
 
     // prepare splits of matrix B by row
+    index_t B_row_size_half = A_col_size_half;
+    index_t B_row_threshold = B_row_size_half + B_row_offset;
     nnz_t B1_nnz = 0, B2_nnz;
 
     index_t *nnzPerCol_middle = &mempool2[0];
@@ -413,7 +458,6 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
     // to avoid subtraction in the following for loop " - B_col_offset"
     index_t *nnzPerCol_middle_p = &nnzPerCol_middle[0] - B_col_offset;
 
-    index_t B_row_threshold = B_row_size_half + B_row_offset;
     for(nnz_t i = 0; i < B_col_size; i++){
         for(nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
             if(B[j].row < B_row_threshold){ // B[j].row - B_row_offset < B_row_size_half
@@ -452,6 +496,10 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
 #ifdef __DEBUG1__
 //        MPI_Barrier(comm);
     if(rank==verbose_rank){
+
+        printf("fast_mm: case 2: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
+               "A_size: (%u, %u, %u), B_size: (%u, %u) \n",
+               A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size_half, A_col_size, B_col_size);
 
         if(verbose_matmat_A) {
             std::cout << "\nranges of A:" << std::endl;
@@ -670,16 +718,65 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
     if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
 #endif
 
-    // prepare splits of matrix B by column
-//    index_t A_col_size_half = A_col_size/2;
-    index_t B_col_size_half = B_col_size/2;
-    nnz_t B1_nnz = 0, B2_nnz;
+    // split based on matrix size
+    // =======================================================
 
-    for(nnz_t i = 0; i < B_col_size_half; i++){
-        B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+#ifdef SPLIT_SIZE
+    // prepare splits of matrix B by column
+//        index_t A_col_size_half = A_col_size/2;
+        index_t B_col_size_half = B_col_size/2;
+        nnz_t B1_nnz = 0, B2_nnz;
+
+        for(nnz_t i = 0; i < B_col_size_half; i++){
+            B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+        }
+
+        B2_nnz = B_nnz - B1_nnz;
+#endif
+
+    // =======================================================
+    // split based on nnz
+    // =======================================================
+
+#ifdef SPLIT_NNZ
+    // prepare splits of matrix B by column
+    nnz_t B1_nnz = 0, B2_nnz;
+    auto B_half_nnz = (nnz_t)ceil(B_nnz/2);
+    index_t B_col_size_half = B_col_size/2;
+
+    if(B_nnz > matmat_nnz_thre) {
+        for (nnz_t i = 0; i < B_col_size; i++) {
+            B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+
+#ifdef __DEBUG1__
+//                if(rank==verbose_rank)
+//                    printf("B_nnz = %lu, B_half_nnz = %lu, B1_nnz = %lu, nnz on col %u: %u \n",
+//                           B_nnz, B_half_nnz, B1_nnz, B[nnzPerColScan_rightStart[i]].col,
+//                           nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i]);
+#endif
+
+            if (B1_nnz >= B_half_nnz) {
+                B_col_size_half = B[nnzPerColScan_rightStart[i]].col + 1 - B_col_offset;
+                break;
+            }
+        }
+    } else {
+        for (nnz_t i = 0; i < B_col_size_half; i++) {
+            B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+        }
+    }
+
+    // if B is not being splitted at all following "half nnz method", then swtich to "half col method".
+    if(B_col_size_half == B_col_size){
+        B_col_size_half = B_col_size/2;
+        B1_nnz = 0;
+        for (nnz_t i = 0; i < B_col_size_half; i++) {
+            B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+        }
     }
 
     B2_nnz = B_nnz - B1_nnz;
+#endif
 
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 1 \n");
@@ -727,6 +824,10 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 #ifdef __DEBUG1__
     //        MPI_Barrier(comm);
         if(rank==verbose_rank){
+
+            printf("fast_mm: case 3: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
+                   "A_size: (%u, %u), B_size: (%u, %u, %u) \n",
+                   A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size, B_col_size, B_col_size_half);
 
             if(verbose_matmat_A) {
                 // print entries of A1:
