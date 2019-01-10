@@ -2181,7 +2181,6 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
 
 
-
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> mat_send(R->entry.size());
     transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], mat_send);
@@ -2354,7 +2353,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
         double t2 = MPI_Wtime();
-        printf("\nfast_mm of AP = %f\n", t2-t1);
+        printf("\nfast_mm of AP = %f \tP->Nbig = %u \n", t2-t1, P->Nbig);
         return 0;
 
     }
