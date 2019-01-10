@@ -2318,6 +2318,13 @@ int saena_object::triple_mat_mult(Grid *grid) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+#ifdef SPLIT_NNZ
+    if(rank==0) printf("\nfast_mm: split based on nnz\n");
+#endif
+#ifdef SPLIT_SIZE
+    if(rank==0) printf("\nfast_mm: split based on matrix size\n");
+#endif
+    
 #ifdef __DEBUG1__
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
@@ -2331,12 +2338,12 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    if(A->active_old_comm)
 //        printf("rank = %d, nprocs = %d active\n", rank1, nprocs1);
 
-#ifdef SPLIT_NNZ
-    if(rank==0) printf("\nfast_mm: split based on nnz\n");
-#endif
-#ifdef SPLIT_SIZE
-    if(rank==0) printf("\nfast_mm: split based on matrix size\n");
-#endif
+//#ifdef SPLIT_NNZ
+//    if(rank==0) printf("\nfast_mm: split based on nnz\n");
+//#endif
+//#ifdef SPLIT_SIZE
+//    if(rank==0) printf("\nfast_mm: split based on matrix size\n");
+//#endif
 
     if (verbose_coarsen) {
         MPI_Barrier(comm);
