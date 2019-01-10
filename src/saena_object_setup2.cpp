@@ -2164,13 +2164,22 @@ int saena_object::triple_mat_mult(Grid *grid) {
     // *******************************************************
 
     saena_matrix B(comm);
+    B.Mbig = A->Mbig;
+    B.M = A->M;
+    B.split = A->split;
+    B.comm = A->comm;
     for(int i = 0; i < A->entry.size(); i++){
         if(A->entry[i].row < P->Nbig){
-            B.set(A->entry[i].row, A->entry[i].col, A->entry[i].val);
+            B.entry.emplace_back(A->entry[i]);
         }
     }
-    B.assemble_no_scale();
+
     A = &B;
+
+
+
+
+
 
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
