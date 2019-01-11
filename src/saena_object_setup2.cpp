@@ -2985,7 +2985,6 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 }
 
 
-
 int saena_object::compute_coarsen_old(Grid *grid){
 
     // todo: to improve the performance of this function, consider using the arrays used for RA also for RAP.

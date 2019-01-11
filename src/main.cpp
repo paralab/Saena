@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
 
     double t2 = MPI_Wtime();
     if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-    print_time(t1, t2, "Matrix Assemble:", comm);
+//    print_time(t1, t2, "Matrix Assemble:", comm);
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]){
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
-    print_time(t1, t2, "Setup:", comm);
+//    print_time(t1, t2, "Setup:", comm);
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
@@ -156,10 +156,9 @@ int main(int argc, char* argv[]){
         B.split = g1->A->split;
         B.comm = g1->A->comm;
 
-
         for(index_t j = 1; j < 11; j++){
             row_thres = g1->A->Mbig / j;
-            printf("\n=======================================\nrow_thres = %u \n", row_thres);
+            printf("\n=======================================\n\nrow_thres = %u \n", row_thres);
 
             B.entry.clear();
             for (int i = 0; i < g1->A->entry.size(); i++) {
@@ -170,7 +169,6 @@ int main(int argc, char* argv[]){
             obj1->compute_coarsen_test(&g2);
 
         }
-
 
         delete []obj1->mempool1;
         delete []obj1->mempool2;

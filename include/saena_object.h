@@ -99,10 +99,13 @@ public:
     int setup(saena_matrix* A);
     int coarsen(Grid *grid);
     int compute_coarsen(Grid *grid);
-    int compute_coarsen_test(Grid *grid);
     int compute_coarsen_old(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+
+    // for fast_mm experiments
+    int compute_coarsen_test(Grid *grid);
+    int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
     int fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                      nnz_t A_nnz, nnz_t B_nnz,
