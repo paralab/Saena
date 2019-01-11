@@ -16,6 +16,9 @@
 #include "mpi.h"
 
 
+#include "grid.h"
+
+
 int main(int argc, char* argv[]){
 
     MPI_Init(&argc, &argv);
@@ -128,6 +131,56 @@ int main(int argc, char* argv[]){
     print_time(t1, t2, "Solve:", comm);
 */
 //    print_vector(u, -1, "u", comm);
+
+    // *************************** experiment for triple_mat_mult ****************************
+    {
+
+        saena_object *obj1 = solver.get_object();
+        Grid *g1 = &obj1->grids[0];
+
+        index_t row_thres;
+//        row_thres = g1->A->Mbig;
+//        row_thres = g1->P.Nbig;
+
+        obj1->mempool1 = new value_t[obj1->matmat_size_thre];
+        obj1->mempool2 = new index_t[g1->A->Mbig * 4];
+
+        Grid g2;
+        g2.P = g1->P;
+        g2.R = g1->R;
+        saena_matrix B(comm);
+        g2.A = &B;
+
+        B.Mbig = g1->A->Mbig;
+        B.M = g1->A->M;
+        B.split = g1->A->split;
+        B.comm = g1->A->comm;
+
+
+        for(index_t j = 1; j < 11; j++){
+            row_thres = g1->A->Mbig / j;
+            printf("\n=======================================\nrow_thres = %u \n", row_thres);
+
+            B.entry.clear();
+            for (int i = 0; i < g1->A->entry.size(); i++) {
+                if (g1->A->entry[i].row < row_thres) {
+                    B.entry.emplace_back(g1->A->entry[i]);
+                }
+            }
+            obj1->triple_mat_mult_test(&g2);
+
+        }
+
+
+        delete []obj1->mempool1;
+        delete []obj1->mempool2;
+
+    }
+    // *************************** CombBLAS ****************************
+
+//    combblas_matmult_DoubleBuff();
+//    int combblas_matmult_Synch();
+//    int combblas_GalerkinNew();
 
     // *************************** check correctness of the solution ****************************
 
@@ -303,13 +356,6 @@ int main(int argc, char* argv[]){
         }
     }
 */
-
-    // *************************** CombBLAS ****************************
-
-//    combblas_matmult_DoubleBuff();
-//    int combblas_matmult_Synch();
-//    int combblas_GalerkinNew();
-
     // *************************** finalize ****************************
 
 //    if(rank==0) dollar::text(std::cout);

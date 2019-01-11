@@ -2345,7 +2345,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    if(rank==0) printf("\nfast_mm: split based on matrix size\n");
 //#endif
 
-    if (verbose_coarsen) {
+    if (verbose_triple_mat_mult) {
         MPI_Barrier(comm);
         if (rank == 0) printf("start of triple_mat_mult nprocs: %d \n", nprocs);
         MPI_Barrier(comm);
@@ -2393,10 +2393,10 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //           rank, Ac->Mbig, Ac->M, Ac->nnz_g, Ac->nnz_l, Ac->density);
 //    MPI_Barrier(comm);
 
-//    if(verbose_coarsen){
+//    if(verbose_triple_mat_mult){
 //        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %lu, Ac->nnz_g = %lu \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2412,29 +2412,13 @@ int saena_object::triple_mat_mult(Grid *grid) {
     }
 
 #ifdef __DEBUG1__
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
     // *******************************************************
     // part 1: multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
-
-    // test multiplying a submatrix of A with P
-/*
-    saena_matrix B(comm);
-    B.Mbig = A->Mbig;
-    B.M = A->M;
-    B.split = A->split;
-    B.comm = A->comm;
-    for(int i = 0; i < A->entry.size(); i++){
-        if(A->entry[i].row < P->Nbig){
-            B.entry.emplace_back(A->entry[i]);
-        }
-    }
-
-    A = &B;
-*/
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> mat_send(R->entry.size());
@@ -2480,7 +2464,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2608,8 +2592,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 //        double t2 = MPI_Wtime();
-//        printf("\nfast_mm of AP = %f \tP->Nbig = %u \n", t2-t1, P->Nbig);
-//        return 0;
+//        printf("\nfast_mm of AP = %f\n", t2-t1);
 
     }
 
@@ -2620,7 +2603,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
 #ifdef __DEBUG1__
 //    print_vector(AP, -1, "AP", A->comm);
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2691,10 +2674,13 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
     // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
     std::vector<cooEntry> RAP_temp;
+//    double t1 = MPI_Wtime();
     fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
             P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
             &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
             &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+//    double t2 = MPI_Wtime();
+//    printf("\nfast_mm of R(AP) = %f \n", t2-t1);
 
     // free memory
     // -----------
@@ -2712,7 +2698,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2740,7 +2726,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2756,7 +2742,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 //    print_vector(RAP_row_sorted, -1, "RAP_row_sorted", A->comm);
 //    MPI_Barrier(comm); printf("rank %d: RAP_row_sorted.size = %lu \n", rank, RAP_row_sorted.size()); MPI_Barrier(comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2871,7 +2857,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
 
 #ifdef __DEBUG1__
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2886,7 +2872,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
 #ifdef __DEBUG1__
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 10: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2912,7 +2898,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
         }
 
 #ifdef __DEBUG1__
-        if(verbose_coarsen){
+        if(verbose_triple_mat_mult){
             MPI_Barrier(comm); printf("triple_mat_mult: step 11: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2926,7 +2912,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
         }
 
 #ifdef __DEBUG1__
-        if(verbose_coarsen){
+        if(verbose_triple_mat_mult){
             MPI_Barrier(comm); printf("triple_mat_mult: step 12: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2937,7 +2923,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
         }
 
 #ifdef __DEBUG1__
-        if(verbose_coarsen){
+        if(verbose_triple_mat_mult){
             MPI_Barrier(comm); printf("triple_mat_mult: step 13: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
@@ -2962,7 +2948,7 @@ int saena_object::triple_mat_mult(Grid *grid) {
     comm = grid->A->comm;
 
 #ifdef __DEBUG1__
-    if(verbose_coarsen){MPI_Barrier(comm); printf("end of triple_mat_mult: rank = %d\n", rank); MPI_Barrier(comm);}
+    if(verbose_triple_mat_mult){MPI_Barrier(comm); printf("end of triple_mat_mult: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
     // view matrix Ac
@@ -2996,7 +2982,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm);
         if(rank==0) printf("\nstart of triple_mat_mult nprocs: %d \n", nprocs);
         MPI_Barrier(comm);
@@ -3045,7 +3031,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 //        if(rank==1) printf("i=%lu, AnnzPerRow=%d, AnnzPerRowScan = %d\n", i+A->split[rank], AnnzPerRow[i], AnnzPerRowScan[i+1]);
     }
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 1: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // find row-wise ordering for A and save it in indicesP
@@ -3077,7 +3063,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 
 //    printf("rank %d: RA_temp.entry.size_local = %lu \n", rank, RA_temp.entry.size());
 //    MPI_Barrier(comm); printf("rank %d: local RA.size = %lu \n", rank, RA_temp.entry.size()); MPI_Barrier(comm);
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // ************************************* RA_temp - R off-diag and A remote (on and off-diag) *************************************
@@ -3110,7 +3096,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
     for(int i = 0; i < nprocs; i++)
         left_block_nnz_scan[i+1] = left_block_nnz_scan[i] + left_block_nnz[i];
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
 
 //    print_vector(left_block_nnz_scan, -1, "left_block_nnz_scan", comm);
@@ -3231,7 +3217,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
     } //for i
 //    MPI_Barrier(comm); printf("\n\n rank = %d, loop ends! \n", rank); MPI_Barrier(comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 4-1: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // todo: check this: since entries of RA_temp with these row indices only exist on this processor,
@@ -3241,7 +3227,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 //    printf("rank %d: RA_temp.entry.size_total = %lu \n", rank, RA_temp.entry.size());
 //    print_vector(RA_temp.entry, -1, "RA_temp.entry", comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 4-2: rank = %d\n", rank); MPI_Barrier(comm);}
 
     prolong_matrix RA(comm);
@@ -3272,7 +3258,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 
 //    print_vector(RA.entry, -1, "RA.entry", comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 4-3: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // ************************************* RAP_temp - P local *************************************
@@ -3314,7 +3300,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 
 //    print_vector(left_block_nnz_scan, -1, "left_block_nnz_scan", comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 4-4: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // todo: combine indicesP_Prolong and indicesP_ProlongRecv together.
@@ -3338,7 +3324,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 
 //    print_vector(RAP_temp.entry, -1, "RAP_temp.entry", comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 
     // ************************************* RAP_temp - P remote *************************************
@@ -3418,14 +3404,14 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 
     } //for i
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 6-1: rank = %d\n", rank); MPI_Barrier(comm);}
 
     std::sort(RAP_temp.entry.begin(), RAP_temp.entry.end());
 
 //    print_vector(RAP_temp.entry, -1, "RAP_temp.entry", comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 6-2: rank = %d\n", rank); MPI_Barrier(comm);}
 
     Ac->entry.resize(RAP_temp.entry.size());
@@ -3458,7 +3444,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 
 //    par::sampleSort(Ac_temp, Ac->entry, comm);
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
 
     Ac->nnz_l = entry_size;
@@ -3487,7 +3473,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
     A->cpu_shrink_thre2_next_level = -1;
     A->enable_shrink_next_level = false;
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
 
 //    print_vector(Ac->split, -1, "Ac->split", comm);
@@ -3504,10 +3490,10 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 //           rank, Ac->Mbig, Ac->M, Ac->nnz_g, Ac->nnz_l, Ac->density);
 //    MPI_Barrier(comm);
 
-//    if(verbose_coarsen){
+//    if(verbose_triple_mat_mult){
 //        printf("\nrank = %d, Ac->Mbig = %u, Ac->M = %u, Ac->nnz_l = %lu, Ac->nnz_g = %lu \n", rank, Ac->Mbig, Ac->M, Ac->nnz_l, Ac->nnz_g);}
 
-    if(verbose_coarsen){
+    if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("triple_mat_mult: step 9: rank = %d\n", rank); MPI_Barrier(comm);}
 
 
@@ -3528,7 +3514,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 //            MPI_Barrier(Ac->comm); if(rank_new==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
         }
 
-        if(verbose_coarsen){
+        if(verbose_triple_mat_mult){
             MPI_Barrier(comm); printf("triple_mat_mult: step 10: rank = %d\n", rank); MPI_Barrier(comm);}
 
         // ********** setup matrix **********
@@ -3548,7 +3534,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
 //            repartition_u_shrink_minor_prepare(grid);
 //        }
 
-        if(verbose_coarsen){
+        if(verbose_triple_mat_mult){
             MPI_Barrier(comm); printf("triple_mat_mult: step 11: rank = %d\n", rank); MPI_Barrier(comm);}
 
         repartition_u_shrink_prepare(grid);
@@ -3557,7 +3543,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
             Ac->shrink_cpu();
         }
 
-        if(verbose_coarsen){
+        if(verbose_triple_mat_mult){
             MPI_Barrier(comm); printf("triple_mat_mult: step 12: rank = %d\n", rank); MPI_Barrier(comm);}
 
         if(Ac->active){
@@ -3577,7 +3563,7 @@ int saena_object::triple_mat_mult_old(Grid *grid){
     }
 
     comm = grid->A->comm;
-    if(verbose_coarsen){MPI_Barrier(comm); printf("end of triple_mat_mult: rank = %d\n", rank); MPI_Barrier(comm);}
+    if(verbose_triple_mat_mult){MPI_Barrier(comm); printf("end of triple_mat_mult: rank = %d\n", rank); MPI_Barrier(comm);}
 
     return 0;
 } // triple_mat_mult_old()
