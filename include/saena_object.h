@@ -71,7 +71,7 @@ public:
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to switch to the dense structure.
                                  // dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
 
-    // memory pool used in triple_mat_mult
+    // memory pool used in compute_coarsen
     value_t *mempool1;
     index_t *mempool2;
 
@@ -98,10 +98,11 @@ public:
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
     int setup(saena_matrix* A);
     int coarsen(Grid *grid);
-    int triple_mat_mult(Grid *grid);
-    int triple_mat_mult_test(Grid *grid);
-    int triple_mat_mult_old(Grid *grid);
-    int triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
+    int compute_coarsen(Grid *grid);
+    int compute_coarsen_test(Grid *grid);
+    int compute_coarsen_old(Grid *grid);
+    int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
+    int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
     int fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                      nnz_t A_nnz, nnz_t B_nnz,

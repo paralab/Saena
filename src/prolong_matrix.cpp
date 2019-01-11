@@ -292,7 +292,7 @@ int prolong_matrix::findLocalRemote(){
         vecValues_t.resize(recvSize_t);
     }
 
-    // todo: change the following two parts the same as indicesP for A in triple_mat_mult, which is using entry, instead of row_local and row_remote.
+    // todo: change the following two parts the same as indicesP for A in compute_coarsen, which is using entry, instead of row_local and row_remote.
     indicesP_local.resize(nnz_l_local);
     for(nnz_t i=0; i<nnz_l_local; i++)
         indicesP_local[i] = i;

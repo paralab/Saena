@@ -1760,7 +1760,7 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 */
 
 
-int saena_object::triple_mat_mult_test(Grid *grid) {
+int saena_object::compute_coarsen_test(Grid *grid) {
 
     // Output: Ac = R * A * P
     // Steps:
@@ -1804,7 +1804,7 @@ int saena_object::triple_mat_mult_test(Grid *grid) {
 
     if (verbose_triple_mat_mult_test) {
         MPI_Barrier(comm);
-        if (rank == 0) printf("start of triple_mat_mult nprocs: %d \n", nprocs);
+        if (rank == 0) printf("start of compute_coarsen nprocs: %d \n", nprocs);
         MPI_Barrier(comm);
         printf("rank %d: A.Mbig = %u, \tA.M = %u, \tA.nnz_g = %lu, \tA.nnz_l = %lu \n", rank, A->Mbig, A->M, A->nnz_g,
                A->nnz_l);
@@ -1867,7 +1867,7 @@ int saena_object::triple_mat_mult_test(Grid *grid) {
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
 
     if(verbose_triple_mat_mult_test){
-        MPI_Barrier(comm); printf("triple_mat_mult: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("compute_coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
     // compute the maximum size for nnzPerCol_right and nnzPerColScan_right
@@ -2006,7 +2006,7 @@ int saena_object::triple_mat_mult_test(Grid *grid) {
 #ifdef __DEBUG1__
 //    print_vector(AP, -1, "AP", A->comm);
     if(verbose_triple_mat_mult_test){
-        MPI_Barrier(comm); printf("triple_mat_mult: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
 //    if(rank==0) dollar::text(std::cout);
@@ -2101,7 +2101,7 @@ int saena_object::triple_mat_mult_test(Grid *grid) {
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
     if(verbose_triple_mat_mult_test){
-        MPI_Barrier(comm); printf("triple_mat_mult: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("compute_coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 /*
     // remove local duplicates.
@@ -2350,7 +2350,7 @@ int saena_object::triple_mat_mult_test(Grid *grid) {
     comm = grid->A->comm;
 
 #ifdef __DEBUG1__
-    if(verbose_triple_mat_mult_test){MPI_Barrier(comm); printf("end of triple_mat_mult: rank = %d\n", rank); MPI_Barrier(comm);}
+    if(verbose_triple_mat_mult_test){MPI_Barrier(comm); printf("end of compute_coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
     // view matrix Ac
@@ -2358,4 +2358,4 @@ int saena_object::triple_mat_mult_test(Grid *grid) {
 //    petsc_viewer(Ac);
 */
     return 0;
-} // triple_mat_mult_test()
+} // compute_coarsen_test()

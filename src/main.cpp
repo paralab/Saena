@@ -132,7 +132,7 @@ int main(int argc, char* argv[]){
 */
 //    print_vector(u, -1, "u", comm);
 
-    // *************************** experiment for triple_mat_mult ****************************
+    // *************************** experiment for compute_coarsen ****************************
     {
 
         saena_object *obj1 = solver.get_object();
@@ -167,7 +167,7 @@ int main(int argc, char* argv[]){
                     B.entry.emplace_back(g1->A->entry[i]);
                 }
             }
-            obj1->triple_mat_mult_test(&g2);
+            obj1->compute_coarsen_test(&g2);
 
         }
 
