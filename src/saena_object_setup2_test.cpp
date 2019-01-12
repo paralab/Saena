@@ -21,7 +21,7 @@
 // 2- split matrices by half based on number of nonzeros.
 // =======================================================
 
-int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+int saena_object::fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                           const nnz_t A_nnz, const nnz_t B_nnz,
                           const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                           const index_t B_col_size, const index_t B_col_offset,
@@ -657,6 +657,8 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
     if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 4 \n");}
 #endif
 
+//    char* dummyinput;
+
     // merge C1 and C2
     nnz_t i = 0;
     nnz_t j = 0;
@@ -682,6 +684,9 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
 #ifdef __DEBUG1__
             if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
 #endif
+//            print_vector(C, 0, "C", comm);
+//            std::cin >> dummyinput;
+
             return 0;
         }else if(j == C2.size()) {
             while (i < C1.size()) {
@@ -692,6 +697,8 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
 #ifdef __DEBUG1__
             if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
 #endif
+//            print_vector(C, 0, "C", comm);
+//            std::cin >> dummyinput;
             return 0;
         }
     }

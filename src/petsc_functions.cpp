@@ -332,7 +332,7 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc MatMatMatMult", comm);
 
-    petsc_viewer(RAP);
+//    petsc_viewer(RAP);
 
     MatDestroy(&R2);
     MatDestroy(&A2);
@@ -365,7 +365,7 @@ int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc MatPtAP", comm);
 
-    petsc_viewer(RAP);
+//    petsc_viewer(RAP);
 
 //    MatDestroy(&R2);
     MatDestroy(&A2);
@@ -397,7 +397,7 @@ int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc 2*MatMatMult", comm);
 
-    petsc_viewer(RAP);
+//    petsc_viewer(RAP);
 
     MatDestroy(&R2);
     MatDestroy(&A2);
