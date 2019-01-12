@@ -407,3 +407,10 @@ int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *
     PetscFinalize();
     return 0;
 }
+
+int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
+
+
+
+    return 0;
+}
