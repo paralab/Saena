@@ -16,5 +16,7 @@ int petsc_prolong_matrix(prolong_matrix *P, Mat &B);
 int petsc_restrict_matrix(restrict_matrix *R, Mat &B);
 int petsc_saena_matrix(saena_matrix *A, Mat &B);
 int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P);
+int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P);
+int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *P);
 
 #endif //SAENA_PETSC_FUNCTIONS_H

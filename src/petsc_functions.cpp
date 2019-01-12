@@ -341,3 +341,69 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     PetscFinalize();
     return 0;
 }
+
+
+int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
+
+    // todo: petsc has a MatGalerkin() function for coarsening. check this link:
+    // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatGalerkin.html
+    // manual for MatMatMatMult():
+    // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatMatMatMult.html
+
+    PetscInitialize(0, nullptr, nullptr, nullptr);
+    MPI_Comm comm = A->comm;
+
+    Mat R2, A2, P2, RAP;
+//    petsc_restrict_matrix(R, R2);
+    petsc_saena_matrix(A, A2);
+    petsc_prolong_matrix(P, P2);
+
+    MPI_Barrier(comm);
+    double t1 = MPI_Wtime();
+    MatPtAP(A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+//    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+    t1 = MPI_Wtime() - t1;
+    print_time_ave(t1, "PETSc MatPtAP", comm);
+
+//    petsc_viewer(RAP);
+
+//    MatDestroy(&R2);
+    MatDestroy(&A2);
+    MatDestroy(&P2);
+    MatDestroy(&RAP);
+    PetscFinalize();
+    return 0;
+}
+
+int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
+
+    // todo: petsc has a MatGalerkin() function for coarsening. check this link:
+    // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatGalerkin.html
+    // manual for MatMatMatMult():
+    // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatMatMatMult.html
+
+    PetscInitialize(0, nullptr, nullptr, nullptr);
+    MPI_Comm comm = A->comm;
+
+    Mat R2, A2, P2, RA, RAP;
+    petsc_restrict_matrix(R, R2);
+    petsc_saena_matrix(A, A2);
+    petsc_prolong_matrix(P, P2);
+
+    MPI_Barrier(comm);
+    double t1 = MPI_Wtime();
+    MatMatMult(R2, A2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RA);
+    MatMatMult(RA, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+    t1 = MPI_Wtime() - t1;
+    print_time_ave(t1, "PETSc 2*MatMatMult", comm);
+
+//    petsc_viewer(RAP);
+
+    MatDestroy(&R2);
+    MatDestroy(&A2);
+    MatDestroy(&P2);
+    MatDestroy(&RA);
+    MatDestroy(&RAP);
+    PetscFinalize();
+    return 0;
+}
