@@ -156,7 +156,7 @@ int main(int argc, char* argv[]){
         B.split = g1->A->split;
         B.comm = g1->A->comm;
 
-        printf("row\tAP\tR(AP)\ttotal");
+        printf("row\tAP\tR(AP)\t\ttotal");
         for(index_t j = 1; j < 11; j++){
             row_thres = g1->A->Mbig / j;
 //            printf("\n=======================================\n\nrow_thres = %u \n", row_thres);
