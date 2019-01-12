@@ -318,7 +318,7 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     // manual for MatMatMatMult():
     // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatMatMatMult.html
 
-    PetscInitialize(0, nullptr, nullptr, nullptr);
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
 
     Mat R2, A2, P2, RAP;
@@ -332,7 +332,7 @@ int petsc_coarsen(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc MatMatMatMult", comm);
 
-//    petsc_viewer(RAP);
+    petsc_viewer(RAP);
 
     MatDestroy(&R2);
     MatDestroy(&A2);
@@ -350,7 +350,7 @@ int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     // manual for MatMatMatMult():
     // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatMatMatMult.html
 
-    PetscInitialize(0, nullptr, nullptr, nullptr);
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
 
     Mat R2, A2, P2, RAP;
@@ -365,7 +365,7 @@ int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc MatPtAP", comm);
 
-//    petsc_viewer(RAP);
+    petsc_viewer(RAP);
 
 //    MatDestroy(&R2);
     MatDestroy(&A2);
@@ -382,7 +382,7 @@ int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *
     // manual for MatMatMatMult():
     // https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatMatMatMult.html
 
-    PetscInitialize(0, nullptr, nullptr, nullptr);
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
 
     Mat R2, A2, P2, RA, RAP;
@@ -397,7 +397,7 @@ int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc 2*MatMatMult", comm);
 
-//    petsc_viewer(RAP);
+    petsc_viewer(RAP);
 
     MatDestroy(&R2);
     MatDestroy(&A2);
