@@ -1770,7 +1770,7 @@ int saena_object::compute_coarsen_test(Grid *grid) {
 
     double t22 = MPI_Wtime();
 //    print_time_ave(t22-t11, "triple_mat_mult_test: ", grid->A->comm);
-    printf("%f \n", t22-t11);
+    printf("%f", t22-t11);
 
     return 0;
 } // compute_coarsen_test()

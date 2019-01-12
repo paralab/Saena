@@ -156,9 +156,11 @@ int main(int argc, char* argv[]){
         B.split = g1->A->split;
         B.comm = g1->A->comm;
 
+        printf("row\tAP\t\tR(AP)\t\ttotal\n");
         for(index_t j = 1; j < 11; j++){
             row_thres = g1->A->Mbig / j;
-            printf("\n=======================================\n\nrow_thres = %u \n", row_thres);
+//            printf("\n=======================================\n\nrow_thres = %u \n", row_thres);
+            printf("\n%u\t", row_thres);
 
             B.entry.clear();
             for (int i = 0; i < g1->A->entry.size(); i++) {
@@ -169,6 +171,7 @@ int main(int argc, char* argv[]){
             obj1->compute_coarsen_test(&g2);
 
         }
+        printf("\n");
 
         delete []obj1->mempool1;
         delete []obj1->mempool2;
