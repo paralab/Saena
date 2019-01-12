@@ -21,7 +21,7 @@
 // 2- split matrices by half based on number of nonzeros.
 // =======================================================
 
-int saena_object::fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+int saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                           const nnz_t A_nnz, const nnz_t B_nnz,
                           const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                           const index_t B_col_size, const index_t B_col_offset,
@@ -61,12 +61,12 @@ int saena_object::fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector
     if(rank==verbose_rank && verbose_matmat) printf("\nfast_mm: start \n");
 #endif
 
-    if(A_nnz == 0 || B_nnz == 0){
-#ifdef __DEBUG1__
-        if(rank==verbose_rank && verbose_matmat) printf("\nskip: A_nnz == 0 || B_nnz == 0\n\n");
-#endif
-        return 0;
-    }
+//    if(A_nnz == 0 || B_nnz == 0){
+//#ifdef __DEBUG1__
+//        if(rank==verbose_rank && verbose_matmat) printf("\nskip: A_nnz == 0 || B_nnz == 0\n\n");
+//#endif
+//        return 0;
+//    }
 
 #ifdef __DEBUG1__
     //    print_vector(A, -1, "A", comm);
@@ -418,7 +418,7 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
     // prepare splits of matrix A by column
     nnz_t A1_nnz = 0, A2_nnz;
     auto A_half_nnz = (nnz_t)ceil(A_nnz/2);
-//        index_t A_col_size_half = A_col_size/2;
+//    index_t A_col_size_half = A_col_size/2;
 
     if(A_nnz > matmat_nnz_thre){
         for (nnz_t i = 0; i < A_col_size; i++) {
@@ -1919,10 +1919,26 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-            fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
-                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
-                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+            if(A->entry.empty() || mat_send.empty()){ // skip!
+#ifdef __DEBUG1__
+                if(verbose_triple_mat_mult){
+                    if(A->entry.empty()){
+                        printf("\nskip: A->entry.size() == 0\n\n");
+                    } else {
+                        printf("\nskip: mat_send == 0\n\n");
+                    }
+                }
+#endif
+            } else {
+
+                fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
+                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
+                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+            }
+
+
 
             MPI_Waitall(3, requests+1, statuses+1);
 
@@ -1965,14 +1981,27 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-        double t1 = MPI_Wtime();
-        fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
-                A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
-                &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
-        double t2 = MPI_Wtime();
-//        printf("fast_mm of AP    = %f\n", t2-t1);
-        printf("%f\t", t2-t1);
+        if(A->entry.empty() || mat_send.empty()){ // skip!
+#ifdef __DEBUG1__
+            if(verbose_triple_mat_mult){
+                if(A->entry.empty()){
+                    printf("\nskip: A->entry.size() == 0\n\n");
+                } else {
+                    printf("\nskip: mat_send == 0\n\n");
+                }
+            }
+#endif
+        } else {
+
+            double t1 = MPI_Wtime();
+            fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
+                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
+                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+            double t2 = MPI_Wtime();
+//            printf("fast_mm of AP    = %f\n", t2-t1);
+            printf("%f\t", t2-t1);
+        }
 
     }
 
@@ -2054,14 +2083,29 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 
     // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
     std::vector<cooEntry> RAP_temp;
-    double t1 = MPI_Wtime();
-    fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
-            P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
-            &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-            &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
-    double t2 = MPI_Wtime();
-//    printf("fast_mm of R(AP) = %f \n", t2-t1);
-    printf("%f\t", t2-t1);
+
+    if(P_tranpose.empty() || AP.empty()){ // skip!
+#ifdef __DEBUG1__
+        if(verbose_triple_mat_mult){
+            if(P_tranpose.empty()){
+                printf("\nskip: P_tranpose.size() == 0\n\n");
+            } else {
+                printf("\nskip: AP == 0\n\n");
+            }
+        }
+#endif
+    } else {
+
+        double t1 = MPI_Wtime();
+        fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
+                P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
+                &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+        double t2 = MPI_Wtime();
+//        printf("fast_mm of R(AP) = %f \n", t2-t1);
+        printf("%f\t", t2-t1);
+
+    }
 
     // free memory
     // -----------
