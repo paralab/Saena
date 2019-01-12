@@ -16,3 +16,10 @@ HPDC19.log
 HPDC19.out
 HPDC19.pdf
 HPDC19.synctex.gz
+data/2DMed_sorted2.bin
+data/2DMed_sorted3.bin
+data/2DMed_sorted3.mtx
+data/2DMed_sorted3_changed_entries.txt
+data/CombBLAS/
+external/parmetis-4.0.3/metis/Makefile_orig
+papers_backup/
