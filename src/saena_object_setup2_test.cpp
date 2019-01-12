@@ -1011,9 +1011,6 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
         if(C1[i] < C2[j]){
             C.emplace_back(C1[i]);
             i++;
-        }else if(C1[i] == C2[j]){ // there is no duplicate in either C1 or C2. So there may be at most one duplicate when we add them.
-            C.emplace_back(C1[i] + C2[j]);
-            i++; j++;
         }else{ // C1[i] > C2[j]
             C.emplace_back(C2[j]);
             j++;
@@ -1156,9 +1153,6 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
         if(C1[i] < C2[j]){
             C.emplace_back(C1[i]);
             i++;
-        }else if(C1[i] == C2[j]){ // there is no duplicate in either C1 or C2. So there may be at most one duplicate when we add them.
-            C.emplace_back(C1[i] + C2[j]);
-            i++; j++;
         }else{ // C1[i] > C2[j]
             C.emplace_back(C2[j]);
             j++;
