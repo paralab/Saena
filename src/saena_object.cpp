@@ -300,20 +300,20 @@ int saena_object::coarsen(Grid *grid){
 
     // **************************** compute_coarsen ****************************
 
-//#ifdef __DEBUG1__
-    MPI_Barrier(grid->A->comm);
-    double t11 = MPI_Wtime();
-//    t1 = omp_get_wtime();
-//#endif
+#ifdef __DEBUG1__
+//    MPI_Barrier(grid->A->comm);
+//    double t11 = MPI_Wtime();
+    t1 = omp_get_wtime();
+#endif
 
     compute_coarsen(grid);
 //    compute_coarsen_old(grid);
 
-//#ifdef __DEBUG1__
-//    t2 = omp_get_wtime();
-    double t22 = MPI_Wtime();
-    if(verbose_level_setup) print_time(t11, t22, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
-    print_time_ave(t22-t11, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
+#ifdef __DEBUG1__
+    t2 = omp_get_wtime();
+//    double t22 = MPI_Wtime();
+    if(verbose_level_setup) print_time(t1, t2, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
+//    print_time_ave(t22-t11, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after compute_coarsen!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    if(grid->Ac.active) print_vector(grid->Ac.split, 1, "grid->Ac.split", grid->Ac.comm);
@@ -321,7 +321,7 @@ int saena_object::coarsen(Grid *grid){
 
 //    printf("rank = %d, M = %u, nnz_l = %lu, nnz_g = %lu, Ac.M = %u, Ac.nnz_l = %lu \n",
 //           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l);
-//#endif
+#endif
 
     // **************************** compute_coarsen in PETSc ****************************
     // this part is only for experiments.

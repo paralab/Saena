@@ -1762,8 +1762,14 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
 int saena_object::compute_coarsen_test(Grid *grid) {
 
+    MPI_Barrier(grid->A->comm);
+    double t11 = MPI_Wtime();
+
     std::vector<cooEntry_row> RAP_row_sorted;
     triple_mat_mult_test(grid, RAP_row_sorted);
+
+    double t22 = MPI_Wtime();
+    print_time_ave(t22-t11, "triple_mat_mult_test: ", grid->A->comm);
 
     return 0;
 } // compute_coarsen_test()
@@ -2114,6 +2120,22 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 //    memcpy(&RAP_sorted[0], &RAP_row_sorted[0], RAP_row_sorted.size() * sizeof(cooEntry));
 //    RAP_row_sorted.clear();
 //    RAP_row_sorted.shrink_to_fit();
+
+
+    // since RAP_row_sorted is sorted in row-major order, Ac->entry will be the same.
+
+    std::vector<cooEntry> Ac_dummy;
+
+    // remove duplicates.
+    cooEntry temp;
+    for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
+        temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
+        while(i < size_minus_1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+            ++i;
+            temp.val += RAP_row_sorted[i].val;
+        }
+        Ac_dummy.emplace_back( temp );
+    }
 
     return 0;
 }

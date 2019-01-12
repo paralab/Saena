@@ -2420,8 +2420,12 @@ int saena_object::compute_coarsen(Grid *grid) {
     // perform the triple multiplication: R*A*P
     // *******************************************************
 
+    MPI_Barrier(grid->A->comm);
+    double t11 = MPI_Wtime();
+
     std::vector<cooEntry_row> RAP_row_sorted;
     triple_mat_mult(grid, RAP_row_sorted);
+
 
     // *******************************************************
     // form Ac
@@ -2449,6 +2453,9 @@ int saena_object::compute_coarsen(Grid *grid) {
             }
             Ac->entry.emplace_back( temp );
         }
+
+        double t22 = MPI_Wtime();
+        print_time_ave(t22-t11, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
