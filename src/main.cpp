@@ -157,7 +157,7 @@ int main(int argc, char* argv[]){
         B.comm = g1->A->comm;
 
         printf("row\tAP\tR(AP)\t\ttotal");
-        for(index_t j = 1; j < 11; j++){
+        for(index_t j = 1; j < 20; j*=2){
             row_thres = g1->A->Mbig / j;
 //            printf("\n=======================================\n\nrow_thres = %u \n", row_thres);
             printf("\n%u\t", row_thres);
