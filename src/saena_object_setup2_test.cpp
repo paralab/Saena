@@ -1769,7 +1769,8 @@ int saena_object::compute_coarsen_test(Grid *grid) {
     triple_mat_mult_test(grid, RAP_row_sorted);
 
     double t22 = MPI_Wtime();
-    print_time_ave(t22-t11, "triple_mat_mult_test: ", grid->A->comm);
+//    print_time_ave(t22-t11, "triple_mat_mult_test: ", grid->A->comm);
+    printf("%f \n", t22-t11);
 
     return 0;
 } // compute_coarsen_test()
@@ -1963,7 +1964,8 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
         double t2 = MPI_Wtime();
-        printf("fast_mm of AP    = %f\n", t2-t1);
+//        printf("fast_mm of AP    = %f\n", t2-t1);
+        printf("%f\t", t2-t1);
 
     }
 
@@ -2051,7 +2053,8 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
             &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
             &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
     double t2 = MPI_Wtime();
-    printf("fast_mm of R(AP) = %f \n", t2-t1);
+//    printf("fast_mm of R(AP) = %f \n", t2-t1);
+    printf("%f\t", t2-t1);
 
     // free memory
     // -----------
