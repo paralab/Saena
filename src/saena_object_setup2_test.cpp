@@ -376,7 +376,7 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
         temp = A_nnz_row_sz * j;
         for(index_t i = 0; i < A_nnz_row_sz; i++) {
 //            if(rank==0) std::cout << i + A_nnz_row_sz*j << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + A_nnz_row_sz*j] << std::endl;
-            if (C_temp[i + A_nnz_row_sz * j] != 0) {
+            if (fabs(C_temp[i + A_nnz_row_sz * j]) > 1e-12) {
                 C.emplace_back( orig_row_idx[i] , orig_col_idx[j], C_temp[i + temp] );
             }
         }
