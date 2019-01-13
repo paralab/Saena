@@ -1116,17 +1116,6 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
 //        if(rank==0 && verbose_matmat) printf("fast_mm: case 3: step 4 \n");
 
-    // sort
-    // --------------------------
-//    std::sort(C_temp.begin(), C_temp.end());
-//    nnz_t C_temp_size_minus1 = C_temp.size()-1;
-//    for(nnz_t i = 0; i < C_temp.size(); i++){
-//        C.emplace_back(C_temp[i]);
-//        while(i < C_temp_size_minus1 && C_temp[i] == C_temp[i+1]){ // values of entries with the same row and col should be added.
-//            C.back().val += C_temp[++i].val;
-//        }
-//    }
-
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 3: end \n");
 #endif
