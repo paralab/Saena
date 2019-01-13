@@ -81,7 +81,7 @@ public:
     bool verbose_level_setup      = false;
     bool verbose_triple_mat_mult  = false;
     bool verbose_matmat           = false;
-    bool verbose_matmat_recursive = false;
+    bool verbose_matmat_recursive = true;
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
     bool verbose_solve            = false;
@@ -107,7 +107,7 @@ public:
     int compute_coarsen_test(Grid *grid);
     int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    int fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+    void fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                      nnz_t A_nnz, nnz_t B_nnz,
                      index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                      index_t B_col_size, index_t B_col_offset,
@@ -115,7 +115,7 @@ public:
                      const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
 
 
-    int fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                 nnz_t A_nnz, nnz_t B_nnz,
                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                 index_t B_col_size, index_t B_col_offset,
