@@ -257,7 +257,7 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
     if(rank==verbose_rank && (verbose_matmat || verbose_matmat_recursive)){printf("fast_mm: case 1: start \n");}
 #endif
 
-    double t1 = MPI_Wtime();
+//    double t1 = MPI_Wtime();
     index_t *nnzPerRow_left = &mempool2[0];
     std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
     index_t *nnzPerRow_left_p = &nnzPerRow_left[0] - A_row_offset;
@@ -287,14 +287,14 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
         }
     }
 
-    t1 = MPI_Wtime() - t1;
-    printf("A info: \t%f\n", t1);
+//    t1 = MPI_Wtime() - t1;
+//    printf("A info: \t%f\n", t1);
 
 #ifdef __DEBUG1__
 //    print_vector(A_new_row_idx, -1, "A_new_row_idx", comm);
 #endif
 
-    t1 = MPI_Wtime();
+//    t1 = MPI_Wtime();
 
     index_t *B_new_col_idx   = &mempool2[A_row_size * 2];
     index_t *B_new_col_idx_p = &B_new_col_idx[0] - B_col_offset;
@@ -308,15 +308,15 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
         }
     }
 
-    t1 = MPI_Wtime() - t1;
-    printf("B info: \t%f\n", t1);
+//    t1 = MPI_Wtime() - t1;
+//    printf("B info: \t%f\n", t1);
 
 #ifdef __DEBUG1__
 //    printf("A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
 //            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
-    t1 = MPI_Wtime();
+//    t1 = MPI_Wtime();
 
     // initialize
     value_t *C_temp = &mempool1[0];
@@ -361,15 +361,15 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
         }
     }
 
-    t1 = MPI_Wtime() - t1;
-    printf("C_temp: \t%f\n", t1);
+//    t1 = MPI_Wtime() - t1;
+//    printf("C_temp: \t%f\n", t1);
 
 #ifdef __DEBUG1__
 //    print_vector(C_temp, -1, "C_temp", comm);
     if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 1: step 2 \n");}
 #endif
 
-    t1 = MPI_Wtime();
+//    t1 = MPI_Wtime();
 
     C.reserve(C.size() + A_nnz_row_sz * B_nnz_col_sz);
     for(index_t j = 0; j < B_nnz_col_sz; j++) {
@@ -382,8 +382,8 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
         }
     }
 
-    t1 = MPI_Wtime() - t1;
-    printf("Add to C: \t%f\n", t1);
+//    t1 = MPI_Wtime() - t1;
+//    printf("Add to C: \t%f\n", t1);
 
 #ifdef __DEBUG1__
 //        print_vector(C, -1, "C", comm);
