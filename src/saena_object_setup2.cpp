@@ -3000,8 +3000,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    std::ofstream file("chrome.json");
 //    dollar::chrome(file);
 //    if(rank==0) printf("\n");
-//    if(rank==0) dollar::text(std::cout);
-//    dollar::clear();
+    if(rank==0) dollar::text(std::cout);
+    dollar::clear();
 
     // *******************************************************
     // part 2: multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
