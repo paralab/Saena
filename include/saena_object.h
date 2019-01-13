@@ -47,7 +47,7 @@ public:
 
     MPI_Comm get_orig_comm();
 
-    const index_t matmat_size_thre = 1000000; // if(row * col) do the dense matmat default 1000000
+    const index_t matmat_size_thre = 100; // if(row * col) do the dense matmat default 1000000
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
 

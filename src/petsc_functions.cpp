@@ -171,7 +171,7 @@ int petsc_viewer(saena_matrix *A){
 //    MatSetType(B,MATSEQAIJ);
 //    MatSeqAIJSetPreallocation(B, 7, NULL);
 
-    MatSetType(B, MATMPIAIJ);
+    MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
     MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
     for(unsigned long i = 0; i < A->nnz_l; i++){
@@ -218,7 +218,7 @@ int petsc_prolong_matrix(prolong_matrix *P, Mat &B){
 //    MatSetType(B,MATSEQAIJ);
 //    MatSeqAIJSetPreallocation(B, 7, NULL);
 
-    MatSetType(B, MATMPIAIJ);
+    MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
     MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
     for(unsigned long i = 0; i < P->nnz_l; i++){
@@ -258,7 +258,7 @@ int petsc_restrict_matrix(restrict_matrix *R, Mat &B){
 //    MatSetType(B,MATSEQAIJ);
 //    MatSeqAIJSetPreallocation(B, 7, NULL);
 
-    MatSetType(B, MATMPIAIJ);
+    MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
     MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
     for(unsigned long i = 0; i < R->nnz_l; i++){
@@ -296,7 +296,7 @@ int petsc_saena_matrix(saena_matrix *A, Mat &B){
 //    MatSetType(B,MATSEQAIJ);
 //    MatSeqAIJSetPreallocation(B, 7, NULL);
 
-    MatSetType(B, MATMPIAIJ);
+    MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
     MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
     for(unsigned long i = 0; i < A->nnz_l; i++){
@@ -408,9 +408,47 @@ int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *
     return 0;
 }
 
-int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
+int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P, saena_matrix *Ac){
 
+    // Note: saena_matrix Ac should not be scaled.
 
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+//    MPI_Comm comm = A->comm;
+
+    Ac->scale_back_matrix();
+
+    Mat R2, A2, Ac2, P2, RA, RAP;
+    petsc_restrict_matrix(R, R2);
+    petsc_saena_matrix(A, A2);
+    petsc_saena_matrix(Ac, Ac2);
+    petsc_prolong_matrix(P, P2);
+
+//    MPI_Barrier(comm);
+//    double t1 = MPI_Wtime();
+    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+//    t1 = MPI_Wtime() - t1;
+//    print_time_ave(t1, "PETSc 2*MatMatMult", comm);
+
+//    petsc_viewer(RAP);
+
+    MatAXPY(RAP, -1, Ac2, DIFFERENT_NONZERO_PATTERN);
+
+    double norm_frob;
+    MatNorm(RAP, NORM_FROBENIUS, &norm_frob);
+    printf("\nnorm_frob = %.16f\n", norm_frob);
+
+//    petsc_viewer(Ac2);
+//    petsc_viewer(RAP);
+
+    Ac->scale_matrix();
+
+    MatDestroy(&R2);
+    MatDestroy(&A2);
+    MatDestroy(&Ac2);
+    MatDestroy(&P2);
+//    MatDestroy(&RA);
+    MatDestroy(&RAP);
+    PetscFinalize();
 
     return 0;
 }

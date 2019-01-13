@@ -2612,6 +2612,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
         if(Ac->active){
             Ac->matrix_setup();
+//            Ac->matrix_setup_no_scale();
 
             if(Ac->shrinked && Ac->enable_dummy_matvec)
                 Ac->compute_matvec_dummy_time();

@@ -378,6 +378,7 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
     return 0;
 }
 
+
 int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                                 const nnz_t A_nnz, const nnz_t B_nnz,
                                 const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
@@ -737,6 +738,7 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
     return 0;
 }
 
+
 int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                                 const nnz_t A_nnz, const nnz_t B_nnz,
                                 const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
@@ -926,6 +928,8 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
     std::vector<cooEntry> C1, C2;
 
     // C1 = A1 * B1
+    //=========================
+
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 1 \n");
 #endif
@@ -951,7 +955,9 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
     }
 
 
-    // C2 = A2 * B1:
+    // C2 = A2 * B1
+    //=========================
+
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 2 \n");
 #endif
@@ -976,6 +982,9 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
     }
 
+    // merge C1 and C2
+    //=========================
+
     if(C1.empty()){
         nnz_t C_init_size = C.size();
         C.resize(C.size() + C2.size());
@@ -984,7 +993,7 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 #ifdef __DEBUG1__
         if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
 #endif
-        return 0;
+//        return 0;
     }
 
     if(C2.empty()){
@@ -995,7 +1004,7 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 #ifdef __DEBUG1__
         if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
 #endif
-        return 0;
+//        return 0;
     }
 
 #ifdef __DEBUG1__
@@ -1004,7 +1013,6 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
 //    char* dummyinput;
 
-    // merge C1 and C2
     nnz_t i = 0;
     nnz_t j = 0;
     while(i < C1.size() && j < C2.size()){
@@ -1029,7 +1037,7 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 //            print_vector(C, 0, "C", comm);
 //            std::cin >> dummyinput;
 
-            return 0;
+//            return 0;
         }else if(j == C2.size()) {
             while (i < C1.size()) {
                 C.emplace_back(C1[i]);
@@ -1041,31 +1049,16 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 #endif
 //            print_vector(C, 0, "C", comm);
 //            std::cin >> dummyinput;
-            return 0;
+//            return 0;
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    C1.clear();
+    C2.clear();
 
     // C3 = A1 * B2:
+    //=========================
+
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 3 \n");
 #endif
@@ -1082,7 +1075,6 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 #endif
     } else {
 
-        C1.clear();
         fast_mm(&A[0], &B[0], C1, A1_nnz, B2_nnz,
                 A_row_size_half, A_row_offset, A_col_size, A_col_offset,
                 B_col_size-B_col_size_half, B_col_offset+B_col_size_half,
@@ -1093,6 +1085,8 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
 
     // C4 = A2 * B2
+    //=========================
+
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 4 \n");
 #endif
@@ -1109,7 +1103,6 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 #endif
     } else {
 
-        C2.clear();
         fast_mm(&A[0], &B[0], C2, A2_nnz, B2_nnz,
                 A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset,
                 B_col_size-B_col_size_half, B_col_offset+B_col_size_half,
@@ -1117,6 +1110,9 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
                 &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half], comm); // B2
 
     }
+
+    // merge C1 and C2
+    //=========================
 
     if(C1.empty()){
         nnz_t C_init_size = C.size();
@@ -1146,7 +1142,6 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
 //    char* dummyinput;
 
-    // merge C1 and C2
     i = 0;
     j = 0;
     while(i < C1.size() && j < C2.size()){
@@ -1188,9 +1183,6 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
     }
 
 
-
-
-
     // C1 = A1 * B1:
 //        fast_mm(A1, B1, C_temp, A_row_size_half, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size_half, B_col_offset, comm);
     // C2 = A2 * B1:
@@ -1222,6 +1214,7 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 
 
 // older version: mergesort and remove duplicates at the end.
+// int saena_object::fast_mm_part2
 /*
 int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                                 const nnz_t A_nnz, const nnz_t B_nnz,
