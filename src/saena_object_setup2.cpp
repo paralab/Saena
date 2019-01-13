@@ -2884,8 +2884,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
 //    std::ofstream file("chrome.json");
 //    dollar::chrome(file);
-    if(rank==0) printf("\n");
-    if(rank==0) dollar::text(std::cout);
+//    if(rank==0) printf("\n");
+//    if(rank==0) dollar::text(std::cout);
 //    dollar::clear();
 
     // *******************************************************

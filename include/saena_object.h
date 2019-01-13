@@ -127,7 +127,7 @@ public:
                       index_t B_col_size, index_t B_col_offset,
                       const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
                       const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
-    int fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+    void fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                       nnz_t A_nnz, nnz_t B_nnz,
                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                       index_t B_col_size, index_t B_col_offset,
