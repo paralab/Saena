@@ -410,24 +410,34 @@ int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *
 
 int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P, saena_matrix *Ac){
 
-    // Note: saena_matrix Ac should not be scaled.
+    // Note: saena_matrix Ac should be scaled back for comparison.
 
     PetscInitialize(nullptr, nullptr, nullptr, nullptr);
 //    MPI_Comm comm = A->comm;
 
     Ac->scale_back_matrix();
 
-    Mat R2, A2, Ac2, P2, RA, RAP;
+    Mat R2, A2, Ac2, P2, RAP;
     petsc_restrict_matrix(R, R2);
     petsc_saena_matrix(A, A2);
     petsc_saena_matrix(Ac, Ac2);
     petsc_prolong_matrix(P, P2);
 
-//    MPI_Barrier(comm);
-//    double t1 = MPI_Wtime();
-    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
-//    t1 = MPI_Wtime() - t1;
-//    print_time_ave(t1, "PETSc 2*MatMatMult", comm);
+    // method1
+    // =====================
+//    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+
+    // method2
+    // =====================
+    MatPtAP(A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+
+    // method3
+    // =====================
+//    Mat RA;
+//    MatMatMult(R2, A2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RA);
+//    MatMatMult(RA, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+//    MatDestroy(&RA);
+    // =====================
 
 //    petsc_viewer(RAP);
 
@@ -435,7 +445,7 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
 
     double norm_frob;
     MatNorm(RAP, NORM_FROBENIUS, &norm_frob);
-    printf("\nnorm_frob = %.16f\n", norm_frob);
+    printf("\nnorm_frobenius(Ac_PETSc - Ac_Saena) = %.16f\n", norm_frob);
 
 //    petsc_viewer(Ac2);
 //    petsc_viewer(RAP);
@@ -446,7 +456,6 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
     MatDestroy(&A2);
     MatDestroy(&Ac2);
     MatDestroy(&P2);
-//    MatDestroy(&RA);
     MatDestroy(&RAP);
     PetscFinalize();
 
