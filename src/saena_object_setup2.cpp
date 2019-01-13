@@ -951,7 +951,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //        print_vector(C1, -1, "C1", comm);
 //        print_vector(C2, -1, "C2", comm);
 
-    if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 3 \n");}
+//    if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 3 \n");}
 //        if(rank==0 && verbose_matmat) printf("C1.size() = %lu, C2.size() = %lu \n", C1.size(), C2.size());
 #endif
 
@@ -977,14 +977,6 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat) printf("fast_mm: case 2: end \n");
 #endif
-
-//    return 0;
-
-
-
-
-
-
 
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");

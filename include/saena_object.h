@@ -81,7 +81,7 @@ public:
     bool verbose_level_setup      = false;
     bool verbose_triple_mat_mult  = false;
     bool verbose_matmat           = false;
-    bool verbose_matmat_recursive = true;
+    bool verbose_matmat_recursive = false;
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
     bool verbose_solve            = false;
