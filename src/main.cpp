@@ -200,7 +200,7 @@ int main(int argc, char* argv[]){
 //        B.split = g1->A->split;
 //        B.comm = g1->A->comm;
 
-        int matmat_times = 20;
+        int matmat_times = 10;
         MPI_Barrier(comm);
         double t11 = MPI_Wtime();
 
