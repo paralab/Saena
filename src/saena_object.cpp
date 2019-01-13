@@ -327,7 +327,7 @@ int saena_object::coarsen(Grid *grid){
 //    petsc_viewer(&grid->Ac);
 
     // this part is only for experiments.
-//    petsc_coarsen(&grid->R, grid->A, &grid->P);
+    petsc_coarsen(&grid->R, grid->A, &grid->P);
 //    petsc_coarsen_PtAP(&grid->R, grid->A, &grid->P);
 //    petsc_coarsen_2matmult(&grid->R, grid->A, &grid->P);
     petsc_check_matmatmat(&grid->R, grid->A, &grid->P, &grid->Ac);
