@@ -2866,7 +2866,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     for(nnz_t i = 0; i < AP_temp.size(); i++){
         AP.emplace_back(AP_temp[i]);
         while(i < AP_temp_size_minus1 && AP_temp[i] == AP_temp[i+1]){ // values of entries with the same row and col should be added.
-//            std::cout << C_temp[i] << "\t" << C_temp[i+1] << std::endl;
+//            std::cout << AP_temp[i] << "\t" << AP_temp[i+1] << std::endl;
             AP.back().val += AP_temp[++i].val;
         }
     }
@@ -2882,7 +2882,10 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         MPI_Barrier(comm); printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
-//    if(rank==0) dollar::text(std::cout);
+//    std::ofstream file("chrome.json");
+//    dollar::chrome(file);
+    if(rank==0) printf("\n");
+    if(rank==0) dollar::text(std::cout);
 //    dollar::clear();
 
     // *******************************************************
