@@ -924,7 +924,7 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
 #endif
 
     // =======================================================
-    // Save the result of 4 recursive functions in C_temp. At the end, sort it and remove duplicates.
+    // Save the result of 4 recursive functions in C_temp.
     std::vector<cooEntry> C1, C2;
 
     // C1 = A1 * B1
@@ -955,32 +955,33 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
     }
 
 
-    // C2 = A2 * B1
+    // C2 = A1 * B2:
     //=========================
 
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 2 \n");
 #endif
 
-    if(A2_nnz == 0 || B1_nnz == 0){
+    if(A1_nnz == 0 || B2_nnz == 0){
 #ifdef __DEBUG1__
         if(rank==verbose_rank && verbose_matmat){
-            if(A2_nnz == 0){
-                printf("\nskip: A2_nnz == 0\n\n");
+            if(A1_nnz == 0){
+                printf("\nskip: A1_nnz == 0\n\n");
             } else {
-                printf("\nskip: B1_nnz == 0\n\n");
+                printf("\nskip: B2_nnz == 0\n\n");
             }
         }
 #endif
     } else {
 
-        fast_mm(&A[0], &B[0], C2, A2_nnz, B1_nnz,
-                A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset,
-                B_col_size_half, B_col_offset,
-                &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
-                nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+        fast_mm(&A[0], &B[0], C1, A1_nnz, B2_nnz,
+                A_row_size_half, A_row_offset, A_col_size, A_col_offset,
+                B_col_size-B_col_size_half, B_col_offset+B_col_size_half,
+                nnzPerColScan_leftStart,  &nnzPerColScan_middle[0], // A1
+                &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half], comm); // B2
 
     }
+
 
     // merge C1 and C2
     //=========================
@@ -1056,30 +1057,31 @@ int saena_object::fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vecto
     C1.clear();
     C2.clear();
 
-    // C3 = A1 * B2:
+
+    // C3 = A2 * B1
     //=========================
 
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 3 \n");
 #endif
 
-    if(A1_nnz == 0 || B2_nnz == 0){
+    if(A2_nnz == 0 || B1_nnz == 0){
 #ifdef __DEBUG1__
         if(rank==verbose_rank && verbose_matmat){
-            if(A1_nnz == 0){
-                printf("\nskip: A1_nnz == 0\n\n");
+            if(A2_nnz == 0){
+                printf("\nskip: A2_nnz == 0\n\n");
             } else {
-                printf("\nskip: B2_nnz == 0\n\n");
+                printf("\nskip: B1_nnz == 0\n\n");
             }
         }
 #endif
     } else {
 
-        fast_mm(&A[0], &B[0], C1, A1_nnz, B2_nnz,
-                A_row_size_half, A_row_offset, A_col_size, A_col_offset,
-                B_col_size-B_col_size_half, B_col_offset+B_col_size_half,
-                nnzPerColScan_leftStart,  &nnzPerColScan_middle[0], // A1
-                &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half], comm); // B2
+        fast_mm(&A[0], &B[0], C2, A2_nnz, B1_nnz,
+                A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset,
+                B_col_size_half, B_col_offset,
+                &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
+                nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
 
     }
 
