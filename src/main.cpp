@@ -178,6 +178,44 @@ int main(int argc, char* argv[]){
 
     }
 */
+    {
+        saena_object *obj1 = solver.get_object();
+        Grid *g1 = &obj1->grids[0];
+
+        index_t row_thres;
+//        row_thres = g1->A->Mbig;
+//        row_thres = g1->P.Nbig;
+
+        obj1->mempool1 = new value_t[obj1->matmat_size_thre];
+        obj1->mempool2 = new index_t[g1->A->Mbig * 4];
+
+//        Grid g2;
+//        g2.P = g1->P;
+//        g2.R = g1->R;
+//        saena_matrix B(comm);
+//        g2.A = &B;
+//
+//        B.Mbig = g1->A->Mbig;
+//        B.M = g1->A->M;
+//        B.split = g1->A->split;
+//        B.comm = g1->A->comm;
+
+        int matmat_times = 20;
+        MPI_Barrier(comm);
+        double t11 = MPI_Wtime();
+
+        for(index_t j = 0; j < matmat_times; j++){
+            obj1->compute_coarsen_test(g1);
+        }
+
+        double t22 = MPI_Wtime();
+//        print_time_ave(t22-t11, "triple_mat_mult_test: ", grid->A->comm);
+        printf("\naverage coarsen time for %d times: \n%f \n\n", matmat_times, (t22 - t11) / matmat_times);
+
+        delete []obj1->mempool1;
+        delete []obj1->mempool2;
+
+    }
 
     // *************************** CombBLAS ****************************
 
