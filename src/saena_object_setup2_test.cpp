@@ -590,7 +590,7 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
 #endif
     } else {
 
-        fast_mm(&A[0], &B[0], C_temp, A1_nnz, B1_nnz,
+        fast_mm(&A[0], &B[0], C, A1_nnz, B1_nnz,
                 A_row_size, A_row_offset, A_col_size_half, A_col_offset,
                 B_col_size, B_col_offset,
                 nnzPerColScan_leftStart,  nnzPerColScan_leftEnd, // A1
@@ -616,7 +616,7 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
 #endif
     } else {
 
-        fast_mm(&A[0], &B[0], C_temp, A2_nnz, B2_nnz,
+        fast_mm(&A[0], &B[0], C, A2_nnz, B2_nnz,
                 A_row_size, A_row_offset, A_col_size-A_col_size_half, A_col_offset+A_col_size_half,
                 B_col_size, B_col_offset,
                 &nnzPerColScan_leftStart[A_col_size_half], &nnzPerColScan_leftEnd[A_col_size_half], // A2
@@ -632,103 +632,23 @@ int saena_object::fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vecto
 //        if(rank==0 && verbose_matmat) printf("C1.size() = %lu, C2.size() = %lu \n", C1.size(), C2.size());
 #endif
 
-    // sort
+    // sort and remove duplicates
     // --------------------------
+/*
+//    double t1 = MPI_Wtime();
     std::sort(C_temp.begin(), C_temp.end());
+//    print_vector(C_temp, 0, "C_temp", comm);
+
     nnz_t C_temp_size_minus1 = C_temp.size()-1;
     for(nnz_t i = 0; i < C_temp.size(); i++){
         C.emplace_back(C_temp[i]);
         while(i < C_temp_size_minus1 && C_temp[i] == C_temp[i+1]){ // values of entries with the same row and col should be added.
+//            std::cout << C_temp[i] << "\t" << C_temp[i+1] << std::endl;
             C.back().val += C_temp[++i].val;
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-    if(C1.empty()){
-        nnz_t C_init_size = C.size();
-        C.resize(C.size() + C2.size());
-        memcpy(&C[C_init_size], &C2[0], C2.size() * sizeof(cooEntry));
-
-#ifdef __DEBUG1__
-        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
-#endif
-        return 0;
-    }
-
-    if(C2.empty()){
-        nnz_t C_init_size = C.size();
-        C.resize(C.size() + C1.size());
-        memcpy(&C[C_init_size], &C1[0], C1.size() * sizeof(cooEntry));
-
-#ifdef __DEBUG1__
-        if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
-#endif
-        return 0;
-    }
-
-#ifdef __DEBUG1__
-    if(rank==verbose_rank && verbose_matmat) {printf("fast_mm: case 2: step 4 \n");}
-#endif
-
-//    char* dummyinput;
-
-    // merge C1 and C2
-    nnz_t i = 0;
-    nnz_t j = 0;
-    while(i < C1.size() && j < C2.size()){
-        if(C1[i] < C2[j]){
-            C.emplace_back(C1[i]);
-            i++;
-        }else if(C1[i] == C2[j]){ // there is no duplicate in either C1 or C2. So there may be at most one duplicate when we add them.
-            C.emplace_back(C1[i] + C2[j]);
-            i++; j++;
-        }else{ // C1[i] > C2[j]
-            C.emplace_back(C2[j]);
-            j++;
-        }
-
-        // when end of C1 (or C2) is reached, just add C2 (C1).
-        if(i == C1.size()){
-            while(j < C2.size()){
-                C.emplace_back(C2[j]);
-                j++;
-            }
-
-#ifdef __DEBUG1__
-            if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
-#endif
-//            print_vector(C, 0, "C", comm);
-//            std::cin >> dummyinput;
-
-            return 0;
-        }else if(j == C2.size()) {
-            while (i < C1.size()) {
-                C.emplace_back(C1[i]);
-                i++;
-            }
-
-#ifdef __DEBUG1__
-            if(rank==verbose_rank && verbose_matmat) printf("fast_mm: end \n\n");
-#endif
-//            print_vector(C, 0, "C", comm);
-//            std::cin >> dummyinput;
-            return 0;
-        }
-    }
+//    t1 = MPI_Wtime() - t1;
+//    printf("%f+", t1);
 */
 
 #ifdef __DEBUG1__

@@ -2426,7 +2426,6 @@ int saena_object::compute_coarsen(Grid *grid) {
     std::vector<cooEntry_row> RAP_row_sorted;
     triple_mat_mult(grid, RAP_row_sorted);
 
-
     // *******************************************************
     // form Ac
     // *******************************************************
@@ -2656,7 +2655,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     MPI_Comm_rank(comm, &rank);
 
     // *******************************************************
-    // part 1: multiply: AP = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
+    // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
@@ -2718,7 +2717,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
     std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
-    std::vector<cooEntry> AP;
+    std::vector<cooEntry> AP_temp;
 
     if(nprocs > 1){
         int right_neighbor = (rank + 1)%nprocs;
@@ -2791,7 +2790,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 #endif
             } else {
 
-                fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
+                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                         A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                         &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                         &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
@@ -2804,7 +2803,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
             send_size = recv_size;
 
 #ifdef __DEBUG1__
-//          print_vector(AP, -1, "AP", A->comm);
+//          print_vector(AP_temp, -1, "AP_temp", A->comm);
 //          print_vector(mat_send, -1, "mat_send", A->comm);
 //          print_vector(mat_recv, -1, "mat_recv", A->comm);
 //          prev_owner = owner;
@@ -2852,22 +2851,31 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         } else {
 
 //            double t1 = MPI_Wtime();
-            fast_mm(&A->entry[0], &mat_send[0], AP, A->entry.size(), mat_send.size(),
+            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                     &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 //            double t2 = MPI_Wtime();
-//            printf("\nfast_mm of AP = %f\n", t2-t1);
+//            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
         }
     }
 
-    std::sort(AP.begin(), AP.end());
+    std::sort(AP_temp.begin(), AP_temp.end());
+    std::vector<cooEntry> AP;
+    nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
+    for(nnz_t i = 0; i < AP_temp.size(); i++){
+        AP.emplace_back(AP_temp[i]);
+        while(i < AP_temp_size_minus1 && AP_temp[i] == AP_temp[i+1]){ // values of entries with the same row and col should be added.
+//            std::cout << C_temp[i] << "\t" << C_temp[i+1] << std::endl;
+            AP.back().val += AP_temp[++i].val;
+        }
+    }
 
     mat_send.clear();
     mat_send.shrink_to_fit();
 
 #ifdef __DEBUG1__
-//    print_vector(AP, -1, "AP", A->comm);
+//    print_vector(AP_temp, -1, "AP_temp", A->comm);
     if(verbose_triple_mat_mult){
         MPI_Barrier(comm); printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
@@ -2876,10 +2884,10 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    dollar::clear();
 
     // *******************************************************
-    // part 2: multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
+    // part 2: multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
     // *******************************************************
 
-    // local transpose of P is being used to compute R*(AP). So P is transposed locally here.
+    // local transpose of P is being used to compute R*(AP_temp). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
     transpose_locally(P->entry, P->entry.size(), P_tranpose);
 
@@ -2914,10 +2922,10 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
 #endif
 
-    // compute nnzPerColScan_left for AP
+    // compute nnzPerColScan_left for AP_temp
     nnzPerCol_right.assign(P->Nbig, 0);
-    for(nnz_t i = 0; i < AP.size(); i++){
-        nnzPerCol_right[AP[i].col]++;
+    for(nnz_t i = 0; i < AP_temp.size(); i++){
+        nnzPerCol_right[AP_temp[i].col]++;
     }
 
 #ifdef __DEBUG1__
@@ -2937,37 +2945,37 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-    // multiply: R_i * (AP)_i. in which R_i = P_i_tranpose
+    // multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
     // ===================================================
 
     std::vector<cooEntry> RAP_temp;
 
-    if(P_tranpose.empty() || AP.empty()){ // skip!
+    if(P_tranpose.empty() || AP_temp.empty()){ // skip!
 #ifdef __DEBUG1__
         if(verbose_triple_mat_mult){
             if(P_tranpose.empty()){
                 printf("\nskip: P_tranpose.size() == 0\n\n");
             } else {
-                printf("\nskip: AP == 0\n\n");
+                printf("\nskip: AP_temp == 0\n\n");
             }
         }
 #endif
     } else {
 
 //        double t1 = MPI_Wtime();
-        fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
+        fast_mm(&P_tranpose[0], &AP_temp[0], RAP_temp, P_tranpose.size(), AP_temp.size(),
                 P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 //        double t2 = MPI_Wtime();
-//        printf("\nfast_mm of R(AP) = %f \n", t2-t1);
+//        printf("\nfast_mm of R(AP_temp) = %f \n", t2-t1);
 
     }
 
     // free memory
     // -----------
-    AP.clear();
-    AP.shrink_to_fit();
+    AP_temp.clear();
+    AP_temp.shrink_to_fit();
     P_tranpose.clear();
     P_tranpose.shrink_to_fit();
     nnzPerColScan_left.clear();
