@@ -69,7 +69,15 @@
 
 
 \begin{abstract}
-This is abstract.
+Algebraic Multigrid (AMG) is a popular linear system solver and
+preconditioner for large sparse linear systems, especially the ones
+obtained from the discretization of elliptic operators.
+(what is the problem)
+We have implemented a new way for both steps of matrix-matrix
+product, i.e. communication and computation, to have a faster setup
+phase for multigrid. The computation part is being done in a recursive 
+fashion. Also, the communication part is optimized to use information available
+from the multigrid.
 \end{abstract}
 
 %
