@@ -187,8 +187,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
             if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
 
-                std::unordered_map<std::pair<index_t, index_t>, value_t> map1;
-
+                std::map<index_t, value_t> map1;
+                index_t C_index;
                 value_t C_val;
                 const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
                 const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
@@ -196,9 +196,9 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
                         for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row]; i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
 
-//                            C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+                            C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
                             C_val = B[k].val * A[i].val;
-                            auto it = map1.emplace(std::make_pair(A[i].row, B[k].col), C_val);
+                            auto it = map1.emplace(C_index, C_val);
                             if (!it.second) it.first->second += C_val;
 
                         }
@@ -206,10 +206,10 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 }
 
                 C.reserve(C.size() + map1.size());
-                std::map<std::pair<index_t, index_t>, value_t>::iterator it1;
-                for (it1 = map1.begin(); it1 != map1.end(); ++it1) {
+//                std::map<index_t, value_t>::iterator it1;
+                for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
 //                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
-                    C.emplace_back(it1->first.first, it1->first.second, it1->second);
+                    C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + A_row_offset, it1->second);
                 }
 
 //                t1 = MPI_Wtime() - t1;
@@ -223,8 +223,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
                 return;
-            } else {
-                DOLLAR("case1v")
+            } else { DOLLAR("case1v")
 //                index_t *A_new_row_idx = &nnzPerRow_left[0];
                 index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
                 index_t *orig_row_idx = &mempool2[A_row_size];
