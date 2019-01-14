@@ -209,7 +209,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                std::map<index_t, value_t>::iterator it1;
                 for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
 //                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
-                    C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + A_row_offset, it1->second);
+                    C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
                 }
 
 //                t1 = MPI_Wtime() - t1;
