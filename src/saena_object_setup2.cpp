@@ -122,7 +122,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // ==============================================================
 
     bool do_case1 = false;
-    if (A_row_size * B_col_size < matmat_size_thre) { DOLLAR("case1")
+    if (A_row_size * B_col_size < matmat_size_thre2) { DOLLAR("case1")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
