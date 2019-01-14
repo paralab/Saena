@@ -216,7 +216,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
             }
 
             t1 = MPI_Wtime() - t1;
-            printf("C_nnz = %lu\tA_row_size = %u\tB_col_size = %u\tA_nnz_row_sz = %u\tB_nnz_col_sz = %u\ttime = %f\n", map1.size(), A_row_size, B_col_size, A_nnz_row_sz, B_nnz_col_sz, t1);
+            printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\n", map1.size(), A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz, t1);
 
 
 #ifdef __DEBUG1__
