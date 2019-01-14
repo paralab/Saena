@@ -47,7 +47,8 @@ public:
 
     MPI_Comm get_orig_comm();
 
-    const index_t matmat_size_thre = 10000000; // if(row * col) do the dense matmat default 1000000
+    const index_t matmat_size_thre  = 10000000; // if(nnz_row * nnz_col) do the dense matmat default 10M
+    const index_t matmat_size_thre2 = 10000000; // if(row * col) do the dense matmat default 10M
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
 
@@ -107,7 +108,7 @@ public:
     int compute_coarsen_test(Grid *grid);
     int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    void fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                      nnz_t A_nnz, nnz_t B_nnz,
                      index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                      index_t B_col_size, index_t B_col_offset,
@@ -115,7 +116,7 @@ public:
                      const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
 
 
-    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+    void fast_mm_parts(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                 nnz_t A_nnz, nnz_t B_nnz,
                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                 index_t B_col_size, index_t B_col_offset,

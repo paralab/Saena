@@ -178,6 +178,8 @@ int main(int argc, char* argv[]){
 
     }
 */
+
+/*
     {
         saena_object *obj1 = solver.get_object();
         Grid *g1 = &obj1->grids[0];
@@ -216,7 +218,7 @@ int main(int argc, char* argv[]){
         delete []obj1->mempool2;
 
     }
-
+*/
     // *************************** CombBLAS ****************************
 
 //    combblas_matmult_DoubleBuff();

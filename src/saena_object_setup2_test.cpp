@@ -21,7 +21,7 @@
 // 2- split matrices by half based on number of nonzeros.
 // =======================================================
 
-void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+void saena_object::fast_mm_parts(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                           const nnz_t A_nnz, const nnz_t B_nnz,
                           const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
                           const index_t B_col_size, const index_t B_col_offset,
@@ -371,6 +371,7 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
 
 //    t1 = MPI_Wtime();
 
+//    nnz_t C_nnz = 0;
     C.reserve(C.size() + A_nnz_row_sz * B_nnz_col_sz);
     for(index_t j = 0; j < B_nnz_col_sz; j++) {
         temp = A_nnz_row_sz * j;
@@ -378,9 +379,12 @@ int saena_object::fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vecto
 //            if(rank==0) std::cout << i + A_nnz_row_sz*j << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + A_nnz_row_sz*j] << std::endl;
             if (fabs(C_temp[i + A_nnz_row_sz * j]) > 1e-14) {
                 C.emplace_back( orig_row_idx[i] , orig_col_idx[j], C_temp[i + temp] );
+//                C_nnz++;
             }
         }
     }
+
+//    printf("C_nnz = %lu \n", C_nnz);
 
 //    t1 = MPI_Wtime() - t1;
 //    printf("Add to C: \t%f\n", t1);
