@@ -173,8 +173,9 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
-
+            printf("A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre\n");
             if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1_m")
+                printf("A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3\n");
 
                 std::map<std::pair<index_t, index_t>, value_t> map1;
 
@@ -208,6 +209,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                         map1.size(), A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz, t1);
 
             } else { DOLLAR("case1_v")
+                printf(" else of A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3\n");
 
                 // VECTOR
                 // =========================================================
@@ -345,8 +347,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case2
     // ==============================================================
 
-    if (A_row_size <= A_col_size) {
-        DOLLAR("case2")
+    if (A_row_size <= A_col_size) { DOLLAR("case2")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: start \n"); }
