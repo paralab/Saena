@@ -10,8 +10,8 @@
 #define SPLIT_NNZ
 //#define SPLIT_SIZE
 
-//#define FAST_MM_MAP
-#define FAST_MM_VECTOR
+#define FAST_MM_MAP
+//#define FAST_MM_VECTOR
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;

@@ -121,7 +121,6 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case1
     // ==============================================================
 
-    bool do_case1 = false;
     if (A_row_size * B_col_size < matmat_size_thre2) { DOLLAR("case1")
 
 #ifdef __DEBUG1__
@@ -187,21 +186,21 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
 
-            do_case1 = true;
-
             std::map<std::pair<index_t, index_t>, value_t> map1;
 
             value_t C_val;
             const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
             const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
             for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
-                for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
-                    for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row]; i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
+                for (nnz_t k = nnzPerColScan_rightStart[j];
+                     k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
+                    for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row];
+                         i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
 
 //                        C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
                         C_val = B[k].val * A[i].val;
                         auto it = map1.emplace(std::make_pair(A[i].row, B[k].col), C_val);
-                        if(!it.second) it.first->second += C_val;
+                        if (!it.second) it.first->second += C_val;
 
                     }
                 }
@@ -209,10 +208,19 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
             C.reserve(C.size() + map1.size());
             std::map<std::pair<index_t, index_t>, value_t>::iterator it1;
-            for(it1 = map1.begin(); it1 != map1.end(); ++it1){
+            for (it1 = map1.begin(); it1 != map1.end(); ++it1) {
 //                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
                 C.emplace_back(it1->first.first, it1->first.second, it1->second);
             }
+            printf("C_nnz = %lu\n", map1.size());
+
+#ifdef __DEBUG1__
+//       print_vector(C, -1, "C", comm);
+            if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
+#endif
+
+            return;
+        }
 #endif
 
 
@@ -324,114 +332,114 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
             }
 
 //            printf("C_nnz = %lu\n", C_nnz);
-#endif
 
 #ifdef __DEBUG1__
 //       print_vector(C, -1, "C", comm);
             if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
 #endif
 
-            return;
+        return;
+
         }
+#endif
+
     }
 
     // case2
     // ==============================================================
 
-    if(!do_case1) {
-
-        if (A_row_size <= A_col_size) {
-            DOLLAR("case2")
+    if (A_row_size <= A_col_size) {
+        DOLLAR("case2")
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: start \n"); }
+        if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: start \n"); }
 #endif
 
 //        index_t B_row_offset = A_col_offset;
 //        index_t A_col_size_half = A_col_size/2;
 
-            // split based on matrix size
-            // =======================================================
+        // split based on matrix size
+        // =======================================================
 
 #ifdef SPLIT_SIZE
-            // prepare splits of matrix A by column
-            nnz_t A1_nnz = 0, A2_nnz;
-            for(nnz_t i = 0; i < A_col_size_half; i++){
-                A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
-            }
+        // prepare splits of matrix A by column
+        nnz_t A1_nnz = 0, A2_nnz;
+        for(nnz_t i = 0; i < A_col_size_half; i++){
+            A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+        }
 
-            A2_nnz = A_nnz - A1_nnz;
+        A2_nnz = A_nnz - A1_nnz;
 #endif
 
-            // =======================================================
-            // split based on nnz
-            // =======================================================
+        // =======================================================
+        // split based on nnz
+        // =======================================================
 
 #ifdef SPLIT_NNZ
 
-            // prepare splits of matrix A by column
-            nnz_t A1_nnz = 0, A2_nnz;
-            auto A_half_nnz = (nnz_t) ceil(A_nnz / 2);
+        // prepare splits of matrix A by column
+        nnz_t A1_nnz = 0, A2_nnz;
+        auto A_half_nnz = (nnz_t) ceil(A_nnz / 2);
 //    index_t A_col_size_half = A_col_size/2;
 
-            if (A_nnz > matmat_nnz_thre) {
-                for (nnz_t i = 0; i < A_col_size; i++) {
-                    A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
-                    if (A1_nnz >= A_half_nnz) {
-                        A_col_size_half = A[nnzPerColScan_leftStart[i]].col + 1 -
-                                          A_col_offset; // this is called once! don't optimize.
-                        break;
-                    }
-                }
-            } else { // A_col_half will stay A_col_size/2
-                for (nnz_t i = 0; i < A_col_size_half; i++) {
-                    A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+        if (A_nnz > matmat_nnz_thre) {
+            for (nnz_t i = 0; i < A_col_size; i++) {
+                A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+                if (A1_nnz >= A_half_nnz) {
+                    A_col_size_half = A[nnzPerColScan_leftStart[i]].col + 1 -
+                                      A_col_offset; // this is called once! don't optimize.
+                    break;
                 }
             }
-
-            // if A is not being splitted at all following "half nnz method", then swtich to "half size method".
-            if (A_col_size_half == A_col_size) {
-                A_col_size_half = A_col_size / 2;
-                A1_nnz = 0;
-                for (nnz_t i = 0; i < A_col_size_half; i++) {
-                    A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
-                }
+        } else { // A_col_half will stay A_col_size/2
+            for (nnz_t i = 0; i < A_col_size_half; i++) {
+                A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
             }
+        }
 
-            A2_nnz = A_nnz - A1_nnz;
+        // if A is not being splitted at all following "half nnz method", then swtich to "half size method".
+        if (A_col_size_half == A_col_size) {
+            A_col_size_half = A_col_size / 2;
+            A1_nnz = 0;
+            for (nnz_t i = 0; i < A_col_size_half; i++) {
+                A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
+            }
+        }
+
+        A2_nnz = A_nnz - A1_nnz;
 #endif
 
-            // =======================================================
+        // =======================================================
 
-            // prepare splits of matrix B by row
-            index_t B_row_size_half = A_col_size_half;
-            index_t B_row_threshold = B_row_size_half + B_row_offset;
-            nnz_t B1_nnz = 0, B2_nnz;
+        // prepare splits of matrix B by row
+        index_t B_row_size_half = A_col_size_half;
+        index_t B_row_threshold = B_row_size_half + B_row_offset;
+        nnz_t B1_nnz = 0, B2_nnz;
 
-            index_t *nnzPerCol_middle = &mempool2[0];
-            std::fill(&nnzPerCol_middle[0], &nnzPerCol_middle[B_col_size], 0);
-            // to avoid subtraction in the following for loop " - B_col_offset"
-            index_t *nnzPerCol_middle_p = &nnzPerCol_middle[0] - B_col_offset;
+        index_t *nnzPerCol_middle = &mempool2[0];
+        std::fill(&nnzPerCol_middle[0], &nnzPerCol_middle[B_col_size], 0);
+        // to avoid subtraction in the following for loop " - B_col_offset"
+        index_t *nnzPerCol_middle_p = &nnzPerCol_middle[0] - B_col_offset;
 
-            for (nnz_t i = 0; i < B_col_size; i++) {
-                for (nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
-                    if (B[j].row < B_row_threshold) { // B[j].row - B_row_offset < B_row_size_half
-                        nnzPerCol_middle_p[B[j].col]++;
-                        B1_nnz++;
-                    }
+        for (nnz_t i = 0; i < B_col_size; i++) {
+            for (nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
+                if (B[j].row < B_row_threshold) { // B[j].row - B_row_offset < B_row_size_half
+                    nnzPerCol_middle_p[B[j].col]++;
+                    B1_nnz++;
                 }
             }
+        }
 
-            B2_nnz = B_nnz - B1_nnz;
+        B2_nnz = B_nnz - B1_nnz;
 
 #ifdef __DEBUG1__
 //    print_vector(nnzPerCol_middle, -1, "nnzPerCol_middle", comm);
 #endif
 
-            std::vector<index_t> nnzPerColScan_middle(B_col_size + 1);
-            for (nnz_t i = 0; i < B_col_size; i++) {
-                nnzPerColScan_middle[i] = nnzPerColScan_rightStart[i] + nnzPerCol_middle[i];
-            }
+        std::vector<index_t> nnzPerColScan_middle(B_col_size + 1);
+        for (nnz_t i = 0; i < B_col_size; i++) {
+            nnzPerColScan_middle[i] = nnzPerColScan_rightStart[i] + nnzPerCol_middle[i];
+        }
 
 //    nnzPerCol_middle.clear();
 //    nnzPerCol_middle.shrink_to_fit();
@@ -440,142 +448,142 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
 //        if(rank==0) printf("rank %d: A_nnz = %lu, A1_nnz = %lu, A2_nnz = %lu, B_nnz = %lu, B1_nnz = %lu, B2_nnz = %lu \n",
 //                rank, A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz);
-            if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: step 1 \n"); }
+        if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: step 1 \n"); }
 #endif
 
-            // A1: start: nnzPerColScan_leftStart,                  end: nnzPerColScan_leftEnd
-            // A2: start: nnzPerColScan_leftStart[A_col_size_half], end: nnzPerColScan_leftEnd[A_col_size_half]
-            // B1: start: nnzPerColScan_rightStart,                 end: nnzPerColScan_middle
-            // B2: start: nnzPerColScan_middle,                     end: nnzPerColScan_rightEnd
+        // A1: start: nnzPerColScan_leftStart,                  end: nnzPerColScan_leftEnd
+        // A2: start: nnzPerColScan_leftStart[A_col_size_half], end: nnzPerColScan_leftEnd[A_col_size_half]
+        // B1: start: nnzPerColScan_rightStart,                 end: nnzPerColScan_middle
+        // B2: start: nnzPerColScan_middle,                     end: nnzPerColScan_rightEnd
 
 #ifdef __DEBUG1__
 //        MPI_Barrier(comm);
-            if (rank == verbose_rank) {
+        if (rank == verbose_rank) {
 
 //        printf("fast_mm: case 2: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
 //               "A_size: (%u, %u, %u), B_size: (%u, %u) \n",
 //               A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size_half, A_col_size, B_col_size);
 
-                if (verbose_matmat_A) {
-                    std::cout << "\nranges of A:" << std::endl;
-                    for (nnz_t i = 0; i < A_col_size; i++) {
-                        std::cout << i << "\t" << nnzPerColScan_leftStart[i] << "\t" << nnzPerColScan_leftEnd[i]
-                                  << std::endl;
-                    }
+            if (verbose_matmat_A) {
+                std::cout << "\nranges of A:" << std::endl;
+                for (nnz_t i = 0; i < A_col_size; i++) {
+                    std::cout << i << "\t" << nnzPerColScan_leftStart[i] << "\t" << nnzPerColScan_leftEnd[i]
+                              << std::endl;
+                }
 
-                    std::cout << "\nranges of A1:" << std::endl;
-                    for (nnz_t i = 0; i < A_col_size / 2; i++) {
-                        std::cout << i << "\t" << nnzPerColScan_leftStart[i] << "\t" << nnzPerColScan_leftStart[i + 1]
-                                  << std::endl;
-                    }
+                std::cout << "\nranges of A1:" << std::endl;
+                for (nnz_t i = 0; i < A_col_size / 2; i++) {
+                    std::cout << i << "\t" << nnzPerColScan_leftStart[i] << "\t" << nnzPerColScan_leftStart[i + 1]
+                              << std::endl;
+                }
 
-                    std::cout << "\nranges of A2:" << std::endl;
-                    for (nnz_t i = 0; i < A_col_size - A_col_size / 2; i++) {
-                        std::cout << i << "\t" << nnzPerColScan_leftStart[A_col_size / 2 + i]
-                                  << "\t" << nnzPerColScan_leftStart[A_col_size / 2 + i + 1] << std::endl;
-                    }
+                std::cout << "\nranges of A2:" << std::endl;
+                for (nnz_t i = 0; i < A_col_size - A_col_size / 2; i++) {
+                    std::cout << i << "\t" << nnzPerColScan_leftStart[A_col_size / 2 + i]
+                              << "\t" << nnzPerColScan_leftStart[A_col_size / 2 + i + 1] << std::endl;
+                }
 
-                    // print entries of A1:
-                    std::cout << "\nA1: nnz = " << A1_nnz << std::endl;
-                    for (nnz_t i = 0; i < A_col_size / 2; i++) {
-                        for (nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftStart[i + 1]; j++) {
-                            std::cout << j << "\t" << A[j] << std::endl;
-                        }
-                    }
-
-                    // print entries of A2:
-                    std::cout << "\nA2: nnz = " << A2_nnz << std::endl;
-                    for (nnz_t i = 0; i < A_col_size - A_col_size / 2; i++) {
-                        for (nnz_t j = nnzPerColScan_leftStart[A_col_size / 2 + i];
-                             j < nnzPerColScan_leftStart[A_col_size / 2 + i + 1]; j++) {
-                            std::cout << j << "\t" << A[j] << std::endl;
-                        }
+                // print entries of A1:
+                std::cout << "\nA1: nnz = " << A1_nnz << std::endl;
+                for (nnz_t i = 0; i < A_col_size / 2; i++) {
+                    for (nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftStart[i + 1]; j++) {
+                        std::cout << j << "\t" << A[j] << std::endl;
                     }
                 }
 
-                if (verbose_matmat_B) {
-                    std::cout << "\nranges of B, B1, B2::" << std::endl;
-                    for (nnz_t i = 0; i < B_col_size; i++) {
-                        std::cout << i << "\t" << nnzPerColScan_rightStart[i] << "\t" << nnzPerColScan_rightEnd[i]
-                                  << "\t" << nnzPerColScan_rightStart[i] << "\t" << nnzPerColScan_middle[i]
-                                  << "\t" << nnzPerColScan_middle[i] << "\t" << nnzPerColScan_rightEnd[i] << std::endl;
-                    }
-
-                    // print entries of B1:
-                    std::cout << "\nB1: nnz = " << B1_nnz << std::endl;
-                    for (nnz_t i = 0; i < B_col_size; i++) {
-                        for (nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_middle[i]; j++) {
-                            std::cout << j << "\t" << B[j] << std::endl;
-                        }
-                    }
-
-                    // print entries of B2:
-                    std::cout << "\nB2: nnz = " << B2_nnz << std::endl;
-                    for (nnz_t i = 0; i < B_col_size; i++) {
-                        for (nnz_t j = nnzPerColScan_middle[i]; j < nnzPerColScan_rightEnd[i]; j++) {
-                            std::cout << j << "\t" << B[j] << std::endl;
-                        }
+                // print entries of A2:
+                std::cout << "\nA2: nnz = " << A2_nnz << std::endl;
+                for (nnz_t i = 0; i < A_col_size - A_col_size / 2; i++) {
+                    for (nnz_t j = nnzPerColScan_leftStart[A_col_size / 2 + i];
+                         j < nnzPerColScan_leftStart[A_col_size / 2 + i + 1]; j++) {
+                        std::cout << j << "\t" << A[j] << std::endl;
                     }
                 }
             }
+
+            if (verbose_matmat_B) {
+                std::cout << "\nranges of B, B1, B2::" << std::endl;
+                for (nnz_t i = 0; i < B_col_size; i++) {
+                    std::cout << i << "\t" << nnzPerColScan_rightStart[i] << "\t" << nnzPerColScan_rightEnd[i]
+                              << "\t" << nnzPerColScan_rightStart[i] << "\t" << nnzPerColScan_middle[i]
+                              << "\t" << nnzPerColScan_middle[i] << "\t" << nnzPerColScan_rightEnd[i] << std::endl;
+                }
+
+                // print entries of B1:
+                std::cout << "\nB1: nnz = " << B1_nnz << std::endl;
+                for (nnz_t i = 0; i < B_col_size; i++) {
+                    for (nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_middle[i]; j++) {
+                        std::cout << j << "\t" << B[j] << std::endl;
+                    }
+                }
+
+                // print entries of B2:
+                std::cout << "\nB2: nnz = " << B2_nnz << std::endl;
+                for (nnz_t i = 0; i < B_col_size; i++) {
+                    for (nnz_t j = nnzPerColScan_middle[i]; j < nnzPerColScan_rightEnd[i]; j++) {
+                        std::cout << j << "\t" << B[j] << std::endl;
+                    }
+                }
+            }
+        }
 //        print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
 //        MPI_Barrier(comm);
 #endif
 
-            // =======================================================
-            // Call two recursive functions here. Put the result of the first one in C1, and the second one in C2.
-            // merge sort them and add the result to C.
-            std::vector<cooEntry> C_temp;
+        // =======================================================
+        // Call two recursive functions here. Put the result of the first one in C1, and the second one in C2.
+        // merge sort them and add the result to C.
+        std::vector<cooEntry> C_temp;
 
-            // C1 = A1 * B1
+        // C1 = A1 * B1
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 1 \n");
+        if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 1 \n");
 #endif
 
-            if (A1_nnz == 0 || B1_nnz == 0) { // skip!
+        if (A1_nnz == 0 || B1_nnz == 0) { // skip!
 #ifdef __DEBUG1__
-                if (rank == verbose_rank && verbose_matmat) {
-                    if (A1_nnz == 0) {
-                        printf("\nskip: A1_nnz == 0\n\n");
-                    } else {
-                        printf("\nskip: B1_nnz == 0\n\n");
-                    }
+            if (rank == verbose_rank && verbose_matmat) {
+                if (A1_nnz == 0) {
+                    printf("\nskip: A1_nnz == 0\n\n");
+                } else {
+                    printf("\nskip: B1_nnz == 0\n\n");
                 }
-#endif
-            } else {
-
-                fast_mm(&A[0], &B[0], C, A1_nnz, B1_nnz,
-                        A_row_size, A_row_offset, A_col_size_half, A_col_offset,
-                        B_col_size, B_col_offset,
-                        nnzPerColScan_leftStart, nnzPerColScan_leftEnd, // A1
-                        nnzPerColScan_rightStart, &nnzPerColScan_middle[0], comm); // B1
-
             }
-
-
-            // C2 = A2 * B2
-#ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 2 \n");
 #endif
+        } else {
 
-            if (A2_nnz == 0 || B2_nnz == 0) {
-#ifdef __DEBUG1__
-                if (rank == verbose_rank && verbose_matmat) {
-                    if (A2_nnz == 0) {
-                        printf("\nskip: A2_nnz == 0\n\n");
-                    } else {
-                        printf("\nskip: B2_nnz == 0\n\n");
-                    }
-                }
-#endif
-                return;
-            }
-
-            fast_mm(&A[0], &B[0], C, A2_nnz, B2_nnz,
-                    A_row_size, A_row_offset, A_col_size - A_col_size_half, A_col_offset + A_col_size_half,
+            fast_mm(&A[0], &B[0], C, A1_nnz, B1_nnz,
+                    A_row_size, A_row_offset, A_col_size_half, A_col_offset,
                     B_col_size, B_col_offset,
-                    &nnzPerColScan_leftStart[A_col_size_half], &nnzPerColScan_leftEnd[A_col_size_half], // A2
-                    &nnzPerColScan_middle[0], nnzPerColScan_rightEnd, comm); // B2
+                    nnzPerColScan_leftStart, nnzPerColScan_leftEnd, // A1
+                    nnzPerColScan_rightStart, &nnzPerColScan_middle[0], comm); // B1
+
+        }
+
+
+        // C2 = A2 * B2
+#ifdef __DEBUG1__
+        if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 2 \n");
+#endif
+
+        if (A2_nnz == 0 || B2_nnz == 0) {
+#ifdef __DEBUG1__
+            if (rank == verbose_rank && verbose_matmat) {
+                if (A2_nnz == 0) {
+                    printf("\nskip: A2_nnz == 0\n\n");
+                } else {
+                    printf("\nskip: B2_nnz == 0\n\n");
+                }
+            }
+#endif
+            return;
+        }
+
+        fast_mm(&A[0], &B[0], C, A2_nnz, B2_nnz,
+                A_row_size, A_row_offset, A_col_size - A_col_size_half, A_col_offset + A_col_size_half,
+                B_col_size, B_col_offset,
+                &nnzPerColScan_leftStart[A_col_size_half], &nnzPerColScan_leftEnd[A_col_size_half], // A2
+                &nnzPerColScan_middle[0], nnzPerColScan_rightEnd, comm); // B2
 
 
 #ifdef __DEBUG1__
@@ -587,48 +595,48 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 2: end \n");
+        if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 2: end \n");
 #endif
 
-            // case3
-            // ==============================================================
+        // case3
+        // ==============================================================
 
-        } else {
-            DOLLAR("case3") // (A_row_size > A_col_size)
+    } else {
+        DOLLAR("case3") // (A_row_size > A_col_size)
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
+        if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
 #endif
 
-            // split based on matrix size
-            // =======================================================
+        // split based on matrix size
+        // =======================================================
 
 #ifdef SPLIT_SIZE
-            // prepare splits of matrix B by column
-    //        index_t A_col_size_half = A_col_size/2;
-            index_t B_col_size_half = B_col_size/2;
-            nnz_t B1_nnz = 0, B2_nnz;
+        // prepare splits of matrix B by column
+//        index_t A_col_size_half = A_col_size/2;
+        index_t B_col_size_half = B_col_size/2;
+        nnz_t B1_nnz = 0, B2_nnz;
 
-            for(nnz_t i = 0; i < B_col_size_half; i++){
-                B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
-            }
+        for(nnz_t i = 0; i < B_col_size_half; i++){
+            B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+        }
 
-            B2_nnz = B_nnz - B1_nnz;
+        B2_nnz = B_nnz - B1_nnz;
 #endif
 
-            // =======================================================
-            // split based on nnz
-            // =======================================================
+        // =======================================================
+        // split based on nnz
+        // =======================================================
 
 #ifdef SPLIT_NNZ
-            // prepare splits of matrix B by column
-            nnz_t B1_nnz = 0, B2_nnz;
-            auto B_half_nnz = (nnz_t) ceil(B_nnz / 2);
-            index_t B_col_size_half = B_col_size / 2;
+        // prepare splits of matrix B by column
+        nnz_t B1_nnz = 0, B2_nnz;
+        auto B_half_nnz = (nnz_t) ceil(B_nnz / 2);
+        index_t B_col_size_half = B_col_size / 2;
 
-            if (B_nnz > matmat_nnz_thre) {
-                for (nnz_t i = 0; i < B_col_size; i++) {
-                    B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+        if (B_nnz > matmat_nnz_thre) {
+            for (nnz_t i = 0; i < B_col_size; i++) {
+                B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
 
 #ifdef __DEBUG1__
 //                if(rank==verbose_rank)
@@ -637,270 +645,269 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                           nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i]);
 #endif
 
-                    if (B1_nnz >= B_half_nnz) {
-                        B_col_size_half = B[nnzPerColScan_rightStart[i]].col + 1 - B_col_offset;
-                        break;
-                    }
-                }
-            } else {
-                for (nnz_t i = 0; i < B_col_size_half; i++) {
-                    B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+                if (B1_nnz >= B_half_nnz) {
+                    B_col_size_half = B[nnzPerColScan_rightStart[i]].col + 1 - B_col_offset;
+                    break;
                 }
             }
-
-            // if B is not being splitted at all following "half nnz method", then swtich to "half col method".
-            if (B_col_size_half == B_col_size) {
-                B_col_size_half = B_col_size / 2;
-                B1_nnz = 0;
-                for (nnz_t i = 0; i < B_col_size_half; i++) {
-                    B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
-                }
+        } else {
+            for (nnz_t i = 0; i < B_col_size_half; i++) {
+                B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
             }
+        }
 
-            B2_nnz = B_nnz - B1_nnz;
+        // if B is not being splitted at all following "half nnz method", then swtich to "half col method".
+        if (B_col_size_half == B_col_size) {
+            B_col_size_half = B_col_size / 2;
+            B1_nnz = 0;
+            for (nnz_t i = 0; i < B_col_size_half; i++) {
+                B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
+            }
+        }
+
+        B2_nnz = B_nnz - B1_nnz;
 #endif
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 1 \n");
+        if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 1 \n");
 #endif
 
-            // prepare splits of matrix A by row
-            nnz_t A1_nnz = 0, A2_nnz;
-            index_t A_row_size_half = A_row_size / 2;
-            index_t A_row_threshold = A_row_size_half + A_row_offset;
+        // prepare splits of matrix A by row
+        nnz_t A1_nnz = 0, A2_nnz;
+        index_t A_row_size_half = A_row_size / 2;
+        index_t A_row_threshold = A_row_size_half + A_row_offset;
 
 //    std::vector<index_t> nnzPerCol_middle(A_col_size, 0);
-            index_t *nnzPerCol_middle = &mempool2[0];
-            std::fill(&nnzPerCol_middle[0], &nnzPerCol_middle[A_col_size], 0);
-            // to avoid subtraction in the following for loop " - B_col_offset"
-            index_t *nnzPerCol_middle_p = &nnzPerCol_middle[0] - A_col_offset;
+        index_t *nnzPerCol_middle = &mempool2[0];
+        std::fill(&nnzPerCol_middle[0], &nnzPerCol_middle[A_col_size], 0);
+        // to avoid subtraction in the following for loop " - B_col_offset"
+        index_t *nnzPerCol_middle_p = &nnzPerCol_middle[0] - A_col_offset;
 
-            for (nnz_t i = 0; i < A_col_size; i++) {
-                for (nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
-                    if (A[j].row < A_row_threshold) { // A[j].row - A_row_offset < A_row_size_half
-                        nnzPerCol_middle_p[A[j].col]++;
-                        A1_nnz++;
-                    }
+        for (nnz_t i = 0; i < A_col_size; i++) {
+            for (nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
+                if (A[j].row < A_row_threshold) { // A[j].row - A_row_offset < A_row_size_half
+                    nnzPerCol_middle_p[A[j].col]++;
+                    A1_nnz++;
                 }
             }
+        }
 
-            A2_nnz = A_nnz - A1_nnz;
+        A2_nnz = A_nnz - A1_nnz;
 
-            std::vector<index_t> nnzPerColScan_middle(A_col_size);
-            for (nnz_t i = 0; i < A_col_size; i++) {
-                nnzPerColScan_middle[i] = nnzPerColScan_leftStart[i] + nnzPerCol_middle[i];
-            }
+        std::vector<index_t> nnzPerColScan_middle(A_col_size);
+        for (nnz_t i = 0; i < A_col_size; i++) {
+            nnzPerColScan_middle[i] = nnzPerColScan_leftStart[i] + nnzPerCol_middle[i];
+        }
 
 //    nnzPerCol_middle.clear();
 //    nnzPerCol_middle.shrink_to_fit();
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 2 \n");
+        if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: step 2 \n");
 #endif
 
-            // A1: start: nnzPerColScan_leftStart,                   end: nnzPerColScan_middle
-            // A2: start: nnzPerColScan_middle,                      end: nnzPerColScan_leftEnd
-            // B1: start: nnzPerColScan_rightStart,                  end: nnzPerColScan_rightEnd
-            // B2: start: nnzPerColScan_rightStart[B_col_size_half], end: nnzPerColScan_rightEnd[B_col_size_half]
+        // A1: start: nnzPerColScan_leftStart,                   end: nnzPerColScan_middle
+        // A2: start: nnzPerColScan_middle,                      end: nnzPerColScan_leftEnd
+        // B1: start: nnzPerColScan_rightStart,                  end: nnzPerColScan_rightEnd
+        // B2: start: nnzPerColScan_rightStart[B_col_size_half], end: nnzPerColScan_rightEnd[B_col_size_half]
 
 #ifdef __DEBUG1__
-            //        MPI_Barrier(comm);
-            if (rank == verbose_rank) {
+        //        MPI_Barrier(comm);
+        if (rank == verbose_rank) {
 
 //            printf("fast_mm: case 3: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
 //                   "A_size: (%u, %u), B_size: (%u, %u, %u) \n",
 //                   A_nnz, A1_nnz, A2_nnz, B_nnz, B1_nnz, B2_nnz, A_row_size, A_col_size, A_col_size, B_col_size, B_col_size_half);
 
-                if (verbose_matmat_A) {
-                    // print entries of A1:
-                    std::cout << "\nA1: nnz = " << A1_nnz << std::endl;
-                    for (nnz_t i = 0; i < A_col_size; i++) {
-                        for (nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_middle[i]; j++) {
-                            std::cout << j << "\t" << A[j] << std::endl;
-                        }
-                    }
-
-                    // print entries of A2:
-                    std::cout << "\nA2: nnz = " << A2_nnz << std::endl;
-                    for (nnz_t i = 0; i < A_col_size; i++) {
-                        for (nnz_t j = nnzPerColScan_middle[i]; j < nnzPerColScan_leftEnd[i]; j++) {
-                            std::cout << j << "\t" << A[j] << std::endl;
-                        }
+            if (verbose_matmat_A) {
+                // print entries of A1:
+                std::cout << "\nA1: nnz = " << A1_nnz << std::endl;
+                for (nnz_t i = 0; i < A_col_size; i++) {
+                    for (nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_middle[i]; j++) {
+                        std::cout << j << "\t" << A[j] << std::endl;
                     }
                 }
 
-                if (verbose_matmat_B) {
-                    std::cout << "\nranges of B:" << std::endl;
-                    for (nnz_t i = 0; i < B_col_size; i++) {
-                        std::cout << i << "\t" << nnzPerColScan_rightStart[i] << "\t" << nnzPerColScan_rightEnd[i]
-                                  << std::endl;
-                    }
-
-                    std::cout << "\nranges of B1:" << std::endl;
-                    for (nnz_t i = 0; i < B_col_size / 2; i++) {
-                        std::cout << i << "\t" << nnzPerColScan_rightStart[i] << "\t" << nnzPerColScan_rightEnd[i]
-                                  << std::endl;
-                    }
-
-                    std::cout << "\nranges of B2:" << std::endl;
-                    for (nnz_t i = 0; i < B_col_size - B_col_size / 2; i++) {
-                        std::cout << i << "\t" << nnzPerColScan_rightStart[B_col_size / 2 + i]
-                                  << "\t" << nnzPerColScan_rightEnd[B_col_size / 2 + i] << std::endl;
-                    }
-
-                    // print entries of B1:
-                    std::cout << "\nB1: nnz = " << B1_nnz << std::endl;
-                    for (nnz_t i = 0; i < B_col_size / 2; i++) {
-                        for (nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
-                            std::cout << j << "\t" << B[j] << std::endl;
-                        }
-                    }
-
-                    // print entries of B2:
-                    std::cout << "\nB2: nnz = " << B2_nnz << std::endl;
-                    for (nnz_t i = 0; i < B_col_size - B_col_size / 2; i++) {
-                        for (nnz_t j = nnzPerColScan_rightStart[B_col_size / 2 + i];
-                             j < nnzPerColScan_rightEnd[B_col_size / 2 + i]; j++) {
-                            std::cout << j << "\t" << B[j] << std::endl;
-                        }
+                // print entries of A2:
+                std::cout << "\nA2: nnz = " << A2_nnz << std::endl;
+                for (nnz_t i = 0; i < A_col_size; i++) {
+                    for (nnz_t j = nnzPerColScan_middle[i]; j < nnzPerColScan_leftEnd[i]; j++) {
+                        std::cout << j << "\t" << A[j] << std::endl;
                     }
                 }
             }
+
+            if (verbose_matmat_B) {
+                std::cout << "\nranges of B:" << std::endl;
+                for (nnz_t i = 0; i < B_col_size; i++) {
+                    std::cout << i << "\t" << nnzPerColScan_rightStart[i] << "\t" << nnzPerColScan_rightEnd[i]
+                              << std::endl;
+                }
+
+                std::cout << "\nranges of B1:" << std::endl;
+                for (nnz_t i = 0; i < B_col_size / 2; i++) {
+                    std::cout << i << "\t" << nnzPerColScan_rightStart[i] << "\t" << nnzPerColScan_rightEnd[i]
+                              << std::endl;
+                }
+
+                std::cout << "\nranges of B2:" << std::endl;
+                for (nnz_t i = 0; i < B_col_size - B_col_size / 2; i++) {
+                    std::cout << i << "\t" << nnzPerColScan_rightStart[B_col_size / 2 + i]
+                              << "\t" << nnzPerColScan_rightEnd[B_col_size / 2 + i] << std::endl;
+                }
+
+                // print entries of B1:
+                std::cout << "\nB1: nnz = " << B1_nnz << std::endl;
+                for (nnz_t i = 0; i < B_col_size / 2; i++) {
+                    for (nnz_t j = nnzPerColScan_rightStart[i]; j < nnzPerColScan_rightEnd[i]; j++) {
+                        std::cout << j << "\t" << B[j] << std::endl;
+                    }
+                }
+
+                // print entries of B2:
+                std::cout << "\nB2: nnz = " << B2_nnz << std::endl;
+                for (nnz_t i = 0; i < B_col_size - B_col_size / 2; i++) {
+                    for (nnz_t j = nnzPerColScan_rightStart[B_col_size / 2 + i];
+                         j < nnzPerColScan_rightEnd[B_col_size / 2 + i]; j++) {
+                        std::cout << j << "\t" << B[j] << std::endl;
+                    }
+                }
+            }
+        }
 //        MPI_Barrier(comm);
 #endif
 
-            // =======================================================
-            // Save the result of 4 recursive functions in C_temp.
+        // =======================================================
+        // Save the result of 4 recursive functions in C_temp.
 
-            // C1 = A1 * B1
-            //=========================
+        // C1 = A1 * B1
+        //=========================
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 1 \n");
+        if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 1 \n");
 #endif
 
-            if (A1_nnz == 0 || B1_nnz == 0) {
+        if (A1_nnz == 0 || B1_nnz == 0) {
 #ifdef __DEBUG1__
-                if (rank == verbose_rank && verbose_matmat) {
-                    if (A1_nnz == 0) {
-                        printf("\nskip: A1_nnz == 0\n\n");
-                    } else {
-                        printf("\nskip: B1_nnz == 0\n\n");
-                    }
+            if (rank == verbose_rank && verbose_matmat) {
+                if (A1_nnz == 0) {
+                    printf("\nskip: A1_nnz == 0\n\n");
+                } else {
+                    printf("\nskip: B1_nnz == 0\n\n");
                 }
-#endif
-            } else {
-
-                fast_mm(&A[0], &B[0], C, A1_nnz, B1_nnz,
-                        A_row_size_half, A_row_offset, A_col_size, A_col_offset,
-                        B_col_size_half, B_col_offset,
-                        nnzPerColScan_leftStart, &nnzPerColScan_middle[0], // A1
-                        nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
-
             }
+#endif
+        } else {
+
+            fast_mm(&A[0], &B[0], C, A1_nnz, B1_nnz,
+                    A_row_size_half, A_row_offset, A_col_size, A_col_offset,
+                    B_col_size_half, B_col_offset,
+                    nnzPerColScan_leftStart, &nnzPerColScan_middle[0], // A1
+                    nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+
+        }
 
 
-            // C2 = A1 * B2:
-            //=========================
+        // C2 = A1 * B2:
+        //=========================
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 2 \n");
+        if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 2 \n");
 #endif
 
-            if (A1_nnz == 0 || B2_nnz == 0) {
+        if (A1_nnz == 0 || B2_nnz == 0) {
 #ifdef __DEBUG1__
-                if (rank == verbose_rank && verbose_matmat) {
-                    if (A1_nnz == 0) {
-                        printf("\nskip: A1_nnz == 0\n\n");
-                    } else {
-                        printf("\nskip: B2_nnz == 0\n\n");
-                    }
+            if (rank == verbose_rank && verbose_matmat) {
+                if (A1_nnz == 0) {
+                    printf("\nskip: A1_nnz == 0\n\n");
+                } else {
+                    printf("\nskip: B2_nnz == 0\n\n");
                 }
-#endif
-            } else {
-
-                fast_mm(&A[0], &B[0], C, A1_nnz, B2_nnz,
-                        A_row_size_half, A_row_offset, A_col_size, A_col_offset,
-                        B_col_size - B_col_size_half, B_col_offset + B_col_size_half,
-                        nnzPerColScan_leftStart, &nnzPerColScan_middle[0], // A1
-                        &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half],
-                        comm); // B2
-
             }
+#endif
+        } else {
+
+            fast_mm(&A[0], &B[0], C, A1_nnz, B2_nnz,
+                    A_row_size_half, A_row_offset, A_col_size, A_col_offset,
+                    B_col_size - B_col_size_half, B_col_offset + B_col_size_half,
+                    nnzPerColScan_leftStart, &nnzPerColScan_middle[0], // A1
+                    &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half],
+                    comm); // B2
+
+        }
 
 
-            // C3 = A2 * B1
-            //=========================
+        // C3 = A2 * B1
+        //=========================
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 3 \n");
+        if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 3 \n");
 #endif
 
-            if (A2_nnz == 0 || B1_nnz == 0) {
+        if (A2_nnz == 0 || B1_nnz == 0) {
 #ifdef __DEBUG1__
-                if (rank == verbose_rank && verbose_matmat) {
-                    if (A2_nnz == 0) {
-                        printf("\nskip: A2_nnz == 0\n\n");
-                    } else {
-                        printf("\nskip: B1_nnz == 0\n\n");
-                    }
+            if (rank == verbose_rank && verbose_matmat) {
+                if (A2_nnz == 0) {
+                    printf("\nskip: A2_nnz == 0\n\n");
+                } else {
+                    printf("\nskip: B1_nnz == 0\n\n");
                 }
-#endif
-            } else {
-
-                fast_mm(&A[0], &B[0], C, A2_nnz, B1_nnz,
-                        A_row_size - A_row_size_half, A_row_offset + A_row_size_half, A_col_size, A_col_offset,
-                        B_col_size_half, B_col_offset,
-                        &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
-                        nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
-
             }
+#endif
+        } else {
+
+            fast_mm(&A[0], &B[0], C, A2_nnz, B1_nnz,
+                    A_row_size - A_row_size_half, A_row_offset + A_row_size_half, A_col_size, A_col_offset,
+                    B_col_size_half, B_col_offset,
+                    &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
+                    nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+
+        }
 
 
-            // C4 = A2 * B2
-            //=========================
+        // C4 = A2 * B2
+        //=========================
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 4 \n");
+        if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 4 \n");
 #endif
 
-            if (A2_nnz == 0 || B2_nnz == 0) {
+        if (A2_nnz == 0 || B2_nnz == 0) {
 #ifdef __DEBUG1__
-                if (rank == verbose_rank && verbose_matmat) {
-                    if (A2_nnz == 0) {
-                        printf("\nskip: A2_nnz == 0\n\n");
-                    } else {
-                        printf("\nskip: B2_nnz == 0\n\n");
-                    }
+            if (rank == verbose_rank && verbose_matmat) {
+                if (A2_nnz == 0) {
+                    printf("\nskip: A2_nnz == 0\n\n");
+                } else {
+                    printf("\nskip: B2_nnz == 0\n\n");
                 }
-#endif
-            } else {
-
-                fast_mm(&A[0], &B[0], C, A2_nnz, B2_nnz,
-                        A_row_size - A_row_size_half, A_row_offset + A_row_size_half, A_col_size, A_col_offset,
-                        B_col_size - B_col_size_half, B_col_offset + B_col_size_half,
-                        &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
-                        &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half],
-                        comm); // B2
-
             }
+#endif
+        } else {
 
-            // C1 = A1 * B1:
+            fast_mm(&A[0], &B[0], C, A2_nnz, B2_nnz,
+                    A_row_size - A_row_size_half, A_row_offset + A_row_size_half, A_col_size, A_col_offset,
+                    B_col_size - B_col_size_half, B_col_offset + B_col_size_half,
+                    &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
+                    &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half],
+                    comm); // B2
+
+        }
+
+        // C1 = A1 * B1:
 //        fast_mm(A1, B1, C_temp, A_row_size_half, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size_half, B_col_offset, comm);
-            // C2 = A2 * B1:
+        // C2 = A2 * B1:
 //        fast_mm(A2, B1, C_temp, A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset, B_row_offset, B_col_size_half, B_col_offset, comm);
-            // C3 = A1 * B2:
+        // C3 = A1 * B2:
 //        fast_mm(A1, B2, C_temp, A_row_size_half, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size-B_col_size_half, B_col_offset+B_col_size_half, comm);
-            // C4 = A2 * B2
+        // C4 = A2 * B2
 //        fast_mm(A2, B2, C_temp, A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset, B_row_offset, B_col_size-B_col_size_half, B_col_offset+B_col_size_half, comm);
 
 //        if(rank==0 && verbose_matmat) printf("fast_mm: case 3: step 4 \n");
 
 #ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: end \n");
+        if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: end \n");
 #endif
 
-        }
     }
 
 //    return;
