@@ -147,14 +147,14 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
         index_t *A_new_row_idx = &nnzPerRow_left[0];
-        index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
-        index_t *orig_row_idx = &mempool2[A_row_size];
+//        index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
+//        index_t *orig_row_idx = &mempool2[A_row_size];
         index_t A_nnz_row_sz = 0;
 
         for (index_t i = 0; i < A_row_size; i++) {
             if (A_new_row_idx[i]) {
-                A_new_row_idx[i] = A_nnz_row_sz;
-                orig_row_idx[A_nnz_row_sz] = i + A_row_offset;
+//                A_new_row_idx[i] = A_nnz_row_sz;
+//                orig_row_idx[A_nnz_row_sz] = i + A_row_offset;
                 A_nnz_row_sz++;
             }
         }
@@ -163,14 +163,14 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         //    print_vector(A_new_row_idx, -1, "A_new_row_idx", comm);
 #endif
 
-        index_t *B_new_col_idx = &mempool2[A_row_size * 2];
-        index_t *B_new_col_idx_p = &B_new_col_idx[0] - B_col_offset;
-        index_t *orig_col_idx = &mempool2[A_row_size * 2 + B_col_size];
+//        index_t *B_new_col_idx = &mempool2[A_row_size * 2];
+//        index_t *B_new_col_idx_p = &B_new_col_idx[0] - B_col_offset;
+//        index_t *orig_col_idx = &mempool2[A_row_size * 2 + B_col_size];
         index_t B_nnz_col_sz = 0;
         for (index_t i = 0; i < B_col_size; i++) {
             if (nnzPerColScan_rightEnd[i] != nnzPerColScan_rightStart[i]) {
-                B_new_col_idx[i] = B_nnz_col_sz;
-                orig_col_idx[B_nnz_col_sz] = i + B_col_offset;
+//                B_new_col_idx[i] = B_nnz_col_sz;
+//                orig_col_idx[B_nnz_col_sz] = i + B_col_offset;
                 B_nnz_col_sz++;
             }
         }
@@ -185,6 +185,35 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
             do_case1 = true;
 
+            std::map<std::pair<index_t, index_t>, value_t> map1;
+
+            value_t C_val;
+            index_t C_index;
+            const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
+            const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
+            for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
+                for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
+                    for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row]; i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
+
+
+//                        C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+                        C_val = B[k].val * A[i].val;
+                        auto it = map1.emplace(std::make_pair(A[i].row, B[k].col), C_val);
+                        if(!it.second) it.first->second += C_val;
+
+                    }
+                }
+            }
+
+            C.reserve(C.size() + map1.size());
+            std::map<std::pair<index_t, index_t>, value_t>::iterator it1;
+            for(it1 = map1.begin(); it1 != map1.end(); ++it1){
+//                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
+                C.emplace_back(it1->first.first, it1->first.second, it1->second);
+            }
+
+
+/*
             // initialize
             value_t *C_temp = &mempool1[0];
             std::fill(&C_temp[0], &C_temp[A_nnz_row_sz * B_nnz_col_sz], 0);
@@ -250,7 +279,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     }
                 }
             }
-
+*/
 //            printf("C_nnz = %lu\n", C_nnz);
 
 #ifdef __DEBUG1__
