@@ -187,7 +187,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
             if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
 
-                std::map<index_t, value_t> map1;
+                std::unordered_map<index_t, value_t> map1;
                 index_t C_index;
                 value_t C_val;
                 const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
