@@ -121,13 +121,15 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case1
     // ==============================================================
 
-    if (A_row_size * B_col_size < matmat_size_thre2) { DOLLAR("case1")
+    if (A_row_size * B_col_size < matmat_size_thre2) { DOLLAR("case0")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
             printf("fast_mm: case 1: start \n");
         }
 #endif
+
+        double t1 = MPI_Wtime();
 
         index_t *nnzPerRow_left = &mempool2[0];
         std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
@@ -184,7 +186,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
-        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
+        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) { DOLLAR("case1")
 
             std::map<std::pair<index_t, index_t>, value_t> map1;
 
@@ -212,7 +214,10 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
                 C.emplace_back(it1->first.first, it1->first.second, it1->second);
             }
-            printf("C_nnz = %lu\n", map1.size());
+
+            t1 = MPI_Wtime() - t1;
+            printf("C_nnz = %lu\tA_row_size = %u\tB_col_size = %u\tA_nnz_row_sz = %u\tB_nnz_col_sz = %u\ttime = %f\n", map1.size(), A_row_size, B_col_size, A_nnz_row_sz, B_nnz_col_sz, t1);
+
 
 #ifdef __DEBUG1__
 //       print_vector(C, -1, "C", comm);
@@ -2763,6 +2768,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
     std::vector<cooEntry> AP_temp;
 
+    if(rank==0) printf("\n");
+
     if(nprocs > 1){
         int right_neighbor = (rank + 1)%nprocs;
         int left_neighbor  = rank - 1;
@@ -2928,7 +2935,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
 //    std::ofstream file("chrome.json");
 //    dollar::chrome(file);
-//    if(rank==0) printf("\n");
+    if(rank==0) printf("\nRA:\n");
     if(rank==0) dollar::text(std::cout);
     dollar::clear();
 
@@ -2998,6 +3005,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     // ===================================================
 
     std::vector<cooEntry> RAP_temp;
+    if(rank==0) printf("\n");
 
     if(P_tranpose.empty() || AP.empty()){ // skip!
 #ifdef __DEBUG1__
