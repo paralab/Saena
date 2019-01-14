@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <unordered_map>
 #include <mpi.h>
 
 
@@ -186,18 +187,16 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
             if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
 
-                std::map<std::pair<index_t, index_t>, value_t> map1;
+                std::unordered_map<std::pair<index_t, index_t>, value_t> map1;
 
                 value_t C_val;
                 const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
                 const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
                 for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
-                    for (nnz_t k = nnzPerColScan_rightStart[j];
-                         k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
-                        for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row];
-                             i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
+                    for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
+                        for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row]; i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
 
-//                        C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+//                            C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
                             C_val = B[k].val * A[i].val;
                             auto it = map1.emplace(std::make_pair(A[i].row, B[k].col), C_val);
                             if (!it.second) it.first->second += C_val;
@@ -213,9 +212,9 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     C.emplace_back(it1->first.first, it1->first.second, it1->second);
                 }
 
-                t1 = MPI_Wtime() - t1;
-                printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tmap\n", map1.size(), A_row_size, A_nnz_row_sz,
-                       B_col_size, B_nnz_col_sz, t1);
+//                t1 = MPI_Wtime() - t1;
+//                printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tmap\n", map1.size(), A_row_size, A_nnz_row_sz,
+//                       B_col_size, B_nnz_col_sz, t1);
 
 
 #ifdef __DEBUG1__
@@ -328,10 +327,9 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                         }
                     }
 
-                    t1 = MPI_Wtime() - t1;
-                    printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tvec\n", C_nnz, A_row_size, A_nnz_row_sz,
-                           B_col_size, B_nnz_col_sz, t1);
-//            printf("C_nnz = %lu\n", C_nnz);
+//                    t1 = MPI_Wtime() - t1;
+//                    printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tvec\n", C_nnz, A_row_size, A_nnz_row_sz,
+//                           B_col_size, B_nnz_col_sz, t1);
 
 #ifdef __DEBUG1__
 //       print_vector(C, -1, "C", comm);
@@ -342,7 +340,6 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
                 }
             }
-//#endif
 
     }
 
