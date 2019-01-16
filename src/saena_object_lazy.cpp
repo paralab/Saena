@@ -1297,7 +1297,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
 #endif
 
     // use this for fast_mm case1
-    std::unordered_map<index_t, value_t> map_matmat;
+//    std::unordered_map<index_t, value_t> map_matmat;
     map_matmat.reserve(matmat_size_thre);
 
     std::vector<cooEntry_row> RAP_temp_row; // this is defined here to take care of diff being empty.

@@ -3354,6 +3354,9 @@ int saena_object::compute_coarsen(Grid *grid) {
     // perform the triple multiplication: R*A*P
     // *******************************************************
 
+    // reserve memory for matmat_size_thre used in fast_mm case1
+    map_matmat.reserve(matmat_size_thre);
+
     MPI_Barrier(grid->A->comm);
     double t11 = MPI_Wtime();
 
@@ -3649,8 +3652,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     }
 
     // use this for fast_mm case1
-    std::unordered_map<index_t, value_t> map_matmat;
-    map_matmat.reserve(matmat_size_thre);
+//    std::unordered_map<index_t, value_t> map_matmat;
+//    map_matmat.reserve(matmat_size_thre);
 
     std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,

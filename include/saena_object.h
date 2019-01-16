@@ -80,7 +80,7 @@ public:
     // memory pool used in compute_coarsen
     value_t *mempool1;
     index_t *mempool2;
-//    std::unordered_map<index_t, value_t> map_matmat;
+    std::unordered_map<index_t, value_t> map_matmat;
 
     bool verbose                  = false;
     bool verbose_setup            = true;
