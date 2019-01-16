@@ -4594,6 +4594,19 @@ int saena_object::triple_mat_mult_basic(Grid *grid){
 //    std::unordered_map<index_t, value_t> map_temp;
 //    std::swap(map_matmat, map_temp);
 
+    // remove duplicates.
+    std::vector<cooEntry> Ac_dummy;
+    cooEntry temp;
+    size_minus_1 = RAP_row_sorted.size() - 1;
+    for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
+        temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
+        while(i < size_minus_1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+            ++i;
+            temp.val += RAP_row_sorted[i].val;
+        }
+        Ac_dummy.emplace_back( temp );
+    }
+
     return 0;
 }
 
