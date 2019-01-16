@@ -2546,7 +2546,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
                 fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                         A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                         &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
+                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
             }
 
@@ -2607,7 +2607,10 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
             fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
+                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+
+
 
 
 
@@ -2627,6 +2630,9 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 
 
 
+
+
+
             double t2 = MPI_Wtime();
             printf("\nfast_mm of AP_temp = %f\n", t2-t1);
         }
@@ -2642,27 +2648,6 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
             AP.back().val += AP_temp[++i].val;
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-//    std::sort(AP_temp.begin(), AP_temp.end());
-//    std::vector<cooEntry> AP;
-//    nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
-//    for(nnz_t i = 0; i < AP_temp.size(); i++){
-//        AP.emplace_back(AP_temp[i]);
-//        while(i < AP_temp_size_minus1 && AP_temp[i] == AP_temp[i+1]){ // values of entries with the same row and col should be added.
-//            std::cout << AP_temp[i] << "\t" << AP_temp[i+1] << std::endl;
-//            AP.back().val += AP_temp[++i].val;
-//        }
-//    }
 
     mat_send.clear();
     mat_send.shrink_to_fit();
@@ -2764,7 +2749,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
         fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
                 P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 //        double t2 = MPI_Wtime();
 //        printf("\nfast_mm of R(AP_temp) = %f \n", t2-t1);
 

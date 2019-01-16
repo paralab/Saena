@@ -49,13 +49,13 @@ public:
     bool dynamic_levels = true;
     bool adaptive_coarsening = false;
 
-    MPI_Comm get_orig_comm();
-
+    std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive
     const index_t matmat_size_thre  = 10000000; // if(nnz_row * nnz_col) do the dense matmat default 10M
     const index_t matmat_size_thre2 = 100000000; // if(row * col) do the dense matmat default 100M
     const index_t matmat_size_thre3 = 10000000; // if(row * col) do the dense matmat default 1M
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
+
 
     bool doSparsify = false;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
@@ -80,7 +80,7 @@ public:
     // memory pool used in compute_coarsen
     value_t *mempool1;
     index_t *mempool2;
-    std::unordered_map<index_t, value_t> map_matmat;
+//    std::unordered_map<index_t, value_t> map_matmat;
 
     bool verbose                  = false;
     bool verbose_setup            = true;
@@ -102,6 +102,8 @@ public:
     ~saena_object();
     int destroy();
 
+    MPI_Comm get_orig_comm();
+
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
     int setup(saena_matrix* A);
     int coarsen(Grid *grid);
@@ -109,7 +111,7 @@ public:
     int compute_coarsen_old(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int triple_mat_mult_basic(Grid *grid);
+    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
     // for fast_mm experiments
     int compute_coarsen_test(Grid *grid);

@@ -1081,7 +1081,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
 
             if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
-//                std::unordered_map<index_t, value_t> map_matmat;
+                std::unordered_map<index_t, value_t> map_matmat;
 
                 index_t C_index;
                 value_t C_val;
@@ -1111,7 +1111,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tmap\n", map_matmat.size(), A_row_size, A_nnz_row_sz,
 //                       B_col_size, B_nnz_col_sz, t1);
 
-                map_matmat.clear();
+//                map_matmat.clear();
 
 #ifdef __DEBUG1__
 //       print_vector(C, -1, "C", comm);
@@ -3470,14 +3470,20 @@ int saena_object::compute_coarsen(Grid *grid) {
     // *******************************************************
 
     // reserve memory for matmat_size_thre used in fast_mm case1
-    map_matmat.reserve(matmat_size_thre);
+//    map_matmat.reserve(matmat_size_thre);
 
     MPI_Barrier(grid->A->comm);
     double t11 = MPI_Wtime();
 
     std::vector<cooEntry_row> RAP_row_sorted;
-    triple_mat_mult(grid, RAP_row_sorted);
-//    triple_mat_mult_basic(grid, RAP_row_sorted);
+
+    if(coarsen_method == "basic"){
+        triple_mat_mult_basic(grid, RAP_row_sorted);
+    }else if(coarsen_method == "recursive"){
+        triple_mat_mult(grid, RAP_row_sorted);
+    }else{
+        printf("wrong coarsen method!\n");
+    }
 
     // *******************************************************
     // form Ac
@@ -3914,7 +3920,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 #endif
         } else {
 
-//            double t1 = MPI_Wtime();
+            double t1 = MPI_Wtime();
+
             fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
@@ -3924,8 +3931,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
 //                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
 //                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
-//            double t2 = MPI_Wtime();
-//            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
+
+            double t2 = MPI_Wtime();
+            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
         }
     }
 
@@ -4130,7 +4138,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 }
 
 
-int saena_object::triple_mat_mult_basic(Grid *grid){
+int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted){
 
     saena_matrix *A    = grid->A;
     prolong_matrix *P  = &grid->P;
@@ -4570,7 +4578,6 @@ int saena_object::triple_mat_mult_basic(Grid *grid){
 
     // sort globally
     // -------------
-    std::vector<cooEntry_row> RAP_row_sorted;
     par::sampleSort(RAP_temp_row, RAP_row_sorted, P->splitNew, comm);
 
     RAP_temp_row.clear();

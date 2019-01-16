@@ -202,13 +202,15 @@ int main(int argc, char* argv[]){
 //        B.split = g1->A->split;
 //        B.comm = g1->A->comm;
 
+        std::vector<cooEntry_row> RAP_row_sorted;
+
         int matmat_times = 1;
         MPI_Barrier(comm);
         double t11 = MPI_Wtime();
 
         for(index_t j = 0; j < matmat_times; j++){
-            obj1->compute_coarsen_test(g1);
-            obj1->triple_mat_mult_basic(g1);
+//            obj1->compute_coarsen_test(g1);
+            obj1->triple_mat_mult_basic(g1, RAP_row_sorted);
         }
 
         double t22 = MPI_Wtime();
