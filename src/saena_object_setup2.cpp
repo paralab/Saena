@@ -4375,7 +4375,6 @@ int saena_object::triple_mat_mult_basic(Grid *grid){
         }
     }
 
-/*
 //    std::sort(AP.begin(), AP.end());
 
 //    std::vector<cooEntry> AP;
@@ -4424,20 +4423,38 @@ int saena_object::triple_mat_mult_basic(Grid *grid){
 #endif
 
     // compute nnzPerColScan_left for P_tranpose
-    nnzPerRow_left.assign(P->Mbig, 0);
+//    nnzPerRow_left.assign(P->Mbig, 0);
 //    *nnzPerRow_left_p = &nnzPerRow_left[0] - P->split[rank];
+//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+//        nnzPerRow_left[P_tranpose[i].row]++;
+//    }
+
+//    nnzPerRowScan_left.resize(P->M + 1);
+//    nnzPerRowScan_left[0] = 0;
+//    for(nnz_t i = 0; i < P->M; i++){
+//        nnzPerRowScan_left[i+1] = nnzPerRowScan_left[i] + nnzPerRow_left[i];
+//    }
+
+//    nnzPerRow_left.clear();
+//    nnzPerRow_left.shrink_to_fit();
+
+    // compute nnzPerColScan_left for P_tranpose
+    std::vector<index_t> nnzPerCol_left(P->M, 0);
+//    nnzPerCol_left.assign(P->M, 0);
+    index_t *nnzPerCol_left_p = &nnzPerCol_left[0] - P->split[rank];
     for(nnz_t i = 0; i < P_tranpose.size(); i++){
-        nnzPerRow_left[P_tranpose[i].row]++;
+        nnzPerCol_left_p[P_tranpose[i].col]++;
+//        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
     }
 
-    nnzPerRowScan_left.resize(P->M + 1);
-    nnzPerRowScan_left[0] = 0;
+    std::vector<index_t> nnzPerColScan_left(P->M + 1);
+    nnzPerColScan_left[0] = 0;
     for(nnz_t i = 0; i < P->M; i++){
-        nnzPerRowScan_left[i+1] = nnzPerRowScan_left[i] + nnzPerRow_left[i];
+        nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
     }
 
-    nnzPerRow_left.clear();
-    nnzPerRow_left.shrink_to_fit();
+    nnzPerCol_left.clear();
+    nnzPerCol_left.shrink_to_fit();
 
 #ifdef __DEBUG1__
 //    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
@@ -4485,10 +4502,10 @@ int saena_object::triple_mat_mult_basic(Grid *grid){
     } else {
 
 //        double t1 = MPI_Wtime();
-//        fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
-//                P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
-//                &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-//                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+        fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
+                P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
+                &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
 //        fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
 //                P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
@@ -4553,6 +4570,7 @@ int saena_object::triple_mat_mult_basic(Grid *grid){
 
     // sort globally
     // -------------
+    std::vector<cooEntry_row> RAP_row_sorted;
     par::sampleSort(RAP_temp_row, RAP_row_sorted, P->splitNew, comm);
 
     RAP_temp_row.clear();
@@ -4575,7 +4593,6 @@ int saena_object::triple_mat_mult_basic(Grid *grid){
 //    map_matmat.clear();
 //    std::unordered_map<index_t, value_t> map_temp;
 //    std::swap(map_matmat, map_temp);
-*/
 
     return 0;
 }
