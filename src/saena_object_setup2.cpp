@@ -13,17 +13,17 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
-#include <unordered_map>
 #include <mpi.h>
 
 
 // this version splits the matrices by the middle row and column.
 void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-                               const nnz_t A_nnz, const nnz_t B_nnz,
-                               const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
-                               const index_t B_col_size, const index_t B_col_offset,
-                               const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                               const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, const MPI_Comm comm){
+                           const nnz_t A_nnz, const nnz_t B_nnz,
+                           const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
+                           const index_t B_col_size, const index_t B_col_offset,
+                           const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
+                           const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
+                           std::unordered_map<index_t, value_t> &map_matmat, const MPI_Comm comm){
 
     // Compute: C = A * B
     // This function has three parts:
@@ -51,6 +51,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    map_matmat.clear();
 
     index_t B_row_offset = A_col_offset;
     index_t A_col_size_half = A_col_size/2;
@@ -186,8 +188,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
 
             if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
+//                std::unordered_map<index_t, value_t> map_matmat;
 
-                std::unordered_map<index_t, value_t> map1;
                 index_t C_index;
                 value_t C_val;
                 const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
@@ -198,22 +200,22 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
                             C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
                             C_val = B[k].val * A[i].val;
-                            auto it = map1.emplace(C_index, C_val);
+                            auto it = map_matmat.emplace(C_index, C_val);
                             if (!it.second) it.first->second += C_val;
 
                         }
                     }
                 }
 
-                C.reserve(C.size() + map1.size());
+                C.reserve(C.size() + map_matmat.size());
 //                std::map<index_t, value_t>::iterator it1;
-                for (auto it1 = map1.begin(); it1 != map1.end(); ++it1) {
+                for (auto it1 = map_matmat.begin(); it1 != map_matmat.end(); ++it1) {
 //                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
                     C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
                 }
 
 //                t1 = MPI_Wtime() - t1;
-//                printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tmap\n", map1.size(), A_row_size, A_nnz_row_sz,
+//                printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tmap\n", map_matmat.size(), A_row_size, A_nnz_row_sz,
 //                       B_col_size, B_nnz_col_sz, t1);
 
 
@@ -552,7 +554,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     A_row_size, A_row_offset, A_col_size_half, A_col_offset,
                     B_col_size, B_col_offset,
                     nnzPerColScan_leftStart, nnzPerColScan_leftEnd, // A1
-                    nnzPerColScan_rightStart, &nnzPerColScan_middle[0], comm); // B1
+                    nnzPerColScan_rightStart, &nnzPerColScan_middle[0], map_matmat, comm); // B1
 
         }
 
@@ -579,7 +581,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 A_row_size, A_row_offset, A_col_size - A_col_size_half, A_col_offset + A_col_size_half,
                 B_col_size, B_col_offset,
                 &nnzPerColScan_leftStart[A_col_size_half], &nnzPerColScan_leftEnd[A_col_size_half], // A2
-                &nnzPerColScan_middle[0], nnzPerColScan_rightEnd, comm); // B2
+                &nnzPerColScan_middle[0], nnzPerColScan_rightEnd, map_matmat, comm); // B2
 
 
 #ifdef __DEBUG1__
@@ -799,7 +801,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     A_row_size_half, A_row_offset, A_col_size, A_col_offset,
                     B_col_size_half, B_col_offset,
                     nnzPerColScan_leftStart, &nnzPerColScan_middle[0], // A1
-                    nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+                    nnzPerColScan_rightStart, nnzPerColScan_rightEnd, map_matmat, comm); // B1
 
         }
 
@@ -828,7 +830,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     B_col_size - B_col_size_half, B_col_offset + B_col_size_half,
                     nnzPerColScan_leftStart, &nnzPerColScan_middle[0], // A1
                     &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half],
-                    comm); // B2
+                    map_matmat, comm); // B2
 
         }
 
@@ -856,7 +858,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     A_row_size - A_row_size_half, A_row_offset + A_row_size_half, A_col_size, A_col_offset,
                     B_col_size_half, B_col_offset,
                     &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
-                    nnzPerColScan_rightStart, nnzPerColScan_rightEnd, comm); // B1
+                    nnzPerColScan_rightStart, nnzPerColScan_rightEnd, map_matmat, comm); // B1
 
         }
 
@@ -885,7 +887,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     B_col_size - B_col_size_half, B_col_offset + B_col_size_half,
                     &nnzPerColScan_middle[0], nnzPerColScan_leftEnd, // A2
                     &nnzPerColScan_rightStart[B_col_size_half], &nnzPerColScan_rightEnd[B_col_size_half],
-                    comm); // B2
+                    map_matmat, comm); // B2
 
         }
 
@@ -2754,6 +2756,10 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         }
     }
 
+    // use this for fast_mm case1
+    std::unordered_map<index_t, value_t> map_matmat;
+    map_matmat.reserve(matmat_size_thre);
+
     std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
     std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
@@ -2835,7 +2841,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
                 fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                         A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                         &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
             }
 
@@ -2896,7 +2902,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
             fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 //            double t2 = MPI_Wtime();
 //            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
         }
@@ -3014,7 +3020,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
                 P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 //        double t2 = MPI_Wtime();
 //        printf("\nfast_mm of R(AP_temp) = %f \n", t2-t1);
 
@@ -3088,6 +3094,11 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    memcpy(&RAP_sorted[0], &RAP_row_sorted[0], RAP_row_sorted.size() * sizeof(cooEntry));
 //    RAP_row_sorted.clear();
 //    RAP_row_sorted.shrink_to_fit();
+
+    // clear map_matmat and free memory
+//    map_matmat.clear();
+//    std::unordered_map<index_t, value_t> map_temp;
+//    std::swap(map_matmat, map_temp);
 
     return 0;
 }

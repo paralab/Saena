@@ -66,11 +66,11 @@
 
 
 \begin{abstract}
-Algebraic Multigrid (AMG) is a popular linear system solver and preconditioner
-for large sparse linear systems, especially the ones obtained from the discretization of elliptic operators. Its scalability and performance, however, suffers from higher density in coarser levels of multigrid, which causes higher cost for different operations in the process, including matrix-vector and matrix-matrix product.
-In this paper, we use randomized sparsification to increase sparsity of coarse
-matrices at different levels of the Multigrid hierarchy.
-
+Algebraic Multigrid (AMG), mostly because of its black-box nature, is being used widely as a solver and also preconditioner for large sparse linear systems.
+Its scalability and performance, however, suffers from loss of sparsity in coarser levels of multigrid. Because of fill-in phenomenon, each level of multigrid has a matrix denser the one from its previous level, which causes higher cost for different operations in the solver, including matrix-vector and matrix-matrix product.
+In our method, we use randomized sparsification to increase sparsity of coarse
+matrices at different levels of the Multigrid hierarchy, but still keeping the important information of the matrices. The randomness feature of our method guarantees the whole range of information from the matrix being preserved, so the solver will not remove a specific range of entries and consequently losing parts of the matrix information.
+Our experiments show the performance boost that we achieve, by using the correct degree of sparsification.
 \end{abstract}
 
 %

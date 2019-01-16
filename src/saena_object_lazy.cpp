@@ -1296,6 +1296,10 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
         MPI_Barrier(comm); printf("compute_coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
+    // use this for fast_mm case1
+    std::unordered_map<index_t, value_t> map_matmat;
+    map_matmat.reserve(matmat_size_thre);
+
     std::vector<cooEntry_row> RAP_temp_row; // this is defined here to take care of diff being empty.
     if(!diff.empty()) {
 
@@ -1381,7 +1385,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
         fast_mm(&diff[0], &R_tranpose[0], AP, diff.size(), R_tranpose.size(),
                 A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                 &nnzPerColScan_left[0], &nnzPerColScan_left[1],
-                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
         R_tranpose.clear();
         R_tranpose.shrink_to_fit();
@@ -1473,7 +1477,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
         fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
                 P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
                 &nnzPerColScan_left[0], &nnzPerColScan_left[1],
-                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
         AP.clear();
         AP.shrink_to_fit();
