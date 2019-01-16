@@ -947,6 +947,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    map_matmat.clear();
+
     index_t B_row_offset = A_col_offset;
     index_t A_col_size_half = A_col_size/2;
 //    index_t B_row_size_half = A_col_size_half;
@@ -1081,7 +1083,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
 
             if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
-                std::unordered_map<index_t, value_t> map_matmat;
+//                std::unordered_map<index_t, value_t> map_matmat;
 
                 index_t C_index;
                 value_t C_val;
