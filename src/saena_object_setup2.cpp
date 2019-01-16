@@ -3334,7 +3334,7 @@ void saena_object::matmat(const cooEntry *A, const cooEntry *B, std::vector<cooE
             for(nnz_t k = 0; k < B_col_size; k++){
                 C_val = 0;
                 for(nnz_t l = nnzPerColScan_right[k]; l < nnzPerColScan_right[k+1]; l++){
-                    C_val = A[j].val * B[l].val;
+                    C_val += A[j].val * B[l].val;
                 }
                 C.emplace_back(A[i].row, B[k].col, C_val);
             }
