@@ -179,7 +179,7 @@ int main(int argc, char* argv[]){
     }
 */
 
-/*
+
     {
         saena_object *obj1 = solver.get_object();
         Grid *g1 = &obj1->grids[0];
@@ -202,12 +202,13 @@ int main(int argc, char* argv[]){
 //        B.split = g1->A->split;
 //        B.comm = g1->A->comm;
 
-        int matmat_times = 10;
+        int matmat_times = 1;
         MPI_Barrier(comm);
         double t11 = MPI_Wtime();
 
         for(index_t j = 0; j < matmat_times; j++){
             obj1->compute_coarsen_test(g1);
+            obj1->triple_mat_mult_basic(g1);
         }
 
         double t22 = MPI_Wtime();
@@ -218,7 +219,7 @@ int main(int argc, char* argv[]){
         delete []obj1->mempool2;
 
     }
-*/
+
     // *************************** CombBLAS ****************************
 
 //    combblas_matmult_DoubleBuff();

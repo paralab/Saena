@@ -109,6 +109,7 @@ public:
     int compute_coarsen_old(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+    int triple_mat_mult_basic(Grid *grid);
 
     // for fast_mm experiments
     int compute_coarsen_test(Grid *grid);
@@ -130,6 +131,9 @@ public:
                  const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
                  std::unordered_map<index_t, value_t> &map_matmat, MPI_Comm comm);
 
+    void matmat(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+                 nnz_t A_nnz, nnz_t B_nnz, index_t A_row_size, index_t A_col_size, index_t B_col_size,
+                 const index_t *nnzPerRowScan_left, const index_t *nnzPerColScan_right, MPI_Comm comm);
 
 //    void fast_mm_parts(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
 //                nnz_t A_nnz, nnz_t B_nnz,

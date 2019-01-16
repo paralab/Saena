@@ -2603,17 +2603,36 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 #endif
         } else {
 
-//            double t1 = MPI_Wtime();
+            double t1 = MPI_Wtime();
             fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                     &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
-//            double t2 = MPI_Wtime();
-//            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
+
+
+
+
+
+            std::sort(AP_temp.begin(), AP_temp.end()); //todo: move this to the end of this else statement.
+            std::vector<cooEntry> AP;
+            nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
+            for(nnz_t i = 0; i < AP_temp.size(); i++){
+                AP.emplace_back(AP_temp[i]);
+                while(i < AP_temp_size_minus1 && AP_temp[i] == AP_temp[i+1]){ // values of entries with the same row and col should be added.
+//            std::cout << AP_temp[i] << "\t" << AP_temp[i+1] << std::endl;
+                    AP.back().val += AP_temp[++i].val;
+                }
+            }
+
+
+
+
+            double t2 = MPI_Wtime();
+            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
         }
     }
 
-    std::sort(AP_temp.begin(), AP_temp.end());
+    std::sort(AP_temp.begin(), AP_temp.end()); //todo: move this to the end of this else statement.
     std::vector<cooEntry> AP;
     nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
     for(nnz_t i = 0; i < AP_temp.size(); i++){
@@ -2623,6 +2642,27 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
             AP.back().val += AP_temp[++i].val;
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+//    std::sort(AP_temp.begin(), AP_temp.end());
+//    std::vector<cooEntry> AP;
+//    nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
+//    for(nnz_t i = 0; i < AP_temp.size(); i++){
+//        AP.emplace_back(AP_temp[i]);
+//        while(i < AP_temp_size_minus1 && AP_temp[i] == AP_temp[i+1]){ // values of entries with the same row and col should be added.
+//            std::cout << AP_temp[i] << "\t" << AP_temp[i+1] << std::endl;
+//            AP.back().val += AP_temp[++i].val;
+//        }
+//    }
 
     mat_send.clear();
     mat_send.shrink_to_fit();
