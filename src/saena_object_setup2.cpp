@@ -3481,6 +3481,8 @@ int saena_object::compute_coarsen(Grid *grid) {
         triple_mat_mult_basic(grid, RAP_row_sorted);
     }else if(coarsen_method == "recursive"){
         triple_mat_mult(grid, RAP_row_sorted);
+    }else if(coarsen_method == "no_overlap"){
+        triple_mat_mult_no_overlap(grid, RAP_row_sorted);
     }else{
         printf("wrong coarsen method!\n");
     }
@@ -4248,9 +4250,29 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
             nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
         }
 
+        if(A->entry.empty() || mat_send.empty()){ // skip!
+#ifdef __DEBUG1__
+            if(verbose_triple_mat_mult){
+                if(A->entry.empty()){
+                    printf("\nskip: A->entry.size() == 0\n\n");
+                } else {
+                    printf("\nskip: mat_send == 0\n\n");
+                }
+            }
+#endif
+        } else {
 
+            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
+                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
+                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
+//                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
+//                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
+//                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+//                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
+        }
 
         auto *requests = new MPI_Request[4];
         auto *statuses = new MPI_Status[4];
@@ -4266,7 +4288,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
             // communicate size
             MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
             MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
-            MPI_Waitall(1, requests, statuses);
+            MPI_Waitall(2, requests, statuses);
 //          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
             mat_recv.resize(recv_size);
 
@@ -4274,9 +4296,11 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 //          print_vector(mat_recv, -1, "mat_recv", A->comm);
 //          print_vector(mat_send, -1, "mat_send", A->comm);
 #endif
+
             // communicate data
             MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests+2);
             MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+3);
+            MPI_Waitall(2, requests+2, statuses+2);
 
             owner = k%nprocs;
             mat_recv_M = P->splitNew[owner + 1] - P->splitNew[owner];
@@ -4284,8 +4308,8 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 
             std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
             nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[owner];
-            for(nnz_t i = 0; i < mat_send.size(); i++){
-                nnzPerCol_right_p[mat_send[i].col]++;
+            for(nnz_t i = 0; i < mat_recv.size(); i++){
+                nnzPerCol_right_p[mat_recv[i].col]++;
             }
 
             nnzPerColScan_right[0] = 0;
@@ -4310,7 +4334,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 #endif
             } else {
 
-                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
+                fast_mm(&A->entry[0], &mat_recv[0], AP_temp, A->entry.size(), recv_size,
                         A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                         &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                         &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
@@ -4321,8 +4345,6 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 //                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
             }
-
-            MPI_Waitall(3, requests+1, statuses+1);
 
             mat_recv.swap(mat_send);
             send_size = recv_size;
