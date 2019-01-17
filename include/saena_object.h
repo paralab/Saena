@@ -27,7 +27,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 1; // fine grid is level 0.
+    int max_level = 5; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,

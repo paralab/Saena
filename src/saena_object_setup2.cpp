@@ -4153,6 +4153,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    coarsen_time = 0;
     MPI_Barrier(comm); //todo: delete
     double t1 = MPI_Wtime(); //todo: delete
 
