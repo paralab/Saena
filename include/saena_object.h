@@ -49,7 +49,7 @@ public:
     bool dynamic_levels = true;
     bool adaptive_coarsening = false;
 
-    std::string coarsen_method = "no_overlap" ; // 1-basic, 2-recursive, 3-no_overlap
+    std::string coarsen_method = "basic" ; // 1-basic, 2-recursive, 3-no_overlap
     const index_t matmat_size_thre  = 10000000; // if(nnz_row * nnz_col) do the dense matmat default 10M
     const index_t matmat_size_thre2 = 100000000; // if(row * col) do the dense matmat default 100M
     const index_t matmat_size_thre3 = 10000000; // if(row * col) do the dense matmat default 1M
@@ -134,8 +134,16 @@ public:
                  std::unordered_map<index_t, value_t> &map_matmat, MPI_Comm comm);
 
     void matmat(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-                 nnz_t A_nnz, nnz_t B_nnz, index_t A_row_size, index_t A_col_size, index_t B_col_size,
-                 const index_t *nnzPerRowScan_left, const index_t *nnzPerColScan_right, MPI_Comm comm);
+                 nnz_t A_nnz, nnz_t B_nnz,
+                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                 index_t B_col_size, index_t B_col_offset,
+                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
+                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
+                 MPI_Comm comm);
+
+//    void matmat(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+//                 nnz_t A_nnz, nnz_t B_nnz, index_t A_row_size, index_t A_col_size, index_t B_col_size,
+//                 const index_t *nnzPerRowScan_left, const index_t *nnzPerColScan_right, MPI_Comm comm);
 
 //    void fast_mm_parts(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
 //                nnz_t A_nnz, nnz_t B_nnz,
