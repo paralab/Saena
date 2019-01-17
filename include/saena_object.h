@@ -49,7 +49,7 @@ public:
     bool dynamic_levels = true;
     bool adaptive_coarsening = false;
 
-    std::string coarsen_method = "no_overlap" ; // 1-basic, 2-recursive, 3-no_overlap
+    std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive, 3-no_overlap
     const index_t matmat_size_thre  = 10000000; // if(nnz_row * nnz_col) do the dense matmat default 10M
     const index_t matmat_size_thre2 = 100000000; // if(row * col) do the dense matmat default 100M
     const index_t matmat_size_thre3 = 10000000; // if(row * col) do the dense matmat default 1M
