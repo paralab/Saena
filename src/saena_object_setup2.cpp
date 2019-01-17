@@ -4656,6 +4656,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 
     t1 = MPI_Wtime() - t1; //todo: delete
     coarsen_time += print_time_ave_consecutive(t1, A->comm); //todo: delete
+    if(!rank) printf("coarsen_time:\n%f\n", coarsen_time);
 
     return 0;
 }
