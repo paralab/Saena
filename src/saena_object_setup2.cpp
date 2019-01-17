@@ -3344,56 +3344,6 @@ void saena_object::matmat(const cooEntry *A, const cooEntry *B, std::vector<cooE
         }
 #endif
 
-    index_t *nnzPerRow_left = &mempool2[0];
-    std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
-    index_t *nnzPerRow_left_p = &nnzPerRow_left[0] - A_row_offset;
-
-    for (nnz_t i = 0; i < A_col_size; i++) {
-        for (nnz_t j = nnzPerColScan_leftStart[i]; j < nnzPerColScan_leftEnd[i]; j++) {
-            nnzPerRow_left_p[A[j].row]++;
-        }
-    }
-
-#ifdef __DEBUG1__
-    //    for(nnz_t i = 0; i < A_row_size; i++){
-//        printf("%u\n", nnzPerRow_left[i]);
-//    }
-#endif
-
-    index_t *A_new_row_idx = &nnzPerRow_left[0];
-//        index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
-//        index_t *orig_row_idx = &mempool2[A_row_size];
-    index_t A_nnz_row_sz = 0;
-
-    for (index_t i = 0; i < A_row_size; i++) {
-        if (A_new_row_idx[i]) {
-//                A_new_row_idx[i] = A_nnz_row_sz;
-//                orig_row_idx[A_nnz_row_sz] = i + A_row_offset;
-            A_nnz_row_sz++;
-        }
-    }
-
-#ifdef __DEBUG1__
-    //    print_vector(A_new_row_idx, -1, "A_new_row_idx", comm);
-#endif
-
-//        index_t *B_new_col_idx = &mempool2[A_row_size * 2];
-//        index_t *B_new_col_idx_p = &B_new_col_idx[0] - B_col_offset;
-//        index_t *orig_col_idx = &mempool2[A_row_size * 2 + B_col_size];
-    index_t B_nnz_col_sz = 0;
-    for (index_t i = 0; i < B_col_size; i++) {
-        if (nnzPerColScan_rightEnd[i] != nnzPerColScan_rightStart[i]) {
-//                B_new_col_idx[i] = B_nnz_col_sz;
-//                orig_col_idx[B_nnz_col_sz] = i + B_col_offset;
-            B_nnz_col_sz++;
-        }
-    }
-
-#ifdef __DEBUG1__
-    //    printf("A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
-//            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
-#endif
-
     std::unordered_map<index_t, value_t> map_matmat;
 
     index_t C_index;
