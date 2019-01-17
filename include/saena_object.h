@@ -49,7 +49,7 @@ public:
     bool dynamic_levels = true;
     bool adaptive_coarsening = false;
 
-    std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive
+    std::string coarsen_method = "basic" ; // 1-basic, 2-recursive
     const index_t matmat_size_thre  = 10000000; // if(nnz_row * nnz_col) do the dense matmat default 10M
     const index_t matmat_size_thre2 = 100000000; // if(row * col) do the dense matmat default 100M
     const index_t matmat_size_thre3 = 10000000; // if(row * col) do the dense matmat default 1M
@@ -111,6 +111,7 @@ public:
     int compute_coarsen_old(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
     // for fast_mm experiments
