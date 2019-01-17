@@ -16,6 +16,9 @@
 #include <mpi.h>
 
 
+double coarsen_time = 0;
+
+
 // this version splits the matrices by the middle row and column.
 void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                            const nnz_t A_nnz, const nnz_t B_nnz,
@@ -124,7 +127,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case1
     // ==============================================================
 
-    if (A_row_size * B_col_size < matmat_size_thre2) { DOLLAR("case0")
+    if (A_row_size * B_col_size < matmat_size_thre2) { //DOLLAR("case0")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
@@ -187,7 +190,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
 
-            if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
+            if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { //DOLLAR("case1m")
 //                std::unordered_map<index_t, value_t> map_matmat;
 
                 index_t C_index;
@@ -225,7 +228,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
                 return;
-            } else { DOLLAR("case1v")
+            } else { //DOLLAR("case1v")
 //                index_t *A_new_row_idx = &nnzPerRow_left[0];
                 index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
                 index_t *orig_row_idx = &mempool2[A_row_size];
@@ -347,7 +350,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case2
     // ==============================================================
 
-    if (A_row_size <= A_col_size) { DOLLAR("case2")
+    if (A_row_size <= A_col_size) { //DOLLAR("case2")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: start \n"); }
@@ -599,8 +602,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // case3
         // ==============================================================
 
-    } else {
-        DOLLAR("case3") // (A_row_size > A_col_size)
+    } else { //DOLLAR("case3") // (A_row_size > A_col_size)
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
@@ -1017,7 +1019,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case1
     // ==============================================================
 
-    if (A_row_size * B_col_size < matmat_size_thre2) { DOLLAR("case0")
+    if (A_row_size * B_col_size < matmat_size_thre2) { //DOLLAR("case0")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
@@ -1080,7 +1082,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
 
-            if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
+            if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { //DOLLAR("case1m")
                 std::unordered_map<index_t, value_t> map_matmat;
 
                 index_t C_index;
@@ -1119,7 +1121,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
                 return;
-            } else { DOLLAR("case1v")
+            } else { //DOLLAR("case1v")
 //                index_t *A_new_row_idx = &nnzPerRow_left[0];
                 index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
                 index_t *orig_row_idx = &mempool2[A_row_size];
@@ -1241,7 +1243,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case2
     // ==============================================================
 
-    if (A_row_size <= A_col_size) { DOLLAR("case2")
+    if (A_row_size <= A_col_size) { //DOLLAR("case2")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: start \n"); }
@@ -1493,8 +1495,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // case3
         // ==============================================================
 
-    } else {
-        DOLLAR("case3") // (A_row_size > A_col_size)
+    } else { //DOLLAR("case3") // (A_row_size > A_col_size)
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
@@ -3963,9 +3964,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
 //    std::ofstream file("chrome.json");
 //    dollar::chrome(file);
-    if(rank==0) printf("\nRA:\n");
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) printf("\nRA:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
     // *******************************************************
     // part 2: multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
@@ -4073,9 +4074,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
 
-    if(rank==0) printf("\nRAP:\n");
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) printf("\nRAP:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
@@ -4152,6 +4153,9 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    MPI_Barrier(comm); //todo: delete
+    double t1 = MPI_Wtime(); //todo: delete
+
     // *******************************************************
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
@@ -4221,9 +4225,15 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
     std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
     std::vector<cooEntry> AP_temp;
 
-    if(rank==0) printf("\n");
+    t1 = MPI_Wtime() - t1; //todo: delete
+    coarsen_time += print_time_ave_consecutive(t1, A->comm); //todo: delete
+//    MPI_Barrier(comm);
+//    if(rank==0) printf("\nRA:\n");
 
     if(nprocs > 1){
+
+        t1 = MPI_Wtime(); //todo: delete
+
         int right_neighbor = (rank + 1)%nprocs;
         int left_neighbor  = rank - 1;
         if (left_neighbor < 0){
@@ -4236,9 +4246,6 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
         std::vector<cooEntry> mat_recv;
         index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
 
-
-
-
         std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
         nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[rank];
         for(nnz_t i = 0; i < mat_send.size(); i++){
@@ -4249,6 +4256,11 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
         for(nnz_t i = 0; i < mat_recv_M; i++){
             nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
         }
+
+#ifdef __DEBUG1__
+//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+//          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
 
         if(A->entry.empty() || mat_send.empty()){ // skip!
 #ifdef __DEBUG1__
@@ -4262,17 +4274,25 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 #endif
         } else {
 
+//            double t1 = MPI_Wtime();
+
             fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
-                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
+                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                     &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
-//                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
-//                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
-//                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-//                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
+//            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
+//                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
+//                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+//                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
+//            double t2 = MPI_Wtime();
+//            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
+//            print_time_ave_consecutive(t2-t1, A->comm);
         }
+
+        t1 = MPI_Wtime() - t1; //todo: delete
+        coarsen_time += print_time_ave_consecutive(t1, A->comm); //todo: delete
 
         auto *requests = new MPI_Request[4];
         auto *statuses = new MPI_Status[4];
@@ -4302,6 +4322,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
             MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+3);
             MPI_Waitall(2, requests+2, statuses+2);
 
+            t1 = MPI_Wtime(); //todo: delete
             owner = k%nprocs;
             mat_recv_M = P->splitNew[owner + 1] - P->splitNew[owner];
 //          printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
@@ -4349,6 +4370,9 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
             mat_recv.swap(mat_send);
             send_size = recv_size;
 
+            t1 = MPI_Wtime() - t1; //todo: delete
+            coarsen_time += print_time_ave_consecutive(t1, A->comm); //todo: delete
+
 #ifdef __DEBUG1__
 //          print_vector(AP_temp, -1, "AP_temp", A->comm);
 //          print_vector(mat_send, -1, "mat_send", A->comm);
@@ -4367,6 +4391,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 
     } else { // nprocs == 1 -> serial
 
+        t1 = MPI_Wtime(); //todo: delete
         index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
 
         std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
@@ -4397,7 +4422,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 #endif
         } else {
 
-            double t1 = MPI_Wtime();
+//            double t1 = MPI_Wtime();
 
             fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
@@ -4409,11 +4434,14 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 //                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
 //                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
-            double t2 = MPI_Wtime();
-            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
+//            double t2 = MPI_Wtime();
+//            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
         }
+        t1 = MPI_Wtime() - t1; //todo: delete
+        coarsen_time += print_time_ave_consecutive(t1, A->comm); //todo: delete
     }
 
+    t1 = MPI_Wtime(); //todo: delete
     std::sort(AP_temp.begin(), AP_temp.end());
     std::vector<cooEntry> AP;
     nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
@@ -4438,9 +4466,9 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 
 //    std::ofstream file("chrome.json");
 //    dollar::chrome(file);
-    if(rank==0) printf("\nRA:\n");
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) printf("\nRA:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
     // *******************************************************
     // part 2: multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
@@ -4508,7 +4536,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
     // ===================================================
 
     std::vector<cooEntry> RAP_temp;
-    if(rank==0) printf("\n");
+//    if(rank==0) printf("\nRAP:\n");
 
     if(P_tranpose.empty() || AP.empty()){ // skip!
 #ifdef __DEBUG1__
@@ -4548,9 +4576,9 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
 
-    if(rank==0) printf("\nRAP:\n");
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) printf("\nRAP:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
@@ -4610,6 +4638,24 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 //    map_matmat.clear();
 //    std::unordered_map<index_t, value_t> map_temp;
 //    std::swap(map_matmat, map_temp);
+
+    // remove duplicates.
+    cooEntry temp;
+    std::vector<cooEntry> Ac_dummy;
+    for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
+        temp = cooEntry(RAP_row_sorted[i].row, RAP_row_sorted[i].col, RAP_row_sorted[i].val);
+        while(i < size_minus_1 && RAP_row_sorted[i] == RAP_row_sorted[i+1]){ // values of entries with the same row and col should be added.
+            ++i;
+            temp.val += RAP_row_sorted[i].val;
+        }
+        Ac_dummy.emplace_back( temp );
+    }
+
+//    RAP_row_sorted.clear();
+//    RAP_row_sorted.shrink_to_fit();
+
+    t1 = MPI_Wtime() - t1; //todo: delete
+    coarsen_time += print_time_ave_consecutive(t1, A->comm); //todo: delete
 
     return 0;
 }
@@ -4885,9 +4931,9 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
 
 //    std::ofstream file("chrome.json");
 //    dollar::chrome(file);
-    if(rank==0) printf("\nRA:\n");
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) printf("\nRA:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
     // *******************************************************
     // part 2: multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
@@ -5015,9 +5061,9 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
 
-    if(rank==0) printf("\nRAP:\n");
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) printf("\nRAP:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
