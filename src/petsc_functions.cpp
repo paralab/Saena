@@ -228,6 +228,19 @@ int petsc_prolong_matrix(prolong_matrix *P, Mat &B){
     MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(B,   MAT_FINAL_ASSEMBLY);
 
+//    MatInfo info;
+//    MatGetInfo(B, MAT_GLOBAL_SUM,&info);
+//    if(!rank){
+//        std::cout << "\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
+//                  << ", block size = " << info.block_size << std::endl;
+//
+//        PetscInt m, n;
+//        MatGetSize(B, &m,&n);
+//        printf("\nm = %d, n = %d\n", m, n);
+//    }
+
+//    petsc_viewer(B);
+
 //    PetscFinalize();
     return 0;
 }
@@ -306,6 +319,19 @@ int petsc_saena_matrix(saena_matrix *A, Mat &B){
     MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(B,   MAT_FINAL_ASSEMBLY);
 
+//    int rank;
+//    MPI_Comm_rank(comm, &rank);
+//    MatInfo info;
+//    MatGetInfo(B, MAT_GLOBAL_SUM,&info);
+//    if(!rank){
+//        std::cout << "\npetsc_saena_matrix:\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
+//                  << ", block size = " << info.block_size << std::endl;
+//
+//        PetscInt m, n;
+//        MatGetSize(B, &m,&n);
+//        printf("m = %d, n = %d\n", m, n);
+//    }
+
 //    PetscFinalize();
     return 0;
 }
@@ -353,7 +379,7 @@ int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
 
-    Mat R2, A2, P2, RAP;
+    Mat A2, P2, RAP;
 //    petsc_restrict_matrix(R, R2);
     petsc_saena_matrix(A, A2);
     petsc_prolong_matrix(P, P2);
@@ -361,11 +387,23 @@ int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
     MPI_Barrier(comm);
     double t1 = MPI_Wtime();
     MatPtAP(A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
-//    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc MatPtAP", comm);
 
 //    petsc_viewer(RAP);
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+    MatInfo info;
+    MatGetInfo(RAP, MAT_GLOBAL_SUM,&info);
+    if(!rank){
+        std::cout << "\npetsc_saena_matrix:\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
+                  << ", block size = " << info.block_size << std::endl;
+
+        PetscInt m, n;
+        MatGetSize(RAP, &m,&n);
+        printf("m = %d, n = %d\n", m, n);
+    }
 
 //    MatDestroy(&R2);
     MatDestroy(&A2);
@@ -427,11 +465,11 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
 
     // method1
     // =====================
-    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+//    MatMatMatMult(R2, A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
 
     // method2
     // =====================
-//    MatPtAP(A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
+    MatPtAP(A2, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
 
     // method3
     // =====================

@@ -323,6 +323,11 @@ int saena_object::coarsen(Grid *grid){
 //           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l);
 #endif
 
+    if(!rank)
+        printf("rank = %d, Mbig = %u, M = %u, nnz_l = %lu, nnz_g = %lu \n",
+               rank, grid->Ac.Mbig, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
+//    print_vector(grid->Ac.entry, 0, "grid->Ac.entry", grid->Ac.comm);
+
     // **************************** compute_coarsen in PETSc ****************************
 //    petsc_viewer(&grid->Ac);
 

@@ -27,7 +27,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 5; // fine grid is level 0.
+    int max_level = 1; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -49,7 +49,7 @@ public:
     bool dynamic_levels = true;
     bool adaptive_coarsening = false;
 
-    std::string coarsen_method = "basic" ; // 1-basic, 2-recursive, 3-no_overlap
+    std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive, 3-no_overlap
     const index_t matmat_size_thre  = 10000000; // if(nnz_row * nnz_col) do the dense matmat default 10M
     const index_t matmat_size_thre2 = 100000000; // if(row * col) do the dense matmat default 100M
     const index_t matmat_size_thre3 = 10000000; // if(row * col) do the dense matmat default 1M
