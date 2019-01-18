@@ -956,19 +956,13 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //    index_t B_row_size_half = A_col_size_half;
 //    index_t B_col_size_half = B_col_size/2;
 
+    printf("A_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u\n",
+           A_nnz, B_nnz, A_row_size, B_col_size);
+
     int verbose_rank = 0;
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat) printf("\nfast_mm: start \n");
-#endif
 
-//    if(A_nnz == 0 || B_nnz == 0){
-//#ifdef __DEBUG1__
-//        if(rank==verbose_rank && verbose_matmat) printf("\nskip: A_nnz == 0 || B_nnz == 0\n\n");
-//#endif
-//        return 0;
-//    }
-
-#ifdef __DEBUG1__
 //    print_vector(A, -1, "A", comm);
 //    print_vector(B, -1, "B", comm);
 //    MPI_Barrier(comm); printf("rank %d: A: %ux%u, B: %ux%u \n\n", rank, A_row_size, A_col_size, A_col_size, B_col_size); MPI_Barrier(comm);
@@ -1084,7 +1078,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
 
-            if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { //DOLLAR("case1m")
+            if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
                 std::unordered_map<index_t, value_t> map_matmat;
                 map_matmat.reserve(A_nnz + 2*B_nnz);
 
@@ -1124,7 +1118,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
                 return;
-            } else { //DOLLAR("case1v")
+            } else { DOLLAR("case1v")
 //                index_t *A_new_row_idx = &nnzPerRow_left[0];
                 index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
                 index_t *orig_row_idx = &mempool2[A_row_size];
@@ -3348,6 +3342,7 @@ void saena_object::matmat(const cooEntry *A, const cooEntry *B, std::vector<cooE
 #endif
 
     std::unordered_map<index_t, value_t> map_matmat;
+    map_matmat.reserve(A_nnz + 2*B_nnz);
 
     index_t C_index;
     value_t C_val;
@@ -4103,9 +4098,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     AP_temp.clear();
     AP_temp.shrink_to_fit();
 
-    unsigned long AP_size_loc = AP.size(), AP_size;
-    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
-    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
+//    unsigned long AP_size_loc = AP.size(), AP_size;
+//    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
+//    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);
@@ -4115,9 +4110,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
 //    std::ofstream file("chrome.json");
 //    dollar::chrome(file);
-//    if(rank==0) printf("\nRA:\n");
-//    if(rank==0) dollar::text(std::cout);
-//    dollar::clear();
+    if(rank==0) printf("\nRA:\n");
+    if(rank==0) dollar::text(std::cout);
+    dollar::clear();
 
     // *******************************************************
     // part 2: multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
@@ -4226,9 +4221,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
 
-//    if(rank==0) printf("\nRAP:\n");
-//    if(rank==0) dollar::text(std::cout);
-//    dollar::clear();
+    if(rank==0) printf("\nRAP:\n");
+    if(rank==0) dollar::text(std::cout);
+    dollar::clear();
 
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
