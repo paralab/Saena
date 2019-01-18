@@ -922,6 +922,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                            const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
                            const MPI_Comm comm){
 
+    // =============================================================
     // Compute: C = A * B
     // This function has three parts:
     // 1- Do multiplication when blocks of A and B are small enough. Put them in a sparse C, where C_ij = A_i * B_j
@@ -944,6 +945,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //            return sort (A1B1 + A2B1 + A1B2 + A2B2);
 //        }
 //    }
+// =============================================================
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
@@ -3931,6 +3933,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     std::vector<cooEntry> AP_temp;
 
     if(nprocs > 1){
+
         int right_neighbor = (rank + 1)%nprocs;
         int left_neighbor  = rank - 1;
         if (left_neighbor < 0){
@@ -4098,6 +4101,10 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     mat_send.shrink_to_fit();
     AP_temp.clear();
     AP_temp.shrink_to_fit();
+
+    unsigned long AP_size_loc = AP.size(), AP_size;
+    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
+    if(!rank) printf("A_nnz_g = %lu, P_nnz_g = %lu, AP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);
