@@ -321,14 +321,14 @@ int saena_object::coarsen(Grid *grid){
 
 //    printf("rank = %d, M = %u, nnz_l = %lu, nnz_g = %lu, Ac.M = %u, Ac.nnz_l = %lu \n",
 //           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l);
-#endif
 
-    int rank1;
-    MPI_Comm_rank(grid->A->comm, &rank1);
-    if(!rank1)
-        printf("Mbig = %u, M = %u, nnz_l = %lu, nnz_g = %lu \n",
-               grid->Ac.Mbig, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
+//    int rank1;
+//    MPI_Comm_rank(grid->A->comm, &rank1);
+//    if(!rank1)
+//        printf("Mbig = %u, M = %u, nnz_l = %lu, nnz_g = %lu \n",
+//               grid->Ac.Mbig, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
 //    print_vector(grid->Ac.entry, 0, "grid->Ac.entry", grid->Ac.comm);
+#endif
 
     // **************************** compute_coarsen in PETSc ****************************
 //    petsc_viewer(&grid->Ac);
