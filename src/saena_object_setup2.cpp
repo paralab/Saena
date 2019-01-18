@@ -18,8 +18,7 @@
 
 double coarsen_time = 0;
 
-
-// this version splits the matrices by the middle row and column.
+/*
 void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                            const nnz_t A_nnz, const nnz_t B_nnz,
                            const index_t A_row_size, const index_t A_row_offset, const index_t A_col_size, const index_t A_col_offset,
@@ -912,6 +911,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 //    return;
 }
+*/
 
 
 void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
