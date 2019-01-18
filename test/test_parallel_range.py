@@ -13,7 +13,7 @@ import subprocess
 # args = "./Saena 3 3 3"
 
 for x in range(int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])):
-    args = ("mpirun", "-np", sys.argv[1], "./Saena", str(x), str(x), str(x))
+    args = ("mpirun", "-np", sys.argv[1], "./Saena", str(x))
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     popen.wait()
     output = popen.stdout.read()

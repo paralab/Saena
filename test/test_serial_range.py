@@ -13,7 +13,7 @@ import subprocess
 # args = "./Saena 3 3 3"
 
 for x in range(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])):
-    args = ("./Saena", str(x), str(x), str(x))
+    args = ("./Saena", str(x))
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     popen.wait()
     output = popen.stdout.read()

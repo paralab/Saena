@@ -29,9 +29,11 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 4){
-        if(rank == 0)
-            std::cout << "This is how to make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
+    if(argc != 2){
+        if(rank == 0){
+//            std::cout << "This is how to make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
+            std::cout << "This is how to make a 3DLaplacian: ./Saena <grid size>" << std::endl;
+        }
         MPI_Finalize();
         return -1;
     }
@@ -41,8 +43,10 @@ int main(int argc, char* argv[]){
     double t1 = MPI_Wtime();
 
     int mx(std::stoi(argv[1]));
-    int my(std::stoi(argv[2]));
-    int mz(std::stoi(argv[3]));
+//    int my(std::stoi(argv[2]));
+//    int mz(std::stoi(argv[3]));
+    int my = mx;
+    int mz = mx;
 
     if(verbose){
         MPI_Barrier(comm);

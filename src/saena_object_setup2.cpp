@@ -4198,7 +4198,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 #endif
     } else {
 
-//        double t1 = MPI_Wtime();
+        double t1 = MPI_Wtime();
+
         fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
                 P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
                 &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
@@ -4208,8 +4209,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //                P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
 //                &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
 //                &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
-//        double t2 = MPI_Wtime();
-//        printf("\nfast_mm of R(AP_temp) = %f \n", t2-t1);
+
+        double t2 = MPI_Wtime();
+        printf("\nfast_mm of R(AP_temp) = %f \n", t2-t1);
 
     }
 
