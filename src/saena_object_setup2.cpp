@@ -4104,7 +4104,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
     unsigned long AP_size_loc = AP.size(), AP_size;
     MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
-    if(!rank) printf("A_nnz_g = %lu, P_nnz_g = %lu, AP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
+    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);
