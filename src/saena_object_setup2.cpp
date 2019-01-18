@@ -956,9 +956,6 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //    index_t B_row_size_half = A_col_size_half;
 //    index_t B_col_size_half = B_col_size/2;
 
-    printf("A_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u\n",
-           A_nnz, B_nnz, A_row_size, B_col_size);
-
     int verbose_rank = 0;
 #ifdef __DEBUG1__
     if(rank==verbose_rank && verbose_matmat) printf("\nfast_mm: start \n");
@@ -1109,6 +1106,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                t1 = MPI_Wtime() - t1;
 //                printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tmap\n", map_matmat.size(), A_row_size, A_nnz_row_sz,
 //                       B_col_size, B_nnz_col_sz, t1);
+                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u\n",
+                       map_matmat.size(), A_nnz, B_nnz, A_row_size, B_col_size);
 
 //                map_matmat.clear();
 
@@ -1209,14 +1208,14 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 1: step 2 \n"); }
 #endif
 
-                nnz_t C_nnz = 0;
+                nnz_t C_nnz = 0; //todo: delete this
                 for (index_t j = 0; j < B_nnz_col_sz; j++) {
                     temp = A_nnz_row_sz * j;
                     for (index_t i = 0; i < A_nnz_row_sz; i++) {
 //                if(rank==0) std::cout << i + A_nnz_row_sz*j << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + A_nnz_row_sz*j] << std::endl;
                         if (C_temp[i + A_nnz_row_sz * j] != 0) {
                             C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[i + temp]);
-                            C_nnz++;
+                            C_nnz++; //todo: delete this
                         }
                     }
                 }
@@ -1224,7 +1223,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                    t1 = MPI_Wtime() - t1;
 //                    printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tvec\n", C_nnz, A_row_size, A_nnz_row_sz,
 //                           B_col_size, B_nnz_col_sz, t1);
-
+                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u\n",
+                       C_nnz, A_nnz, B_nnz, A_row_size, B_col_size);
 #ifdef __DEBUG1__
 //       print_vector(C, -1, "C", comm);
                 if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
@@ -1240,7 +1240,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case2
     // ==============================================================
 
-    if (A_row_size <= A_col_size) { //DOLLAR("case2")
+    if (A_row_size <= A_col_size) { DOLLAR("case2")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: start \n"); }
@@ -1492,7 +1492,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // case3
         // ==============================================================
 
-    } else { //DOLLAR("case3") // (A_row_size > A_col_size)
+    } else { DOLLAR("case3") // (A_row_size > A_col_size)
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
@@ -3928,6 +3928,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
     std::vector<cooEntry> AP_temp;
 
+    printf("\n");
     if(nprocs > 1){
 
         int right_neighbor = (rank + 1)%nprocs;
@@ -4179,6 +4180,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     // multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
     // ===================================================
 
+    printf("\n");
     std::vector<cooEntry> RAP_temp;
 
     if(P_tranpose.empty() || AP.empty()){ // skip!
