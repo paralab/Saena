@@ -392,18 +392,18 @@ int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P){
 
 //    petsc_viewer(RAP);
 
-    int rank;
-    MPI_Comm_rank(comm, &rank);
-    MatInfo info;
-    MatGetInfo(RAP, MAT_GLOBAL_SUM,&info);
-    if(!rank){
-        std::cout << "\npetsc_saena_matrix:\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
-                  << ", block size = " << info.block_size << std::endl;
-
-        PetscInt m, n;
-        MatGetSize(RAP, &m,&n);
-        printf("m = %d, n = %d\n", m, n);
-    }
+//    int rank;
+//    MPI_Comm_rank(comm, &rank);
+//    MatInfo info;
+//    MatGetInfo(RAP, MAT_GLOBAL_SUM,&info);
+//    if(!rank){
+//        std::cout << "\npetsc_saena_matrix:\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
+//                  << ", block size = " << info.block_size << std::endl;
+//
+//        PetscInt m, n;
+//        MatGetSize(RAP, &m,&n);
+//        printf("m = %d, n = %d\n", m, n);
+//    }
 
 //    MatDestroy(&R2);
     MatDestroy(&A2);
@@ -478,17 +478,51 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
 //    MatMatMult(RA, P2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &RAP);
 //    MatDestroy(&RA);
     // =====================
+    // debug info
+    // =====================
 
 //    petsc_viewer(RAP);
+//    petsc_viewer(Ac2);
 
-    MatAXPY(RAP, -1, Ac2, SUBSET_NONZERO_PATTERN);
+//    MatInfo info;
+//    MatGetInfo(RAP, MAT_GLOBAL_SUM,&info);
+//    if(!rank){
+//        std::cout << "\nRAP:\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
+//                  << ", block size = " << info.block_size << std::endl;
+//
+//        PetscInt m, n;
+//        MatGetSize(RAP, &m,&n);
+//        printf("m = %d, n = %d\n", m, n);
+//    }
+//
+//    MatGetInfo(Ac2, MAT_GLOBAL_SUM,&info);
+//    if(!rank){
+//        std::cout << "\nAc:\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
+//                  << ", block size = " << info.block_size << std::endl;
+//
+//        PetscInt m, n;
+//        MatGetSize(Ac2, &m,&n);
+//        printf("m = %d, n = %d\n", m, n);
+//    }
+
+    // ====================================
+    // compute the norm of the difference
+    // ====================================
+
+    MatAXPY(RAP, -1, Ac2, DIFFERENT_NONZERO_PATTERN);
 
     double norm_frob;
     MatNorm(RAP, NORM_FROBENIUS, &norm_frob);
     if(rank==0) printf("\nnorm_frobenius(Ac_PETSc - Ac_Saena) = %.16f\n", norm_frob);
 
+    // ====================================
+
 //    petsc_viewer(Ac2);
 //    petsc_viewer(RAP);
+
+    // ====================================
+    // destroy
+    // ====================================
 
     MatDestroy(&RAP);
     MatDestroy(&P2);
