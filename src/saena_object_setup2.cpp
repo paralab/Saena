@@ -1086,6 +1086,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
             if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { //DOLLAR("case1m")
                 std::unordered_map<index_t, value_t> map_matmat;
+                map_matmat.reserve(A_nnz + 2*B_nnz);
 
                 index_t C_index;
                 value_t C_val;
