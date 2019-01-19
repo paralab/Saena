@@ -1109,8 +1109,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 t11 = MPI_Wtime() - t11;
 //                printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tmap\n", map_matmat.size(), A_row_size, A_nnz_row_sz,
 //                       B_col_size, B_nnz_col_sz, t1);
-                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u \tt: %.3f \n",
-                       map_matmat.size(), A_nnz, B_nnz, A_row_size, B_col_size, t11*1000);
+                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row: %u (%u) \tB_col: %u (%u) \tt: %.3f \n",
+                       map_matmat.size(), A_nnz, B_nnz, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz, t11*1000);
 
 //                map_matmat.clear();
 
@@ -1229,8 +1229,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     t11 = MPI_Wtime() - t11;
 //                    printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tvec\n", C_nnz, A_row_size, A_nnz_row_sz,
 //                           B_col_size, B_nnz_col_sz, t1);
-                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u \tt: %.3f \n",
-                       C_nnz, A_nnz, B_nnz, A_row_size, B_col_size, t11*1000);
+                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row: %u (%u) \tB_col: %u (%u) \tt: %.3f \n",
+                       C_nnz, A_nnz, B_nnz, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz, t11*1000);
 #ifdef __DEBUG1__
 //       print_vector(C, -1, "C", comm);
                 if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
