@@ -1075,7 +1075,10 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
 
-            if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { DOLLAR("case1m")
+            if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { //DOLLAR("case1m")
+
+                double t11 = MPI_Wtime();
+
                 std::unordered_map<index_t, value_t> map_matmat;
                 map_matmat.reserve(A_nnz + 2*B_nnz);
 
@@ -1103,11 +1106,11 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
                 }
 
-//                t1 = MPI_Wtime() - t1;
+                t11 = MPI_Wtime() - t11;
 //                printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tmap\n", map_matmat.size(), A_row_size, A_nnz_row_sz,
 //                       B_col_size, B_nnz_col_sz, t1);
-                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u\n",
-                       map_matmat.size(), A_nnz, B_nnz, A_row_size, B_col_size);
+                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u \tt: %.3f \n",
+                       map_matmat.size(), A_nnz, B_nnz, A_row_size, B_col_size, t11*1000);
 
 //                map_matmat.clear();
 
@@ -1117,7 +1120,10 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
                 return;
-            } else { DOLLAR("case1v")
+            } else { //DOLLAR("case1v")
+
+                double t11 = MPI_Wtime();
+
 //                index_t *A_new_row_idx = &nnzPerRow_left[0];
                 index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
                 index_t *orig_row_idx = &mempool2[A_row_size];
@@ -1180,7 +1186,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                              i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
 
 #ifdef __DEBUG1__
-                            //                if(rank==0) std::cout << A_new_row_idx[A[i].row - A_row_offset] + A_nnz_row_sz * B_new_col_idx_p[B[k].col] << "\t"
+//                if(rank==0) std::cout << A_new_row_idx[A[i].row - A_row_offset] + A_nnz_row_sz * B_new_col_idx_p[B[k].col] << "\t"
 //                << A_new_row_idx[A[i].row - A_row_offset] << "\t" << B_new_col_idx_p[B[k].col] << "\t"
 //                << C_temp[A_new_row_idx[A[i].row - A_row_offset] + A_nnz_row_sz * B_new_col_idx_p[B[k].col]] << std::endl;
 
@@ -1191,7 +1197,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                             C_temp[A_new_row_idx_p[A[i].row] + temp] += B[k].val * A[i].val;
 
 #ifdef __DEBUG1__
-                            //                if (rank == 0) std::cout << "A: " << A[i] << "\tB: " << B[k] << "\tC_index: " << A_new_row_idx_p[A[i].row] + temp
+//                if (rank == 0) std::cout << "A: " << A[i] << "\tB: " << B[k] << "\tC_index: " << A_new_row_idx_p[A[i].row] + temp
 //                                         << "\tA_row_offset = " << A_row_offset
 //                                         << "\tB_col_offset = " << B_col_offset << std::endl;
 
@@ -1220,11 +1226,11 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     }
                 }
 
-//                    t1 = MPI_Wtime() - t1;
+                    t11 = MPI_Wtime() - t11;
 //                    printf("C_nnz = %lu\tA: %u, %u\tB: %u, %u\ttime = %f\t\tvec\n", C_nnz, A_row_size, A_nnz_row_sz,
 //                           B_col_size, B_nnz_col_sz, t1);
-                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u\n",
-                       C_nnz, A_nnz, B_nnz, A_row_size, B_col_size);
+                printf("C_nnz: %lu \tA_nnz: %lu \tB_nnz: %lu \tA_row_size: %u \tB_col_size: %u \tt: %.3f \n",
+                       C_nnz, A_nnz, B_nnz, A_row_size, B_col_size, t11*1000);
 #ifdef __DEBUG1__
 //       print_vector(C, -1, "C", comm);
                 if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
@@ -1240,7 +1246,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case2
     // ==============================================================
 
-    if (A_row_size <= A_col_size) { DOLLAR("case2")
+    if (A_row_size <= A_col_size) { //DOLLAR("case2")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 2: start \n"); }
@@ -1492,7 +1498,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         // case3
         // ==============================================================
 
-    } else { DOLLAR("case3") // (A_row_size > A_col_size)
+    } else { //DOLLAR("case3") // (A_row_size > A_col_size)
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 3: start \n");
@@ -4111,9 +4117,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
 //    std::ofstream file("chrome.json");
 //    dollar::chrome(file);
-    if(rank==0) printf("\nRA:\n");
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) printf("\nRA:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
     // *******************************************************
     // part 2: multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
@@ -4223,9 +4229,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     nnzPerColScan_right.clear();
     nnzPerColScan_right.shrink_to_fit();
 
-    if(rank==0) printf("\nRAP:\n");
-    if(rank==0) dollar::text(std::cout);
-    dollar::clear();
+//    if(rank==0) printf("\nRAP:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
 
 #ifdef __DEBUG1__
 //    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
