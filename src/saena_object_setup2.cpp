@@ -1012,7 +1012,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case1
     // ==============================================================
 
-    if (A_row_size * B_col_size < matmat_size_thre2) { //DOLLAR("case0")
+    if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
@@ -1072,15 +1072,15 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
-        // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
-        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
+        // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2, then do dense multiplication. otherwise, do case2 or 3.
+        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
 
             if (A_nnz_row_sz * B_nnz_col_sz > matmat_size_thre3) { //DOLLAR("case1m")
 
 //                double t11 = MPI_Wtime();
 
                 std::unordered_map<index_t, value_t> map_matmat;
-                map_matmat.reserve(A_nnz + 2*B_nnz);
+                map_matmat.reserve(A_nnz + B_nnz);
 
                 index_t C_index;
                 value_t C_val;
@@ -1100,7 +1100,6 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 }
 
                 C.reserve(C.size() + map_matmat.size());
-//                std::map<index_t, value_t>::iterator it1;
                 for (auto it1 = map_matmat.begin(); it1 != map_matmat.end(); ++it1) {
 //                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
                     C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
