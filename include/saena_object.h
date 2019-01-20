@@ -50,9 +50,9 @@ public:
     bool adaptive_coarsening = false;
 
     std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive, 3-no_overlap
-    const index_t matmat_size_thre  = 10000000; // if(nnz_row * nnz_col) do the dense matmat default 10M
-    const index_t matmat_size_thre2 = 100000000; // if(row * col) do the dense matmat default 100M
-    const index_t matmat_size_thre3 = 10000000; // if(row * col) do the dense matmat default 1M
+    const index_t matmat_size_thre  = 10000000; // if(nnz_row * nnz_col < matmat_size_thre) do case1. default 10M
+    const index_t matmat_size_thre2 = 30000000; // if(row * col < matmat_size_thre2) decide to do case1 or not. default 30M
+    const index_t matmat_size_thre3 = 3000000;  // if(row * col < matmat_size_thre3) do vector, otherwise map. default 3M
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
 
