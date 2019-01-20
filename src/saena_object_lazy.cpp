@@ -50,7 +50,7 @@ int saena_object::update2(saena_matrix* A_new){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    mempool1 = new value_t[matmat_size_thre];
+    mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[grids[0].A->Mbig * 4];
 
 //    A_new->assemble();
@@ -133,7 +133,7 @@ int saena_object::update3(saena_matrix* A_new){
 //    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
 //    printf("A_diff.size = %lu\n", A_diff.size());
 
-    mempool1 = new value_t[matmat_size_thre];
+    mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[grids[0].A->Mbig * 4];
 
     grids[0].A = A_new; // the whole matrix A for level 0 should be updated with the updated matrix.
@@ -1298,7 +1298,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
 
     // use this for fast_mm case1
 //    std::unordered_map<index_t, value_t> map_matmat;
-//    map_matmat.reserve(matmat_size_thre);
+//    map_matmat.reserve(matmat_size_thre2);
 
     std::vector<cooEntry_row> RAP_temp_row; // this is defined here to take care of diff being empty.
     if(!diff.empty()) {

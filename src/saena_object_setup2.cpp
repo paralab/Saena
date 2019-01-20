@@ -126,7 +126,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
     // case1
     // ==============================================================
 
-    if (A_row_size * B_col_size < matmat_size_thre2) { //DOLLAR("case0")
+    if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
@@ -186,8 +186,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
-        // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre, then do dense multiplication. otherwise, do case2 or 3.
-        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre) {
+        // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2, then do dense multiplication. otherwise, do case2 or 3.
+        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
 
             if (A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre3) { //DOLLAR("case1m")
 //                std::unordered_map<index_t, value_t> map_matmat;
@@ -1072,8 +1072,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
-        // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2, then do dense multiplication. otherwise, do case2 or 3.
-        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
+        // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
+        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1) {
 
             if (A_nnz_row_sz * B_nnz_col_sz > matmat_size_thre3) { //DOLLAR("case1m")
 
@@ -1918,7 +1918,7 @@ int saena_object::fast_mm_orig(const cooEntry *A, const cooEntry *B, std::vector
 
 //    index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
 
-    if( A_row_size * B_col_size < matmat_size_thre ){
+    if( A_row_size * B_col_size < matmat_size_thre2 ){
 
 #ifdef __DEBUG1__
         if(rank==verbose_rank && (verbose_matmat || verbose_matmat_recursive)){printf("fast_mm: case 1: start \n");}
@@ -2574,7 +2574,7 @@ int saena_object::fast_mm_nnz(const cooEntry *A, const cooEntry *B, std::vector<
 //                                  A_row_size, A_col_size, B_col_size, size_min, min_size_threshold);
 #endif
 
-    if( A_row_size * B_col_size < matmat_size_thre ){
+    if( A_row_size * B_col_size < matmat_size_thre2 ){
 
 #ifdef __DEBUG1__
         if(rank==verbose_rank && (verbose_matmat || verbose_matmat_recursive)){printf("fast_mm: case 1: start \n");}
@@ -3622,8 +3622,8 @@ int saena_object::compute_coarsen(Grid *grid) {
     // perform the triple multiplication: R*A*P
     // *******************************************************
 
-    // reserve memory for matmat_size_thre used in fast_mm case1
-//    map_matmat.reserve(matmat_size_thre);
+    // reserve memory for matmat_size_thre2 used in fast_mm case1
+//    map_matmat.reserve(matmat_size_thre2);
 
     if(!rank) std::cout << "coarsen_method: " << coarsen_method << std::endl;
 
@@ -3932,7 +3932,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
     // use this for fast_mm case1
 //    std::unordered_map<index_t, value_t> map_matmat;
-//    map_matmat.reserve(matmat_size_thre);
+//    map_matmat.reserve(matmat_size_thre2);
 
     std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
@@ -4379,7 +4379,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
 
     // use this for fast_mm case1
 //    std::unordered_map<index_t, value_t> map_matmat;
-//    map_matmat.reserve(matmat_size_thre);
+//    map_matmat.reserve(matmat_size_thre2);
 
     std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
@@ -4897,7 +4897,7 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
 
     // use this for fast_mm case1
 //    std::unordered_map<index_t, value_t> map_matmat;
-//    map_matmat.reserve(matmat_size_thre);
+//    map_matmat.reserve(matmat_size_thre2);
 
     std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
@@ -5335,7 +5335,7 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
 
     // use this for fast_mm case1
 //    std::unordered_map<index_t, value_t> map_matmat;
-//    map_matmat.reserve(matmat_size_thre);
+//    map_matmat.reserve(matmat_size_thre2);
 
     std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,

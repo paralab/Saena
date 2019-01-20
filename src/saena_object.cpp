@@ -84,7 +84,7 @@ int saena_object::setup(saena_matrix* A) {
         A->generate_dense_matrix();
     }
 
-    mempool1 = new value_t[matmat_size_thre];
+    mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[A->Mbig * 4];
 
     if(verbose_setup_steps && rank==0) printf("setup: first Grid\n");

@@ -146,7 +146,7 @@ int main(int argc, char* argv[]){
 //        row_thres = g1->A->Mbig;
 //        row_thres = g1->P.Nbig;
 
-        obj1->mempool1 = new value_t[obj1->matmat_size_thre];
+        obj1->mempool1 = new value_t[obj1->matmat_size_thre2];
         obj1->mempool2 = new index_t[g1->A->Mbig * 4];
 
         Grid g2;
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]){
 //        row_thres = g1->A->Mbig;
 //        row_thres = g1->P.Nbig;
 
-        obj1->mempool1 = new value_t[obj1->matmat_size_thre];
+        obj1->mempool1 = new value_t[obj1->matmat_size_thre2];
         obj1->mempool2 = new index_t[g1->A->Mbig * 4];
 
 //        Grid g2;

@@ -128,7 +128,7 @@ void saena_object::fast_mm_parts(const cooEntry *A, const cooEntry *B, std::vect
 
 //    index_t size_min = std::min(std::min(A_row_size, A_col_size), B_col_size);
 
-    if( (A_row_size * B_col_size < matmat_size_thre) || (A_row_size == 1) || (B_col_size == 1) ){
+    if( (A_row_size * B_col_size < matmat_size_thre2) || (A_row_size == 1) || (B_col_size == 1) ){
 
         fast_mm_part1(&A[0], &B[0], C, A_nnz, B_nnz,
                       A_row_size, A_row_offset, A_col_size, A_col_offset,
@@ -2465,7 +2465,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 
     // use this for fast_mm case1
     std::unordered_map<index_t, value_t> map_matmat;
-    map_matmat.reserve(matmat_size_thre);
+    map_matmat.reserve(matmat_size_thre2);
 
     std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
