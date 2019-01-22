@@ -3874,9 +3874,14 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
+    unsigned long send_size_max;
+    unsigned long send_size = R->entry.size();
+    MPI_Allreduce(&send_size, &send_size_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
-    std::vector<cooEntry> mat_send(R->entry.size());
-    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], mat_send);
+//    std::vector<cooEntry> mat_send(R->entry.size());
+    auto mat_send = new cooEntry[send_size_max];
+    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
 
 #ifdef __DEBUG1__
 //    print_vector(R->entry, -1, "R->entry", comm);
@@ -3949,9 +3954,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         }
 
         int owner;
-        unsigned long send_size = mat_send.size();
         unsigned long recv_size;
-        std::vector<cooEntry> mat_recv;
+//        std::vector<cooEntry> mat_recv;
+        auto mat_recv = new cooEntry[send_size_max];
         index_t mat_recv_M;
 
         auto *requests = new MPI_Request[4];
@@ -3970,7 +3975,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
             MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
             MPI_Waitall(1, requests, statuses);
 //          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
-            mat_recv.resize(recv_size);
+//            mat_recv.resize(recv_size);
 
 #ifdef __DEBUG1__
 //          print_vector(mat_recv, -1, "mat_recv", A->comm);
@@ -3986,7 +3991,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
             std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
             nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[owner];
-            for(nnz_t i = 0; i < mat_send.size(); i++){
+            for(nnz_t i = 0; i < send_size; i++){
                 nnzPerCol_right_p[mat_send[i].col]++;
             }
 
@@ -4000,7 +4005,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-            if(A->entry.empty() || mat_send.empty()){ // skip!
+            if(A->entry.empty() || send_size==0){ // skip!
 #ifdef __DEBUG1__
                 if(verbose_triple_mat_mult){
                     if(A->entry.empty()){
@@ -4012,7 +4017,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 #endif
             } else {
 
-                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
+                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), send_size,
                         A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                         &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                         &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
@@ -4026,7 +4031,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
             MPI_Waitall(3, requests+1, statuses+1);
 
-            mat_recv.swap(mat_send);
+//            mat_recv.swap(mat_send);
+            std::swap(mat_send, mat_recv);
             send_size = recv_size;
 
 #ifdef __DEBUG1__
@@ -4039,9 +4045,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
         }
 
-        mat_recv.clear();
-        mat_recv.shrink_to_fit();
-
+//        mat_recv.clear();
+//        mat_recv.shrink_to_fit();
+        delete [] mat_recv;
         delete [] requests;
         delete [] statuses;
 
@@ -4051,7 +4057,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
         std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
         nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[rank];
-        for(nnz_t i = 0; i < mat_send.size(); i++){
+        for(nnz_t i = 0; i < send_size; i++){
             nnzPerCol_right_p[mat_send[i].col]++;
         }
 
@@ -4065,7 +4071,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-        if(A->entry.empty() || mat_send.empty()){ // skip!
+        if(A->entry.empty() || send_size == 0){ // skip!
 #ifdef __DEBUG1__
             if(verbose_triple_mat_mult){
                 if(A->entry.empty()){
@@ -4079,7 +4085,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
             double t1 = MPI_Wtime();
 
-            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
+            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), send_size,
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                     &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
@@ -4105,8 +4111,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         }
     }
 
-    mat_send.clear();
-    mat_send.shrink_to_fit();
+    delete [] mat_send;
+//    mat_send.clear();
+//    mat_send.shrink_to_fit();
     AP_temp.clear();
     AP_temp.shrink_to_fit();
 
@@ -4132,7 +4139,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
     // local transpose of P is being used to compute R*(AP_temp). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
-    transpose_locally(P->entry, P->entry.size(), P_tranpose);
+    transpose_locally(&P->entry[0], P->entry.size(), &P_tranpose[0]);
 
     // convert the indices to global
     for(nnz_t i = 0; i < P_tranpose.size(); i++){
@@ -4302,7 +4309,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
 
 int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted){
-
+/*
     saena_matrix *A    = grid->A;
     prolong_matrix *P  = &grid->P;
     restrict_matrix *R = &grid->R;
@@ -4321,9 +4328,13 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
+    unsigned long send_size_max;
+    unsigned long send_size = R->entry.size();
+    MPI_Allreduce(&send_size, &send_size_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> mat_send(R->entry.size());
-    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], mat_send);
+    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
 
 #ifdef __DEBUG1__
 //    print_vector(R->entry, -1, "R->entry", comm);
@@ -4818,7 +4829,7 @@ int saena_object::triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_ro
     t1 = MPI_Wtime() - t1; //todo: delete
     coarsen_time += print_time_ave_consecutive(t1, A->comm); //todo: delete
     if(!rank) printf("coarsen_time:\n%f\n", coarsen_time);
-
+*/
     return 0;
 }
 
@@ -4841,7 +4852,7 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
     std::vector<cooEntry> mat_send(R->entry.size());
-    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], mat_send);
+    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
 
 #ifdef __DEBUG1__
 //    print_vector(R->entry, -1, "R->entry", comm);
@@ -5091,7 +5102,7 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
 
     // local transpose of P is being used to compute R*(AP_temp). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
-    transpose_locally(P->entry, P->entry.size(), P_tranpose);
+    transpose_locally(&P->entry[0], P->entry.size(), &P_tranpose[0]);
 
     // convert the indices to global
     for(nnz_t i = 0; i < P_tranpose.size(); i++){
@@ -6353,7 +6364,7 @@ int saena_object::compute_coarsen_old(Grid *grid){
 } // compute_coarsen_old()
 
 
-int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size){
+int saena_object::transpose_locally(cooEntry *A, nnz_t size){
 
     transpose_locally(A, size, 0, A);
 
@@ -6361,7 +6372,7 @@ int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size){
 }
 
 
-int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::vector<cooEntry> &B){
+int saena_object::transpose_locally(cooEntry *A, nnz_t size, cooEntry *B){
 
     transpose_locally(A, size, 0, B);
 
@@ -6369,13 +6380,13 @@ int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, std::v
 }
 
 
-int saena_object::transpose_locally(std::vector<cooEntry> &A, nnz_t size, index_t row_offset, std::vector<cooEntry> &B){
+int saena_object::transpose_locally(cooEntry *A, nnz_t size, index_t row_offset, cooEntry *B){
 
     for(nnz_t i = 0; i < size; i++){
         B[i] = cooEntry(A[i].col, A[i].row+row_offset, A[i].val);
     }
 
-    std::sort(B.begin(), B.end());
+    std::sort(&B[0], &B[size]);
 
     return 0;
 }

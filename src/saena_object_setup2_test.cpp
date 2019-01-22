@@ -2407,9 +2407,14 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
+    unsigned long send_size_max;
+    unsigned long send_size = R->entry.size();
+    MPI_Allreduce(&send_size, &send_size_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
-    std::vector<cooEntry> mat_send(R->entry.size());
-    transpose_locally(R->entry, R->entry.size(), R->splitNew[rank], mat_send);
+//    std::vector<cooEntry> mat_send(R->entry.size());
+    auto mat_send = new cooEntry[send_size_max];
+    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
 
 #ifdef __DEBUG1__
 //    print_vector(R->entry, -1, "R->entry", comm);
@@ -2480,9 +2485,9 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
         }
 
         int owner;
-        unsigned long send_size = mat_send.size();
         unsigned long recv_size;
-        std::vector<cooEntry> mat_recv;
+//        std::vector<cooEntry> mat_recv;
+        auto mat_recv = new cooEntry[send_size_max];
         index_t mat_recv_M;
 
         auto *requests = new MPI_Request[4];
@@ -2501,7 +2506,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
             MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
             MPI_Waitall(1, requests, statuses);
 //          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
-            mat_recv.resize(recv_size);
+//            mat_recv.resize(recv_size);
 
 #ifdef __DEBUG1__
 //          print_vector(mat_recv, -1, "mat_recv", A->comm);
@@ -2517,7 +2522,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 
             std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
             nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[owner];
-            for(nnz_t i = 0; i < mat_send.size(); i++){
+            for(nnz_t i = 0; i < send_size; i++){
                 nnzPerCol_right_p[mat_send[i].col]++;
             }
 
@@ -2531,7 +2536,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-            if(A->entry.empty() || mat_send.empty()){ // skip!
+            if(A->entry.empty() || send_size == 0){ // skip!
 #ifdef __DEBUG1__
                 if(verbose_triple_mat_mult){
                     if(A->entry.empty()){
@@ -2543,7 +2548,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 #endif
             } else {
 
-                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
+                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), send_size,
                         A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                         &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                         &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
@@ -2552,7 +2557,8 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 
             MPI_Waitall(3, requests+1, statuses+1);
 
-            mat_recv.swap(mat_send);
+//            mat_recv.swap(mat_send);
+            std::swap(mat_send, mat_recv);
             send_size = recv_size;
 
 #ifdef __DEBUG1__
@@ -2565,9 +2571,9 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 
         }
 
-        mat_recv.clear();
-        mat_recv.shrink_to_fit();
-
+//        mat_recv.clear();
+//        mat_recv.shrink_to_fit();
+        delete [] mat_recv;
         delete [] requests;
         delete [] statuses;
 
@@ -2577,7 +2583,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 
         std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
         nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[rank];
-        for(nnz_t i = 0; i < mat_send.size(); i++){
+        for(nnz_t i = 0; i < send_size; i++){
             nnzPerCol_right_p[mat_send[i].col]++;
         }
 
@@ -2591,7 +2597,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 //          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
 #endif
 
-        if(A->entry.empty() || mat_send.empty()){ // skip!
+        if(A->entry.empty() || send_size == 0){ // skip!
 #ifdef __DEBUG1__
             if(verbose_triple_mat_mult){
                 if(A->entry.empty()){
@@ -2604,7 +2610,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
         } else {
 
             double t1 = MPI_Wtime();
-            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
+            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), send_size,
                     A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                     &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
@@ -2649,8 +2655,9 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
         }
     }
 
-    mat_send.clear();
-    mat_send.shrink_to_fit();
+    delete [] mat_send;
+//    mat_send.clear();
+//    mat_send.shrink_to_fit();
     AP_temp.clear();
     AP_temp.shrink_to_fit();
 
@@ -2672,7 +2679,7 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
 
     // local transpose of P is being used to compute R*(AP_temp). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
-    transpose_locally(P->entry, P->entry.size(), P_tranpose);
+    transpose_locally(&P->entry[0], P->entry.size(), &P_tranpose[0]);
 
     // convert the indices to global
     for(nnz_t i = 0; i < P_tranpose.size(); i++){
