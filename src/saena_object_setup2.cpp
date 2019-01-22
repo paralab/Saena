@@ -4140,12 +4140,12 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
     // local transpose of P is being used to compute R*(AP_temp). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
-    transpose_locally(&P->entry[0], P->entry.size(), &P_tranpose[0]);
+    transpose_locally(&P->entry[0], P->entry.size(), P->split[rank], &P_tranpose[0]);
 
     // convert the indices to global
-    for(nnz_t i = 0; i < P_tranpose.size(); i++){
-        P_tranpose[i].col += P->split[rank];
-    }
+//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+//        P_tranpose[i].col += P->split[rank];
+//    }
 
 #ifdef __DEBUG1__
 //    print_vector(P->entry, -1, "P->entry", comm);
