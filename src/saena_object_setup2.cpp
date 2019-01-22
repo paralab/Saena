@@ -4140,7 +4140,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
     // local transpose of P is being used to compute R*(AP_temp). So P is transposed locally here.
     std::vector<cooEntry> P_tranpose(P->entry.size());
-    transpose_locally(&P->entry[0], P->entry.size(), P->split[rank], &P_tranpose[0]);
+//    transpose_locally(&P->entry[0], P->entry.size(), P->split[rank], &P_tranpose[0]);
 
     // convert the indices to global
 //    for(nnz_t i = 0; i < P_tranpose.size(); i++){
@@ -4157,10 +4157,17 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     std::vector<index_t> nnzPerColScan_left2(P->M + 1, 0);
     index_t *nnzPerCol_left = &nnzPerColScan_left2[1];
     index_t *nnzPerCol_left_p = &nnzPerCol_left[0] - P->split[rank];
-    for(nnz_t i = 0; i < P_tranpose.size(); i++){
-        nnzPerCol_left_p[P_tranpose[i].col]++;
+//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+//        nnzPerCol_left_p[P_tranpose[i].col]++;
 //        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
+//    }
+
+    for(nnz_t i = 0; i < P->entry.size(); i++){
+        P_tranpose[i] = cooEntry(P->entry[i].col, P->entry[i].row + P->split[rank], P->entry[i].val);
+        nnzPerCol_left_p[P_tranpose[i].col]++;
     }
+
+    std::sort(P_tranpose.begin(), P_tranpose.end());
 
 //    nnzPerColScan_left.resize(P->M + 1);
 //    nnzPerColScan_left[0] = 0;
