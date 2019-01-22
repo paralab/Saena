@@ -651,7 +651,9 @@ int saena_matrix::set_off_on_diagonal(){
 //        nnzPerRow.assign(M,0);
 //        nnzPerCol_local.assign(Mbig,0); // Nbig = Mbig, assuming A is symmetric.
 //        nnzPerCol_remote.assign(M,0);
-        std::vector<index_t> nnzPerCol(Mbig, 0);
+//        std::vector<index_t> nnzPerCol(Mbig, 0);
+        nnzPerColScan.assign(Mbig + 1, 0);
+        index_t *nnzPerCol = &nnzPerColScan[1];
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //        nnzPerRow[row[0]-split[rank]]++;
@@ -733,12 +735,12 @@ int saena_matrix::set_off_on_diagonal(){
             MPI_Barrier(comm);
         }
 
-        nnzPerColScan.resize(Mbig + 1);
-        nnzPerColScan[0] = 0;
-        for(nnz_t i = 0; i < Mbig; i++){
-            nnzPerColScan[i+1] = nnzPerColScan[i] + nnzPerCol[i];
+//        nnzPerColScan.resize(Mbig + 1);
+//        nnzPerColScan[0] = 0;
+        for(nnz_t i = 1; i < Mbig+1; i++){
+            nnzPerColScan[i] += nnzPerColScan[i-1];
         }
-        nnzPerCol.clear();
+//        nnzPerCol.clear();
 
         // don't receive anything from yourself
         recvCount[rank] = 0;

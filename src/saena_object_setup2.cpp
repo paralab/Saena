@@ -4153,7 +4153,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 #endif
 
     // compute nnzPerColScan_left for P_tranpose
-    nnzPerCol_left.assign(P->M, 0);
+    std::vector<index_t> nnzPerCol_left(P->M, 0);
+//    nnzPerCol_left.assign(P->M, 0);
     index_t *nnzPerCol_left_p = &nnzPerCol_left[0] - P->split[rank];
     for(nnz_t i = 0; i < P_tranpose.size(); i++){
         nnzPerCol_left_p[P_tranpose[i].col]++;
