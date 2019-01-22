@@ -401,6 +401,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     openmp_setup();
     w_buff.resize(num_threads*M); // allocate for w_buff for matvec
 
+    MPI_Allreduce(&nnz_l, &nnz_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+
     return 0;
 } //end of restrictMatrix::transposeP
 

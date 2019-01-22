@@ -3874,9 +3874,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
-    unsigned long send_size_max;
+    unsigned long send_size_max = R->nnz_max;
     unsigned long send_size = R->entry.size();
-    MPI_Allreduce(&send_size, &send_size_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+//    MPI_Allreduce(&send_size, &send_size_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
 //    std::vector<cooEntry> mat_send(R->entry.size());
@@ -3888,23 +3888,24 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    print_vector(R_tranpose, -1, "mat_send", comm);
 #endif
 
-    std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
-    for(nnz_t i = 0; i < A->entry.size(); i++){
-        nnzPerCol_left[A->entry[i].col]++;
-    }
+//    std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
+//    for(nnz_t i = 0; i < A->entry.size(); i++){
+//        nnzPerCol_left[A->entry[i].col]++;
+//    }
 
 #ifdef __DEBUG1__
 //    print_vector(A->entry, 1, "A->entry", comm);
 //    print_vector(nnzPerCol_left, 1, "nnzPerCol_left", comm);
 #endif
 
-    std::vector<index_t> nnzPerColScan_left(A->Mbig+1);
-    nnzPerColScan_left[0] = 0;
-    for(nnz_t i = 0; i < A->Mbig; i++){
-        nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
-    }
+    index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
+//    std::vector<index_t> nnzPerColScan_left(A->Mbig+1);
+//    nnzPerColScan_left[0] = 0;
+//    for(nnz_t i = 0; i < A->Mbig; i++){
+//        nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
+//    }
 
-    nnzPerCol_left.clear();
+//    nnzPerCol_left.clear();
 //    nnzPerCol_left.shrink_to_fit();
 
 #ifdef __DEBUG1__
@@ -4303,6 +4304,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    map_matmat.clear();
 //    std::unordered_map<index_t, value_t> map_temp;
 //    std::swap(map_matmat, map_temp);
+
+    A->nnzPerColScan.clear();
+    A->nnzPerColScan.shrink_to_fit();
 
     return 0;
 }

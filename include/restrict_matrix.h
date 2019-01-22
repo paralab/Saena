@@ -26,6 +26,7 @@ public:
     nnz_t nnz_l  = 0;
     nnz_t nnz_l_local  = 0;
     nnz_t nnz_l_remote = 0;
+    nnz_t nnz_max = 0;
 
     std::vector<cooEntry> entry; // local row indices (not global)
     std::vector<cooEntry> entry_local;
