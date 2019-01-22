@@ -1,5 +1,7 @@
 \documentclass[sigconf]{acmart}
 
+\pdfsuppresswarningpagegroup=1 % Majid: suppress this warning: PDF inclusion: multiple pdfs with page group included in a single page 
+
 \usepackage{booktabs} % For formal tables
 
 \usepackage{algpseudocode} 
@@ -37,6 +39,7 @@
 \newcommand{\recmm}{\textsc{recurs\_matmult}}
 \newcommand{\spr}{\textsc{split\_by\_row}}
 \newcommand{\spc}{\textsc{split\_by\_col}}
+\newcommand{\nnzsz}{\textsc{nnz\_mat\_size}}
 
 
 \begin{document}
@@ -45,7 +48,7 @@
 
 \author{Majid Rasouli}
 \affiliation{%
-  \institution{School of Computing, University of Utah}
+  \institution{School of Computing \\University of Utah}
 %  \streetaddress{P.O. Box 1212}
   \city{Salt Lake City}
   \state{Utah}
@@ -53,16 +56,25 @@
 }
 \email{rasouli@cs.utah.edu}
 
+\author{Robert M. Kirby}
+\affiliation{%
+  \institution{School of Computing \\University of Utah}
+%  \streetaddress{P.O. Box 1212}
+  \city{Salt Lake City}
+  \state{Utah}
+  %\postcode{43017-6221}
+}
+\email{kirby@cs.utah.edu}
+
 \author{Hari Sundar}
 \affiliation{%
-  \institution{School of Computing, University of Utah}
+  \institution{School of Computing \\University of Utah}
 %  \streetaddress{P.O. Box 1212}
   \city{Salt Lake City}
   \state{Utah}
   %\postcode{43017-6221}
 }
 \email{hari@cs.utah.edu}
-
 
 % The default list of authors is too long for headers.
 %\renewcommand{\shortauthors}{B. Trovato et al.}
