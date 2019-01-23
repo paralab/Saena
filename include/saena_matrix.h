@@ -57,6 +57,8 @@ public:
     index_t M_old = 0; // local number of rows, before being repartitioned.
     nnz_t nnz_g   = 0; // global nnz
     nnz_t nnz_l   = 0; // local nnz
+    nnz_t nnz_max = 0;
+    index_t max_M = 0;
     std::vector<index_t> split; // (row-wise) partition of the matrix between processes
     std::vector<index_t> split_old;
 
@@ -74,6 +76,7 @@ public:
     std::vector<index_t> nnzPerRow_local2; // todo: remove this. this is used for openmp part of saena_matrix.cpp
     std::vector<index_t> nnzPerRow_remote; // It is also used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
+    std::vector<index_t> nnzPerColScan; // used in triple_mat_mult. free it when done. // todo: change this to nnz_t
 
 //    std::vector<index_t> row_local_temp;
 //    std::vector<index_t> col_local_temp;

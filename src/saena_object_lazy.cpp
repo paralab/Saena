@@ -1721,7 +1721,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
 } // compute_coarsen()
 
 
-//int saena_object::compute_coarsen_update_Ac -> implemented based on the older version of matmat. newer.
+//int saena_object::compute_coarsen_update_Ac -> implemented based on the older version of fast_mm_basic. newer.
 /*
 int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
 
@@ -1969,7 +1969,7 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
 } // end of compute_coarsen_update_Ac()
 */
 
-//int saena_object::compute_coarsen_update_Ac -> implemented based on the older version of matmat. older.
+//int saena_object::compute_coarsen_update_Ac -> implemented based on the older version of fast_mm_basic. older.
 /*
 int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
 

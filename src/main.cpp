@@ -409,6 +409,9 @@ int main(int argc, char* argv[]){
 */
     // *************************** finalize ****************************
 
+//    saena_matrix C(comm);
+//    solver.get_object()->matmat(A.get_internal_matrix(), A.get_internal_matrix(), &C);
+
 //    if(rank==0) dollar::text(std::cout);
 
 //    A.destroy();

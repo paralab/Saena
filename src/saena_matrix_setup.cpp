@@ -651,6 +651,9 @@ int saena_matrix::set_off_on_diagonal(){
 //        nnzPerRow.assign(M,0);
 //        nnzPerCol_local.assign(Mbig,0); // Nbig = Mbig, assuming A is symmetric.
 //        nnzPerCol_remote.assign(M,0);
+//        std::vector<index_t> nnzPerCol(Mbig, 0);
+        nnzPerColScan.assign(Mbig + 1, 0);
+        index_t *nnzPerCol = &nnzPerColScan[1];
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //        nnzPerRow[row[0]-split[rank]]++;
@@ -680,6 +683,7 @@ int saena_matrix::set_off_on_diagonal(){
 //                if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[0].col, lower_bound3(&split[0], &split[nprocs], entry[0].col));
                 recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
             }
+            nnzPerCol[entry[0].col]++;
         }
 
         if(entry.size() >= 2){
@@ -721,6 +725,7 @@ int saena_matrix::set_off_on_diagonal(){
                     // the original col values are not being used. the ordering starts from 0, and goes up by 1.
                     col_remote.emplace_back(col_remote_size - 1);
                 }
+                nnzPerCol[entry[i].col]++;
             } // for i
         }
 
@@ -729,6 +734,13 @@ int saena_matrix::set_off_on_diagonal(){
             printf("matrix_setup: rank = %d, local remote2 \n", rank);
             MPI_Barrier(comm);
         }
+
+//        nnzPerColScan.resize(Mbig + 1);
+//        nnzPerColScan[0] = 0;
+        for(nnz_t i = 1; i < Mbig+1; i++){
+            nnzPerColScan[i] += nnzPerColScan[i-1];
+        }
+//        nnzPerCol.clear();
 
         // don't receive anything from yourself
         recvCount[rank] = 0;
@@ -739,7 +751,7 @@ int saena_matrix::set_off_on_diagonal(){
             sendCount.resize(nprocs);
             MPI_Alltoall(&recvCount[0], 1, MPI_INT, &sendCount[0], 1, MPI_INT, comm);
 
-//        print_vector(sendCount, 0, "sendCount", comm);
+//            print_vector(sendCount, 0, "sendCount", comm);
 
             recvCountScan.resize(nprocs);
             sendCountScan.resize(nprocs);
@@ -788,7 +800,7 @@ int saena_matrix::set_off_on_diagonal(){
             MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
                           &vIndex[0],          &sendCount[0], &vdispls[0], MPI_UNSIGNED, comm);
 
-//    print_vector(vIndex, -1, "vIndex", comm);
+//            print_vector(vIndex, -1, "vIndex", comm);
 
             if(verbose_matrix_setup) {
                 MPI_Barrier(comm);
@@ -816,6 +828,18 @@ int saena_matrix::set_off_on_diagonal(){
 
             allocate_zfp();
         }
+
+        // compute max_M
+//        MPI_Allreduce(&M, &max_M, 1, MPI_UNSIGNED, MPI_MAX, comm);
+        max_M = 0;
+        for(index_t i = 0; i < nprocs; i++){
+            if(split[i+1] - split[i] > max_M){
+                max_M = split[i+1] - split[i];
+            }
+        }
+
+        // compute nnz_max
+        MPI_Allreduce(&nnz_l, &nnz_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
     }
 
     return 0;

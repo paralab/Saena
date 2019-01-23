@@ -35,6 +35,14 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     // set the number of rows for each process
     M = splitNew[rank+1] - splitNew[rank];
 
+    // this is used in triple_mat_mult
+    max_M = 0;
+    for(index_t i = 0; i < nprocs; i++){
+        if(splitNew[i+1] - splitNew[i] > max_M){
+            max_M = splitNew[i+1] - splitNew[i];
+        }
+    }
+
     if(verbose_transposeP){
         MPI_Barrier(comm);
         printf("rank = %d, R.Mbig = %u, R.NBig = %u, M = %u \n", rank, Mbig, Nbig, M);
@@ -400,6 +408,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     openmp_setup();
     w_buff.resize(num_threads*M); // allocate for w_buff for matvec
+
+    MPI_Allreduce(&nnz_l, &nnz_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
 
     return 0;
 } //end of restrictMatrix::transposeP
