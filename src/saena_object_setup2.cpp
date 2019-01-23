@@ -3929,12 +3929,12 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 #endif
 
     // compute the maximum size for nnzPerCol_right and nnzPerColScan_right
-    index_t mat_recv_M_max = 0;
-    for(index_t i = 0; i < nprocs; i++){
-        if(P->splitNew[i+1] - P->splitNew[i] > mat_recv_M_max){
-            mat_recv_M_max = P->splitNew[i+1] - P->splitNew[i];
-        }
-    }
+    index_t mat_recv_M_max = R->max_M;
+//    for(index_t i = 0; i < nprocs; i++){
+//        if(P->splitNew[i+1] - P->splitNew[i] > mat_recv_M_max){
+//            mat_recv_M_max = P->splitNew[i+1] - P->splitNew[i];
+//        }
+//    }
 
     // use this for fast_mm case1
 //    std::unordered_map<index_t, value_t> map_matmat;

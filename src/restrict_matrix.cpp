@@ -35,6 +35,14 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     // set the number of rows for each process
     M = splitNew[rank+1] - splitNew[rank];
 
+    // this is used in triple_mat_mult
+    max_M = 0;
+    for(index_t i = 0; i < nprocs; i++){
+        if(splitNew[i+1] - splitNew[i] > max_M){
+            max_M = splitNew[i+1] - splitNew[i];
+        }
+    }
+
     if(verbose_transposeP){
         MPI_Barrier(comm);
         printf("rank = %d, R.Mbig = %u, R.NBig = %u, M = %u \n", rank, Mbig, Nbig, M);
