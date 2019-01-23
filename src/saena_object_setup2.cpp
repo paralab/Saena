@@ -3632,10 +3632,10 @@ int saena_object::compute_coarsen(Grid *grid) {
 
     std::vector<cooEntry_row> RAP_row_sorted;
 
-    if(coarsen_method == "basic"){
-        triple_mat_mult_basic(grid, RAP_row_sorted);
-    }else if(coarsen_method == "recursive"){
+    if(coarsen_method == "recursive"){
         triple_mat_mult(grid, RAP_row_sorted);
+    }else if(coarsen_method == "basic"){
+        triple_mat_mult_basic(grid, RAP_row_sorted);
     }else if(coarsen_method == "no_overlap"){
         triple_mat_mult_no_overlap(grid, RAP_row_sorted);
     }else{
@@ -3873,6 +3873,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     // *******************************************************
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
+
+    double t_AP = MPI_Wtime();
 
     unsigned long send_size     = R->entry.size();
     unsigned long send_size_max = R->nnz_max;
@@ -4123,6 +4125,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    unsigned long AP_size_loc = AP.size(), AP_size;
 //    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
+
+    t_AP = MPI_Wtime() - t_AP;
+    print_time_ave(t_AP, "AP:\n", grid->A->comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);
