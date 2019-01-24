@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <spp.h> //sparsepp
 
 // set one of the following to set fast_mm split based on nnz or matrix size
 #define SPLIT_NNZ
@@ -80,6 +81,7 @@ public:
     value_t *mempool1;
     index_t *mempool2;
 //    std::unordered_map<index_t, value_t> map_matmat;
+    spp::sparse_hash_map<index_t, value_t> map_matmat;
 
     bool verbose                  = false;
     bool verbose_setup            = true;
