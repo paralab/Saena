@@ -1055,7 +1055,10 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         }
 
 #ifdef __DEBUG1__
-        //    print_vector(A_new_row_idx, -1, "A_new_row_idx", comm);
+//    print_vector(A_new_row_idx, -1, "A_new_row_idx", comm);
+//        for (index_t i = 0; i < A_row_size; i++) {
+//            std::cout << A_new_row_idx[i] << std::endl;
+//        }
 #endif
 
 //        index_t *B_new_col_idx = &mempool2[A_row_size * 2];
@@ -1082,8 +1085,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 //                double t11 = MPI_Wtime();
 
-//                std::unordered_map<index_t, value_t> map_matmat;
-                spp::sparse_hash_map<index_t, value_t> map_matmat;
+                std::unordered_map<index_t, value_t> map_matmat;
+//                spp::sparse_hash_map<index_t, value_t> map_matmat;
                 map_matmat.reserve(A_nnz + 2*B_nnz);
 
                 index_t C_index;
@@ -1098,6 +1101,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                             C_val = B[k].val * A[i].val;
                             auto it = map_matmat.emplace(C_index, C_val);
                             if (!it.second) it.first->second += C_val;
+//                            std::cout << C_index << "\t" << C_val << std::endl;
 
                         }
                     }
@@ -3389,9 +3393,8 @@ void saena_object::fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vect
     }
 
     C.reserve(C.size() + map_matmat.size());
-//                std::map<index_t, value_t>::iterator it1;
     for (auto it1 = map_matmat.begin(); it1 != map_matmat.end(); ++it1) {
-//                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
+//        std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
         C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
     }
 
@@ -3412,6 +3415,9 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
     MPI_Comm_rank(comm, &rank);
 
     bool verbose_matmat = false;
+
+    mempool1 = new value_t[matmat_size_thre2];
+    mempool2 = new index_t[A->Mbig * 4];
 
     double t_AP = MPI_Wtime();
 
@@ -3620,7 +3626,10 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
     t_AP = MPI_Wtime() - t_AP;
-    print_time_ave(t_AP, "AB:\n", comm);
+    print_time_ave(t_AP, "AB:", comm);
+
+    delete[] mempool1;
+    delete[] mempool2;
 
 #ifdef __DEBUG1__
 //    print_vector(AB_temp, -1, "AB_temp", A->comm);
@@ -4380,7 +4389,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
     t_AP = MPI_Wtime() - t_AP;
-    print_time_ave(t_AP, "AP:\n", grid->A->comm);
+    print_time_ave(t_AP, "AP:", grid->A->comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);

@@ -72,7 +72,7 @@ int main(int argc, char* argv[]){
 //    petsc_viewer(A.get_internal_matrix());
 
     // *************************** set rhs: Laplacian ****************************
-
+/*
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs;
     saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
-
+*/
     // *************************** AMG - Solve ****************************
 /*
     t1 = MPI_Wtime();
@@ -409,8 +409,10 @@ int main(int argc, char* argv[]){
 */
     // *************************** finalize ****************************
 
-//    saena_matrix C(comm);
-//    solver.get_object()->matmat(A.get_internal_matrix(), A.get_internal_matrix(), &C);
+    saena::amg solver;
+//    saena_object *obj1 = solver.get_object();
+    saena::matrix C(comm);
+    solver.matmat(&A, &A, &C);
 
 //    if(rank==0) dollar::text(std::cout);
 

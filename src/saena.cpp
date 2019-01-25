@@ -536,6 +536,14 @@ int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
 }
 
 
+int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C){
+
+    m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix());
+
+    return 0;
+}
+
+
 int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local){
 
     MPI_Comm comm = A->get_comm();
