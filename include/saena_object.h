@@ -53,7 +53,7 @@ public:
     std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive, 3-no_overlap
     const index_t matmat_size_thre1 = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 30M
     const index_t matmat_size_thre2 = 20000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 20M
-    const index_t matmat_size_thre3 = 500000;  // if(nnz_row * nnz_col < matmat_size_thre3) do vector, otherwise map. default 500k
+    const index_t matmat_size_thre3 = 1000000;  // if(nnz_row * nnz_col < matmat_size_thre3) do vector, otherwise map. default 500k
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
 
