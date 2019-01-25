@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <bitset>
 #include <spp.h> //sparsepp
 
 // set one of the following to set fast_mm split based on nnz or matrix size
@@ -52,10 +53,11 @@ public:
 
     std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive, 3-no_overlap
     const index_t matmat_size_thre1 = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 30M
-    const index_t matmat_size_thre2 = 20000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 20M
-    const index_t matmat_size_thre3 = 0;  // if(nnz_row * nnz_col < matmat_size_thre3) do vector, otherwise map. default 500k
+    static const index_t matmat_size_thre2 = 20000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 20M
+    const index_t matmat_size_thre3 = 500000;  // if(nnz_row * nnz_col < matmat_size_thre3) do vector, otherwise map. default 500k
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
+    std::bitset<matmat_size_thre2> mapbit;
 
     bool doSparsify = false;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
@@ -80,8 +82,8 @@ public:
     // memory pool used in compute_coarsen
     value_t *mempool1;
     index_t *mempool2;
-//    std::unordered_map<index_t, value_t> map_matmat;
-    spp::sparse_hash_map<index_t, value_t> map_matmat;
+    std::unordered_map<index_t, value_t> map_matmat;
+//    spp::sparse_hash_map<index_t, value_t> map_matmat;
 
     bool verbose                  = false;
     bool verbose_setup            = true;

@@ -9,7 +9,6 @@
 #include "dollar.hpp"
 
 #include <spp.h> //sparsepp
-
 //#include "petsc_functions.h"
 
 #include <cstdio>
@@ -1085,9 +1084,10 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 //                double t11 = MPI_Wtime();
 
-                std::unordered_map<index_t, value_t> map_matmat;
+//                std::unordered_map<index_t, value_t> map_matmat;
 //                spp::sparse_hash_map<index_t, value_t> map_matmat;
-                map_matmat.reserve(A_nnz + 2*B_nnz);
+//                map_matmat.reserve(A_nnz + 2*B_nnz);
+                mapbit.reset();
 
                 index_t C_index;
                 value_t C_val;
@@ -1099,9 +1099,15 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
                             C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
                             C_val = B[k].val * A[i].val;
-                            auto it = map_matmat.emplace(C_index, C_val);
-                            if (!it.second) it.first->second += C_val;
+//                            auto it = map_matmat.emplace(C_index, C_val);
+//                            if (!it.second) it.first->second += C_val;
 //                            std::cout << C_index << "\t" << C_val << std::endl;
+                            if(mapbit[C_index]) {
+                                map_matmat[C_index] += C_val;
+                            } else {
+                                map_matmat[C_index] = C_val;
+                                mapbit[C_index] = true;
+                            }
 
                         }
                     }
@@ -3885,7 +3891,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     // *******************************************************
 
     // reserve memory for matmat_size_thre2 used in fast_mm case1
-//    map_matmat.reserve(matmat_size_thre2);
+    map_matmat.reserve(matmat_size_thre2);
 
     if(!rank) std::cout << "coarsen_method: " << coarsen_method << std::endl;
 
