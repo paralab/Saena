@@ -1120,7 +1120,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
-        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1) {
+        if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
 
             if (A_nnz_row_sz * B_nnz_col_sz > matmat_size_thre3) { //DOLLAR("case1m")
 
@@ -1138,7 +1138,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 index_t C_index;
                 value_t C_val;
                 index_t temp;
-                const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
+/*                const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
                 const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
                 for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
                     for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
@@ -1153,7 +1153,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                             C_val = B[k].val * A[i].val;
 //                            auto it = map_matmat.emplace(C_index, C_val);
 //                            if (!it.second) it.first->second += C_val;
-//                            std::cout << C_index << "\t" << C_val << std::endl;
+                            std::cout << C_index << "\t" << C_val << std::endl;
                             if(mapbit[C_index]) {
                                 map_matmat[C_index] += C_val;
                             } else {
@@ -1167,8 +1167,40 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                         }
                     }
                 }
+*/
 
-                printf("\nmap_matmat.size = %lu, mapbit.count() = %lu\n", map_matmat.size(), mapbit.count());
+
+
+                const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
+                const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
+
+                for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
+                    for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
+                        temp = A_nnz_row_sz * B_new_col_idx_p[B[k].col];
+                        for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row]; i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
+                            C_index = A_new_row_idx_p[A[i].row] + temp;
+                            C_val = B[k].val * A[i].val;
+//                            std::cout << C_index << "\t" << C_val << std::endl;
+//                            if(C_index >= matmat_size_thre2)
+//                                std::cout << A[i].row << "\t" << A_new_row_idx_p[A[i].row] << "\t" << B[k].col << "\t"
+//                                << B_new_col_idx_p[B[k].col] << "\t" << C_index << "\t" << C_val << std::endl;
+                            if(mapbit[C_index]) {
+                                map_matmat[C_index] += C_val;
+                            } else {
+                                map_matmat[C_index] = C_val;
+                                mapbit[C_index] = true;
+                            }
+
+                        }
+                    }
+                }
+
+
+
+
+
+
+//                printf("\nmap_matmat.size = %lu, mapbit.count() = %lu, mapbit_size = %u\n", map_matmat.size(), mapbit.count(), mapbit_size);
 
 //                for(nnz_t i = 0; i < mapbit.size(); i++){
 //                    if(mapbit[i])
@@ -3971,7 +4003,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     // *******************************************************
 
     // reserve memory for matmat_size_thre2 used in fast_mm case1
-//    map_matmat.reserve(matmat_size_thre2);
+    map_matmat.reserve(matmat_size_thre2);
 //    for(nnz_t i = 0; i < matmat_size_thre2; i++){
 //        map_matmat[i] = 0;
 //    }
