@@ -4003,7 +4003,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     // *******************************************************
 
     // reserve memory for matmat_size_thre2 used in fast_mm case1
-    map_matmat.reserve(matmat_size_thre2);
+    map_matmat.reserve(2*matmat_size_thre2);
 //    for(nnz_t i = 0; i < matmat_size_thre2; i++){
 //        map_matmat[i] = 0;
 //    }
