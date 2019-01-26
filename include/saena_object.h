@@ -57,7 +57,7 @@ public:
     const index_t matmat_size_thre3 = 0;  // if(nnz_row * nnz_col < matmat_size_thre3) do vector, otherwise map. default 500k
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
-    std::bitset<10*matmat_size_thre2> mapbit;
+    std::bitset<matmat_size_thre2> mapbit;
 
     // memory pool used in compute_coarsen
     value_t *mempool1;
