@@ -332,6 +332,7 @@ int saena_object::coarsen(Grid *grid){
 
     // **************************** compute_coarsen in PETSc ****************************
 //    petsc_viewer(&grid->Ac);
+//    map_matmat.clear();
 
     // this part is only for experiments.
 //    petsc_coarsen(&grid->R, grid->A, &grid->P);

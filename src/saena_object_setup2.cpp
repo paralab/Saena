@@ -1017,7 +1017,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
-            printf("fast_mm: case 1: start \n");
+            printf("fast_mm: case 0: start \n");
         }
 #endif
 
@@ -1087,7 +1087,11 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                std::unordered_map<index_t, value_t> map_matmat;
 //                spp::sparse_hash_map<index_t, value_t> map_matmat;
 //                map_matmat.reserve(A_nnz + 2*B_nnz);
+//                if(mapbit.count() == 1000000)
+//                    map_matmat.clear();
+//                printf("\nmap_matmat.size = %lu\n", map_matmat.size());
                 mapbit.reset();
+//                map_matmat.clear();
 
                 index_t C_index;
                 value_t C_val;
@@ -1097,7 +1101,11 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
                         for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row]; i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
 
-                            C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+//                            std::cout << A[i].row << "\t" << B[k].col << "\t" << A_row_size << "\t" << C_index << std::endl;
+//                            std::cout << A[i].row << "\t" << B[k].col << "\t" << A_nnz_row_sz << "\t" << C_index << std::endl;
+
+//                            C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+                            C_index = (A[i].row - A_row_offset) + A_nnz_row_sz * (B[k].col - B_col_offset);
                             C_val = B[k].val * A[i].val;
 //                            auto it = map_matmat.emplace(C_index, C_val);
 //                            if (!it.second) it.first->second += C_val;
@@ -1109,14 +1117,27 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                                 mapbit[C_index] = true;
                             }
 
+//                            if(!mapbit[C_index]) {
+//                                mapbit[C_index] = true;
+//                            }
                         }
                     }
                 }
 
-                C.reserve(C.size() + map_matmat.size());
+                printf("\nmap_matmat.size = %lu, mapbit.count() = %lu\n", map_matmat.size(), mapbit.count());
+
+//                for(nnz_t i = 0; i < mapbit.size(); i++){
+//                    if(mapbit[i])
+//                        std::cout << i << "\t" << mapbit[i] << std::endl;
+//                }
+
+//                C.reserve(C.size() + map_matmat.size());
+                C.reserve(C.size() + mapbit.count());
                 for (auto it1 = map_matmat.begin(); it1 != map_matmat.end(); ++it1) {
 //                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
-                    C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
+                    if(mapbit[it1->first])
+                        C.emplace_back( (it1->first % A_nnz_row_sz) + A_row_offset, (it1->first / A_nnz_row_sz) + B_col_offset, it1->second);
+//                    C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
                 }
 
 //                t11 = MPI_Wtime() - t11;
@@ -1130,7 +1151,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 #ifdef __DEBUG1__
 //       print_vector(C, -1, "C", comm);
-                if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 1: end \n");
+                if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 1 (map): end \n");
 #endif
 
             } else { //DOLLAR("case1v")
@@ -3891,7 +3912,10 @@ int saena_object::compute_coarsen(Grid *grid) {
     // *******************************************************
 
     // reserve memory for matmat_size_thre2 used in fast_mm case1
-    map_matmat.reserve(matmat_size_thre2);
+//    map_matmat.reserve(matmat_size_thre2);
+//    for(nnz_t i = 0; i < matmat_size_thre2; i++){
+//        map_matmat[i] = 0;
+//    }
 
     if(!rank) std::cout << "coarsen_method: " << coarsen_method << std::endl;
 
@@ -4212,7 +4236,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
     std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
 //    std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
-    index_t *nnzPerCol_right = &nnzPerColScan_right[1];
+    index_t *nnzPerCol_right   = &nnzPerColScan_right[1];
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
 
     std::vector<cooEntry> AP_temp;

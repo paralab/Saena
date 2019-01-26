@@ -52,12 +52,18 @@ public:
     bool adaptive_coarsening = false;
 
     std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive, 3-no_overlap
-    const index_t matmat_size_thre1 = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 30M
-    static const index_t matmat_size_thre2 = 20000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 20M
-    const index_t matmat_size_thre3 = 500000;  // if(nnz_row * nnz_col < matmat_size_thre3) do vector, otherwise map. default 500k
+    const index_t matmat_size_thre1 = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 50M
+    static const index_t matmat_size_thre2 = 10000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 20M
+    const index_t matmat_size_thre3 = 0;  // if(nnz_row * nnz_col < matmat_size_thre3) do vector, otherwise map. default 500k
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
-    std::bitset<matmat_size_thre2> mapbit;
+    std::bitset<10*matmat_size_thre2> mapbit;
+
+    // memory pool used in compute_coarsen
+    value_t *mempool1;
+    index_t *mempool2;
+    std::unordered_map<index_t, value_t> map_matmat;
+//    spp::sparse_hash_map<index_t, value_t> map_matmat;
 
     bool doSparsify = false;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
@@ -78,12 +84,6 @@ public:
     bool switch_to_dense = false;
     float dense_threshold = 0.1; // 0<dense_threshold<=1 decide when to switch to the dense structure.
                                  // dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
-
-    // memory pool used in compute_coarsen
-    value_t *mempool1;
-    index_t *mempool2;
-    std::unordered_map<index_t, value_t> map_matmat;
-//    spp::sparse_hash_map<index_t, value_t> map_matmat;
 
     bool verbose                  = false;
     bool verbose_setup            = true;
