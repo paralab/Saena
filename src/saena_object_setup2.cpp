@@ -1116,7 +1116,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 #ifdef __DEBUG1__
 //        printf("A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
-//               A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
+//            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
@@ -1126,58 +1126,66 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 //                double t11 = MPI_Wtime();
 
-                std::unordered_map<index_t, value_t> map_matmat;
+//                std::unordered_map<index_t, value_t> map_matmat;
 //                spp::sparse_hash_map<index_t, value_t> map_matmat;
-                map_matmat.reserve(A_nnz + 2*B_nnz);
-
+//                map_matmat.reserve(A_nnz + 2*B_nnz);
 //                if(mapbit.count() == 1000000)
 //                    map_matmat.clear();
-//                mapbit.reset();
+//                printf("\nmap_matmat.size = %lu\n", map_matmat.size());
+                mapbit.reset();
 //                map_matmat.clear();
 
                 index_t C_index;
                 value_t C_val;
                 index_t temp;
                 const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
-                const index_t *nnzPerColScan_leftEnd_p   = &nnzPerColScan_leftEnd[0] - B_row_offset;
+                const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
                 for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
                     for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
-//                        temp = A_nnz_row_sz * B_new_col_idx_p[B[k].col];
+                        temp = A_nnz_row_sz * B_new_col_idx_p[B[k].col];
                         for (nnz_t i = nnzPerColScan_leftStart_p[B[k].row]; i < nnzPerColScan_leftEnd_p[B[k].row]; i++) { // nonzeros in column B[k].row of A
 
-                            C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
-//                            C_index = A_new_row_idx_p[A[i].row] + temp;
+//                            C_index = (A[i].row - A_row_offset) + A_row_size * (B[k].col - B_col_offset);
+                            C_index = A_new_row_idx_p[A[i].row] + temp;
                             C_val = B[k].val * A[i].val;
-                            auto it = map_matmat.emplace(C_index, C_val);
-                            if (!it.second) it.first->second += C_val;
+//                            auto it = map_matmat.emplace(C_index, C_val);
+//                            if (!it.second) it.first->second += C_val;
 
 //                            std::cout << C_index << "\t" << C_val << std::endl;
-//                            if(mapbit[C_index]) {
-//                                map_matmat[C_index] += C_val;
-//                            } else {
-//                                map_matmat[C_index] = C_val;
-//                                mapbit[C_index] = true;
-//                            }
+                            if(mapbit[C_index]) {
+                                map_matmat[C_index] += C_val;
+                            } else {
+                                map_matmat[C_index] = C_val;
+                                mapbit[C_index] = true;
+                            }
 
                         }
                     }
                 }
 
-                C.reserve(C.size() + map_matmat.size());
+/*
+//                C.reserve(C.size() + map_matmat.size());
+                C.reserve(C.size() + mapbit.count());
                 for (auto it1 = map_matmat.begin(); it1 != map_matmat.end(); ++it1) {
-//                    std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
-                    C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
+//                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
+                    if(mapbit[it1->first])
+                        C.emplace_back( (it1->first % A_nnz_row_sz) + A_row_offset, (it1->first / A_nnz_row_sz) + B_col_offset, it1->second);
+//                    C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
                 }
+*/
 
-//                C.reserve(C.size() + mapbit.count());
-//                for (index_t j = 0; j < B_nnz_col_sz; j++) {
-//                    temp = A_nnz_row_sz * j;
-//                    for (index_t i = 0; i < A_nnz_row_sz; i++) {
-//                        if(mapbit[i + temp]){
-//                            C.emplace_back(orig_row_idx[i], orig_col_idx[j], map_matmat[i + temp]);
-//                        }
-//                    }
-//                }
+                for (index_t j = 0; j < B_nnz_col_sz; j++) {
+                    temp = A_nnz_row_sz * j;
+                    for (index_t i = 0; i < A_nnz_row_sz; i++) {
+
+                        if(mapbit[i + temp]){
+//                            std::cout << i << "\t" << j << "\t" << i + temp << "\t" << orig_row_idx[i] << "\t"
+//                                      << orig_col_idx[j] << "\t" << map_matmat[i + temp] << std::endl;
+
+                            C.emplace_back(orig_row_idx[i], orig_col_idx[j], map_matmat[i + temp]);
+                        }
+                    }
+                }
 
 
 #ifdef __DEBUG1__
@@ -1283,7 +1291,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 #ifdef __DEBUG1__
                 if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 1: step 2 \n"); }
-            //    print_vector(C_temp, -1, "C_temp", comm);
+                //    print_vector(C_temp, -1, "C_temp", comm);
 #endif
 
 //                nnz_t C_nnz = 0; //todo: delete this
@@ -3418,9 +3426,9 @@ void saena_object::fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vect
 
 
 #ifdef __DEBUG1__
-        if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
-            printf("fast_mm: case 1: start \n");
-        }
+    if (rank == verbose_rank && (verbose_matmat || verbose_matmat_recursive)) {
+        printf("fast_mm: case 1: start \n");
+    }
 #endif
 
     std::unordered_map<index_t, value_t> map_matmat;
@@ -7037,8 +7045,8 @@ int saena_object::compute_coarsen_old(Grid *grid){
             for (k = kstart; k < kend; k++) {
 //                if(rank==1) std::cout << "R = " << R->entry_remote[j] << "\tA = " << Arecv[indicesPRecv[k]] << std::endl;
                 RA_temp.entry.emplace_back(cooEntry(R->entry_remote[j].row,
-                                                 Arecv[indices_row_wise[k]].col,
-                                                 R->entry_remote[j].val * Arecv[indices_row_wise[k]].val));
+                                                    Arecv[indices_row_wise[k]].col,
+                                                    R->entry_remote[j].val * Arecv[indices_row_wise[k]].val));
             }
         }
 
