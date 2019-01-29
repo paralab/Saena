@@ -9,7 +9,7 @@
 #include "ietl_saena.h"
 #include "dollar.hpp"
 
-#include "petsc_functions.h"
+//#include "petsc_functions.h"
 
 #include <sys/stat.h>
 #include <cstdio>
@@ -55,7 +55,14 @@ int saena_object::setup(saena_matrix* A) {
 
     #pragma omp parallel
     if(rank==0 && omp_get_thread_num()==0)
-        printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
+        printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
+
+#ifdef SPLIT_NNZ
+    if(rank==0) printf("fast_mm: split based on nnz\n");
+#endif
+#ifdef SPLIT_SIZE
+    if(rank==0) printf("fast_mm: split based on matrix size\n");
+#endif
 
 //    float row_reduction_min;
 //    float total_row_reduction;

@@ -8,7 +8,7 @@
 #include "parUtils.h"
 #include "dollar.hpp"
 
-#include <spp.h> //sparsepp
+//#include <spp.h> //sparsepp
 //#include "petsc_functions.h"
 
 #include <cstdio>
@@ -3841,13 +3841,6 @@ int saena_object::compute_coarsen(Grid *grid) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-#ifdef SPLIT_NNZ
-    if(rank==0) printf("\nfast_mm: split based on nnz\n");
-#endif
-#ifdef SPLIT_SIZE
-    if(rank==0) printf("\nfast_mm: split based on matrix size\n");
-#endif
-
 #ifdef __DEBUG1__
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
@@ -3994,7 +3987,7 @@ int saena_object::compute_coarsen(Grid *grid) {
         }
 
         double t22 = MPI_Wtime();
-        print_time_ave(t22-t11, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
+//        print_time_ave(t22-t11, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
@@ -4451,7 +4444,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
     t_AP = MPI_Wtime() - t_AP;
-    print_time_ave(t_AP, "AP:", grid->A->comm);
+//    print_time_ave(t_AP, "AP:", grid->A->comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);
