@@ -4420,6 +4420,11 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         }
     }
 
+    // todo: delete this after computing estimates for AP and RAP nnz.
+    nnz_t AP_temp_nnz_g_loc = AP_temp.size();
+    nnz_t AP_temp_nnz_g;
+    MPI_Allreduce(&AP_temp_nnz_g_loc, &AP_temp_nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
     std::sort(AP_temp.begin(), AP_temp.end());
     std::vector<cooEntry> AP;
     nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
@@ -4600,6 +4605,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
             RAP_temp_row.back().val += RAP_temp[i].val;
         }
     }
+
+    if(!rank) printf("\nave_nnz: R: %lu \tA: %lu \tP: %lu \tAP_temp: %lu \tRAP_temp = %lu \n", R->nnz_g/nprocs, A->nnz_g/nprocs, P->nnz_g/nprocs, AP_temp_nnz_g/nprocs, RAP_temp.size()/nprocs);
 
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
