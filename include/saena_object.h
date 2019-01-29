@@ -1,6 +1,9 @@
 #ifndef SAENA_SAENA_OBJECT_H
 #define SAENA_SAENA_OBJECT_H
 
+//#include "superlu_ddefs.h"
+#include "superlu_defs.h"
+
 #include "aux_functions.h"
 
 #include <vector>
@@ -29,7 +32,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 1; // fine grid is level 0.
+    int max_level = 10; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -50,6 +53,10 @@ public:
 //    bool shrink_cpu = true;
     bool dynamic_levels = true;
     bool adaptive_coarsening = false;
+
+    // SuperLU parameters
+    SuperMatrix A_SLU2; // save matrix in SuperLU for solve_coarsest_SuperLU()
+    gridinfo_t superlu_grid;
 
     std::string coarsen_method = "recursive" ; // 1-basic, 2-recursive, 3-no_overlap
     const index_t matmat_size_thre1 = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 50M
@@ -152,31 +159,6 @@ public:
 //                 nnz_t A_nnz, nnz_t B_nnz, index_t A_row_size, index_t A_col_size, index_t B_col_size,
 //                 const index_t *nnzPerRowScan_left, const index_t *nnzPerColScan_right, MPI_Comm comm);
 
-//    void fast_mm_parts(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                nnz_t A_nnz, nnz_t B_nnz,
-//                index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                index_t B_col_size, index_t B_col_offset,
-//                const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
-//    int fast_mm_part1(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                      nnz_t A_nnz, nnz_t B_nnz,
-//                      index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                      index_t B_col_size, index_t B_col_offset,
-//                      const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                      const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
-//    void fast_mm_part2(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                      nnz_t A_nnz, nnz_t B_nnz,
-//                      index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                      index_t B_col_size, index_t B_col_offset,
-//                      const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                      const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
-//    int fast_mm_part3(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                      nnz_t A_nnz, nnz_t B_nnz,
-//                      index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                      index_t B_col_size, index_t B_col_offset,
-//                      const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                      const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd, MPI_Comm comm);
-
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
     int aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
@@ -225,6 +207,7 @@ public:
 
     int find_eig(saena_matrix& A);
 //    int find_eig_Elemental(saena_matrix& A);
+
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
     int transpose_locally(cooEntry *A, nnz_t size);

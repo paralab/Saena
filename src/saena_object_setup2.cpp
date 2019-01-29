@@ -3942,8 +3942,6 @@ int saena_object::compute_coarsen(Grid *grid) {
 //        map_matmat[i] = 0;
 //    }
 
-    if(!rank) std::cout << "coarsen_method: " << coarsen_method << std::endl;
-
     MPI_Barrier(grid->A->comm);
     double t11 = MPI_Wtime();
 

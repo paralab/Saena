@@ -523,7 +523,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		                 nonzero segments in U.
 	      If options->Fact != SamePattern_SameRowPerm, they are 
 	      computed by SYMBFACT routine, and then used by PDDISTRIBUTE
-	      routine. They will be freed after PDDISTRIBUTE routine.
+	      routine. They will be freed after PDDISTRIBUTE routine.false
 	      If options->Fact == SamePattern_SameRowPerm, these
 	      structures are not used.                                  */
     fact_t   Fact;

@@ -54,15 +54,16 @@ int saena_object::setup(saena_matrix* A) {
     A->active_old_comm = true;
 
     #pragma omp parallel
-    if(rank==0 && omp_get_thread_num()==0)
+    if(!rank && omp_get_thread_num()==0)
         printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
 
 #ifdef SPLIT_NNZ
-    if(rank==0) printf("fast_mm: split based on nnz\n");
+    if(!rank) printf("fast_mm: split based on nnz\n");
 #endif
 #ifdef SPLIT_SIZE
     if(rank==0) printf("fast_mm: split based on matrix size\n");
 #endif
+    if(!rank) std::cout << "coarsen_method: " << coarsen_method << std::endl;
 
 //    float row_reduction_min;
 //    float total_row_reduction;
