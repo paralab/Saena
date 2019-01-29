@@ -3973,6 +3973,8 @@ int saena_object::compute_coarsen(Grid *grid) {
         // *******************************************************
         // since RAP_row_sorted is sorted in row-major order, Ac->entry will be the same.
 
+        Ac->entry.reserve(RAP_row_sorted.size()/30);
+
         // remove duplicates.
         cooEntry temp;
         for(nnz_t i = 0; i < RAP_row_sorted.size(); i++){
@@ -3985,7 +3987,7 @@ int saena_object::compute_coarsen(Grid *grid) {
         }
 
         double t22 = MPI_Wtime();
-//        print_time_ave(t22-t11, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
+        print_time_ave(t22-t11, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
@@ -4422,12 +4424,13 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     }
 
     // todo: delete this after computing estimates for AP and RAP nnz.
-    nnz_t AP_temp_nnz_g_loc = AP_temp.size();
-    nnz_t AP_temp_nnz_g;
-    MPI_Allreduce(&AP_temp_nnz_g_loc, &AP_temp_nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+//    nnz_t AP_temp_nnz_g_loc = AP_temp.size();
+//    nnz_t AP_temp_nnz_g;
+//    MPI_Allreduce(&AP_temp_nnz_g_loc, &AP_temp_nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     std::sort(AP_temp.begin(), AP_temp.end());
     std::vector<cooEntry> AP;
+    AP.reserve(AP_temp.size()/25); // 25 is not accurate.
     nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
     for(nnz_t i = 0; i < AP_temp.size(); i++){
         AP.emplace_back(AP_temp[i]);
@@ -4448,7 +4451,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
     t_AP = MPI_Wtime() - t_AP;
-//    print_time_ave(t_AP, "AP:", grid->A->comm);
+    print_time_ave(t_AP, "AP:", grid->A->comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);
@@ -4571,9 +4574,9 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     }
 
     // todo: delete this after computing estimates for AP and RAP nnz.
-    nnz_t RAP_temp_nnz_g_loc = RAP_temp.size();
-    nnz_t RAP_temp_nnz_g;
-    MPI_Allreduce(&RAP_temp_nnz_g_loc, &RAP_temp_nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+//    nnz_t RAP_temp_nnz_g_loc = RAP_temp.size();
+//    nnz_t RAP_temp_nnz_g;
+//    MPI_Allreduce(&RAP_temp_nnz_g_loc, &RAP_temp_nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     // free memory
     // -----------
@@ -4613,12 +4616,11 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         }
     }
 
-    if(!rank) printf("\nave_nnz: R: %lu \tA: %lu \tP: %lu \tAP_temp: %lu \tRAP_temp = %lu \n", R->nnz_g/nprocs, A->nnz_g/nprocs, P->nnz_g/nprocs, AP_temp_nnz_g/nprocs, RAP_temp_nnz_g/nprocs);
-
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
 
 #ifdef __DEBUG1__
+//    if(!rank) printf("\nave_nnz: R: %lu \tA: %lu \tP: %lu \tAP_temp: %lu \tRAP_temp = %lu \n", R->nnz_g/nprocs, A->nnz_g/nprocs, P->nnz_g/nprocs, AP_temp_nnz_g/nprocs, RAP_temp_nnz_g/nprocs);
 //    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
 //    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
 //    print_vector(P->splitNew, -1, "P->splitNew", comm);
