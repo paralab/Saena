@@ -4263,6 +4263,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
 
     std::vector<cooEntry> AP_temp;
+    AP_temp.reserve(A->nnz_l + R->nnz_l); // an estimate to reserve memory
 
 //    printf("\n");
     if(nprocs > 1){
@@ -4538,6 +4539,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
 //    printf("\n");
     std::vector<cooEntry> RAP_temp;
+    RAP_temp.reserve(A->nnz_l/20 + R->nnz_l/20); // an estimate to reserve memory
 
     if(P_tranpose.empty() || AP.empty()){ // skip!
 #ifdef __DEBUG1__
@@ -4567,6 +4569,11 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //        printf("\nfast_mm of R(AP_temp) = %f \n", t2-t1);
 
     }
+
+    // todo: delete this after computing estimates for AP and RAP nnz.
+    nnz_t RAP_temp_nnz_g_loc = RAP_temp.size();
+    nnz_t RAP_temp_nnz_g;
+    MPI_Allreduce(&RAP_temp_nnz_g_loc, &RAP_temp_nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     // free memory
     // -----------
@@ -4606,7 +4613,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
         }
     }
 
-    if(!rank) printf("\nave_nnz: R: %lu \tA: %lu \tP: %lu \tAP_temp: %lu \tRAP_temp = %lu \n", R->nnz_g/nprocs, A->nnz_g/nprocs, P->nnz_g/nprocs, AP_temp_nnz_g/nprocs, RAP_temp.size()/nprocs);
+    if(!rank) printf("\nave_nnz: R: %lu \tA: %lu \tP: %lu \tAP_temp: %lu \tRAP_temp = %lu \n", R->nnz_g/nprocs, A->nnz_g/nprocs, P->nnz_g/nprocs, AP_temp_nnz_g/nprocs, RAP_temp_nnz_g/nprocs);
 
     RAP_temp.clear();
     RAP_temp.shrink_to_fit();
