@@ -1080,6 +1080,11 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
     if(A_coarsest->active) {
 
+        // todo: bool active is not set correctly for inactive processors in the lower grids.
+        // check how the following command is set in setup() and try to fix it:
+        // if(!grids[i].Ac.active)
+        //     break;
+
         MPI_Comm *comm_coarsest = &A_coarsest->comm;
         int nprocs_coarsest, rank_coarsest;
         MPI_Comm_size(*comm_coarsest, &nprocs_coarsest);
