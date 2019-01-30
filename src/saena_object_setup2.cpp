@@ -1289,9 +1289,9 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 //                            std::cout << C_index << "\t" << C_val << std::endl;
                             if(mapbit[C_index]) {
-                                map_matmat[C_index] += C_val;
+                                C_temp[C_index] += C_val;
                             } else {
-                                map_matmat[C_index] = C_val;
+                                C_temp[C_index] = C_val;
                                 mapbit[C_index] = true;
                             }
 
@@ -1320,9 +1320,9 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     for (index_t j = 0; j < B_nnz_col_sz; j++) {
                         temp = A_nnz_row_sz * j;
                         for (index_t i = 0; i < A_nnz_row_sz; i++) {
-//                            if(rank==0) std::cout << i << "\t" << j << "\t" << i + A_nnz_row_sz*j << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
 //                            if (C_temp[i + temp] != 0) {
                             if(mapbit[i + temp]){
+//                                if(rank==0) std::cout << i << "\t" << j << "\t" << i + temp << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
                                 C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[i + temp]);
 //                            C_nnz++; //todo: delete this
                             }
