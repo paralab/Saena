@@ -1316,13 +1316,13 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 //                nnz_t C_nnz = 0; //todo: delete this
 //                if(C_not_zero) {
-                if(mapbit.count())
+                if(mapbit.count()){
                     for (index_t j = 0; j < B_nnz_col_sz; j++) {
                         temp = A_nnz_row_sz * j;
                         for (index_t i = 0; i < A_nnz_row_sz; i++) {
 //                            if(rank==0) std::cout << i << "\t" << j << "\t" << i + A_nnz_row_sz*j << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
 //                            if (C_temp[i + temp] != 0) {
-                            if(mapbit[i + temp])
+                            if(mapbit[i + temp]){
                                 C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[i + temp]);
 //                            C_nnz++; //todo: delete this
                             }
