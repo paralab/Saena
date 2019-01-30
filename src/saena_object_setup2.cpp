@@ -1249,13 +1249,16 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
                 // initialize
                 value_t *C_temp = &mempool1[0];
-                std::fill(&C_temp[0], &C_temp[A_nnz_row_sz * B_nnz_col_sz], 0);
+//                std::fill(&C_temp[0], &C_temp[A_nnz_row_sz * B_nnz_col_sz], 0);
 
 #ifdef __DEBUG1__
                 if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 1: step 1 \n"); }
 #endif
 
-                bool C_not_zero = false;
+                index_t C_index;
+                value_t C_val;
+                mapbit.reset();
+//                bool C_not_zero = false;
                 index_t temp;
                 const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
                 const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
@@ -1274,8 +1277,25 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
 //                            C_temp_p[A_new_row_idx_p[A[i].row] + A_nnz_row_sz * B[k].col] += B[k].val * A[i].val;
-                            C_temp[A_new_row_idx_p[A[i].row] + temp] += B[k].val * A[i].val;
-                            C_not_zero = true;
+//                            C_temp[A_new_row_idx_p[A[i].row] + temp] += B[k].val * A[i].val;
+//                            C_not_zero = true;
+
+
+
+                            C_index = A_new_row_idx_p[A[i].row] + temp;
+                            C_val = B[k].val * A[i].val;
+//                            auto it = map_matmat.emplace(C_index, C_val);
+//                            if (!it.second) it.first->second += C_val;
+
+//                            std::cout << C_index << "\t" << C_val << std::endl;
+                            if(mapbit[C_index]) {
+                                map_matmat[C_index] += C_val;
+                            } else {
+                                map_matmat[C_index] = C_val;
+                                mapbit[C_index] = true;
+                            }
+
+
 
 #ifdef __DEBUG1__
 //                            if(rank == 0) std::cout << "A: " << A[i] << "\tB: " << B[k] << "\tC_index: " << A_new_row_idx_p[A[i].row] + temp
@@ -1295,12 +1315,14 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
 //                nnz_t C_nnz = 0; //todo: delete this
-                if(C_not_zero) {
+//                if(C_not_zero) {
+                if(mapbit.count())
                     for (index_t j = 0; j < B_nnz_col_sz; j++) {
                         temp = A_nnz_row_sz * j;
                         for (index_t i = 0; i < A_nnz_row_sz; i++) {
 //                            if(rank==0) std::cout << i << "\t" << j << "\t" << i + A_nnz_row_sz*j << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
-                            if (C_temp[i + temp] != 0) {
+//                            if (C_temp[i + temp] != 0) {
+                            if(mapbit[i + temp])
                                 C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[i + temp]);
 //                            C_nnz++; //todo: delete this
                             }
