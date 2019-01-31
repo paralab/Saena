@@ -3866,6 +3866,285 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 }
 
 
+int saena_object::matmat(saena_matrix *A, saena_matrix *B){
+    // this version is only for experiments.
+    // B1 should be symmetric. Because we need its transpose. Treat its row indices as column indices and vice versa.
+
+//    saena_matrix *A = A1.get_internal_matrix();
+//    saena_matrix *B = B1.get_internal_matrix();
+
+    MPI_Comm comm = A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    bool verbose_matmat = false;
+
+    mempool1 = new value_t[matmat_size_thre2];
+    mempool2 = new index_t[A->Mbig * 4];
+    mempool3 = new cooEntry[B->nnz_max * 2];
+
+    MPI_Barrier(comm);
+    double t_AP = MPI_Wtime();
+
+    MPI_Barrier(comm);
+    double t1 = MPI_Wtime();
+
+    unsigned long send_size     = B->entry.size();
+    unsigned long send_size_max = B->nnz_max;
+//    MPI_Allreduce(&send_size, &send_size_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+//    printf("send_size = %lu, send_size_max = %lu\n", send_size, send_size_max);
+
+    // local transpose of R is being used to compute A*P. So R is transposed locally here.
+//    std::vector<cooEntry> mat_send(R->entry.size());
+//    auto mat_send = new cooEntry[send_size_max];
+    auto mat_send = &mempool3[0];
+//    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
+//    memcpy(&mat_send[0], &B->entry[0], B->entry.size() * sizeof(cooEntry));
+
+//    std::sort(B->entry.begin(), B->entry.end(), row_major);
+
+    for(nnz_t i = 0; i < B->entry.size(); i++){
+        mat_send[i] = cooEntry(B->entry[i].col, B->entry[i].row, B->entry[i].val);
+//        if(rank==1) std::cout << mat_send[i] << std::endl;
+    }
+
+    std::sort(&mat_send[0], &mat_send[B->entry.size()]);
+
+    t1 = MPI_Wtime() - t1;
+    print_time_ave(t1, "mat_send:", comm);
+
+#ifdef __DEBUG1__
+//    print_vector(A->entry, 1, "A->entry", comm);
+//    print_vector(A->nnzPerColScan, 0, "A->nnzPerColScan", comm);
+#endif
+
+    MPI_Barrier(comm);
+    t1 = MPI_Wtime() - t1;
+
+    index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
+    index_t mat_recv_M_max      = B->max_M;
+
+    std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
+    index_t *nnzPerCol_right   = &nnzPerColScan_right[1];
+    index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
+
+    std::vector<cooEntry> AB_temp;
+
+//    printf("\n");
+    if(nprocs > 1){
+
+        int right_neighbor = (rank + 1)%nprocs;
+        int left_neighbor  = rank - 1;
+        if (left_neighbor < 0){
+            left_neighbor += nprocs;
+        }
+
+        int owner;
+        unsigned long recv_size;
+//        std::vector<cooEntry> mat_recv;
+//        auto mat_recv = new cooEntry[send_size_max];
+        auto mat_recv = &mempool3[send_size_max];
+        index_t mat_recv_M;
+
+        auto *requests = new MPI_Request[4];
+        auto *statuses = new MPI_Status[4];
+
+        for(int k = rank; k < rank+nprocs; k++){
+            // This is overlapped. Both local and remote loops are done here.
+            // The first iteration is the local loop. The rest are remote.
+            // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor.
+            // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
+            // receive R_tranpose from the right_neighbor. And so on.
+            // --------------------------------------------------------------------
+
+            // communicate size
+            MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
+            MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
+            MPI_Waitall(1, requests, statuses);
+//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+//            mat_recv.resize(recv_size);
+
+#ifdef __DEBUG1__
+//          print_vector(mat_recv, -1, "mat_recv", A->comm);
+//          print_vector(mat_send, -1, "mat_send", A->comm);
+#endif
+            // communicate data
+            MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests+2);
+            MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+3);
+
+            owner = k%nprocs;
+            mat_recv_M = B->split[owner + 1] - B->split[owner];
+//          printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
+
+            std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
+            nnzPerCol_right_p = &nnzPerCol_right[0] - B->split[owner];
+            for(nnz_t i = 0; i < send_size; i++){
+                nnzPerCol_right_p[mat_send[i].col]++;
+            }
+
+//            nnzPerColScan_right[0] = 0;
+            for(nnz_t i = 0; i < mat_recv_M; i++){
+                nnzPerColScan_right[i+1] += nnzPerColScan_right[i];
+            }
+
+#ifdef __DEBUG1__
+//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+//          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
+
+            if(A->entry.empty() || send_size==0){ // skip!
+#ifdef __DEBUG1__
+                if(verbose_matmat){
+                    if(A->entry.empty()){
+                        printf("\nskip: A->entry.size() == 0\n\n");
+                    } else {
+                        printf("\nskip: mat_send == 0\n\n");
+                    }
+                }
+#endif
+            } else {
+
+                fast_mm(&A->entry[0], &mat_send[0], AB_temp, A->entry.size(), send_size,
+                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, B->split[owner],
+                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+//                fast_mm(&A->entry[0], &mat_send[0], AB_temp, A->entry.size(), mat_send.size(),
+//                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
+//                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+//                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
+
+            }
+
+            MPI_Waitall(3, requests+1, statuses+1);
+
+//            mat_recv.swap(mat_send);
+            std::swap(mat_send, mat_recv);
+            send_size = recv_size;
+
+#ifdef __DEBUG1__
+//          print_vector(AB_temp, -1, "AB_temp", A->comm);
+//          print_vector(mat_send, -1, "mat_send", A->comm);
+//          print_vector(mat_recv, -1, "mat_recv", A->comm);
+//          prev_owner = owner;
+//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+#endif
+
+        }
+
+//        mat_recv.clear();
+//        mat_recv.shrink_to_fit();
+//        delete [] mat_recv;
+        delete [] requests;
+        delete [] statuses;
+
+    } else { // nprocs == 1 -> serial
+
+        index_t mat_recv_M = B->split[rank + 1] - B->split[rank];
+
+        std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
+        nnzPerCol_right_p = &nnzPerCol_right[0] - B->split[rank];
+        for(nnz_t i = 0; i < send_size; i++){
+            nnzPerCol_right_p[mat_send[i].col]++;
+        }
+
+//        nnzPerColScan_right[0] = 0;
+        for(nnz_t i = 0; i < mat_recv_M; i++){
+            nnzPerColScan_right[i+1] += nnzPerColScan_right[i];
+        }
+
+#ifdef __DEBUG1__
+//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+//          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
+
+        if(A->entry.empty() || send_size == 0){ // skip!
+#ifdef __DEBUG1__
+            if(verbose_matmat){
+                if(A->entry.empty()){
+                    printf("\nskip: A->entry.size() == 0\n\n");
+                } else {
+                    printf("\nskip: mat_send == 0\n\n");
+                }
+            }
+#endif
+        } else {
+
+//            double t1 = MPI_Wtime();
+
+            fast_mm(&A->entry[0], &mat_send[0], AB_temp, A->entry.size(), send_size,
+                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, B->split[rank],
+                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+//            double t2 = MPI_Wtime();
+//            printf("\nfast_mm of AB_temp = %f\n", t2-t1);
+        }
+    }
+
+    t1 = MPI_Wtime() - t1;
+    print_time_ave(t1, "AB_temp:", comm);
+
+//    print_vector(AB_temp, 0, "AB_temp", comm);
+
+    MPI_Barrier(comm);
+    t1 = MPI_Wtime();
+
+    std::sort(AB_temp.begin(), AB_temp.end());
+//    std::vector<cooEntry> AB;
+//    nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
+//    for(nnz_t i = 0; i < AB_temp.size(); i++){
+//        AB.emplace_back(AB_temp[i]);
+//        while(i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i+1]){ // values of entries with the same row and col should be added.
+//            AB.back().val += AB_temp[++i].val;
+//        }
+//    }
+
+    nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
+    std::vector<cooEntry> AB; // this won't be used.
+    for(nnz_t i = 0; i < AB_temp.size(); i++){
+        AB.emplace_back(AB_temp[i]);
+        while(i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i+1]){ // values of entries with the same row and col should be added.
+//            std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+            AB.back().val += AB_temp[++i].val;
+        }
+    }
+
+    t1 = MPI_Wtime() - t1;
+    print_time_ave(t1, "AB:", comm);
+
+//    mat_send.clear();
+//    mat_send.shrink_to_fit();
+    AB_temp.clear();
+    AB_temp.shrink_to_fit();
+//    delete [] mat_send;
+
+//    unsigned long AP_size_loc = AB.size(), AP_size;
+//    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
+//    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
+
+//    t_AP = MPI_Wtime() - t_AP;
+//    print_time_ave(t_AP, "AB:", comm);
+
+    delete[] mempool1;
+    delete[] mempool2;
+    delete[] mempool3;
+
+#ifdef __DEBUG1__
+//    print_vector(C->entry, -1, "AB = C", A->comm);
+    if(verbose_matmat){
+        MPI_Barrier(comm); printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+//    if(rank==0) printf("\nAB:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
+
+    return 0;
+}
+
+
 /*
 void saena_object::matmat(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
                           nnz_t A_nnz, nnz_t B_nnz, index_t A_row_size, index_t A_col_size, index_t B_col_size,

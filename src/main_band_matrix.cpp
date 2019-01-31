@@ -127,9 +127,14 @@ int main(int argc, char* argv[]){
 */
     // *************************** matrix-matrix product ****************************
 
+    int matmat_iter = 1;
+
     saena::amg solver;
-    saena::matrix C(comm);
-    solver.matmat(&A, &A, &C);
+//    saena::matrix C(comm);
+
+    for(int i = 00; i < matmat_iter; i++){
+        solver.matmat(&A, &A);
+    }
 
 //    petsc_viewer(A.get_internal_matrix());
 //    petsc_viewer(C.get_internal_matrix());
