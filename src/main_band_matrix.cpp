@@ -127,12 +127,18 @@ int main(int argc, char* argv[]){
 */
     // *************************** matrix-matrix product ****************************
 
-    int matmat_iter = 1;
+    int matmat_iter_warmup = 4;
+    int matmat_iter = 10;
 
     saena::amg solver;
 //    saena::matrix C(comm);
 
-    for(int i = 00; i < matmat_iter; i++){
+    // warm-up
+    for(int i = 0; i < matmat_iter_warmup; i++){
+        solver.matmat(&A, &A);
+    }
+
+    for(int i = 0; i < matmat_iter; i++){
         solver.matmat(&A, &A);
     }
 
@@ -140,7 +146,8 @@ int main(int argc, char* argv[]){
 //    petsc_viewer(C.get_internal_matrix());
 //    saena_object *obj1 = solver.get_object();
 
-    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
+//    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
+//    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
 
     // *************************** CombBLAS ****************************

@@ -562,6 +562,36 @@ int petsc_matmat(saena_matrix *A, saena_matrix *B){
 }
 
 
+int petsc_matmat_ave(saena_matrix *A, saena_matrix *B, int matmat_iter){
+
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    MPI_Comm comm = A->comm;
+
+    Mat A2, B2, AB;
+    petsc_saena_matrix(A, A2);
+    petsc_saena_matrix(B, B2);
+
+    MPI_Barrier(comm);
+    double t1 = MPI_Wtime();
+    MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &AB);
+
+    for(int i = 1; i < matmat_iter; i++){
+        MatMatMult(A2, B2, MAT_REUSE_MATRIX, PETSC_DEFAULT, &AB);
+    }
+
+    t1 = MPI_Wtime() - t1;
+    print_time_ave(t1 / matmat_iter, "PETSc MatMatMult", comm);
+
+//    petsc_viewer(AB);
+
+    MatDestroy(&A2);
+    MatDestroy(&B2);
+    MatDestroy(&AB);
+    PetscFinalize();
+    return 0;
+}
+
+
 int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
 
     PetscInitialize(nullptr, nullptr, nullptr, nullptr);

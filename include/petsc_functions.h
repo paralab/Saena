@@ -21,6 +21,7 @@ int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *
 int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P, saena_matrix *Ac);
 
 int petsc_matmat(saena_matrix *A, saena_matrix *B);
+int petsc_matmat_ave(saena_matrix *A, saena_matrix *B, int matmat_iter);
 int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB);
 
 #endif //SAENA_PETSC_FUNCTIONS_H
