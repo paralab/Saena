@@ -128,8 +128,8 @@ int main(int argc, char* argv[]){
     // *************************** matrix-matrix product ****************************
 
     double matmat_time = 0;
-    int matmat_iter_warmup = 4;
-    int matmat_iter = 10;
+    int matmat_iter_warmup = 2;
+    int matmat_iter = 5;
 
     saena::amg solver;
 //    saena::matrix C(comm);
