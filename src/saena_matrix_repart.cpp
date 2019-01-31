@@ -12,7 +12,7 @@
 
 int saena_matrix::repartition_nnz_initial(){
     // before using this function these variables of saena_matrix should be set:
-    // Mbig", "nnz_g", "initial_nnz_l", "data"
+    // "Mbig", "nnz_g", "initial_nnz_l", "data"
 
     // the following variables of saena_matrix class will be set in this function:
     // "nnz_l", "M", "split", "entry"

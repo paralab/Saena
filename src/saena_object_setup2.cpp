@@ -3500,6 +3500,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
     mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[A->Mbig * 4];
 
+    MPI_Barrier(comm);
     double t_AP = MPI_Wtime();
 
     unsigned long send_size     = B->entry.size();
@@ -3686,15 +3687,24 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 //    print_vector(AB_temp, 0, "AB_temp", comm);
 
     std::sort(AB_temp.begin(), AB_temp.end());
-    std::vector<cooEntry> AB;
+//    std::vector<cooEntry> AB;
+//    nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
+//    for(nnz_t i = 0; i < AB_temp.size(); i++){
+//        AB.emplace_back(AB_temp[i]);
+//        while(i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i+1]){ // values of entries with the same row and col should be added.
+//            AB.back().val += AB_temp[++i].val;
+//        }
+//    }
+
     nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
     for(nnz_t i = 0; i < AB_temp.size(); i++){
-        AB.emplace_back(AB_temp[i]);
+        C->entry.emplace_back(AB_temp[i]);
         while(i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i+1]){ // values of entries with the same row and col should be added.
 //            std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-            AB.back().val += AB_temp[++i].val;
+            C->entry.back().val += AB_temp[++i].val;
         }
     }
+
 
 //    mat_send.clear();
 //    mat_send.shrink_to_fit();
@@ -3713,7 +3723,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
     delete[] mempool2;
 
 #ifdef __DEBUG1__
-//    print_vector(AB_temp, -1, "AB_temp", A->comm);
+//    print_vector(C->entry, -1, "AB = C", A->comm);
     if(verbose_matmat){
         MPI_Barrier(comm); printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
@@ -3721,6 +3731,111 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 //    if(rank==0) printf("\nAB:\n");
 //    if(rank==0) dollar::text(std::cout);
 //    dollar::clear();
+
+    // -------------------------
+    // set some of C parameters
+    // -------------------------
+
+    C->nnz_l = C->entry.size();
+    MPI_Allreduce(&C->nnz_l, &C->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+    C->Mbig = A->Mbig;
+    C->split = A->split;
+//    C->M = C->split[rank+1] - C->split[rank];
+    C->M = A->M;
+    C->M_old = C->M;
+
+    C->comm = A->comm;
+    C->comm_old = A->comm;
+    C->active_old_comm = true;
+
+    // set dense parameters
+    C->density = ((double)C->nnz_g / C->Mbig) / C->Mbig;
+//    C->switch_to_dense = switch_to_dense;
+//    C->dense_threshold = dense_threshold;
+
+    // set shrink parameters
+//    C->last_M_shrink = A->last_M_shrink;
+//    C->last_density_shrink = A->last_density_shrink;
+//    C->cpu_shrink_thre1 = A->cpu_shrink_thre1; //todo: is this required?
+//    if(A->cpu_shrink_thre2_next_level != -1) // this is -1 by default.
+//        C->cpu_shrink_thre2 = A->cpu_shrink_thre2_next_level;
+    //return these to default, since they have been used in the above part.
+//    A->cpu_shrink_thre2_next_level = -1;
+//    A->enable_shrink_next_level = false;
+
+    if(C->active_minor){
+        comm = C->comm;
+        int rank_new;
+        MPI_Comm_rank(C->comm, &rank_new);
+
+#ifdef __DEBUG1__
+//        C->print_info(-1);
+//        C->print_entry(-1);
+//        if(verbose_triple_mat_mult){
+//            MPI_Barrier(comm); printf("compute_coarsen: step 10: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+        // ********** decide about shrinking **********
+        //---------------------------------------------
+//        if(C->enable_shrink && C->enable_dummy_matvec && nprocs > 1){
+//            MPI_Barrier(C->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(C->comm);
+//            C->matrix_setup_dummy();
+//            C->compute_matvec_dummy_time();
+//            C->decide_shrinking(A->matvec_dummy_time);
+//            C->erase_after_decide_shrinking();
+//            MPI_Barrier(C->comm); if(rank_new==0) printf("finish decide shrinking\n"); MPI_Barrier(C->comm);
+//        }
+
+//#ifdef __DEBUG1__
+//        if(verbose_triple_mat_mult){
+//            MPI_Barrier(comm); printf("compute_coarsen: step 11: rank = %d\n", rank); MPI_Barrier(comm);}
+//#endif
+
+        // decide to partition based on number of rows or nonzeros.
+//    if(switch_repartition && C->density >= repartition_threshold)
+        if(switch_repartition && C->density >= repartition_threshold){
+            if(rank==0) printf("equi-ROW partition for the next level: density = %f, repartition_threshold = %f \n", C->density, repartition_threshold);
+            C->repartition_row(); // based on number of rows
+        }else{
+            C->repartition_nnz(); // based on number of nonzeros
+        }
+
+//#ifdef __DEBUG1__
+//        if(verbose_triple_mat_mult){
+//            MPI_Barrier(comm); printf("compute_coarsen: step 12: rank = %d\n", rank); MPI_Barrier(comm);}
+//#endif
+
+//        repartition_u_shrink_prepare(grid);
+
+        if(C->shrinked){
+            C->shrink_cpu();
+        }
+
+//#ifdef __DEBUG1__
+//        if(verbose_triple_mat_mult){
+//            MPI_Barrier(comm); printf("compute_coarsen: step 13: rank = %d\n", rank); MPI_Barrier(comm);}
+//#endif
+
+        if(C->active){
+            C->matrix_setup();
+//            C->matrix_setup_no_scale();
+
+//            if(C->shrinked && C->enable_dummy_matvec)
+//                C->compute_matvec_dummy_time();
+
+//            if(switch_to_dense && C->density > dense_threshold){
+//                if(rank==0) printf("Switch to dense: density = %f, dense_threshold = %f \n", C->density, dense_threshold);
+//                C->generate_dense_matrix();
+//            }
+        }
+
+#ifdef __DEBUG1__
+//        C->print_info(-1);
+//        C->print_entry(-1);
+#endif
+
+    }
 
     return 0;
 }

@@ -971,7 +971,7 @@ int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local){
 
 
 int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
-    // generates a band matrix with bandwidth "bandwidth".
+    // generates a band matrix with bandwidth of size "bandwidth".
     // set bandwidth to 0 to have a diagonal matrix.
 
     int rank, nprocs;

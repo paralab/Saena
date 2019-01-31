@@ -535,3 +535,68 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
     PetscFinalize();
     return 0;
 }
+
+
+int petsc_matmat(saena_matrix *A, saena_matrix *B){
+
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    MPI_Comm comm = A->comm;
+
+    Mat A2, B2, AB;
+    petsc_saena_matrix(A, A2);
+    petsc_saena_matrix(B, B2);
+
+    MPI_Barrier(comm);
+    double t1 = MPI_Wtime();
+    MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &AB);
+    t1 = MPI_Wtime() - t1;
+    print_time_ave(t1, "PETSc MatMatMult", comm);
+
+//    petsc_viewer(AB);
+
+    MatDestroy(&A2);
+    MatDestroy(&B2);
+    MatDestroy(&AB);
+    PetscFinalize();
+    return 0;
+}
+
+
+int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
+
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    MPI_Comm comm = A->comm;
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    Mat A2, B2, AB2, C;
+    petsc_saena_matrix(A, A2);
+    petsc_saena_matrix(B, B2);
+    petsc_saena_matrix(AB, AB2);
+
+//    MPI_Barrier(comm);
+//    double t1 = MPI_Wtime();
+    MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &C);
+//    t1 = MPI_Wtime() - t1;
+//    print_time_ave(t1, "PETSc MatMatMult", comm);
+
+    petsc_viewer(AB2);
+    petsc_viewer(C);
+
+    // ====================================
+    // compute the norm of the difference
+    // ====================================
+
+    MatAXPY(C, -1, AB2, DIFFERENT_NONZERO_PATTERN);
+
+    double norm_frob;
+    MatNorm(C, NORM_FROBENIUS, &norm_frob);
+    if(rank==0) printf("\nnorm_frobenius(AB_PETSc - AB_Saena) = %.16f\n", norm_frob);
+
+    MatDestroy(&A2);
+    MatDestroy(&B2);
+    MatDestroy(&AB2);
+    MatDestroy(&C);
+    PetscFinalize();
+    return 0;
+}
