@@ -150,15 +150,7 @@ int main(int argc, char* argv[]){
 //    petsc_viewer(C.get_internal_matrix());
 //    saena_object *obj1 = solver.get_object();
 
-//    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
-
-    t1 = MPI_Wtime();
-    for(int i = 0; i < matmat_iter; i++){
-        petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
-    }
-    t1 = MPI_Wtime() - t1;
-    print_time_ave(t1 / matmat_iter, "PETSc MatMat", comm);
-
+    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
 //    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
 
