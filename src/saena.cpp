@@ -1037,6 +1037,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     MPI_Allreduce(&iter, &B->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, A.get_comm());
     B->Mbig = Mbig;
     B->M = M;
+    B->density = ((double)B->nnz_g / B->Mbig) / B->Mbig;
     B->split.resize(nprocs+1);
     for(index_t i = 0; i < nprocs+1; i++)
         B->split[i] = i*M;
@@ -1048,7 +1049,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 
 //    printf("rank %d: M = %u, Mbig = %u, nnz_l = %lu, nnz_g = %lu \n",
 //            rank, A.get_num_local_rows(), A.get_num_rows(), A.get_local_nnz(), A.get_nnz());
-    if(!rank) printf("Mbig = %u, nnz_g = %lu \n", A.get_num_rows(), A.get_nnz());
+    if(!rank) printf("Mbig = %u, nnz_g = %lu, density = %.8f \n", A.get_num_rows(), A.get_nnz(), A.get_internal_matrix()->density);
 
     return 0;
 }
