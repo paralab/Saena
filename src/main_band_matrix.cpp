@@ -131,8 +131,8 @@ int main(int argc, char* argv[]){
     saena::matrix C(comm);
     solver.matmat(&A, &A, &C);
 
-    petsc_viewer(A.get_internal_matrix());
-    petsc_viewer(C.get_internal_matrix());
+//    petsc_viewer(A.get_internal_matrix());
+//    petsc_viewer(C.get_internal_matrix());
 //    saena_object *obj1 = solver.get_object();
 
     petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
