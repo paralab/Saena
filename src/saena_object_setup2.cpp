@@ -1076,7 +1076,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 
 
-        index_t *A_new_row_idx = &nnzPerRow_left[0];
+        index_t *A_new_row_idx   = &nnzPerRow_left[0];
         index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
         index_t *orig_row_idx    = &mempool2[A_row_size];
         index_t A_nnz_row_sz = 0;
@@ -1095,9 +1095,9 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                }
 #endif
 
-        index_t *B_new_col_idx = &mempool2[A_row_size * 2];
+        index_t *B_new_col_idx   = &mempool2[A_row_size * 2];
         index_t *B_new_col_idx_p = &B_new_col_idx[0] - B_col_offset;
-        index_t *orig_col_idx = &mempool2[A_row_size * 2 + B_col_size];
+        index_t *orig_col_idx    = &mempool2[A_row_size * 2 + B_col_size];
         index_t B_nnz_col_sz = 0;
         for (index_t i = 0; i < B_col_size; i++) {
             if (nnzPerColScan_rightEnd[i] != nnzPerColScan_rightStart[i]) {
@@ -1139,7 +1139,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 value_t C_val;
                 index_t temp;
                 const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
-                const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
+                const index_t *nnzPerColScan_leftEnd_p   = &nnzPerColScan_leftEnd[0] - B_row_offset;
                 for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
                     for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
                         temp = A_nnz_row_sz * B_new_col_idx_p[B[k].col];
@@ -1174,15 +1174,15 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 }
 */
 
+                nnz_t temp2;
                 for (index_t j = 0; j < B_nnz_col_sz; j++) {
                     temp = A_nnz_row_sz * j;
                     for (index_t i = 0; i < A_nnz_row_sz; i++) {
-
-                        if(mapbit[i + temp]){
+                        temp2 = i + temp;
+                        if(mapbit[temp2]){
 //                            std::cout << i << "\t" << j << "\t" << i + temp << "\t" << orig_row_idx[i] << "\t"
 //                                      << orig_col_idx[j] << "\t" << map_matmat[i + temp] << std::endl;
-
-                            C.emplace_back(orig_row_idx[i], orig_col_idx[j], map_matmat[i + temp]);
+                            C.emplace_back(orig_row_idx[i], orig_col_idx[j], map_matmat[temp2]);
                         }
                     }
                 }
@@ -1203,7 +1203,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
             } else { //DOLLAR("case1v")
 
-                double t11 = MPI_Wtime();
+//                double t11 = MPI_Wtime();
+
 /*
 //                index_t *A_new_row_idx = &nnzPerRow_left[0];
                 index_t *A_new_row_idx_p = &A_new_row_idx[0] - A_row_offset;
@@ -1255,13 +1256,13 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                 if (rank == verbose_rank && verbose_matmat) { printf("fast_mm: case 1: step 1 \n"); }
 #endif
 
+                mapbit.reset();
                 index_t C_index;
                 value_t C_val;
-                mapbit.reset();
-//                bool C_not_zero = false;
                 index_t temp;
+//                bool C_not_zero = false;
                 const index_t *nnzPerColScan_leftStart_p = &nnzPerColScan_leftStart[0] - B_row_offset;
-                const index_t *nnzPerColScan_leftEnd_p = &nnzPerColScan_leftEnd[0] - B_row_offset;
+                const index_t *nnzPerColScan_leftEnd_p   = &nnzPerColScan_leftEnd[0] - B_row_offset;
 
                 for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
                     for (nnz_t k = nnzPerColScan_rightStart[j]; k < nnzPerColScan_rightEnd[j]; k++) { // nonzeros in column j of B
@@ -1280,12 +1281,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                            C_temp[A_new_row_idx_p[A[i].row] + temp] += B[k].val * A[i].val;
 //                            C_not_zero = true;
 
-
-
                             C_index = A_new_row_idx_p[A[i].row] + temp;
                             C_val = B[k].val * A[i].val;
-//                            auto it = map_matmat.emplace(C_index, C_val);
-//                            if (!it.second) it.first->second += C_val;
 
 //                            std::cout << C_index << "\t" << C_val << std::endl;
                             if(mapbit[C_index]) {
@@ -1294,8 +1291,6 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                                 C_temp[C_index] = C_val;
                                 mapbit[C_index] = true;
                             }
-
-
 
 #ifdef __DEBUG1__
 //                            if(rank == 0) std::cout << "A: " << A[i] << "\tB: " << B[k] << "\tC_index: " << A_new_row_idx_p[A[i].row] + temp
@@ -1316,14 +1311,16 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
 //                nnz_t C_nnz = 0; //todo: delete this
 //                if(C_not_zero) {
+                nnz_t temp2;
                 if(mapbit.count()){
                     for (index_t j = 0; j < B_nnz_col_sz; j++) {
                         temp = A_nnz_row_sz * j;
                         for (index_t i = 0; i < A_nnz_row_sz; i++) {
 //                            if (C_temp[i + temp] != 0) {
-                            if(mapbit[i + temp]){
-//                                if(rank==0) std::cout << i << "\t" << j << "\t" << i + temp << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
-                                C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[i + temp]);
+                            temp2 = i + temp;
+                            if(mapbit[temp2]){
+//                                if(rank==0) std::cout << i << "\t" << j << "\t" << temp2 << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
+                                C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[temp2]);
 //                            C_nnz++; //todo: delete this
                             }
                         }
