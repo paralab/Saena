@@ -547,10 +547,10 @@ int petsc_matmat(saena_matrix *A, saena_matrix *B){
     petsc_saena_matrix(B, B2);
 
     MPI_Barrier(comm);
-//    double t1 = MPI_Wtime();
+    double t1 = MPI_Wtime();
     MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &AB);
-//    t1 = MPI_Wtime() - t1;
-//    print_time_ave(t1, "PETSc MatMatMult", comm);
+    t1 = MPI_Wtime() - t1;
+    print_time_ave(t1, "PETSc MatMatMult", comm);
 
 //    petsc_viewer(AB);
 

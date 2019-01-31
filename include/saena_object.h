@@ -10,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <bitset>
-#include <spp.h> //sparsepp
+//#include <spp.h> //sparsepp
 
 // set one of the following to set fast_mm split based on nnz or matrix size
 #define SPLIT_NNZ

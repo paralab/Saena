@@ -3481,7 +3481,8 @@ void saena_object::fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vect
 
 
 int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
-
+    printf("update it from matmat_ave before use.\n");
+    /*
     // B1 should be symmetric. Because we need its transpose. Treat its row indices as column indices and vice versa.
 
 //    saena_matrix *A = A1.get_internal_matrix();
@@ -3858,7 +3859,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 #endif
 
     }
-
+*/
     return 0;
 }
 
