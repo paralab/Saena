@@ -569,6 +569,8 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
     int rank;
     MPI_Comm_rank(comm, &rank);
 
+    AB->scale_back_matrix();
+
     Mat A2, B2, AB2, C;
     petsc_saena_matrix(A, A2);
     petsc_saena_matrix(B, B2);
@@ -580,8 +582,8 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
 //    t1 = MPI_Wtime() - t1;
 //    print_time_ave(t1, "PETSc MatMatMult", comm);
 
-    petsc_viewer(AB2);
-    petsc_viewer(C);
+//    petsc_viewer(AB2);
+//    petsc_viewer(C);
 
     // ====================================
     // compute the norm of the difference
@@ -592,6 +594,8 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
     double norm_frob;
     MatNorm(C, NORM_FROBENIUS, &norm_frob);
     if(rank==0) printf("\nnorm_frobenius(AB_PETSc - AB_Saena) = %.16f\n", norm_frob);
+
+    AB->scale_matrix();
 
     MatDestroy(&A2);
     MatDestroy(&B2);

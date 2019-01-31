@@ -973,6 +973,7 @@ int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local){
 int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     // generates a band matrix with bandwidth of size "bandwidth".
     // set bandwidth to 0 to have a diagonal matrix.
+    // value of entry (i,j) = 1 / (i + j + 1)
 
     int rank, nprocs;
     MPI_Comm_size(A.get_comm(), &nprocs);
@@ -988,30 +989,30 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     }
 
     //Type of random number distribution
-    std::uniform_real_distribution<value_t> dist(0, 1); //(min, max)
+//    std::uniform_real_distribution<value_t> dist(0, 1); //(min, max)
     //Mersenne Twister: Good quality random number generator
-    std::mt19937 rng;
+//    std::mt19937 rng;
     //Initialize with non-deterministic seeds
-    rng.seed(std::random_device{}());
+//    rng.seed(std::random_device{}());
 
     value_t val = 1;
     index_t d;
     for(index_t i = rank*M; i < (rank+1)*M; i++){
         d = 0;
         for(index_t j = i; j <= i+bandwidth; j++){
-            val = dist(rng); // comment out this to have all values equal to 1.
+//            val = dist(rng); // comment out this to have all values equal to 1.
+            val = 1.0 / (i + j + 1); // comment out this to have all values equal to 1.
             if(i==j){
-//                printf("%u \t%u \n", i, j);
+//                printf("%u \t%u \t%f \n", i, j, val);
                 A.set(i, j, val);
-            }
-            else{
+            }else{
                 if(j < Mbig){
-//                    printf("%u \t%u \n", i, j);
+//                    printf("%u \t%u \t%f \n", i, j, val);
                     A.set(i, j, val);
                 }
                 if(j >= 2*d) { // equivalent to if(j-2*d >= 0)
-//                    printf("%u \t%u \n", i, j - (2 * d));
-                    A.set(i, j - (2 * d), val);
+//                    printf("%u \t%u \t%f \n", i, j - (2 * d), 1.0 / (i + j - (2 * d) + 1);
+                    A.set(i, j - (2 * d), 1.0 / (i + j - (2 * d) + 1));
                 }
             }
             d++;
