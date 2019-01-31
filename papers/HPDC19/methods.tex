@@ -1,6 +1,18 @@
 \section{Methods}
 \label{sec:methods}
 
+\mr{too abrupt. add the following...edit as neccessary}
+
+In this section, we present our modifications to the triple matrix multiplications that are part of the AMG setup process. First give a brief overview of the AMG setup process, followed by our specific changes.
+
+\subsection{AMG Setup}
+
+Short summary of AMG setup. Explain given the fine matrix, how coarsening is normally done, and where the triple matmult shows up as part of the Galerkin approximation. What else is done during setup. Basically, highlight that the matmult is the dominant part, and the part that is complex in parallel. 
+
+\subsection{Matrix Multiplication}
+
+
+% original text starts here 
 To compute the coarse matrix $Ac$, a triple matrix multiplication should be done:
 \begin{equation}
  Ac = R \times A \times P
