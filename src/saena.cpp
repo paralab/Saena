@@ -1045,8 +1045,10 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 
 //    A.assemble();
     A.assemble_band_matrix();
+
 //    printf("rank %d: M = %u, Mbig = %u, nnz_l = %lu, nnz_g = %lu \n",
-//           rank, A.get_num_local_rows(), A.get_num_rows(), A.get_local_nnz(), A.get_nnz());
+//            rank, A.get_num_local_rows(), A.get_num_rows(), A.get_local_nnz(), A.get_nnz());
+    if(!rank) printf("Mbig = %u, nnz_g = %lu \n", A.get_num_rows(), A.get_nnz());
 
     return 0;
 }
