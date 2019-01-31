@@ -128,8 +128,8 @@ int main(int argc, char* argv[]){
     // *************************** matrix-matrix product ****************************
 
     double matmat_time = 0;
-    int matmat_iter_warmup = 2;
-    int matmat_iter = 5;
+    int matmat_iter_warmup = 0;
+    int matmat_iter = 1;
 
     saena::amg solver;
 //    saena::matrix C(comm);
@@ -150,7 +150,12 @@ int main(int argc, char* argv[]){
 //    petsc_viewer(C.get_internal_matrix());
 //    saena_object *obj1 = solver.get_object();
 
-    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
+//    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
+
+    for(int i = 0; i < matmat_iter; i++){
+        petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
+    }
+
 //    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
 

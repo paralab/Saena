@@ -840,6 +840,11 @@ int saena_matrix::set_off_on_diagonal(){
 
         // compute nnz_max
         MPI_Allreduce(&nnz_l, &nnz_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+
+        // compute nnz_list
+        nnz_list.resize(nprocs);
+        MPI_Allgather(&nnz_l, 1, MPI_UNSIGNED_LONG, &nnz_list[0], 1, MPI_UNSIGNED_LONG, comm);
+//        print_vector(nnz_list, 1, "nnz_list", comm);
     }
 
     return 0;

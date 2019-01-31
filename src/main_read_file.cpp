@@ -338,6 +338,28 @@ int main(int argc, char* argv[]){
         }
     }
 */
+
+    // *************************** matrix-matrix product ****************************
+/*
+    double matmat_time = 0;
+    int matmat_iter_warmup = 0;
+    int matmat_iter = 1;
+
+//    saena::amg solver;
+//    saena::matrix C(comm);
+
+    // warm-up
+    for(int i = 0; i < matmat_iter_warmup; i++){
+        solver.matmat_ave(&A, &A, matmat_time);
+    }
+
+    matmat_time = 0;
+    for(int i = 0; i < matmat_iter; i++){
+        solver.matmat_ave(&A, &A, matmat_time);
+    }
+
+    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
+*/
     // *************************** finalize ****************************
 
 //    if(rank==0) dollar::text(std::cout);

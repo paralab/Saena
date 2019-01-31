@@ -3947,8 +3947,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         auto mat_recv = &mempool3[send_size_max];
         index_t mat_recv_M;
 
-        auto *requests = new MPI_Request[4];
-        auto *statuses = new MPI_Status[4];
+        auto *requests = new MPI_Request[2];
+        auto *statuses = new MPI_Status[2];
 
         for(int k = rank; k < rank+nprocs; k++){
             // This is overlapped. Both local and remote loops are done here.
@@ -3959,23 +3959,26 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
             // --------------------------------------------------------------------
 
             // communicate size
-            MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
-            MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
-            MPI_Waitall(1, requests, statuses);
-//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+//            MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
+//            MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
+//            MPI_Waitall(1, requests, statuses);
+
+            owner = k%nprocs;
+            recv_size  = B->nnz_list[(k+1) % nprocs];
+            mat_recv_M = B->split[owner + 1] - B->split[owner];
+//            printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
 //            mat_recv.resize(recv_size);
+//            printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
+//            if(!rank) printf("recv_size: %lu \t%lu\n", recv_size, B->nnz_list[(owner+1)%nprocs]);
 
 #ifdef __DEBUG1__
 //          print_vector(mat_recv, -1, "mat_recv", A->comm);
 //          print_vector(mat_send, -1, "mat_send", A->comm);
 #endif
-            // communicate data
-            MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests+2);
-            MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+3);
 
-            owner = k%nprocs;
-            mat_recv_M = B->split[owner + 1] - B->split[owner];
-//          printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
+            // communicate data
+            MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests);
+            MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+1);
 
             std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
             nnzPerCol_right_p = &nnzPerCol_right[0] - B->split[owner];
@@ -4017,7 +4020,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
             }
 
-            MPI_Waitall(3, requests+1, statuses+1);
+            MPI_Waitall(2, requests, statuses);
 
 //            mat_recv.swap(mat_send);
             std::swap(mat_send, mat_recv);
