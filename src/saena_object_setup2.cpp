@@ -3652,7 +3652,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 
 //        mat_recv.clear();
 //        mat_recv.shrink_to_fit();
-        delete [] mat_recv;
+//        delete [] mat_recv;
         delete [] requests;
         delete [] statuses;
 
@@ -3734,7 +3734,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 //    mat_send.shrink_to_fit();
     AB_temp.clear();
     AB_temp.shrink_to_fit();
-    delete [] mat_send;
+//    delete [] mat_send;
 
 //    unsigned long AP_size_loc = AB.size(), AP_size;
 //    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
