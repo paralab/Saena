@@ -3499,6 +3499,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 
     mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[A->Mbig * 4];
+    mempool3 = new cooEntry[B->nnz_max * 2];
 
     MPI_Barrier(comm);
     double t_AP = MPI_Wtime();
@@ -3513,7 +3514,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
 //    std::vector<cooEntry> mat_send(R->entry.size());
-    auto mat_send = new cooEntry[send_size_max];
+//    auto mat_send = new cooEntry[send_size_max];
+    auto mat_send = &mempool3[0];
 //    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
 //    memcpy(&mat_send[0], &B->entry[0], B->entry.size() * sizeof(cooEntry));
 
@@ -3558,7 +3560,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
         int owner;
         unsigned long recv_size;
 //        std::vector<cooEntry> mat_recv;
-        auto mat_recv = new cooEntry[send_size_max];
+//        auto mat_recv = new cooEntry[send_size_max];
+        auto mat_recv = &mempool3[send_size_max];
         index_t mat_recv_M;
 
         auto *requests = new MPI_Request[4];
@@ -3742,6 +3745,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 
     delete[] mempool1;
     delete[] mempool2;
+    delete[] mempool3;
 
 #ifdef __DEBUG1__
 //    print_vector(C->entry, -1, "AB = C", A->comm);

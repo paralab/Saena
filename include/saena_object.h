@@ -69,6 +69,7 @@ public:
     // memory pool used in compute_coarsen
     value_t *mempool1;
     index_t *mempool2;
+    cooEntry *mempool3;
     std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
 
