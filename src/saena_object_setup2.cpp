@@ -3521,7 +3521,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 //        if(rank==1) std::cout << mat_send[i] << std::endl;
     }
 
-//    std::sort(&mat_send[0], &mat_send[B->entry.size()]);
+    std::sort(&mat_send[0], &mat_send[B->entry.size()]);
 
 #ifdef __DEBUG1__
 //    print_vector(A->entry, 1, "A->entry", comm);
