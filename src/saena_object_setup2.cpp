@@ -3512,11 +3512,16 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 //    std::vector<cooEntry> mat_send(R->entry.size());
     auto mat_send = new cooEntry[send_size_max];
 //    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
-    memcpy(&mat_send[0], &B->entry[0], B->entry.size() * sizeof(cooEntry));
-//    for(nnz_t i = 0; i < B->entry.size(); i++){
-//        mat_send[i] = cooEntry(B->entry[i].col, B->entry[i].row, B->entry[i].val);
-//        std::cout << mat_send[i] << std::endl;
-//    }
+//    memcpy(&mat_send[0], &B->entry[0], B->entry.size() * sizeof(cooEntry));
+
+//    std::sort(B->entry.begin(), B->entry.end(), row_major);
+
+    for(nnz_t i = 0; i < B->entry.size(); i++){
+        mat_send[i] = cooEntry(B->entry[i].col, B->entry[i].row, B->entry[i].val);
+//        if(rank==1) std::cout << mat_send[i] << std::endl;
+    }
+
+//    std::sort(&mat_send[0], &mat_send[B->entry.size()]);
 
 #ifdef __DEBUG1__
 //    print_vector(A->entry, 1, "A->entry", comm);
