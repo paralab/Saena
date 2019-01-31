@@ -3866,7 +3866,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 }
 
 
-int saena_object::matmat(saena_matrix *A, saena_matrix *B){
+int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time){
     // this version is only for experiments.
     // B1 should be symmetric. Because we need its transpose. Treat its row indices as column indices and vice versa.
 
@@ -3887,8 +3887,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B){
     MPI_Barrier(comm);
     double t_AP = MPI_Wtime();
 
-    MPI_Barrier(comm);
-    double t1 = MPI_Wtime();
+//    MPI_Barrier(comm);
+//    double t1 = MPI_Wtime();
 
     unsigned long send_size     = B->entry.size();
     unsigned long send_size_max = B->nnz_max;
@@ -3911,16 +3911,16 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B){
 
     std::sort(&mat_send[0], &mat_send[B->entry.size()]);
 
-    t1 = MPI_Wtime() - t1;
-    print_time_ave(t1, "mat_send:", comm);
+//    t1 = MPI_Wtime() - t1;
+//    print_time_ave(t1, "mat_send:", comm);
 
 #ifdef __DEBUG1__
 //    print_vector(A->entry, 1, "A->entry", comm);
 //    print_vector(A->nnzPerColScan, 0, "A->nnzPerColScan", comm);
 #endif
 
-    MPI_Barrier(comm);
-    t1 = MPI_Wtime() - t1;
+//    MPI_Barrier(comm);
+//    t1 = MPI_Wtime() - t1;
 
     index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
     index_t mat_recv_M_max      = B->max_M;
@@ -4083,13 +4083,13 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B){
         }
     }
 
-    t1 = MPI_Wtime() - t1;
-    print_time_ave(t1, "AB_temp:", comm);
-
 //    print_vector(AB_temp, 0, "AB_temp", comm);
 
-    MPI_Barrier(comm);
-    t1 = MPI_Wtime();
+//    t1 = MPI_Wtime() - t1;
+//    print_time_ave(t1, "AB_temp:", comm);
+
+//    MPI_Barrier(comm);
+//    t1 = MPI_Wtime();
 
     std::sort(AB_temp.begin(), AB_temp.end());
 //    std::vector<cooEntry> AB;
@@ -4111,8 +4111,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B){
         }
     }
 
-    t1 = MPI_Wtime() - t1;
-    print_time_ave(t1, "AB:", comm);
+//    t1 = MPI_Wtime() - t1;
+//    print_time_ave(t1, "AB:", comm);
 
 //    mat_send.clear();
 //    mat_send.shrink_to_fit();
@@ -4124,8 +4124,9 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B){
 //    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
-//    t_AP = MPI_Wtime() - t_AP;
-//    print_time_ave(t_AP, "AB:", comm);
+    t_AP = MPI_Wtime() - t_AP;
+    matmat_time += print_time_ave_consecutive(t_AP, comm);
+//    matmat_time += t_ave;
 
     delete[] mempool1;
     delete[] mempool2;

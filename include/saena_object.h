@@ -127,7 +127,7 @@ public:
     int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int matmat(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C);
-    int matmat(saena_matrix *A, saena_matrix *B); // this version is only for experiments.
+    int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
 
     // for fast_mm experiments
     int compute_coarsen_test(Grid *grid);

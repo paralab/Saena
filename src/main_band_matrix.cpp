@@ -127,6 +127,7 @@ int main(int argc, char* argv[]){
 */
     // *************************** matrix-matrix product ****************************
 
+    double matmat_time = 0;
     int matmat_iter_warmup = 4;
     int matmat_iter = 10;
 
@@ -135,18 +136,21 @@ int main(int argc, char* argv[]){
 
     // warm-up
     for(int i = 0; i < matmat_iter_warmup; i++){
-        solver.matmat(&A, &A);
+        solver.matmat_ave(&A, &A, matmat_time);
     }
 
+    matmat_time = 0;
     for(int i = 0; i < matmat_iter; i++){
-        solver.matmat(&A, &A);
+        solver.matmat_ave(&A, &A, matmat_time);
     }
+
+    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
 
 //    petsc_viewer(A.get_internal_matrix());
 //    petsc_viewer(C.get_internal_matrix());
 //    saena_object *obj1 = solver.get_object();
 
-//    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
+    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
 //    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
 
