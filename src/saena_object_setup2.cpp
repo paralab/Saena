@@ -3897,6 +3897,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    std::vector<cooEntry> mat_send(R->entry.size());
 //    auto mat_send = new cooEntry[send_size_max];
     auto mat_send = &mempool3[0];
+    auto mat_temp = mat_send; // use this to swap mat_send and mat_recv
 //    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
 //    memcpy(&mat_send[0], &B->entry[0], B->entry.size() * sizeof(cooEntry));
 
@@ -3919,7 +3920,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
 //    MPI_Barrier(comm);
 //    t1 = MPI_Wtime() - t1;
-
+    double tt;
+    double t_swap = 0;
     index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
     index_t mat_recv_M_max      = B->max_M;
 
@@ -3961,22 +3963,16 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //            MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
 //            MPI_Waitall(1, requests, statuses);
 
-            owner = k%nprocs;
-            recv_size  = B->nnz_list[(k+1) % nprocs];
-            mat_recv_M = B->split[owner + 1] - B->split[owner];
+            recv_size = B->nnz_list[(k+1) % nprocs];
 //            printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
 //            mat_recv.resize(recv_size);
-//            printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
-//            if(!rank) printf("recv_size: %lu \t%lu\n", recv_size, B->nnz_list[(owner+1)%nprocs]);
-
-#ifdef __DEBUG1__
-//          print_vector(mat_recv, -1, "mat_recv", A->comm);
-//          print_vector(mat_send, -1, "mat_send", A->comm);
-#endif
 
             // communicate data
             MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests);
             MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+1);
+
+            owner = k%nprocs;
+            mat_recv_M = B->split[owner + 1] - B->split[owner];
 
             std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
             nnzPerCol_right_p = &nnzPerCol_right[0] - B->split[owner];
@@ -4011,18 +4007,16 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
                         &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                         &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
-//                fast_mm(&A->entry[0], &mat_send[0], AB_temp, A->entry.size(), mat_send.size(),
-//                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
-//                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-//                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
-
             }
 
-            MPI_Waitall(2, requests, statuses);
-
 //            mat_recv.swap(mat_send);
-            std::swap(mat_send, mat_recv);
+//            std::swap(mat_send, mat_recv);
+            mat_temp = mat_send;
+            mat_send = mat_recv;
+            mat_recv = mat_temp;
             send_size = recv_size;
+
+            MPI_Waitall(2, requests, statuses);
 
 #ifdef __DEBUG1__
 //          print_vector(AB_temp, -1, "AB_temp", A->comm);
