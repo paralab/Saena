@@ -87,7 +87,7 @@ When A is horizontal, i.e. its row size is less than or equal to its column size
 
 \subsubsection{Case 3}
 \label{sec:case3}
-When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its cloumn size and halve B by column (Figure\ref{fig:case3}). In contrary to the previous case, column size of B is not related to row size of A, so they are splitted independently.
+When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, column size of B is not related to row size of A, so they are splitted independently.
 
 \begin{figure}[tbh]
  \centering
@@ -113,9 +113,7 @@ When A is vertical, i.e. its row size is greater than its column size, we halve 
   \end{algorithmic}
 \end{algorithm}
 
-Explain why we prefer case 2 over case 3, so we have changed condition for case 2 to: when A's row size is less than or equal to \textbf{a multiple of} its column size.
-
-Explain the second method, splitting based on the number of nonzeros.
+\mr:{Explain the second method, splitting based on the number of nonzeros.}
 
 
 \subsection{AMG Matrix Multiplication}
