@@ -49,7 +49,7 @@
 
 \begin{document}
 
-\title{Improving Scalability of Algebraic Multigrid by Compression and Divide and Conquer Matrix-Matrix Product}
+\title{Improving Performance of Algebraic Multigrid Divide and Conquer Matrix-Matrix Product}
 
 \author{Majid Rasouli}
 \affiliation{%
@@ -86,9 +86,11 @@
 
 
 \begin{abstract}
-Algebraic Multigrid (AMG) is a popular linear system solver and preconditioner for large sparse linear systems, especially the ones obtained from the discretization of elliptic operators. The large-scale performance and scalability of AMG depends on two linear algebra primitives, matrix-matrix product (MATMULT) and matrix-vector multiplication (MATVEC). \mr{Are we presenting MATVEC in this paper? Abstract should be shorter.} MATVEC is the dominant operation in the solve phase of AMG and an important one in the setup phase. For large linear systems, the communication during MATVEC becomes significant and is usually the bottleneck for scalability. In this work, we have explored  reducing the communication cost during MATVEC by using compressed data transfer. This is performed in a manner that allows us to control the precision of data loss. We demonstrate that when used in conjunction with Conjugate Gradients as a preconditioner, significant savings in communication can be obtained without adversely affecting the overall convergence during the solve phase.
-
-A key bottleneck for the scalability of the setup phase of AMG is the Matrix-matrix multiplication required for computing the sparse grid representation. While significant work has been done on optimizing sparse matrix-matrix multiplication, in this work, we optimize it in the context of the matrix multiplications encountered in the setup phase of AMG. Specifically we designed a new divide and conquer sparse MatMult, that is scalable and makes use of the specific structure of the restriction and prolongation matrices. This combined with an efficient communication pattern during parallel MatMult provides excellent scalability for our AMG setup. We compare our solver with PETSc and CombBLAS to demonstrate the performance and scalability improvements gained using our methods.
+Algebraic Multigrid (AMG) is a popular linear system solver and preconditioner for large sparse linear systems, especially the ones obtained from the discretization of elliptic operators.
+%The large-scale performance and scalability of AMG depends on two linear algebra primitives, matrix-matrix product (MATMULT) and matrix-vector multiplication (MATVEC). \mr{Are we presenting MATVEC in this paper? Abstract should be shorter.} MATVEC is the dominant operation in the solve phase of AMG and an important one in the setup phase. For large linear systems, the communication during MATVEC becomes significant and is usually the bottleneck for scalability. In this work, we have explored  reducing the communication cost during MATVEC by using compressed data transfer. This is performed in a manner that allows us to control the precision of data loss. We demonstrate that when used in conjunction with Conjugate Gradients as a preconditioner, significant savings in communication can be obtained without adversely affecting the overall convergence during the solve phase.
+A key bottleneck for the scalability of the setup phase of AMG is the Matrix-matrix multiplication required for computing the sparse grid representation. While significant work has been done on optimizing sparse matrix-matrix multiplication, in this work, we optimize it in the context of the matrix multiplications encountered in the setup phase of AMG. Specifically we designed a new divide and conquer sparse MatMult, that is scalable and makes use of the specific structure of the restriction and prolongation matrices. This combined with an efficient communication pattern during parallel MatMult provides excellent scalability for our AMG setup. We compare our solver with PETSc to demonstrate the performance
+%and scalability
+improvements gained using our methods.
 \end{abstract}
 
 %
