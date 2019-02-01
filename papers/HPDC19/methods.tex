@@ -79,8 +79,8 @@ When A is horizontal, i.e. its row size is less than or equal to its column size
     \Ensure  $C$
     \State $(A1, A2) = \spc(A)$
     \State $(B1, B2) = \spr(B)$
-    \State $C1 \leftarrow \recmm(A1,B1)$
-    \State $C2 \leftarrow \recmm(A2,B2)$
+    \State $C \leftarrow \recmm(A1,B1)$
+    \State $C \leftarrow \recmm(A2,B2)$
     %\State $C \leftarrow \textsc{mergesort}(C1, C2)$
   \end{algorithmic}
 \end{algorithm}
@@ -113,7 +113,7 @@ When A is vertical, i.e. its row size is greater than its column size, we halve 
   \end{algorithmic}
 \end{algorithm}
 
-\mr:{Explain the second method, splitting based on the number of nonzeros.}
+We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. In \textit{Case 3}, we do the same for matrix $B$.
 
 
 \subsection{AMG Matrix Multiplication}
