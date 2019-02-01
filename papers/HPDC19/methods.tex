@@ -1,30 +1,14 @@
 \section{Methods}
 \label{sec:methods}
 
-\mr{too abrupt. add the following...edit as neccessary}
+In this section, we present our matrix-matrix multiplix. Then explain our modifications to the triple matrix multiplications that are part of the AMG setup process.
 
-In this section, we present our modifications to the triple matrix multiplications that are part of the AMG setup process. First give a brief overview of the AMG setup process, followed by our specific changes.
+\subsection{Matrix-Matrix Multiplication}
+\label{sec:matmult}
 
-\subsection{AMG Setup}
-
-Short summary of AMG setup. Explain given the fine matrix, how coarsening is normally done, and where the triple matmult shows up as part of the Galerkin approximation. What else is done during setup. Basically, highlight that the matmult is the dominant part, and the part that is complex in parallel. 
-
-\subsection{Matrix Multiplication}
-
-
-% original text starts here 
-To compute the coarse matrix $Ac$, a triple matrix multiplication should be done:
-\begin{equation}
- Ac = R \times A \times P
-\end{equation}
-in which $R = P^T$.
-
-This section includes two parts: First, we describe preforming the multiplication locallly on one processor. In the next part, we explain how the communication of the matrix data is being done between processors.
-
-
-\subsection{Computation}
-\label{sec:comp}
-Here we assume that the data is available locally, so we discuss it as a serial implementation. We have implemented comptutation in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size, split by half based on number of nonzeros. 
+%\subsubsection{Computation}
+%\label{sec:comp}
+Here we assume that the data is available locally, so we discuss it as a serial implementation. We have implemented \mm~ in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size, split by half based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
 
 The recursive function, \recmm, includes three cases:
 \begin{enumerate}
@@ -33,20 +17,18 @@ The recursive function, \recmm, includes three cases:
  \item Case 3: A is vertical.
 \end{enumerate}
 
-First we explain the first method, splitting based on the matrix sizes.
-
 \subsubsection{Case 1}
 \label{sec:case1}
-At the start of the recursive function, the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$) are being computed. A threshold for $\nnzsz = A\_nnz\_row \times B\_nnz\_col$ is being set (for our experiments we use $10M$ and sometimes $20M$).
-We continue splitting the matrices until the threshold is reached. Then, we preform the multiplication. We have implemented two methods for this case: dense struture and hashmap.
+At the start of the recursive function, the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$) are being computed. A threshold for $\nnzsz = A\_nnz\_row \times B\_nnz\_col$ is set (for our experiments we use $20M$ \mr{explain why.}).
+We continue splitting the matrices until the threshold is reached. Then, we preform the multiplication. We have implemented two methods for this case: dense data struture and hashmap.
 
 %First method uses a dense matrix.
 %The matrices are ordered as column-major.
-In the first method, a dense matrix of size $\nnzsz = A\_nnz\_row \times B\_nnz\_col$ is initialized to $0$. Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. At the end, we go through the dense matrix and add the nonzeros to the final multiplication matrix.
+In the first method, a dense matrix of size $\nnzsz$ is initialized to $0$. \mr{explain better:}Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. At the end, we go through the dense matrix and add the nonzeros to the final multiplication matrix.
 
-When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we have implemented another method that uses hashmaps. The entry's index is the key and its value is the hashmap's value. When we want to add the multipliation of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added. Otherwise a new entry will be added to the hashmap.
+When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we have implemented another method that uses hashmaps. The entry's index is the key and its value is the hashmap's value. When we want to add the multipliation of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap.
 
-In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we count how many times each method is faster than the other one. For the lower range the first method is better and for the higher range the second one.
+In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we show how which method is faster than the other one. For the lower range the first method is better and for the higher range the second one.
 
 \begin{figure}[tbh]
  \centering
@@ -66,7 +48,7 @@ Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSp
  \label{fig:eco}
 \end{figure}
 
-A combination of these two methods would give us the best of both. The dense method is being used for the lower range and the hashmap for the higher range. Figure~\ref{fig:mix} shows the comparison of the mixed method with when each method is being used separately.
+A combination of these two methods would give us the best of both. The dense method is being used for the lower range and the hashmap for the higher range. Figure~\ref{fig:mix} compares the mixed method with the basic two methods.
 
 \begin{figure}[tbh]
  \centering
@@ -136,8 +118,22 @@ Explain why we prefer case 2 over case 3, so we have changed condition for case 
 Explain the second method, splitting based on the number of nonzeros.
 
 
-\subsection{Communication}
-\label{sec:comm}
+\subsection{AMG Matrix Multiplication}
+\label{sec:amg}
+
+Short summary of AMG setup. Explain given the fine matrix, how coarsening is normally done, and where the triple matmult shows up as part of the Galerkin approximation. What else is done during setup. Basically, highlight that the matmult is the dominant part, and the part that is complex in parallel. 
+
+% original text starts here 
+To compute the coarse matrix $Ac$, a triple matrix multiplication should be done:
+\begin{equation}
+ Ac = R \times A \times P
+\end{equation}
+in which $R = P^T$.
+
+This section includes two parts: First, we describe preforming the multiplication locallly on one processor. In the next part, we explain how the communication of the matrix data is being done between processors.
+
+%\subsubsection{Communication}
+%\label{sec:comm}
 
 Matrices are partitioned on multiple processors by row blocks (Figure~\ref{fig:partition}). Matrices $A$ and $P$ have the same number of rows and consequently are partitioned the same way. $R$ has less number of rows and has a different partition.
 
