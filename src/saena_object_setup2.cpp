@@ -1121,7 +1121,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
-
+/*
             if (A_nnz_row_sz * B_nnz_col_sz > matmat_size_thre3) { //DOLLAR("case1m")
 
 //                double t11 = MPI_Wtime();
@@ -1163,16 +1163,12 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                     }
                 }
 
-/*
 //                C.reserve(C.size() + map_matmat.size());
-                C.reserve(C.size() + mapbit.count());
-                for (auto it1 = map_matmat.begin(); it1 != map_matmat.end(); ++it1) {
-//                std::cout << it1->first.first << "\t" << it1->first.second << "\t" << it1->second << std::endl;
-                    if(mapbit[it1->first])
-                        C.emplace_back( (it1->first % A_nnz_row_sz) + A_row_offset, (it1->first / A_nnz_row_sz) + B_col_offset, it1->second);
-//                    C.emplace_back( (it1->first % A_row_size) + A_row_offset, (it1->first / A_row_size) + B_col_offset, it1->second);
-                }
-*/
+//                C.reserve(C.size() + mapbit.count());
+//                for (auto it1 = map_matmat.begin(); it1 != map_matmat.end(); ++it1) {
+//                    if(mapbit[it1->first])
+//                        C.emplace_back( (it1->first % A_nnz_row_sz) + A_row_offset, (it1->first / A_nnz_row_sz) + B_col_offset, it1->second);
+//                }
 
                 nnz_t temp2;
                 for (index_t j = 0; j < B_nnz_col_sz; j++) {
@@ -1186,7 +1182,6 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                         }
                     }
                 }
-
 
 #ifdef __DEBUG1__
                 if (rank == verbose_rank && verbose_matmat) printf("fast_mm: case 1 (map): end \n");
@@ -1202,6 +1197,8 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 #endif
 
             } else { //DOLLAR("case1v")
+*/
+
 
 //                double t11 = MPI_Wtime();
 
@@ -1321,7 +1318,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
                             if(mapbit[temp2]){
 //                                if(rank==0) std::cout << i << "\t" << j << "\t" << temp2 << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
                                 C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[temp2]);
-//                            C_nnz++; //todo: delete this
+//                                C_nnz++; //todo: delete this
                             }
                         }
                     }
@@ -1339,7 +1336,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
 //                print_vector(C, -1, "C", comm);
 #endif
 
-            }
+//            }
 
             return;
         }
