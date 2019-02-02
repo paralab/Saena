@@ -1,14 +1,14 @@
 \section{Methods}
 \label{sec:methods}
 
-In this section, we present our matrix-matrix multiplication. We then explain further modifications to the triple matrix multiplication (\ref{eq:rap}) that are part of the AMG setup process.
+In this section, we present our matrix-matrix multiplication. Then explain our modifications to the triple matrix multiplications that are part of the AMG setup process.
 
 \subsection{Matrix-Matrix Multiplication}
 \label{sec:matmult}
 
 %\subsubsection{Computation}
 %\label{sec:comp}
-We design a divide and conquer approach to performing the sparse \mm\ in a node-local fashion. The key idea is to perform simple tasks while recursing, having efficient memory access, and to perform the multiplication for small chunks where the resulting matrix can fit into an appropriate cache. For clarity of presentation, we assume that the data is available locally and discuss it as a serial implementation. Shared memory parallelism is added in a straightforward manner. We have implemented \mm~ in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size, split by half based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
+Here we assume that the data is available locally, so we discuss it as a serial implementation. We have implemented \mm~ in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size, split by half based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
 
 The recursive function, \recmm, includes three cases:
 \begin{enumerate}
@@ -23,12 +23,11 @@ At the start of the recursive function, the number of nonzero rows of A ($A\_nnz
 
 %First method uses a dense matrix.
 %The matrices are ordered as column-major.
-% In the first method, a dense matrix of size $\nnzsz$ is initialized to $0$. \mr{explain better:}Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. At the end, we go through the dense matrix and add the nonzeros to the final multiplication matrix.
-When performing the multiplication, at least one of the matrices, typically the output, needs random access as it is accumulating the results. Given that the divide and conquer approach has reduced the size of the output matrix, the first approach is to keep a temporary buffer for dense matrix storage. Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. As long as the dense matrix is small enough to fit within the L2 cache, we should get good performance. At the end of the multiplication, we traverse the dense matrix and extract the non-zeros as a sparse matrix. This approach works well as long as the resulting matrix is dense. 
+In the first method, a dense matrix of size $\nnzsz$ is initialized to $0$. \mr{explain better:}Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. At the end, we go through the dense matrix and add the nonzeros to the final multiplication matrix.
 
-When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we use an efficient hashmap to achieve similar results without the $\mathcal{O}(n^2)$ overhead of extracting the non-zeros from the dense matrix. The entry's index is the key and its value is the hashmap's value. When we want to add the multiplication of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap. Clearly, there is an overhead to this approach that needs to be balanced against the overheads associated with the dense representation. 
+When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we have implemented another method that uses hashmaps. The entry's index is the key and its value is the hashmap's value. When we want to add the multiplication of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap.
 
-In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we compare the two methods in order to develop an efficient hybrid algorithm. For the lower range the dense representation is better and for the higher range the hashmap is significantly faster. Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. \mr{what is special about this matrix? At least give a description, so people know what it is. Better than giving the number.}
+In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we show how which method is faster than the other one. For the lower range the first method is better and for the higher range the second one.
 
 \begin{figure}[tbh]
  \centering
@@ -38,6 +37,8 @@ In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem o
  \label{fig:lap60}
 \end{figure}
 
+Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection.
+
 \begin{figure}[tbh]
  \centering
  \Description{Description}
@@ -46,26 +47,27 @@ In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem o
  \label{fig:eco}
 \end{figure}
 
-A combination of these two methods would give us the best performance across different matrix structures and densities. The dense method is being used for the lower range and the hashmap for the higher range. Figure ~\ref{fig:mix} compares the hybrid method with the basic two methods. \mr{How did you determine the hybrid algorithm. 1-2 lines on that.} \mr{Also, discuss the results. Change mix to hybrid.}
+A combination of these two methods would give us the best of both. The dense method is being used for the lower range and the hashmap for the higher range. Figure ~\ref{fig:mix} compares the mixed method with the basic two methods.
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=5cm]{./figures/mix.pdf}
- \caption{Comparison between three ways to do Case 1: only using hashmap, only using the dense structure, and a mix of both of them. \mr{longer caption, more details. It should be clear what is being done here.}}
+ \caption{Comparison between three ways to do Case 1: only using hashmap, only using the dense structure, and a mix of both of them.}
  \label{fig:mix}
 \end{figure}
 
 
 \subsubsection{Case 2}
 \label{sec:case2}
-When $A$ is horizontal, i.e. its row size is less than or equal to its column size, we halve $A$ by column based on its column size (Figure ~\ref{fig:case2}). Since the row size of $B$ equals the column size of $A$, we halve $B$ by row, so it will be a split similar to $A$, but horizontally. 
+When A is horizontal, i.e. its row size is less than or equal to its column size, we halve A by column based on its column size (Figure ~\ref{fig:case2}). Since row size of B equals column size of A, we halve B by row, so it will be a similar split to A, but horizontally.
+Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$ and $B2$ (Algorithm~\ref{alg:case2}). The result of them need to be added to together at the end.
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=6cm,height=2.7cm]{./figures/case2_001.pdf}
- \caption{Case 2: When A is horizontal, split A by column and B by row.}
+ \caption{Case 2: When A is horizontal, split A by column and B by row. Call the recursive function twice, and add the result together at the end.}
  \label{fig:case2}
 \end{figure}
 
@@ -85,13 +87,13 @@ When $A$ is horizontal, i.e. its row size is less than or equal to its column si
 
 \subsubsection{Case 3}
 \label{sec:case3}
-When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, column size of B is not related to row size of A, so they are split independently.
+When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, column size of B is not related to row size of A, so they are split independently. This time the \recmm~ will be called four times (Algorithm~\ref{alg:case2}).
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=6cm,height=2.5cm]{./figures/case3_001.pdf}
- \caption{Case 3: When A is vertical, split A by row and B by column.}
+ \caption{Case 3: When A is vertical, split A by row and B by column. Call the recursive function four times.}
  \label{fig:case3}
 \end{figure}
 
@@ -116,8 +118,6 @@ We have also implemented splitting based on the number of nonzeros. In \textit{C
 \subsection{AMG Matrix Multiplication}
 \label{sec:amg}
 
-\mr{highlight that the matmult is the dominant part, and the part that is complex in parallel.}
-
 To solve a large linear system 
 \begin{equation}
  Ax = b
@@ -139,7 +139,7 @@ Matrices are partitioned on multiple processors by row blocks (Figure~\ref{fig:p
  \centering
  \Description{Description}
  \includegraphics[width=8cm,height=3cm]{./figures/partition.pdf}
- \caption{Partition the matrices between the processors in row blocks.}
+ \caption{Partition the matrices between the processors in row blocks. $A$ and $P$ have the same partition but $R$'s is different.}
  \label{fig:partition}
 \end{figure}
 
@@ -154,7 +154,7 @@ We focus how to do \mm ~on processor $P1$. To compute entry $B(i, j)$, we need t
  \centering
  \Description{Description}
  \includegraphics[width=5.5cm,height=3cm]{./figures/part1b.pdf}
- \caption{This figure shows how the matrices are split into sub-blocks in Part 1.}
+ \caption{This figure shows how the matrices are split into sub-blocks in Part 1. Column $j$ of $P$ is stored on different processors.}
  \label{fig:part1b}
 \end{figure}
 
@@ -215,7 +215,7 @@ But in this method, each sub-block of local $P$ is being multiplied by whole row
  \label{fig:part2e}
 \end{figure}
 
-\mr{explain better}Using this method, we need to add duplicates twice (explain duplicates). Once, after doing the multiplication; Second time, after sorting the result globally (using HykSort \cite{Sundar:2013}) and putting the entries on the correct processors (Algorithm~\ref{alg:part2}).
+The differece for final result between this case and Case 2 is that, the final entries are not on the correct processors, so there should be a communication at the end to put the entries on their correct owners. So, we sort the entries locally at the end and add the duplicates together. Then, we sort them globally (using HykSort \cite{Sundar:2013}) and again add the duplicates together (Algorithm~\ref{alg:part2}).
 
 \begin{algorithm}[H] 
   %\footnotesize
