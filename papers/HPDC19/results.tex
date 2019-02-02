@@ -3,7 +3,31 @@
 
 For our experiments we have used RMACC Summit Supercomputer in University of Colorado, Boulder. It uses Intel Xeon E5-2680 with $4.84GB$ of memory per core.
 
-Add weak scaling and strong scaling.
+For these experiments for \mm~ we have multiplied a banded matrix with itself, assuming that the matrix is being multiplied with a separate matrix, so not using any information from the left-hand side matrix for the right-hand side one.
 
-Compare with PETSc for weak scaling.
+Figure\ref{fig:weak1} shows the weak scaling for 
+
+\begin{figure}[tbh]
+ \centering
+ \Description{Description}
+ \includegraphics[width=8.5cm,height=4.8cm]{./figures/weak1.pdf}
+ \caption{1}
+ \label{fig:weak1}
+\end{figure}
+
+\begin{figure}[tbh]
+ \centering
+ \Description{Description}
+ \includegraphics[width=8.5cm,height=4.9cm]{./figures/strong1.pdf}
+ \caption{1}
+ \label{fig:strong1}
+\end{figure}
+
+\begin{figure}[tbh]
+ \centering
+ \Description{Description}
+ \includegraphics[width=8.5cm,height=4.4cm]{./figures/petsc1.pdf}
+ \caption{1}
+ \label{fig:petsc1}
+\end{figure}
 
