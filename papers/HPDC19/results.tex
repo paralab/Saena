@@ -5,7 +5,7 @@ For our experiments we have used RMACC Summit Supercomputer in University of Col
 
 For these experiments for \mm~ we have multiplied a banded matrix with itself, assuming that the matrix is being multiplied with a separate matrix, so not using any information from the left-hand side matrix for the right-hand side one.
 
-Figure\ref{fig:weak1} shows the weak scaling for two banded matrices.
+Figure\ref{fig:weak1} shows the weak scaling for two banded matrices. Our solver scales significantly better when the size of matrix per core is smaller.
 
 \begin{figure}[tbh]
  \centering
@@ -25,7 +25,7 @@ Figure\ref{fig:strong1} is the strong scaling for five banded matrices of the sa
  \label{fig:strong1}
 \end{figure}
 
-Figure\ref{fig:petsc1} compares the strong scaling between our solver and PETSc. For the matrices with lower density (more sparse) PETSc performs better when using higher number of processes, but for denser matrices our solver is faster. In multigrid hierarchy, the coarse matrices get denser as we go to lower levels, so it becomes expensive to perform \mm~ and having a fast matrix-matrix product would improve the setup cost significantly.
+Figure\ref{fig:petsc1} compares the strong scaling between our solver and PETSc. For the matrices with lower density (more sparse) PETSc performs better when using higher number of processes, but for denser matrices our solver is faster. In multigrid hierarchy, the coarse matrices get denser as we go to lower levels, so it becomes expensive to perform \mm~ at those levels and having an efficient matrix-matrix product will improve the setup cost significantly.
 
 \begin{figure}[tbh]
  \centering
