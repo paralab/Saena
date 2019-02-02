@@ -4,6 +4,7 @@
 
 \usepackage{booktabs} % For formal tables
 \usepackage{amssymb}
+\usepackage{soul}
 \usepackage{algpseudocode} 
 % Typesetting algorithms
 \usepackage{algorithm}
@@ -28,7 +29,8 @@
 %\acmISBN{123-4567-24-567/08/06}
 
 %Conference
-\acmConference[HPDC'19]{ACM Symposium on High-Performance Parallel and Distributed Computing}{June 2019}{Phoenix, Arizona, USA}
+% \acmConference[HPDC'19]{ACM Symposium on High-Performance Parallel and Distributed Computing}{June 2019}{Phoenix, Arizona, USA}
+\acmConference[ICS'19]{International Conference on Supercomputing}{June 2019}{Phoenix, Arizona, USA}
 \acmYear{2019}
 \copyrightyear{2019}
 
@@ -40,6 +42,7 @@
 \newcommand{\mr}[1]{\mynote{Majid}{blue}{#1}}
 \newcommand{\hs}[1]{\mynote{Hari}{olive}{#1}}
 
+\newcommand{\mvec}{\textsc{matvec}}
 \newcommand{\mm}{\textsc{matmult}}
 \newcommand{\recmm}{\textsc{recurs\_matmult}}
 \newcommand{\spr}{\textsc{split\_by\_row}}
@@ -138,7 +141,7 @@ improvements gained using our methods.
 \input{methods}
 \input{results}
 
-%\bibliographystyle{ACM-Reference-Format}
-%\bibliography{sample-bibliography}
+\bibliographystyle{abbrv}
+\bibliography{ref.bib}
 
 \end{document}
