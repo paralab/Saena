@@ -60,8 +60,8 @@ A combination of these two methods would give us the best performance across dif
 
 \subsubsection{Case 2}
 \label{sec:case2}
-When A is horizontal, i.e. its row size is less than or equal to its column size, we halve A by column based on its column size (Figure ~\ref{fig:case2}). Since row size of B equals column size of A, we halve B by row, so it will be a similar split to A, but horizontally.
-Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$ and $B2$ (Algorithm~\ref{alg:case2}). The result of them need to be added to together at the end.
+When A is horizontal, i.e. its row size is less than or equal to its column size, we halve A by column based on its column size (Figure ~\ref{fig:case2}). Since row size of B equals column size of A, we halve B by row, so it will be a split similar to A, but horizontally.
+Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$ and $B2$ (Algorithm~\ref{alg:case2}). The results of the two multiplications will need to be added together in the end. \mr{elaborate more. e.g.} In the sparse representation, this is similar to iterating over both lists once to merge and accumulate the results and is very efficient. 
 
 \begin{figure}[tbh]
  \centering
@@ -87,7 +87,7 @@ Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$
 
 \subsubsection{Case 3}
 \label{sec:case3}
-When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, column size of B is not related to row size of A, so they are split independently. This time the \recmm~ will be called four times (Algorithm~\ref{alg:case2}).
+When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, the column size of B is not related to row size of A, so they are split independently. This time the \recmm~ will be called four times (Algorithm~\ref{alg:case2}). \mr{Again we are missing details. This should be described in more details. I am adding some text, but check for correctness.} Although we have 4 recursive calls in this case, combining the results together is much simpler, as no additions need to be done, and simply merging the 4 results is sufficient.
 
 \begin{figure}[tbh]
  \centering
@@ -113,42 +113,44 @@ When A is vertical, i.e. its row size is greater than its column size, we halve 
   \end{algorithmic}
 \end{algorithm}
 
-We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. The same split is used for $B$. In \textit{Case 3}, we do the same, but separately for both $A$ and $B$.
+We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. The same split is used for $B$. In \textit{Case 3}, we do the same, but separately for both $A$ and $B$. \mr{This is fine, but I think you can expand this and add why this works. i.e., the zero rows will not be there in the multiplication, so we can skip them and make it more efficient. Also note the recursive splitting increases the probability of getting zero rols and columns}.
 
-\subsection{AMG Matrix Multiplication}
+\subsubsection{All together}
+
+When all three cases work together, we have Case 2 and Case 3, that aim to divide the matrices into skinny matrices such that the resulting matrix is small. Then by using a hybrid multiplication algorithm, we get these results. These results are then accumulated and merged together. From a memory access perspective, the accumulation and merging required for Case 2 and 3 is structured access to the matrix, with the only random access happening during Case 1. This makes the overall algorithm very efficient. 
+
+\subsection{AMG Matrix-Multiplication: Communication}
 \label{sec:amg}
 
-To solve a large linear system 
-\begin{equation}
- Ax = b
-\end{equation}
-using an Algebraic Multigrid approach, we scale down the system, solve it directly, then scale back the solution. To scale down the system, three different categories of matrices are being created: coarse matrices ($As$), restriction matrices ($Rs$) and prolongation matrices ($Ps$). To study how $Ps$ and $Rs$ are computed you can refer to \cite{bell2012exposing, treister2015non}. Here we focus how to compute $As$, assuming $Ps$ and $Rs$ are available. We explain how to compute the first coarse matrix, the next ones can be computed similarly.
+% To solve a large linear system 
+% \begin{equation}
+%  Ax = b
+% \end{equation}
+% using an Algebraic Multigrid approach, we scale down the system, solve it directly, then scale back the solution. To scale down the system, three different categories of matrices are being created: coarse matrices ($As$), restriction matrices ($Rs$) and prolongation matrices ($Ps$). To study how $Ps$ and $Rs$ are computed you can refer to \cite{bell2012exposing, treister2015non}. Here we focus how to compute $As$, assuming $Ps$ and $Rs$ are available. We explain how to compute the first coarse matrix, the next ones can be computed similarly.
 
 % original text starts here 
-To compute the coarse matrix $Ac$, a triple matrix multiplication should be done:
+As noted earlier, to compute the coarse matrix $Ac$, a triple matrix multiplication is performed:
 \begin{equation}
  Ac = R \times A \times P
 \end{equation}
-and $R = P^T$ in a Galerkin approach, which we use in our solver.
-
-In the following, we explain how the communication is being done to compute the coarse matrix $Ac$, using some properties that are available in AMG.
-
-Matrices are partitioned on multiple processors by row blocks (Figure~\ref{fig:partition}). Matrices $A$ and $P$ have the same number of rows and consequently are partitioned the same way. $R$ has less number of rows and has a different partition.
+with $R = P^T$ in the Galerkin approach, which we use in our implementation.
+%
+In this section, we explain how the communication is setup to compute the coarse matrix $Ac$, exploiting properties of the matrix structure specific to AMG. 
+%
+Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Matrices $A$ and $P$ have the same number of rows and consequently are partitioned the same way. $R$ has fewer number of rows and has a different partition. This is because coarsening need not be uniform across processes. Consequently the partitioning of the rows of $R$ could be different from that of $A$ and $P$. The triple matrix product is performed in two parts: first $A \times P$ is computed, followed by $R \times B$, where $B = A \times P$ is the result of the first multiplication. In other words, this is equivalent to performing matrix-matrix multiplications (\mm) twice.
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=8cm,height=3cm]{./figures/partition.pdf}
- \caption{Partition the matrices between the processors in row blocks. $A$ and $P$ have the same partition but $R$'s is different.}
+ \caption{Partitioning of the matrices across the processors in row blocks. $A$ and $P$ have the same partition but $R$'s is different.}
  \label{fig:partition}
 \end{figure}
 
-The triple matrix product is being done in two parts: first $A \times P$, then $R \times B$, in which $B = A \times P$, so performing matrix-matrix multiplications (\mm) twice.
-
 \subsubsection{Part 1}
 
-In this part, we explain how to compute $B := A \times P$. We assume the same partition of rows of $A$ on also its columns (red lines). For columns of $P$ we use the partition of rows of $R$ (blue lines in Figure~\ref{fig:part1b}).
-We focus how to do \mm ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros).
+In this part, we explain how to compute $B := A \times P$. We assume the same partition of rows of $A$ on also its columns (red lines) since $A$ is symmetric. For columns of $P$ we use the partition of rows of $R$ (blue lines in Figure~\ref{fig:part1b}).
+Without loss of generality, let us focus on how to perform \mm ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros).
 
 \begin{figure}[tbh]
  \centering
@@ -158,7 +160,7 @@ We focus how to do \mm ~on processor $P1$. To compute entry $B(i, j)$, we need t
  \label{fig:part1b}
 \end{figure}
 
-Column $j$ of $P$ is distributed between all the processors, so we need to communicate all nonzeros of that column and then perform $B_{ij} = \sum_{k} A_{ik} P_{kj}$. To avoid that, we can use the fact that $R$ is the transpose of $P$ and we already have it in the multigrid hierarchy. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$).
+Column $j$ of $P$ is distributed between all the processors. Therefore we need to communicate all nonzeros of that column and then perform $B_{ij} = \sum_{k} A_{ik} P_{kj}$. Since that can lead to significant communication, we make use of the fact that $R$ is the transpose of $P$ and is already available locally because of the multigrid hierarchy. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$). Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion. $B_{i}$ is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_i$. \mr{this is good, but describe overlapping in the text too ... not just the alg. }
 
 \begin{figure}[tbh]
  \centering
@@ -167,8 +169,6 @@ Column $j$ of $P$ is distributed between all the processors, so we need to commu
  \caption{This figure shows how row block of $R$ are transpose of column blocks of $P$.}
  \label{fig:part1c}
 \end{figure}
-
-Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion. $B_{i}$ is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_i$.
 
 \begin{algorithm}[H] 
   %\footnotesize
@@ -191,7 +191,7 @@ Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion. $B_{i}$ i
 
 \subsubsection{Part 2}
 
-Now we explain how to do the second \mm: $R \times B$. The blocks of $R$ on processor $P1$ in, Figure~\ref{fig:part2d}, should be multiplied with the corresponding blocks of $B$ with the same color. In contrary to the previous part, we already don't have the transpose of the right-hand side matrix and performing the transpose or communicating whole matrix $B$ between processors is expensive. Instead, we change the way the multiplication is being done and do a cheaper communication at the end.
+Now we explain how to do the second \mm: $R \times B$. The blocks of $R$ on processor $P1$ in, Figure~\ref{fig:part2d}, should be multiplied with the corresponding blocks of $B$ with the same color. In contrary to the previous part, we already don't have the transpose of the right-hand side matrix and performing the transpose or communicating whole matrix $B$ between processors is expensive. Instead, we change the way the multiplication is being done and instead perform a cheaper communication round at the end.
 
 \begin{figure}[tbh]
  \centering
@@ -203,9 +203,9 @@ Now we explain how to do the second \mm: $R \times B$. The blocks of $R$ on proc
 
 In this case we have the transpose of the left-hand side matrix, so we use $P$ instead of $R$ to do this multiplication.
 We only perform the multiplication of the green blocks on processor $P1$ in Figure~\ref{fig:part2e}, which can be done locally.
-
+%
 In the previous case each sub-block of the local left-hand side is multiplied by only one sub-block of the local right-hand side.
-But in this method, each sub-block of local $P$ is being multiplied by whole row block of $B$, i.e. $PT10$ is multiplied by all $B10$, $B11$ and $B12$, and so on.
+But in this method, each sub-block of local $P$ is being multiplied by the entire row block of $B$, i.e. $PT10$ is multiplied by all $B10$, $B11$ and $B12$, and so on.
 
 \begin{figure}[tbh]
  \centering
@@ -215,7 +215,7 @@ But in this method, each sub-block of local $P$ is being multiplied by whole row
  \label{fig:part2e}
 \end{figure}
 
-The differece for final result between this case and Case 2 is that, the final entries are not on the correct processors, so there should be a communication at the end to put the entries on their correct owners. So, we sort the entries locally at the end and add the duplicates together. Then, we sort them globally (using HykSort \cite{Sundar:2013}) and again add the duplicates together (Algorithm~\ref{alg:part2}).
+The difference for final result between this case and the na\"{i}ve Case 2 is that, the final entries are not on the correct processors, so an additional data exchange needs to be performed at the end to restore the entries on the correct processes. We sort the entries locally at the end and add the duplicates together. Finally, we sort them globally (using HykSort \cite{Sundar:2013}) and again add the duplicates together (Algorithm~\ref{alg:part2}).
 
 \begin{algorithm}[H] 
   %\footnotesize
