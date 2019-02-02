@@ -29,13 +29,13 @@ When performing the multiplication, at least one of the matrices, typically the 
 
 When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we use an efficient hashmap to achieve similar results without the $\mathcal{O}(n^2)$ overhead of extracting the non-zeros from the dense matrix. The entry's index is the key and its value is the hashmap's value. When we want to add the multiplication of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap. Clearly, there is an overhead to this approach that needs to be balanced against the overheads associated with the dense representation. 
 
-In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we compare the two methods in order to develop an efficient hybrid algorithm. For instance, the first point indicates that the dense structure is better than hashmap in $1245$ cases for all multiplications such that $0 \le\ \nnzsz < 1M$. For the lower range the dense representation is better and for the higher range the hashmap is significantly faster. Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection, which is a sparse matrix of size $1M$ and $5M$ nonzero.
+In Figure~\ref{fig:lap60}, we compare the two methods for computing the first coarse matrix $Ac = R \times A \times P$, in which $A$ is the 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we compare the two methods in order to develop an efficient hybrid algorithm. For instance, the first point indicates that the dense structure is better than hashmap in $1245$ cases for all multiplications such that $0 \le\ \nnzsz < 1M$. For the lower range the dense representation is better and for the higher range the hashmap is significantly faster. Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection, which is a sparse matrix of size $1M$ and $5M$ nonzero.
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=4cm]{./figures/lap60_range.pdf}
- \caption{Case 1: comparison between dense structure method with hashmap for a 3D Poisson problem of size $216k$. The plot shows the number of times each method is better than the other one in intervals of $1M$ for $\nnzsz$.}
+ \caption{Comparison between dense structure method with hashmap to compute the first coarse matrix $Ac = R \times A \times P$, in which $A$ is the 3D Poisson problem of size $216k$. The plot shows the number of times each method is faster than the other one in intervals of $1M$ for $\nnzsz$.}
  \label{fig:lap60}
 \end{figure}
 
@@ -43,7 +43,7 @@ In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem o
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=4cm]{./figures/eco_range.pdf}
- \caption{Case 1: comparison between dense structure method with hashmap for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. The plot shows the number of times each method is better than the other one in intervals of $1M$ for $\nnzsz$.}
+ \caption{Comparison between dense structure method with hashmap to compute the first coarse matrix $Ac = R \times A \times P$, in which $A$ is matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. The plot shows the number of times each method is faster than the other one in intervals of $1M$ for $\nnzsz$.}
  \label{fig:eco}
 \end{figure}
 
