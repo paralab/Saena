@@ -1,14 +1,14 @@
 \section{Methods}
 \label{sec:methods}
 
-In this section, we present our matrix-matrix multiplication. Then explain our modifications to the triple matrix multiplications that are part of the AMG setup process.
+In this section, we present our matrix-matrix multiplication. We then explain further modifications to the triple matrix multiplication (\ref{eq:rap}) that are part of the AMG setup process.
 
 \subsection{Matrix-Matrix Multiplication}
 \label{sec:matmult}
 
 %\subsubsection{Computation}
 %\label{sec:comp}
-Here we assume that the data is available locally, so we discuss it as a serial implementation. We have implemented \mm~ in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size, split by half based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
+We design a divide and conquer approach to performing the sparse \mm\ in a node-local fashion. The key idea is to perform simple tasks while recursing, having efficient memory access, and to perform the multiplication for small chunks where the resulting matrix can fit into an appropriate cache. For clarity of presentation, we assume that the data is available locally and discuss it as a serial implementation. Shared memory parallelism is added in a straightforward manner. We have implemented \mm~ in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size, split by half based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
 
 The recursive function, \recmm, includes three cases:
 \begin{enumerate}
@@ -23,11 +23,12 @@ At the start of the recursive function, the number of nonzero rows of A ($A\_nnz
 
 %First method uses a dense matrix.
 %The matrices are ordered as column-major.
-In the first method, a dense matrix of size $\nnzsz$ is initialized to $0$. \mr{explain better:}Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. At the end, we go through the dense matrix and add the nonzeros to the final multiplication matrix.
+% In the first method, a dense matrix of size $\nnzsz$ is initialized to $0$. \mr{explain better:}Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. At the end, we go through the dense matrix and add the nonzeros to the final multiplication matrix.
+When performing the multiplication, at least one of the matrices, typically the output, needs random access as it is accumulating the results. Given that the divide and conquer approach has reduced the size of the output matrix, the first approach is to keep a temporary buffer for dense matrix storage. Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. As long as the dense matrix is small enough to fit within the L2 cache, we should get good performance. At the end of the multiplication, we traverse the dense matrix and extract the non-zeros as a sparse matrix. This approach works well as long as the resulting matrix is dense. 
 
-When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we have implemented another method that uses hashmaps. The entry's index is the key and its value is the hashmap's value. When we want to add the multiplication of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap.
+When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we use an efficient hashmap to achieve similar results without the $\mathcal{O}(n^2)$ overhead of extracting the non-zeros from the dense matrix. The entry's index is the key and its value is the hashmap's value. When we want to add the multiplication of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap. Clearly, there is an overhead to this approach that needs to be balanced against the overheads associated with the dense representation. 
 
-In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we show how which method is faster than the other one. For the lower range the first method is better and for the higher range the second one.
+In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we compare the two methods in order to develop an efficient hybrid algorithm. For the lower range the dense representation is better and for the higher range the hashmap is significantly faster. Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. \mr{what is special about this matrix? At least give a description, so people know what it is. Better than giving the number.}
 
 \begin{figure}[tbh]
  \centering
@@ -37,8 +38,6 @@ In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem o
  \label{fig:lap60}
 \end{figure}
 
-Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection.
-
 \begin{figure}[tbh]
  \centering
  \Description{Description}
@@ -47,15 +46,16 @@ Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSp
  \label{fig:eco}
 \end{figure}
 
-A combination of these two methods would give us the best of both. The dense method is being used for the lower range and the hashmap for the higher range. Figure ~\ref{fig:mix} compares the mixed method with the basic two methods.
+A combination of these two methods would give us the best performance across different matrix structures and densities. The dense method is being used for the lower range and the hashmap for the higher range. Figure ~\ref{fig:mix} compares the hybrid method with the basic two methods. \mr{How did you determine the hybrid algorithm. 1-2 lines on that.} \mr{Also, discuss the results. Change mix to hybrid.}
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=5cm]{./figures/mix.pdf}
- \caption{Comparison between three ways to do Case 1: only using hashmap, only using the dense structure, and a mix of both of them.}
+ \caption{Comparison between three ways to do Case 1: only using hashmap, only using the dense structure, and a mix of both of them. \mr{longer caption, more details. It should be clear what is being done here.}}
  \label{fig:mix}
 \end{figure}
+
 
 
 \subsubsection{Case 2}
