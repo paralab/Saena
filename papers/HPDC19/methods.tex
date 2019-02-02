@@ -54,7 +54,7 @@ A combination of these two methods would give us the best of both. The dense met
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=5cm]{./figures/mix.pdf}
- \caption{Comparison of three ways for Case 1: only using hashmap, only using the dense structure, and a mix of both of them.}
+ \caption{Comparison between three ways to do Case 1: only using hashmap, only using the dense structure, and a mix of both of them.}
  \label{fig:mix}
 \end{figure}
 
@@ -67,7 +67,7 @@ When A is horizontal, i.e. its row size is less than or equal to its column size
  \centering
  \Description{Description}
  \includegraphics[width=6cm,height=2.7cm]{./figures/case2_001.pdf}
- \caption{}
+ \caption{Case 2: When A is horizontal, split A by column and B by row.}
  \label{fig:case2}
 \end{figure}
 
@@ -93,7 +93,7 @@ When A is vertical, i.e. its row size is greater than its column size, we halve 
  \centering
  \Description{Description}
  \includegraphics[width=6cm,height=2.5cm]{./figures/case3_001.pdf}
- \caption{1}
+ \caption{Case 3: When A is vertical, split A by row and B by column.}
  \label{fig:case3}
 \end{figure}
 
@@ -141,7 +141,7 @@ Matrices are partitioned on multiple processors by row blocks (Figure~\ref{fig:p
  \centering
  \Description{Description}
  \includegraphics[width=8cm,height=3cm]{./figures/partition.pdf}
- \caption{1}
+ \caption{Partition the matrices between the processors in row blocks.}
  \label{fig:partition}
 \end{figure}
 
@@ -156,7 +156,7 @@ We focus how to do \mm ~on processor $P1$. To compute entry $B(i, j)$, we need t
  \centering
  \Description{Description}
  \includegraphics[width=5.5cm,height=3cm]{./figures/part1b.pdf}
- \caption{1}
+ \caption{Part 1: $A \times P$}
  \label{fig:part1b}
 \end{figure}
 
@@ -166,7 +166,7 @@ Column $j$ of $P$ is distributed between all the processors, so we need to commu
  \centering
  \Description{Description}
  \includegraphics[width=5.5cm,height=3cm]{./figures/part1c.pdf}
- \caption{1}
+ \caption{This figure shows how row block of $R$ are transpose of column blocks of $P$.}
  \label{fig:part1c}
 \end{figure}
 
@@ -199,7 +199,7 @@ Now we explain how to do the second \mm: $R \times B$. The blocks of $R$ on proc
  \centering
  \Description{Description}
  \includegraphics[width=5.5cm,height=3cm]{./figures/part2d.pdf}
- \caption{1}
+ \caption{Part 2: $R \times B$. This figure shows which sub-blocks of R should be multiplied by which sub-blocks of $B$.}
  \label{fig:part2d}
 \end{figure}
 
