@@ -1,7 +1,7 @@
 \section{Methods}
 \label{sec:methods}
 
-In this section, we present our matrix-matrix multiplix. Then explain our modifications to the triple matrix multiplications that are part of the AMG setup process.
+In this section, we present our matrix-matrix multiplication. Then explain our modifications to the triple matrix multiplications that are part of the AMG setup process.
 
 \subsection{Matrix-Matrix Multiplication}
 \label{sec:matmult}
@@ -20,13 +20,13 @@ The recursive function, \recmm, includes three cases:
 \subsubsection{Case 1}
 \label{sec:case1}
 At the start of the recursive function, the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$) are being computed. A threshold for $\nnzsz = A\_nnz\_row \times B\_nnz\_col$ is set (for our experiments we use $20M$ \mr{explain why.}).
-We continue splitting the matrices until the threshold is reached. Then, we preform the multiplication. We have implemented two methods for this case: dense data struture and hashmap.
+We continue splitting the matrices until the threshold is reached. Then, we preform the multiplication. We have implemented two methods for this case: dense data structure and hashmap.
 
 %First method uses a dense matrix.
 %The matrices are ordered as column-major.
 In the first method, a dense matrix of size $\nnzsz$ is initialized to $0$. \mr{explain better:}Each nonzero of $B$ is multiplied by its corresponding nonzero of $A$ and the result will be added to the corresponding index in the dense matrix. At the end, we go through the dense matrix and add the nonzeros to the final multiplication matrix.
 
-When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we have implemented another method that uses hashmaps. The entry's index is the key and its value is the hashmap's value. When we want to add the multipliation of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap.
+When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we have implemented another method that uses hashmaps. The entry's index is the key and its value is the hashmap's value. When we want to add the multiplication of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap.
 
 In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we show how which method is faster than the other one. For the lower range the first method is better and for the higher range the second one.
 
@@ -34,7 +34,7 @@ In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem o
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=4cm]{./figures/lap60_range.pdf}
- \caption{1}
+ \caption{Case 1: comparison between dense structure method with hashmap for a 3D Poisson problem of size $216k$. The plot shows the number of times each method was better than the other one in intervals of $1M$ for $\nnzsz$.}
  \label{fig:lap60}
 \end{figure}
 
@@ -44,7 +44,7 @@ Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSp
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=4cm]{./figures/eco_range.pdf}
- \caption{1}
+ \caption{Case 1: comparison between dense structure method with hashmap for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. The plot shows the number of times each method was better than the other one in intervals of $1M$ for $\nnzsz$}
  \label{fig:eco}
 \end{figure}
 
@@ -54,14 +54,14 @@ A combination of these two methods would give us the best of both. The dense met
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=5cm]{./figures/mix.pdf}
- \caption{1}
+ \caption{Comparison of three ways for Case 1: only using hashmap, only using the dense structure, and a mix of both of them.}
  \label{fig:mix}
 \end{figure}
 
 
 \subsubsection{Case 2}
 \label{sec:case2}
-When A is horizontal, i.e. its row size is less than or equal to its column size, we halve A by column based on its cloumn size (Figure ~\ref{fig:case2}). Since row size of B eqauls column size of A, we halve B by row, so it will be a smiliar split to A, but horizontally. 
+When A is horizontal, i.e. its row size is less than or equal to its column size, we halve A by column based on its column size (Figure ~\ref{fig:case2}). Since row size of B equals column size of A, we halve B by row, so it will be a similar split to A, but horizontally. 
 
 \begin{figure}[tbh]
  \centering
@@ -87,7 +87,7 @@ When A is horizontal, i.e. its row size is less than or equal to its column size
 
 \subsubsection{Case 3}
 \label{sec:case3}
-When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, column size of B is not related to row size of A, so they are splitted independently.
+When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, column size of B is not related to row size of A, so they are split independently.
 
 \begin{figure}[tbh]
  \centering
