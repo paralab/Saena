@@ -113,25 +113,27 @@ When A is vertical, i.e. its row size is greater than its column size, we halve 
   \end{algorithmic}
 \end{algorithm}
 
-We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. In \textit{Case 3}, we do the same for matrix $B$.
-
+We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. The same split is used for $B$. In \textit{Case 3}, we do the same, but separately for both $A$ and $B$.
 
 \subsection{AMG Matrix Multiplication}
 \label{sec:amg}
 
-Short summary of AMG setup. Explain given the fine matrix, how coarsening is normally done, and where the triple matmult shows up as part of the Galerkin approximation. What else is done during setup. Basically, highlight that the matmult is the dominant part, and the part that is complex in parallel. 
+\mr{Short summary of AMG setup. Explain given the fine matrix, how coarsening is normally done, and where the triple matmult shows up as part of the Galerkin approximation. What else is done during setup. Basically, highlight that the matmult is the dominant part, and the part that is complex in parallel.}
+
+To solve a large linear system 
+\begin{equation}
+ Ax = b
+\end{equation}
+using an Algebraic Multigrid approach, we scale down the system, solve it directly, then scale back the solution. To scale down the system, three different categories of matrices are being created: coarse matrices ($As$), restriction matrices ($Rs$) and prolongation matrices ($Ps$). To study more about computing $Ps$ and $Rs$ you can refer to \mr{put some papers}. Here we focus how to compute $As$, assuming $Ps$ and $Rs$ are available. We explain how to compute the first coarse matrix, the next ones can be computed similarly.
 
 % original text starts here 
 To compute the coarse matrix $Ac$, a triple matrix multiplication should be done:
 \begin{equation}
  Ac = R \times A \times P
 \end{equation}
-in which $R = P^T$.
+and $R = P^T$ in a Galerkin approach, which we use in our solver.
 
-This section includes two parts: First, we describe preforming the multiplication locallly on one processor. In the next part, we explain how the communication of the matrix data is being done between processors.
-
-%\subsubsection{Communication}
-%\label{sec:comm}
+In the following, we explain how the communication is being done to compute the coarse matrix $Ac$, using some properties that are available in AMG.
 
 Matrices are partitioned on multiple processors by row blocks (Figure~\ref{fig:partition}). Matrices $A$ and $P$ have the same number of rows and consequently are partitioned the same way. $R$ has less number of rows and has a different partition.
 
@@ -147,8 +149,8 @@ The triple matrix product is being done in two parts: first $A \times P$, then $
 
 \subsubsection{Part 1}
 
-In this part, we compute $B := A \times P$. We assume the same partition of rows of $A$ on its columns. The same partition of rows of $R$ is assumed on columns of $P$ (Figure~\ref{fig:part1b}).
-Here we consider doing \mm ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros).
+In this part, we explain how to compute $B := A \times P$. We assume the same partition of rows of $A$ on also its columns (red lines). For columns of $P$ we use the partition of rows of $R$ (blue lines in Figure~\ref{fig:part1b}).
+We focus how to do \mm ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros).
 
 \begin{figure}[tbh]
  \centering
@@ -158,7 +160,7 @@ Here we consider doing \mm ~on processor $P1$. To compute entry $B(i, j)$, we ne
  \label{fig:part1b}
 \end{figure}
 
-Column $j$ is distributed between all the processors, so we will be able to perform  summation $B_{ij} = \sum_{k} A_{ik} P_{kj}$, after communicating all nonzeros of column $j$ and performing the multiplication. (explain this part clearer and show why this method is not good). To avoid that, we can use the fact that $R$ is the transpose of $P$ and we already have computed it. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$).
+Column $j$ of $P$ is distributed between all the processors, so we need to communicate all nonzeros of that column and then perform $B_{ij} = \sum_{k} A_{ik} P_{kj}$. To avoid that, we can use the fact that $R$ is the transpose of $P$ and we already have it in the multigrid hierarchy. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$).
 
 \begin{figure}[tbh]
  \centering
@@ -168,7 +170,7 @@ Column $j$ is distributed between all the processors, so we will be able to perf
  \label{fig:part1c}
 \end{figure}
 
-Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion using MPI. $B_{i}$ is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_i$.
+Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion. $B_{i}$ is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_i$.
 
 \begin{algorithm}[H] 
   %\footnotesize
@@ -178,7 +180,7 @@ Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion using MPI.
     \Ensure  $B_i$ (result of $A_i \times P$)
     \State $R1 \leftarrow$ transpose of $R_i$ (locally)
     \For{$k=myrank:myrank+nprocs$}
-      \State $R2 \leftarrow\ Irecv(transpose\ of\ R)\ from\ right\ neighbor$
+      \State $R2 \leftarrow\ Irecv(transpose\ of\ R block)\ from\ right\ neighbor$
       \State $Isend(R1)\ to\ left\ neighbor$
       \State $B_{ik} \leftarrow \recmm(A_i, R1)$ 
       \State $wait\ for\ Isend\ and\ Irecv\ to\ finish$
@@ -191,7 +193,7 @@ Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion using MPI.
 
 \subsubsection{Part 2}
 
-Now we explain how to do the second \mm: $R \times B$, in which $B = A \times P$. Figure~\ref{fig:part2d} shows an example on processor $P1$. The blocks of $R$ on processor $P1$ should be multiplied with the corresponding blocks of $B$ with the same color. To do that we need to communicate whole $B$ between all the processors.
+Now we explain how to do the second \mm: $R \times B$. The blocks of $R$ on processor $P1$ in, Figure~\ref{fig:part2d}, should be multiplied with the corresponding blocks of $B$ with the same color. In contrary to the previous part, we already don't have the transpose of the right-hand side matrix and performing the transpose or communicating whole matrix $B$ between processors is expensive. Instead, we change the way the multiplication is being done and do a cheaper communication at the end.
 
 \begin{figure}[tbh]
  \centering
@@ -201,7 +203,11 @@ Now we explain how to do the second \mm: $R \times B$, in which $B = A \times P$
  \label{fig:part2d}
 \end{figure}
 
-To avoid this expensive communication, we again can use the fact that we already have computed the transpose of $R$. We only perform the multplication of the green blocks on processor $P1$ in Figure~\ref{fig:part2e}, which can be done locally.
+In this case we have the transpose of the left-hand side matrix, so we use $P$ instead of $R$ to do this multiplication.
+We only perform the multiplication of the green blocks on processor $P1$ in Figure~\ref{fig:part2e}, which can be done locally.
+
+In the previous case each sub-block of the local left-hand side is multiplied by only one sub-block of the local right-hand side.
+But in this method, each sub-block of local $P$ is being multiplied by whole row block of $B$, i.e. $PT10$ is multiplied by all $B10$, $B11$ and $B12$, and so on.
 
 \begin{figure}[tbh]
  \centering
@@ -211,7 +217,7 @@ To avoid this expensive communication, we again can use the fact that we already
  \label{fig:part2e}
 \end{figure}
 
-Using this method, we need to add duplicates twice (explain duplicates). Once, after doing the multplication; Second time, after sorting the result globally and putting the entries on the correct processors. Algorithm~\ref{alg:part2} shows how we have implemented it. Note that each sub-block of $R_i$ should be multiplied by whole $B_i$, in contrary to the naive method, in which each sub-block of $R_i$ is multiplied by only one other sub-block of $B_i$.
+\mr{explain better}Using this method, we need to add duplicates twice (explain duplicates). Once, after doing the multiplication; Second time, after sorting the result globally and putting the entries on the correct processors (Algorithm~\ref{alg:part2}).
 
 \begin{algorithm}[H] 
   %\footnotesize
@@ -224,6 +230,6 @@ Using this method, we need to add duplicates twice (explain duplicates). Once, a
       \State $Ac_i \leftarrow \recmm(PT_{ik}, B_i)$
     \EndFor
     \State locally sort $Ac_i$ and add duplicates
-    \State globallly sort $Ac_i$ and add duplicates
+    \State globally sort $Ac_i$ and add duplicates
   \end{algorithmic}
 \end{algorithm}
