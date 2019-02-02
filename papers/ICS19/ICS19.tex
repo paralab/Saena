@@ -1,7 +1,10 @@
 \documentclass[sigconf]{acmart}
 
-\usepackage{booktabs} % For formal tables
+\pdfsuppresswarningpagegroup=1 % Majid: suppress this warning: PDF inclusion: multiple pdfs with page group included in a single page 
 
+\usepackage{booktabs} % For formal tables
+\usepackage{amssymb}
+\usepackage{soul}
 \usepackage{algpseudocode} 
 % Typesetting algorithms
 \usepackage{algorithm}
@@ -26,48 +29,81 @@
 %\acmISBN{123-4567-24-567/08/06}
 
 %Conference
+% \acmConference[HPDC'19]{ACM Symposium on High-Performance Parallel and Distributed Computing}{June 2019}{Phoenix, Arizona, USA}
 \acmConference[ICS'19]{International Conference on Supercomputing}{June 2019}{Phoenix, Arizona, USA}
 \acmYear{2019}
 \copyrightyear{2019}
 
+\newcommand{\mynote}[3]{
+    \textcolor{#2}{\fbox{\bfseries\sffamily\scriptsize#1}}
+        {\small$\blacktriangleright$\textsf{\emph{#3}}$\blacktriangleleft$}
+}
+
 \newcommand{\mr}[1]{\mynote{Majid}{blue}{#1}}
 \newcommand{\hs}[1]{\mynote{Hari}{olive}{#1}}
 
-\newcommand{\matmult}{\textsc{matmult}}
+\newcommand{\mvec}{\textsc{matvec}}
+\newcommand{\mm}{\textsc{matmult}}
+\newcommand{\recmm}{\textsc{recurs\_matmult}}
+\newcommand{\spr}{\textsc{split\_by\_row}}
+\newcommand{\spc}{\textsc{split\_by\_col}}
+\newcommand{\nnzsz}{\textsc{nnz\_mat\_size}}
 
 
 \begin{document}
 
-\title{Randomized Sparsification for Improving Performance and Scalability of Algebraic Multigrid}
+\title{A Divide and Conquer Matrix Multiplication Algorithm to Speedup Algebraic Multigrid Setup}
 
-\author{Majid Rasouli}
+\author{Anonymous}
 \affiliation{%
-  \institution{School of Computing, University of Utah}
+  \institution{Anon University}
 %  \streetaddress{P.O. Box 1212}
-  \city{Salt Lake City}
-  \state{Utah}
+  \city{Anonymous}
+  \state{Anonymous}
   %\postcode{43017-6221}
 }
-\email{rasouli@cs.utah.edu}
+\email{anon@ymo.us}
 
-\author{Hari Sundar}
-\affiliation{%
-  \institution{School of Computing, University of Utah}
-%  \streetaddress{P.O. Box 1212}
-  \city{Salt Lake City}
-  \state{Utah}
-  %\postcode{43017-6221}
-}
-\email{hari@cs.utah.edu}
 
+% \author{Majid Rasouli}
+% \affiliation{%
+%   \institution{School of Computing \\University of Utah}
+% %  \streetaddress{P.O. Box 1212}
+%   \city{Salt Lake City}
+%   \state{Utah}
+%   %\postcode{43017-6221}
+% }
+% \email{rasouli@cs.utah.edu}
+
+% \author{Robert M. Kirby}
+% \affiliation{%
+%   \institution{School of Computing \\University of Utah}
+% %  \streetaddress{P.O. Box 1212}
+%   \city{Salt Lake City}
+%   \state{Utah}
+%   %\postcode{43017-6221}
+% }
+% \email{kirby@cs.utah.edu}
+
+% \author{Hari Sundar}
+% \affiliation{%
+%   \institution{School of Computing \\University of Utah}
+% %  \streetaddress{P.O. Box 1212}
+%   \city{Salt Lake City}
+%   \state{Utah}
+%   %\postcode{43017-6221}
+% }
+% \email{hari@cs.utah.edu}
 
 % The default list of authors is too long for headers.
 %\renewcommand{\shortauthors}{B. Trovato et al.}
 
 
 \begin{abstract}
-Algebraic Multigrid (AMG), mostly because of its black-box nature, is being used widely as a solver and also preconditioner for large sparse linear systems. Its scalability and performance, however, suffers from loss of sparsity in coarser levels of multigrid. Because of filling-in, each level of multigrid has a matrix denser than its previous level, which causes higher cost for different operations in the solver, including matrix-vector product (MATVEC) and matrix-matrix multiplication (MATMAT). In a parallel setting, the communication is usually the bottleneck of the solver, and the denser the matrices, the more expensive the communication. 
-In our method, we use randomized sparsification to increase sparsity of coarse matrices at different levels of the Multigrid hierarchy, but still keeping the important information of the matrices. The randomness feature of our method guarantees the whole range of information from the matrix being preserved, so the solver will not remove a specific range of entries and consequently losing parts of the matrix information. By using the correct degree of sparsification, our experiments show the performance boost that we achieve for specific operations such as MATVEC and MATMAT and also for our solver as a whole.
+Algebraic Multigrid (AMG) is a popular solver and preconditioner for large sparse linear systems, especially the ones obtained from the discretization of elliptic operators.
+A key bottleneck for the scalability of the setup phase of AMG is the Matrix-matrix multiplication (MatMult) required for computing the sparse grid representation. While significant work has been done on optimizing matrix-matrix multiplication, in this work, we optimize it in the context of the matrix multiplications encountered in the setup phase of AMG. Specifically, we designed a new divide and conquer sparse MatMult, that is scalable and makes use of the specific structure of the restriction and prolongation matrices. This combined with an efficient communication pattern during parallel MatMult provides excellent performance for our AMG setup. We compare our solver with PETSc to demonstrate the performance improvements gained using our methods.
+
+%The large-scale performance and scalability of AMG depends on two linear algebra primitives, matrix-matrix product (MATMULT) and matrix-vector multiplication (MATVEC). \mr{Are we presenting MATVEC in this paper? Abstract should be shorter.} MATVEC is the dominant operation in the solve phase of AMG and an important one in the setup phase. For large linear systems, the communication during MATVEC becomes significant and is usually the bottleneck for scalability. In this work, we have explored  reducing the communication cost during MATVEC by using compressed data transfer. This is performed in a manner that allows us to control the precision of data loss. We demonstrate that when used in conjunction with Conjugate Gradients as a preconditioner, significant savings in communication can be obtained without adversely affecting the overall convergence during the solve phase.
 \end{abstract}
 
 %
@@ -107,7 +143,7 @@ In our method, we use randomized sparsification to increase sparsity of coarse m
 \ccsdesc[100]{Networks~Network reliability}
 \fi
 
-\keywords{algebraic multigrid, AMG, sparse, sparsification, matvec, matrix-matrix product, parallel}
+\keywords{algebraic multigrid, AMG, sparse, matrix-matrix product, parallel}
 
 \maketitle
 
@@ -115,7 +151,7 @@ In our method, we use randomized sparsification to increase sparsity of coarse m
 \input{methods}
 \input{results}
 
-%\bibliographystyle{ACM-Reference-Format}
-%\bibliography{sample-bibliography}
+\bibliographystyle{abbrv}
+\bibliography{ref.bib}
 
 \end{document}
