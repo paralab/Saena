@@ -19,8 +19,7 @@ The recursive function, \recmm, includes three cases:
 
 \subsubsection{Case 1}
 \label{sec:case1}
-At the start of the recursive function, the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$) are being computed. A threshold for $\nnzsz = A\_nnz\_row \times B\_nnz\_col$ is set (for our experiments we use $20M$ \mr{explain why.}).
-We continue splitting the matrices until the threshold is reached. Then, we preform the multiplication. We have implemented two methods for this case: dense data structure and hashmap.
+At the start of the recursive function, the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$) are being computed. A threshold for $\nnzsz = A\_nnz\_row \times B\_nnz\_col$ is set. Our algorithm has a profiling step where it empirically determines the appropriate threshold by running several test cases. On the machines we used,  $20M$ was chosen as the threshold. We continue splitting the matrices until the threshold is reached. Then, we preform the multiplication. We have implemented two methods for this case: dense data structure and hashmap.
 
 %First method uses a dense matrix.
 %The matrices are ordered as column-major.
@@ -118,13 +117,13 @@ We have also implemented splitting based on the number of nonzeros. In \textit{C
 \subsection{AMG Matrix Multiplication}
 \label{sec:amg}
 
-\mr{Short summary of AMG setup. Explain given the fine matrix, how coarsening is normally done, and where the triple matmult shows up as part of the Galerkin approximation. What else is done during setup. Basically, highlight that the matmult is the dominant part, and the part that is complex in parallel.}
+\mr{highlight that the matmult is the dominant part, and the part that is complex in parallel.}
 
 To solve a large linear system 
 \begin{equation}
  Ax = b
 \end{equation}
-using an Algebraic Multigrid approach, we scale down the system, solve it directly, then scale back the solution. To scale down the system, three different categories of matrices are being created: coarse matrices ($As$), restriction matrices ($Rs$) and prolongation matrices ($Ps$). To study more about computing $Ps$ and $Rs$ you can refer to \mr{put some papers}. Here we focus how to compute $As$, assuming $Ps$ and $Rs$ are available. We explain how to compute the first coarse matrix, the next ones can be computed similarly.
+using an Algebraic Multigrid approach, we scale down the system, solve it directly, then scale back the solution. To scale down the system, three different categories of matrices are being created: coarse matrices ($As$), restriction matrices ($Rs$) and prolongation matrices ($Ps$). To study how $Ps$ and $Rs$ are computed you can refer to \cite{bell2012exposing, treister2015non}. Here we focus how to compute $As$, assuming $Ps$ and $Rs$ are available. We explain how to compute the first coarse matrix, the next ones can be computed similarly.
 
 % original text starts here 
 To compute the coarse matrix $Ac$, a triple matrix multiplication should be done:
@@ -156,7 +155,7 @@ We focus how to do \mm ~on processor $P1$. To compute entry $B(i, j)$, we need t
  \centering
  \Description{Description}
  \includegraphics[width=5.5cm,height=3cm]{./figures/part1b.pdf}
- \caption{Part 1: $A \times P$}
+ \caption{This figure shows how the matrices are split into sub-blocks in Part 1.}
  \label{fig:part1b}
 \end{figure}
 
@@ -217,7 +216,7 @@ But in this method, each sub-block of local $P$ is being multiplied by whole row
  \label{fig:part2e}
 \end{figure}
 
-\mr{explain better}Using this method, we need to add duplicates twice (explain duplicates). Once, after doing the multiplication; Second time, after sorting the result globally and putting the entries on the correct processors (Algorithm~\ref{alg:part2}).
+\mr{explain better}Using this method, we need to add duplicates twice (explain duplicates). Once, after doing the multiplication; Second time, after sorting the result globally (using HykSort \cite{Sundar:2013}) and putting the entries on the correct processors (Algorithm~\ref{alg:part2}).
 
 \begin{algorithm}[H] 
   %\footnotesize
