@@ -8,7 +8,7 @@ In this section, we present our matrix-matrix multiplication. We then explain fu
 
 %\subsubsection{Computation}
 %\label{sec:comp}
-We design a divide and conquer approach to performing the sparse \mm\ in a node-local fashion. The key idea is to perform simple tasks while recursing, having efficient memory access, and to perform the multiplication for small chunks where the resulting matrix can fit into an appropriate cache. For clarity of presentation, we assume that the data is available locally and discuss it as a serial implementation. Shared memory parallelism is added in a straightforward manner. We have implemented \mm~ in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size, split by half based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
+We design a divide and conquer approach to perform the sparse \mm\ in a node-local fashion. The key idea is to perform simple tasks while recursing, having efficient memory access, and to perform the multiplication for small chunks where the resulting matrix can fit into an appropriate cache. For clarity of presentation, we assume that the data is available locally and discuss it as a serial implementation. Shared memory parallelism is added in a straightforward manner. We have implemented \mm~ in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size and based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
 
 The recursive function, \recmm, includes three cases:
 \begin{enumerate}
@@ -19,6 +19,7 @@ The recursive function, \recmm, includes three cases:
 
 \subsubsection{Case 1}
 \label{sec:case1}
+By splitting sparse matrices recursively, we will have more and more zero rows and columns in the resulting sub-matrices. So, using row size and column size of those sub-matrices is not very helpful. Instead, we use nonzero rows and nonzero columns.
 At the start of the recursive function, the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$) are being computed. A threshold for $\nnzsz = A\_nnz\_row \times B\_nnz\_col$ is set. Our algorithm has a profiling step where it empirically determines the appropriate threshold by running several test cases. On the machines we used,  $20M$ was chosen as the threshold. We continue splitting the matrices until the threshold is reached. Then, we preform the multiplication. We have implemented two methods for this case: dense data structure and hashmap.
 
 %First method uses a dense matrix.
@@ -28,13 +29,13 @@ When performing the multiplication, at least one of the matrices, typically the 
 
 When $\nnzsz$ gets larger, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we use an efficient hashmap to achieve similar results without the $\mathcal{O}(n^2)$ overhead of extracting the non-zeros from the dense matrix. The entry's index is the key and its value is the hashmap's value. When we want to add the multiplication of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap. Clearly, there is an overhead to this approach that needs to be balanced against the overheads associated with the dense representation. 
 
-In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we compare the two methods in order to develop an efficient hybrid algorithm. For the lower range the dense representation is better and for the higher range the hashmap is significantly faster. Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. \mr{what is special about this matrix? At least give a description, so people know what it is. Better than giving the number.}
+In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we compare the two methods in order to develop an efficient hybrid algorithm. For instance, the first point indicates that the dense structure is better than hashmap in $1245$ cases for all multiplications such that $0 \le\ \nnzsz < 1M$. For the lower range the dense representation is better and for the higher range the hashmap is significantly faster. Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection, which is a sparse matrix of size $1M$ and $5M$ nonzero.
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=4cm]{./figures/lap60_range.pdf}
- \caption{Case 1: comparison between dense structure method with hashmap for a 3D Poisson problem of size $216k$. The plot shows the number of times each method was better than the other one in intervals of $1M$ for $\nnzsz$.}
+ \caption{Case 1: comparison between dense structure method with hashmap for a 3D Poisson problem of size $216k$. The plot shows the number of times each method is better than the other one in intervals of $1M$ for $\nnzsz$.}
  \label{fig:lap60}
 \end{figure}
 
@@ -42,17 +43,20 @@ In Figure~\ref{fig:lap60}, we compare the two methods for a 3D Poisson problem o
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=4cm]{./figures/eco_range.pdf}
- \caption{Case 1: comparison between dense structure method with hashmap for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. The plot shows the number of times each method was better than the other one in intervals of $1M$ for $\nnzsz$}
+ \caption{Case 1: comparison between dense structure method with hashmap for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. The plot shows the number of times each method is better than the other one in intervals of $1M$ for $\nnzsz$.}
  \label{fig:eco}
 \end{figure}
 
-A combination of these two methods would give us the best performance across different matrix structures and densities. The dense method is being used for the lower range and the hashmap for the higher range. Figure ~\ref{fig:mix} compares the hybrid method with the basic two methods. \mr{How did you determine the hybrid algorithm. 1-2 lines on that.} \mr{Also, discuss the results. Change mix to hybrid.}
+A combination of these two methods would give us the best performance across different matrix structures and densities. The dense method is being used for the lower range and the hashmap for the higher range.
+We have done a series of experiments to determine the threshold when to switch between the two methods. Figures~\ref{fig:lap60} and \ref{fig:eco} suggest to use the dense structure method when $0 \le\ \nnzsz < 4M$ and use hashmap for the rest. We noticed that when hashmaps are better, the difference time between the two methods on average is higher. In other words, on average, $n$ times performing hashmap is faster than $n$ times using the dense structure. So empirically, we found $1M$ to be a good estimate for switching between the two methods.
+
+Figure ~\ref{fig:mix} compares the hybrid method with the basic two methods. We have compared the the three approaches on different sizes of 3D Poisson problem, ranging from $8k$ to almost half a million. For instance, for the case where the matrix is of size $512k$, computing the first coarse matrix (performing the triple matrix) takes $291s$ if only hashmap is used for Case 1, takes $72s$ if only the dense structure is used and finally takes almost $17s$ when the hybrid approach is utilized for Case 1.
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=8.5cm,height=5cm]{./figures/mix.pdf}
- \caption{Comparison between three ways to do Case 1: only using hashmap, only using the dense structure, and a mix of both of them. \mr{longer caption, more details. It should be clear what is being done here.}}
+ \caption{Comparison between the three methods to do Case 1: only using hashmap, only using the dense structure, and the hybrid method. They are used as Case 1 to compute the first coarse matrix (the triple multiplication) on 7 matrices (3D Poisson) of different sizes.}
  \label{fig:mix}
 \end{figure}
 
@@ -61,13 +65,13 @@ A combination of these two methods would give us the best performance across dif
 \subsubsection{Case 2}
 \label{sec:case2}
 When A is horizontal, i.e. its row size is less than or equal to its column size, we halve A by column based on its column size (Figure ~\ref{fig:case2}). Since row size of B equals column size of A, we halve B by row, so it will be a split similar to A, but horizontally.
-Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$ and $B2$ (Algorithm~\ref{alg:case2}). The results of the two multiplications will need to be added together in the end. \mr{elaborate more. e.g.} In the sparse representation, this is similar to iterating over both lists once to merge and accumulate the results and is very efficient. 
+Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$ and $B2$ (Algorithm~\ref{alg:case2}). The results of the two multiplications will need to be added together at the end. It means, there will be entries for the result matrix with the same index, e.g. multiple entries with $(10, 20)$ as the index. We call these entries \textit{duplicates}. Since there will be numerous nested recursive calls, we avoid doing adding duplicate at this stage. After the first recursive function is finished, we will perform a sorting and then add the duplicates only once at the end.
 
 \begin{figure}[tbh]
  \centering
  \Description{Description}
  \includegraphics[width=6cm,height=2.7cm]{./figures/case2_001.pdf}
- \caption{Case 2: When A is horizontal, split A by column and B by row. Call the recursive function twice, and add the result together at the end.}
+ \caption{Case 2: When A is horizontal, split A by column and B by row. Call the recursive function twice.}
  \label{fig:case2}
 \end{figure}
 
@@ -87,7 +91,7 @@ Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$
 
 \subsubsection{Case 3}
 \label{sec:case3}
-When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, the column size of B is not related to row size of A, so they are split independently. This time the \recmm~ will be called four times (Algorithm~\ref{alg:case2}). \mr{Again we are missing details. This should be described in more details. I am adding some text, but check for correctness.} Although we have 4 recursive calls in this case, combining the results together is much simpler, as no additions need to be done, and simply merging the 4 results is sufficient.
+When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, the column size of B is not related to row size of A, so they are split independently. This time the \recmm~ will be called four times (Algorithm~\ref{alg:case2}).  Although we have 4 recursive calls in this case, but there is no duplicates at the end, which makes this case more efficient than Case 2 for the total time, because it is faster to do the sorting and adding duplicates at the end on a smaller set of entries. 
 
 \begin{figure}[tbh]
  \centering
@@ -113,7 +117,7 @@ When A is vertical, i.e. its row size is greater than its column size, we halve 
   \end{algorithmic}
 \end{algorithm}
 
-We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. The same split is used for $B$. In \textit{Case 3}, we do the same, but separately for both $A$ and $B$. \mr{This is fine, but I think you can expand this and add why this works. i.e., the zero rows will not be there in the multiplication, so we can skip them and make it more efficient. Also note the recursive splitting increases the probability of getting zero rols and columns}.
+We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. The same split is used for $B$. In \textit{Case 3}, we do the same, but separately for both $A$ and $B$.
 
 \subsubsection{All together}
 
@@ -160,7 +164,8 @@ Without loss of generality, let us focus on how to perform \mm ~on processor $P1
  \label{fig:part1b}
 \end{figure}
 
-Column $j$ of $P$ is distributed between all the processors. Therefore we need to communicate all nonzeros of that column and then perform $B_{ij} = \sum_{k} A_{ik} P_{kj}$. Since that can lead to significant communication, we make use of the fact that $R$ is the transpose of $P$ and is already available locally because of the multigrid hierarchy. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$). Algorithm \ref{alg:part1} shows how we do it in an overlapped fashion. $B_{i}$ is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_i$. \mr{this is good, but describe overlapping in the text too ... not just the alg. }
+Column $j$ of $P$ is distributed between all the processors. Therefore we need to communicate all nonzeros of that column and then perform $B_{ij} = \sum_{k} A_{ik} P_{kj}$. Since that can lead to significant communication, we make use of the fact that $R$ is the transpose of $P$ and is already available locally because of the multigrid hierarchy. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$).
+We have implemented this part in an overlapped fashion; first we do the send and receive commands (to communicate $rt$ blocks) and while this communication is being done, we perform \mm, so saving time for the communication (Algorithm \ref{alg:part1}). $B_{i}$ in the algorithm is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_i$.
 
 \begin{figure}[tbh]
  \centering
