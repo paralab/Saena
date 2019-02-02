@@ -91,11 +91,11 @@ The next phase of AMG is the solve phase. To solve $Ax = b$, we start with an in
 %  \item Relaxation
 %  \item Coarse-Grid Correction (CGC)
 % \end{enumerate}
-
+%
 % Algorithm \ref{alg:amg} shows the AMG loop, which repeats until the solution is found within the 
 % desired accuracy. The grid $g$ is the AMG hierarchy, consisting the three matrix categories mentioned previously.
 % %of the coarse matrices ($As$), prolongation operators ($Ps$), and restriction operators ($Rs$).
-
+%
 % \begin{algorithm}[ht] 
 %   \caption{AMG} \label{alg:amg} 
 %   \begin{algorithmic}[1]
@@ -140,11 +140,25 @@ in which the prolongation and restriction operators are smoothed %, for instance
 to improve the convergence of AMG.
 For this paper, the improved version of SA-AMG in \cite{treister2015non} is used.
 
+
+\subsection{Related Work}
+
+While significant research has been done on improving the efficiency and scalability of sparse matrix-vector products, sparse \mm\ in comparison has received far less attention. Yuster and Zwick \cite{Yuster2005} provide a theoretically nearly optimal algorithm for multiplying sparse matrices, but rely on fast rectangular matrix multiplication. Consequently the approach is currently of only theoretical value. In \cite{Buluc12}, Buluc and Gilbert present algorithms for parallel sparse \mm\ using a two-dimensional block data distributions with serial hypersparse kernels. 
+Gremse {\em et al.} \cite{Gremse15} the authors present a promising algorithm using iterative row merging to improve the performance on GPUs. Similarly, Saule {\em et al.} \cite{Saule14} evaluate the performance of sparse matrix multiplication kernels on the Intel Xeon Phi. Most AMG implementation have relied on standard sparse \mm\ implementations without any special considerations for the structure of the matrices generated within AMG. This work attempts to fill this gap. 
+
+The main {\bf contributions} of this work are,
 \begin{itemize}
-  \item \st{General intro to AMG and elliptic operators, black box nature.}
-  \item \st{General outline of AMG method, setup and solve.}
-  \item \st{Why setup costs are important, what dominates}
-  \item what others have done.
-  \item This work and contributions.
-  \item rest of the paper.
+  \item A new efficient \mm\ algorithm.
+  \item \mr{add more here}
 \end{itemize}
+
+The rest of the paper is organized as follows. In \S\ref{sec:methods} we discuss the different strategies used to improve the performance and scalability of \mm. \hs{finish}
+
+% \begin{itemize}
+%   \item \st{General intro to AMG and elliptic operators, black box nature.}
+%   \item \st{General outline of AMG method, setup and solve.}
+%   \item \st{Why setup costs are important, what dominates}
+%   \item what others have done.
+%   \item This work and contributions.
+%   \item rest of the paper.
+% \end{itemize}
