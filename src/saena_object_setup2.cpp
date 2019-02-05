@@ -1021,7 +1021,7 @@ void saena_object::fast_mm(const cooEntry *A, const cooEntry *B, std::vector<coo
         }
 #endif
 
-        double t1 = MPI_Wtime();
+//        double t1 = MPI_Wtime();
 
         index_t *nnzPerRow_left = &mempool2[0];
         std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
@@ -3879,8 +3879,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     mempool2 = new index_t[A->Mbig * 4];
     mempool3 = new cooEntry[B->nnz_max * 2];
 
-    MPI_Barrier(comm);
-    double t_AP = MPI_Wtime();
+//    MPI_Barrier(comm);
+//    double t_AP = MPI_Wtime();
 
 //    MPI_Barrier(comm);
 //    double t1 = MPI_Wtime();
@@ -4116,8 +4116,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
-    t_AP = MPI_Wtime() - t_AP;
-    matmat_time += print_time_ave_consecutive(t_AP, comm);
+//    t_AP = MPI_Wtime() - t_AP;
+//    matmat_time += print_time_ave_consecutive(t_AP, comm);
 //    matmat_time += t_ave;
 
     delete[] mempool1;
@@ -4376,8 +4376,8 @@ int saena_object::compute_coarsen(Grid *grid) {
 //        map_matmat[i] = 0;
 //    }
 
-    MPI_Barrier(grid->A->comm);
-    double t11 = MPI_Wtime();
+//    MPI_Barrier(grid->A->comm);
+//    double t11 = MPI_Wtime();
 
     std::vector<cooEntry_row> RAP_row_sorted;
 
@@ -4420,8 +4420,8 @@ int saena_object::compute_coarsen(Grid *grid) {
             Ac->entry.emplace_back( temp );
         }
 
-        double t22 = MPI_Wtime();
-        print_time_ave(t22-t11, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
+//        double t22 = MPI_Wtime();
+//        print_time_ave(t22-t11, "triple_mat_mult: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
         RAP_row_sorted.clear();
         RAP_row_sorted.shrink_to_fit();
@@ -4625,7 +4625,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
-    double t_AP = MPI_Wtime();
+//    double t_AP = MPI_Wtime();
 
     unsigned long send_size     = R->entry.size();
     unsigned long send_size_max = R->nnz_max;
@@ -4884,8 +4884,8 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
-    t_AP = MPI_Wtime() - t_AP;
-    print_time_ave(t_AP, "AP:", grid->A->comm);
+//    t_AP = MPI_Wtime() - t_AP;
+//    print_time_ave(t_AP, "AP:", grid->A->comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);
@@ -5111,7 +5111,7 @@ int saena_object::triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> 
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
-    double t_AP = MPI_Wtime();
+//    double t_AP = MPI_Wtime();
 
     unsigned long send_size     = R->entry.size();
     unsigned long send_size_max = R->nnz_max;
@@ -5363,8 +5363,8 @@ int saena_object::triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> 
 //    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
 //    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
 
-    t_AP = MPI_Wtime() - t_AP;
-    print_time_ave(t_AP, "AP:\n", grid->A->comm);
+//    t_AP = MPI_Wtime() - t_AP;
+//    print_time_ave(t_AP, "AP:\n", grid->A->comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);
@@ -6309,7 +6309,7 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
 #endif
         } else {
 
-            double t1 = MPI_Wtime();
+//            double t1 = MPI_Wtime();
 
             fast_mm_basic(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
                           A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
@@ -6321,8 +6321,8 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
 //                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
 //                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
-            double t2 = MPI_Wtime();
-            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
+//            double t2 = MPI_Wtime();
+//            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
         }
     }
 
@@ -7028,7 +7028,7 @@ int saena_object::matmat(Grid *grid){
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
-    double t_AP = MPI_Wtime();
+//    double t_AP = MPI_Wtime();
 
     unsigned long send_size     = R->entry.size();
     unsigned long send_size_max = R->nnz_max;
@@ -7223,8 +7223,8 @@ int saena_object::matmat(Grid *grid){
     AP_temp.clear();
     AP_temp.shrink_to_fit();
 
-    t_AP = MPI_Wtime() - t_AP;
-    print_time_ave(t_AP, "AP:\n", grid->A->comm);
+//    t_AP = MPI_Wtime() - t_AP;
+//    print_time_ave(t_AP, "AP:\n", grid->A->comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AP_temp, -1, "AP_temp", A->comm);

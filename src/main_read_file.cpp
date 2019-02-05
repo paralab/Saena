@@ -75,7 +75,7 @@ int main(int argc, char* argv[]){
 //    petsc_viewer(A.get_internal_matrix());
 
     // *************************** set rhs ****************************
-/*
+
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs;
 
@@ -150,9 +150,9 @@ int main(int argc, char* argv[]){
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
-*/
+
     // *************************** AMG - Solve ****************************
-/*
+
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
@@ -161,7 +161,7 @@ int main(int argc, char* argv[]){
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);
     print_time(t1, t2, "Solve:", comm);
-*/
+
 //    print_vector(u, -1, "u", comm);
 
     // *************************** check correctness of the solution ****************************
@@ -362,7 +362,7 @@ int main(int argc, char* argv[]){
 */
 
     // *************************** matrix-matrix product ****************************
-
+/*
     double matmat_time = 0;
     int matmat_iter_warmup = 1;
     int matmat_iter = 1;
@@ -389,7 +389,7 @@ int main(int argc, char* argv[]){
 //    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
     petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
-
+*/
 
     // *************************** finalize ****************************
 
