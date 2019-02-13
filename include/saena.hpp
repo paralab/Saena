@@ -24,8 +24,8 @@ namespace saena {
 
         matrix& operator=(const matrix &B);
 
-        int read_file(char *name);
-        int read_file(char *name, const std::string &input_type);
+        int read_file(const char *name);
+        int read_file(const char *name, const std::string &input_type);
 
         void set_comm(MPI_Comm comm);
 

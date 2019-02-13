@@ -164,6 +164,36 @@ int main(int argc, char* argv[]){
 
 //    print_vector(u, -1, "u", comm);
 
+    // *************************** lazy-update ****************************
+
+    int update_method = 1; // choose update method here: 1, 2, 3
+    if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
+
+    for(int i = 2; i <= 2; i++){
+        A.erase_no_shrink_to_fit();
+        A.add_duplicates(true);
+
+        std::string file_name_update = "mat";
+        file_name_update += std::to_string(i);
+        file_name_update += ".mtx";
+        A.read_file(file_name_update.c_str());
+
+        if(update_method == 1) {
+            A.assemble();
+            solver.update1(&(A)); // update the AMG hierarchy
+        } else if(update_method == 2) {
+            A.assemble();
+            solver.update2(&(A)); // update the AMG hierarchy
+        } else if(update_method == 3) {
+            A.assemble_no_scale();
+            solver.update3(&(A)); // update the AMG hierarchy
+        } else {
+            printf("Error: Wrong update_method is set! Options: 1, 2, 3\n");
+        }
+
+        solver.solve_pcg(u, &opts);
+    }
+
     // *************************** check correctness of the solution ****************************
 
     // A is scaled. read it from the file and don't scale.

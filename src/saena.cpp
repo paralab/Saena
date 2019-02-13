@@ -51,11 +51,11 @@ saena::matrix::~matrix(){
 }
 
 
-int saena::matrix::read_file(char *name) {
+int saena::matrix::read_file(const char *name) {
     m_pImpl->read_file(name);
 }
 
-int saena::matrix::read_file(char *name, const std::string &input_type) {
+int saena::matrix::read_file(const char *name, const std::string &input_type) {
     m_pImpl->read_file(name, input_type);
 }
 
