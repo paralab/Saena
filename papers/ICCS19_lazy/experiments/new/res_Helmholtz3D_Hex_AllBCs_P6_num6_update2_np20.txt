@@ -1,0 +1,1152 @@
+Solving 3D Helmholtz:
+  - Communication: Parallel MPI (20 processes)
+  - Solver type  : PETScFull
+  - Lambda       : 1
+  - No. modes    : 6
+
+
+ctr = 0.025000 
+
+number of processes = 20, number of threads = 1
+
+_____________________________
+
+level = 0 
+number of procs = 20 
+matrix size 	= 3600 
+nonzero 	= 956530 
+density 	= 0.073806 
+
+connStrength = 0.20 
+current size = 3600 
+new size     = 1119 
+division     = 3.22
+_____________________________
+
+level = 1 
+number of procs = 20 
+matrix size 	= 1119 
+nonzero 	= 1252161 
+density 	= 1.000000 
+
+connStrength = 0.20 
+current size = 1119 
+new size     = 306 
+division     = 3.66
+_____________________________
+
+level = 2 
+number of procs = 20 
+matrix size 	= 306 
+nonzero 	= 93636 
+density 	= 1.000000 
+
+connStrength = 0.20 
+current size = 306 
+new size     = 116 
+division     = 2.64
+_____________________________
+
+level = 3 
+number of procs = 20 
+matrix size 	= 116 
+nonzero 	= 13456 
+density 	= 1.000000 
+
+connStrength = 0.20 
+current size = 116 
+new size     = 93 
+division     = 1.25
+_____________________________
+
+level = 4 
+number of procs = 20 
+matrix size 	= 93 
+nonzero 	= 8649 
+density 	= 1.000000 
+
+connStrength = 0.20 
+current size = 93 
+new size     = 1 
+division     = 93.00
+_____________________________
+
+level = 5 
+number of procs = 1 
+matrix size 	= 1 
+nonzero 	= 1 
+density 	= 1.000000 
+_____________________________
+
+number of levels = << 4 >> (the finest level is 0)
+
+******************************************************
+
+setup
+min: 3.80928
+ave: 3.80928
+max: 3.80929
+
+******************************************************
+
+initial residual = 2.454401e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 114 
+final absolute residual = 2.414869e-08
+relative residual       = 9.838936e-09 
+
+******************************************************
+
+solve
+min: 2.00476
+ave: 2.00476
+max: 2.00477
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num60.fld" (0.0207534s, XML)
+
+ctr = 0.050000 
+
+setup
+min: 3.36597
+ave: 3.366
+max: 3.36605
+
+******************************************************
+
+initial residual = 2.425710e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 116 
+final absolute residual = 2.105515e-08
+relative residual       = 8.679997e-09 
+
+******************************************************
+
+solve
+min: 2.0264
+ave: 2.02641
+max: 2.02644
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num61.fld" (0.0141537s, XML)
+
+ctr = 0.075000 
+
+setup
+min: 3.37596
+ave: 3.37599
+max: 3.37604
+
+******************************************************
+
+initial residual = 2.400224e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 116 
+final absolute residual = 2.332623e-08
+relative residual       = 9.718357e-09 
+
+******************************************************
+
+solve
+min: 2.03468
+ave: 2.03469
+max: 2.03471
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num62.fld" (0.0306911s, XML)
+
+ctr = 0.100000 
+
+setup
+min: 3.49733
+ave: 3.49736
+max: 3.49742
+
+******************************************************
+
+initial residual = 2.378073e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 117 
+final absolute residual = 2.231432e-08
+relative residual       = 9.383362e-09 
+
+******************************************************
+
+solve
+min: 2.6007
+ave: 2.6007
+max: 2.60073
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num63.fld" (0.0156724s, XML)
+
+ctr = 0.125000 
+
+setup
+min: 3.37489
+ave: 3.37492
+max: 3.37497
+
+******************************************************
+
+initial residual = 2.359322e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 118 
+final absolute residual = 2.045982e-08
+relative residual       = 8.671908e-09 
+
+******************************************************
+
+solve
+min: 2.07533
+ave: 2.07533
+max: 2.07537
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num64.fld" (0.0179136s, XML)
+
+ctr = 0.150000 
+
+setup
+min: 3.36732
+ave: 3.36735
+max: 3.3674
+
+******************************************************
+
+initial residual = 2.343997e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 118 
+final absolute residual = 2.214195e-08
+relative residual       = 9.446239e-09 
+
+******************************************************
+
+solve
+min: 2.05832
+ave: 2.05832
+max: 2.05835
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num65.fld" (0.0169275s, XML)
+
+ctr = 0.175000 
+
+setup
+min: 3.36277
+ave: 3.3628
+max: 3.36285
+
+******************************************************
+
+initial residual = 2.332097e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 119 
+final absolute residual = 1.935646e-08
+relative residual       = 8.300024e-09 
+
+******************************************************
+
+solve
+min: 2.08757
+ave: 2.08757
+max: 2.0876
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num66.fld" (0.0274122s, XML)
+
+ctr = 0.200000 
+
+setup
+min: 3.3416
+ave: 3.34163
+max: 3.34169
+
+******************************************************
+
+initial residual = 2.323612e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 119 
+final absolute residual = 2.029264e-08
+relative residual       = 8.733230e-09 
+
+******************************************************
+
+solve
+min: 2.07197
+ave: 2.07198
+max: 2.07201
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num67.fld" (0.0308671s, XML)
+
+ctr = 0.225000 
+
+setup
+min: 3.37226
+ave: 3.37229
+max: 3.37235
+
+******************************************************
+
+initial residual = 2.318528e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 119 
+final absolute residual = 2.120554e-08
+relative residual       = 9.146119e-09 
+
+******************************************************
+
+solve
+min: 2.11304
+ave: 2.11304
+max: 2.11307
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num68.fld" (0.0478971s, XML)
+
+ctr = 0.250000 
+
+setup
+min: 3.36667
+ave: 3.36669
+max: 3.36675
+
+******************************************************
+
+initial residual = 2.316835e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 119 
+final absolute residual = 2.157636e-08
+relative residual       = 9.312858e-09 
+
+******************************************************
+
+solve
+min: 2.06387
+ave: 2.06387
+max: 2.0639
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num69.fld" (0.0160716s, XML)
+
+ctr = 0.275000 
+
+setup
+min: 3.35089
+ave: 3.35092
+max: 3.35097
+
+******************************************************
+
+initial residual = 2.318528e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 119 
+final absolute residual = 2.120554e-08
+relative residual       = 9.146119e-09 
+
+******************************************************
+
+solve
+min: 2.05407
+ave: 2.05407
+max: 2.0541
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num610.fld" (0.0217879s, XML)
+
+ctr = 0.300000 
+
+setup
+min: 3.35554
+ave: 3.35557
+max: 3.35563
+
+******************************************************
+
+initial residual = 2.323612e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 119 
+final absolute residual = 2.029264e-08
+relative residual       = 8.733230e-09 
+
+******************************************************
+
+solve
+min: 2.07042
+ave: 2.07043
+max: 2.07045
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num611.fld" (0.0134714s, XML)
+
+ctr = 0.325000 
+
+setup
+min: 3.35951
+ave: 3.35954
+max: 3.35959
+
+******************************************************
+
+initial residual = 2.332097e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 119 
+final absolute residual = 1.935646e-08
+relative residual       = 8.300024e-09 
+
+******************************************************
+
+solve
+min: 2.09298
+ave: 2.09298
+max: 2.09301
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num612.fld" (0.0161467s, XML)
+
+ctr = 0.350000 
+
+setup
+min: 3.36237
+ave: 3.3624
+max: 3.36245
+
+******************************************************
+
+initial residual = 2.343997e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 118 
+final absolute residual = 2.214195e-08
+relative residual       = 9.446239e-09 
+
+******************************************************
+
+solve
+min: 2.06297
+ave: 2.06299
+max: 2.06302
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num613.fld" (0.0253475s, XML)
+
+ctr = 0.375000 
+
+setup
+min: 3.3604
+ave: 3.36042
+max: 3.36048
+
+******************************************************
+
+initial residual = 2.359322e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 118 
+final absolute residual = 2.045982e-08
+relative residual       = 8.671908e-09 
+
+******************************************************
+
+solve
+min: 2.08888
+ave: 2.08889
+max: 2.08892
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num614.fld" (0.014044s, XML)
+
+ctr = 0.400000 
+
+setup
+min: 3.36231
+ave: 3.36235
+max: 3.3624
+
+******************************************************
+
+initial residual = 2.378073e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 117 
+final absolute residual = 2.231432e-08
+relative residual       = 9.383362e-09 
+
+******************************************************
+
+solve
+min: 2.02395
+ave: 2.02397
+max: 2.02401
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num615.fld" (0.0144801s, XML)
+
+ctr = 0.425000 
+
+setup
+min: 3.36176
+ave: 3.36179
+max: 3.36184
+
+******************************************************
+
+initial residual = 2.400224e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 116 
+final absolute residual = 2.332623e-08
+relative residual       = 9.718357e-09 
+
+******************************************************
+
+solve
+min: 2.04033
+ave: 2.04034
+max: 2.04037
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num616.fld" (0.0400772s, XML)
+
+ctr = 0.450000 
+
+setup
+min: 3.35486
+ave: 3.35489
+max: 3.35494
+
+******************************************************
+
+initial residual = 2.425710e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 116 
+final absolute residual = 2.105515e-08
+relative residual       = 8.679997e-09 
+
+******************************************************
+
+solve
+min: 2.05957
+ave: 2.05958
+max: 2.05962
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num617.fld" (0.0165935s, XML)
+
+ctr = 0.475000 
+
+setup
+min: 3.36828
+ave: 3.36831
+max: 3.36836
+
+******************************************************
+
+initial residual = 2.454401e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 114 
+final absolute residual = 2.414869e-08
+relative residual       = 9.838936e-09 
+
+******************************************************
+
+solve
+min: 2.04045
+ave: 2.04048
+max: 2.04052
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num618.fld" (0.0147121s, XML)
+
+ctr = 0.500000 
+***** ctr = 0.500000 => skip! *****
+
+ctr = 0.525000 
+
+setup
+min: 3.35996
+ave: 3.35999
+max: 3.36004
+
+******************************************************
+
+initial residual = 2.520391e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 113 
+final absolute residual = 2.503467e-08
+relative residual       = 9.932850e-09 
+
+******************************************************
+
+solve
+min: 1.96488
+ave: 1.9649
+max: 1.96494
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num620.fld" (0.0139308s, XML)
+
+ctr = 0.550000 
+
+setup
+min: 3.35564
+ave: 3.35567
+max: 3.35572
+
+******************************************************
+
+initial residual = 2.556821e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 113 
+final absolute residual = 2.532897e-08
+relative residual       = 9.906430e-09 
+
+******************************************************
+
+solve
+min: 2.00584
+ave: 2.00591
+max: 2.00596
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num621.fld" (0.0164156s, XML)
+
+ctr = 0.575000 
+
+setup
+min: 3.37423
+ave: 3.37426
+max: 3.37431
+
+******************************************************
+
+initial residual = 2.594623e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 114 
+final absolute residual = 2.368871e-08
+relative residual       = 9.129925e-09 
+
+******************************************************
+
+solve
+min: 1.99873
+ave: 1.99873
+max: 1.99876
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num622.fld" (0.0228922s, XML)
+
+ctr = 0.600000 
+
+setup
+min: 3.3471
+ave: 3.34713
+max: 3.34718
+
+******************************************************
+
+initial residual = 2.632777e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 114 
+final absolute residual = 2.597428e-08
+relative residual       = 9.865731e-09 
+
+******************************************************
+
+solve
+min: 1.99934
+ave: 1.99937
+max: 1.99942
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num623.fld" (0.0206966s, XML)
+
+ctr = 0.625000 
+
+setup
+min: 3.35265
+ave: 3.35269
+max: 3.35274
+
+******************************************************
+
+initial residual = 2.669948e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 115 
+final absolute residual = 2.433198e-08
+relative residual       = 9.113279e-09 
+
+******************************************************
+
+solve
+min: 2.07136
+ave: 2.07138
+max: 2.07142
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num624.fld" (0.0150037s, XML)
+
+ctr = 0.650000 
+
+setup
+min: 3.36896
+ave: 3.36899
+max: 3.36904
+
+******************************************************
+
+initial residual = 2.704474e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 116 
+final absolute residual = 2.559823e-08
+relative residual       = 9.465144e-09 
+
+******************************************************
+
+solve
+min: 2.02235
+ave: 2.02237
+max: 2.02241
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num625.fld" (0.0295506s, XML)
+
+ctr = 0.675000 
+
+setup
+min: 3.34308
+ave: 3.34311
+max: 3.34317
+
+******************************************************
+
+initial residual = 2.734428e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 118 
+final absolute residual = 2.447879e-08
+relative residual       = 8.952068e-09 
+
+******************************************************
+
+solve
+min: 2.06655
+ave: 2.06659
+max: 2.06664
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num626.fld" (0.01472s, XML)
+
+ctr = 0.700000 
+
+setup
+min: 3.37218
+ave: 3.37221
+max: 3.37227
+
+******************************************************
+
+initial residual = 2.757782e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 120 
+final absolute residual = 2.516179e-08
+relative residual       = 9.123923e-09 
+
+******************************************************
+
+solve
+min: 2.12114
+ave: 2.12121
+max: 2.12127
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num627.fld" (0.0165777s, XML)
+
+ctr = 0.725000 
+
+setup
+min: 3.37852
+ave: 3.37855
+max: 3.3786
+
+******************************************************
+
+initial residual = 2.772684e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 121 
+final absolute residual = 2.684120e-08
+relative residual       = 9.680582e-09 
+
+******************************************************
+
+solve
+min: 2.15083
+ave: 2.15088
+max: 2.15095
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num628.fld" (0.0135846s, XML)
+
+ctr = 0.750000 
+
+setup
+min: 3.37659
+ave: 3.37662
+max: 3.37668
+
+******************************************************
+
+initial residual = 2.777812e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 122 
+final absolute residual = 2.487080e-08
+relative residual       = 8.953375e-09 
+
+******************************************************
+
+solve
+min: 2.14283
+ave: 2.14286
+max: 2.14289
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num629.fld" (0.0157542s, XML)
+
+ctr = 0.775000 
+
+setup
+min: 3.37973
+ave: 3.37976
+max: 3.37981
+
+******************************************************
+
+initial residual = 2.772684e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 121 
+final absolute residual = 2.684120e-08
+relative residual       = 9.680582e-09 
+
+******************************************************
+
+solve
+min: 2.22742
+ave: 2.22745
+max: 2.22749
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num630.fld" (0.0157738s, XML)
+
+ctr = 0.800000 
+
+setup
+min: 3.37252
+ave: 3.37256
+max: 3.37261
+
+******************************************************
+
+initial residual = 2.757782e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 120 
+final absolute residual = 2.516180e-08
+relative residual       = 9.123923e-09 
+
+******************************************************
+
+solve
+min: 2.17294
+ave: 2.17296
+max: 2.17301
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num631.fld" (0.0283s, XML)
+
+ctr = 0.825000 
+
+setup
+min: 3.35375
+ave: 3.35377
+max: 3.35382
+
+******************************************************
+
+initial residual = 2.734428e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 118 
+final absolute residual = 2.447879e-08
+relative residual       = 8.952068e-09 
+
+******************************************************
+
+solve
+min: 2.06812
+ave: 2.06815
+max: 2.06818
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num632.fld" (0.0233381s, XML)
+
+ctr = 0.850000 
+
+setup
+min: 3.37772
+ave: 3.37777
+max: 3.37782
+
+******************************************************
+
+initial residual = 2.704474e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 116 
+final absolute residual = 2.559823e-08
+relative residual       = 9.465144e-09 
+
+******************************************************
+
+solve
+min: 2.07818
+ave: 2.07821
+max: 2.07826
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num633.fld" (0.0264521s, XML)
+
+ctr = 0.875000 
+
+setup
+min: 3.34936
+ave: 3.34939
+max: 3.34944
+
+******************************************************
+
+initial residual = 2.669948e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 115 
+final absolute residual = 2.433198e-08
+relative residual       = 9.113279e-09 
+
+******************************************************
+
+solve
+min: 2.00725
+ave: 2.00728
+max: 2.00732
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num634.fld" (0.0145319s, XML)
+
+ctr = 0.900000 
+
+setup
+min: 3.34182
+ave: 3.34186
+max: 3.34191
+
+******************************************************
+
+initial residual = 2.632777e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 114 
+final absolute residual = 2.597428e-08
+relative residual       = 9.865732e-09 
+
+******************************************************
+
+solve
+min: 2.03387
+ave: 2.03389
+max: 2.03394
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num635.fld" (0.0147293s, XML)
+
+ctr = 0.925000 
+
+setup
+min: 3.36441
+ave: 3.36445
+max: 3.3645
+
+******************************************************
+
+initial residual = 2.594623e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 114 
+final absolute residual = 2.368871e-08
+relative residual       = 9.129925e-09 
+
+******************************************************
+
+solve
+min: 2.04022
+ave: 2.04027
+max: 2.04031
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num636.fld" (0.0134764s, XML)
+
+ctr = 0.950000 
+
+setup
+min: 3.35058
+ave: 3.35062
+max: 3.35069
+
+******************************************************
+
+initial residual = 2.556821e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 113 
+final absolute residual = 2.532897e-08
+relative residual       = 9.906430e-09 
+
+******************************************************
+
+solve
+min: 1.99153
+ave: 1.99156
+max: 1.9916
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num637.fld" (0.0145485s, XML)
+
+ctr = 0.975000 
+
+setup
+min: 3.36149
+ave: 3.36152
+max: 3.36157
+
+******************************************************
+
+initial residual = 2.520391e+00 
+
+
+******************************************************
+
+final:
+stopped at iteration    = 113 
+final absolute residual = 2.503467e-08
+relative residual       = 9.932850e-09 
+
+******************************************************
+
+solve
+min: 2.03705
+ave: 2.03712
+max: 2.03719
+
+Writing: "../library/Demos/MultiRegions/Tests/Helmholtz3D_Hex_AllBCs_P6_num638.fld" (0.0172954s, XML)
+L infinity error: 0.330075
+L 2 error:        0.263069
+H 1 error:        0.814873
+Time in ExpEval:  0.00122883
