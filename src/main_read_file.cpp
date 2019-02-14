@@ -169,9 +169,9 @@ int main(int argc, char* argv[]){
     int update_method = 1; // choose update method here: 1, 2, 3
     if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
 
-    for(int i = 2; i <= 2; i++){
+    for(int i = 2; i <= 10; i++){
         A.erase_no_shrink_to_fit();
-        A.add_duplicates(true);
+//        A.add_duplicates(true);
 
         std::string file_name_update = "mat";
         file_name_update += std::to_string(i);
