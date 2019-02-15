@@ -4352,6 +4352,8 @@ int saena_object::compute_coarsen(Grid *grid) {
 
     // ********** minor shrinking **********
     // -------------------------------------
+    Ac->active = true;
+    Ac->active_minor = true;
     for(index_t i = 0; i < Ac->split.size()-1; i++){
         if(Ac->split[i+1] - Ac->split[i] == 0){
 //            printf("rank %d: shrink minor in compute_coarsen: i = %d, split[i] = %d, split[i+1] = %d\n",

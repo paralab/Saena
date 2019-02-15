@@ -131,7 +131,7 @@ public:
     MPI_Comm comm_horizontal;
     MPI_Comm comm_old;
 
-    bool active = true;
+    bool active = false;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
     bool enable_shrink = false;  // default = true
@@ -154,7 +154,7 @@ public:
 //    int cpu_shrink_thre1_next = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
 
     // shrink_minor: if there no entry for the coarse matrix on this proc, then shrink.
-    bool active_minor = true;    // default = true
+    bool active_minor = false;    // default = false
 //    index_t M_old_minor = 0; // local number of rows, before being repartitioned.
     std::vector<index_t> split_old_minor;
     bool shrinked_minor = false; // default = false

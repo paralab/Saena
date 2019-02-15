@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
 //    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 400;
     double relative_tolerance = 1e-14;
-    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
+    std::string smoother      = "jacobi"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 1;
     int postSmooth            = 1;
 

@@ -235,6 +235,9 @@ int saena_matrix::repartition_nnz_initial(){
 //    print_entry(0);
 //    MPI_Barrier(comm); printf("repartition: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l); MPI_Barrier(comm);
 
+    active = true;
+    active_minor = true;
+
     if(verbose_repartition && rank==0) printf("repartition - step 7!\n");
 
     return 0;
