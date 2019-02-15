@@ -68,11 +68,22 @@ When A is horizontal, i.e. its row size is less than or equal to its column size
 Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$ and $B2$ (Algorithm~\ref{alg:case2}). The results of the two multiplications will need to be added together at the end. It means, there will be entries for the result matrix with the same index, e.g. multiple entries with $(10, 20)$ as the index. We call these entries \textit{duplicates}. Since there will be numerous nested recursive calls, we avoid doing adding duplicate at this stage. After the first recursive function is finished, we will perform a sorting and then add the duplicates only once at the end.
 
 \begin{figure}[tbh]
- \centering
- %\Description{Description}
- \includegraphics[width=6cm,height=2.7cm]{./figures/case2_001.pdf}
- \caption{Case 2: When A is horizontal, split A by column and B by row. Call the recursive function twice.}
- \label{fig:case2}
+    \centering
+    \begin{subfigure}{.45\textwidth}
+        %\Description{Description}
+        \centering
+        \includegraphics[width=4.5cm,height=2.3cm]{./figures/case2_001.pdf}
+%        \caption{Case 2: When A is horizontal, split A by column and B by row. Call the recursive function twice.}
+        \label{fig:case2}
+    \end{subfigure}
+    %
+    \begin{subfigure}{.45\textwidth}
+        \centering
+        \includegraphics[width=5.5cm,height=2.3cm]{./figures/case3_001.pdf}
+        %\caption{Case 3: When A is vertical, split A by row and B by column. Call the recursive function four times.}
+        \label{fig:case3}
+    \end{subfigure}
+    \caption{Left figure shows Case 2: When A is horizontal, split A by column and B by row. Call the recursive function twice. Right figure shows Case 3: When A is vertical, split A by row and B by column. Call the recursive function four times.}
 \end{figure}
 
 \begin{algorithm}[H] 
@@ -93,6 +104,7 @@ Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$
 \label{sec:case3}
 When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure ~\ref{fig:case3}). In contrary to the previous case, the column size of B is not related to row size of A, so they are split independently. This time the \recmm~ will be called four times (Algorithm~\ref{alg:case2}).  Although we have 4 recursive calls in this case, but there is no duplicates at the end, which makes this case more efficient than Case 2 for the total time, because it is faster to do the sorting and adding duplicates at the end on a smaller set of entries. 
 
+\iffalse
 \begin{figure}[tbh]
  \centering
  %\Description{Description}
@@ -100,6 +112,7 @@ When A is vertical, i.e. its row size is greater than its column size, we halve 
  \caption{Case 3: When A is vertical, split A by row and B by column. Call the recursive function four times.}
  \label{fig:case3}
 \end{figure}
+\fi
 
 \begin{algorithm}[H] 
   %\footnotesize
@@ -172,7 +185,7 @@ We have implemented this part in an overlapped fashion; first we do the send and
  \centering
  %\Description{Description}
  \includegraphics[width=5.5cm,height=3cm]{./figures/part1c.pdf}
- \caption{This figure shows how row block of $R$ are transpose of column blocks of $P$.}
+ \caption{This figure shows how row blocks of $R$ are transpose of column blocks of $P$.}
  \label{fig:part1c}
 \end{figure}
 

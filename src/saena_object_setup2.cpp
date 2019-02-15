@@ -4543,9 +4543,11 @@ int saena_object::compute_coarsen(Grid *grid) {
 //            MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
             Ac->matrix_setup_dummy();
             Ac->compute_matvec_dummy_time();
+            MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
             Ac->decide_shrinking(A->matvec_dummy_time);
+            MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
             Ac->erase_after_decide_shrinking();
-//            MPI_Barrier(Ac->comm); if(rank_new==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
+            MPI_Barrier(Ac->comm); if(rank_new==0) printf("finish decide shrinking\n"); MPI_Barrier(Ac->comm);
         }
 
 #ifdef __DEBUG1__
@@ -4569,6 +4571,8 @@ int saena_object::compute_coarsen(Grid *grid) {
 
         repartition_u_shrink_prepare(grid);
 
+        Ac->active = true;
+//        Ac->active_minor = true;
         if(Ac->shrinked){
             Ac->shrink_cpu();
         }

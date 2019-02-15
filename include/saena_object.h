@@ -97,7 +97,7 @@ public:
     bool verbose_setup            = true;
     bool verbose_setup_steps      = false;
     bool verbose_level_setup      = false;
-    bool verbose_triple_mat_mult  = false;
+    bool verbose_triple_mat_mult  = true;
     bool verbose_matmat           = false;
     bool verbose_matmat_recursive = false;
     bool verbose_matmat_A         = false;

@@ -152,17 +152,23 @@ int saena_matrix::compute_matvec_dummy_time(){
     MPI_Barrier(comm); // todo: should I keep this barrier?
 //    double t1 = omp_get_wtime();
 
+    printf("rank %d: decide shrinking: step1\n", rank); MPI_Barrier(comm);
+
     // warm-up
     for (int i = 0; i < matvec_iter_warmup; i++) {
         matvec_dummy(v_dummy, w_dummy);
         v_dummy.swap(w_dummy);
     }
 
+    MPI_Barrier(comm); printf("rank %d: decide shrinking: step2\n", rank); MPI_Barrier(comm);
+
     std::fill(matvec_dummy_time.begin(), matvec_dummy_time.end(), 0);
     for (int i = 0; i < matvec_iter; i++) {
         matvec_dummy(v_dummy, w_dummy);
         v_dummy.swap(w_dummy);
     }
+
+    MPI_Barrier(comm); printf("rank %d: decide shrinking: step3\n", rank); MPI_Barrier(comm);
 
 //    double t2 = omp_get_wtime();
 
@@ -478,6 +484,8 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
     // put the values of thoss indices in vSend to send to other procs.
     double t0_start = omp_get_wtime();
 
+    MPI_Barrier(comm); printf("rank %d: matvec_dummy: step1\n", rank); MPI_Barrier(comm);
+
 #pragma omp parallel for
     for(index_t i=0;i<vIndexSize;i++)
         vSend[i] = v[(vIndex[i])];
@@ -492,6 +500,8 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
     MPI_Request* requests;
     MPI_Status* statuses;
 
+    MPI_Barrier(comm); printf("rank %d: matvec_dummy: step2\n", rank); MPI_Barrier(comm);
+
     if(nprocs > 1){
         requests = new MPI_Request[numSendProc+numRecvProc];
         statuses = new MPI_Status[numSendProc+numRecvProc];
@@ -504,6 +514,8 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
         for(int i = 0; i < numSendProc; i++)
             MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
     }
+
+    MPI_Barrier(comm); printf("rank %d: matvec_dummy: step3\n", rank); MPI_Barrier(comm);
 
     // local loop
     // ----------
@@ -527,6 +539,8 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
 //        }
 //    }
 
+    MPI_Barrier(comm); printf("rank %d: matvec_dummy: step4\n", rank); MPI_Barrier(comm);
+
     double t1_end = omp_get_wtime();
 
     double t2_start = 0, t2_end = 0;
@@ -535,7 +549,8 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
         // Wait for the receive communication to finish.
         MPI_Waitall(numRecvProc, requests, statuses);
 
-//    print_vector(vecValues, 0, "vecValues", comm);
+        printf("rank %d: col_remote_size = %u, \tnumSendProc = %u, \tnumRecvProc = %u\n", rank, col_remote_size, numSendProc, numRecvProc);
+//        print_vector(vecValues, 1, "vecValues", comm);
 
         // remote loop
         // -----------
@@ -560,6 +575,8 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
         t2_end = omp_get_wtime();
         MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     }
+
+    MPI_Barrier(comm); printf("rank %d: matvec_dummy: step1\n", rank); MPI_Barrier(comm);
 
     double t3_end = omp_get_wtime();
 

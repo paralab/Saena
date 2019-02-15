@@ -19,6 +19,10 @@
 %\usepackage{epstopdf}
 %\usepackage{algorithmic}
 
+%\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{compatibility=false}
+
 % Tools for mathematical typesetting
 \usepackage{algpseudocode} 
 % Typesetting algorithms
@@ -58,9 +62,9 @@
 
 \begin{document}
 %
-\title{Lazy-update Multigrid Preconditioners}
+\title{A Divide and Conquer Matrix-Matrix Multiplication Algorithm to Speedup Algebraic Multigrid Setup}
 %
-\titlerunning{Abbreviated paper title}
+\titlerunning{Divide and Conquer Matrix-Matrix Multiplication}
 % If the paper title is too long for the running head, you can set
 % an abbreviated paper title here
 %
@@ -76,10 +80,8 @@
 \institute{School of Computing, University of Utah,\\Salt Lake City, UT, USA \\
 \and
 \email{rasouli@cs.utah.edu}\\
-%\url{https://www.cs.utah.edu/~rasouli/}
 \and
-%ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
-\email{kirby@sci.utah.edu}
+\email{kirby@cs.utah.edu}
 \and
 \email{hari@cs.utah.edu}
 }
