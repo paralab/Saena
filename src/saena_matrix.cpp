@@ -331,6 +331,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
 //    print_vector(data, -1, "data", comm);
 
+    return 0;
 }
 
 
@@ -975,28 +976,24 @@ int saena_matrix::erase_lazy_update(){
 int saena_matrix::erase_no_shrink_to_fit(){
 
     data_coo.clear();
-//    data.clear();
-//    data.shrink_to_fit();
+    data.clear(); //todo: is this required?
+    data_unsorted.clear(); //todo: is this required?
 
-//    printf("erase1\n");
     entry.clear();
     split.clear();
     split_old.clear();
     values_local.clear();
     row_local.clear();
     values_remote.clear();
-//    printf("erase2\n");
     row_remote.clear();
     col_local.clear();
     col_remote.clear();
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-//    printf("erase3\n");
     inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
-//    printf("erase4\n");
     recvProcRank.clear();
     recvProcCount.clear();
     sendProcRank.clear();
@@ -1004,8 +1001,9 @@ int saena_matrix::erase_no_shrink_to_fit(){
     sendProcCount.clear();
 //    vElementRep_local.clear();
     vElementRep_remote.clear();
-//    printf("erase5\n");
 
+//    data.shrink_to_fit();
+//    data_unsorted.shrink_to_fit();
 //    entry.shrink_to_fit();
 //    split.shrink_to_fit();
 //    split_old.shrink_to_fit();
@@ -1031,8 +1029,6 @@ int saena_matrix::erase_no_shrink_to_fit(){
 
     deallocate_zfp();
 
-//    printf("erase6\n");
-
     M = 0;
     Mbig = 0;
     nnz_g = 0;
@@ -1044,7 +1040,6 @@ int saena_matrix::erase_no_shrink_to_fit(){
     numRecvProc = 0;
     numSendProc = 0;
     assembled = false;
-//    printf("erase7\n");
 
     return 0;
 }

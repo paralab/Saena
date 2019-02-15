@@ -129,6 +129,7 @@ int saena_object::update3(saena_matrix* A_new){
     local_diff(*grids[0].A, *A_new, A_diff);
     A_new->scale_matrix();
     grids[0].A->scale_matrix();
+
 //    print_vector(A_diff, -1, "A_diff", grids[0].A->comm);
 //    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
 //    printf("A_diff.size = %lu\n", A_diff.size());
@@ -1139,6 +1140,7 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         C.resize(A.nnz_l_local);
         index_t loc_size = 0;
         for(nnz_t i = 0; i < A.nnz_l_local; i++){
+//            if(rank==0) printf("%u \t%u \t%f \t%u \t%u \t%f \n", A.row_local[i], A.col_local[i], A.values_local[i], B.row_local[i], B.col_local[i], B.values_local[i]);
             if(!almost_zero(A.values_local[i] - B.values_local[i])){
 //                if(rank==0) printf("%u \t%u \t%f \t%f \n", A.row_local[i], A.col_local[i], A.values_local[i], B.values_local[i]);
                 C[loc_size] = cooEntry(A.row_local[i] + A.split[rank], A.col_local[i], B.values_local[i]-A.values_local[i]);

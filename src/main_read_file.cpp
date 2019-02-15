@@ -166,43 +166,68 @@ int main(int argc, char* argv[]){
 
     // *************************** lazy-update ****************************
 
-    int update_method = 1; // choose update method here: 1, 2, 3
+    saena::matrix B (comm);
+    int lazy_step = 0;
+
+    int update_method = 1;
     if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
 
     for(int i = 2; i <= 10; i++){
-        A.erase_no_shrink_to_fit();
-//        A.add_duplicates(true);
-
-        t1 = MPI_Wtime();
-
         std::string file_name_update = "mat";
         file_name_update += std::to_string(i);
         file_name_update += ".mtx";
-        A.read_file(file_name_update.c_str());
 
-        if(update_method == 1) {
-            A.assemble();
-            solver.update1(&(A)); // update the AMG hierarchy
-        } else if(update_method == 2) {
-            A.assemble();
-            solver.update2(&(A)); // update the AMG hierarchy
-        } else if(update_method == 3) {
-            A.assemble_no_scale();
-            solver.update3(&(A)); // update the AMG hierarchy
+        t1 = MPI_Wtime();
+        if( lazy_step % 2 == 1) {
+            A.erase_no_shrink_to_fit();
+    //        A.add_duplicates(true);
+
+            A.read_file(file_name_update.c_str());
+
+            if(update_method == 1) {
+                A.assemble();
+                solver.update1(&(A)); // update the AMG hierarchy
+            } else if(update_method == 2) {
+                A.assemble();
+                solver.update2(&(A)); // update the AMG hierarchy
+            } else if(update_method == 3) {
+                A.assemble_no_scale();
+                solver.update3(&(A)); // update the AMG hierarchy
+            } else {
+                printf("Error: Wrong update_method is set! Options: 1, 2, 3\n");
+            }
+
+            lazy_step++;
+
         } else {
-            printf("Error: Wrong update_method is set! Options: 1, 2, 3\n");
+
+            B.erase_no_shrink_to_fit();
+//            B.add_duplicates(true);
+
+            B.read_file(file_name_update.c_str());
+
+            if(update_method == 1) {
+                B.assemble();
+                solver.update1(&(B)); // update the AMG hierarchy
+            } else if(update_method == 2) {
+                B.assemble();
+                solver.update2(&(B)); // update the AMG hierarchy
+            } else if(update_method == 3) {
+                B.assemble_no_scale();
+                solver.update3(&(B)); // update the AMG hierarchy
+            } else {
+                printf("Error: Wrong update_method is set! Options: 1, 2, 3\n");
+            }
+
+            lazy_step++;
         }
 
         t2 = MPI_Wtime();
-        if(solver.verbose) print_time(t1, t2, "Setup:", comm);
         print_time(t1, t2, "Setup:", comm);
 
         t1 = MPI_Wtime();
-
         solver.solve_pcg(u, &opts);
-
         t2 = MPI_Wtime();
-        if(solver.verbose) print_time(t1, t2, "Solve:", comm);
         print_time(t1, t2, "Solve:", comm);
     }
 
