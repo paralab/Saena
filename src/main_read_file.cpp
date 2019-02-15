@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 2){
+    if(argc != 3){
         if(rank == 0) {
             std::cout << "Usage: ./Saena <MatrixA>" << std::endl;
         }
@@ -81,8 +81,8 @@ int main(int argc, char* argv[]){
 
     // ********** 1 - set rhs: random **********
 
-    rhs.resize(num_local_row);
-    generate_rhs_old(rhs);
+//    rhs.resize(num_local_row);
+//    generate_rhs_old(rhs);
 
     // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
 
@@ -97,9 +97,9 @@ int main(int argc, char* argv[]){
 
     // ********** 4 - set rhs: read from file **********
 
-//    char* Vname(argv[2]);
-//    saena::read_vector_file(rhs, A, Vname, comm);
-//    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
+    char* Vname(argv[2]);
+    saena::read_vector_file(rhs, A, Vname, comm);
+    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
 
     // set rhs
 //    A.get_internal_matrix()->matvec(v, rhs);
@@ -119,10 +119,10 @@ int main(int argc, char* argv[]){
 
 //    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 400;
-    double relative_tolerance = 1e-12;
+    double relative_tolerance = 1e-14;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
-    int preSmooth             = 3;
-    int postSmooth            = 3;
+    int preSmooth             = 1;
+    int postSmooth            = 1;
 
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");
