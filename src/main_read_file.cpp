@@ -173,6 +173,8 @@ int main(int argc, char* argv[]){
         A.erase_no_shrink_to_fit();
 //        A.add_duplicates(true);
 
+        t1 = MPI_Wtime();
+
         std::string file_name_update = "mat";
         file_name_update += std::to_string(i);
         file_name_update += ".mtx";
@@ -191,7 +193,17 @@ int main(int argc, char* argv[]){
             printf("Error: Wrong update_method is set! Options: 1, 2, 3\n");
         }
 
+        t2 = MPI_Wtime();
+        if(solver.verbose) print_time(t1, t2, "Setup:", comm);
+        print_time(t1, t2, "Setup:", comm);
+
+        t1 = MPI_Wtime();
+
         solver.solve_pcg(u, &opts);
+
+        t2 = MPI_Wtime();
+        if(solver.verbose) print_time(t1, t2, "Solve:", comm);
+        print_time(t1, t2, "Solve:", comm);
     }
 
     // *************************** check correctness of the solution ****************************
