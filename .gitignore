@@ -21,4 +21,25 @@ data/2DMed_sorted3.bin
 data/2DMed_sorted3.mtx
 data/2DMed_sorted3_changed_entries.txt
 data/CombBLAS/
-papers_backup/
+CMakeLists (copy).txt
+data/vectors/vector_generator001
+papers/ICCS19_lazy/ICCS19.aux
+papers/ICCS19_lazy/ICCS19.bbl
+papers/ICCS19_lazy/ICCS19.blg
+papers/ICCS19_lazy/ICCS19.log
+papers/ICCS19_lazy/ICCS19.pdf
+papers/ICCS19_lazy/ICCS19.synctex.gz
+papers/ICS19/ICS19.synctex.gz
+papers/ICCS19_matmult/ICCS19.aux
+papers/ICCS19_matmult/ICCS19.bbl
+papers/ICCS19_matmult/ICCS19.blg
+papers/ICCS19_matmult/ICCS19.log
+papers/ICCS19_matmult/ICCS19.pdf
+papers/ICCS19_matmult/ICCS19.synctex.gz
+papers/ICS19/ICS19.aux
+papers/ICS19/ICS19.bbl
+papers/ICS19/ICS19.blg
+papers/ICS19/ICS19.log
+papers/ICS19/ICS19.out
+papers/ICS19/ICS19.pdf
+papers/ICS19/ICS19.synctex.gz
