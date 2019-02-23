@@ -73,7 +73,7 @@
 \and Hari Sundar\inst{1,4} %\orcidID{2222--3333-4444-5555}
 }
 %
-\authorrunning{M. Rasouli et al.}
+%\authorrunning{M. Rasouli et al.}
 % First names are abbreviated in the running head.
 % If there are more than two authors, 'et al.' is used.
 %
@@ -92,7 +92,7 @@
 Algebraic Multigrid (AMG) is a popular solver and preconditioner for large sparse linear systems, especially the ones obtained from the discretization of elliptic operators.
 A key bottleneck for the scalability of the setup phase of AMG is the Matrix-matrix multiplication (MatMult) required for computing the sparse grid representation. While significant work has been done on optimizing matrix-matrix multiplication, in this work, we optimize it in the context of the matrix multiplications encountered in the setup phase of AMG. Specifically, we designed a new divide and conquer sparse MatMult, that is scalable and makes use of the specific structure of the restriction and prolongation matrices. This combined with an efficient communication pattern during parallel MatMult provides excellent performance for our AMG setup. We compare our solver with PETSc to demonstrate the performance improvements gained using our methods.
 
-\keywords{Algebraic Multigrid \and Iterative Solver \and Sparse \and Preconditioned Conjugate Gradient \and Preconditioner \and matrix-matrix product \and sparse \and AMG}
+\keywords{Matrix-Matrix Product \and Algebraic Multigrid \and AMG \and Iterative Solver \and Sparse \and Preconditioned Conjugate Gradient \and Preconditioner}
 \end{abstract}
 %
 

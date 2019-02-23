@@ -66,7 +66,7 @@ namespace saena {
     class options {
     private:
         int vcycle_num            = 500;
-        double relative_tolerance = 1e-10;
+        double relative_tolerance = 1e-12;
         std::string smoother      = "chebyshev";
         int preSmooth             = 3;
         int postSmooth            = 3;
