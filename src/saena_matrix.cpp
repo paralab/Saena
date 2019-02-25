@@ -28,6 +28,7 @@ void saena_matrix::set_comm(MPI_Comm com){
 
 int saena_matrix::read_file(const char* Aname){
     read_file(Aname, "");
+    return 0;
 }
 
 
@@ -335,7 +336,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 }
 
 
-saena_matrix::~saena_matrix() {}
+saena_matrix::~saena_matrix() = default;
 
 
 int saena_matrix::set(index_t row, index_t col, value_t val){
@@ -397,7 +398,7 @@ int saena_matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local)
 int saena_matrix::set2(index_t row, index_t col, value_t val){
 
     // if there are duplicates with different values on two different processors, what should happen?
-    // which one should be removed? Hari said "do it randomly".
+    // which one should be removed? We do it randomly.
 
     cooEntry_row temp_old;
     cooEntry_row temp_new = cooEntry_row(row, col, val);
@@ -408,7 +409,8 @@ int saena_matrix::set2(index_t row, index_t col, value_t val){
         temp_old = *(p.first);
         temp_new.val += temp_old.val;
 
-        std::set<cooEntry_row>::iterator hint = p.first;
+//        std::set<cooEntry_row>::iterator hint = p.first;
+        auto hint = p.first;
         hint++;
         data_coo.erase(p.first);
         data_coo.insert(hint, temp_new);

@@ -12,14 +12,14 @@
 
 
 /**
- * @author Majid
+ * @author Majid Rasouli
  * @breif Contains the basic structure for the Saena matrix class (saena_matrix).
  *
  * */
 
-typedef unsigned int index_t;
+typedef unsigned int  index_t;
 typedef unsigned long nnz_t;
-typedef double value_t;
+typedef double        value_t;
 
 class saena_matrix {
 
@@ -134,7 +134,7 @@ public:
     bool active = false;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
-    bool enable_shrink = true;  // default = true
+    bool enable_shrink = false;  // default = true
     bool do_shrink     = false; // default = false
     bool shrinked      = false; // default = false. if shrinking happens for the matrix, set this to true.
     bool enable_dummy_matvec = true; // default = true
@@ -206,7 +206,7 @@ public:
 
     void set_comm(MPI_Comm com);
 
-    // The difference between set and set2 is that if there is a repetition, set will erase the previous one
+    // The difference between set and set2 is that if there is a duplicate, set will erase the previous one
     // and insert the new one, but in set2, the values of those entries will be added together.
     int set(index_t row, index_t col, value_t val);
     int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);

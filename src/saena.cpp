@@ -1,6 +1,7 @@
 #include "saena.hpp"
 #include "saena_matrix.h"
 #include "saena_matrix_dense.h"
+#include "saena_vector.h"
 #include "saena_object.h"
 #include "pugixml.hpp"
 #include "dollar.hpp"
@@ -12,7 +13,7 @@
 #include <random>
 #include <math.h>
 
-# define PETSC_PI		3.14159265358979323846	/* pi */
+# define PETSC_PI 3.14159265358979323846
 
 // ******************************* matrix *******************************
 
@@ -53,21 +54,22 @@ saena::matrix::~matrix(){
 
 int saena::matrix::read_file(const char *name) {
     m_pImpl->read_file(name);
+    return 0;
 }
 
 int saena::matrix::read_file(const char *name, const std::string &input_type) {
     m_pImpl->read_file(name, input_type);
+    return 0;
 }
 
 
 int saena::matrix::set(index_t i, index_t j, value_t val){
 
-//    if( val != 0) {
-        if (!add_dup)
+        if (!add_dup) {
             m_pImpl->set(i, j, val);
-        else
+        } else {
             m_pImpl->set2(i, j, val);
-//    }
+        }
 
     return 0;
 }
@@ -233,9 +235,80 @@ int saena::matrix::add_duplicates(bool add) {
 }
 
 
+// ******************************* vector *******************************
+
+saena::vector::vector(MPI_Comm comm) {
+    m_pImpl = new saena_vector(comm);
+}
+
+saena::vector::vector() {
+    m_pImpl = new saena_vector();
+}
+
+// copy constructor
+saena::vector::vector(const saena::vector &B) {
+    m_pImpl = new saena_vector(*B.m_pImpl);
+    add_dup = B.add_dup;
+}
+
+saena::vector& saena::vector::operator=(const saena::vector &B) {
+    delete m_pImpl;
+    m_pImpl = new saena_vector(*B.m_pImpl);
+    add_dup = B.add_dup;
+    return *this;
+}
+
+void saena::vector::set_comm(MPI_Comm comm) {
+    m_pImpl->set_comm(comm);
+}
+
+MPI_Comm saena::vector::get_comm() {
+    return m_pImpl->comm;
+}
+
+saena::vector::~vector() {
+//    m_pImpl->erase();
+    delete m_pImpl;
+}
+
+
+//int saena::vector::read_file(const char *name) {
+//    m_pImpl->read_file(name);
+//    return 0;
+//}
+
+//int saena::vector::read_file(const char *name, const std::string &input_type) {
+//    m_pImpl->read_file(name, input_type);
+//    return 0;
+//}
+
+
+int saena::vector::set(index_t i, value_t val){
+
+    if (!add_dup) {
+        m_pImpl->set_rep_dup(i, val);
+    } else {
+        m_pImpl->set_add_dup(i, val);
+    }
+
+    return 0;
+}
+
+
+int saena::vector::assemble() {
+    m_pImpl->assemble();
+    return 0;
+}
+
+int saena::vector::get_vec(std::vector<double> &vec){
+    m_pImpl->get_vec(vec);
+    return 0;
+}
+
+
 // ******************************* options *******************************
 
-saena::options::options(){}
+saena::options::options() = default;
 
 saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
     vcycle_num         = vcycle_n;
@@ -275,8 +348,7 @@ saena::options::options(char* name){
 
 }
 
-saena::options::~options(){
-}
+saena::options::~options() = default;
 
 void saena::options::set(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
     vcycle_num         = vcycle_n;

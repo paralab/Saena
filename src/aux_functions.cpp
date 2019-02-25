@@ -48,12 +48,15 @@ std::ostream & operator<<(std::ostream & stream, const cooEntry & item) {
     return stream;
 }
 
-
 std::ostream & operator<<(std::ostream & stream, const cooEntry_row & item) {
     stream << item.row << "\t" << item.col << "\t" << item.val;
     return stream;
 }
 
+std::ostream & operator<<(std::ostream & stream, const vecEntry & item) {
+    stream << item.row << "\t" << item.val;
+    return stream;
+}
 
 void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nnz_t initial_nnz_l, MPI_Comm comm){
 

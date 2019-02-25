@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){
     int preSmooth             = 3;
     int postSmooth            = 3;
 
-        saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");
 //    saena::options opts;
     saena::amg solver;
@@ -143,6 +143,30 @@ int main(int argc, char* argv[]){
     saena::matrix C(comm);
     solver.matmat(&A, &A, &C);
 */
+
+    // *************************** test for saena_vector ****************************
+
+    saena::vector v1(comm);
+    if(rank == 0){
+        v1.set(0, 0.2);
+        v1.set(1, 0.4);
+        v1.set(5, 0.7);
+        v1.set(6, 0.7);
+    }
+    if(rank == 1){
+        v1.set(2, 0.6);
+        v1.set(3, 0.1);
+        v1.set(4, 0.7);
+        v1.set(5, 0.7);
+        v1.set(6, 0.7);
+    }
+
+    v1.assemble();
+
+//    std::vector<double> v2;
+//    v1.get_vec(v2);
+//    print_vector(v2, -1, "v2", comm);
+
     // *************************** experiment for compute_coarsen ****************************
 /*
     {
@@ -233,7 +257,6 @@ int main(int argc, char* argv[]){
 
     }
 */
-
     // *************************** CombBLAS ****************************
 
 //    combblas_matmult_DoubleBuff();

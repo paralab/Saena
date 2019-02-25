@@ -5,12 +5,13 @@
 #include <mpi.h>
 
 class saena_matrix;
+class saena_vector;
 class saena_matrix_dense;
 class saena_object;
 
-typedef unsigned int index_t;
+typedef unsigned int  index_t;
 typedef unsigned long nnz_t;
-typedef double value_t;
+typedef double        value_t;
 
 
 namespace saena {
@@ -61,6 +62,55 @@ namespace saena {
 
     protected:
         saena_matrix* m_pImpl;
+    };
+
+    class vector {
+    public:
+        vector();
+        explicit vector(MPI_Comm comm);
+        vector(const vector &B); // copy constructor
+        ~vector();
+
+        vector& operator=(const vector &B);
+
+//        int read_file(const char *name);
+//        int read_file(const char *name, const std::string &input_type);
+
+        void set_comm(MPI_Comm comm);
+
+        int set(index_t i, value_t val); // set individual value
+//        int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local); // set multiple values
+//        int set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, value_t* val); // set contiguous block
+//        int set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local); // set generic block
+
+        bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
+        int add_duplicates(bool add);
+
+        int assemble();
+//        int assemble_no_scale();
+//        int assemble_writeToFile();
+//        int assemble_writeToFile(const char *folder_name);
+//        int assemble_band_matrix();
+
+        int get_vec(std::vector<double> &vec);
+        vector* get_internal_vector();
+        MPI_Comm get_comm();
+        index_t get_num_rows();
+        index_t get_num_local_rows();
+//        nnz_t get_nnz();
+//        nnz_t get_local_nnz();
+
+        int print(int ran);
+
+//        int enable_shrink(bool val);
+
+//        int erase();
+//        int erase_lazy_update();
+//        int erase_no_shrink_to_fit();
+//        void destroy();
+
+    protected:
+        saena_vector* m_pImpl;
     };
 
     class options {

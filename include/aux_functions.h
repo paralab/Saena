@@ -21,7 +21,7 @@ class sort_indices
 private:
     index_t *mparr;
 public:
-    sort_indices(index_t *parr) : mparr(parr) {}
+    explicit sort_indices(index_t *parr) : mparr(parr) {}
     bool operator()(index_t i, index_t j) const { return mparr[i]<mparr[j]; }
 };
 
@@ -108,7 +108,7 @@ public:
     index_t col;
     value_t val;
 
-    cooEntry(){}
+    cooEntry() = default;
 
     cooEntry(index_t i, index_t j, value_t v){
         row = i;
@@ -223,7 +223,7 @@ public:
     index_t col;
     value_t val;
 
-    cooEntry_row(){}
+    cooEntry_row() = default;
 
     cooEntry_row(index_t i, index_t j, value_t v){
         row = i;
@@ -431,5 +431,73 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
 
 int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm);
 
+
+class vecEntry {
+public:
+    index_t row;
+    value_t val;
+
+    vecEntry() = default;
+
+    vecEntry(index_t i, value_t v){
+        row = i;
+        val = v;
+    }
+
+    bool operator == (const vecEntry& node2) const
+    {
+        return (row == node2.row);
+    }
+
+    bool operator < (const vecEntry& node2) const
+    {
+        return(row < node2.row);
+    }
+
+    bool operator <= (const vecEntry& node2) const
+    {
+        return(row <= node2.row);
+    }
+
+    bool operator > (const vecEntry& node2) const
+    {
+        return(row > node2.row);
+    }
+
+    bool operator >= (const vecEntry& node2) const
+    {
+        return(row >= node2.row);
+    }
+
+    vecEntry operator + (const vecEntry& node2) const
+    {
+        if (row != node2.row){
+            printf("ERROR: adding two entries without the same indices!");
+        }
+        return (vecEntry(row, val + node2.val));
+    }
+
+    value_t get_val() const
+    {
+        return val;
+    }
+
+    static MPI_Datatype mpi_datatype()
+    {
+        static bool         first = true;
+        static MPI_Datatype datatype;
+
+        if (first)
+        {
+            first = false;
+            MPI_Type_contiguous(sizeof(vecEntry), MPI_BYTE, &datatype);
+            MPI_Type_commit(&datatype);
+        }
+
+        return datatype;
+    }
+};
+
+std::ostream & operator<<(std::ostream & stream, const vecEntry & item);
 
 #endif //SAENA_AUXFUNCTIONS_H

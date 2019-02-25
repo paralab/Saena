@@ -184,16 +184,36 @@ int saena_matrix::remove_duplicates() {
         data_size++;
     }
 
-    for(nnz_t i=1; i<data_sorted.size(); i++){
-        if(data_sorted[i] == data_sorted[i-1]){
-            if(add_duplicates){
-                data[data_size-1].val += data_sorted[i].val;
-            }else{
-                data[data_size-1] = data_sorted[i];
+//    for(nnz_t i=1; i<data_sorted.size(); i++){
+//        if(data_sorted[i] == data_sorted[i-1]){
+//            if(add_duplicates){
+//                data[data_size-1].val += data_sorted[i].val;
+//            }else{
+//                data[data_size-1] = data_sorted[i];
+//            }
+//        }else{
+//            data[data_size] = data_sorted[i];
+//            data_size++;
+//        }
+//    }
+
+    if(add_duplicates){
+        for(nnz_t i = 1; i < data_sorted.size(); i++) {
+            if (data_sorted[i] == data_sorted[i - 1]) {
+                data[data_size - 1].val += data_sorted[i].val;
+            } else {
+                data[data_size] = data_sorted[i];
+                data_size++;
             }
-        }else{
-            data[data_size] = data_sorted[i];
-            data_size++;
+        }
+    } else {
+        for(nnz_t i=1; i<data_sorted.size(); i++){
+            if(data_sorted[i] == data_sorted[i - 1]){
+                data[data_size - 1] = data_sorted[i];
+            }else{
+                data[data_size] = data_sorted[i];
+                data_size++;
+            }
         }
     }
 
