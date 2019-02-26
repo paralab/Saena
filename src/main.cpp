@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
 */
 
     // *************************** test for saena_vector ****************************
-
+/*
     saena::vector v1(comm);
     if(rank == 0){
         v1.set(0, 0.2);
@@ -159,6 +159,7 @@ int main(int argc, char* argv[]){
     }
 
     v1.assemble();
+*/
 
 //    std::vector<double> v2;
 //    v1.get_vec(v2);

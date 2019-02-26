@@ -20,7 +20,7 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
 
     // ************** check rhs size **************
 
-    index_t rhs_size_local = rhs0.size(), rhs_size_total;
+    index_t rhs_size_local = (index_t)rhs0.size(), rhs_size_total;
     MPI_Allreduce(&rhs_size_local, &rhs_size_total, 1, MPI_UNSIGNED, MPI_SUM, comm);
     if(grids[0].A->Mbig != rhs_size_total){
         if(rank==0) printf("Error: size of LHS (=%u) and RHS (=%u) are not equal!\n", grids[0].A->Mbig,rhs_size_total);
@@ -33,8 +33,8 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     // ************** repartition rhs, based on A.split **************
 
     std::vector<index_t> rhs_init_partition(nprocs);
-    rhs_init_partition[rank] = rhs0.size();
-    index_t temp = rhs0.size();
+    rhs_init_partition[rank] = (index_t)rhs0.size();
+    auto temp = (index_t)rhs0.size();
 
     MPI_Allgather(&temp, 1, MPI_UNSIGNED, &*rhs_init_partition.begin(), 1, MPI_UNSIGNED, comm);
 //    MPI_Alltoall(&*grids[0].rhs_init_partition.begin(), 1, MPI_INT, &*grids[0].rhs_init_partition.begin(), 1, MPI_INT, grids[0].comm);
@@ -94,8 +94,9 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
         grids[0].scount[start_proc] = grids[0].A->split[start_proc+1] - init_partition_scan[rank];
         grids[0].scount[end_proc] = init_partition_scan[rank+1] - grids[0].A->split[end_proc];
 
-        for(int i = start_proc+1; i < end_proc; i++)
+        for(int i = start_proc+1; i < end_proc; i++){
             grids[0].scount[i] = grids[0].A->split[i+1] - grids[0].A->split[i];
+        }
     } else if(start_proc == end_proc)
         grids[0].scount[start_proc] = init_partition_scan[rank+1] - init_partition_scan[rank];
     else{
@@ -131,8 +132,8 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
 
     if(repartition){
         grids[0].rhs.resize(grids[0].A->split[rank+1] - grids[0].A->split[rank]);
-        MPI_Alltoallv(&*rhs0.begin(), &grids[0].scount[0], &grids[0].sdispls[0], MPI_DOUBLE,
-                      &*grids[0].rhs.begin(), &grids[0].rcount[0], &grids[0].rdispls[0], MPI_DOUBLE, comm);
+        MPI_Alltoallv(&rhs0[0],         &grids[0].scount[0], &grids[0].sdispls[0], MPI_DOUBLE,
+                      &grids[0].rhs[0], &grids[0].rcount[0], &grids[0].rdispls[0], MPI_DOUBLE, comm);
     } else{
         grids[0].rhs = rhs0;
     }
