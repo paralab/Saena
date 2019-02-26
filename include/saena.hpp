@@ -87,10 +87,8 @@ namespace saena {
         int add_duplicates(bool add);
 
         int assemble();
-//        int assemble_no_scale();
 //        int assemble_writeToFile();
 //        int assemble_writeToFile(const char *folder_name);
-//        int assemble_band_matrix();
 
         int get_vec(std::vector<double> &vec);
         vector* get_internal_vector();
