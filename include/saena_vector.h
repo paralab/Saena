@@ -37,6 +37,7 @@ public:
     std::set<vecEntry>    data_set;
     std::vector<vecEntry> data;
 //    std::vector<double>   val;
+    std::vector<index_t> orig_order; // save the input order
 
 
     saena_vector();

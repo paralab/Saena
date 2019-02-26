@@ -22,6 +22,8 @@ int saena_vector::set_rep_dup(index_t row, value_t val){
 //        entry.emplace_back(row, val);
 //    }
 
+    orig_order.emplace_back(row);
+
     vecEntry temp_new = vecEntry(row, val);
     std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
 
@@ -45,6 +47,8 @@ int saena_vector::set_add_dup(index_t row, value_t val){
 
     // if there are duplicates with different values on two different processors, what should happen?
     // which one should be removed? We do it randomly.
+
+    orig_order.emplace_back(row);
 
     vecEntry temp_old;
     vecEntry temp_new = vecEntry(row, val);
