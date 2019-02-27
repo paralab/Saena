@@ -67,6 +67,7 @@ int main(int argc, char* argv[]){
 //    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
 
 //    petsc_viewer(A.get_internal_matrix());
+//    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
 
     // *************************** set rhs: Laplacian ****************************
 
@@ -185,6 +186,10 @@ int main(int argc, char* argv[]){
 //    std::vector<double> v2;
 //    v1.get_vec(v2);
 //    print_vector(v2, -1, "v2", comm);
+
+    std::vector<double> v3;
+    rhs2.return_vec(u, v3);
+//    print_vector(v3, -1, "v3", comm);
 
     // *************************** experiment for compute_coarsen ****************************
 /*

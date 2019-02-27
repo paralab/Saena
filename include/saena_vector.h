@@ -81,8 +81,8 @@ public:
     int get_vec(std::vector<double> &vec);
     int print_entry(int ran);
 
+    int return_vec(std::vector<double> &u);
     int return_vec(std::vector<double> &u1, std::vector<double> &u2);
-
 };
 
 #endif //SAENA_SAENA_VECTOR_H

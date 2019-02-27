@@ -5,6 +5,7 @@
 #include "restrict_matrix.h"
 #include "saena_matrix_dense.h"
 #include "saena_matrix.h"
+#include "saena_vector.h"
 
 #include <vector>
 #include <mpi.h>
@@ -30,6 +31,7 @@ public:
     prolong_matrix P;
     restrict_matrix R;
     std::vector<value_t> rhs;
+    saena_vector *rhs_orig;
     int currentLevel, maxLevel;
     float row_reduction_min = 0;
     Grid* coarseGrid;

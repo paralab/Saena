@@ -1018,8 +1018,8 @@ int saena_object::solve(std::vector<value_t>& u){
 
     // ************** repartition u back **************
 
-    if(repartition)
-        repartition_back_u(u);
+//    if(repartition)
+//        repartition_back_u(u);
 
 //    print_vector(u, -1, "u", comm);
 
@@ -1233,21 +1233,21 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         // sort entries in row-major
         std::vector<cooEntry> entry_temp = A_coarsest->entry;
         std::sort(entry_temp.begin(), entry_temp.end(), row_major);
-//    print_vector(entry_temp, -1, "entry_temp", comm);
+//        print_vector(entry_temp, -1, "entry_temp", comm);
 
         index_t fst_row = A_coarsest->split[rank_coarsest];
         std::vector<int> nnz_per_row(m_loc, 0);
 
-        auto *rowptr = (int_t *) intMalloc_dist(m_loc + 1);
+        auto *rowptr    = (int_t *) intMalloc_dist(m_loc + 1);
         auto *nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
-        auto *colind = (int_t *) intMalloc_dist(nnz_loc);
+        auto *colind    = (int_t *) intMalloc_dist(nnz_loc);
 
         // Do this line to avoid this subtraction for each entry in the next "for" loop.
         int *nnz_per_row_p = &nnz_per_row[0] - fst_row;
 
         for (nnz_t i = 0; i < nnz_loc; i++) {
             nzval_loc[i] = entry_temp[i].val;
-//        nnz_per_row[entry_temp[i].row - fst_row]++;
+//            nnz_per_row[entry_temp[i].row - fst_row]++;
             nnz_per_row_p[entry_temp[i].row]++;
             colind[i] = entry_temp[i].col;
         }
@@ -1310,8 +1310,9 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         scale_vector(u, grids[0].A->inv_sq_diag);
 
         // repartition u back
-        if(repartition)
-            repartition_back_u(u);
+//        if(repartition){
+//            repartition_back_u(u);
+//        }
 
         return 0;
     }
@@ -1421,8 +1422,9 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
 //    print_vector(u, 2, "final u before repartition_back_u", comm);
 
-    if(repartition)
-        repartition_back_u(u);
+//    if(repartition){
+//        repartition_back_u(u);
+//    }
 
 #ifdef __DEBUG1__
     if(verbose_solve){
