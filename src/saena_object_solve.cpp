@@ -1077,7 +1077,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 #endif
 
     // ************** create matrix in SuperLU **************
-
+/*
     saena_matrix *A_coarsest = &grids.back().Ac;
 
     if(A_coarsest->active) {
@@ -1106,13 +1106,13 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 //    int      iam, info, ldb, nrhs;
         int iam, ldb;
 
-        nprow = nprocs_coarsest;  /* Default process rows.      */
-        npcol = 1;  /* Default process columns.   */
-//    nrhs  = 1;  /* Number of right-hand side. */
+        nprow = nprocs_coarsest;  // Default process rows.
+        npcol = 1;  // Default process columns.
+//    nrhs  = 1;  // Number of right-hand side.
 
-        /* ------------------------------------------------------------
-           INITIALIZE MPI ENVIRONMENT.
-           ------------------------------------------------------------*/
+        // ------------------------------------------------------------
+        //   INITIALIZE MPI ENVIRONMENT.
+        // ------------------------------------------------------------
 //    MPI_Init( &argc, &argv );
 
 //    char* file_name(argv[5]);
@@ -1121,40 +1121,40 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 //    A_saena.print_entry(-1);
 //    if(rank==0) printf("after matrix assemble.\n");
 
-        /*
-        // Parse command line argv[].
-        for (cpp = argv+1; *cpp; ++cpp) {
-            if ( **cpp == '-' ) {
-                c = *(*cpp+1);
-                ++cpp;
-                switch (c) {
-                    case 'h':
-                        printf("Options:\n");
-                        printf("\t-r <int>: process rows    (default %4d)\n", nprow);
-                        printf("\t-c <int>: process columns (default %4d)\n", npcol);
-                        exit(0);
-                        break;
-                    case 'r': nprow = atoi(*cpp);
-                        break;
-                    case 'c': npcol = atoi(*cpp);
-                        break;
-                }
-            } else { // Last arg is considered a filename
-    //            if ( !(fp = fopen(*cpp, "r")) ) {
-    //                ABORT("File does not exist");
-    //            }
 
-                saena::matrix A_saena (*cpp, comm);
-                A_saena.assemble();
-                A_saena.print_entry(-1);
-                if(rank==0) printf("after matrix assemble.\n");
-                break;
-            }
-        }
-    */
-        /* ------------------------------------------------------------
-           INITIALIZE THE SUPERLU PROCESS GRID.
-           ------------------------------------------------------------*/
+        // Parse command line argv[].
+//        for (cpp = argv+1; *cpp; ++cpp) {
+//            if ( **cpp == '-' ) {
+//                c = *(*cpp+1);
+//                ++cpp;
+//                switch (c) {
+//                    case 'h':
+//                        printf("Options:\n");
+//                        printf("\t-r <int>: process rows    (default %4d)\n", nprow);
+//                        printf("\t-c <int>: process columns (default %4d)\n", npcol);
+//                        exit(0);
+//                        break;
+//                    case 'r': nprow = atoi(*cpp);
+//                        break;
+//                    case 'c': npcol = atoi(*cpp);
+//                        break;
+//                }
+//            } else { // Last arg is considered a filename
+//    //            if ( !(fp = fopen(*cpp, "r")) ) {
+//    //                ABORT("File does not exist");
+//    //            }
+//
+//                saena::matrix A_saena (*cpp, comm);
+//                A_saena.assemble();
+//                A_saena.print_entry(-1);
+//                if(rank==0) printf("after matrix assemble.\n");
+//                break;
+//            }
+//        }
+
+        // ------------------------------------------------------------
+        //   INITIALIZE THE SUPERLU PROCESS GRID.
+        // ------------------------------------------------------------
 
 #ifdef __DEBUG1__
         if (verbose_solve_coarse) {
@@ -1196,9 +1196,9 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         CHECK_MALLOC(iam, "Enter main()");
 #endif
 
-        /* ------------------------------------------------------------
-           PASS THE MATRIX FROM SAENA
-           ------------------------------------------------------------*/
+        // ------------------------------------------------------------
+        //   PASS THE MATRIX FROM SAENA
+        // ------------------------------------------------------------
 
         // Set up the local A_SLU in NR_loc format
 //    dCreate_CompRowLoc_Matrix_dist(A_SLU, m, n, nnz_loc, m_loc, fst_row,
@@ -1274,6 +1274,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
 //    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
     }
+*/
 
     // ************** solve **************
 
@@ -1405,7 +1406,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 #endif
 
     // ************** destroy matrix from SuperLU **************
-
+/*
     if(A_coarsest->active) {
         Destroy_CompRowLoc_Matrix_dist(&A_SLU2);
 
@@ -1413,7 +1414,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         out:
         superlu_gridexit(&superlu_grid);
     }
-
+*/
     // ************** scale u **************
 
     scale_vector(u, grids[0].A->inv_sq_diag);

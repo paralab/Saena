@@ -3,7 +3,7 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-#include "petsc_functions.h"
+//#include "petsc_functions.h"
 //#include "combblas_functions.h"
 
 #include <iostream>
