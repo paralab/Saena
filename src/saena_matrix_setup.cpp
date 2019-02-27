@@ -174,29 +174,17 @@ int saena_matrix::remove_duplicates() {
 //    printf("rank = %d \t\t\t after  sort: data_sorted size = %lu\n", rank, data_sorted.size());
 //    print_vector(data_sorted, -1, "data_sorted", comm);
 
+    // remove duplicates
+    // -----------------------
+
     // size of data may be smaller because of duplicates. In that case its size will be reduced after finding the exact size.
     data.resize(data_sorted.size());
-
     // put the first element of data_unsorted to data.
     nnz_t data_size = 0;
     if(!data_sorted.empty()){
         data[0] = data_sorted[0];
         data_size++;
     }
-
-//    for(nnz_t i=1; i<data_sorted.size(); i++){
-//        if(data_sorted[i] == data_sorted[i-1]){
-//            if(add_duplicates){
-//                data[data_size-1].val += data_sorted[i].val;
-//            }else{
-//                data[data_size-1] = data_sorted[i];
-//            }
-//        }else{
-//            data[data_size] = data_sorted[i];
-//            data_size++;
-//        }
-//    }
-
     if(add_duplicates){
         for(nnz_t i = 1; i < data_sorted.size(); i++) {
             if (data_sorted[i] == data_sorted[i - 1]) {
@@ -207,7 +195,7 @@ int saena_matrix::remove_duplicates() {
             }
         }
     } else {
-        for(nnz_t i=1; i<data_sorted.size(); i++){
+        for(nnz_t i = 1; i < data_sorted.size(); i++){
             if(data_sorted[i] == data_sorted[i - 1]){
                 data[data_size - 1] = data_sorted[i];
             }else{
@@ -216,10 +204,30 @@ int saena_matrix::remove_duplicates() {
             }
         }
     }
-
     data.resize(data_size);
     data.shrink_to_fit();
 
+    // todo: replace the previous part with this
+//    nnz_t data_sorted_size_minus1 = data_sorted.size()-1;
+//    if(add_duplicates){
+//        for(nnz_t i = 0; i < data_sorted.size(); i++){
+//            data.emplace_back(data_sorted[i]);
+//            while(i < data_sorted_size_minus1 && data_sorted[i] == data_sorted[i+1]){ // values of entries with the same row should be added.
+//                //            std::cout << data_sorted[i] << "\t" << data_sorted[i+1] << std::endl;
+//                data.back().val += data_sorted[++i].val;
+//            }
+//        }
+//    } else {
+//        for(nnz_t i = 0; i < data_sorted.size(); i++){
+//            data.emplace_back(data_sorted[i]);
+//            while(i < data_sorted_size_minus1 && data_sorted[i] == data_sorted[i+1]){ // values of entries with the same row should be added.
+//                ++i;
+//            }
+//        }
+//    }
+
+    // check for dupliactes on boundary points of the processors
+    // ---------------------------------------------------------
     // receive first element of your left neighbor and check if it is equal to your last element.
     cooEntry first_element_neighbor;
     if(rank != nprocs-1)
@@ -662,6 +670,8 @@ int saena_matrix::set_off_on_diagonal(){
     // on-diagonal (local) elements are elements that correspond to vector elements which are local to this process.
     // off-diagonal (remote) elements correspond to vector elements which should be received from another processes.
 
+    // todo: check which variables here is not required later and can be freed at the end of this function.
+
     if(active){
         int nprocs, rank;
         MPI_Comm_size(comm, &nprocs);
@@ -849,8 +859,8 @@ int saena_matrix::set_off_on_diagonal(){
                 vIndex[i] -= split[rank];
             }
 
-            // vSend = vector values to send to other procs
-            // vecValues = vector values that received from other procs
+            // vSend     = vector values to send to other procs
+            // vecValues = vector values to be received from other procs
             // These will be used in matvec and they are set here to reduce the time of matvec.
             vSend.resize(vIndexSize);
             vecValues.resize(recvSize);

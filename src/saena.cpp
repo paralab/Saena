@@ -305,6 +305,9 @@ int saena::vector::get_vec(std::vector<double> &vec){
     return 0;
 }
 
+saena_vector* saena::vector::get_internal_vector(){
+    return m_pImpl;
+}
 
 // ******************************* options *******************************
 
@@ -418,8 +421,8 @@ int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
     return 0;
 }
 
-int saena::amg::set_rhs(std::vector<value_t> rhs){
-    m_pImpl->set_repartition_rhs(rhs);
+int saena::amg::set_rhs(saena::vector &rhs){
+    m_pImpl->set_repartition_rhs(rhs.get_internal_vector());
     return 0;
 }
 

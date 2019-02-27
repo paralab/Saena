@@ -78,6 +78,27 @@ int main(int argc, char* argv[]){
 
 //    print_vector(rhs, -1, "rhs", comm);
 
+    // ********** put rhs in saena::vector **********
+
+    std::vector<index_t> split_temp(nprocs);
+    split_temp[rank] = rhs.size();
+    auto temp1 = (index_t)rhs.size();
+    MPI_Allgather(&temp1, 1, MPI_UNSIGNED, &*split_temp.begin(), 1, MPI_UNSIGNED, comm);
+
+    std::vector<index_t> split_vec(nprocs+1);
+    split_vec[0] = 0;
+    for(index_t i = 1; i < nprocs + 1; i++){
+        split_vec[i] = split_vec[i-1] + split_temp[i-1];
+    }
+//    print_vector(split_vec, 0, "split_vec", comm);
+
+    saena::vector rhs2(comm);
+    for(index_t i = 0; i < rhs.size(); i++){
+//        if(rank==0) printf("%u \t%d \t%u \t%e\n", i, split_vec[rank], i + split_vec[rank], rhs[i]);
+        rhs2.set(i + split_vec[rank], rhs[i]);
+    }
+    rhs2.assemble();
+
     // *************************** set u0 ****************************
 
     std::vector<double> u(num_local_row, 0);
@@ -111,7 +132,7 @@ int main(int argc, char* argv[]){
 //    solver.set_sample_sz_percent(sm_sz_prct);
 
     solver.set_matrix(&A, &opts);
-    solver.set_rhs(rhs);
+    solver.set_rhs(rhs2);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
@@ -121,7 +142,7 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 
     // *************************** AMG - Solve ****************************
-/*
+
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
@@ -132,7 +153,7 @@ int main(int argc, char* argv[]){
     print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
-*/
+
     // *************************** matrix-matrix product ****************************
 /*
     saena::amg solver;

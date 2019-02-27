@@ -9,14 +9,24 @@
 #include <cstdlib>
 #include <fstream>
 #include <mpi.h>
+#include <saena_vector.h>
 
 
-int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
+int saena_object::set_repartition_rhs(saena_vector *rhs1){
 
     MPI_Comm comm = grids[0].A->comm;
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
+
+    // ************** set variables **************
+
+    rhs1->split = &grids[0].A->split[0];
+    std::vector<double> rhs0;
+    rhs1->get_vec(rhs0);
+
+//    print_vector(grids[0].A->split, 0, "split", comm);
+//    print_vector(rhs0, -1, "rhs0", comm);
 
     // ************** check rhs size **************
 
@@ -27,8 +37,6 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
         MPI_Finalize();
         return -1;
     }
-
-//    print_vector(grids[0].A->split, 1, "split", comm);
 
     // ************** repartition rhs, based on A.split **************
 
@@ -130,6 +138,7 @@ int saena_object::set_repartition_rhs(std::vector<value_t>& rhs0){
     MPI_Allreduce(&repartition_local, &repartition, 1, MPI_CXX_BOOL, MPI_LOR, comm);
 //    printf("rank = %d, repartition_local = %d, repartition = %d \n", rank, repartition_local, repartition);
 
+    // todo: replace Alltoall with a for loop of send and recv.
     if(repartition){
         grids[0].rhs.resize(grids[0].A->split[rank+1] - grids[0].A->split[rank]);
         MPI_Alltoallv(&rhs0[0],         &grids[0].scount[0], &grids[0].sdispls[0], MPI_DOUBLE,
@@ -159,6 +168,7 @@ int saena_object::repartition_u(std::vector<value_t>& u0){
 
     // ************** repartition u, based on A.split **************
 
+    // todo: replace Alltoall with a for loop of send and recv.
     u0.resize(grids[0].A->split[rank+1] - grids[0].A->split[rank]);
     MPI_Alltoallv(&u_temp[0], &grids[0].scount[0], &grids[0].sdispls[0], MPI_DOUBLE,
                   &u0[0],     &grids[0].rcount[0], &grids[0].rdispls[0], MPI_DOUBLE, grids[0].A->comm);
@@ -203,6 +213,8 @@ int saena_object::repartition_back_u(std::vector<value_t>& u0){
     u0.resize(rhs_init_size);
 //    std::fill(u0.begin(), u0.end(), -111);
 //    print_vector(u_temp, 2, "u_temp", grids[0].A->comm);
+
+    // todo: replace Alltoall with a for loop of send and recv.
     MPI_Alltoallv(&u_temp[0], &grids[0].rcount[0], &sdispls[0], MPI_DOUBLE,
                   &u0[0],     &grids[0].scount[0], &rdispls[0], MPI_DOUBLE, comm);
 

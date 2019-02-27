@@ -1,8 +1,10 @@
 #ifndef SAENA_SAENA_VECTOR_H
 #define SAENA_SAENA_VECTOR_H
 
-#include "mpi.h"
 #include "aux_functions.h"
+
+#include <set>
+#include "mpi.h"
 #include <boost/numeric/ublas/vector.hpp>
 
 /**
@@ -37,8 +39,33 @@ public:
     std::set<vecEntry>    data_set;
     std::vector<vecEntry> data;
 //    std::vector<double>   val;
-    std::vector<index_t> orig_order; // save the input order
 
+    std::vector<index_t> orig_order; // save the input order
+    std::vector<index_t> remote_idx; // indices that should receive their value from other procs
+//    std::vector<index_t> split;
+    index_t *split; // point to the split of input matrix. size of it is (size of comm + 1).
+
+    index_t vIndexSize = 0;
+    index_t recvSize   = 0;
+    std::vector<index_t> vIndex;
+    std::vector<value_t> vSend;
+    std::vector<value_t> vecValues;
+
+    int numRecvProc = 0;
+    int numSendProc = 0;
+    std::vector<int> vdispls;
+    std::vector<int> rdispls;
+    std::vector<int> recvCount;
+    std::vector<int> recvCountScan;
+    std::vector<int> sendCount;
+    std::vector<int> sendCountScan;
+    std::vector<int> recvProcRank;
+    std::vector<int> recvProcCount;
+    std::vector<int> sendProcRank;
+    std::vector<int> sendProcCount;
+    std::vector<index_t> vElement_remote;
+
+    bool verbose_return_vec = false;
 
     saena_vector();
     explicit saena_vector(MPI_Comm com);
@@ -52,7 +79,9 @@ public:
     int assemble();
 
     int get_vec(std::vector<double> &vec);
-//    int print_entry(int ran);
+    int print_entry(int ran);
+
+    int return_vec(std::vector<double> &u1, std::vector<double> &u2);
 
 };
 

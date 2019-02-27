@@ -5,6 +5,7 @@
 #include "superlu_defs.h"
 
 #include "aux_functions.h"
+#include "saena_vector.h"
 
 #include <vector>
 #include <string>
@@ -32,7 +33,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 1; // fine grid is level 0.
+    int max_level = 10; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -153,7 +154,7 @@ public:
                        nnz_t A_nnz, nnz_t B_nnz,
                        index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                        index_t B_col_size, index_t B_col_offset,
-                       const index_t *nnzPerColScan_leftStart, const index_t *nnzPerColScan_leftEnd,
+                       const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
                        const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
                        MPI_Comm comm);
 
@@ -185,7 +186,7 @@ public:
     int solve_coarsest_SuperLU(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
 //    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
 
-    int set_repartition_rhs(std::vector<value_t>& rhs);
+    int set_repartition_rhs(saena_vector *rhs);
 
     // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
     // then, repartition_back_u() at the end of the solve function to convert the solution to the initial partition.

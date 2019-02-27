@@ -96,7 +96,7 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
         // Wait for the receive communication to finish.
         MPI_Waitall(numRecvProc, requests, statuses);
 
-//    print_vector(vecValues, 1, "vecValues", comm);
+//        print_vector(vecValues, 1, "vecValues", comm);
 
         // remote loop
         // -----------
@@ -183,7 +183,7 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
     double t3_start = omp_get_wtime();
     // iSend your data, and iRecv from others
     MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
-    MPI_Status* statuses = new MPI_Status[numSendProc+numRecvProc];
+    MPI_Status* statuses  = new MPI_Status[numSendProc+numRecvProc];
 
     for(int i = 0; i < numRecvProc; i++)
         MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
