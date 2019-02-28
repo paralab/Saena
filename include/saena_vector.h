@@ -68,7 +68,7 @@ public:
     std::vector<int> sendProcCount;
     std::vector<index_t> vElement_remote;
 
-    bool verbose_return_vec = false;
+    bool verbose_return_vec = true;
 
     saena_vector();
     explicit saena_vector(MPI_Comm com);
