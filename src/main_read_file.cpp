@@ -99,8 +99,8 @@ int main(int argc, char* argv[]){
     // ********** 4 - set rhs_std: read from file **********
 
     char* Vname(argv[2]);
-    saena::read_vector_file(rhs_std, A, Vname, comm);
-//    read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
+//    saena::read_vector_file(rhs_std, A, Vname, comm);
+    read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
 
     // set rhs_std
 //    A.get_internal_matrix()->matvec(v, rhs_std);
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-    rhs.print_entry(0);
+//    rhs.print_entry(-1);
 
     // ********** print rhs_std **********
 

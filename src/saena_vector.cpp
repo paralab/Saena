@@ -635,7 +635,7 @@ int saena_vector::print_entry(int ran){
     index_t iter = 0;
     if(ran >= 0) {
         if (rank == ran) {
-            printf("\nmatrix on proc = %d \n", ran);
+            printf("\nvector on proc = %d \n", ran);
             printf("nnz = %lu \n", data.size());
             for (auto i:data) {
                 std::cout << iter << "\t" << i << std::endl;
@@ -646,7 +646,7 @@ int saena_vector::print_entry(int ran){
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("\nmatrix on proc = %d \n", proc);
+                printf("\nvector on proc = %d \n", proc);
                 printf("nnz = %lu \n", data.size());
                 for (auto i:data) {
                     std::cout << iter << "\t" << i << std::endl;

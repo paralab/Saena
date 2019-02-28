@@ -97,8 +97,8 @@ namespace saena {
         int return_vec(std::vector<double> &u1, std::vector<double> &u2);
         saena_vector* get_internal_vector();
         MPI_Comm get_comm();
-        index_t get_num_rows();
-        index_t get_num_local_rows();
+//        index_t get_num_rows();
+//        index_t get_num_local_rows();
 //        nnz_t get_nnz();
 //        nnz_t get_local_nnz();
 
@@ -126,7 +126,7 @@ namespace saena {
     public:
         options();
         options(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
-        options(char* name); // to set parameters from an xml file
+        explicit options(char* name); // to set parameters from an xml file
         ~options();
 
         void set(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);

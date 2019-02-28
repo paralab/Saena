@@ -950,7 +950,7 @@ int saena_object::solve(std::vector<value_t>& u){
     MPI_Comm_rank(comm, &rank);
 
     // ************** check u size **************
-
+/*
     index_t u_size_local = u.size(), u_size_total;
     MPI_Allreduce(&u_size_local, &u_size_total, 1, MPI_UNSIGNED, MPI_SUM, grids[0].A->comm);
     if(grids[0].A->Mbig != u_size_total){
@@ -958,11 +958,16 @@ int saena_object::solve(std::vector<value_t>& u){
         MPI_Finalize();
         return -1;
     }
-
+*/
     // ************** repartition u **************
-
+/*
     if(repartition)
         repartition_u(u);
+*/
+
+    // ************** initialize u **************
+
+    u.assign(grids[0].A->M, 0);
 
     // ************** solve **************
 
@@ -970,7 +975,7 @@ int saena_object::solve(std::vector<value_t>& u){
 //    current_dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
-    std::vector<value_t > r(grids[0].A->M);
+    std::vector<value_t> r(grids[0].A->M);
     grids[0].A->residual(u, grids[0].rhs, r);
     double initial_dot, current_dot;
     dotProduct(r, r, &initial_dot, comm);
@@ -1042,10 +1047,9 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     }
 #endif
 
-    std::fill(u.begin(), u.end(), 0);
 
     // ************** check u size **************
-
+/*
     index_t u_size_local = u.size();
     index_t u_size_total;
     MPI_Allreduce(&u_size_local, &u_size_total, 1, MPI_UNSIGNED, MPI_SUM, grids[0].A->comm);
@@ -1062,9 +1066,14 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         MPI_Barrier(comm);
     }
 #endif
+*/
 
     // ************** repartition u **************
+    // todo: using repartition(), give the user the option of passing an initial guess for u. in that case comment
+    //  out "initialize u" part.
 
+/*
+    std::fill(u.begin(), u.end(), 0);
     if(repartition)
         repartition_u(u);
 
@@ -1075,6 +1084,11 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         MPI_Barrier(comm);
     }
 #endif
+*/
+
+    // ************** initialize u **************
+
+    u.assign(grids[0].A->M, 0);
 
     // ************** create matrix in SuperLU **************
 /*
