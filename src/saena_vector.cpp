@@ -16,59 +16,82 @@ void saena_vector::set_comm(MPI_Comm com){
 saena_vector::~saena_vector() = default;
 
 
-int saena_vector::set_rep_dup(index_t row, value_t val){
+int saena_vector::set_idx_offset(const index_t offset){
+    idx_offset = offset;
+    return 0;
+}
+
+
+int saena_vector::set_dup_flag(bool add){
+    add_duplicates = add;
+    return 0;
+}
+
+
+int saena_vector::set(index_t row, value_t val){
 
 //    if(fabs(val) > 1e-14){
 //        entry.emplace_back(row, val);
 //    }
 
+    row += idx_offset;
     orig_order.emplace_back(row);
 
-    vecEntry temp_new = vecEntry(row, val);
-    std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
+    if(add_duplicates){
 
-    if (!p.second){
-        auto hint = p.first; // hint is std::set<cooEntry>::iterator
-        hint++;
-        data_set.erase(p.first);
-        // in the case of duplicate, if the new value is zero, remove the older one and don't insert the zero.
-//        if(!almost_zero(val))
-        data_set.insert(hint, temp_new);
-    }
+        vecEntry temp_old;
+        vecEntry temp_new = vecEntry(row, val);
+        std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
 
-    // if the entry is zero and it was not a duplicate, just erase it.
-//    if(p.second && almost_zero(val))
-//        data_set.erase(p.first);
+        if (!p.second){
+            temp_old = *(p.first);
+            temp_new.val += temp_old.val;
 
-    return 0;
-}
+//            std::set<cooEntry_row>::iterator hint = p.first;
+            auto hint = p.first;
+            hint++;
+            data_set.erase(p.first);
+            data_set.insert(hint, temp_new);
+        }
 
-int saena_vector::set_add_dup(index_t row, value_t val){
+    } else {
 
-    // if there are duplicates with different values on two different processors, what should happen?
-    // which one should be removed? We do it randomly.
+        vecEntry temp_new = vecEntry(row, val);
+        std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
 
-    orig_order.emplace_back(row);
+        if (!p.second){
+            auto hint = p.first; // hint is std::set<cooEntry>::iterator
+            hint++;
+            data_set.erase(p.first);
+//            if(!almost_zero(val))
+            data_set.insert(hint, temp_new);
+        }
 
-    vecEntry temp_old;
-    vecEntry temp_new = vecEntry(row, val);
+        // if the entry is zero and it was not a duplicate, just erase it.
+//        if(p.second && almost_zero(val))
+//            data_set.erase(p.first);
 
-    std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
-
-    if (!p.second){
-        temp_old = *(p.first);
-        temp_new.val += temp_old.val;
-
-//        std::set<cooEntry_row>::iterator hint = p.first;
-        auto hint = p.first;
-        hint++;
-        data_set.erase(p.first);
-        data_set.insert(hint, temp_new);
     }
 
     return 0;
 }
 
+
+int saena_vector::set(value_t* val, index_t size, index_t offset){
+
+    for(index_t i = 0; i < size; i++){
+        set(i + offset, val[i]);
+    }
+
+    return 0;
+}
+
+int saena_vector::set(value_t* val, index_t size){
+
+    set(val, size, 0);
+
+    return 0;
+}
 
 int saena_vector::remove_duplicates() {
     // parameters needed for this function:
@@ -409,7 +432,7 @@ int saena_vector::return_vec(std::vector<double> &u2){
 
     // todo: check where is the best to compute some of these variables, especially if this function is being called multiple times.
     // todo: check which variables here are not required later and can be freed at the end of this function.
-
+    MPI_Comm comm = MPI_COMM_WORLD;
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -418,11 +441,12 @@ int saena_vector::return_vec(std::vector<double> &u2){
         MPI_Barrier(comm);
         printf("return_vec: rank = %d, step1 \n", rank);
         MPI_Barrier(comm);
+//    print_vector(u2, -1, "u2", comm);
+//    print_vector(orig_order, -1, "orig_order", comm);
     }
 
     // copy u2 to u1
     std::vector<double> u1 = u2;
-//    print_vector(u1, -1, "u1", comm);
 
     u2.resize(orig_order.size());
 
@@ -601,8 +625,36 @@ int saena_vector::return_vec(std::vector<double> &u2){
 
 int saena_vector::print_entry(int ran){
 
-    for(auto i:data){
-        std::cout << i << std::endl;
+    // if ran >= 0 print_entry the vector entries on proc with rank = ran
+    // otherwise print the vector entries on all processors in order. (first on proc 0, then proc 1 and so on.)
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    index_t iter = 0;
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\nmatrix on proc = %d \n", ran);
+            printf("nnz = %lu \n", data.size());
+            for (auto i:data) {
+                std::cout << iter << "\t" << i << std::endl;
+                iter++;
+            }
+        }
+    } else{
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("\nmatrix on proc = %d \n", proc);
+                printf("nnz = %lu \n", data.size());
+                for (auto i:data) {
+                    std::cout << iter << "\t" << i << std::endl;
+                    iter++;
+                }
+            }
+            MPI_Barrier(comm);
+        }
     }
 
     return 0;

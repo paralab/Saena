@@ -249,13 +249,15 @@ saena::vector::vector() {
 // copy constructor
 saena::vector::vector(const saena::vector &B) {
     m_pImpl = new saena_vector(*B.m_pImpl);
-    add_dup = B.add_dup;
+    m_pImpl->set_dup_flag(B.m_pImpl->add_duplicates);
+//    add_dup = B.add_dup;
 }
 
 saena::vector& saena::vector::operator=(const saena::vector &B) {
     delete m_pImpl;
     m_pImpl = new saena_vector(*B.m_pImpl);
-    add_dup = B.add_dup;
+    m_pImpl->set_dup_flag(B.m_pImpl->add_duplicates);
+//    add_dup = B.add_dup;
     return *this;
 }
 
@@ -273,6 +275,12 @@ saena::vector::~vector() {
 }
 
 
+int saena::vector::set_idx_offset(const index_t offset){
+    m_pImpl->set_idx_offset(offset);
+    return 0;
+}
+
+
 //int saena::vector::read_file(const char *name) {
 //    m_pImpl->read_file(name);
 //    return 0;
@@ -285,13 +293,22 @@ saena::vector::~vector() {
 
 
 int saena::vector::set(index_t i, value_t val){
+    m_pImpl->set(i, val);
+    return 0;
+}
 
-    if (!add_dup) {
-        m_pImpl->set_rep_dup(i, val);
-    } else {
-        m_pImpl->set_add_dup(i, val);
-    }
+int saena::vector::set(value_t* val, index_t size, index_t offset){
+    m_pImpl->set(val, size, offset);
+    return 0;
+}
 
+int saena::vector::set(value_t* val, index_t size){
+    m_pImpl->set(val, size);
+    return 0;
+}
+
+int saena::vector::set_dup_flag(bool add){
+    m_pImpl->set_dup_flag(add);
     return 0;
 }
 
@@ -317,6 +334,12 @@ int saena::vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 saena_vector* saena::vector::get_internal_vector(){
     return m_pImpl;
 }
+
+int saena::vector::print_entry(int rank_){
+    m_pImpl->print_entry(rank_);
+    return 0;
+}
+
 
 // ******************************* options *******************************
 
@@ -429,6 +452,12 @@ int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
     m_pImpl->setup(A->get_internal_matrix());
     return 0;
 }
+
+
+//int saena::amg::set_rhs(std::vector<double> rhs){
+//    m_pImpl->set_repartition_rhs(rhs);
+//    return 0;
+//}
 
 int saena::amg::set_rhs(saena::vector &rhs){
     m_pImpl->set_repartition_rhs(rhs.get_internal_vector());
@@ -1198,5 +1227,28 @@ int saena::read_vector_file(std::vector<value_t>& v, saena::matrix &A, char *fil
 
 //    print_vector(v, -1, "v", comm);
 
+    return 0;
+}
+
+
+index_t saena::find_split(index_t loc_size, index_t &my_split, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    std::vector<index_t> split_temp(nprocs);
+    split_temp[rank] = loc_size;
+    MPI_Allgather(&loc_size, 1, MPI_UNSIGNED, &*split_temp.begin(), 1, MPI_UNSIGNED, comm);
+
+    std::vector<index_t> split_vec(nprocs+1);
+    split_vec[0] = 0;
+    for(index_t i = 1; i < nprocs + 1; i++){
+        split_vec[i] = split_vec[i-1] + split_temp[i-1];
+    }
+
+//    print_vector(split_vec, 0, "split_vec", comm);
+
+    my_split = split_vec[rank];
     return 0;
 }

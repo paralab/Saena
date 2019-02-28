@@ -1185,7 +1185,7 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
 int saena_matrix::print_entry(int ran){
 
     // if ran >= 0 print_entry the matrix entries on proc with rank = ran
-    // otherwise print_entry the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
+    // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);

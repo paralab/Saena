@@ -31,15 +31,18 @@ private:
 
 public:
 
-    MPI_Comm comm;
+    MPI_Comm comm = MPI_COMM_WORLD;
     index_t M;
     index_t Mbig;
 
     bool add_duplicates = false;
+    int set_dup_flag(bool add);
+
     std::set<vecEntry>    data_set;
     std::vector<vecEntry> data;
 //    std::vector<double>   val;
 
+    index_t idx_offset = 0;
     std::vector<index_t> orig_order; // save the input order
     std::vector<index_t> remote_idx; // indices that should receive their value from other procs
 //    std::vector<index_t> split;
@@ -72,9 +75,13 @@ public:
     ~saena_vector();
 
     void set_comm(MPI_Comm com);
-    int set_rep_dup(index_t row, value_t val); // replace duplicates
-    int set_add_dup(index_t row, value_t val); // add duplicates
+    int set_idx_offset(index_t offset);
+    int set(index_t row, value_t val); // replace duplicates
+//    int set_rep_dup(index_t row, value_t val); // replace duplicates
+//    int set_add_dup(index_t row, value_t val); // add duplicates
 //    int set(index_t *row, value_t *val, index_t size);
+    int set(value_t* val, index_t size, index_t offset);
+    int set(value_t* val, index_t size);
     int remove_duplicates();
     int assemble();
 

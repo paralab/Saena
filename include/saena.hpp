@@ -77,14 +77,17 @@ namespace saena {
 //        int read_file(const char *name, const std::string &input_type);
 
         void set_comm(MPI_Comm comm);
+        int set_idx_offset(index_t offset);
 
         int set(index_t i, value_t val); // set individual value
+        int set(value_t* val, index_t size, index_t offset); // set multiple values
+        int set(value_t* val, index_t size); // set multiple values
 //        int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local); // set multiple values
 //        int set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, value_t* val); // set contiguous block
 //        int set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local); // set generic block
 
-        bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
-        int add_duplicates(bool add);
+//        bool add_dup = false; // if false replace the duplicate, otherwise add the values together.
+        int set_dup_flag(bool add);
 
         int assemble();
 //        int assemble_writeToFile();
@@ -99,7 +102,7 @@ namespace saena {
 //        nnz_t get_nnz();
 //        nnz_t get_local_nnz();
 
-        int print(int ran);
+        int print_entry(int ran);
 
 //        int enable_shrink(bool val);
 
@@ -207,5 +210,6 @@ namespace saena {
     int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth);
 
     int read_vector_file(std::vector<value_t>& v, saena::matrix &A, char *file, MPI_Comm comm);
+    index_t find_split(index_t loc_size, index_t &my_split, MPI_Comm comm);
 }
 

@@ -74,40 +74,48 @@ int main(int argc, char* argv[]){
 
 //    petsc_viewer(A.get_internal_matrix());
 
-    // *************************** set rhs ****************************
+    // *************************** set rhs_std ****************************
 
+    saena::vector rhs(comm);
     unsigned int num_local_row = A.get_num_local_rows();
-    std::vector<double> rhs;
+    std::vector<double> rhs_std;
 
-    // ********** 1 - set rhs: random **********
+    // ********** 1 - set rhs_std: random **********
 
-//    rhs.resize(num_local_row);
-//    generate_rhs_old(rhs);
+//    rhs_std.resize(num_local_row);
+//    generate_rhs_old(rhs_std);
 
-    // ********** 2 - set rhs: ordered: 1, 2, 3, ... **********
+    // ********** 2 - set rhs_std: ordered: 1, 2, 3, ... **********
 
-//    rhs.resize(num_local_row);
+//    rhs_std.resize(num_local_row);
 //    for(index_t i = 0; i < A.get_num_local_rows(); i++)
-//        rhs[i] = i + 1 + A.get_internal_matrix()->split[rank];
+//        rhs_std[i] = i + 1 + A.get_internal_matrix()->split[rank];
 
-    // ********** 3 - set rhs: Laplacian **********
+    // ********** 3 - set rhs_std: Laplacian **********
 
     // don't set the size for this method
-//    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
+//    saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
 
-    // ********** 4 - set rhs: read from file **********
+    // ********** 4 - set rhs_std: read from file **********
 
     char* Vname(argv[2]);
-    saena::read_vector_file(rhs, A, Vname, comm);
-    read_vector_file(rhs, A.get_internal_matrix(), Vname, comm);
+    saena::read_vector_file(rhs_std, A, Vname, comm);
+//    read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
 
-    // set rhs
-//    A.get_internal_matrix()->matvec(v, rhs);
-//    rhs = v;
+    // set rhs_std
+//    A.get_internal_matrix()->matvec(v, rhs_std);
+//    rhs_std = v;
 
-    // ********** print rhs **********
+    index_t my_split;
+    saena::find_split((index_t)rhs_std.size(), my_split, comm);
 
-//    print_vector(rhs, -1, "rhs", comm);
+    rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
+    rhs.assemble();
+    rhs.print_entry(0);
+
+    // ********** print rhs_std **********
+
+//    print_vector(rhs_std, -1, "rhs_std", comm);
 
     // *************************** set u0 ****************************
 
@@ -120,9 +128,9 @@ int main(int argc, char* argv[]){
 //    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 400;
     double relative_tolerance = 1e-14;
-    std::string smoother      = "jacobi"; // choices: "jacobi", "chebyshev"
-    int preSmooth             = 1;
-    int postSmooth            = 1;
+    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
+    int preSmooth             = 3;
+    int postSmooth            = 3;
 
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");
@@ -149,7 +157,7 @@ int main(int argc, char* argv[]){
     print_time(t1, t2, "Setup:", comm);
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
-//    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
+//    print_vector(solver.get_object()->grids[0].rhs_std, -1, "rhs_std", comm);
 
     // *************************** AMG - Solve ****************************
 
@@ -165,7 +173,7 @@ int main(int argc, char* argv[]){
 //    print_vector(u, -1, "u", comm);
 
     // *************************** lazy-update ****************************
-
+/*
     saena::matrix B (comm);
     int lazy_step = 0;
 
@@ -230,7 +238,7 @@ int main(int argc, char* argv[]){
         t2 = MPI_Wtime();
         print_time(t1, t2, "Solve:", comm);
     }
-
+*/
     // *************************** check correctness of the solution ****************************
 
     // A is scaled. read it from the file and don't scale.
@@ -245,11 +253,11 @@ int main(int argc, char* argv[]){
     bool bool_correct = true;
     if(rank==0){
         printf("\nChecking the correctness of the Saena solution by Saena itself:\n");
-        printf("Au \t\trhs \t\tAu-rhs \n");
+        printf("Au \t\trhs_std \t\tAu-rhs_std \n");
         for(index_t i = 0; i < num_local_row; i++){
-            if(fabs(Au[i] - rhs[i]) > 1e-10){
+            if(fabs(Au[i] - rhs_std[i]) > 1e-10){
                 bool_correct = false;
-                printf("%.10f \t%.10f \t%.10f \n", Au[i], rhs[i], Au[i] - rhs[i]);
+                printf("%.10f \t%.10f \t%.10f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
             }
         }
         if(bool_correct)
@@ -275,12 +283,12 @@ int main(int argc, char* argv[]){
     // -------
     B = amg->grids[0].A;
     num_local_row = B->M;
-    rhs.resize(num_local_row);
+    rhs_std.resize(num_local_row);
     u.resize(num_local_row);
     time_e1.assign(time_e1.size(), 0);
     for (int i = 0; i < 50; i++) {
-        B->matvec_timing1(rhs, u, time_e1);
-        rhs.swap(u);
+        B->matvec_timing1(rhs_std, u, time_e1);
+        rhs_std.swap(u);
     }
 
 //    if (rank == 0) std::cout << "\nlocal loop, remote loop and communication (including <<set vSend>>) times of matvec"
@@ -294,13 +302,13 @@ int main(int argc, char* argv[]){
             B = amg->grids[l].A;
             num_local_row = B->M;
 //            printf("level = %d, num_local_row = %d \n", l, num_local_row);
-            rhs.resize(num_local_row);
+            rhs_std.resize(num_local_row);
             u.resize(num_local_row);
 //            if (rank == 0) printf("level %d of %d step1! \n", l, levels);
 
             // *************************** matvec1 ****************************
 
-            generate_rhs_old(rhs);
+            generate_rhs_old(rhs_std);
             u.assign(num_local_row, 0);
             time_e1.assign(time_e1.size(), 0);
 //            printf("rank %d: level %d of %d step3! \n", rank, l, levels);
@@ -308,8 +316,8 @@ int main(int argc, char* argv[]){
             MPI_Barrier(B->comm);
 //            t1 = omp_get_wtime();
             for (int i = 0; i < matvec_iter; i++) {
-                B->matvec_timing1(rhs, u, time_e1);
-                rhs.swap(u);
+                B->matvec_timing1(rhs_std, u, time_e1);
+                rhs_std.swap(u);
             }
 //            t2 = omp_get_wtime();
 

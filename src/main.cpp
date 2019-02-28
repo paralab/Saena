@@ -72,8 +72,8 @@ int main(int argc, char* argv[]){
     // *************************** set rhs: Laplacian ****************************
 
     unsigned int num_local_row = A.get_num_local_rows();
-    std::vector<double> rhs;
-    saena::laplacian3D_set_rhs(rhs, mx, my, mz, comm);
+    std::vector<double> rhs_std;
+    saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
 
     // ********** print rhs **********
 
@@ -81,24 +81,15 @@ int main(int argc, char* argv[]){
 
     // ********** put rhs in saena::vector **********
 
-    std::vector<index_t> split_temp(nprocs);
-    split_temp[rank] = rhs.size();
-    auto temp1 = (index_t)rhs.size();
-    MPI_Allgather(&temp1, 1, MPI_UNSIGNED, &*split_temp.begin(), 1, MPI_UNSIGNED, comm);
+    index_t my_split;
+    saena::find_split((index_t)rhs_std.size(), my_split, comm);
 
-    std::vector<index_t> split_vec(nprocs+1);
-    split_vec[0] = 0;
-    for(index_t i = 1; i < nprocs + 1; i++){
-        split_vec[i] = split_vec[i-1] + split_temp[i-1];
-    }
-//    print_vector(split_vec, 0, "split_vec", comm);
-
-    saena::vector rhs2(comm);
-    for(index_t i = 0; i < rhs.size(); i++){
+    saena::vector rhs(comm);
+    for(index_t i = 0; i < rhs_std.size(); i++){
 //        if(rank==0) printf("%u \t%d \t%u \t%e\n", i, split_vec[rank], i + split_vec[rank], rhs[i]);
-        rhs2.set(i + split_vec[rank], rhs[i]);
+        rhs.set(i + my_split, rhs_std[i]);
     }
-    rhs2.assemble();
+    rhs.assemble();
 
     // *************************** set u0 ****************************
 
@@ -133,7 +124,7 @@ int main(int argc, char* argv[]){
 //    solver.set_sample_sz_percent(sm_sz_prct);
 
     solver.set_matrix(&A, &opts);
-    solver.set_rhs(rhs2);
+    solver.set_rhs(rhs);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
@@ -188,7 +179,7 @@ int main(int argc, char* argv[]){
 //    print_vector(v2, -1, "v2", comm);
 
     std::vector<double> v3;
-    rhs2.return_vec(u, v3);
+    rhs.return_vec(u, v3);
 //    print_vector(v3, -1, "v3", comm);
 
     // *************************** experiment for compute_coarsen ****************************
