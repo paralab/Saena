@@ -29,19 +29,19 @@ int saena_vector::set_dup_flag(bool add){
 }
 
 
-int saena_vector::set(index_t row, value_t val){
+int saena_vector::set(index_t idx, value_t val){
 
 //    if(fabs(val) > 1e-14){
 //        entry.emplace_back(row, val);
 //    }
 
-    row += idx_offset;
-    orig_order.emplace_back(row);
+    idx += idx_offset;
+    orig_order.emplace_back(idx);
 
     if(add_duplicates){
 
         vecEntry temp_old;
-        vecEntry temp_new = vecEntry(row, val);
+        vecEntry temp_new = vecEntry(idx, val);
         std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
 
         if (!p.second){
@@ -57,7 +57,7 @@ int saena_vector::set(index_t row, value_t val){
 
     } else {
 
-        vecEntry temp_new = vecEntry(row, val);
+        vecEntry temp_new = vecEntry(idx, val);
         std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
 
         if (!p.second){
@@ -77,6 +77,14 @@ int saena_vector::set(index_t row, value_t val){
     return 0;
 }
 
+int saena_vector::set(index_t* idx, value_t* val, index_t size){
+
+    for(index_t i = 0; i < size; i++){
+        set(idx[i], val[i]);
+    }
+
+    return 0;
+}
 
 int saena_vector::set(value_t* val, index_t size, index_t offset){
 

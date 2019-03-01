@@ -113,7 +113,7 @@ int saena_matrix::shrink_cpu_minor(){
     ranks.resize(total_active_procs);
     ranks.shrink_to_fit();
 
-    print_vector(split, 0, "split before shrinking", comm);
+//    print_vector(split, 0, "split before shrinking", comm);
 
 //    comm_old_minor = comm;
     MPI_Group group_new;
