@@ -91,6 +91,10 @@ int main(int argc, char* argv[]){
     }
     rhs.assemble();
 
+//    std::vector<double> rrr;
+//    rhs.get_vec(rrr);
+//    print_vector(rrr, -1, "rhs", comm);
+
     // *************************** set u0 ****************************
 
     std::vector<double> u(num_local_row, 0);
@@ -178,8 +182,8 @@ int main(int argc, char* argv[]){
 //    v1.get_vec(v2);
 //    print_vector(v2, -1, "v2", comm);
 
-    std::vector<double> v3;
-    rhs.return_vec(u, v3);
+//    std::vector<double> v3;
+//    rhs.return_vec(u, v3);
 //    print_vector(v3, -1, "v3", comm);
 
     // *************************** experiment for compute_coarsen ****************************

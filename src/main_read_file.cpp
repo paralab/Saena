@@ -154,13 +154,13 @@ int main(int argc, char* argv[]){
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Setup:", comm);
-    print_time(t1, t2, "Setup:", comm);
+//    print_time(t1, t2, "Setup:", comm);
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs_std, -1, "rhs_std", comm);
 
     // *************************** AMG - Solve ****************************
-
+/*
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
@@ -171,7 +171,7 @@ int main(int argc, char* argv[]){
     print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
-
+*/
     // *************************** lazy-update ****************************
 /*
     saena::matrix B (comm);

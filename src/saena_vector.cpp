@@ -1,7 +1,8 @@
-#include <set>
 #include "saena_vector.h"
+#include "aux_functions.h"
 #include "parUtils.h"
 
+#include <set>
 
 saena_vector::saena_vector() = default;
 
@@ -95,7 +96,6 @@ int saena_vector::set(value_t* val, index_t size){
 
 int saena_vector::remove_duplicates() {
     // parameters needed for this function:
-
     // parameters being set in this function:
 
     int nprocs, rank;
@@ -248,8 +248,8 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         MPI_Barrier(comm);
         printf("return_vec: rank = %d, step 1 \n", rank);
         MPI_Barrier(comm);
-//        print_vector(u1, -1, "u1", comm);
     }
+//    print_vector(u1, -1, "u1", comm);
 //    print_vector(split, 0, "split", comm);
 //    print_vector(orig_order, -1, "orig_order", comm);
 
@@ -276,28 +276,41 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 //                if(rank==1) printf("%u \t%u \t%f\n", i, orig_order[i], u1[orig_order[i]]);
                 u2[i] = u1[orig_order[i] - split[rank]];
             } else { // elements that should be received from other procs
-                recv_idx.emplace_back(orig_order[i]);
-                remote_idx.emplace_back(i);
+                remote_idx_tuple.emplace_back(i, orig_order[i]);
+//                recv_idx.emplace_back(orig_order[i]);
+//                remote_idx.emplace_back(i);
                 procNum = lower_bound2(&split[0], &split[nprocs], orig_order[i]);
                 recvCount[procNum]++;
             }
         }
 
+//        print_vector(remote_idx_tuple, -1, "remote_idx_tuple", comm);
+        std::sort(remote_idx_tuple.begin(), remote_idx_tuple.end());
+//        print_vector(remote_idx_tuple, -1, "remote_idx_tuple", comm);
+
+        recv_idx.resize(remote_idx_tuple.size());
+        for(index_t i = 0; i < remote_idx_tuple.size(); i++){
+            recv_idx[i] = remote_idx_tuple[i].idx2;
+        }
+
         // after sorting recv_idx, the order of remote_idx should be changed the same way. The new order is saved
         // in idx_order, so remote_idx[idx_order[i]] has the new order.
-        std::vector<index_t> idx_order(remote_idx.size());
-#pragma omp parallel for
-        for (index_t i = 0; i < remote_idx.size(); i++)
-            idx_order[i] = i;
-        std::sort(idx_order.begin(), idx_order.end(), sort_indices(&recv_idx[0]));
+//        std::vector<index_t> idx_order(remote_idx.size());
+//#pragma omp parallel for
+//        for (index_t i = 0; i < remote_idx.size(); i++)
+//            idx_order[i] = i;
+//        std::sort(idx_order.begin(), idx_order.end(), sort_indices(&recv_idx[0]));
 //        std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
 
-        std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
-        std::sort(recv_idx.begin(), recv_idx.end());
+//        std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
+//        std::sort(recv_idx.begin(), recv_idx.end());
 
-        if (verbose_return_vec) {
+
+//        if(rank==1){
 //            for(int i = 0; i < remote_idx.size(); i++)
-//                std::cout << remote_idx[idx_order[i]] << "\t" << recv_idx[i] << std::endl;
+//                std::cout << remote_idx[i] << "\t"<< remote_idx[idx_order[i]] << "\t" << recv_idx[i] << std::endl;
+//        }
+        if (verbose_return_vec) {
             MPI_Barrier(comm);
             printf("return_vec: rank = %d, step 2 \n", rank);
             MPI_Barrier(comm);
@@ -399,7 +412,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         for (index_t i = 0; i < send_sz; i++)
             send_vals[i] = u1[(send_idx[i])];
 
-//        print_vector(send_vals, 0, "send_vals", comm);
+//        print_vector(send_vals, -1, "send_vals", comm);
 
         auto requests = new MPI_Request[numSendProc + numRecvProc];
         auto statuses = new MPI_Status[numSendProc + numRecvProc];
@@ -426,8 +439,8 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         // ------------------------------------------
 
 #pragma omp parallel for
-        for (index_t i = 0; i < remote_idx.size(); i++) {
-            u2[remote_idx[idx_order[i]]] = recv_vals[i];
+        for (index_t i = 0; i < remote_idx_tuple.size(); i++) {
+            u2[remote_idx_tuple[i].idx1] = recv_vals[i];
         }
 
         MPI_Waitall(numSendProc, numRecvProc + requests, numRecvProc + statuses);

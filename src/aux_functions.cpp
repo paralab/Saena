@@ -58,6 +58,12 @@ std::ostream & operator<<(std::ostream & stream, const vecEntry & item) {
     return stream;
 }
 
+std::ostream & operator<<(std::ostream & stream, const tuple1 & item) {
+    stream << item.idx1 << "\t" << item.idx2;
+    return stream;
+}
+
+
 void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nnz_t initial_nnz_l, MPI_Comm comm){
 
     int rank, nprocs;
@@ -272,8 +278,6 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
             }
         }
     }
-
-
 
     if(verbose_gen_rhs){
         MPI_Barrier(comm);

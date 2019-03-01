@@ -500,4 +500,60 @@ public:
 
 std::ostream & operator<<(std::ostream & stream, const vecEntry & item);
 
+// this class is used in saena_vector class, in return_vec() function.
+class tuple1{
+public:
+    index_t idx1;
+    index_t idx2;
+
+    tuple1() = default;
+
+    tuple1(index_t i, index_t j){
+        idx1 = i;
+        idx2 = j;
+    }
+
+    bool operator == (const tuple1& node2) const
+    {
+        return (idx2 == node2.idx2);
+    }
+
+    bool operator < (const tuple1& node2) const
+    {
+        return(idx2 < node2.idx2);
+    }
+
+    bool operator <= (const tuple1& node2) const
+    {
+        return(idx2 <= node2.idx2);
+    }
+
+    bool operator > (const tuple1& node2) const
+    {
+        return(idx2 > node2.idx2);
+    }
+
+    bool operator >= (const tuple1& node2) const
+    {
+        return(idx2 >= node2.idx2);
+    }
+
+    static MPI_Datatype mpi_datatype()
+    {
+        static bool         first = true;
+        static MPI_Datatype datatype;
+
+        if (first)
+        {
+            first = false;
+            MPI_Type_contiguous(sizeof(tuple1), MPI_BYTE, &datatype);
+            MPI_Type_commit(&datatype);
+        }
+
+        return datatype;
+    }
+};
+
+std::ostream & operator<<(std::ostream & stream, const tuple1 & item);
+
 #endif //SAENA_AUXFUNCTIONS_H

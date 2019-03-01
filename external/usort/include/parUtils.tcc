@@ -2263,13 +2263,20 @@ namespace par {
         }
         par::Mpi_Allgather<T>(sendSplitsPtr, splittersPtr, 1, comm);
 
+//        print_vector(arr, -1, "arr", comm);
+//        print_vector(splitter_old, 0, "splitter_old", comm);
 //        print_vector(splitters, 0, "splitters", comm);
+//        T *temp = NULL;
 
         if(splitter_old[1] == splitter_old[0]){
             splittersPtr[1] = arr[0];
         }
         for(int i = 1; i < npes-1; i++) {
             if(splitter_old[i+1] == splitter_old[i]){
+//                if(rank==0) std::cout << splittersPtr[i] << "\t" << splittersPtr[i+1] << std::endl;
+//                temp = splittersPtr[i];
+//                splittersPtr[i+1] = temp;
+//                splitters[i+1] = splitters[i];
                 splittersPtr[i+1] = splittersPtr[i];
             }
         }//end for i
@@ -2278,7 +2285,6 @@ namespace par {
         }
 
 //        print_vector(splitters, 0, "splitters after", comm);
-
 
 //        MPI_Barrier(comm);
 //        if(rank==0){

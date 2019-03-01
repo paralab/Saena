@@ -44,7 +44,8 @@ public:
 
     index_t idx_offset = 0;
     std::vector<index_t> orig_order; // save the input order
-    std::vector<index_t> remote_idx; // indices that should receive their value from other procs
+    std::vector<tuple1> remote_idx_tuple;
+//    std::vector<index_t> remote_idx; // indices that should receive their value from other procs
     std::vector<index_t> split;
 //    index_t *split; // point to the split of input matrix. size of it is (size of comm + 1).
 
@@ -87,8 +88,8 @@ public:
     int get_vec(std::vector<double> &vec);
     int print_entry(int ran);
 
-    int return_vec(std::vector<double> &u);
     int return_vec(std::vector<double> &u1, std::vector<double> &u2);
+    int return_vec(std::vector<double> &u);
 };
 
 #endif //SAENA_SAENA_VECTOR_H

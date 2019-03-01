@@ -87,6 +87,7 @@ int saena_matrix::shrink_cpu_minor(){
     MPI_Comm_rank(comm, &rank);
 
 //    MPI_Barrier(comm); if(rank==0) printf("********MINOR SHRINK********\n"); MPI_Barrier(comm);
+//    print_vector(split, 0, "split before shrinking", comm);
 
     shrinked_minor = true;
 
@@ -112,7 +113,7 @@ int saena_matrix::shrink_cpu_minor(){
     ranks.resize(total_active_procs);
     ranks.shrink_to_fit();
 
-//    print_vector(split, 0, "split before shrinking", comm);
+    print_vector(split, 0, "split before shrinking", comm);
 
 //    comm_old_minor = comm;
     MPI_Group group_new;

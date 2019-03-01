@@ -4524,7 +4524,8 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
     if(verbose_triple_mat_mult){
-        MPI_Barrier(comm); printf("compute_coarsen: step 10: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("compute_coarsen: step 10: rank = %d\n", rank); MPI_Barrier(comm);
+    }
 #endif
 
     if(Ac->active_minor){
@@ -4784,12 +4785,6 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
                         A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
                         &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                         &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
-
-//                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
-//                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
-//                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-//                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
-
             }
 
             MPI_Waitall(3, requests+1, statuses+1);
@@ -4853,11 +4848,6 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
                     &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
                     &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
 
-//            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), mat_send.size(),
-//                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
-//                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-//                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
-
 //            double t2 = MPI_Wtime();
 //            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
         }
@@ -4918,11 +4908,6 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //        P_tranpose[i].col += P->split[rank];
 //    }
 
-#ifdef __DEBUG1__
-//    print_vector(P->entry, -1, "P->entry", comm);
-//    print_vector(P_tranpose, -1, "P_tranpose", comm);
-#endif
-
     // compute nnzPerColScan_left for P_tranpose
 //    nnzPerCol_left.assign(P->M, 0);
     std::vector<index_t> nnzPerColScan_left2(P->M + 1, 0);
@@ -4940,6 +4925,11 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 
     std::sort(P_tranpose.begin(), P_tranpose.end());
 
+#ifdef __DEBUG1__
+//    print_vector(P->entry, -1, "P->entry", comm);
+//    print_vector(P_tranpose, -1, "P_tranpose", comm);
+#endif
+
 //    nnzPerColScan_left.resize(P->M + 1);
 //    nnzPerColScan_left[0] = 0;
     for(nnz_t i = 1; i < P->M + 1; i++){
@@ -4950,7 +4940,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 //    nnzPerCol_left.shrink_to_fit();
 
 #ifdef __DEBUG1__
-//    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
+//    print_vector(nnzPerColScan_left2, -1, "nnzPerColScan_left2", comm);
 #endif
 
     // compute nnzPerColScan_left for AP_temp
@@ -4980,7 +4970,6 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
     // multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
     // ===================================================
 
-//    printf("\n");
     std::vector<cooEntry> RAP_temp;
     RAP_temp.reserve(A->nnz_l/20 + R->nnz_l/20); // an estimate to reserve memory
 
@@ -5002,11 +4991,6 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
                 P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
                 &nnzPerColScan_left2[0], &nnzPerColScan_left2[1],
                 &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
-
-//        fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
-//                P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
-//                &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-//                &nnzPerColScan_right[0], &nnzPerColScan_right[1], map_matmat, A->comm);
 
 //        double t2 = MPI_Wtime();
 //        printf("\nfast_mm of R(AP_temp) = %f \n", t2-t1);

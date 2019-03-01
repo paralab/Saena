@@ -196,7 +196,6 @@ public:
     int deallocate_zfp();
     // ***********************************************************
 
-
     saena_matrix();
     explicit saena_matrix(MPI_Comm com);
     ~saena_matrix();
