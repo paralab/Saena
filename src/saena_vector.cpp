@@ -283,7 +283,8 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             }
         }
 
-        recvCount[rank] = 0; // don't receive from yourself.
+        std::sort(vElement_remote.begin(), vElement_remote.end());
+//        recvCount[rank] = 0; // don't receive from yourself.
 
         if (verbose_return_vec) {
             MPI_Barrier(comm);
@@ -345,7 +346,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
         }
         vIndexSize = vdispls[nprocs - 1] + sendCount[nprocs - 1];
-        recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
+        recvSize   = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
         // vIndex: elements that should be sent to other procs.
         vIndex.resize(vIndexSize);

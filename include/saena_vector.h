@@ -48,14 +48,10 @@ public:
     std::vector<index_t> split;
 //    index_t *split; // point to the split of input matrix. size of it is (size of comm + 1).
 
-    index_t vIndexSize = 0;
-    index_t recvSize   = 0;
-    std::vector<index_t> vIndex;
-    std::vector<value_t> vSend;
-    std::vector<value_t> vecValues;
-
     int numRecvProc = 0;
     int numSendProc = 0;
+    index_t vIndexSize = 0;
+    index_t recvSize   = 0;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
     std::vector<int> recvCount;
@@ -67,6 +63,9 @@ public:
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
     std::vector<index_t> vElement_remote;
+    std::vector<index_t> vIndex;
+    std::vector<value_t> vSend;
+    std::vector<value_t> vecValues;
 
     bool verbose_return_vec = false;
 
