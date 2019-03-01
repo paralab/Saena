@@ -248,8 +248,10 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         MPI_Barrier(comm);
         printf("return_vec: rank = %d, step 1 \n", rank);
         MPI_Barrier(comm);
+//        print_vector(u1, -1, "u1", comm);
     }
-//    print_vector(u1, -1, "u1", comm);
+//    print_vector(split, 0, "split", comm);
+//    print_vector(orig_order, -1, "orig_order", comm);
 
     u2.resize(orig_order.size());
 
@@ -273,18 +275,13 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             if (orig_order[i] >= split[rank] && orig_order[i] < split[rank + 1]) {
 //                if(rank==1) printf("%u \t%u \t%f\n", i, orig_order[i], u1[orig_order[i]]);
                 u2[i] = u1[orig_order[i] - split[rank]];
-            } else {
+            } else { // elements that should be received from other procs
                 remote_idx.emplace_back(i);
                 vElement_remote.emplace_back(orig_order[i]);
                 procNum = lower_bound2(&split[0], &split[nprocs], orig_order[i]);
                 recvCount[procNum]++;
             }
         }
-
-//        print_vector(u2, -1, "u2 local", comm);
-//        print_vector(recvCount, -1, "recvCount", comm);
-//        print_vector(remote_idx, -1, "remote_idx", comm);
-//        print_vector(vElement_remote, -1, "vElement_remote", comm);
 
         recvCount[rank] = 0; // don't receive from yourself.
 
@@ -293,6 +290,10 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             printf("return_vec: rank = %d, step 2 \n", rank);
             MPI_Barrier(comm);
         }
+//        print_vector(u2, -1, "u2 local", comm);
+//        print_vector(recvCount, -1, "recvCount", comm);
+//        print_vector(remote_idx, -1, "remote_idx", comm);
+//        print_vector(vElement_remote, -1, "vElement_remote", comm);
 
         // compute the variables for communication
         // ---------------------------------------
@@ -346,13 +347,13 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         vIndexSize = vdispls[nprocs - 1] + sendCount[nprocs - 1];
         recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
+        // vIndex: elements that should be sent to other procs.
         vIndex.resize(vIndexSize);
         MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
-                      &vIndex[0], &sendCount[0], &vdispls[0], MPI_UNSIGNED, comm);
-
+                      &vIndex[0],          &sendCount[0], &vdispls[0], MPI_UNSIGNED, comm);
 
         if (verbose_return_vec) {
-            print_vector(vIndex, -1, "vIndex", comm);
+//            print_vector(vIndex, -1, "vIndex", comm);
             MPI_Barrier(comm);
             printf("return_vec: rank = %d, step 4 \n", rank);
             MPI_Barrier(comm);
@@ -371,6 +372,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         vecValues.resize(recvSize);
 
         if (verbose_return_vec) {
+//            print_vector(vIndex, 1, "vIndex", comm);
             MPI_Barrier(comm);
             printf("return_vec: rank = %d, step 5 \n", rank);
             MPI_Barrier(comm);

@@ -170,7 +170,8 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
     // ************** set variables **************
 
     grids[0].rhs_orig = rhs1; // use this for returning solution to the original order, based on the input rhs.
-    rhs1->split = &grids[0].A->split[0];
+//    rhs1->split = &grids[0].A->split[0];
+    rhs1->split = grids[0].A->split;
     std::vector<double> rhs0;
     rhs1->get_vec(rhs0);
 

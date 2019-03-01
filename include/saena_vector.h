@@ -45,8 +45,8 @@ public:
     index_t idx_offset = 0;
     std::vector<index_t> orig_order; // save the input order
     std::vector<index_t> remote_idx; // indices that should receive their value from other procs
-//    std::vector<index_t> split;
-    index_t *split; // point to the split of input matrix. size of it is (size of comm + 1).
+    std::vector<index_t> split;
+//    index_t *split; // point to the split of input matrix. size of it is (size of comm + 1).
 
     index_t vIndexSize = 0;
     index_t recvSize   = 0;
@@ -68,7 +68,7 @@ public:
     std::vector<int> sendProcCount;
     std::vector<index_t> vElement_remote;
 
-    bool verbose_return_vec = true;
+    bool verbose_return_vec = false;
 
     saena_vector();
     explicit saena_vector(MPI_Comm com);
