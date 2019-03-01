@@ -81,6 +81,7 @@ public:
 //    int set_add_dup(index_t row, value_t val); // add duplicates
 //    int set(index_t *row, value_t *val, index_t size);
     int set(index_t* idx, value_t* val, index_t size);
+    int set(int* idx, value_t* val, int size);
     int set(value_t* val, index_t size, index_t offset);
     int set(value_t* val, index_t size);
     int remove_duplicates();

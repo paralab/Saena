@@ -86,6 +86,15 @@ int saena_vector::set(index_t* idx, value_t* val, index_t size){
     return 0;
 }
 
+int saena_vector::set(int* idx, value_t* val, int size){
+
+    for(index_t i = 0; i < size; i++){
+        set(idx[i], val[i]);
+    }
+
+    return 0;
+}
+
 int saena_vector::set(value_t* val, index_t size, index_t offset){
 
     for(index_t i = 0; i < size; i++){

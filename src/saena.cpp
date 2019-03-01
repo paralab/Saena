@@ -302,6 +302,11 @@ int saena::vector::set(index_t* idx, value_t* val, index_t size){
     return 0;
 }
 
+int saena::vector::set(int* idx, value_t* val, int size){
+    m_pImpl->set(idx, val, size);
+    return 0;
+}
+
 int saena::vector::set(value_t* val, index_t size, index_t offset){
     m_pImpl->set(val, size, offset);
     return 0;
