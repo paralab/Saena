@@ -80,10 +80,10 @@ namespace saena {
         int set_idx_offset(index_t offset);
 
         int set(index_t i, value_t val); // set individual value
-        int set(int* idx, value_t* val, int size); // set multiple values
-        int set(index_t* idx, value_t* val, index_t size); // set multiple values
-        int set(value_t* val, index_t size, index_t offset); // set multiple values
-        int set(value_t* val, index_t size); // set multiple values
+        int set(const int* idx, const value_t* val, int size); // set multiple values
+        int set(const index_t* idx, const value_t* val, index_t size); // set multiple values
+        int set(const value_t* val, index_t size, index_t offset); // set multiple values
+        int set(const value_t* val, index_t size); // set multiple values
 //        int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local); // set multiple values
 //        int set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, value_t* val); // set contiguous block
 //        int set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local); // set generic block

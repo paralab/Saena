@@ -29,13 +29,13 @@ int saena_vector::set_dup_flag(bool add){
 }
 
 
-int saena_vector::set(index_t idx, value_t val){
+int saena_vector::set(const index_t idx_, const value_t val){
 
 //    if(fabs(val) > 1e-14){
 //        entry.emplace_back(row, val);
 //    }
 
-    idx += idx_offset;
+    index_t idx = idx_ + idx_offset;
     orig_order.emplace_back(idx);
 
     if(add_duplicates){
@@ -77,7 +77,7 @@ int saena_vector::set(index_t idx, value_t val){
     return 0;
 }
 
-int saena_vector::set(index_t* idx, value_t* val, index_t size){
+int saena_vector::set(const index_t* idx, const value_t* val, const index_t size){
 
     for(index_t i = 0; i < size; i++){
         set(idx[i], val[i]);
@@ -86,7 +86,7 @@ int saena_vector::set(index_t* idx, value_t* val, index_t size){
     return 0;
 }
 
-int saena_vector::set(int* idx, value_t* val, int size){
+int saena_vector::set(const int* idx, const value_t* val, const int size){
 
     for(index_t i = 0; i < size; i++){
         set(idx[i], val[i]);
@@ -95,7 +95,7 @@ int saena_vector::set(int* idx, value_t* val, int size){
     return 0;
 }
 
-int saena_vector::set(value_t* val, index_t size, index_t offset){
+int saena_vector::set(const value_t* val, const index_t size, const index_t offset){
 
     for(index_t i = 0; i < size; i++){
         set(i + offset, val[i]);
@@ -104,7 +104,7 @@ int saena_vector::set(value_t* val, index_t size, index_t offset){
     return 0;
 }
 
-int saena_vector::set(value_t* val, index_t size){
+int saena_vector::set(const value_t* val, const index_t size){
 
     set(val, size, 0);
 

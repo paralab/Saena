@@ -292,27 +292,27 @@ int saena::vector::set_idx_offset(const index_t offset){
 //}
 
 
-int saena::vector::set(index_t i, value_t val){
+int saena::vector::set(const index_t i, const value_t val){
     m_pImpl->set(i, val);
     return 0;
 }
 
-int saena::vector::set(index_t* idx, value_t* val, index_t size){
+int saena::vector::set(const index_t* idx, const value_t* val, const index_t size){
     m_pImpl->set(idx, val, size);
     return 0;
 }
 
-int saena::vector::set(int* idx, value_t* val, int size){
+int saena::vector::set(const int* idx, const value_t* val, const int size){
     m_pImpl->set(idx, val, size);
     return 0;
 }
 
-int saena::vector::set(value_t* val, index_t size, index_t offset){
+int saena::vector::set(const value_t* val, const index_t size, const index_t offset){
     m_pImpl->set(val, size, offset);
     return 0;
 }
 
-int saena::vector::set(value_t* val, index_t size){
+int saena::vector::set(const value_t* val, const index_t size){
     m_pImpl->set(val, size);
     return 0;
 }
