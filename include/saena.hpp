@@ -80,6 +80,7 @@ namespace saena {
         int set_idx_offset(index_t offset);
 
         int set(index_t i, value_t val); // set individual value
+        int set(index_t* idx, value_t* val, index_t size); // set multiple values
         int set(value_t* val, index_t size, index_t offset); // set multiple values
         int set(value_t* val, index_t size); // set multiple values
 //        int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local); // set multiple values
