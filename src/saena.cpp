@@ -531,6 +531,7 @@ int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->solve_pcg(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
+//    print_vector(u, -1, "u", g->rhs_orig->comm);
     return 0;
 }
 

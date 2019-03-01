@@ -276,17 +276,28 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 //                if(rank==1) printf("%u \t%u \t%f\n", i, orig_order[i], u1[orig_order[i]]);
                 u2[i] = u1[orig_order[i] - split[rank]];
             } else { // elements that should be received from other procs
+                recv_idx.emplace_back(orig_order[i]);
                 remote_idx.emplace_back(i);
-                vElement_remote.emplace_back(orig_order[i]);
                 procNum = lower_bound2(&split[0], &split[nprocs], orig_order[i]);
                 recvCount[procNum]++;
             }
         }
 
-        std::sort(vElement_remote.begin(), vElement_remote.end());
-//        recvCount[rank] = 0; // don't receive from yourself.
+        // after sorting recv_idx, the order of remote_idx should be changed the same way. The new order is saved
+        // in idx_order, so remote_idx[idx_order[i]] has the new order.
+        std::vector<index_t> idx_order(remote_idx.size());
+#pragma omp parallel for
+        for (index_t i = 0; i < remote_idx.size(); i++)
+            idx_order[i] = i;
+        std::sort(idx_order.begin(), idx_order.end(), sort_indices(&recv_idx[0]));
+//        std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
+
+        std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
+        std::sort(recv_idx.begin(), recv_idx.end());
 
         if (verbose_return_vec) {
+//            for(int i = 0; i < remote_idx.size(); i++)
+//                std::cout << remote_idx[idx_order[i]] << "\t" << recv_idx[i] << std::endl;
             MPI_Barrier(comm);
             printf("return_vec: rank = %d, step 2 \n", rank);
             MPI_Barrier(comm);
@@ -294,7 +305,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 //        print_vector(u2, -1, "u2 local", comm);
 //        print_vector(recvCount, -1, "recvCount", comm);
 //        print_vector(remote_idx, -1, "remote_idx", comm);
-//        print_vector(vElement_remote, -1, "vElement_remote", comm);
+//        print_vector(recv_idx, -1, "recv_idx", comm);
 
         // compute the variables for communication
         // ---------------------------------------
@@ -345,16 +356,16 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             vdispls[i] = vdispls[i - 1] + sendCount[i - 1];
             rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
         }
-        vIndexSize = vdispls[nprocs - 1] + sendCount[nprocs - 1];
-        recvSize   = rdispls[nprocs - 1] + recvCount[nprocs - 1];
+        send_sz = vdispls[nprocs - 1] + sendCount[nprocs - 1];
+        recv_sz = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
-        // vIndex: elements that should be sent to other procs.
-        vIndex.resize(vIndexSize);
-        MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
-                      &vIndex[0],          &sendCount[0], &vdispls[0], MPI_UNSIGNED, comm);
+        // send_idx: elements that should be sent to other procs.
+        send_idx.resize(send_sz);
+        MPI_Alltoallv(&recv_idx[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
+                      &send_idx[0], &sendCount[0], &vdispls[0], MPI_UNSIGNED, comm);
 
         if (verbose_return_vec) {
-//            print_vector(vIndex, -1, "vIndex", comm);
+//            print_vector(send_idx, -1, "send_idx", comm);
             MPI_Barrier(comm);
             printf("return_vec: rank = %d, step 4 \n", rank);
             MPI_Barrier(comm);
@@ -362,18 +373,18 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 
         // change the indices from global to local
 #pragma omp parallel for
-        for (index_t i = 0; i < vIndexSize; i++) {
-            vIndex[i] -= split[rank];
+        for (index_t i = 0; i < send_sz; i++) {
+            send_idx[i] -= split[rank];
         }
 
-        // vSend     = vector values to send to other procs
-        // vecValues = vector values to be received from other procs
+        // send_vals     = vector values to send to other procs
+        // recv_vals = vector values to be received from other procs
         // These will be used in return_vec and they are set here to reduce the time of return_vec.
-        vSend.resize(vIndexSize);
-        vecValues.resize(recvSize);
+        send_vals.resize(send_sz);
+        recv_vals.resize(recv_sz);
 
         if (verbose_return_vec) {
-//            print_vector(vIndex, 1, "vIndex", comm);
+//            print_vector(send_idx, 1, "send_idx", comm);
             MPI_Barrier(comm);
             printf("return_vec: rank = %d, step 5 \n", rank);
             MPI_Barrier(comm);
@@ -381,26 +392,26 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 
         // perform the communication
         // ----------------------------------
-        // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
-        // put the values of thoss indices in vSend to send to other procs.
+        // the indices of the v on this proc that should be sent to other procs are saved in send_idx.
+        // put the values of thoss indices in send_vals to send to other procs.
 
 #pragma omp parallel for
-        for (index_t i = 0; i < vIndexSize; i++)
-            vSend[i] = u1[(vIndex[i])];
+        for (index_t i = 0; i < send_sz; i++)
+            send_vals[i] = u1[(send_idx[i])];
 
-//        print_vector(vSend, 0, "vSend", comm);
+//        print_vector(send_vals, 0, "send_vals", comm);
 
         auto requests = new MPI_Request[numSendProc + numRecvProc];
         auto statuses = new MPI_Status[numSendProc + numRecvProc];
 
-        // receive and put the remote parts of v in vecValues.
+        // receive and put the remote parts of v in recv_vals.
         // they are received in order: first put the values from the lowest rank matrix, and so on.
         for (int i = 0; i < numRecvProc; i++)
-            MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm,
+            MPI_Irecv(&recv_vals[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm,
                       &(requests[i]));
 
         for (int i = 0; i < numSendProc; i++)
-            MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm,
+            MPI_Isend(&send_vals[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm,
                       &(requests[numRecvProc + i]));
 
         MPI_Waitall(numRecvProc, requests, statuses);
@@ -416,7 +427,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 
 #pragma omp parallel for
         for (index_t i = 0; i < remote_idx.size(); i++) {
-            u2[remote_idx[i]] = vecValues[i];
+            u2[remote_idx[idx_order[i]]] = recv_vals[i];
         }
 
         MPI_Waitall(numSendProc, numRecvProc + requests, numRecvProc + statuses);

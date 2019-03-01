@@ -50,8 +50,8 @@ public:
 
     int numRecvProc = 0;
     int numSendProc = 0;
-    index_t vIndexSize = 0;
-    index_t recvSize   = 0;
+    index_t send_sz = 0;
+    index_t recv_sz = 0;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
     std::vector<int> recvCount;
@@ -62,10 +62,10 @@ public:
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
-    std::vector<index_t> vElement_remote;
-    std::vector<index_t> vIndex;
-    std::vector<value_t> vSend;
-    std::vector<value_t> vecValues;
+    std::vector<index_t> recv_idx;
+    std::vector<index_t> send_idx;
+    std::vector<value_t> send_vals;
+    std::vector<value_t> recv_vals;
 
     bool verbose_return_vec = false;
 
