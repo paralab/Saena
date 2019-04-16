@@ -14,8 +14,8 @@
 //#include <spp.h> //sparsepp
 
 // set one of the following to set fast_mm split based on nnz or matrix size
-#define SPLIT_NNZ
-//#define SPLIT_SIZE
+//#define SPLIT_NNZ
+#define SPLIT_SIZE
 
 //#define FAST_MM_MAP
 //#define FAST_MM_VECTOR
