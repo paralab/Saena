@@ -1191,6 +1191,7 @@ int saena_matrix::print_entry(int ran){
         int rank, nprocs;
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
+        printf("print");
 
         index_t iter = 0;
         if (ran >= 0) {

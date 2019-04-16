@@ -1171,15 +1171,17 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     }
     std::sort(B->entry.begin(), B->entry.end());
 
+    B->active = true;
     B->nnz_l = iter;
     MPI_Allreduce(&iter, &B->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, A.get_comm());
     B->Mbig = Mbig;
     B->M = M;
     B->density = ((double)B->nnz_g / B->Mbig) / B->Mbig;
     B->split.resize(nprocs+1);
-    for(index_t i = 0; i < nprocs+1; i++)
+    for(index_t i = 0; i < nprocs+1; i++){
         B->split[i] = i*M;
-//
+    }
+
 //    B->print_entry(-1);
 
 //    A.assemble();

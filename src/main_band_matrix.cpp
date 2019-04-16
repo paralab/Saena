@@ -139,10 +139,10 @@ int main(int argc, char* argv[]){
         solver.matmat_ave(&A, &A, matmat_time);
     }
 
-    matmat_time = 0;
-    for(int i = 0; i < matmat_iter; i++){
-        solver.matmat_ave(&A, &A, matmat_time);
-    }
+//    matmat_time = 0;
+//    for(int i = 0; i < matmat_iter; i++){
+//        solver.matmat_ave(&A, &A, matmat_time);
+//    }
 
     if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
 
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]){
 //    saena_object *obj1 = solver.get_object();
 
 //    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
-    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
+//    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
 
     // *************************** CombBLAS ****************************
