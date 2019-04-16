@@ -1,0 +1,97 @@
+\relax 
+\citation{MadayMunoz88,BrambleZhang00,Brenner02,GholamiMalhotraSundar2016}
+\citation{Braess86,TatebeOyanagi94}
+\@writefile{toc}{\contentsline {title}{A Divide and Conquer Matrix-Matrix Multiplication Algorithm to Speedup Algebraic Multigrid Setup}{1}\protected@file@percent }
+\@writefile{toc}{\authcount {3}}
+\@writefile{toc}{\contentsline {author}{Majid Rasouli \and Robert M. Kirby \and Hari Sundar }{1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{1}}
+\citation{Dendy82,Vanek:1995,VanekBrezinaMandelEtAl01}
+\citation{Sundar12}
+\citation{treister2015non}
+\citation{bell2012exposing}
+\citation{notay2010aggregation}
+\citation{Guillard98anaggregation}
+\citation{DBLP:journals/siammax/Notay06}
+\citation{bell2012exposing}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Background}{2}\protected@file@percent }
+\newlabel{sec:bg}{{1.1}{2}}
+\citation{Vanek:1995}
+\citation{treister2015non}
+\newlabel{eq:rap}{{2}{3}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces vcycle($g, x,\ b,\ l$)\relax }}{3}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{alg:vcycle}{{1}{3}}
+\citation{Yuster2005}
+\citation{Buluc12}
+\citation{Gremse15}
+\citation{Saule14}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Related Work}{4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Methods}{4}\protected@file@percent }
+\newlabel{sec:methods}{{2}{4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Matrix-Matrix Multiplication}{4}\protected@file@percent }
+\newlabel{sec:matmult}{{2.1}{4}}
+\newlabel{sec:case1}{{2.1}{5}}
+\@writefile{toc}{\contentsline {subsubsection}{Case 1}{5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Comparison between dense structure method with hashmap to compute coarse matrix $Ac = R \times A \times P$, in which $A$ is the 3D Poisson problem of size $216k$. The plot shows the number of times each method is faster than the other one in intervals of $1M$ for $\textsc  {nnz\_mat\_size}$.\relax }}{6}\protected@file@percent }
+\newlabel{fig:lap60}{{1}{6}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Comparison between dense structure method with hashmap to compute coarse matrix $Ac = R \times A \times P$, in which $A$ is matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection. The plot shows the number of times each method is faster than the other one in intervals of $1M$ for $\textsc  {nnz\_mat\_size}$.\relax }}{6}\protected@file@percent }
+\newlabel{fig:eco}{{2}{6}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Comparison between the three methods to do Case 1: only using hashmap, only using the dense structure, and the hybrid method. They are used as Case 1 to compute the first coarse matrix (the triple multiplication) on 7 matrices (3D Poisson) of different sizes.\relax }}{7}\protected@file@percent }
+\newlabel{fig:mix}{{3}{7}}
+\newlabel{sec:case2}{{2.1}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{Case 2}{7}\protected@file@percent }
+\newlabel{sec:case3}{{2.1}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{Case 3}{7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Left figure shows Case 2: When A is horizontal, split A by column and B by row. Call the recursive function twice. Right figure shows Case 3: When A is vertical, split A by row and B by column. Call the recursive function four times.\relax }}{8}\protected@file@percent }
+\newlabel{fig:case2}{{4}{8}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {2}{\ignorespaces Case 2: $C = \textsc  {recurs\_matmult}2(A, B)$\relax }}{8}\protected@file@percent }
+\newlabel{alg:case2}{{2}{8}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {3}{\ignorespaces Case 3: $C = \textsc  {recurs\_matmult}3(A, B)$\relax }}{8}\protected@file@percent }
+\newlabel{alg:case3}{{3}{8}}
+\@writefile{toc}{\contentsline {subsubsection}{All together}{8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}AMG Matrix-Multiplication: Communication}{9}\protected@file@percent }
+\newlabel{sec:amg}{{2.2}{9}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Partitioning of the matrices across the processors in row blocks. $A$ and $P$ have the same partition but $R$'s is different.\relax }}{9}\protected@file@percent }
+\newlabel{fig:partition}{{5}{9}}
+\@writefile{toc}{\contentsline {subsubsection}{Part 1}{9}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The left figure shows how the matrices are split into sub-blocks in Part 1. Column $j$ of $P$ is stored on different processors. The right figure shows how row blocks of $R$ are transpose of column blocks of $P$.\relax }}{10}\protected@file@percent }
+\newlabel{fig:part1b}{{6}{10}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {4}{\ignorespaces Part 1: $B_i = A_i \times P$\relax }}{10}\protected@file@percent }
+\newlabel{alg:part1}{{4}{10}}
+\@writefile{toc}{\contentsline {subsubsection}{Part 2}{10}\protected@file@percent }
+\citation{Sundar:2013}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Left: Part 2: $R \times B$. This figure shows which sub-blocks of R should be multiplied by which sub-blocks of $B$. Right: Local transpose of blocks of $P$ is used instead of $R$. Each green sub-block of the transpose of $P$ is multiplied by all green sub-blocks of $B$.\relax }}{11}\protected@file@percent }
+\newlabel{fig:part2d}{{7}{11}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {5}{\ignorespaces Part 2: $Ac = R \times B$\relax }}{11}\protected@file@percent }
+\newlabel{alg:part2}{{5}{11}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Numerical Results}{11}\protected@file@percent }
+\newlabel{sec:results}{{3}{11}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Left: Strong scaling for four banded matrices of the same size ($192k$), but with different bandwidth. The legend shows the density ($\frac  {nonzero}{size^2}$) of each matrix. Right: Comparison of the the strong scaling when using two different splitting strategies: based on matrix size and based on number of nonzeros. The legend shows the density of each matrix together with the splitting strategy.\relax }}{12}\protected@file@percent }
+\newlabel{fig:strong1}{{8}{12}}
+\bibstyle{splncs04}
+\bibdata{ref.bib}
+\bibcite{bell2012exposing}{1}
+\bibcite{Braess86}{2}
+\bibcite{BrambleZhang00}{3}
+\bibcite{Brenner02}{4}
+\bibcite{Buluc12}{5}
+\bibcite{Dendy82}{6}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Left: Comparison of the the strong scaling between our solver and PETSc. The legend shows the density of each matrix. Right: Weak scaling for two banded matrices: blue line shows the one with $24k$ on each node ($1k$ on each core) and red line shows a larger one with $100k$ on each node ($4166$ on each core).\relax }}{13}\protected@file@percent }
+\newlabel{fig:petsc1}{{9}{13}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Conclusion}{13}\protected@file@percent }
+\newlabel{sec:conc}{{4}{13}}
+\bibcite{GholamiMalhotraSundar2016}{7}
+\bibcite{Gremse15}{8}
+\bibcite{Guillard98anaggregation}{9}
+\bibcite{MadayMunoz88}{10}
+\bibcite{DBLP:journals/siammax/Notay06}{11}
+\bibcite{notay2010aggregation}{12}
+\bibcite{Saule14}{13}
+\bibcite{Sundar12}{14}
+\bibcite{Sundar:2013}{15}
+\bibcite{TatebeOyanagi94}{16}
+\bibcite{treister2015non}{17}
+\bibcite{VanekBrezinaMandelEtAl01}{18}
+\bibcite{Vanek:1995}{19}
+\bibcite{Yuster2005}{20}

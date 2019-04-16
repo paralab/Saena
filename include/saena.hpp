@@ -214,4 +214,3 @@ namespace saena {
     int read_vector_file(std::vector<value_t>& v, saena::matrix &A, char *file, MPI_Comm comm);
     index_t find_split(index_t loc_size, index_t &my_split, MPI_Comm comm);
 }
-

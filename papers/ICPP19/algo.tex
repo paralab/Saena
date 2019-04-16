@@ -1,0 +1,113 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.20 of 2017/10/04
+%
+\documentclass{article}
+%
+%\usepackage{graphicx}
+% Used for displaying a sample figure. If possible, figure files should
+% be included in EPS format.
+%
+% If you use the hyperref package, please uncomment the following line
+% to display URLs in blue roman font according to Springer's eBook style:
+% \renewcommand\UrlFont{\color{blue}\rmfamily}
+
+% 1. Preamble and packages
+\usepackage{lipsum}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+%\usepackage{epstopdf}
+%\usepackage{algorithmic}
+
+%\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{compatibility=false}
+
+% Tools for mathematical typesetting
+\usepackage{algpseudocode} 
+% Typesetting algorithms
+\usepackage{algorithm}
+
+\usepackage{amsmath}
+\input{macros}
+%\ifpdf%
+%  \DeclareGraphicsExtensions{.eps,.pdf,.png,.jpg}
+%\else
+%  \DeclareGraphicsExtensions{.eps}
+%\fi
+\usepackage{amsopn}
+\usepackage{amssymb}
+\DeclareMathOperator{\diag}{diag}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{varwidth}
+
+\newcommand{\bs}[1]{\ensuremath{\boldsymbol #1}}
+\newcommand{\mynote}[3]{
+	\textcolor{#2}{\fbox{\bfseries\sffamily\scriptsize#1}}
+		{\small$\blacktriangleright$\textsf{\emph{#3}}$\blacktriangleleft$}
+}
+
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\newcommand{\mvec}{\textsc{matvec}}
+\newcommand{\mm}{\textsc{matmult}}
+\newcommand{\recmm}{\textsc{recurs\_matmult}}
+\newcommand{\spr}{\textsc{split\_by\_row}}
+\newcommand{\spc}{\textsc{split\_by\_col}}
+\newcommand{\nnzsz}{\textsc{nnz\_mat\_size}}
+
+\begin{document}
+
+
+%\maketitle              % typeset the header of the contribution
+
+
+\begin{algorithm}[H] 
+  %\footnotesize
+  \caption{$C_i = A_i \times B$} \label{alg:part1} 
+  \begin{algorithmic}[1]
+    \Require $A_i$, $B$
+    \Ensure  $C_i$ (result of $A_i \times B$)
+    \State $nnzPerColScan\_left \gets A.nnzPerColScan$ (this is computed in matrix setup)
+    \State $mat\_send \gets local\ B$
+    \For{$k=myrank:myrank+nprocs$}
+      \State $mat\_recv \gets Irecv(remote\ B)\ from\ right\ neighbor$
+      \State $Isend(mat\_send)\ to\ left\ neighbor$
+      \State $nnzPerColScan\_right \gets compute\ it\ for\ mat\_send$
+      \State \begin{varwidth}[t]{\linewidth}
+      $C_i$~$\gets$~\recmm(\par
+      \hskip\algorithmicindent  $A_i, mat\_send,$ \par
+      \hskip\algorithmicindent $nnzPerColScan\_left[0], nnzPerColScan\_left[1],$ \par \hskip\algorithmicindent $nnzPerColScan\_right[0], nnzPerColScan\_right[1])$ 
+             \end{varwidth}
+
+      \State $wait\ for\ Isend\ and\ Irecv\ to\ finish$
+      \State $swap(mat\_send,mat\_recv)$
+    \EndFor
+  \end{algorithmic}
+\end{algorithm}
+
+$nnzPerColScan\_left[0]$ and $nnzPerColScan\_left[1]$ are being used to know the starting and ending index for nonzeros of each column of $A$. The same for $nnzPerColScan\_right$ about $B$.
+
+In the recursive function, if $A$ is being split vertically, $nnzPerColScan\_left$  will also be split to half, In this case, $B$ should be split horizontally, so we go through half of the nonzeros of $B$ and create $nnzPerColScan\_middle$ to know when each column ends for the top block and starts for the bottom block. Then call the recursive function as following:
+
+\begin{algorithm}[H] 
+  %\footnotesize
+  \caption{Calling \recmm for when A is being split vertically}
+  \begin{algorithmic}[1]
+    \State \begin{varwidth}[t]{\linewidth}
+    $C_i$~$\gets$~\recmm(\par
+    \hskip\algorithmicindent  $A_{i,1}, B_{i,1},$ \par
+    \hskip\algorithmicindent $nnzPerColScan\_leftStart[0], nnzPerColScan\_leftEnd[0],$ \par \hskip\algorithmicindent $nnzPerColScan\_rightStart, nnzPerColScan\_middle)$ 
+            \end{varwidth}
+            
+        \State \begin{varwidth}[t]{\linewidth}
+    $C_i$~$\gets$~\recmm(\par
+    \hskip\algorithmicindent  $A_{i,2}, B_{i,2},$ \par
+    \hskip\algorithmicindent $nnzPerColScan\_leftStart[A\_col\_size\_half], nnzPerColScan\_leftEnd[A\_col\_size\_half],$ \par \hskip\algorithmicindent $nnzPerColScan\_middle, nnzPerColScan\_rightEnd)$ 
+            \end{varwidth}
+  \end{algorithmic}
+\end{algorithm}
+
+\end{document}

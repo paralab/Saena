@@ -1,0 +1,57 @@
+This is BibTeX, Version 0.99d (TeX Live 2017/Debian)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: ICCS19.aux
+The style file: splncs04.bst
+Database file #1: ref.bib.bib
+Repeated entry---line 80 of file ref.bib.bib
+ : @article{treister2015non
+ :                         ,
+I'm skipping whatever remains of this entry
+Repeated entry---line 102 of file ref.bib.bib
+ : @article{bell2012exposing
+ :                          ,
+I'm skipping whatever remains of this entry
+Warning--empty institution in Guillard98anaggregation
+Warning--missing institution in Vanek:1995
+You've used 20 entries,
+            2850 wiz_defined-function locations,
+            761 strings with 8742 characters,
+and the built_in function-call counts, 12666 in all, are:
+= -- 1099
+> -- 310
+< -- 30
++ -- 129
+- -- 106
+* -- 827
+:= -- 1540
+add.period$ -- 36
+call.type$ -- 20
+change.case$ -- 124
+chr.to.int$ -- 0
+cite$ -- 22
+duplicate$ -- 1138
+empty$ -- 1138
+format.name$ -- 123
+if$ -- 2821
+int.to.chr$ -- 0
+int.to.str$ -- 20
+missing$ -- 218
+newline$ -- 66
+num.names$ -- 44
+pop$ -- 353
+preamble$ -- 1
+purify$ -- 89
+quote$ -- 0
+skip$ -- 386
+stack$ -- 0
+substring$ -- 844
+swap$ -- 706
+text.length$ -- 30
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 80
+warning$ -- 2
+while$ -- 112
+width$ -- 22
+write$ -- 230
+(There were 2 error messages)
