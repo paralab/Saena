@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.1.1)  11 APR 2019 16:24
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.1.1)  16 APR 2019 12:59
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -303,7 +303,7 @@ LaTeX Font Info:    Try loading font information for U+msb on input line 69.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Overfull \hbox (73.14304pt too wide) in paragraph at lines 108--108
+Overfull \hbox (73.14304pt too wide) in paragraph at lines 109--109
 [] $\OML/cmm/m/it/10 nnzPerColScan[]leftStart\OT1/cmr/m/n/10 [\OML/cmm/m/it/10 
 A[]col[]size[]half\OT1/cmr/m/n/10 ]\OML/cmm/m/it/10 ; nnzPerColScan[]leftEnd\OT
 1/cmr/m/n/10 [\OML/cmm/m/it/10 A[]col[]size[]half\OT1/cmr/m/n/10 ]\OML/cmm/m/it
@@ -311,7 +311,7 @@ A[]col[]size[]half\OT1/cmr/m/n/10 ]\OML/cmm/m/it/10 ; nnzPerColScan[]leftEnd\OT
  []
 
 
-Overfull \hbox (73.14304pt too wide) detected at line 109
+Overfull \hbox (73.14304pt too wide) detected at line 110
 [] $\OML/cmm/m/it/10 nnzPerColScan[]leftStart\OT1/cmr/m/n/10 [\OML/cmm/m/it/10 
 A[]col[]size[]half\OT1/cmr/m/n/10 ]\OML/cmm/m/it/10 ; nnzPerColScan[]leftEnd\OT
 1/cmr/m/n/10 [\OML/cmm/m/it/10 A[]col[]size[]half\OT1/cmr/m/n/10 ]\OML/cmm/m/it
@@ -324,7 +324,7 @@ A[]col[]size[]half\OT1/cmr/m/n/10 ]\OML/cmm/m/it/10 ; nnzPerColScan[]leftEnd\OT
 Here is how much of TeX's memory you used:
  4502 strings out of 492982
  63592 string characters out of 6134897
- 227710 words of memory out of 5000000
+ 228710 words of memory out of 5000000
  8008 multiletter control sequences out of 15000+600000
  6247 words of font info for 25 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -338,7 +338,7 @@ t/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/texmf-dist/fonts
 public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/a
 msfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/
 cm/cmsy10.pfb>
-Output written on algo.pdf (1 page, 86248 bytes).
+Output written on algo.pdf (1 page, 86313 bytes).
 PDF statistics:
  40 PDF objects out of 1000 (max. 8388607)
  28 compressed objects within 1 object stream

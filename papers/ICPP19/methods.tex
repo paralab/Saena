@@ -61,7 +61,7 @@ We have done a series of experiments to determine the threshold when to switch b
  \Description{}
 \end{figure}
 
-Figure~\ref{fig:mix} compares the hybrid method with the basic two methods. We have compared the the three approaches on different sizes of 3D Poisson problem, ranging from $8k$ to almost half a million. For instance, for the case where the matrix is of size $512k$, computing the first coarse matrix (performing the triple matrix) takes $291s$ if only hashmap is used for Case 1, takes $72s$ if only the dense structure is used and finally takes almost $17s$ when the hybrid approach is utilized for Case 1.
+Figure~\ref{fig:mix} compares the hybrid method with the basic two methods. We have compared the three approaches on different sizes of 3D Poisson problem, ranging from $8k$ to almost half a million. For instance, for the case where the matrix is of size $512k$, computing the first coarse matrix (performing the triple matrix) takes $291s$ if only hashmap is used for Case 1, takes $72s$ if only the dense structure is used and finally takes almost $17s$ when the hybrid approach is utilized for Case 1.
 
 
 \subsubsection{Case 2}
@@ -271,3 +271,22 @@ The difference for final result between this case and the na\"{i}ve Case 2 is th
     \State globally sort $Ac_i$ and add duplicates
   \end{algorithmic}
 \end{algorithm}
+
+Notes:
+
+When doing $A \times B$ in a distributed fashion, it is better to use the local transpose of $B$ for two reasons:
+
+1- After doing each block, sorting and removing duplicates can be done, instead doing that for the whole results.
+2- $B$ will be split better. (create a figure for this part)
+
+Explain why CSC is a better option for splitting the matrices. Explain the choice of pivot and the in-place sorting.
+
+Steps for splitting based on CSC:
+
+I) Split Vertically: Reusing row, val from the original block. Modify col-idx by subtracting a fixed number
+
+II) Split Horizontally: 
+
+1- First create col-idx for the bottom and top blocks.
+
+2- Then, perform an in-place sorting by choosing a specifi pivot to change the order for the bottom and top blocks for row and val. Then the bottom and top blocks should have column-major order (because of CSC).
