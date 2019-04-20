@@ -1188,7 +1188,8 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 
 
 int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff) {
-
+    printf("update fast_mm, then uncomment!\n");
+/*
     // Output: Ac = R * A * P
     // Steps:
     // 1- Compute AP = A * P. To do that use the transpose of R_i, instead of P. Pass all R_j's to all the processors,
@@ -1583,7 +1584,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
     // use this part to print data to be used in Julia, to check the solution.
     // *******************************************************
 #ifdef __DEBUG1__
-/*
+
 //    std::cout << "\n";
 //    for(nnz_t i = 0; i < A->entry.size(); i++){
 //        std::cout << A->entry[i].row+1 << ", ";
@@ -1631,7 +1632,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
 //    A = sparse(I, J ,V)
 //    and so on. then compare the multiplication from Julia with the following:
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
-*/
+
 #endif
 
     // *******************************************************
@@ -1718,6 +1719,8 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
     // view matrix Ac
     // --------------
 //    petsc_viewer(Ac);
+
+*/
 
     return 0;
 } // compute_coarsen()

@@ -21,6 +21,17 @@ bool row_major (const cooEntry& node1, const cooEntry& node2)
 }
 
 
+bool vecCol_col_major (const vecCol& node1, const vecCol& node2)
+{
+    if(*node1.c < *node2.c)
+        return (true);
+    else if(*node1.c == *node2.c)
+        return((*node1.rv).row <= (*node2.rv).row);
+    else
+        return false;
+}
+
+
 //template <class T>
 //float myNorm(std::vector<T>& v){
 //    float norm = 0;
@@ -60,6 +71,11 @@ std::ostream & operator<<(std::ostream & stream, const vecEntry & item) {
 
 std::ostream & operator<<(std::ostream & stream, const tuple1 & item) {
     stream << item.idx1 << "\t" << item.idx2;
+    return stream;
+}
+
+std::ostream & operator<<(std::ostream & stream, const vecCol & item) {
+    stream << item.rv->row << "\t" << *item.c << "\t" << item.rv->val;
     return stream;
 }
 

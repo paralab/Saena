@@ -16,9 +16,6 @@
 #include "mpi.h"
 
 
-#include "grid.h"
-
-
 int main(int argc, char* argv[]){
 
     MPI_Init(&argc, &argv);
@@ -134,9 +131,11 @@ int main(int argc, char* argv[]){
     saena::amg solver;
 //    saena::matrix C(comm);
 
+    saena::matrix B(A);
+
     // warm-up
     for(int i = 0; i < matmat_iter_warmup; i++){
-        solver.matmat_ave(&A, &A, matmat_time);
+        solver.matmat_ave(&A, &B, matmat_time);
     }
 
 //    matmat_time = 0;
@@ -144,7 +143,7 @@ int main(int argc, char* argv[]){
 //        solver.matmat_ave(&A, &A, matmat_time);
 //    }
 
-    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
+//    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
 
 //    petsc_viewer(A.get_internal_matrix());
 //    petsc_viewer(C.get_internal_matrix());

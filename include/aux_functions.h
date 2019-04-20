@@ -429,6 +429,45 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
     return 0;
 }
 
+
+template<class T>
+int print_array(const T &v, const nnz_t sz, const int ran, const std::string &name, MPI_Comm comm){
+    // if ran >= 0 print the array elements on proc with rank = ran
+    // otherwise print the array elements on all processors in order. (first on proc 0, then proc 1 and so on.)
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    index_t iter = 0;
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), ran, sz);
+            for (index_t i = 0; i < sz; i++) {
+                std::cout << iter << "\t" << v[i] << std::endl;
+                iter++;
+            }
+            printf("\n");
+        }
+    } else{
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), proc, sz);
+                for (index_t i = 0; i < sz; i++) {
+                    std::cout << iter << "\t" << v[i] << std::endl;
+                    iter++;
+                }
+                printf("\n");
+            }
+            MPI_Barrier(comm);
+        }
+    }
+
+    return 0;
+}
+
+
 int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm);
 
 
@@ -555,5 +594,69 @@ public:
 };
 
 std::ostream & operator<<(std::ostream & stream, const tuple1 & item);
+
+
+class vecCol{
+public:
+    vecEntry *rv;
+    index_t  *c;
+//    nnz_t sz;
+
+    vecCol() = default;
+    vecCol(vecEntry *_rv, index_t *_c){
+        rv = _rv;
+        c  = _c;
+//        sz = _sz;
+    }
+
+    bool operator == (const vecCol& node2) const
+    {
+        return (rv->row == node2.rv->row && c == node2.c);
+    }
+
+    bool operator < (const vecCol& node2) const
+    {
+        if(c < node2.c)
+            return (true);
+        else if(c == node2.c)
+            return(rv->row < node2.rv->row);
+        else
+            return false;
+    }
+
+    bool operator <= (const vecCol& node2) const
+    {
+        if(c < node2.c)
+            return (true);
+        else if(c == node2.c)
+            return(rv->row <= node2.rv->row);
+        else
+            return false;
+    }
+
+    bool operator > (const vecCol& node2) const
+    {
+        if(c > node2.c)
+            return (true);
+        else if(c == node2.c)
+            return(rv->row > node2.rv->row);
+        else
+            return false;
+    }
+
+    bool operator >= (const vecCol& node2) const
+    {
+        if(c > node2.c)
+            return (true);
+        else if(c == node2.c)
+            return(rv->row >= node2.rv->row);
+        else
+            return false;
+    }
+};
+
+std::ostream & operator<<(std::ostream & stream, const vecCol & item);
+
+bool vecCol_col_major (const vecCol& node1, const vecCol& node2);
 
 #endif //SAENA_AUXFUNCTIONS_H

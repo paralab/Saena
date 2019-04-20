@@ -60,7 +60,7 @@ public:
     gridinfo_t superlu_grid;
 
     std::string coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const index_t matmat_size_thre1        = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M
+    const index_t matmat_size_thre1        = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
     static const index_t matmat_size_thre2 = 20000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
     const index_t matmat_size_thre3        = 20000000;  // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold = 50; //default 50
@@ -129,18 +129,17 @@ public:
     int matmat(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C);
     int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
+    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
+    int reorder_split(vecEntry *arr, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
 
     // for fast_mm experiments
     int compute_coarsen_test(Grid *grid);
     int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-                 nnz_t A_nnz, nnz_t B_nnz,
+    void fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
                  index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                  index_t B_col_size, index_t B_col_offset,
-                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-                 MPI_Comm comm);
+                 index_t *Ac, index_t *Bc, MPI_Comm comm);
 
 //    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
 //                 nnz_t A_nnz, nnz_t B_nnz,
