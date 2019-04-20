@@ -227,6 +227,7 @@ public:
 
 //    to write saena matrix to a file use related function from saena_matrix class.
 //    int writeMatrixToFileA(saena_matrix* A, std::string name);
+    int writeMatrixToFile(std::vector<cooEntry>& A, const std::string &folder_name, MPI_Comm comm);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);
     int writeMatrixToFileR(restrict_matrix* R, std::string name);
     int writeVectorToFileul(std::vector<unsigned long>& v, std::string name, MPI_Comm comm);

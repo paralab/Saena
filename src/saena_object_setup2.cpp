@@ -5873,11 +5873,60 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 #endif
 
     // =======================================
+    // perform the multiplication
+    // =======================================
 
     std::vector<cooEntry> AB_temp;
     fast_mm(Arv, Brv, AB_temp,
             A->M, A->split[rank], A->Mbig, 0, B->M, B->split[rank],
             &Ac[0], &Bc[0], A->comm);
+
+#ifdef __DEBUG1__
+//    print_vector(AB_temp, -1, "AB_temp", comm);
+#endif
+
+    // =======================================
+    // sort and remove duplicates
+    // =======================================
+
+//    MPI_Barrier(comm);
+//    t1 = MPI_Wtime();
+
+    std::sort(AB_temp.begin(), AB_temp.end());
+
+    nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
+    std::vector<cooEntry> AB; // this won't be used.
+    for(nnz_t i = 0; i < AB_temp.size(); i++){
+        AB.emplace_back(AB_temp[i]);
+        while(i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i+1]){ // values of entries with the same row and col should be added.
+//            std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+            AB.back().val += AB_temp[++i].val;
+        }
+    }
+
+//    t1 = MPI_Wtime() - t1;
+//    print_time_ave(t1, "AB:", comm);
+
+#ifdef __DEBUG1__
+//    print_vector(AB, -1, "AB", comm);
+//    writeMatrixToFile(AB, "matrix_folder", comm);
+#endif
+
+    // =======================================
+    // finalize
+    // =======================================
+
+//    mat_send.clear();
+//    mat_send.shrink_to_fit();
+    AB_temp.clear();
+    AB_temp.shrink_to_fit();
+
+    delete []Ac;
+    delete []Bc;
+
+    delete[] mempool1;
+    delete[] mempool2;
+//    delete[] mempool3;
 
     // =======================================
     // split A horizontally
@@ -5885,7 +5934,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 /*
     index_t A_row_sz      = A->M;
     index_t A_col_sz      = A->Mbig;
-    index_t A_row_sz_half = A_row_sz/2; // todo: fix this
+    index_t A_row_sz_half = A_row_sz/2;
     nnz_t A_nnz           = A->nnz_l;
 
     auto Ac1 = Ac; // col_idx
@@ -5923,15 +5972,6 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    }
 #endif
 */
-
-    delete []Ac;
-    delete []Bc;
-
-    delete[] mempool1;
-    delete[] mempool2;
-//    delete[] mempool3;
-
-
 
     // =======================================
 
