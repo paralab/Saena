@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    // *************************** initialize the matrix: Laplacian ****************************
+    // *************************** initialize the matrix: banded ****************************
 
     double t1 = MPI_Wtime();
 
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
-//    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
+//    A.get_internal_matrix()->writeMatrixToFile("Matlab/Saena/matrix");
 
 //    petsc_viewer(A.get_internal_matrix());
 

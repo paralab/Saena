@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <omp.h>
 #include <printf.h>
+#include <iomanip>
 #include "mpi.h"
 
 
@@ -1304,7 +1305,8 @@ int saena_matrix::writeMatrixToFile(const char *folder_name){
 
     for (nnz_t i = 0; i < entry_temp2.size(); i++) {
 //        if(rank==0) std::cout  << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
-        outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t" << entry_temp2[i].val << std::endl;
+        outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t"
+                   << std::setprecision(12) << entry_temp2[i].val << std::endl;
     }
 
     outFileTxt.clear();

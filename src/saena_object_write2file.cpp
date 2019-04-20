@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <mpi.h>
+#include <iomanip>
 
 
 // to write saena matrix to a file use the related function from the saena_matrix class.
@@ -61,7 +62,8 @@ int saena_object::writeMatrixToFile(std::vector<cooEntry>& A, const std::string 
 
     for (nnz_t i = 0; i < entry_temp2.size(); i++) {
 //        if(rank==0) std::cout  << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
-        outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t" << entry_temp2[i].val << std::endl;
+        outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t"
+                   << std::setprecision(12) << entry_temp2[i].val << std::endl;
     }
 
     outFileTxt.clear();

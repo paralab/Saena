@@ -5882,7 +5882,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
             &Ac[0], &Bc[0], A->comm);
 
 #ifdef __DEBUG1__
-    print_vector(AB_temp, -1, "AB_temp", comm);
+//    print_vector(AB_temp, -1, "AB_temp", comm);
 #endif
 
     // =======================================
@@ -5909,7 +5909,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
 #ifdef __DEBUG1__
 //    print_vector(AB, -1, "AB", comm);
-    writeMatrixToFile(AB, "matrix_folder", comm);
+//    writeMatrixToFile(AB, "Matlab/Saena/result", comm);
 #endif
 
     // =======================================
@@ -5924,9 +5924,12 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     delete []Ac;
     delete []Bc;
 
+    printf("here1!\n");
+
     delete[] mempool1;
     delete[] mempool2;
 //    delete[] mempool3;
+    printf("here2!\n");
 
     // =======================================
     // split A horizontally
