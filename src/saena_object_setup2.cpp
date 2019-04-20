@@ -5924,12 +5924,9 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     delete []Ac;
     delete []Bc;
 
-    printf("here1!\n");
-
     delete[] mempool1;
     delete[] mempool2;
 //    delete[] mempool3;
-    printf("here2!\n");
 
     // =======================================
     // split A horizontally
