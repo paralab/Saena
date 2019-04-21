@@ -36,7 +36,6 @@ int main(int argc, char* argv[]){
     }
 
     // *************************** initialize the matrix: banded ****************************
-
     double t1 = MPI_Wtime();
 
     int M(std::stoi(argv[1]));
@@ -53,7 +52,7 @@ int main(int argc, char* argv[]){
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
-//    A.get_internal_matrix()->writeMatrixToFile("Matlab/Saena/matrix");
+    A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
 
 //    petsc_viewer(A.get_internal_matrix());
 

@@ -7,6 +7,7 @@
 #include "aux_functions.h"
 #include "saena_vector.h"
 
+#include <memory>
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -60,9 +61,9 @@ public:
     gridinfo_t superlu_grid;
 
     std::string coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const index_t matmat_size_thre1        = 500000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
-    static const index_t matmat_size_thre2 = 200000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
-    const index_t matmat_size_thre3        = 200000;  // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
+    const index_t matmat_size_thre1        = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
+    static const index_t matmat_size_thre2 = 20000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
+    const index_t matmat_size_thre3        = 20000000;  // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
     std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
@@ -73,6 +74,9 @@ public:
     cooEntry *mempool3;
     std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
+//    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
+//    std::unique_ptr<index_t[]> mempool2;
+//    std::unique_ptr<value_t[]> mempool3;
 
     bool doSparsify = false;
     std::string sparsifier = "majid"; // options: 1- TRSL, 2- drineas, majid
@@ -128,7 +132,11 @@ public:
     int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int matmat(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+
+    // matmat_ave: transpose of B is used.
+    // matmat_ave_orig_B: original B is used.
     int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
+    int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
     int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
     int reorder_split(vecEntry *arr, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
 
