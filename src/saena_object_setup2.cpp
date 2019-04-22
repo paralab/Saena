@@ -504,7 +504,7 @@ void saena_object::fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
 #ifdef SPLIT_SIZE
 
         // prepare splits of matrix A by column
-
+/*
         auto A1 = &A[0];
         auto A2 = &A[0];
 
@@ -532,6 +532,7 @@ void saena_object::fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
 
         nnz_t A1_nnz = Ac1[A1_col_size] - Ac1[0];
         nnz_t A2_nnz = A_nnz - A1_nnz;
+*/
 #endif
 
 #ifdef __DEBUG1__
@@ -569,40 +570,58 @@ void saena_object::fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
 #ifdef SPLIT_NNZ
 
         // prepare splits of matrix A by column
-        nnz_t A1_nnz = 0, A2_nnz;
         auto A_half_nnz = (nnz_t) ceil(A_nnz / 2);
-//    index_t A_col_size_half = A_col_size/2;
+//        index_t A_col_size_half = A_col_size/2;
 
-        if (A_nnz > matmat_nnz_thre) {
+        if (A_nnz > matmat_nnz_thre) { // otherwise A_col_size_half will stay A_col_size/2
             for (nnz_t i = 0; i < A_col_size; i++) {
-                A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
-                if (A1_nnz >= A_half_nnz) {
-                    A_col_size_half = A[nnzPerColScan_leftStart[i]].col + 1 -
-                                      A_col_offset; // this is called once! don't optimize.
+                if( (Ac[i+1] - Ac[0]) >= A_half_nnz){
+                    A_col_size_half = i;
                     break;
                 }
             }
-        } else { // A_col_half will stay A_col_size/2
-            for (nnz_t i = 0; i < A_col_size_half; i++) {
-                A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
-            }
         }
 
-        // if A is not being splitted at all following "half nnz method", then swtich to "half size method".
+        // if A is not being split at all following "half nnz method", then swtich to "half size method".
         if (A_col_size_half == A_col_size) {
             A_col_size_half = A_col_size / 2;
-            A1_nnz = 0;
-            for (nnz_t i = 0; i < A_col_size_half; i++) {
-                A1_nnz += nnzPerColScan_leftEnd[i] - nnzPerColScan_leftStart[i];
-            }
         }
 
-        A2_nnz = A_nnz - A1_nnz;
 #endif
+
+        auto A1 = &A[0];
+        auto A2 = &A[0];
+
+        auto Ac1 = Ac;
+        auto Ac2 = &Ac[A_col_size_half];
+
+        // Split Fact 1:
+        // The last element of Ac1 is shared with the first element of Ac2, and it may gets changed
+        // during the recursive calls from the Ac1 side. So, save that and use it for the starting
+        // point of Ac2 inside the recursive calls.
+//        index_t A1_col_scan_start = Ac1[0];
+//        index_t A2_col_scan_start = Ac2[0];
+
+        auto A1_row_size = A_row_size;
+        auto A2_row_size = A_row_size;
+
+        auto A1_row_offset = A_row_offset;
+        auto A2_row_offset = A_row_offset;
+
+        auto A1_col_size = A_col_size_half;
+        auto A2_col_size = A_col_size - A1_col_size;
+
+        auto A1_col_offset = A_col_offset;
+        auto A2_col_offset = A_col_offset + A1_col_size;
+
+        nnz_t A1_nnz = Ac1[A1_col_size + 1] - Ac1[0];
+        nnz_t A2_nnz = A_nnz - A1_nnz;
 
         // =======================================================
 
-        index_t B_row_size_half = B_row_size / 2;
+        // split B based on how A is split, so use A_col_size_half to split B. A_col_size_half is different based on
+        // choosing the splitting method (nnz or size).
+        index_t B_row_size_half = A_col_size_half;
         index_t B_row_threshold = B_row_size_half + B_row_offset;
 
         auto Bc1 = Bc; // col_idx
@@ -896,6 +915,8 @@ void saena_object::fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
         // =======================================================
 
 #ifdef SPLIT_NNZ
+        if(rank==0) printf("NOTE: fix splitting based on nnz for case3!");
+
         // prepare splits of matrix B by column
         nnz_t B1_nnz = 0, B2_nnz;
         auto B_half_nnz = (nnz_t) ceil(B_nnz / 2);
