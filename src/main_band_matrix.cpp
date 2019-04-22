@@ -3,7 +3,7 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-//#include "petsc_functions.h"
+#include "petsc_functions.h"
 //#include "combblas_functions.h"
 
 #include <iostream>
@@ -34,6 +34,8 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+
+    if(!rank) std::cout << "nprocs = " << nprocs << std::endl << std::endl;
 
     // *************************** initialize the matrix: banded ****************************
     double t1 = MPI_Wtime();
@@ -124,8 +126,8 @@ int main(int argc, char* argv[]){
     // *************************** matrix-matrix product ****************************
 
     double matmat_time = 0;
-    int matmat_iter_warmup = 5;
-    int matmat_iter = 5;
+    int matmat_iter_warmup = 10;
+    int matmat_iter = 10;
 
     saena::amg solver;
 //    saena::matrix C(comm);
@@ -149,7 +151,7 @@ int main(int argc, char* argv[]){
 //    saena_object *obj1 = solver.get_object();
 
 //    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
-//    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
+    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
 
     // *************************** CombBLAS ****************************
