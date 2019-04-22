@@ -6039,6 +6039,9 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // communication and multiplication - parallel implementation
     // =======================================
 
+    MPI_Barrier(comm);
+    double t_AP = MPI_Wtime();
+
 #ifdef __DEBUG1__
 //    if(rank==0) std::cout << "sizeof(index_t) = " << sizeof(index_t) << ", sizeof(value_t) = " << sizeof(value_t)
 //                          << ", sizeof(vecEntry) = "<< sizeof(vecEntry)
@@ -6068,10 +6071,10 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    MPI_Barrier(comm);
 #endif
 
-    double tt;
-    double t_swap = 0;
+//    double tt;
+//    double t_swap = 0;
 //    index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
-    index_t mat_recv_M_max      = B->max_M;
+//    index_t mat_recv_M_max      = B->max_M;
 
 //    std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
 //    index_t *nnzPerCol_right   = &nnzPerColScan_right[1];
@@ -6093,7 +6096,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         index_t mat_recv_M, mat_current_M;
 //        auto mat_recv = &mempool3[send_size_max];
 
-        auto mat_recv       = &mempool3[send_size_max];
+        auto mat_recv = &mempool3[send_size_max];
 //        auto mat_recv_rv    = reinterpret_cast<vecEntry*>(&mat_recv[0]);
 //        auto mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
 //        auto mat_recv_cscan = reinterpret_cast<index_t*>(&mat_recv[rv_buffer_sz_max]);
@@ -6113,12 +6116,6 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
             // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
             // receive R_tranpose from the right_neighbor. And so on.
             // --------------------------------------------------------------------
-
-            // communicate size
-//            MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
-//            MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
-//            MPI_Waitall(1, requests, statuses);
-
 
             next_owner = (k+1)%nprocs;
             mat_recv_M = B->split[next_owner + 1] - B->split[next_owner];
@@ -6277,6 +6274,10 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    print_vector(AB, -1, "AB", comm);
 //    writeMatrixToFile(AB, "matrix_folder/result", comm);
 #endif
+
+    t_AP = MPI_Wtime() - t_AP;
+    matmat_time += print_time_ave_consecutive(t_AP, comm);
+//    matmat_time += t_ave;
 
     // =======================================
     // finalize

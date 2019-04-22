@@ -28,8 +28,8 @@ int main(int argc, char* argv[]){
 
     if(argc != 3){
         if(rank == 0){
-//            std::cout << "This is how to make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
-            std::cout << "This is how to make a 3DLaplacian: ./Saena <local size> <bandwidth>" << std::endl;
+//            std::cout << "This is how you can make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
+            std::cout << "This is how you can make a banded matrix: ./Saena <local size> <bandwidth>" << std::endl;
         }
         MPI_Finalize();
         return -1;
@@ -124,8 +124,8 @@ int main(int argc, char* argv[]){
     // *************************** matrix-matrix product ****************************
 
     double matmat_time = 0;
-    int matmat_iter_warmup = 1;
-    int matmat_iter = 1;
+    int matmat_iter_warmup = 5;
+    int matmat_iter = 5;
 
     saena::amg solver;
 //    saena::matrix C(comm);
@@ -137,12 +137,12 @@ int main(int argc, char* argv[]){
         solver.matmat_ave(&A, &B, matmat_time);
     }
 
-//    matmat_time = 0;
-//    for(int i = 0; i < matmat_iter; i++){
-//        solver.matmat_ave(&A, &A, matmat_time);
-//    }
+    matmat_time = 0;
+    for(int i = 0; i < matmat_iter; i++){
+        solver.matmat_ave(&A, &A, matmat_time);
+    }
 
-//    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
+    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
 
 //    petsc_viewer(A.get_internal_matrix());
 //    petsc_viewer(C.get_internal_matrix());
