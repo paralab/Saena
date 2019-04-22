@@ -1,7 +1,9 @@
 \section{Methods}
 \label{sec:methods}
 
-In this section, we present our matrix-matrix multiplication. We then explain further modifications to the triple matrix multiplication (\ref{eq:rap}) that are part of the AMG setup process.
+In this section, we present our matrix-matrix multiplication algorithm, the choice of the stop condition for the recursive function and how matrices are being divided to smaller blocks. We then explain how the communication is being done in the distributed fashion to help the recursive function scale better.
+
+%We then explain further modifications to the triple matrix multiplication (\ref{eq:rap}) that are part of the AMG setup process.
 
 \subsection{Matrix-Matrix Multiplication}
 \label{sec:matmult}
@@ -14,9 +16,19 @@ We design a divide and conquer approach to perform the sparse \mm\ in a node-loc
 
 To perform the multiplication
 \begin{equation}
-    Ax = b
+    C = A \times B
 \end{equation}
-we keep splitting the matrices horizontally or vertically based on row and column size of $A$. The recursive function, \recmm, includes three cases:
+we keep splitting the matrices horizontally and vertically (Figure~\ref{fig:split2}) based on row size and column size of $A$, until we can fit the result of the multiplication in a dense matrix.
+
+\begin{figure}[tbh]
+ \centering
+ \includegraphics[width=8.5cm,height=2.7cm]{./figures/split2.pdf}
+ \caption{}
+ \label{fig:split2}
+ \Description{}
+\end{figure}
+
+The recursive function, \recmm, includes three cases:
 \begin{enumerate}
  \item Case 1: Stop the recursion: perform the multiplication.
  \item Case 2: $A$ is horizontal. Split $A$ and $B$.
@@ -25,7 +37,23 @@ we keep splitting the matrices horizontally or vertically based on row and colum
 
 \subsubsection{Case 1}
 \label{sec:case1}
-By splitting sparse matrices recursively, we will have more and more zero rows and columns in the resulting sub-matrices. So, using row size and column size of those sub-matrices is not very helpful. Instead, we use nonzero rows and nonzero columns.
+First we discuss when we decide to stop the recursive function.  
+Our goal is to fit the multiplication result of blocks of $A$ and $B$ in a dense buffer. We show the blocks of $A$ and $B$ as $A_{ij}$ and $B_{lk}$. We use two indices here because matrices gets divided both horizontally and vertically. The size of the dense buffer to store $A_{ij} \times B_{lk}$ is
+\begin{equation}
+    row\ size\ of\ A_{ij} \times column\ size\ of\ B_{lk}\label{eq:thres}
+\end{equation}
+
+Therefore, the obvious choice to decide when to stop the recursion is Equation~ \eqref{eq:thres}, but Figure~\ref{fig:thres} shows why that is not a good choice. If we use Equation~ \eqref{eq:thres} for this example, the splitting process for the top two blocks of the matrix stops at the same step, but the top left block should be divided to more blocks than the top right block.
+
+\begin{figure}[tbh]
+ \centering
+ \includegraphics[width=8.5cm,height=4cm]{./figures/split3.pdf}
+ \caption{}
+ \label{fig:thres}
+ \Description{}
+\end{figure}
+
+Furthermore, by splitting sparse matrices recursively, we will have more and more zero rows and columns in the resulting blocks. So, using row size and column size of the blocks is not very helpful. Instead, we use nonzero rows and nonzero columns.
 At the start of the recursive function, the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$) are being computed. A threshold for $\nnzsz = A\_nnz\_row \times B\_nnz\_col$ is set. Our algorithm has a profiling step where it empirically determines the appropriate threshold by running several test cases. On the machines we used,  $20M$ was chosen as the threshold. We continue splitting the matrices until the threshold is reached. Then, we preform the multiplication. We have implemented two methods for this case: dense data structure and hashmap.
 
 %First method uses a dense matrix.
