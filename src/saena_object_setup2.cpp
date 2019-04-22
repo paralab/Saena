@@ -5923,6 +5923,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         Ac[i+1] += Ac[i];
     }
 
+    nnz_t A_nnz = A->nnz_l;
+
 #ifdef __DEBUG1__
 //    A->print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
@@ -5966,6 +5968,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         Bc[i+1] += Bc[i];
     }
 
+    nnz_t B_nnz = B->nnz_l;
+
 #ifdef __DEBUG1__
 //    B->print_entry(0);
 //    printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
@@ -5989,6 +5993,9 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // important: it depends if B or transpose of B is being used for the multiplciation. if originl B is used then
     // B_col_size is B->Mbig, but for the transpos it is B->M, which is scalable.
     // mempool3: is used to store the the received part of B.
+    // mempool3 size: it should store remote B, so we allocate the max size of B on all the procs.
+    //                sizeof(row index) + sizeof(value) + sizeof(col_scan) =
+    //                nnz * index_t + nnz * value_t + (col_size+1) * index_t
 
     index_t A_row_size = A->M;
 //    index_t B_col_size = B->Mbig; // for original B
@@ -5996,23 +6003,253 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
     mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[2 * A_row_size + 2 * B_col_size];
-//    mempool3 = new cooEntry[B->nnz_max * 2];
+
+    // 2 for both send and receive buffer, vecbyint for row and value, (B->max_M + 1) for col_scan
+    int vecbyint              = sizeof(vecEntry) / sizeof(index_t);
+    nnz_t rv_buffer_sz_max    = vecbyint * B->nnz_max;
+    nnz_t cscan_buffer_sz_max = B->max_M + 1;
+    nnz_t send_size_max       = rv_buffer_sz_max + cscan_buffer_sz_max;
+    auto mempool3             = new index_t[2 * (send_size_max)];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
 
+    if(2 * sizeof(index_t) != sizeof(double)){
+        if(rank==0) std::cout << __func__ << ": 2 * sizeof(index_t) != sizeof(double)" << std::endl;
+    }
+
+#ifdef __DEBUG1__
+//    if(rank==0) std::cout << "vecbyint = " << vecbyint << std::endl;
+#endif
+
     // =======================================
-    // perform the multiplication
+    // perform the multiplication - serial implementation
     // =======================================
 
-    std::vector<cooEntry> AB_temp;
-    fast_mm(Arv, Brv, AB_temp,
-            A->M, A->split[rank], A->Mbig, 0, B->M, B->split[rank],
-            &Ac[0], &Bc[0], A->comm);
+//    std::vector<cooEntry> AB_temp;
+//    fast_mm(Arv, Brv, AB_temp,
+//            A->M, A->split[rank], A->Mbig, 0, B->M, B->split[rank],
+//            &Ac[0], &Bc[0], A->comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AB_temp, -1, "AB_temp", comm);
 #endif
+
+    // =======================================
+    // communication and multiplication - parallel implementation
+    // =======================================
+
+#ifdef __DEBUG1__
+//    if(rank==0) std::cout << "sizeof(index_t) = " << sizeof(index_t) << ", sizeof(value_t) = " << sizeof(value_t)
+//                          << ", sizeof(vecEntry) = "<< sizeof(vecEntry)
+//                          << ", sizeof(cooEntry) = "<< sizeof(cooEntry)<< std::endl;
+#endif
+
+    // set the mat_send data
+    nnz_t send_nnz  = B_nnz;
+    nnz_t send_size = vecbyint * send_nnz + B_col_size + 1;
+//    unsigned long send_size_max = send_buffer_sz_max;
+
+    auto mat_send       = &mempool3[0];
+    auto mat_send_rv    = reinterpret_cast<vecEntry*>(&mat_send[0]);
+    auto mat_send_cscan = &mat_send[vecbyint * send_nnz];
+//    auto mat_send_cscan = reinterpret_cast<index_t*>(&mempool3[rv_buffer_sz_max]);
+
+//    for(nnz_t i = 0; i < B_nnz; i++){
+//        mat_send_rv[i] = Brv[i];
+//    }
+    memcpy(mat_send_rv,    Brv, B_nnz * sizeof(vecEntry));
+    memcpy(mat_send_cscan, Bc,  (B_col_size + 1) * sizeof(index_t));
+
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm);
+//    printf("send_size = %lu, send_size_max = %lu\n", send_size, send_size_max);
+//    print_array(mat_send_cscan, B_col_size+1, 1, "mat_send_cscan", comm);
+//    MPI_Barrier(comm);
+#endif
+
+    double tt;
+    double t_swap = 0;
+//    index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
+    index_t mat_recv_M_max      = B->max_M;
+
+//    std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
+//    index_t *nnzPerCol_right   = &nnzPerColScan_right[1];
+//    index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
+
+    std::vector<cooEntry> AB_temp;
+
+//    printf("\n");
+    if(nprocs > 1){
+        int right_neighbor = (rank + 1)%nprocs;
+        int left_neighbor  = rank - 1;
+        if (left_neighbor < 0){
+            left_neighbor += nprocs;
+        }
+
+        // set the mat_recv data
+        nnz_t recv_nnz;
+        nnz_t recv_size;
+        index_t mat_recv_M, mat_current_M;
+//        auto mat_recv = &mempool3[send_size_max];
+
+        auto mat_recv       = &mempool3[send_size_max];
+//        auto mat_recv_rv    = reinterpret_cast<vecEntry*>(&mat_recv[0]);
+//        auto mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
+//        auto mat_recv_cscan = reinterpret_cast<index_t*>(&mat_recv[rv_buffer_sz_max]);
+
+        auto mat_temp = mat_send;
+        int owner, next_owner;
+        auto *requests = new MPI_Request[2];
+        auto *statuses = new MPI_Status[2];
+
+        // todo: the last communication means each proc receives a copy of its already owned B, which is redundant,
+        // so the communication should be avoided but the multiplication should be done. consider this:
+        // change to k < rank+nprocs-1. Then, copy fast_mm after the end of the for loop to perform the last multiplication
+        for(int k = rank; k < rank+nprocs; k++){
+            // This is overlapped. Both local and remote loops are done here.
+            // The first iteration is the local loop. The rest are remote.
+            // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor.
+            // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
+            // receive R_tranpose from the right_neighbor. And so on.
+            // --------------------------------------------------------------------
+
+            // communicate size
+//            MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
+//            MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
+//            MPI_Waitall(1, requests, statuses);
+
+
+            next_owner = (k+1)%nprocs;
+            mat_recv_M = B->split[next_owner + 1] - B->split[next_owner];
+            recv_nnz   = B->nnz_list[next_owner];
+            recv_size  = vecbyint * recv_nnz + mat_recv_M + 1;
+
+#ifdef __DEBUG1__
+//            if(rank==0) std::cout << "\n===================" << __func__ << ", k = " << k << "===================\n";
+//            if(rank==0) std::cout << "\nnext_owner: " << next_owner << ", recv_size: " << recv_size << ", mat_recv_M: "
+//                        << mat_recv_M << ", recv_nnz: " << recv_nnz << std::endl;
+
+//            printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+//            mat_recv.resize(recv_size);
+#endif
+
+            // communicate data
+            MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
+            MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
+
+//            owner = k%nprocs;
+//            mat_recv_M = B->split[owner + 1] - B->split[owner];
+
+            if(A->entry.empty() || send_nnz==0){ // skip!
+#ifdef __DEBUG1__
+                if(verbose_matmat){
+                    if(A->entry.empty()){
+                        printf("\nskip: A->entry.size() == 0\n\n");
+                    } else {
+                        printf("\nskip: send_nnz == 0\n\n");
+                    }
+                }
+#endif
+            } else {
+
+//                fast_mm(&A->entry[0], &mat_send[0], AB_temp, A->entry.size(), send_size,
+//                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, B->split[owner],
+//                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+//                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+                owner         = k%nprocs;
+                mat_current_M = B->split[owner + 1] - B->split[owner];
+
+                fast_mm(Arv, &mat_send_rv[0], AB_temp,
+                        A->M, A->split[rank], A->Mbig, 0, mat_current_M, B->split[owner],
+                        &Ac[0], &mat_send_cscan[0], A->comm);
+
+            }
+
+            MPI_Waitall(2, requests, statuses);
+
+
+//            mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
+//            MPI_Barrier(comm);
+//            if(rank==0){
+//                print_array(mat_recv_cscan, mat_recv_M+1, 0, "mat_recv_cscan", comm);
+//            }
+//            MPI_Barrier(comm);
+
+            send_size = recv_size;
+            send_nnz  = recv_nnz;
+
+//            mat_recv.swap(mat_send);
+//            std::swap(mat_send, mat_recv);
+            mat_temp = mat_send;
+            mat_send = mat_recv;
+            mat_recv = mat_temp;
+
+            mat_send_rv    = reinterpret_cast<vecEntry*>(&mat_send[0]);
+            mat_send_cscan = &mat_send[vecbyint * send_nnz];
+//            mat_recv_rv    = reinterpret_cast<vecEntry*>(&mat_recv[0]);
+//            mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
+
+#ifdef __DEBUG1__
+//            MPI_Barrier(comm);
+//            if(rank==0){
+//                std::cout << "print received matrix: mat_recv_M: " << mat_recv_M << ", col_offset: "
+//                          << B->split[k%nprocs] << std::endl;
+
+//                print_array(mat_send_cscan, mat_recv_M+1, 0, "mat_send_cscan", comm);
+
+//                for(nnz_t i = 0; i < mat_recv_M; i++){
+//                    for(nnz_t j = mat_send_cscan[i]; j < mat_send_cscan[i+1]; j++) {
+//                        std::cout << j << "\t" << mat_send_rv[j].row << "\t" << i + B->split[k%nprocs] << "\t" << mat_send_rv[j].val << std::endl;
+//                    }
+//                }
+//            }
+//            MPI_Barrier(comm);
+
+//          print_vector(AB_temp, -1, "AB_temp", A->comm);
+//          print_vector(mat_send, -1, "mat_send", A->comm);
+//          print_vector(mat_recv, -1, "mat_recv", A->comm);
+//          prev_owner = owner;
+//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+#endif
+
+        }
+
+        delete [] requests;
+        delete [] statuses;
+
+    } else { // nprocs == 1 -> serial
+
+        if(A->entry.empty() || send_nnz == 0){ // skip!
+#ifdef __DEBUG1__
+            if(verbose_matmat){
+                if(A->entry.empty()){
+                    printf("\nskip: A->entry.size() == 0\n\n");
+                } else {
+                    printf("\nskip: send_nnz == 0\n\n");
+                }
+            }
+#endif
+        } else {
+
+//            index_t mat_recv_M = B->split[rank + 1] - B->split[rank];
+
+//            double t1 = MPI_Wtime();
+
+//            fast_mm(&A->entry[0], &mat_send[0], AB_temp, A->entry.size(), send_size,
+//                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, B->split[rank],
+//                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+//                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+            fast_mm(Arv, Brv, AB_temp,
+                    A->M, A->split[rank], A->Mbig, 0, B_col_size, B->split[rank],
+                    &Ac[0], &Bc[0], A->comm);
+
+//            double t2 = MPI_Wtime();
+//            printf("\nfast_mm of AB_temp = %f\n", t2-t1);
+        }
+    }
 
     // =======================================
     // sort and remove duplicates
@@ -6038,7 +6275,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
 #ifdef __DEBUG1__
 //    print_vector(AB, -1, "AB", comm);
-    writeMatrixToFile(AB, "matrix_folder/result", comm);
+//    writeMatrixToFile(AB, "matrix_folder/result", comm);
 #endif
 
     // =======================================
@@ -6047,8 +6284,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
 //    mat_send.clear();
 //    mat_send.shrink_to_fit();
-    AB_temp.clear();
-    AB_temp.shrink_to_fit();
+//    AB_temp.clear();
+//    AB_temp.shrink_to_fit();
 
     delete []Arv;
     delete []Ac;
@@ -6057,7 +6294,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
     delete[] mempool1;
     delete[] mempool2;
-//    delete[] mempool3;
+    delete[] mempool3;
 
     // =======================================
     // split A horizontally

@@ -90,7 +90,7 @@ void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nn
     if(rank==0) printf("ERROR: change datatypes for function setIJV!!!");
     if(rank==0) printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
-    std::vector<unsigned long> data(2*initial_nnz_l); // 3 is for i and j and val, i and j are int so both of them are like 1 long.
+    std::vector<unsigned long> data(2*initial_nnz_l); // 2 is for i and j and val, i and j are uint so both of them are like 1 ulong.
     unsigned long* datap;
     if(initial_nnz_l != 0)
         datap = &data[0];
