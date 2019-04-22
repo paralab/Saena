@@ -127,7 +127,7 @@ int main(int argc, char* argv[]){
 
     double matmat_time = 0;
     int matmat_iter_warmup = 10;
-    int matmat_iter = 10;
+    int matmat_iter = 15;
 
     saena::amg solver;
 //    saena::matrix C(comm);
@@ -139,6 +139,7 @@ int main(int argc, char* argv[]){
         solver.matmat_ave(&A, &B, matmat_time);
     }
 
+    MPI_Barrier(comm);
     matmat_time = 0;
     for(int i = 0; i < matmat_iter; i++){
         solver.matmat_ave(&A, &A, matmat_time);
