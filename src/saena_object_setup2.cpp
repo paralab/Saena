@@ -6271,6 +6271,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         }
     }
 
+    std::sort(AB.begin(), AB.end());
+
 #ifdef __DEBUG1__
 //    print_vector(AB, -1, "AB", comm);
 //    writeMatrixToFile(AB, "matrix_folder/result", comm);
