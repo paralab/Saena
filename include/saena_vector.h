@@ -5,7 +5,7 @@
 
 #include <set>
 #include "mpi.h"
-#include <boost/numeric/ublas/vector.hpp>
+//#include <boost/numeric/ublas/vector.hpp>
 
 /**
  * @author Majid Rasouli
