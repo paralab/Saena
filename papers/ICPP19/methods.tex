@@ -8,13 +8,19 @@ In this section, we present our matrix-matrix multiplication. We then explain fu
 
 %\subsubsection{Computation}
 %\label{sec:comp}
-We design a divide and conquer approach to perform the sparse \mm\ in a node-local fashion. The key idea is to perform simple tasks while recursing, having efficient memory access, and to perform the multiplication for small chunks where the resulting matrix can fit into an appropriate cache. For clarity of presentation, we assume that the data is available locally and discuss it as a serial implementation. Shared memory parallelism is added in a straightforward manner. We have implemented \mm~ in a recursive fashion. We split the matrices recursively in two ways: split by half based on the matrix size and based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
+We design a divide and conquer approach to perform the sparse \mm\ in a node-local fashion. The key idea is to perform simple tasks while recursing, having efficient memory access, and to perform the multiplication for small chunks where the resulting matrix can fit into an appropriate cache. For clarity of presentation, we assume that the data is available locally and discuss it as a serial implementation. Shared memory parallelism is added in a straightforward manner.
+%We have implemented \mm~ in a recursive fashion.
+%We split the matrices recursively in two ways: split by half based on the matrix size and based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
 
-The recursive function, \recmm, includes three cases:
+To perform the multiplication
+\begin{equation}
+    Ax = b
+\end{equation}
+we keep splitting the matrices horizontally or vertically based on row and column size of $A$. The recursive function, \recmm, includes three cases:
 \begin{enumerate}
  \item Case 1: Stop the recursion: perform the multiplication.
- \item Case 2: A is horizontal.
- \item Case 3: A is vertical.
+ \item Case 2: $A$ is horizontal. Split $A$ and $B$.
+ \item Case 3: $A$ is vertical. Split $A$ and $B$.
 \end{enumerate}
 
 \subsubsection{Case 1}
