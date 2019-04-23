@@ -9,13 +9,13 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="632mm"
-   height="378.30359mm"
-   viewBox="0 0 632.00001 378.30359"
+   width="752mm"
+   height="400.54022mm"
+   viewBox="0 0 752.00001 400.54023"
    version="1.1"
    id="svg8"
    inkscape:version="0.92.3 (2405546, 2018-03-11)"
-   sodipodi:docname="partition2.svg">
+   sodipodi:docname="partition5.svg">
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -25,9 +25,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.46789331"
-     inkscape:cx="1161.6027"
-     inkscape:cy="708.50876"
+     inkscape:zoom="0.35355339"
+     inkscape:cx="1325.7641"
+     inkscape:cy="816.51104"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -40,7 +40,10 @@
      inkscape:window-height="1001"
      inkscape:window-x="0"
      inkscape:window-y="0"
-     inkscape:window-maximized="1">
+     inkscape:window-maximized="1"
+     gridtolerance="1"
+     objecttolerance="1"
+     guidetolerance="1">
     <inkscape:grid
        type="xygrid"
        id="grid10"
@@ -50,7 +53,8 @@
        dotted="false"
        units="mm"
        originx="-338.08334"
-       originy="8.3965664" />
+       originy="6.134628"
+       snapvisiblegridlinesonly="false" />
   </sodipodi:namedview>
   <metadata
      id="metadata5">
@@ -60,7 +64,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -68,7 +72,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-398.08331,142.907)">
+     transform="translate(-398.08331,167.40557)">
     <rect
        style="fill:none;stroke:#000000;stroke-width:1.79110408;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;image-rendering:auto"
        id="rect4528-3"
@@ -77,12 +81,12 @@
        x="462"
        y="-92.000008" />
     <rect
-       style="fill:none;stroke:#000000;stroke-width:1.90162063;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;image-rendering:auto"
+       style="fill:none;stroke:#000000;stroke-width:2.45772314;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;image-rendering:auto"
        id="rect4528-3-7"
-       width="179.00005"
+       width="299.00009"
        height="298"
-       x="820.99994"
-       y="-112" />
+       x="820.99988"
+       y="-112.99997" />
     <path
        style="fill:none;stroke:#f60000;stroke-width:1.99999976;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 449.99999,66.999997 h 320"
@@ -92,11 +96,6 @@
        style="fill:none;stroke:#f60000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 449.99999,-13.000003 h 320"
        id="path4561-3"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#0000ff;stroke:#0000ff;stroke-width:1.90692508;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 810.08331,-12.999997 H 1010.0833"
-       id="path4561-3-5"
        inkscape:connector-curvature="0" />
     <text
        xml:space="preserve"
@@ -134,35 +133,35 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="779.08533"
-       y="-53.310059"
+       x="853.16864"
+       y="-122.10172"
        id="text4659-4-0"><tspan
          sodipodi:role="line"
          id="tspan4657-6-3"
-         x="779.08533"
-         y="-53.310059"
+         x="853.16864"
+         y="-122.10172"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">P0</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="779.08533"
-       y="47"
+       x="954.76862"
+       y="-120.74584"
        id="text4659-2-92-3"><tspan
          sodipodi:role="line"
          id="tspan4657-4-9-7"
-         x="779.08533"
-         y="47"
+         x="954.76862"
+         y="-120.74584"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">P1</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="779.08533"
-       y="147"
+       x="1052.8461"
+       y="-120.53915"
        id="text4659-2-9-0-9"><tspan
          sodipodi:role="line"
          id="tspan4657-4-1-3-4"
-         x="779.08533"
-         y="147"
+         x="1052.8461"
+         y="-120.53915"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">P2</tspan></text>
     <text
        xml:space="preserve"
@@ -177,17 +176,99 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="900.51385"
-       y="215.30356"
+       x="961.58545"
+       y="213.04164"
        id="text4659-2-9-0-99-2"><tspan
          sodipodi:role="line"
          id="tspan4907"
-         x="900.51385"
-         y="215.30356">B</tspan></text>
+         x="961.58545"
+         y="213.04164">B</tspan></text>
     <path
-       style="fill:#0000ff;stroke:#0000ff;stroke-width:1.90692508;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 810.08331,87.000003 H 1010.0833"
-       id="path4561-3-5-2"
+       style="fill:none;stroke:#0000ff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 919.99996,-124.60343 V 195.39658"
+       id="path4561-3-53"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#0000ff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 1020,-124.60344 V 195.39658"
+       id="path4561-3-53-6"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#d42aff;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="447.4007"
+       y="15.736293"
+       id="text4659-2-92-7"><tspan
+         sodipodi:role="line"
+         id="tspan4657-4-9-0"
+         x="447.4007"
+         y="15.736293"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#d42aff;fill-opacity:1;stroke-width:0.26458332">i</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#d42aff;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="870.56073"
+       y="-89.341934"
+       id="text4659-2-92-7-9"><tspan
+         sodipodi:role="line"
+         id="tspan4657-4-9-0-3"
+         x="870.56073"
+         y="-89.341934"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#d42aff;fill-opacity:1;stroke-width:0.26458332">j</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="842.77692"
+       y="47.635643"
+       id="text4659-4-0-3"><tspan
+         sodipodi:role="line"
+         id="tspan4657-6-3-6"
+         x="842.77692"
+         y="47.635643"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">BT0</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="945.1214"
+       y="46.770023"
+       id="text4659-4-0-3-0"><tspan
+         sodipodi:role="line"
+         id="tspan4657-6-3-6-6"
+         x="945.1214"
+         y="46.770023"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">BT1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;line-height:10;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="1041.4775"
+       y="47.144192"
+       id="text4659-4-0-3-2"><tspan
+         sodipodi:role="line"
+         id="tspan4657-6-3-6-61"
+         x="1041.4775"
+         y="47.144192"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.75px;font-family:'Liberation Serif';-inkscape-font-specification:'Liberation Serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.26458332">BT0</tspan></text>
+    <a
+       transform="translate(398.08331,-167.40557)"
+       style=""
+       id="a5714">
+      <path
+         transform="translate(-398.08333,167.40557)"
+         inkscape:connector-curvature="0"
+         id="path1090"
+         d="m 859.99997,-111.71139 -0.0222,295.1079"
+         style="fill:#d42aff;stroke:#d42aff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:6.00000006, 2.00000001999999988;stroke-dashoffset:0;stroke-opacity:1" />
+    </a>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="top">
+    <path
+       transform="translate(-398.08333,167.40557)"
+       style="fill:#d42aff;stroke:#d42aff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:8.00000009, 2.00000001999999988;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 462.0843,7.0000225 295.84141,0.2932"
+       id="path1088"
        inkscape:connector-curvature="0" />
   </g>
 </svg>

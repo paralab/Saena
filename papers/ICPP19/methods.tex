@@ -201,7 +201,7 @@ In the previous section we explained how to perform \mm~ if the data is availabl
 \end{equation}
 in a distributed fashion for general (non necessarily symmetric) matrices $A$ and $B$. Also, we show how to improve performance and scalability if $B$ is symmetric.
 
-Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Since matrices $A$ and $B$ may have different number of rows, they may not be partitioned the same way. We avoid communicating $A$ and only communicate $B$, to avoid any communication at the end of the multiplication. Algorithm~\ref{alg:comm1} shows how the communication is done. It is an overlapped implementation, so while the processors are communicating the data, the multiplciation is being executed on the available data from the previous processor. That's the reason \recmm~ is between the \textit{Isend-Irecv} part and \textit{wait}. This way we use a portion of the (or sometimes the whole) time that the communication takes.
+Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Since matrices $A$ and $B$ may have different number of rows, they may not be partitioned the same way. We avoid communicating $A$ and only communicate $B$, to avoid any communication at the end of the multiplication. Algorithm~\ref{alg:comm1} shows how the communication is done. It is an overlapped implementation, so while the processors are communicating the data, the multiplication is being executed on the available data from the previous processor. That's the reason \recmm~ is between the \textit{Isend-Irecv} part and \textit{wait}. This way we use a portion of the (or sometimes the whole) time that the communication takes, to execute the multiplication.
 
 \begin{figure}[tbh]
  \centering
@@ -214,16 +214,16 @@ Matrices are partitioned across multiple processors by row blocks (Figure~\ref{f
 
 \begin{algorithm}[H] 
   %\footnotesize
-  \caption{Part 1: $C_i = A_i \times B$}
+  \caption{$C_i = A_i \times B$}
   \begin{algorithmic}[1]
     \Require $A_i$, $B$
     \Ensure  $C_i$ (result of $A_i \times B$)
     \State $B\_send \leftarrow B_i$
     \For{$k=myrank:myrank+nprocs$}
-      \State $B\_recv \leftarrow\ Irecv(B)\ from\ right\ neighbor$
-      \State $Isend(B\_send)\ to\ left\ neighbor$
+      \State $Isend(B\_send)$ to left neighbor
+      \State $B\_recv \leftarrow$ Irecv($B$) from right neighbor
       \State $C_{i} \leftarrow \recmm(A_i, B\_send)$ 
-      \State $wait\ for\ Isend\ and\ Irecv\ to\ finish$
+      \State wait for Isend and Irecv to finish
       \State $swap(B\_send,B\_recv)$
     \EndFor
     \State locally sort $C_i$ and add duplicates
@@ -231,44 +231,47 @@ Matrices are partitioned across multiple processors by row blocks (Figure~\ref{f
   \label{alg:comm1} 
 \end{algorithm}
 
-Now, we explain how to compute $B := A \times P$. We assume the same partition of rows of $A$ on also its columns (red lines) since $A$ is square. For columns of $P$ we use the partition of rows of $R$ (blue lines in Figure~\ref{fig:part1b}).
-Without loss of generality, let us focus on how to perform \mm ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros here).
+Now, we explain how to improve our algorithm to compute $A \times B$, when $B$ is symmetric. Since the number of columns of $A$ equals the number of rows of $B$ (to be able to multiply them), we assume the same division of rows of $B$ on $A$'s columns (blue lines), only to show corresponding parts of $A$ and $B$ that should be multiplied. To compute entry $C_{ij}$, we need to multiply row $i$ of $A$ with column $j$ of $B$ and add them together.
+For that, the blocks of $A$ and $B$ with the same color in Figure~\ref{fig:partition3} should be multiplied, and only after multiplying all those blocks we have all the duplicates to add together and have the final value for entry $C_{ij}$ (Line $9$ in Algorithm~\ref{alg:comm1}).
 
 \begin{figure}[tbh]
     \centering
     \includegraphics[width=5cm,height=3cm]{./figures/partition3.pdf}
-    \caption{Column $j$ of $B$ is stored on different processors.}
-    \label{fig:part1b}
+    \caption{Column $j$ of $B$ is stored on different processors, so to compute entry $C_{ij}$ we need to multiply the parts of $A$ and $B$ with the same color.}
+    \label{fig:partition3}
     \Description{}
 \end{figure}
+
+Since in this case $B$ is symmetric, we can work with its local transpose. Instead of working with $B_i$'s, we consider their local transpose $BT_i$ in Figure~\ref{fig:partition4}.
 
 \begin{figure}[tbh]
     \centering
-    \includegraphics[width=5cm,height=2.9cm]{./figures/part1c.pdf}
-    \caption{This figure shows how row blocks of $R$ are transpose of column blocks of $P$.}
-    \label{fig:part1c}
+    \includegraphics[width=5.8cm,height=2.9cm]{./figures/partition4.pdf}
+    \caption{In case of a symmetric $B$, we use local transpose of its row blocks.}
+    \label{fig:partition4}
     \Description{}
 \end{figure}
 
-Column $j$ of $P$ is distributed between all the processors. Therefore we need to communicate all nonzeros of that column and then perform $B_{ij} = \sum_{k} A_{ik} P_{kj}$. Since that can lead to significant communication, we make use of the fact that $R$ is the transpose of $P$ and is already available locally because of the multigrid hierarchy. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$).
-
-We have implemented this part in an overlapped fashion; first we do the send and receive commands (to communicate $rt$ blocks) and while this communication is being done, we perform \mm, so saving time for the communication (Algorithm \ref{alg:comm2}). $B_{i}$ in the algorithm is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_k$.
+If we partition $B$ in column blocks, then we don't need $B$ to even be symmetric, but since we want to consider the same partitioning for all the matrices in our algorithm and we don't want to change the partition for one matrix only to perform \recmm, we assumed $B$ being symmetric.
 
 \begin{algorithm}[H] 
   %\footnotesize
-  \caption{Part 1: $B_i = A_i \times P$}
+  \caption{$C_i = A_i \times B$, when $B$ is symmetric.}
   \begin{algorithmic}[1]
-    \Require $A_i$, $R$
-    \Ensure  $B_i$ (result of $A_i \times P$)
-    \State $R1 \leftarrow$ transpose of $R_i$ (locally)
+    \Require $A_i$, $B$
+    \Ensure  $C_i$ (result of $A_i \times B$)
+    \State $B\_send \leftarrow$ local transpose of $B_i$
     \For{$k=myrank:myrank+nprocs$}
-      \State $R2 \leftarrow\ Irecv(transpose\ of\ R block)\ from\ right\ neighbor$
-      \State $Isend(R1)\ to\ left\ neighbor$
-      \State $B_{ik} \leftarrow \recmm(A_i, R1)$ 
+      \State $Isend(B\_send)\ to\ left\ neighbor$
+      \State $B\_recv \leftarrow$Irecv(local transpose of $B$) from right neighbor
+      \State $C_{ik} \leftarrow \recmm(A_i, B\_send)$ 
       \State $wait\ for\ Isend\ and\ Irecv\ to\ finish$
-      \State $swap(R1,R2)$
+      \State $swap(B\_send,B\_recv)$
+      \State locally sort $C_{ik}$ and add duplicates
     \EndFor
-    \State locally sort $B_i$ and add duplicates
+    \State put all $C_{ik}$'s into $C_i$
   \end{algorithmic}
-  \label{alg:comm2}
+  \label{alg:comm2} 
 \end{algorithm}
+
+There are at least two advantages 
