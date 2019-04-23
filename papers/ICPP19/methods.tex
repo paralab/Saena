@@ -201,7 +201,7 @@ In the previous section we explained how to perform \mm~ if the data is availabl
 \end{equation}
 in a distributed fashion for general (non necessarily symmetric) matrices $A$ and $B$. Also, we show how to improve performance and scalability if $B$ is symmetric.
 
-Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Matrices $A$ and $P$ have the same number of rows and consequently are partitioned the same way. $R$ has fewer number of rows and has a different partition. This is because coarsening need not be uniform across processes. Consequently the partitioning of the rows of $R$ could be different from that of $A$ and $P$. The triple matrix product is performed in two parts: first $A \times P$ is computed, followed by $R \times B$, where $B = A \times P$ is the result of the first multiplication. In other words, this is equivalent to performing matrix-matrix multiplications (\mm) twice.
+Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Since matrices $A$ and $B$ may have different number of rows, they may not be partitioned the same way. To avoid any communication at the end of the multiplication, we avoid communicating $A$ and only communicate $B$. 
 
 \begin{figure}[tbh]
  \centering
@@ -211,6 +211,25 @@ Matrices are partitioned across multiple processors by row blocks (Figure~\ref{f
  \label{fig:partition}
  \Description{}
 \end{figure}
+
+\begin{algorithm}[H] 
+  %\footnotesize
+  \caption{Part 1: $C_i = A_i \times B$}
+  \begin{algorithmic}[1]
+    \Require $A_i$, $B$
+    \Ensure  $C_i$ (result of $A_i \times B$)
+    \State $B\_send \leftarrow$ transpose of $R_i$ (locally)
+    \For{$k=myrank:myrank+nprocs$}
+      \State $R2 \leftarrow\ Irecv(transpose\ of\ R block)\ from\ right\ neighbor$
+      \State $Isend(R1)\ to\ left\ neighbor$
+      \State $B_{ik} \leftarrow \recmm(A_i, R1)$ 
+      \State $wait\ for\ Isend\ and\ Irecv\ to\ finish$
+      \State $swap(R1,R2)$
+    \EndFor
+    \State locally sort $B_i$ and add duplicates
+  \end{algorithmic}
+  \label{alg:comm1} 
+\end{algorithm}
 
 Now, we explain how to compute $B := A \times P$. We assume the same partition of rows of $A$ on also its columns (red lines) since $A$ is square. For columns of $P$ we use the partition of rows of $R$ (blue lines in Figure~\ref{fig:part1b}).
 Without loss of generality, let us focus on how to perform \mm ~on processor $P1$. To compute entry $B(i, j)$, we need to multiply row $i$ of $A$ with column $j$ of $P$ and add them together (since we are working with sparse matrices, we only consider the nonzeros here).
@@ -233,21 +252,11 @@ Without loss of generality, let us focus on how to perform \mm ~on processor $P1
 
 Column $j$ of $P$ is distributed between all the processors. Therefore we need to communicate all nonzeros of that column and then perform $B_{ij} = \sum_{k} A_{ik} P_{kj}$. Since that can lead to significant communication, we make use of the fact that $R$ is the transpose of $P$ and is already available locally because of the multigrid hierarchy. We note that column blocks of $P$ (e.g. $r0$ in Figure~\ref{fig:part1c}) are actually row blocks of $R$ transposed ($rt0$, which is transpose of $r0$).
 
-We have implemented this part in an overlapped fashion; first we do the send and receive commands (to communicate $rt$ blocks) and while this communication is being done, we perform \mm, so saving time for the communication (Algorithm \ref{alg:part1}). $B_{i}$ in the algorithm is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_k$.
-
-\iffalse
-\begin{figure}[tbh]
- \centering
- %\Description{Description}
- \includegraphics[width=5.5cm,height=3cm]{./figures/part1c.pdf}
- \caption{This figure shows how row blocks of $R$ are transpose of column blocks of $P$.}
- \label{fig:part1c}
-\end{figure}
-\fi
+We have implemented this part in an overlapped fashion; first we do the send and receive commands (to communicate $rt$ blocks) and while this communication is being done, we perform \mm, so saving time for the communication (Algorithm \ref{alg:comm2}). $B_{i}$ in the algorithm is the row block of matrix $B$ on processor $i$ and $B_{ik}$ is the sub-block result of multiplying $A_i$ with $rt_k$.
 
 \begin{algorithm}[H] 
   %\footnotesize
-  \caption{Part 1: $B_i = A_i \times P$} \label{alg:part1} 
+  \caption{Part 1: $B_i = A_i \times P$}
   \begin{algorithmic}[1]
     \Require $A_i$, $R$
     \Ensure  $B_i$ (result of $A_i \times P$)
@@ -261,4 +270,5 @@ We have implemented this part in an overlapped fashion; first we do the send and
     \EndFor
     \State locally sort $B_i$ and add duplicates
   \end{algorithmic}
+  \label{alg:comm2}
 \end{algorithm}
