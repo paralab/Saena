@@ -23,7 +23,7 @@ we keep splitting the matrices horizontally and vertically (Figure~\ref{fig:spli
 \begin{figure}[tbh]
  \centering
  \includegraphics[width=8.5cm,height=2.7cm]{./figures/split2.pdf}
- \caption{This figure shows splitting the matrix first horizontally, then vertically.}
+ \caption{A basic scheme that shows splitting the matrix first horizontally, then vertically.}
  \label{fig:split2}
  \Description{}
 \end{figure}
@@ -48,7 +48,7 @@ Therefore, the obvious choice to decide when to stop the recursion is Equation~ 
 \begin{figure}[tbh]
  \centering
  \includegraphics[width=8.5cm,height=4cm]{./figures/split3.pdf}
- \caption{This figure shows why using row and column sizes to decide when to stop the recursion is not efficient.}
+ \caption{Using row and column sizes to decide when to stop the recursion is not efficient, because the top left block is the same size as the top right one, but it should be divided to more sub-blocks.}
  \label{fig:thres}
  \Description{}
 \end{figure}
