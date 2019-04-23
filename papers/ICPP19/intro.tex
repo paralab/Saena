@@ -1,6 +1,21 @@
 \section{Introduction}
 \label{sec:intro}
 
+
+Matrix-matrix multiplication (\textsc{GEMM}) is a key linear algebra primitive commonly used by the computational and data science communities. Examples include operations part of the setup phase of algebraic multigrid methods (AMG) \cite{Dendy82}, an example that we will use heavily in this work to demonstrate the effectiveness of our methods. It is also common for large-scale graph analytics, where a linear algebra formulation is used, such as triangle counting \cite{azad2015parallel}, graph clustering \cite{van2000graph}, breadth first search \cite{gilbert2008unified}, amongst others \cite{kepner2011graph}. 
+While there are several highly-tuned distributed-memory matrix libraries available, they usually target either sparse \cite{petsc, combblas} or dense \cite{elemental} matrices. Unfortunately, the performance and scalability of these libraries is sub-optimal for matrices that are unsupported. For the case of AMG and for graph algorithms where the linear algebra formulation necessitates a \textsc{GEMM}, the resulting matrices can lose sparsity and become potential bottleneck for performance and scalability if the underlying \textsc{GEMM} implementation is unable to handle the loss of sparsity. The main contribution of this work is the development of a scalable distributed-memory \textsc{GEMM} algorithm that is able to be performant for varying levels of sparsity. 
+We achieve this by developing a new divide-and-conquer \textsc{GEMM} that recursively divides the matrices vertically and horizontally. This progressively makes the matrices skinny such that the resulting product matrix block ($C = AB$) is dense. The splitting and merging of the matrices are done efficiently leveraging the sparse structure of the graphs, and aim to identify and expose dense blocks in the resulting product, for which we have implemented efficient data-structures. These product blocks are then combined in an efficient manner to produce the resulting product matrix $C$ in a sparse format. 
+
+
+
+
+
+
+\subsection{Background - AMG}
+\label{sec:bg}
+
+\mr{I moved this from the old intro. Trim as neccessary.}
+
 The solution of elliptic partial differential equation (PDE) operators forms the 
 foundation of the mathematical models of several engineering applications.
 In solid mechanics, the stiffness matrix derived from linear elasticity represents an elliptic
@@ -25,8 +40,6 @@ the loss of sparsity at coarser levels arising from the Galerkin approximation \
 Additionally, while both geometric and algebraic variants require an initial {\bf setup} phase, the cost of the setup is significantly higher for AMG, making it less attractive unless multiple solves are performed for the same operator. This is clearly unattractive for dynamic systems where the operator is changing rapidly, such as systems with $h$ or $p$ enrichment. In such cases, while the cost of an AMG solve might be lower than say that of CG, the overall cost i.e., setup + solve might be more than using asymptotically inferior solvers. In most cases, the scalbility of 
 setup phase is also poor and typically worse than that of the solve phase. This is limited the attractiveness of AMG for large systems. In this work, we develop an efficient sparse matrix multiplication (\mm) algorithm to improve the performance and scalability of AMG. As will be explained in the following section, a sparse \mm\ is the dominant part of the AMG setup. While several of our optimizations apply to sparse \mm\ in general, and can be more broadly applied, our strategies for reducing inter-process communication make use of the special structure of \mm\ encountered during AMG setup.
 
-\subsection{Background}
-\label{sec:bg}
 
 We start with a brief description of our AMG framework. 
 AMG has been a popular method for solving the large-scale and 
