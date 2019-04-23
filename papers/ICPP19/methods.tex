@@ -201,7 +201,7 @@ In the previous section we explained how to perform \mm~ if the data is availabl
 \end{equation}
 in a distributed fashion for general (non necessarily symmetric) matrices $A$ and $B$. Also, we show how to improve performance and scalability if $B$ is symmetric.
 
-Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Since matrices $A$ and $B$ may have different number of rows, they may not be partitioned the same way. To avoid any communication at the end of the multiplication, we avoid communicating $A$ and only communicate $B$. 
+Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Since matrices $A$ and $B$ may have different number of rows, they may not be partitioned the same way. We avoid communicating $A$ and only communicate $B$, to avoid any communication at the end of the multiplication. Algorithm~\ref{alg:comm1} shows how the communication is done. It is an overlapped implementation, so while the processors are communicating the data, the multiplciation is being executed on the available data from the previous processor. That's the reason \recmm~ is between the \textit{Isend-Irecv} part and \textit{wait}. This way we use a portion of the (or sometimes the whole) time that the communication takes.
 
 \begin{figure}[tbh]
  \centering
@@ -218,15 +218,15 @@ Matrices are partitioned across multiple processors by row blocks (Figure~\ref{f
   \begin{algorithmic}[1]
     \Require $A_i$, $B$
     \Ensure  $C_i$ (result of $A_i \times B$)
-    \State $B\_send \leftarrow$ transpose of $R_i$ (locally)
+    \State $B\_send \leftarrow B_i$
     \For{$k=myrank:myrank+nprocs$}
-      \State $R2 \leftarrow\ Irecv(transpose\ of\ R block)\ from\ right\ neighbor$
-      \State $Isend(R1)\ to\ left\ neighbor$
-      \State $B_{ik} \leftarrow \recmm(A_i, R1)$ 
+      \State $B\_recv \leftarrow\ Irecv(B)\ from\ right\ neighbor$
+      \State $Isend(B\_send)\ to\ left\ neighbor$
+      \State $C_{i} \leftarrow \recmm(A_i, B\_send)$ 
       \State $wait\ for\ Isend\ and\ Irecv\ to\ finish$
-      \State $swap(R1,R2)$
+      \State $swap(B\_send,B\_recv)$
     \EndFor
-    \State locally sort $B_i$ and add duplicates
+    \State locally sort $C_i$ and add duplicates
   \end{algorithmic}
   \label{alg:comm1} 
 \end{algorithm}

@@ -6210,28 +6210,6 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //            mat_recv_rv    = reinterpret_cast<vecEntry*>(&mat_recv[0]);
 //            mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
 
-            // =======================================
-            // sort and remove duplicates
-            // =======================================
-
-//            MPI_Barrier(comm);
-//            t1 = MPI_Wtime();
-
-            std::sort(AB_temp.begin(), AB_temp.end());
-
-            nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
-            for(nnz_t i = 0; i < AB_temp.size(); i++){
-                AB.emplace_back(AB_temp[i]);
-                while(i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i+1]){ // values of entries with the same row and col should be added.
-//                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-                    AB.back().val += AB_temp[++i].val;
-                }
-            }
-            AB_temp.clear();
-
-//        t1 = MPI_Wtime() - t1;
-//        print_time_ave(t1, "AB:", comm);
-
 #ifdef __DEBUG1__
 //            MPI_Barrier(comm);
 //            if(rank==0){
@@ -6292,7 +6270,27 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         }
     }
 
-    std::sort(AB.begin(), AB.end());
+    // =======================================
+    // sort and remove duplicates
+    // =======================================
+
+//    MPI_Barrier(comm);
+//    t1 = MPI_Wtime();
+
+    std::sort(AB_temp.begin(), AB_temp.end());
+
+    nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
+    for(nnz_t i = 0; i < AB_temp.size(); i++){
+        AB.emplace_back(AB_temp[i]);
+        while(i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i+1]){ // values of entries with the same row and col should be added.
+//                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+            AB.back().val += AB_temp[++i].val;
+        }
+    }
+//    AB_temp.clear();
+
+//    t1 = MPI_Wtime() - t1;
+//    print_time_ave(t1, "AB:", comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AB, -1, "AB", comm);
