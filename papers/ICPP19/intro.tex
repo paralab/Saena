@@ -6,10 +6,17 @@ Matrix-matrix multiplication (\textsc{GEMM}) is a key linear algebra primitive c
 While there are several highly-tuned distributed-memory matrix libraries available, they usually target either sparse \cite{petsc, combblas} or dense \cite{elemental} matrices. Unfortunately, the performance and scalability of these libraries is sub-optimal for matrices that are unsupported. For the case of AMG and for graph algorithms where the linear algebra formulation necessitates a \textsc{GEMM}, the resulting matrices can lose sparsity and become potential bottleneck for performance and scalability if the underlying \textsc{GEMM} implementation is unable to handle the loss of sparsity. The main contribution of this work is the development of a scalable distributed-memory \textsc{GEMM} algorithm that is able to be performant for varying levels of sparsity. 
 We achieve this by developing a new divide-and-conquer \textsc{GEMM} that recursively divides the matrices vertically and horizontally. This progressively makes the matrices skinny such that the resulting product matrix block ($C = AB$) is dense. The splitting and merging of the matrices are done efficiently leveraging the sparse structure of the graphs, and aim to identify and expose dense blocks in the resulting product, for which we have implemented efficient data-structures. These product blocks are then combined in an efficient manner to produce the resulting product matrix $C$ in a sparse format. 
 
+The divide and conquer approach improves memory access for deep-memory hierarchies, and adapts to varying levels of sparsity in a natural manner. Denser matrices will end the recursion sooner, but otherwise are identical to the behavior for sparser matrices. This enables our \textsc{GEMM} to perform in a predictable fashion independent of the density of the sparse matrix. We demonstrate the effectiveness of our algorithms and data-structures by comparing with \textsc{PETSc} \cite{petsc} and demonstrate performance comparable to \textsc{PETSc} for sparse matrices. In contrast, while the performance and scalability of \textsc{PETSc} suffers when the matrices become denser, our \textsc{GEMM} demonstrates excellent scalability even for these cases. We use the example of building an AMG grid hierarchy to evaluate our methods. Specifically, an AMG grid hierarchy is built using a Galerkin approximation by the multiplication of three sparse matrices. This leads to increasing loss of sparsity at coarser levels. 
 
 
+The main {\bf contributions} of this work are,
+\begin{itemize}
+  \item A new divide and conquer algorithm for \textsc{GEMM} that is able to perform efficiently for a wide range of sparsity patterns,
+  \item A new communication pattern to improve the parallel scalability of \textsc{GEMM}, and
+  \item A thorough evaluation and scalability study to demonstrate the effectiveness of the proposed methods.
+\end{itemize}
 
-
+The rest of the paper is organized as follows. In the next section, we provide background into AMG to help the readers understand the target application. We chose AMG as the application because we wanted to consider realistic scenarios where variable sparsity patterns are encountered. We provide a brief review of related work in \S\ref{sec:related}.  In \S\ref{sec:methods} we discuss the different strategies used to improve the performance and scalability of \textsc{GEMM}. In \S\ref{sec:results} we show the strong and weak scaling of our methods and compare our method with PETSc. Finally, we conclude the paper in \S\ref{sec:conc}.
 
 \subsection{Background - AMG}
 \label{sec:bg}
@@ -155,17 +162,15 @@ For this paper, the improved version of SA-AMG in \cite{treister2015non} is used
 
 
 \subsection{Related Work}
+\label{sec:related}
 
 While significant research has been done on improving the efficiency and scalability of sparse matrix-vector products, sparse \mm\ in comparison has received far less attention. Yuster and Zwick \cite{Yuster2005} provide a theoretically nearly optimal algorithm for multiplying sparse matrices, but rely on fast rectangular matrix multiplication. Consequently the approach is currently of only theoretical value. In \cite{Buluc12}, Buluc and Gilbert present algorithms for parallel sparse \mm\ using a two-dimensional block data distributions with serial hypersparse kernels. 
 Gremse {\em et al.} \cite{Gremse15} the authors present a promising algorithm using iterative row merging to improve the performance on GPUs. Similarly, Saule {\em et al.} \cite{Saule14} evaluate the performance of sparse matrix multiplication kernels on the Intel Xeon Phi. Most AMG implementation have relied on standard sparse \mm\ implementations without any special considerations for the structure of the matrices generated within AMG. This work attempts to fill this gap. 
 
-The main {\bf contributions} of this work are,
-\begin{itemize}
-  \item A new efficient \mm\ algorithm.
-  \item A new method to communicate data required to do \mm~specific to Algebraic Multigrid
-\end{itemize}
+\mr{expand this section if possible.}
 
-The rest of the paper is organized as follows. In \S\ref{sec:methods} we discuss the different strategies used to improve the performance and scalability of \mm. In \S\ref{sec:results} we show the strong and weak scaling of our methods and compare our method with PETSc. Finally, we conclude the paper in \S\ref{sec:conc}.
+
+
 
 % \begin{itemize}
 %   \item \st{General intro to AMG and elliptic operators, black box nature.}
