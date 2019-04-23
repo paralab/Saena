@@ -170,7 +170,7 @@ We have also implemented splitting based on the number of nonzeros. In \textit{C
 
 When all three cases work together, we have Case 2 and Case 3, that aim to divide the matrices into skinny matrices such that the resulting matrix is small. Then by using a hybrid multiplication algorithm, we get these results. These results are then accumulated and merged together. From a memory access perspective, the accumulation and merging required for Case 2 and 3 is structured access to the matrix, with the only random access happening during Case 1. This makes the overall algorithm very efficient. 
 
-\subsection{AMG Matrix-Multiplication: Communication}
+\subsection{Communication}
 \label{sec:amg}
 
 % To solve a large linear system 
@@ -251,76 +251,3 @@ We have implemented this part in an overlapped fashion; first we do the send and
     \State locally sort $B_i$ and add duplicates
   \end{algorithmic}
 \end{algorithm}
-
-
-\subsubsection{Part 2}
-
-Now we explain how to do the second \mm: $R \times B$. The blocks of $R$ on processor $P1$ in, Figure~\ref{fig:part2d}, should be multiplied with the corresponding blocks of $B$ with the same color. In contrary to the previous part, we already don't have the transpose of the right-hand side matrix and performing the transpose in parallel is expensive. Instead, we change the way the multiplication is being done and perform a cheaper communication round at the end.
-
-\begin{figure}[tbh]
-    \centering
-    \includegraphics[width=5cm,height=2.8cm]{./figures/part2d.pdf}
-    \caption{Part 2: $R \times B$. This figure shows which sub-blocks of R should be multiplied by which sub-blocks of $B$.}
-    \label{fig:part2d}
-    \Description{}
-\end{figure}
-
-\begin{figure}[tbh]
-    \centering
-    \includegraphics[width=5cm,height=2.8cm]{./figures/part2e.pdf}
-    \caption{Local transpose of blocks of $P$ is used instead of $R$. Each green sub-block of the transpose of $P$ is multiplied by all green sub-blocks of $B$.}
-    \label{fig:part2e}
-    \Description{}
-\end{figure}
-
-In this case we have the transpose of the left-hand side matrix, so we use $P$ instead of $R$ to do this multiplication.
-We only perform the multiplication of the green blocks on processor $P1$ in Figure~\ref{fig:part2e}, which can be done locally.
-%
-In the previous case each sub-block of the local left-hand side is multiplied by only one sub-block of the local right-hand side.
-But in this method, each sub-block of local $P$ is being multiplied by the entire row block of $B$, e.g. $PT10$ is multiplied by all $B10$, $B11$ and $B12$, and so on.
-
-\iffalse
-\begin{figure}[tbh]
- \centering
- %\Description{Description}
- \includegraphics[width=5.5cm,height=3cm]{./figures/part2e.pdf}
- \caption{Local transpose of blocks of $P$ is used instead of $R$. Each green sub-block of the transpose of $P$ is multiplied by all green sub-blocks of $B$.}
- \label{fig:part2e}
-\end{figure}
-\fi
-
-The difference for final result between this case and the na\"{i}ve Case 2 is that, the final entries are not on the correct processors, so an additional data exchange needs to be performed at the end to restore the entries on the correct processes. We sort the entries locally at the end and add the duplicates together. Finally, we sort them globally (using HykSort \cite{Sundar:2013}) and again add the duplicates together (Algorithm~\ref{alg:part2}).
-
-\begin{algorithm}[H] 
-  %\footnotesize
-  \caption{Part 2: $Ac = R \times B$} \label{alg:part2} 
-  \begin{algorithmic}[1]
-    \Require $P_i$, $B_i$
-    \Ensure  $Ac_i$
-    \State $PT_i \leftarrow$ transpose of $P_i$ (locally)
-    \For{$k=0:nprocs$}
-      \State $Ac_i \leftarrow \recmm(PT_{ik}, B_i)$
-    \EndFor
-    \State locally sort $Ac_i$ and add duplicates
-    \State globally sort $Ac_i$ and add duplicates
-  \end{algorithmic}
-\end{algorithm}
-
-Notes:
-
-When doing $A \times B$ in a distributed fashion, it is better to use the local transpose of $B$ for two reasons:
-
-1- After doing each block, sorting and removing duplicates can be done, instead doing that for the whole results.
-2- $B$ will be split better. (create a figure for this part)
-
-Explain why CSC is a better option for splitting the matrices. Explain the choice of pivot and the in-place sorting.
-
-Steps for splitting based on CSC:
-
-I) Split Vertically: Reusing row, val from the original block. Modify col-idx by subtracting a fixed number
-
-II) Split Horizontally: 
-
-1- First create col-idx for the bottom and top blocks.
-
-2- Then, perform an in-place sorting by choosing a specifi pivot to change the order for the bottom and top blocks for row and val. Then the bottom and top blocks should have column-major order (because of CSC).
