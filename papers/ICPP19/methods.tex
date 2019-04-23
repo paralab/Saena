@@ -252,7 +252,7 @@ Since in this case $B$ is symmetric, we can work with its local transpose. Inste
     \Description{}
 \end{figure}
 
-If we partition $B$ in column blocks, then we don't need $B$ to even be symmetric, but since we want to consider the same partitioning for all the matrices in our algorithm and we don't want to change the partition for one matrix only to perform \recmm, we assumed $B$ being symmetric.
+If we partition $B$ in column blocks, then we don't even need $B$ to be symmetric, but since we want to consider the same partitioning for all the matrices in our algorithm and we don't want to change the partition for one matrix only to perform \recmm, we assumed $B$ being symmetric.
 
 \begin{algorithm}[H] 
   %\footnotesize
@@ -274,4 +274,4 @@ If we partition $B$ in column blocks, then we don't need $B$ to even be symmetri
   \label{alg:comm2} 
 \end{algorithm}
 
-There are at least two advantages 
+There are at least two advantages for changing Algorithm~\ref{alg:comm1} to Algorithm~\ref{alg:comm2}. First, we can sort and add duplicates on a subset of entries of $C_i$ (compare line 9 of Algorithm~\ref{alg:comm1} with line $8$ of Algorithm~\ref{alg:comm2}. The other benefit is having better divided blocks of B after splitting.
