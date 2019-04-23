@@ -21,8 +21,6 @@ The rest of the paper is organized as follows. In the next section, we provide b
 \subsection{Background - AMG}
 \label{sec:bg}
 
-\mr{I moved this from the old intro. Trim as neccessary.}
-
 The solution of elliptic partial differential equation (PDE) operators forms the 
 foundation of the mathematical models of several engineering applications.
 In solid mechanics, the stiffness matrix derived from linear elasticity represents an elliptic
@@ -44,7 +42,7 @@ and corresponding to algebraic multigrid (AMG), the communities alternative to G
 
 While AMG is very attractive due to its black-box nature \cite{Dendy82,Vanek:1995,VanekBrezinaMandelEtAl01}, it does not scale as well as GMG \cite{Sundar12}. This is primarily due to
 the loss of sparsity at coarser levels arising from the Galerkin approximation \cite{treister2015non}, leading to poor scalability, especially at the coarser levels.
-Additionally, while both geometric and algebraic variants require an initial {\bf setup} phase, the cost of the setup is significantly higher for AMG, making it less attractive unless multiple solves are performed for the same operator. This is clearly unattractive for dynamic systems where the operator is changing rapidly, such as systems with $h$ or $p$ enrichment. In such cases, while the cost of an AMG solve might be lower than say that of CG, the overall cost i.e., setup + solve might be more than using asymptotically inferior solvers. In most cases, the scalbility of 
+Additionally, while both geometric and algebraic variants require an initial {\bf setup} phase, the cost of the setup is significantly higher for AMG, making it less attractive unless multiple solves are performed for the same operator. This is clearly unattractive for dynamic systems where the operator is changing rapidly, such as systems with $h$ or $p$ enrichment. In such cases, while the cost of an AMG solve might be lower than say that of CG, the overall cost i.e., setup + solve might be more than using asymptotically inferior solvers. In most cases, the scalability of 
 setup phase is also poor and typically worse than that of the solve phase. This is limited the attractiveness of AMG for large systems. In this work, we develop an efficient sparse matrix multiplication (\mm) algorithm to improve the performance and scalability of AMG. As will be explained in the following section, a sparse \mm\ is the dominant part of the AMG setup. While several of our optimizations apply to sparse \mm\ in general, and can be more broadly applied, our strategies for reducing inter-process communication make use of the special structure of \mm\ encountered during AMG setup.
 
 
@@ -165,9 +163,10 @@ For this paper, the improved version of SA-AMG in \cite{treister2015non} is used
 \label{sec:related}
 
 While significant research has been done on improving the efficiency and scalability of sparse matrix-vector products, sparse \mm\ in comparison has received far less attention. Yuster and Zwick \cite{Yuster2005} provide a theoretically nearly optimal algorithm for multiplying sparse matrices, but rely on fast rectangular matrix multiplication. Consequently the approach is currently of only theoretical value. In \cite{Buluc12}, Buluc and Gilbert present algorithms for parallel sparse \mm\ using a two-dimensional block data distributions with serial hypersparse kernels. 
-Gremse {\em et al.} \cite{Gremse15} the authors present a promising algorithm using iterative row merging to improve the performance on GPUs. Similarly, Saule {\em et al.} \cite{Saule14} evaluate the performance of sparse matrix multiplication kernels on the Intel Xeon Phi. Most AMG implementation have relied on standard sparse \mm\ implementations without any special considerations for the structure of the matrices generated within AMG. This work attempts to fill this gap. 
+Gremse {\em et al.} \cite{Gremse15} present a promising algorithm using iterative row merging to improve the performance on GPUs. Similarly, Saule {\em et al.} \cite{Saule14} evaluate the performance of sparse matrix multiplication kernels on the Intel Xeon Phi. Most AMG implementations have relied on standard sparse \mm\ implementations without any special considerations for the structure of the matrices generated within AMG. This work attempts to fill this gap. 
 
-\mr{expand this section if possible.}
+
+%\mr{expand this section if possible.}
 
 
 

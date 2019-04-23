@@ -1,5 +1,5 @@
 % The first command in your LaTeX source must be the \documentclass command.
-\documentclass[sigconf]{acmart}
+\documentclass[sigconf,10pt]{acmart}
 
 % \BibTeX command to typeset BibTeX logo in the docs
 \AtBeginDocument{%
@@ -48,8 +48,8 @@
 \renewcommand{\algorithmicensure}{\textbf{Output:}}
 
 \newcommand{\mvec}{\textsc{matvec}}
-\newcommand{\mm}{\textsc{matmult}}
-\newcommand{\recmm}{\textsc{recurs\_matmult}}
+\newcommand{\mm}{\textsc{GEMM}}
+\newcommand{\recmm}{\textsc{RECURS\_GEMM}}
 \newcommand{\spr}{\textsc{split\_by\_row}}
 \newcommand{\spc}{\textsc{split\_by\_col}}
 \newcommand{\nnzsz}{\textsc{nnz\_mat\_size}}
@@ -137,18 +137,16 @@
 
 \begin{abstract}
 
-Matrix-matrix multiplication (\textsc{GEMM}) is a widely used linear algebra primitive common in scientific computing and data sciences. While several highly-tuned libraries and implementations exist, these typically target either sparse or dense matrices. The performance of these tuned implementations on unsupported types can be poor, and this is critical in cases where the structure of the computations is associated with varying degrees of sparsity. One such example is 
-Algebraic Multigrid (AMG), a popular solver and preconditioner for large sparse linear systems.
+Matrix-matrix multiplication (\textsc{GEMM}) is a widely used linear algebra primitive common in scientific computing and data sciences. While several highly-tuned libraries and implementations exist, these typically target either sparse or dense matrices. The performance of these tuned implementations on unsupported types can be poor, and this is critical in cases where the structure of the computations is associated with varying degrees of sparsity. One such example is Algebraic Multigrid (AMG), a popular solver and preconditioner for large sparse linear systems.
 %, especially the ones obtained from the discretization of elliptic operators.
 %
 %A key bottleneck for the scalability of the setup phase of AMG is the Matrix-matrix multiplication (MatMult) required for computing the sparse grid representation. While significant work has been done on optimizing matrix-matrix multiplication, in this work, we optimize it in the context of the matrix multiplications encountered in the setup phase of AMG. 
-In this work, we present a new divide and conquer sparse \textsc{GEMM}, that is also highly performant and scalable when the matrix becomes very dense, as in the case of AMG matrix hierarchies. We combine this 
-with an efficient communication pattern during distributed-memory \textsc{GEMM} to provide performance comparable to state-of-the-art sparse matrix libraries like PETSc. Additionally, the performance and scalability of our method surpasses PETSc when the density of the matrix increases. We demonstrate the efficacy of our methods by comparing our \textsc{GEMM} with PETSc for a variety of matrices with different levels of sparsity. 
+In this work, we present a new divide and conquer sparse \textsc{GEMM}, that is also highly performant and scalable when the matrix becomes very dense, as in the case of AMG matrix hierarchies. We combine this with an efficient communication pattern during distributed-memory \textsc{GEMM} to provide performance comparable to state-of-the-art sparse matrix libraries like PETSc. Additionally, the performance and scalability of our method surpass PETSc when the density of the matrix increases. We demonstrate the efficacy of our methods by comparing our \textsc{GEMM} with PETSc for different levels of sparsity. 
 % We compare our solver with PETSc to demonstrate the performance improvements gained using our methods.
 
 \end{abstract}
 
-\keywords{Matrix-Matrix Product, Algebraic Multigrid, AMG, Iterative Solver, Sparse, Preconditioned Conjugate Gradient, Preconditioner}
+\keywords{Matrix-Matrix Product, GEMM, Algebraic Multigrid, AMG, Linear Algebra, Iterative Solver, Preconditioner, Sparse, Dense}
 
 \iffalse
 % A "teaser" image appears between the author and affiliation information and the body 
@@ -167,7 +165,7 @@ with an efficient communication pattern during distributed-memory \textsc{GEMM} 
 \input{methods}
 \input{results}
 
-\newpage
+%\newpage
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{ref}
 

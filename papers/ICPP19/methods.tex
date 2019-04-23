@@ -1,7 +1,7 @@
 \section{Methods}
 \label{sec:methods}
 
-In this section, we present our matrix-matrix multiplication algorithm, the choice of the stop condition for the recursive function and how matrices are being divided to smaller blocks. We then explain how the communication is being done in the distributed fashion to help the recursive function scale better.
+In this section, we present our \mm~ algorithm. We first discuss the choice of the stop condition for the recursive function and how matrices are being divided to smaller blocks. Then, We explain how the communication is being done in an overlapped distributed fashion to help the recursive function scale better.
 
 %We then explain further modifications to the triple matrix multiplication (\ref{eq:rap}) that are part of the AMG setup process.
 
@@ -10,7 +10,7 @@ In this section, we present our matrix-matrix multiplication algorithm, the choi
 
 %\subsubsection{Computation}
 %\label{sec:comp}
-We design a divide and conquer approach to perform the sparse \mm\ in a node-local fashion. The key idea is to perform simple tasks while recursing, having efficient memory access, and to perform the multiplication for small chunks where the resulting matrix can fit into an appropriate cache. For clarity of presentation, we assume that the data is available locally and discuss it as a serial implementation. Shared memory parallelism is added in a straightforward manner.
+We design a divide and conquer approach to perform \textsc{GEMM} in a node-local fashion. The key idea is to perform simple tasks while recursing, having efficient memory access, and to perform the multiplication for small chunks where the resulting matrix can fit into an appropriate cache. For clarity of presentation, we assume that the data is available locally and discuss it as a serial implementation. Shared memory parallelism is added in a straightforward manner. The distributed part is explained in the next section.
 %We have implemented \mm~ in a recursive fashion.
 %We split the matrices recursively in two ways: split by half based on the matrix size and based on number of nonzeros. First we explain the algorithms performing splitting based on the matrix sizes.
 
@@ -18,7 +18,7 @@ To perform the multiplication
 \begin{equation}
     C = A \times B
 \end{equation}
-we keep splitting the matrices horizontally and vertically (Figure~\ref{fig:split2}) based on row size and column size of $A$, until we can fit the result of the multiplication in a dense matrix.
+we keep splitting the matrices horizontally and vertically (Figure~\ref{fig:split2}) based on row size and column size of $A$, until we can fit the result of the multiplication in a dense buffer.
 
 \begin{figure}[tbh]
  \centering
@@ -30,20 +30,20 @@ we keep splitting the matrices horizontally and vertically (Figure~\ref{fig:spli
 
 The recursive function, \recmm, includes three cases:
 \begin{enumerate}
- \item Case 1: Stop the recursion: perform the multiplication.
- \item Case 2: $A$ is horizontal. Split $A$ and $B$.
- \item Case 3: $A$ is vertical. Split $A$ and $B$.
+ \item Case 1: Stop the recursion and perform the multiplication.
+ \item Case 2: $A$ is horizontal. Split the blocks.
+ \item Case 3: $A$ is vertical. Split the blocks.
 \end{enumerate}
 
 \subsubsection{Case 1}
 \label{sec:case1}
 First we discuss when we decide to stop the recursive function.  
-Our goal is to fit the multiplication result of blocks of $A$ and $B$ in a dense buffer. We show the blocks of $A$ and $B$ as $A_{ij}$ and $B_{lk}$. We use two indices here because matrices gets divided both horizontally and vertically. The size of the dense buffer to store $A_{ij} \times B_{lk}$ is
+Our goal is to fit the multiplication result of blocks of $A$ and $B$ in a dense buffer. We show the blocks of $A$ and $B$ as $A_{ij}$ and $B_{lk}$. We use two indices here because the matrices get divided both horizontally and vertically. The size of the dense buffer to store $A_{ij} \times B_{lk}$ is
 \begin{equation}
     row\ size\ of\ A_{ij} \times column\ size\ of\ B_{lk}\label{eq:thres}
 \end{equation}
 
-Therefore, the obvious choice to decide when to stop the recursion is Equation~ \eqref{eq:thres}, but Figure~\ref{fig:thres} shows why that is not a good choice. If we use Equation~ \eqref{eq:thres} for this example, the splitting process for the top two blocks of the matrix stops at the same step, but the top left block should be divided to more blocks than the top right block.
+Therefore, Equation~ \eqref{eq:thres} can be used as the naive choice to decide when to stop the recursion, but Figure~\ref{fig:thres} shows why that is not a good choice. If we use Equation~ \eqref{eq:thres} for this example, the splitting process for the top two blocks of the matrix stops at the same step because they have the same size, but to have a more efficient method the top left block should be divided to more blocks than the top right block.
 
 \begin{figure}[tbh]
  \centering
@@ -55,9 +55,9 @@ Therefore, the obvious choice to decide when to stop the recursion is Equation~ 
 
 Furthermore, by splitting sparse matrices recursively, we will have more and more zero rows and columns in the resulting blocks. So, using row size and column size of the blocks is not very helpful. Instead, we use nonzero rows and nonzero columns.
 
-At the start of the recursive function, the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$) are being computed. A threshold for 
+At the start of the recursive function, we compute the number of nonzero rows of A ($A\_nnz\_row$) and nonzero columns of B ($B\_nnz\_col$). A threshold for 
 \begin{equation}
-    \nnzsz = A\_nnz\_row \times B\_nnz\_col
+    \nnzsz := A\_nnz\_row \times B\_nnz\_col\label{eq:thres2}
 \end{equation}
 
 is set. Our algorithm has a profiling step where it empirically determines the appropriate threshold by running several test cases. On the machines we used,  $20M$ was chosen as the threshold. We continue splitting the matrices until the threshold is reached, and then we preform the multiplication.
@@ -81,7 +81,7 @@ When performing the multiplication, at least one of the matrices, typically the 
 
 When the ratio of nonzeros to \nnzsz~ is low, it becomes inefficient to traverse the whole dense matrix and check for nonzeros in the final stage. To solve this issue, we use an efficient hashmap to achieve similar results without the $\mathcal{O}(n^2)$ overhead of extracting the non-zeros from the dense matrix. The entry's index is the key and its value is the hashmap's value. When we want to add the multiplication of nonzeros of $A$ and $B$ to the hashmap, we check if the index exists in the map. If it exists the value is being added to the existing one's. Otherwise a new entry will be added to the hashmap. Clearly, there is an overhead to this approach that needs to be balanced against the overheads associated with the dense representation. 
 
-To measure of the effectiveness of our method in a practical situation, we have implemented the \recmm~ function in our Algebraic Multigrid solver, called \textit{Saena}, and performed \mm~ twice to compute the coarse matrix based on the 3D Poisson Problem.
+To measure the effectiveness of our method in a practical situation, we have implemented the \recmm~ function in our Algebraic Multigrid solver, called \textit{Saena}, and performed \textsc{GEMM} twice to compute the coarse matrix of the 3D Poisson Problem.
 
 In Figure~\ref{fig:lap60}, we compare the two methods for computing coarse matrix $Ac = R \times A \times P$, in which $A$ is the 3D Poisson problem of size $216k$. For $0 \leq \nnzsz \leq 10M$, in $1M$ steps, we compare the two methods in order to develop an efficient hybrid algorithm. For instance, the first point indicates that the dense structure is better than the hashmap approach in $1245$ cases for the multiplications such that $0 \le\ \nnzsz < 1M$. For the lower range the dense representation is better and for the higher range the hashmap is significantly faster. Figure~\ref{fig:eco} shows the same experiment for matrix ID $1882$ from SuiteSparse (Florida) Matrix Collection, which is a sparse matrix of size $1M$ and $5M$ nonzero.
 
@@ -110,7 +110,7 @@ We have done a series of experiments to determine the threshold when to switch b
  \centering
  %\Description{Description}
  \includegraphics[width=8.5cm,height=5cm]{./figures/mix.pdf}
- \caption{Comparison between the three methods to do Case 1: only using hashmap, only using the dense structure, and the hybrid method. They are used as Case 1 to compute the first coarse matrix (the triple multiplication) on 7 matrices (3D Poisson) of different sizes.}
+ \caption{Comparison between the three methods to do Case 1: only using hashmap, only using the dense structure, and the hybrid method. They are used in Case 1 part of \recmm~ to compute the first coarse matrix (the triple multiplication) of 7 matrices (3D Poisson) of different sizes.}
  \label{fig:mix}
  \Description{}
 \end{figure}
@@ -121,7 +121,7 @@ Figure~\ref{fig:mix} compares the hybrid method with the basic two methods. We h
 \subsubsection{Case 2}
 \label{sec:case2}
 When A is horizontal, i.e. its row size is less than or equal to its column size, we halve A by column based on its column size (Figure~\ref{fig:case2_left}). Since row size of B equals column size of A, we halve B by row, so it will be a split similar to A, but horizontally.
-Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$ and $B2$ (Algorithm~\ref{alg:case2}). The results of the two multiplications need to be added together at the end. It means, there will be entries for the result matrix with the same index. We call these entries \textit{duplicates}. Since there will be numerous nested recursive calls, we avoid doing adding duplicates at this stage. After the first recursive function is finished, we will perform a sorting and then add the duplicates only once at the end.
+Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$ and $B2$ (Algorithm~\ref{alg:case2}). The results of the two multiplications need to be added together at the end. It means, there will be entries for the result matrix with the same index. We call these entries \textit{duplicates}. Since there will be numerous nested recursive calls, we avoid doing adding duplicates at this stage. After the starting recursive function is finished, we sort $C$ and then add the duplicates only once at the end.
 
 \begin{figure}[tbh]
     \centering
@@ -157,7 +157,7 @@ Then, the \recmm~ will be called twice, once on $A1$ and $B1$, and again on $A2$
 
 \subsubsection{Case 3}
 \label{sec:case3}
-When A is vertical, i.e. its row size is greater than its column size, we halve A by row based on its row size and halve B by column (Figure~\ref{fig:case3}). In contrary to the previous case, the column size of B is not related to row size of A, so they are split independently. This time the \recmm~ will be called four times (Algorithm~\ref{alg:case3}).  Although we have 4 recursive calls in this case, but there is no duplicates at the end, which makes this case more efficient than Case 2 for the total time, because it is faster to do the sorting and adding duplicates at the end on a smaller set of entries. 
+When A is vertical, i.e. its row size is greater than its column size, we halve A by row and B by column (Figure~\ref{fig:case3}). This time the \recmm~ will be called four times (Algorithm~\ref{alg:case3}).  Although we have 4 recursive calls in this case, but there is no duplicates at the end, which makes this case more efficient than Case 2 for the total time, because we have a smaller set of entries to sort and add the duplicates.
 
 \iffalse
 \begin{figure}[tbh]
@@ -186,7 +186,7 @@ When A is vertical, i.e. its row size is greater than its column size, we halve 
   \label{alg:case3}
 \end{algorithm}
 
-We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. The same split is used for $B$. In \textit{Case 3}, we do the same, but separately for both $A$ and $B$. After a series of experiments we noticed that the splitting method based on size scales better than splitting based on nonzeros.
+We have also implemented splitting based on the number of nonzeros. In \textit{Case 2}, we split $A$ in a way to have half of nonzeros in $A1$, and the other half in $A2$. The same split is used for $B$. In \textit{Case 3}, we do the same, but separately for both $A$ and $B$. We compare these two splitting methods in the last section.
 
 \subsubsection{All together}
 
@@ -195,13 +195,13 @@ When all three cases work together, we have Case 2 and Case 3, that aim to divid
 \subsection{Communication}
 \label{sec:amg}
 
-In the previous section we explained how to perform \mm~ if the data is available locally. In this section, we explain how the communication is done to perform
+In the previous section we explained how to perform \recmm~ if the data is available locally. In this section, we explain how the communication is done to perform
 \begin{equation}
     C = A \times B
 \end{equation}
-in a distributed fashion for general (non necessarily symmetric) matrices $A$ and $B$. Also, we show how to improve performance and scalability if $B$ is symmetric.
+in a distributed fashion for general (non necessarily symmetric) matrices $A$ and $B$. Also, we propose a method to improve the performance and scalability of \recmm~ if $B$ is symmetric.
 
-Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Since matrices $A$ and $B$ may have different number of rows, they may not be partitioned the same way. We avoid communicating $A$ and only communicate $B$, to avoid any communication at the end of the multiplication. Algorithm~\ref{alg:comm1} shows how the communication is done. It is an overlapped implementation, so while the processors are communicating the data, the multiplication is being executed on the available data from the previous processor. That's the reason \recmm~ is between the \textit{Isend-Irecv} part and \textit{wait}. This way we use a portion of the (or sometimes the whole) time that the communication takes, to execute the multiplication.
+Matrices are partitioned across multiple processors by row blocks (Figure~\ref{fig:partition}). Since matrices $A$ and $B$ may have different number of rows, they may not be partitioned the same way. We avoid communicating $A$ in our method and only communicate $B$, to avoid any communication at the end of the multiplication. Algorithm~\ref{alg:comm1} shows how the communication is done. It is an overlapped implementation, so while the processors are communicating the data, the multiplication is being executed on the available data from the previous processor (so executing \recmm~ between the \textit{Isend-Irecv} part and \textit{wait}). This way we save a portion of the time that the communication takes and use it to do the multiplication. The other advantage of our communication algorithm is having each processor to communicate only with their neighbors.
 
 \begin{figure}[tbh]
  \centering
@@ -221,10 +221,10 @@ Matrices are partitioned across multiple processors by row blocks (Figure~\ref{f
     \State $B\_send \leftarrow B_i$
     \For{$k=myrank:myrank+nprocs$}
       \State $Isend(B\_send)$ to left neighbor
-      \State $B\_recv \leftarrow$ Irecv($B$) from right neighbor
+      \State $B\_recv \leftarrow$ Irecv(remote $B$) from right neighbor
       \State $C_{i} \leftarrow \recmm(A_i, B\_send)$ 
       \State wait for Isend and Irecv to finish
-      \State $swap(B\_send,B\_recv)$
+      \State $swap\_pointers(B\_send,B\_recv)$
     \EndFor
     \State locally sort $C_i$ and add duplicates
   \end{algorithmic}
@@ -236,23 +236,23 @@ For that, the blocks of $A$ and $B$ with the same color in Figure~\ref{fig:parti
 
 \begin{figure}[tbh]
     \centering
-    \includegraphics[width=5cm,height=3cm]{./figures/partition3.pdf}
+    \includegraphics[width=5.2cm,height=3cm]{./figures/partition3.pdf}
     \caption{Column $j$ of $B$ is stored on different processors, so to compute entry $C_{ij}$ we need to multiply the parts of $A$ and $B$ with the same color.}
     \label{fig:partition3}
     \Description{}
 \end{figure}
 
-Since in this case $B$ is symmetric, we can work with its local transpose. Instead of working with $B_i$'s, we consider their local transpose $BT_i$ in Figure~\ref{fig:partition4}.
+When $B$ is symmetric, instead of working with $B_i$'s, we consider their local transpose $BT_i$ in Figure~\ref{fig:partition4}.
 
 \begin{figure}[tbh]
     \centering
     \includegraphics[width=5.8cm,height=2.9cm]{./figures/partition4.pdf}
-    \caption{In case of a symmetric $B$, we use local transpose of its row blocks.}
+    \caption{When $B$ is symmetric, we use local transpose of its row blocks.}
     \label{fig:partition4}
     \Description{}
 \end{figure}
 
-If we partition $B$ in column blocks, then we don't even need $B$ to be symmetric, but since we want to consider the same partitioning for all the matrices in our algorithm and we don't want to change the partition for one matrix only to perform \recmm, we assumed $B$ being symmetric.
+If we partition $B$ in column blocks, then we don't even need $B$ to be symmetric, but since we want to consider the same partitioning method for all the matrices in our algorithm and we don't want to change the partition for one matrix to do \mm~ only, we assume $B$ is symmetric.
 
 \begin{algorithm}[H] 
   %\footnotesize
@@ -263,10 +263,10 @@ If we partition $B$ in column blocks, then we don't even need $B$ to be symmetri
     \State $B\_send \leftarrow$ local transpose of $B_i$
     \For{$k=myrank:myrank+nprocs$}
       \State $Isend(B\_send)\ to\ left\ neighbor$
-      \State $B\_recv \leftarrow$Irecv(local transpose of $B$) from right neighbor
+      \State $B\_recv \leftarrow$ Irecv(remote $B$) from right neighbor
       \State $C_{ik} \leftarrow \recmm(A_i, B\_send)$ 
       \State $wait\ for\ Isend\ and\ Irecv\ to\ finish$
-      \State $swap(B\_send,B\_recv)$
+      \State $swap\_pointers(B\_send,B\_recv)$
       \State locally sort $C_{ik}$ and add duplicates
     \EndFor
     \State put all $C_{ik}$'s into $C_i$
@@ -274,4 +274,12 @@ If we partition $B$ in column blocks, then we don't even need $B$ to be symmetri
   \label{alg:comm2} 
 \end{algorithm}
 
-There are at least two advantages for changing Algorithm~\ref{alg:comm1} to Algorithm~\ref{alg:comm2}. First, we can sort and add duplicates on a subset of entries of $C_i$ (compare line 9 of Algorithm~\ref{alg:comm1} with line $8$ of Algorithm~\ref{alg:comm2}. The other benefit is having better divided blocks of B after splitting.
+There are at least two advantages for using Algorithm~\ref{alg:comm2} instead of Algorithm~\ref{alg:comm1}. First, we can sort subsets of entries of $C_i$ separately and add duplicates (compare line 9 of Algorithm~\ref{alg:comm1} with line $8$ of Algorithm~\ref{alg:comm2}, which is cheaper than doing that on the final matrix. The other advantage is having better divided blocks of $B$ for \recmm. The way the splitting procedure is being executed, it is more efficient to have matrix $B$ horizontal if $A$ is vertical and vice versa. Figure~\ref{fig:partition6} compares both ways of dividing matrix $B$ on processor $P0$. Algorithm~\ref{alg:comm1} makes $B$ skinnier, but Algorithm~\ref{alg:comm2} helps to reach the threshold faster.
+
+\begin{figure}[tbh]
+    \centering
+    \includegraphics[width=8cm,height=5.5cm]{./figures/partition6.pdf}
+    \caption{Comparing splitting $B$ based on Algorithm~\ref{alg:comm1} (middle) and Algorithm~\ref{alg:comm2} (right)}
+    \label{fig:partition6}
+    \Description{}
+\end{figure}
