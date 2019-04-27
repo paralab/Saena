@@ -1,4 +1,5 @@
 #include "prolong_matrix.h"
+#include "data_struct.h"
 
 #include "parUtils.h" // for writeMatrixToFile()
 #include <fstream> // for writeMatrixToFile()

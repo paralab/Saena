@@ -1,3 +1,4 @@
+#include "data_struct.h"
 #include <prolong_matrix.h>
 #include <restrict_matrix.h>
 

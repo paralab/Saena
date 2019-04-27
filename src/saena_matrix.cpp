@@ -1,3 +1,4 @@
+#include "data_struct.h"
 #include "saena_matrix.h"
 #include "parUtils.h"
 #include "dollar.hpp"

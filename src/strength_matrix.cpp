@@ -1,4 +1,5 @@
 #include "strength_matrix.h"
+#include "data_struct.h"
 #include "aux_functions.h"
 
 #include <cstdlib>
