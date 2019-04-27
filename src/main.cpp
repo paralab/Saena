@@ -127,6 +127,7 @@ int main(int argc, char* argv[]){
 //    solver.set_sample_sz_percent(sm_sz_prct);
 
     solver.set_matrix(&A, &opts);
+/*
     solver.set_rhs(rhs);
 
     t2 = MPI_Wtime();
@@ -135,9 +136,9 @@ int main(int argc, char* argv[]){
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
-
+*/
     // *************************** AMG - Solve ****************************
-
+/*
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
@@ -148,7 +149,7 @@ int main(int argc, char* argv[]){
     print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
-
+*/
     // *************************** matrix-matrix product ****************************
 /*
     saena::amg solver;
