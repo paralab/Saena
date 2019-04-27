@@ -10,76 +10,6 @@
 class saena_matrix;
 
 
-bool row_major (const cooEntry& node1, const cooEntry& node2)
-{
-    if(node1.row < node2.row)
-        return (true);
-    else if(node1.row == node2.row)
-        return(node1.col <= node2.col);
-    else
-        return false;
-}
-
-
-bool vecCol_col_major (const vecCol& node1, const vecCol& node2)
-{
-    if(*node1.c < *node2.c)
-        return (true);
-    else if(*node1.c == *node2.c)
-        return((*node1.rv).row <= (*node2.rv).row);
-    else
-        return false;
-}
-
-
-//template <class T>
-//float myNorm(std::vector<T>& v){
-//    float norm = 0;
-//    for(long i=0; i<v.size(); i++)
-//        norm += v[i] * v[i];
-//
-//    norm = sqrt(norm);
-//    return  norm;
-//}
-
-/*
-double myNorm(std::vector<double>& v){
-    double norm = 0;
-    for(long i=0; i<v.size(); i++)
-        norm += v[i] * v[i];
-
-    norm = sqrt(norm);
-    return  norm;
-}
-*/
-
-
-std::ostream & operator<<(std::ostream & stream, const cooEntry & item) {
-    stream << item.row << "\t" << item.col << "\t" << item.val;
-    return stream;
-}
-
-std::ostream & operator<<(std::ostream & stream, const cooEntry_row & item) {
-    stream << item.row << "\t" << item.col << "\t" << item.val;
-    return stream;
-}
-
-std::ostream & operator<<(std::ostream & stream, const vecEntry & item) {
-    stream << item.row << "\t" << item.val;
-    return stream;
-}
-
-std::ostream & operator<<(std::ostream & stream, const tuple1 & item) {
-    stream << item.idx1 << "\t" << item.idx2;
-    return stream;
-}
-
-std::ostream & operator<<(std::ostream & stream, const vecCol & item) {
-    stream << item.rv->row << "\t" << *item.c << "\t" << item.rv->val;
-    return stream;
-}
-
-
 void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nnz_t initial_nnz_l, MPI_Comm comm){
 
     int rank, nprocs;
@@ -207,9 +137,58 @@ double print_time_ave_consecutive(double t_dif, MPI_Comm comm){
     return average;
 }
 
+
+int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // check if the size of rhs match the number of rows of A
+    struct stat st;
+    stat(file, &st);
+    unsigned int rhs_size = st.st_size / sizeof(double);
+    if(rhs_size != A->Mbig){
+        if(rank==0) printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
+        if(rank==0) printf("Number of rows of LHS = %d\n", A->Mbig);
+        if(rank==0) printf("Size of RHS = %d\n", rhs_size);
+        MPI_Finalize();
+        return -1;
+    }
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
+        MPI_Finalize();
+        return -1;
+    }
+
+    // define the size of v as the local number of rows on each process
+//    std::vector <double> v(A.M);
+    v.resize(A->M);
+    double* vp = &(*(v.begin()));
+
+    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
+    offset = A->split[rank] * 8; // value(double=8)
+    MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
+
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+    //printf("process %d read %d lines of triples\n", rank, count);
+    MPI_File_close(&fh);
+
+//    print_vector(v, -1, "v", comm);
+
+    return 0;
+}
+
+
 //template <class T>
-//int SaenaObject::writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm) {
-int writeVectorToFiled(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {
+int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {
 
     // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
@@ -320,55 +299,6 @@ int generate_rhs_old(std::vector<value_t>& rhs){
 //        rhs[i] = (value_t)(i+1) / 100;
 //        std::cout << i << "\t" << rhs[i] << std::endl;
     }
-
-    return 0;
-}
-
-
-int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
-
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    // check if the size of rhs match the number of rows of A
-    struct stat st;
-    stat(file, &st);
-    unsigned int rhs_size = st.st_size / sizeof(double);
-    if(rhs_size != A->Mbig){
-        if(rank==0) printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
-        if(rank==0) printf("Number of rows of LHS = %d\n", A->Mbig);
-        if(rank==0) printf("Size of RHS = %d\n", rhs_size);
-        MPI_Finalize();
-        return -1;
-    }
-
-    MPI_Status status;
-    MPI_File fh;
-    MPI_Offset offset;
-
-    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    if(mpiopen){
-        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
-        MPI_Finalize();
-        return -1;
-    }
-
-    // define the size of v as the local number of rows on each process
-//    std::vector <double> v(A.M);
-    v.resize(A->M);
-    double* vp = &(*(v.begin()));
-
-    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A->split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
-
-//    int count;
-//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
-    //printf("process %d read %d lines of triples\n", rank, count);
-    MPI_File_close(&fh);
-
-//    print_vector(v, -1, "v", comm);
 
     return 0;
 }

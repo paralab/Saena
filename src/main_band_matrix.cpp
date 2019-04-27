@@ -124,7 +124,7 @@ int main(int argc, char* argv[]){
 //    print_vector(u, -1, "u", comm);
 */
     // *************************** matrix-matrix product ****************************
-
+/*
     double matmat_time = 0;
     int matmat_iter_warmup = 5;
     int matmat_iter = 10;
@@ -152,9 +152,9 @@ int main(int argc, char* argv[]){
 //    saena_object *obj1 = solver.get_object();
 
 //    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
-    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
+//    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
-
+*/
     // *************************** CombBLAS ****************************
 
 //    combblas_matmult_DoubleBuff();

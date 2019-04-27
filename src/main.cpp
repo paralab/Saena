@@ -75,10 +75,6 @@ int main(int argc, char* argv[]){
     std::vector<double> rhs_std;
     saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
 
-    // ********** print rhs **********
-
-//    print_vector(rhs, -1, "rhs", comm);
-
     // ********** put rhs in saena::vector **********
 
     index_t my_split;
@@ -91,9 +87,12 @@ int main(int argc, char* argv[]){
     }
     rhs.assemble();
 
+    // ********** print rhs **********
+
+//    rhs.print_entry(0);
 //    std::vector<double> rrr;
 //    rhs.get_vec(rrr);
-//    print_vector(rrr, -1, "rhs", comm);
+//    print_vector(rhs, -1, "rhs", comm);
 
     // *************************** set u0 ****************************
 
