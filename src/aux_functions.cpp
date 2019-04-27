@@ -115,7 +115,7 @@ double print_time_ave(double t_dif, std::string function_name, MPI_Comm comm){
     average /= nprocs;
 
     if (rank==0)
-        std::cout << std::endl << function_name << "\n" << average << std::endl;
+        std::cout << function_name << "\n" << average << std::endl;
 
     return average;
 }
