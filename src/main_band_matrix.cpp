@@ -145,7 +145,7 @@ int main(int argc, char* argv[]){
         solver.matmat_ave(&A, &A, matmat_time);
     }
 
-    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
+    if(!rank) printf("Saena matmat:\n%f\n", matmat_time / matmat_iter);
 
 //    petsc_viewer(A.get_internal_matrix());
 //    petsc_viewer(C.get_internal_matrix());
