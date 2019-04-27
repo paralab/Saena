@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    if(!rank) std::cout << "nprocs = " << nprocs << std::endl << std::endl;
+    if(!rank) std::cout << "nprocs = " << nprocs << std::endl;
 
     // *************************** initialize the matrix: banded ****************************
     double t1 = MPI_Wtime();
@@ -124,10 +124,10 @@ int main(int argc, char* argv[]){
 //    print_vector(u, -1, "u", comm);
 */
     // *************************** matrix-matrix product ****************************
-/*
+
     double matmat_time = 0;
     int matmat_iter_warmup = 5;
-    int matmat_iter = 10;
+    int matmat_iter = 5;
 
     saena::amg solver;
 //    saena::matrix C(comm);
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]){
 //    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
 //    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
-*/
+
     // *************************** CombBLAS ****************************
 
 //    combblas_matmult_DoubleBuff();

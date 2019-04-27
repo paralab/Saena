@@ -404,4 +404,20 @@ std::ostream & operator<<(std::ostream & stream, const vecCol & item);
 
 bool vecCol_col_major (const vecCol& node1, const vecCol& node2);
 
+
+class CSCMat{
+
+private:
+    index_t *row;
+    value_t *val;
+    index_t *col_scan;
+
+    index_t M;
+//    index_t Mbig;
+    nnz_t   nnz;
+
+public:
+    CSCMat() = default;
+};
+
 #endif //SAENA_DATA_STRUCT_H

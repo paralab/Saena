@@ -138,16 +138,22 @@ public:
     int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
     int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
     int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
-    int reorder_split(vecEntry *arr, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
+    int reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
 
     // for fast_mm experiments
     int compute_coarsen_test(Grid *grid);
     int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    void fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
+    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
+                 index_t *Br, value_t *Bv, index_t *Bc_scan,
                  index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                  index_t B_col_size, index_t B_col_offset,
-                 index_t *Ac, index_t *Bc, MPI_Comm comm);
+                 std::vector<cooEntry> &C, MPI_Comm comm);
+
+//    void fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
+//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+//                 index_t B_col_size, index_t B_col_offset,
+//                 index_t *Ac, index_t *Bc, MPI_Comm comm);
 
 //    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
 //                 nnz_t A_nnz, nnz_t B_nnz,

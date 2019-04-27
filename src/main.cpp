@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
 //    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
 
     // *************************** set rhs: Laplacian ****************************
-
+/*
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
     saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
@@ -127,7 +127,6 @@ int main(int argc, char* argv[]){
 //    solver.set_sample_sz_percent(sm_sz_prct);
 
     solver.set_matrix(&A, &opts);
-/*
     solver.set_rhs(rhs);
 
     t2 = MPI_Wtime();
