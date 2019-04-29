@@ -1611,7 +1611,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    auto Arv = std::make_unique<vecEntry[]>(A->nnz_l); // row and val
 //    auto Ac  = std::make_unique<index_t[]>(A->Mbig+1); // col_idx
 
-    CSCMat Acsc;
+//    CSCMat Acsc;
 
     auto Ar      = new index_t[A->nnz_l];  // row
     auto Av      = new value_t[A->nnz_l];  // val
@@ -1716,8 +1716,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     int valbyidx                = sizeof(value_t) / sizeof(index_t);
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->max_M + 1;
-    nnz_t send_size_max       = v_buffer_sz_max + r_cscan_buffer_sz_max;
-    auto mempool3             = new index_t[2 * (send_size_max)];
+    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
+    auto mempool3               = new index_t[2 * (send_size_max)];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
@@ -1771,8 +1771,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //        mat_send_rv[i] = Brv[i];
 //    }
     memcpy(mat_send_r,     Br,      B_nnz * sizeof(index_t));
-    memcpy(mat_send_v,     Bv,      B_nnz * sizeof(value_t));
     memcpy(mat_send_cscan, Bc_scan, (B_col_size + 1) * sizeof(index_t));
+    memcpy(mat_send_v,     Bv,      B_nnz * sizeof(value_t));
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
@@ -1791,7 +1791,6 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
 
     std::vector<cooEntry> AB_temp;
-    std::vector<cooEntry> AB; // this is only for experiments.
 
 //    printf("\n");
     if(nprocs > 1){
@@ -1980,6 +1979,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    MPI_Barrier(comm);
 //    t1 = MPI_Wtime();
 
+    std::vector<cooEntry> AB; // this is only for experiments.
     std::sort(AB_temp.begin(), AB_temp.end());
 
     nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
