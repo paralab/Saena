@@ -1790,7 +1790,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    index_t *nnzPerCol_right   = &nnzPerColScan_right[1];
 //    index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
 
-    std::vector<cooEntry> AB_temp;
+    std::vector<cooEntry> AB, AB_temp;
 
 //    printf("\n");
     if(nprocs > 1){
@@ -1812,9 +1812,12 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //        auto mat_recv_cscan = reinterpret_cast<index_t*>(&mat_recv[rv_buffer_sz_max]);
 
         auto mat_temp = mat_send;
-        int owner, next_owner;
+        int  owner, next_owner;
         auto *requests = new MPI_Request[2];
         auto *statuses = new MPI_Status[2];
+
+        std::vector<cooEntry> AB_temp_no_dup;
+        std::vector<nnz_t> AB_nnz_start(nprocs), AB_nnz_end(nprocs);
 
         // todo: the last communication means each proc receives a copy of its already owned B, which is redundant,
         // so the communication should be avoided but the multiplication should be done. consider this:
@@ -1860,27 +1863,43 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 #endif
             } else {
 
-//                fast_mm(&A->entry[0], &mat_send[0], AB_temp, A->entry.size(), send_size,
-//                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, B->split[owner],
-//                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
-//                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+                // =======================================
+                // perform the multiplication
+                // =======================================
 
                 owner         = k%nprocs;
                 mat_current_M = B->split[owner + 1] - B->split[owner];
 
+                AB_temp.clear();
                 fast_mm(&Ar[0], &Av[0], &Ac_scan[0],
                         &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
                         A->M, A->split[rank], A->Mbig, 0, mat_current_M, B->split[owner],
                         AB_temp, comm);
 
-//                fast_mm(Arv, &mat_send_rv[0], AB_temp,
-//                        A->M, A->split[rank], A->Mbig, 0, mat_current_M, B->split[owner],
-//                        &Ac[0], &mat_send_cscan[0], A->comm);
+                // =======================================
+                // sort and remove duplicates
+                // =======================================
 
+                std::sort(AB_temp.begin(), AB_temp.end());
+
+//                print_vector(AB_temp, 0, "AB_temp", comm);
+
+                AB_nnz_start[owner] = AB_temp_no_dup.size();
+
+                if(!AB_temp.empty()) {
+                    nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
+                    for (nnz_t i = 0; i < AB_temp.size(); i++) {
+                        AB_temp_no_dup.emplace_back(AB_temp[i]);
+                        while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+                            AB_temp_no_dup.back().val += AB_temp[++i].val;
+                        }
+                    }
+                }
+
+                AB_nnz_end[owner] = AB_temp_no_dup.size();
             }
 
             MPI_Waitall(2, requests, statuses);
-
 
 //            mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
 //            MPI_Barrier(comm);
@@ -1935,6 +1954,26 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         delete [] requests;
         delete [] statuses;
 
+        AB_temp.clear();
+        AB_temp.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//        print_vector(AB_temp_no_dup, 0, "AB_temp_no_dup", comm);
+//        print_vector(AB_nnz_start, -1, "AB_nnz_start", comm);
+//        print_vector(AB_nnz_end,   -1, "AB_nnz_end",   comm);
+#endif
+
+        AB.resize(AB_temp_no_dup.size());
+        nnz_t AB_nnz = 0;
+        for(index_t p = 0; p < nprocs; p++){
+            memcpy(&AB[AB_nnz], &AB_temp_no_dup[AB_nnz_start[p]], (AB_nnz_end[p] - AB_nnz_start[p]) * sizeof(cooEntry));
+            AB_nnz += AB_nnz_end[p] - AB_nnz_start[p];
+        }
+
+#ifdef __DEBUG1__
+//        print_vector(AB, 0, "AB", comm);
+#endif
+
     } else { // nprocs == 1 -> serial
 
         if(A->entry.empty() || send_nnz == 0){ // skip!
@@ -1969,31 +2008,27 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
 //            double t2 = MPI_Wtime();
 //            printf("\nfast_mm of AB_temp = %f\n", t2-t1);
+
+            // =======================================
+            // sort and remove duplicates
+            // =======================================
+
+            if(!AB_temp.empty()) {
+
+                std::sort(AB_temp.begin(), AB_temp.end());
+
+                nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
+                for (nnz_t i = 0; i < AB_temp.size(); i++) {
+                    AB.emplace_back(AB_temp[i]);
+                    while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+//                    std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+                        AB.back().val += AB_temp[++i].val;
+                    }
+                }
+
+            }
         }
     }
-
-    // =======================================
-    // sort and remove duplicates
-    // =======================================
-
-//    MPI_Barrier(comm);
-//    t1 = MPI_Wtime();
-
-    std::vector<cooEntry> AB; // this is only for experiments.
-    std::sort(AB_temp.begin(), AB_temp.end());
-
-    nnz_t AP_temp_size_minus1 = AB_temp.size()-1;
-    for(nnz_t i = 0; i < AB_temp.size(); i++){
-        AB.emplace_back(AB_temp[i]);
-        while(i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i+1]){ // values of entries with the same row and col should be added.
-//                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-            AB.back().val += AB_temp[++i].val;
-        }
-    }
-//    AB_temp.clear();
-
-//    t1 = MPI_Wtime() - t1;
-//    print_time_ave(t1, "AB:", comm);
 
 #ifdef __DEBUG1__
 //    print_vector(AB, -1, "AB", comm);
