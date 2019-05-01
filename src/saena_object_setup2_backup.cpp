@@ -6660,3 +6660,476 @@ int saena_object::triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &R
     return 0;
 }
 */
+
+
+// before switching to CSC and new communication method (first compute RA, then (RA)P )
+//int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted)
+/*
+int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted){
+
+    saena_matrix *A    = grid->A;
+    prolong_matrix *P  = &grid->P;
+    restrict_matrix *R = &grid->R;
+//    saena_matrix *Ac   = &grid->Ac;
+
+    MPI_Comm comm = A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // *******************************************************
+    // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
+    // *******************************************************
+
+//    double t_AP = MPI_Wtime();
+
+    unsigned long send_size     = R->entry.size();
+    unsigned long send_size_max = R->nnz_max;
+//    MPI_Allreduce(&send_size, &send_size_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+
+    // local transpose of R is being used to compute A*P. So R is transposed locally here.
+//    std::vector<cooEntry> mat_send(R->entry.size());
+    auto mat_send = new cooEntry[send_size_max];
+    transpose_locally(&R->entry[0], R->entry.size(), R->splitNew[rank], &mat_send[0]);
+
+#ifdef __DEBUG1__
+//    print_vector(R->entry, -1, "R->entry", comm);
+//    print_vector(R_tranpose, -1, "mat_send", comm);
+#endif
+
+//    std::vector<index_t> nnzPerCol_left(A->Mbig, 0);
+//    for(nnz_t i = 0; i < A->entry.size(); i++){
+//        nnzPerCol_left[A->entry[i].col]++;
+//    }
+
+#ifdef __DEBUG1__
+//    print_vector(A->entry, 1, "A->entry", comm);
+//    print_vector(nnzPerCol_left, 1, "nnzPerCol_left", comm);
+#endif
+
+    index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
+//    std::vector<index_t> nnzPerColScan_left(A->Mbig+1);
+//    nnzPerColScan_left[0] = 0;
+//    for(nnz_t i = 0; i < A->Mbig; i++){
+//        nnzPerColScan_left[i+1] = nnzPerColScan_left[i] + nnzPerCol_left[i];
+//    }
+
+//    nnzPerCol_left.clear();
+//    nnzPerCol_left.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//    print_vector(nnzPerColScan_left, -1, "nnzPerColScan_left", comm);
+
+    // this is done in the for loop for all R_i's, including the local one.
+//    std::vector<unsigned int> nnzPerCol_right(R->M, 0); // range of rows of R is range of cols of R_transpose.
+//    for(nnz_t i = 0; i < R_tranpose.size(); i++){
+//        nnzPerCol_right[R_tranpose[i].col]++;
+//    }
+//    std::vector<nnz_t> nnzPerColScan_right(P->M+1);
+//    nnzPerColScan_right[0] = 0;
+//    for(nnz_t i = 0; i < P->M; i++){
+//        nnzPerColScan_right[i+1] = nnzPerColScan_right[i] + nnzPerCol_right[i];
+//    }
+
+//    print_vector(P->splitNew, -1, "P->splitNew", comm);
+
+    if(verbose_triple_mat_mult){
+        MPI_Barrier(comm); printf("compute_coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // compute the maximum size for nnzPerCol_right and nnzPerColScan_right
+    index_t mat_recv_M_max = R->max_M;
+//    for(index_t i = 0; i < nprocs; i++){
+//        if(P->splitNew[i+1] - P->splitNew[i] > mat_recv_M_max){
+//            mat_recv_M_max = P->splitNew[i+1] - P->splitNew[i];
+//        }
+//    }
+
+    // use this for fast_mm case1
+//    std::unordered_map<index_t, value_t> map_matmat;
+//    map_matmat.reserve(matmat_size_thre2);
+
+    std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
+//    std::vector<index_t> nnzPerCol_right(mat_recv_M_max); // range of rows of R is range of cols of R_transpose.
+    index_t *nnzPerCol_right   = &nnzPerColScan_right[1];
+    index_t *nnzPerCol_right_p = &nnzPerCol_right[0]; // use this to avoid subtracting a fixed number,
+
+    std::vector<cooEntry> AP_temp;
+    AP_temp.reserve(A->nnz_l + R->nnz_l); // an estimate to reserve memory
+
+//    printf("\n");
+    if(nprocs > 1){
+
+        int right_neighbor = (rank + 1)%nprocs;
+        int left_neighbor  = rank - 1;
+        if (left_neighbor < 0){
+            left_neighbor += nprocs;
+        }
+
+        int owner;
+        unsigned long recv_size;
+//        std::vector<cooEntry> mat_recv;
+        auto mat_recv = new cooEntry[send_size_max];
+        index_t mat_recv_M;
+
+        auto *requests = new MPI_Request[4];
+        auto *statuses = new MPI_Status[4];
+
+        for(int k = rank; k < rank+nprocs; k++){
+            // This is overlapped. Both local and remote loops are done here.
+            // The first iteration is the local loop. The rest are remote.
+            // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor.
+            // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
+            // receive R_tranpose from the right_neighbor. And so on.
+            // --------------------------------------------------------------------
+
+            // communicate size
+            MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
+            MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
+            MPI_Waitall(1, requests, statuses);
+//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+//            mat_recv.resize(recv_size);
+
+#ifdef __DEBUG1__
+//          print_vector(mat_recv, -1, "mat_recv", A->comm);
+//          print_vector(mat_send, -1, "mat_send", A->comm);
+#endif
+            // communicate data
+            MPI_Irecv(&mat_recv[0], recv_size, cooEntry::mpi_datatype(), right_neighbor, right_neighbor, comm, requests+2);
+            MPI_Isend(&mat_send[0], send_size, cooEntry::mpi_datatype(), left_neighbor,  rank,           comm, requests+3);
+
+            owner = k%nprocs;
+            mat_recv_M = P->splitNew[owner + 1] - P->splitNew[owner];
+//          printf("rank %d: owner = %d, mat_recv_M = %d, B_col_offset = %u \n", rank, owner, mat_recv_M, P->splitNew[owner]);
+
+            std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
+            nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[owner];
+            for(nnz_t i = 0; i < send_size; i++){
+                nnzPerCol_right_p[mat_send[i].col]++;
+            }
+
+//            nnzPerColScan_right[0] = 0;
+            for(nnz_t i = 0; i < mat_recv_M; i++){
+                nnzPerColScan_right[i+1] += nnzPerColScan_right[i];
+            }
+
+#ifdef __DEBUG1__
+//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+//          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
+
+            if(A->entry.empty() || send_size==0){ // skip!
+#ifdef __DEBUG1__
+                if(verbose_triple_mat_mult){
+                    if(A->entry.empty()){
+                        printf("\nskip: A->entry.size() == 0\n\n");
+                    } else {
+                        printf("\nskip: mat_send == 0\n\n");
+                    }
+                }
+#endif
+            } else {
+
+                fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), send_size,
+                        A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[owner],
+                        &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                        &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+            }
+
+            MPI_Waitall(3, requests+1, statuses+1);
+
+//            mat_recv.swap(mat_send);
+            std::swap(mat_send, mat_recv);
+            send_size = recv_size;
+
+#ifdef __DEBUG1__
+//          print_vector(AP_temp, -1, "AP_temp", A->comm);
+//          print_vector(mat_send, -1, "mat_send", A->comm);
+//          print_vector(mat_recv, -1, "mat_recv", A->comm);
+//          prev_owner = owner;
+//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+#endif
+
+        }
+
+//        mat_recv.clear();
+//        mat_recv.shrink_to_fit();
+        delete [] mat_recv;
+        delete [] requests;
+        delete [] statuses;
+
+    } else { // nprocs == 1 -> serial
+
+        index_t mat_recv_M = P->splitNew[rank + 1] - P->splitNew[rank];
+
+        std::fill(&nnzPerCol_right[0], &nnzPerCol_right[mat_recv_M], 0);
+        nnzPerCol_right_p = &nnzPerCol_right[0] - P->splitNew[rank];
+        for(nnz_t i = 0; i < send_size; i++){
+            nnzPerCol_right_p[mat_send[i].col]++;
+        }
+
+//        nnzPerColScan_right[0] = 0;
+        for(nnz_t i = 0; i < mat_recv_M; i++){
+            nnzPerColScan_right[i+1] += nnzPerColScan_right[i];
+        }
+
+#ifdef __DEBUG1__
+//          print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+//          print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
+
+        if(A->entry.empty() || send_size == 0){ // skip!
+#ifdef __DEBUG1__
+            if(verbose_triple_mat_mult){
+                if(A->entry.empty()){
+                    printf("\nskip: A->entry.size() == 0\n\n");
+                } else {
+                    printf("\nskip: mat_send == 0\n\n");
+                }
+            }
+#endif
+        } else {
+
+//            double t1 = MPI_Wtime();
+
+            fast_mm(&A->entry[0], &mat_send[0], AP_temp, A->entry.size(), send_size,
+                    A->M, A->split[rank], A->Mbig, 0, mat_recv_M, P->splitNew[rank],
+                    &nnzPerColScan_left[0],  &nnzPerColScan_left[1],
+                    &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+//            double t2 = MPI_Wtime();
+//            printf("\nfast_mm of AP_temp = %f\n", t2-t1);
+        }
+    }
+
+    // todo: delete this after computing estimates for AP and RAP nnz.
+//    nnz_t AP_temp_nnz_g_loc = AP_temp.size();
+//    nnz_t AP_temp_nnz_g;
+//    MPI_Allreduce(&AP_temp_nnz_g_loc, &AP_temp_nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+    std::sort(AP_temp.begin(), AP_temp.end());
+    std::vector<cooEntry> AP;
+    AP.reserve(AP_temp.size()/25); // 25 is not accurate.
+    nnz_t AP_temp_size_minus1 = AP_temp.size()-1;
+    for(nnz_t i = 0; i < AP_temp.size(); i++){
+        AP.emplace_back(AP_temp[i]);
+        while(i < AP_temp_size_minus1 && AP_temp[i] == AP_temp[i+1]){ // values of entries with the same row and col should be added.
+//            std::cout << AP_temp[i] << "\t" << AP_temp[i+1] << std::endl;
+            AP.back().val += AP_temp[++i].val;
+        }
+    }
+
+    delete [] mat_send;
+//    mat_send.clear();
+//    mat_send.shrink_to_fit();
+    AP_temp.clear();
+    AP_temp.shrink_to_fit();
+
+//    unsigned long AP_size_loc = AP.size(), AP_size;
+//    MPI_Reduce(&AP_size_loc, &AP_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
+//    if(!rank) printf("A_nnz_g = %lu, \tP_nnz_g = %lu, \tAP_size = %lu\n", A->nnz_g, P->nnz_g, AP_size);
+
+//    t_AP = MPI_Wtime() - t_AP;
+//    print_time_ave(t_AP, "AP:", grid->A->comm);
+
+#ifdef __DEBUG1__
+//    print_vector(AP_temp, -1, "AP_temp", A->comm);
+    if(verbose_triple_mat_mult){
+        MPI_Barrier(comm); printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+//    std::ofstream file("chrome.json");
+//    dollar::chrome(file);
+//    if(rank==0) printf("\nRA:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
+
+    // *******************************************************
+    // part 2: multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
+    // *******************************************************
+
+    // local transpose of P is being used to compute R*(AP_temp). So P is transposed locally here.
+    std::vector<cooEntry> P_tranpose(P->entry.size());
+//    transpose_locally(&P->entry[0], P->entry.size(), P->split[rank], &P_tranpose[0]);
+
+    // convert the indices to global
+//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+//        P_tranpose[i].col += P->split[rank];
+//    }
+
+    // compute nnzPerColScan_left for P_tranpose
+//    nnzPerCol_left.assign(P->M, 0);
+    std::vector<index_t> nnzPerColScan_left2(P->M + 1, 0);
+    index_t *nnzPerCol_left = &nnzPerColScan_left2[1];
+    index_t *nnzPerCol_left_p = &nnzPerCol_left[0] - P->split[rank];
+//    for(nnz_t i = 0; i < P_tranpose.size(); i++){
+//        nnzPerCol_left_p[P_tranpose[i].col]++;
+//        nnzPerCol_left[P_tranpose[i].col - P->split[rank]]++;
+//    }
+
+    for(nnz_t i = 0; i < P->entry.size(); i++){
+        P_tranpose[i] = cooEntry(P->entry[i].col, P->entry[i].row + P->split[rank], P->entry[i].val);
+        nnzPerCol_left_p[P_tranpose[i].col]++;
+    }
+
+    std::sort(P_tranpose.begin(), P_tranpose.end());
+
+#ifdef __DEBUG1__
+//    print_vector(P->entry, -1, "P->entry", comm);
+//    print_vector(P_tranpose, -1, "P_tranpose", comm);
+#endif
+
+//    nnzPerColScan_left.resize(P->M + 1);
+//    nnzPerColScan_left[0] = 0;
+    for(nnz_t i = 1; i < P->M + 1; i++){
+        nnzPerColScan_left2[i] += nnzPerColScan_left2[i-1];
+    }
+
+//    nnzPerCol_left.clear();
+//    nnzPerCol_left.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//    print_vector(nnzPerColScan_left2, -1, "nnzPerColScan_left2", comm);
+#endif
+
+    // compute nnzPerColScan_left for AP_temp
+    nnzPerColScan_right.assign(P->Nbig + 1, 0);
+    nnzPerCol_right = &nnzPerColScan_right[1];
+//    nnzPerCol_right.assign(P->Nbig, 0);
+    for(nnz_t i = 0; i < AP.size(); i++){
+        nnzPerCol_right[AP[i].col]++;
+    }
+
+#ifdef __DEBUG1__
+//    print_vector(nnzPerCol_right, -1, "nnzPerCol_right", comm);
+#endif
+
+//    nnzPerColScan_right[0] = 0;
+    for(nnz_t i = 0; i < P->Nbig; i++){
+        nnzPerColScan_right[i+1] += nnzPerColScan_right[i];
+    }
+
+//    nnzPerCol_right.clear();
+//    nnzPerCol_right.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//    print_vector(nnzPerColScan_right, -1, "nnzPerColScan_right", comm);
+#endif
+
+    // multiply: R_i * (AP_temp)_i. in which R_i = P_i_tranpose
+    // ===================================================
+
+    std::vector<cooEntry> RAP_temp;
+    RAP_temp.reserve(A->nnz_l/20 + R->nnz_l/20); // an estimate to reserve memory
+
+    if(P_tranpose.empty() || AP.empty()){ // skip!
+#ifdef __DEBUG1__
+        if(verbose_triple_mat_mult){
+            if(P_tranpose.empty()){
+                printf("\nskip: P_tranpose.size() == 0\n\n");
+            } else {
+                printf("\nskip: AP == 0\n\n");
+            }
+        }
+#endif
+    } else {
+
+//        double t1 = MPI_Wtime();
+
+        fast_mm(&P_tranpose[0], &AP[0], RAP_temp, P_tranpose.size(), AP.size(),
+                P->Nbig, 0, P->M, P->split[rank], P->Nbig, 0,
+                &nnzPerColScan_left2[0], &nnzPerColScan_left2[1],
+                &nnzPerColScan_right[0], &nnzPerColScan_right[1], A->comm);
+
+//        double t2 = MPI_Wtime();
+//        printf("\nfast_mm of R(AP_temp) = %f \n", t2-t1);
+
+    }
+
+    // todo: delete this after computing estimates for AP and RAP nnz.
+//    nnz_t RAP_temp_nnz_g_loc = RAP_temp.size();
+//    nnz_t RAP_temp_nnz_g;
+//    MPI_Allreduce(&RAP_temp_nnz_g_loc, &RAP_temp_nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+
+    // free memory
+    // -----------
+    AP.clear();
+    AP.shrink_to_fit();
+    P_tranpose.clear();
+    P_tranpose.shrink_to_fit();
+//    nnzPerColScan_left.clear();
+//    nnzPerColScan_left.shrink_to_fit();
+    nnzPerColScan_right.clear();
+    nnzPerColScan_right.shrink_to_fit();
+
+//    if(rank==0) printf("\nRAP:\n");
+//    if(rank==0) dollar::text(std::cout);
+//    dollar::clear();
+
+#ifdef __DEBUG1__
+//    print_vector(RAP_temp, -1, "RAP_temp", A->comm);
+    if(verbose_triple_mat_mult){
+        MPI_Barrier(comm); printf("compute_coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // remove local duplicates.
+    // Entries should be sorted in row-major order first, since the matrix should be partitioned based on rows.
+    // So cooEntry_row is used here. Remove local duplicates and put them in RAP_temp_row.
+    nnz_t size_minus_1 = 0;
+    if(!RAP_temp.empty()){
+        size_minus_1 = RAP_temp.size() - 1;
+    }
+
+    std::vector<cooEntry_row> RAP_temp_row;
+    for(nnz_t i = 0; i < RAP_temp.size(); i++){
+        RAP_temp_row.emplace_back(cooEntry_row( RAP_temp[i].row, RAP_temp[i].col, RAP_temp[i].val ));
+        while(i < size_minus_1 && RAP_temp[i] == RAP_temp[i+1]){ // values of entries with the same row and col should be added.
+            i++;
+            RAP_temp_row.back().val += RAP_temp[i].val;
+        }
+    }
+
+    RAP_temp.clear();
+    RAP_temp.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//    if(!rank) printf("\nave_nnz: R: %lu \tA: %lu \tP: %lu \tAP_temp: %lu \tRAP_temp = %lu \n", R->nnz_g/nprocs, A->nnz_g/nprocs, P->nnz_g/nprocs, AP_temp_nnz_g/nprocs, RAP_temp_nnz_g/nprocs);
+//    MPI_Barrier(comm); printf("rank %d: RAP_temp_row.size = %lu \n", rank, RAP_temp_row.size()); MPI_Barrier(comm);
+//    print_vector(RAP_temp_row, -1, "RAP_temp_row", comm);
+//    print_vector(P->splitNew, -1, "P->splitNew", comm);
+    if(verbose_triple_mat_mult){
+        MPI_Barrier(comm); printf("compute_coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+    // sort globally
+    // -------------
+    par::sampleSort(RAP_temp_row, RAP_row_sorted, P->splitNew, comm);
+
+    RAP_temp_row.clear();
+    RAP_temp_row.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//    print_vector(RAP_row_sorted, -1, "RAP_row_sorted", A->comm);
+//    MPI_Barrier(comm); printf("rank %d: RAP_row_sorted.size = %lu \n", rank, RAP_row_sorted.size()); MPI_Barrier(comm);
+
+    if(verbose_triple_mat_mult){
+        MPI_Barrier(comm); printf("compute_coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);}
+#endif
+
+//    std::vector<cooEntry> RAP_sorted(RAP_row_sorted.size());
+//    memcpy(&RAP_sorted[0], &RAP_row_sorted[0], RAP_row_sorted.size() * sizeof(cooEntry));
+//    RAP_row_sorted.clear();
+//    RAP_row_sorted.shrink_to_fit();
+
+    // clear map_matmat and free memory
+//    map_matmat.clear();
+//    std::unordered_map<index_t, value_t> map_temp;
+//    std::swap(map_matmat, map_temp);
+
+    // todo: nnzPerColScan is not required after this function. find the best place to clear it.
+//    A->nnzPerColScan.clear();
+//    A->nnzPerColScan.shrink_to_fit();
+
+    return 0;
+}
+*/

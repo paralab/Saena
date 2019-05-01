@@ -2,6 +2,7 @@
 #define SAENA_DATA_STRUCT_H
 
 #include <iostream>
+#include <vector>
 #include "mpi.h"
 
 typedef unsigned int index_t;
@@ -406,17 +407,25 @@ bool vecCol_col_major (const vecCol& node1, const vecCol& node2);
 
 
 class CSCMat{
-
 private:
-    index_t *row;
-    value_t *val;
-    index_t *col_scan;
-
-    index_t M;
-//    index_t Mbig;
-    nnz_t   nnz;
 
 public:
+
+    index_t *row      = nullptr;
+    value_t *val      = nullptr;
+    index_t *col_scan = nullptr;
+
+    index_t col_sz  = 0;
+    nnz_t   nnz     = 0;
+    nnz_t   max_nnz = 0;
+    index_t max_M   = 0;
+//    index_t M    = 0;
+//    index_t Mbig;
+//    nnz_t   nnz_g;
+//    bool free_memory = false;
+    std::vector<index_t> split;
+    std::vector<nnz_t>   nnz_list;
+
     CSCMat() = default;
 };
 
