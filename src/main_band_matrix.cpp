@@ -3,8 +3,7 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-#include "petsc_functions.h"
-//#include "combblas_functions.h"
+#include <dollar.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -12,7 +11,6 @@
 #include <sys/stat.h>
 #include <vector>
 #include <omp.h>
-#include <dollar.hpp>
 #include "mpi.h"
 
 
@@ -123,43 +121,6 @@ int main(int argc, char* argv[]){
 
 //    print_vector(u, -1, "u", comm);
 */
-    // *************************** matrix-matrix product ****************************
-
-    double matmat_time = 0;
-    int matmat_iter_warmup = 5;
-    int matmat_iter = 5;
-
-    saena::amg solver;
-//    saena::matrix C(comm);
-
-    saena::matrix B(A);
-
-    // warm-up
-    for(int i = 0; i < matmat_iter_warmup; i++){
-        solver.matmat_ave(&A, &B, matmat_time);
-    }
-
-    MPI_Barrier(comm);
-    matmat_time = 0;
-    for(int i = 0; i < matmat_iter; i++){
-        solver.matmat_ave(&A, &A, matmat_time);
-    }
-
-    if(!rank) printf("Saena matmat:\n%f\n", matmat_time / matmat_iter);
-
-//    petsc_viewer(A.get_internal_matrix());
-//    petsc_viewer(C.get_internal_matrix());
-//    saena_object *obj1 = solver.get_object();
-
-//    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
-//    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
-//    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
-
-    // *************************** CombBLAS ****************************
-
-//    combblas_matmult_DoubleBuff();
-//    int combblas_matmult_Synch();
-//    int combblas_GalerkinNew();
 
     // *************************** finalize ****************************
 

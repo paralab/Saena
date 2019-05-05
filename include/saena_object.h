@@ -132,10 +132,11 @@ public:
     int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int matmat(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
     int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
     int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, double &matmat_time);
 
-    // matmat_ave: transpose of B is used.
+    // matmat_ave:        transpose of B is used.
     // matmat_ave_orig_B: original B is used.
     int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
     int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
