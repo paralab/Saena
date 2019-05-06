@@ -48,24 +48,29 @@ private:
     bool verbose_repartition_update = false;
 
 public:
+    MPI_Comm comm            = MPI_COMM_WORLD;
+    MPI_Comm comm_horizontal = MPI_COMM_WORLD;
+    MPI_Comm comm_old        = MPI_COMM_WORLD;
+
+    index_t Mbig    = 0; // global number of rows
+    index_t Nbig    = 0; // global number of columns
+    index_t M       = 0; // local number of rows
+    index_t M_old   = 0; // local number of rows, before being repartitioned.
+    nnz_t   nnz_g   = 0; // global nnz
+    nnz_t   nnz_l   = 0; // local nnz
+    nnz_t   nnz_max = 0; // biggest nnz on all the processors
+    index_t M_max   = 0; // biggest M on all the processors
+
     std::set<cooEntry_row> data_coo;
     std::vector<cooEntry>  entry;
     std::vector<cooEntry>  entry_temp; // is used for updating the matrix
 
-    index_t Mbig  = 0; // global number of rows
-    index_t Nbig  = 0; // global number of columns
-    index_t M     = 0; // local number of rows
-    index_t M_old = 0; // local number of rows, before being repartitioned.
-    nnz_t nnz_g   = 0; // global nnz
-    nnz_t nnz_l   = 0; // local nnz
-    nnz_t nnz_max = 0; // biggest nnz on all the processors
-    index_t M_max = 0; // biggest M on all the processors
     std::vector<index_t> split; // (row-wise) partition of the matrix between processes
     std::vector<index_t> split_old;
     std::vector<nnz_t>   nnz_list; // number of nonzeros on each process. todo: Since it is local to each processor, unsigned int is enough. nnz_l should be changed too.
 
-    nnz_t nnz_l_local       = 0;
-    nnz_t nnz_l_remote      = 0;
+    nnz_t   nnz_l_local     = 0;
+    nnz_t   nnz_l_remote    = 0;
     index_t col_remote_size = 0; // number of remote columns
     std::vector<value_t> values_local;
     std::vector<value_t> values_remote;
@@ -79,10 +84,6 @@ public:
     std::vector<index_t> nnzPerRow_remote; // It is also used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
     std::vector<index_t> nnzPerColScan; // used in triple_mat_mult. free it when done. // todo: change this to nnz_t
-
-//    std::vector<index_t> row_local_temp;
-//    std::vector<index_t> col_local_temp;
-//    std::vector<value_t> values_local_temp;
 
     std::vector<value_t> inv_diag;
     std::vector<value_t> inv_diag_original;
@@ -127,10 +128,6 @@ public:
 
     bool add_duplicates = true;
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
-
-    MPI_Comm comm;
-    MPI_Comm comm_horizontal;
-    MPI_Comm comm_old;
 
     bool active = false;
     bool active_old_comm = false; // this is used for prolong and post-smooth

@@ -22,11 +22,13 @@ class prolong_matrix {
 private:
 
 public:
-    index_t Mbig = 0;
-    index_t Nbig = 0;
-    index_t M = 0;
-    nnz_t nnz_g = 0;
-    nnz_t nnz_l = 0;
+    MPI_Comm comm = MPI_COMM_WORLD;
+
+    index_t Mbig  = 0;
+    index_t Nbig  = 0;
+    index_t M     = 0;
+    nnz_t   nnz_g = 0;
+    nnz_t   nnz_l = 0;
 
     nnz_t nnz_l_local  = 0;
     nnz_t nnz_l_remote = 0;
@@ -94,8 +96,6 @@ public:
 
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;
-
-    MPI_Comm comm;
 
     bool verbose_prolong_setup = false;
 

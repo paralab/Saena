@@ -19,22 +19,24 @@ class restrict_matrix {
 private:
 
 public:
-    index_t M    = 0;
-    index_t Mbig = 0;
-    index_t Nbig = 0;
-    nnz_t nnz_g  = 0;
-    nnz_t nnz_l  = 0;
-    nnz_t nnz_l_local  = 0;
-    nnz_t nnz_l_remote = 0;
-    nnz_t nnz_max = 0;
-    index_t max_M = 0;
+    MPI_Comm comm = MPI_COMM_WORLD;
+
+    index_t M            = 0;
+    index_t Mbig         = 0;
+    index_t Nbig         = 0;
+    nnz_t   nnz_g        = 0;
+    nnz_t   nnz_l        = 0;
+    nnz_t   nnz_l_local  = 0;
+    nnz_t   nnz_l_remote = 0;
+    nnz_t   nnz_max      = 0;
+    index_t M_max        = 0;
 
     std::vector<cooEntry> entry; // local row indices (not global)
     std::vector<cooEntry> entry_local;
     std::vector<cooEntry> entry_remote;
-    std::vector<index_t> row_local;  // needed for finding sorting
-    std::vector<index_t> row_remote; // needed for finding sorting
-    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
+    std::vector<index_t>  row_local;  // needed for finding sorting
+    std::vector<index_t>  row_remote; // needed for finding sorting
+    std::vector<index_t>  col_remote; // index starting from 0, instead of the original column index
 
     std::vector<index_t> split;
     std::vector<index_t> splitNew;
@@ -70,8 +72,6 @@ public:
 //    std::vector<nnz_t> indicesP_remote;
 
 //    bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
-
-    MPI_Comm comm;
 
     bool verbose_restrict_setup = false;
     bool verbose_transposeP = false;

@@ -37,10 +37,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     M = splitNew[rank+1] - splitNew[rank];
 
     // this is used in triple_mat_mult
-    max_M = 0;
+    M_max = 0;
     for(index_t i = 0; i < nprocs; i++){
-        if(splitNew[i+1] - splitNew[i] > max_M){
-            max_M = splitNew[i+1] - splitNew[i];
+        if(splitNew[i+1] - splitNew[i] > M_max){
+            M_max = splitNew[i+1] - splitNew[i];
         }
     }
 
