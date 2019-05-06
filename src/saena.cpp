@@ -666,7 +666,15 @@ int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
 
 int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C){
 
-    m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix());
+    m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix(), false);
+
+    return 0;
+}
+
+
+int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble){
+
+    m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix(), assemble);
 
     return 0;
 }

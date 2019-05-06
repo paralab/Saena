@@ -338,6 +338,7 @@ int saena_matrix::matrix_setup() {
 
         // *************************** print_entry info ****************************
 
+#ifdef __DEBUG1__
 /*
         nnz_t total_nnz_l_local;
         nnz_t total_nnz_l_remote;
@@ -356,6 +357,7 @@ int saena_matrix::matrix_setup() {
         if(rank==0) printf("\nremote_min = %u, remote_ave = %u, remote_max = %u \n",
                            col_remote_size_min, (col_remote_size_ave/nprocs), col_remote_size_max);
 */
+#endif
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);

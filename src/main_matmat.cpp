@@ -62,8 +62,13 @@ int main(int argc, char* argv[]){
 
     saena::amg solver;
     saena::matrix C(comm);
-    solver.matmat(&A, &A, &C);
+    solver.matmat(&A, &A, &C, true);
 
+    // view A and C
+//    petsc_viewer(A.get_internal_matrix());
+//    petsc_viewer(C.get_internal_matrix());
+
+    // check the correctness with PETSc
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
 
 // *************************** matrix-matrix product ****************************
@@ -90,9 +95,7 @@ int main(int argc, char* argv[]){
     if(!rank) printf("Saena matmat:\n%f\n", matmat_time / matmat_iter);
 */
 
-//    petsc_viewer(A.get_internal_matrix());
-//    petsc_viewer(C.get_internal_matrix());
-//    saena_object *obj1 = solver.get_object();
+    // *************************** PETSc ****************************
 
 //    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
 //    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());

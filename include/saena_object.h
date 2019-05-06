@@ -72,7 +72,7 @@ public:
     value_t *mempool1;
     index_t *mempool2;
     index_t *mempool3;
-    std::unordered_map<index_t, value_t> map_matmat;
+//    std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
 //    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
 //    std::unique_ptr<index_t[]> mempool2;
@@ -107,6 +107,7 @@ public:
     bool verbose_matmat_recursive = false;
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
+    bool verbose_matmat_assemble  = false;
     bool verbose_solve            = false;
     bool verbose_vcycle           = false;
     bool verbose_vcycle_residuals = false;
@@ -125,13 +126,15 @@ public:
     int coarsen(Grid *grid);
     int compute_coarsen(Grid *grid);
     int compute_coarsen_old(Grid *grid);
+    int compute_coarsen_old2(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int matmat(Grid *grid);
-    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble);
+    int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
     int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
     int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
     int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, double &matmat_time);
