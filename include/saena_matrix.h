@@ -59,7 +59,7 @@ public:
     nnz_t nnz_g   = 0; // global nnz
     nnz_t nnz_l   = 0; // local nnz
     nnz_t nnz_max = 0; // biggest nnz on all the processors
-    index_t max_M = 0; // biggest M on all the processors
+    index_t M_max = 0; // biggest M on all the processors
     std::vector<index_t> split; // (row-wise) partition of the matrix between processes
     std::vector<index_t> split_old;
     std::vector<nnz_t>   nnz_list; // number of nonzeros on each process. todo: Since it is local to each processor, unsigned int is enough. nnz_l should be changed too.

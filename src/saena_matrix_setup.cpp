@@ -876,12 +876,12 @@ int saena_matrix::set_off_on_diagonal(){
             allocate_zfp();
         }
 
-        // compute max_M
-//        MPI_Allreduce(&M, &max_M, 1, MPI_UNSIGNED, MPI_MAX, comm);
-        max_M = 0;
+        // compute M_max
+//        MPI_Allreduce(&M, &M_max, 1, MPI_UNSIGNED, MPI_MAX, comm);
+        M_max = 0;
         for(index_t i = 0; i < nprocs; i++){
-            if(split[i+1] - split[i] > max_M){
-                max_M = split[i+1] - split[i];
+            if(split[i+1] - split[i] > M_max){
+                M_max = split[i+1] - split[i];
             }
         }
 

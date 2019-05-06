@@ -1228,7 +1228,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     Acsc.nnz      = A->nnz_l;
     Acsc.col_sz   = A->Mbig;
     Acsc.max_nnz  = A->nnz_max;
-    Acsc.max_M    = A->max_M;
+    Acsc.max_M    = A->M_max;
     Acsc.row      = new index_t[Acsc.nnz];
     Acsc.val      = new value_t[Acsc.nnz];
     Acsc.col_scan = new index_t[Acsc.col_sz + 1];
@@ -1282,7 +1282,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     Bcsc.nnz      = B->nnz_l;
     Bcsc.col_sz   = B->M;
     Bcsc.max_nnz  = B->nnz_max;
-    Bcsc.max_M    = B->max_M;
+    Bcsc.max_M    = B->M_max;
     Bcsc.row      = new index_t[Bcsc.nnz];
     Bcsc.val      = new value_t[Bcsc.nnz];
     Bcsc.col_scan = new index_t[Bcsc.col_sz + 1];
@@ -1338,11 +1338,11 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.col_sz];
 
-    // 2 for both send and receive buffer, valbyidx for value, (B->max_M + 1) for col_scan
+    // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
     int valbyidx                = sizeof(value_t) / sizeof(index_t);
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
-    nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->max_M + 1;
+    nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
     mempool3                    = new index_t[2 * (send_size_max)];
 
@@ -1440,9 +1440,6 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
                rank, C->Mbig, C->Nbig, C->M, C->nnz_g, C->nnz_l, C->density);
         MPI_Barrier(comm);
     }
-
-//    if(verbose_matmat_assemble){
-//        MPI_Barrier(comm); printf("matmat_assemble: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
     C->matrix_setup();
@@ -1513,7 +1510,7 @@ int saena_object::matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C){
     t1 = MPI_Wtime() - t1;
 
     index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
-    index_t mat_recv_M_max      = B->max_M;
+    index_t mat_recv_M_max      = B->M_max;
 
     std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
     index_t *nnzPerCol_right   = &nnzPerColScan_right[1];
@@ -1863,7 +1860,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     Acsc.nnz      = A->nnz_l;
     Acsc.col_sz   = A->Mbig;
     Acsc.max_nnz  = A->nnz_max;
-    Acsc.max_M    = A->max_M;
+    Acsc.max_M    = A->M_max;
     Acsc.row      = new index_t[Acsc.nnz];
     Acsc.val      = new value_t[Acsc.nnz];
     Acsc.col_scan = new index_t[Acsc.col_sz + 1];
@@ -1916,7 +1913,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     Bcsc.nnz      = B->nnz_l;
     Bcsc.col_sz   = B->M;
     Bcsc.max_nnz  = B->nnz_max;
-    Bcsc.max_M    = B->max_M;
+    Bcsc.max_M    = B->M_max;
     Bcsc.row      = new index_t[Bcsc.nnz];
     Bcsc.val      = new value_t[Bcsc.nnz];
     Bcsc.col_scan = new index_t[Bcsc.col_sz + 1];
@@ -1972,11 +1969,11 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.col_sz];
 
-    // 2 for both send and receive buffer, valbyidx for value, (B->max_M + 1) for col_scan
+    // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
     int valbyidx                = sizeof(value_t) / sizeof(index_t);
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
-    nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->max_M + 1;
+    nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
     mempool3                    = new index_t[2 * (send_size_max)];
 
@@ -2240,7 +2237,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 //    double tt;
 //    double t_swap = 0;
 //    index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
-//    index_t mat_recv_M_max      = B->max_M;
+//    index_t mat_recv_M_max      = B->M_max;
 
 //    std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
 //    index_t *nnzPerCol_right   = &nnzPerColScan_right[1];
@@ -2568,7 +2565,7 @@ int saena_object::matmat(Grid *grid){
 
     // compute the maximum size for nnzPerCol_right and nnzPerColScan_right
     index_t *nnzPerColScan_left = &A->nnzPerColScan[0];
-    index_t mat_recv_M_max = R->max_M;
+    index_t mat_recv_M_max = R->M_max;
 
     std::vector<index_t> nnzPerColScan_right(mat_recv_M_max + 1);
     index_t *nnzPerCol_right = &nnzPerColScan_right[1];
@@ -4308,7 +4305,7 @@ int saena_object::triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row
 #endif
 
     // compute the maximum size for nnzPerCol_right and nnzPerColScan_right
-    index_t mat_recv_M_max = R->max_M;
+    index_t mat_recv_M_max = R->M_max;
 //    for(index_t i = 0; i < nprocs; i++){
 //        if(P->splitNew[i+1] - P->splitNew[i] > mat_recv_M_max){
 //            mat_recv_M_max = P->splitNew[i+1] - P->splitNew[i];
@@ -4776,7 +4773,7 @@ int saena_object::triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> 
 #endif
 
     // compute the maximum size for nnzPerCol_right and nnzPerColScan_right
-    index_t mat_recv_M_max = R->max_M;
+    index_t mat_recv_M_max = R->M_max;
 //    for(index_t i = 0; i < nprocs; i++){
 //        if(P->splitNew[i+1] - P->splitNew[i] > mat_recv_M_max){
 //            mat_recv_M_max = P->splitNew[i+1] - P->splitNew[i];
