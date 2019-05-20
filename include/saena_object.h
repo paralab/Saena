@@ -34,7 +34,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 10; // fine grid is level 0.
+    int max_level = 1; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -61,9 +61,9 @@ public:
     gridinfo_t superlu_grid;
 
     std::string coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const index_t matmat_size_thre1        = 2000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
-    static const index_t matmat_size_thre2 = 1000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
-    const index_t matmat_size_thre3        = 1000000;  // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
+    const index_t matmat_size_thre1        = 1000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
+    static const index_t matmat_size_thre2 = 65; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
+//    const index_t matmat_size_thre3        = 100;  // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
     std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
@@ -102,11 +102,13 @@ public:
     bool verbose_setup            = true;
     bool verbose_setup_steps      = false;
     bool verbose_level_setup      = false;
+    bool verbose_compute_coarsen  = false;
     bool verbose_triple_mat_mult  = false;
     bool verbose_matmat           = false;
-    bool verbose_matmat_recursive = false;
+    bool verbose_fastmm           = false;
+    bool verbose_matmat_recursive = true;
     bool verbose_matmat_A         = false;
-    bool verbose_matmat_B         = false;
+    bool verbose_matmat_B         = true;
     bool verbose_matmat_assemble  = false;
     bool verbose_solve            = false;
     bool verbose_vcycle           = false;
@@ -128,16 +130,17 @@ public:
     int compute_coarsen_old(Grid *grid);
     int compute_coarsen_old2(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
-    int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+    int triple_mat_mult(Grid *grid);
+    int triple_mat_mult_old2(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
+    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
     int matmat(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble);
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
     int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
-    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
-    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, double &matmat_time);
 
     // matmat_ave:        transpose of B is used.
     // matmat_ave_orig_B: original B is used.
@@ -190,7 +193,7 @@ public:
 //    int sparsify_trsl1(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
 //    int sparsify_trsl2(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
 //    int sparsify_drineas(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
-    int sparsify_majid(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
+    int sparsify_majid(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
 //    int sparsify_majid(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, std::vector<index_t> &splitNew, MPI_Comm comm);
     int sparsify_majid_serial(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
     int sparsify_majid_with_dup(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);

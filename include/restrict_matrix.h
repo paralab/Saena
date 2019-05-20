@@ -40,6 +40,7 @@ public:
 
     std::vector<index_t> split;
     std::vector<index_t> splitNew;
+    std::vector<nnz_t>   nnz_list; // number of nonzeros on each process. To be used for mat-mat product.
 
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;

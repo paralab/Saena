@@ -92,8 +92,8 @@ int saena_object::setup(saena_matrix* A) {
         A->generate_dense_matrix();
     }
 
-    mempool1 = new value_t[matmat_size_thre2];
-    mempool2 = new index_t[A->Mbig * 4];
+//    mempool1 = new value_t[matmat_size_thre2];
+//    mempool2 = new index_t[A->Mbig * 4];
 
     if(verbose_setup_steps && rank==0) printf("setup: first Grid\n");
     grids.resize(max_level+1);
@@ -208,8 +208,8 @@ int saena_object::setup(saena_matrix* A) {
     }
 */
 
-    delete[] mempool1;
-    delete[] mempool2;
+//    delete[] mempool1;
+//    delete[] mempool2;
 
     if(verbose_setup){
         MPI_Barrier(A->comm);
@@ -223,7 +223,6 @@ int saena_object::setup(saena_matrix* A) {
     }
 
 //    MPI_Barrier(grids[0].A->comm); printf("rank %d: setup done!\n", rank); MPI_Barrier(grids[0].A->comm);
-
 //    if(rank==0) dollar::text(std::cout);
 
     return 0;

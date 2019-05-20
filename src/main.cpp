@@ -3,7 +3,7 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-//#include "petsc_functions.h"
+#include "petsc_functions.h"
 //#include "combblas_functions.h"
 
 #include <iostream>
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
 //    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
 
     // *************************** set rhs: Laplacian ****************************
-/*
+
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
     saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
@@ -135,7 +135,7 @@ int main(int argc, char* argv[]){
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
-*/
+
     // *************************** AMG - Solve ****************************
 /*
     t1 = MPI_Wtime();

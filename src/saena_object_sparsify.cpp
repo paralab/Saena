@@ -200,13 +200,16 @@ int saena_object::sparsify_drineas(std::vector<cooEntry> & A, std::vector<cooEnt
 */
 
 
-int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq,
+int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq,
                   nnz_t sample_size, double max_val, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
+    if(!rank) printf("\n\nsparsify_majid: rewrite this function based on the new triple_mat_mult\n");
+
+/*
 //    MPI_Barrier(comm);
     nnz_t orig_sz_global, A_sz = A.size();
     MPI_Allreduce(&A_sz, &orig_sz_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
@@ -284,7 +287,7 @@ int saena_object::sparsify_majid(std::vector<cooEntry_row>& A, std::vector<cooEn
 //                A_passes, selected, selected_global, A_sz, orig_sz_global, sample_sz_percent, (double)selected_global/orig_sz_global);
 //    }
 //    print_vector(A_spars, -1, "A_spars", comm);
-
+*/
     return 0;
 }
 
