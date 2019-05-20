@@ -24,9 +24,9 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 2){
+    if(argc != 3){
         if(rank == 0) {
-            std::cout << "Usage: ./Saena <MatrixA>" << std::endl;
+            std::cout << "Usage: ./Saena <MatrixA> <rhs>" << std::endl;
         }
         MPI_Finalize();
         return -1;
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]){
 //    A.get_internal_matrix()->print_info(0);
 //    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
 
-    petsc_viewer(A.get_internal_matrix());
+//    petsc_viewer(A.get_internal_matrix());
 
     // *************************** set rhs_std ****************************
 
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]){
     std::vector<double> rhs_std;
 
     // ********** 1 - set rhs_std: random **********
-
+/*
     rhs_std.resize(num_local_row);
     generate_rhs_old(rhs_std);
 
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-
+*/
     // ********** 2 - set rhs_std: ordered: 1, 2, 3, ... **********
 
 //    rhs_std.resize(num_local_row);
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]){
 //    saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
 
     // ********** 4 - set rhs_std: read from file **********
-/*
+
     char* Vname(argv[2]);
 //    saena::read_vector_file(rhs_std, A, Vname, comm);
     read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-*/
+
     // ********** print rhs_std **********
 
 //    print_vector(rhs_std, -1, "rhs_std", comm);
@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
 //    print_vector(u, -1, "u", comm);
 
     // *************************** lazy-update ****************************
-/*
+
     saena::matrix B (comm);
     int lazy_step = 0;
 
@@ -247,7 +247,7 @@ int main(int argc, char* argv[]){
         t2 = MPI_Wtime();
         print_time(t1, t2, "Solve:", comm);
     }
-*/
+
     // *************************** check correctness of the solution ****************************
 
     // A is scaled. read it from the file and don't scale.
