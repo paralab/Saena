@@ -207,7 +207,7 @@ int main(int argc, char* argv[]){
 //    }
 //    MPI_Barrier(comm);
 
-    for(int i = 2; i <= 10; i++){
+    for(int i = 2; i <= ITER_LAZY; i++){
         std::string file_name_update = file_name3;
         file_name_update            += std::to_string(i);
         file_name_update            += ".mtx";

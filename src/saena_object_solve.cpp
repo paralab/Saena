@@ -1415,7 +1415,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     }
 
     iter_num_lazy.emplace_back(i+1);
-    if(iter_num_lazy.size() == 10){
+    if(iter_num_lazy.size() == ITER_LAZY){
         print_vector(iter_num_lazy, 0, "iter_num_lazy", comm);
     }
 
