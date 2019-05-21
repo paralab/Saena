@@ -64,9 +64,9 @@ int main(int argc, char* argv[]){
 
     // ********** print matrix and time **********
 
-    double t2 = MPI_Wtime();
-    if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-    print_time(t1, t2, "Matrix Assemble:", comm);
+    t1 = t1 - MPI_Wtime();
+    if(verbose) print_time(t1, "Matrix Assemble:", comm);
+    print_time(t1, "Matrix Assemble:", comm);
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
@@ -161,8 +161,8 @@ int main(int argc, char* argv[]){
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
-    t2 = MPI_Wtime();
-    if(solver.verbose) print_time(t1, t2, "Setup:", comm);
+    t1 = t1 - MPI_Wtime();
+    if(solver.verbose) print_time(t1, "Setup:", comm);
 //    print_time(t1, t2, "Setup:", comm);
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
@@ -175,9 +175,9 @@ int main(int argc, char* argv[]){
 //    solver.solve(u, &opts);
     solver.solve_pcg(u, &opts);
 
-    t2 = MPI_Wtime();
-    if(solver.verbose) print_time(t1, t2, "Solve:", comm);
-    print_time(t1, t2, "Solve:", comm);
+    t1 = t1 - MPI_Wtime();
+    if(solver.verbose) print_time(t1, "Solve:", comm);
+    print_time(t1, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
 
@@ -248,13 +248,13 @@ int main(int argc, char* argv[]){
             lazy_step++;
         }
 
-        t2 = MPI_Wtime();
-        print_time(t1, t2, "Setup:", comm);
+        t1 = t1 - MPI_Wtime();
+        print_time(t1, "Setup:", comm);
 
         t1 = MPI_Wtime();
         solver.solve_pcg(u, &opts);
-        t2 = MPI_Wtime();
-        print_time(t1, t2, "Solve:", comm);
+        t1 = t1 - MPI_Wtime();
+        print_time(t1, "Solve:", comm);
     }
 
     // *************************** check correctness of the solution ****************************
