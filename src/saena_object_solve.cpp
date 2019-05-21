@@ -13,6 +13,9 @@
 #include <fstream>
 #include <mpi.h>
 
+// use this to store number of iterations for the lazy-update experiment.
+std::vector<int> iter_num_lazy;
+
 
 int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs){
     // this is CG.
@@ -1409,6 +1412,11 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
                        "\nrelative residual       = %e \n\n", i+1, sqrt(current_dot), sqrt(current_dot/initial_dot));
         std::cout << "******************************************************" << std::endl;
+    }
+
+    iter_num_lazy.emplace_back(i+1);
+    if(iter_num_lazy.size() == 10){
+        print_vector(iter_num_lazy, 0, "iter_num_lazy", comm);
     }
 
 #ifdef __DEBUG1__
