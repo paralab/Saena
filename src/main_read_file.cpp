@@ -187,9 +187,12 @@ int main(int argc, char* argv[]){
     // *************************** lazy-update ****************************
 
     std::string file_name2 = file_name;
-    char file_name3[100];
+    char        file_name3[100];
     std::size_t length = file_name2.copy(file_name3, strlen(file_name)-5, 0);
     file_name3[length] = '\0';
+
+    size_t      extIndex       = file_name2.find_last_of(".");
+    std::string file_extension = file_name2.substr(extIndex+1, 3);
 
 //    std::cout << "file name: " << file_name << ", file_name2: " << file_name2 << ", file_name3: " << file_name3 << std::endl;
 
@@ -210,7 +213,8 @@ int main(int argc, char* argv[]){
     for(int i = 2; i <= ITER_LAZY; i++){
         std::string file_name_update = file_name3;
         file_name_update            += std::to_string(i);
-        file_name_update            += ".mtx";
+        file_name_update            += ".";
+        file_name_update            += file_extension;
 
 //        std::cout << "file_name_update: " << file_name_update << std::endl;
 
