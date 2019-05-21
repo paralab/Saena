@@ -1130,7 +1130,12 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
         MPI_Comm_rank(comm, &rank);
 
         if(A.nnz_g != B.nnz_g){
-            if(rank==0) std::cout << "error: local_diff(): A.nnz_g != B.nnz_g" << std::endl;
+            if(rank==0){
+                std::cout << "error: local_diff(): A.nnz_g != B.nnz_g\n"
+                          << "A.nnz_g = " << A.nnz_g << "\nB.nnz_g = " << B.nnz_g << std::endl;
+            }
+
+            exit(EXIT_FAILURE);
         }
 
 //        A.print_entry(-1);

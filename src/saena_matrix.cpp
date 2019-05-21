@@ -41,9 +41,18 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    std::string filename = Aname;
+
+    std::ifstream inFile_check(filename.c_str());
+    if (!inFile_check.is_open()) {
+        if(!rank) std::cout << "\nCould not open the file!" << std::endl;
+        MPI_Barrier(comm);
+        exit(EXIT_FAILURE);
+    }
+    inFile_check.close();
+
     read_from_file = true;
 
-    std::string filename = Aname;
     size_t extIndex = filename.find_last_of(".");
     std::string file_extension = filename.substr(extIndex+1, 3);
 
@@ -75,10 +84,11 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
                 std::ifstream inFile(filename.c_str());
 
-                if (!inFile.is_open()) {
-                    std::cout << "Could not open the file!" << std::endl;
-                    return -1;
-                }
+//                if (!inFile.is_open()) {
+//                    std::cout << "Could not open the file!" << std::endl;
+//                    MPI_Barrier(comm);
+//                    return -1;
+//                }
 
                 // ignore comments
                 while (inFile.peek() == '%') inFile.ignore(2048, '\n');
