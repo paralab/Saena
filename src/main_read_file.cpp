@@ -34,6 +34,7 @@ int main(int argc, char* argv[]){
 
     // *************************** initialize the matrix ****************************
 
+    MPI_Barrier(comm);
     double t1 = MPI_Wtime();
 
     // ******** 1 - initialize the matrix: laplacian *************
@@ -64,7 +65,7 @@ int main(int argc, char* argv[]){
 
     // ********** print matrix and time **********
 
-    t1 = t1 - MPI_Wtime();
+    t1 = MPI_Wtime() - t1;
     if(verbose) print_time(t1, "Matrix Assemble:", comm);
     print_time(t1, "Matrix Assemble:", comm);
 
@@ -132,6 +133,7 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Setup ****************************
 
+    MPI_Barrier(comm);
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
@@ -161,7 +163,7 @@ int main(int argc, char* argv[]){
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
-    t1 = t1 - MPI_Wtime();
+    t1 = MPI_Wtime() - t1;
     if(solver.verbose) print_time(t1, "Setup:", comm);
 //    print_time(t1, t2, "Setup:", comm);
 
@@ -170,12 +172,13 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Solve ****************************
 
+    MPI_Barrier(comm);
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
     solver.solve_pcg(u, &opts);
 
-    t1 = t1 - MPI_Wtime();
+    t1 = MPI_Wtime() - t1;
     if(solver.verbose) print_time(t1, "Solve:", comm);
     print_time(t1, "Solve:", comm);
 
@@ -197,8 +200,12 @@ int main(int argc, char* argv[]){
     if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
 
     char pause1[10];
-    printf("Enter any letter (then press enter) to continue!");
-    scanf("%s", pause1);
+    MPI_Barrier(comm);
+    if(!rank){
+        printf("Enter any letter (then press enter) to continue!");
+        scanf("%s", pause1);
+    }
+    MPI_Barrier(comm);
 
     for(int i = 2; i <= 10; i++){
         std::string file_name_update = file_name3;
@@ -207,6 +214,7 @@ int main(int argc, char* argv[]){
 
 //        std::cout << "file_name_update: " << file_name_update << std::endl;
 
+        MPI_Barrier(comm);
         t1 = MPI_Wtime();
         if( lazy_step % 2 == 1) {
             A.erase_no_shrink_to_fit();
@@ -252,19 +260,28 @@ int main(int argc, char* argv[]){
             lazy_step++;
         }
 
-        t1 = t1 - MPI_Wtime();
+        t1 = MPI_Wtime() - t1;
         print_time(t1, "Setup:", comm);
 
-        printf("Enter any letter (then press enter) to continue!");
-        scanf("%s", pause1);
+        MPI_Barrier(comm);
+        if(!rank){
+            printf("Enter any letter (then press enter) to continue!");
+            scanf("%s", pause1);
+        }
+        MPI_Barrier(comm);
 
+        MPI_Barrier(comm);
         t1 = MPI_Wtime();
         solver.solve_pcg(u, &opts);
-        t1 = t1 - MPI_Wtime();
+        t1 = MPI_Wtime() - t1;
         print_time(t1, "Solve:", comm);
 
-        printf("Enter any letter (then press enter) to continue!");
-        scanf("%s", pause1);
+        MPI_Barrier(comm);
+        if(!rank){
+            printf("Enter any letter (then press enter) to continue!");
+            scanf("%s", pause1);
+        }
+        MPI_Barrier(comm);
     }
 
     // *************************** check correctness of the solution ****************************
