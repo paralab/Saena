@@ -199,13 +199,13 @@ int main(int argc, char* argv[]){
     int update_method = 1;
     if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
 
-    char pause1[10];
-    MPI_Barrier(comm);
-    if(!rank){
-        printf("Enter any letter (then press enter) to continue!");
-        scanf("%s", pause1);
-    }
-    MPI_Barrier(comm);
+//    char pause1[10];
+//    MPI_Barrier(comm);
+//    if(!rank){
+//        printf("Enter any letter (then press enter) to continue!");
+//        scanf("%s", pause1);
+//    }
+//    MPI_Barrier(comm);
 
     for(int i = 2; i <= 10; i++){
         std::string file_name_update = file_name3;
@@ -263,12 +263,12 @@ int main(int argc, char* argv[]){
         t1 = MPI_Wtime() - t1;
         print_time(t1, "Setup:", comm);
 
-        MPI_Barrier(comm);
-        if(!rank){
-            printf("Enter any letter (then press enter) to continue!");
-            scanf("%s", pause1);
-        }
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
+//        if(!rank){
+//            printf("Enter any letter (then press enter) to continue!");
+//            scanf("%s", pause1);
+//        }
+//        MPI_Barrier(comm);
 
         MPI_Barrier(comm);
         t1 = MPI_Wtime();
@@ -276,12 +276,12 @@ int main(int argc, char* argv[]){
         t1 = MPI_Wtime() - t1;
         print_time(t1, "Solve:", comm);
 
-        MPI_Barrier(comm);
-        if(!rank){
-            printf("Enter any letter (then press enter) to continue!");
-            scanf("%s", pause1);
-        }
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
+//        if(!rank){
+//            printf("Enter any letter (then press enter) to continue!");
+//            scanf("%s", pause1);
+//        }
+//        MPI_Barrier(comm);
     }
 
     // *************************** check correctness of the solution ****************************
