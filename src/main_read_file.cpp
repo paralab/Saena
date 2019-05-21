@@ -196,6 +196,10 @@ int main(int argc, char* argv[]){
     int update_method = 1;
     if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
 
+    char pause1[10];
+    printf("Enter any letter (then press enter) to continue!");
+    scanf("%s", pause1);
+
     for(int i = 2; i <= 10; i++){
         std::string file_name_update = file_name3;
         file_name_update            += std::to_string(i);
@@ -251,10 +255,16 @@ int main(int argc, char* argv[]){
         t1 = t1 - MPI_Wtime();
         print_time(t1, "Setup:", comm);
 
+        printf("Enter any letter (then press enter) to continue!");
+        scanf("%s", pause1);
+
         t1 = MPI_Wtime();
         solver.solve_pcg(u, &opts);
         t1 = t1 - MPI_Wtime();
         print_time(t1, "Solve:", comm);
+
+        printf("Enter any letter (then press enter) to continue!");
+        scanf("%s", pause1);
     }
 
     // *************************** check correctness of the solution ****************************
