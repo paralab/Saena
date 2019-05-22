@@ -199,7 +199,7 @@ int main(int argc, char* argv[]){
     saena::matrix B (comm);
     int lazy_step = 0;
 
-    int update_method = 1;
+    int update_method = 3;
     if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
 
 //    char pause1[10];
