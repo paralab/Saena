@@ -109,6 +109,7 @@ public:
     bool verbose_vcycle           = false;
     bool verbose_vcycle_residuals = false;
     bool verbose_solve_coarse     = false;
+    bool verbose_update           = true;
 
     bool verbose_triple_mat_mult_test = false;
 

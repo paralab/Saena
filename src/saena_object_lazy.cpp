@@ -117,6 +117,12 @@ int saena_object::update3(saena_matrix* A_new){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(verbose_update){
+        MPI_Barrier(comm);
+        if(!rank) printf("update3: start\n");
+        MPI_Barrier(comm);
+    }
+
 //    A_new->assemble_no_scale();
 
     // first set A_new.eig_max_of_invdiagXA equal to the previous A's. Since we only need an upper bound, this is good enough.
@@ -125,10 +131,37 @@ int saena_object::update3(saena_matrix* A_new){
 
     std::vector<cooEntry> A_diff;
     grids[0].A->scale_back_matrix();
+
+    if(verbose_update){
+        MPI_Barrier(comm);
+        if(!rank) printf("update3: scale_back_matrix\n");
+        MPI_Barrier(comm);
+    }
+
 //    A_new->scale_back_matrix();
     local_diff(*grids[0].A, *A_new, A_diff);
+
+    if(verbose_update){
+        MPI_Barrier(comm);
+        if(!rank) printf("update3: local_diff\n");
+        MPI_Barrier(comm);
+    }
+
     A_new->scale_matrix();
+
+    if(verbose_update){
+        MPI_Barrier(comm);
+        if(!rank) printf("update3: A_new->scale_matrix()\n");
+        MPI_Barrier(comm);
+    }
+
     grids[0].A->scale_matrix();
+
+    if(verbose_update){
+        MPI_Barrier(comm);
+        if(!rank) printf("update3: grids[0].A->scale_matrix()\n");
+        MPI_Barrier(comm);
+    }
 
 //    print_vector(A_diff, -1, "A_diff", grids[0].A->comm);
 //    print_vector(grids[0].A->split, 0, "split", grids[0].A->comm);
@@ -136,6 +169,12 @@ int saena_object::update3(saena_matrix* A_new){
 
     mempool1 = new value_t[matmat_size_thre2];
     mempool2 = new index_t[grids[0].A->Mbig * 4];
+
+    if(verbose_update){
+        MPI_Barrier(comm);
+        if(!rank) printf("update3: mempool\n");
+        MPI_Barrier(comm);
+    }
 
     grids[0].A = A_new; // the whole matrix A for level 0 should be updated with the updated matrix.
     for(int i = 0; i < max_level; i++){
@@ -151,8 +190,20 @@ int saena_object::update3(saena_matrix* A_new){
         }
     }
 
+    if(verbose_update){
+        MPI_Barrier(comm);
+        if(!rank) printf("update3: compute_coarsen_update_Ac\n");
+        MPI_Barrier(comm);
+    }
+
     delete[] mempool1;
     delete[] mempool2;
+
+    if(verbose_update){
+        MPI_Barrier(comm);
+        if(!rank) printf("update3: end\n");
+        MPI_Barrier(comm);
+    }
 
     return 0;
 }
