@@ -140,8 +140,8 @@ int main(int argc, char* argv[]){
     int vcycle_num            = 400;
     double relative_tolerance = 1e-14;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
-    int preSmooth             = 3;
-    int postSmooth            = 3;
+    int preSmooth             = 1;
+    int postSmooth            = 1;
 
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");

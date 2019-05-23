@@ -166,6 +166,9 @@ public:
 //    double highest_diag_val = 1e-10; // todo: check if this is still required.
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
 
+    bool verbose_matvec_dummy      = false;
+    bool verbose_comp_matvec_dummy = false;
+
     // dense matrix parameters
     // ***********************************************************
     // search for "uncomment to enable DENSE" to enable the dense part
