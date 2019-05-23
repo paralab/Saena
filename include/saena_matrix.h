@@ -42,10 +42,12 @@ private:
     bool read_from_file = false;
     bool freeBoolean = false; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
 
-    bool verbose_saena_matrix = false;
-    bool verbose_repartition  = false;
-    bool verbose_matrix_setup = false;
+    bool verbose_saena_matrix       = false;
+    bool verbose_repartition        = false;
+    bool verbose_matrix_setup       = false;
     bool verbose_repartition_update = false;
+    bool verbose_matvec_dummy       = false;
+    bool verbose_comp_matvec_dummy  = false;
 
 public:
     std::set<cooEntry_row> data_coo;
@@ -165,9 +167,6 @@ public:
     double eig_max_of_invdiagXA = 0; // the biggest eigenvalue of (A * inv_diag(A)) to be used in chebyshev smoother
 //    double highest_diag_val = 1e-10; // todo: check if this is still required.
 //    double double_machine_prec = 1e-12; // it is hard-coded in aux_functions.h
-
-    bool verbose_matvec_dummy      = false;
-    bool verbose_comp_matvec_dummy = false;
 
     // dense matrix parameters
     // ***********************************************************
