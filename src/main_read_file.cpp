@@ -165,7 +165,7 @@ int main(int argc, char* argv[]){
 
     t1 = MPI_Wtime() - t1;
     if(solver.verbose) print_time(t1, "Setup:", comm);
-//    print_time(t1, t2, "Setup:", comm);
+    print_time(t1, "Setup:", comm);
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs_std, -1, "rhs_std", comm);
