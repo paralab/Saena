@@ -304,17 +304,17 @@ int main(int argc, char* argv[]){
         double ave_setup_time = 0, ave_solve_time = 0;
 
         for(int i = 0; i < setup_time_loc.size(); i++){
-            setup_time_loc[i] /= nprocs; // to print the right number in the following print_vector().
-            solve_time_loc[i] /= nprocs;
-            ave_setup_time += setup_time_loc[i];
-            ave_solve_time += solve_time_loc[i];
+            setup_time[i] /= nprocs; // to print the right number in the following print_vector().
+            solve_time[i] /= nprocs;
+            ave_setup_time += setup_time[i];
+            ave_solve_time += solve_time[i];
         }
 
-        print_vector(setup_time_loc, 0, "setup_time_loc", comm);
-        print_vector(solve_time_loc, 0, "solve_time_loc", comm);
+        print_vector(setup_time, 0, "setup_time", comm);
+        print_vector(solve_time, 0, "solve_time", comm);
 
-        ave_setup_time /= setup_time_loc.size();
-        ave_solve_time /= solve_time_loc.size();
+        ave_setup_time /= setup_time.size();
+        ave_solve_time /= solve_time.size();
         printf("ave_setup_time = %f\nave_solve_time = %f\n", ave_setup_time, ave_solve_time);
     }
 
