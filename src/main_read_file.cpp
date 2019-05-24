@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
 
     // *************************** Ssetup timing parameters ****************************
 
-    std::vector<double> setup_time, solve_time;
+    std::vector<double> setup_time_loc, solve_time_loc;
 
     // *************************** initialize the matrix ****************************
 
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime() - t1;
     if(verbose) print_time(t1, "Matrix Assemble:", comm);
     print_time(t1, "Matrix Assemble:", comm);
-    setup_time.emplace_back(t1);
+    setup_time_loc.emplace_back(t1);
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
@@ -171,7 +171,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime() - t1;
     if(solver.verbose) print_time(t1, "Setup:", comm);
     print_time(t1, "Setup:", comm);
-    setup_time.front() += t1; // add matrix assemble time and AMG setup time to the first entry of setup_time.
+    setup_time_loc.front() += t1; // add matrix assemble time and AMG setup time to the first entry of setup_time_loc.
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs_std, -1, "rhs_std", comm);
@@ -187,7 +187,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime() - t1;
     if(solver.verbose) print_time(t1, "Solve:", comm);
     print_time(t1, "Solve:", comm);
-    solve_time.emplace_back(t1);
+    solve_time_loc.emplace_back(t1);
 
 //    print_vector(u, -1, "u", comm);
 
@@ -273,7 +273,7 @@ int main(int argc, char* argv[]){
 
         t1 = MPI_Wtime() - t1;
         print_time(t1, "Setup:", comm);
-        setup_time.emplace_back(t1);
+        setup_time_loc.emplace_back(t1);
 
 //        MPI_Barrier(comm);
 //        if(!rank){
@@ -287,7 +287,7 @@ int main(int argc, char* argv[]){
         solver.solve_pcg(u, &opts);
         t1 = MPI_Wtime() - t1;
         print_time(t1, "Solve:", comm);
-        solve_time.emplace_back(t1);
+        solve_time_loc.emplace_back(t1);
 
 //        MPI_Barrier(comm);
 //        if(!rank){
@@ -297,8 +297,26 @@ int main(int argc, char* argv[]){
 //        MPI_Barrier(comm);
     }
 
-    print_vector(setup_time, 0, "setup_time", comm);
-    print_vector(solve_time, 0, "solve_time", comm);
+    std::vector<double> setup_time(setup_time_loc.size()), solve_time(solve_time_loc.size());
+    MPI_Reduce(&setup_time_loc[0], &setup_time[0], setup_time_loc.size(), MPI_DOUBLE, MPI_SUM, 0, comm);
+
+    if(!rank){
+        double ave_setup_time = 0, ave_solve_time = 0;
+
+        for(int i = 0; i < setup_time_loc.size(); i++){
+            setup_time_loc[i] /= nprocs; // to print the right number in the following print_vector().
+            solve_time_loc[i] /= nprocs;
+            ave_setup_time += setup_time_loc[i];
+            ave_solve_time += solve_time_loc[i];
+        }
+
+        print_vector(setup_time_loc, 0, "setup_time_loc", comm);
+        print_vector(solve_time_loc, 0, "solve_time_loc", comm);
+
+        ave_setup_time /= setup_time_loc.size();
+        ave_solve_time /= solve_time_loc.size();
+        printf("ave_setup_time = %f\nave_solve_time = %f\n", ave_setup_time, ave_solve_time);
+    }
 
     // *************************** check correctness of the solution ****************************
 
