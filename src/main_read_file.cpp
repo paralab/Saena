@@ -299,6 +299,7 @@ int main(int argc, char* argv[]){
 
     std::vector<double> setup_time(setup_time_loc.size()), solve_time(solve_time_loc.size());
     MPI_Reduce(&setup_time_loc[0], &setup_time[0], setup_time_loc.size(), MPI_DOUBLE, MPI_SUM, 0, comm);
+    MPI_Reduce(&solve_time_loc[0], &solve_time[0], solve_time_loc.size(), MPI_DOUBLE, MPI_SUM, 0, comm);
 
     if(!rank){
         double ave_setup_time = 0, ave_solve_time = 0;
