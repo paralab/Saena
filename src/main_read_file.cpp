@@ -32,6 +32,10 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
+    // *************************** Ssetup timing parameters ****************************
+
+    std::vector<double> setup_time, solve_time;
+
     // *************************** initialize the matrix ****************************
 
     MPI_Barrier(comm);
@@ -68,6 +72,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime() - t1;
     if(verbose) print_time(t1, "Matrix Assemble:", comm);
     print_time(t1, "Matrix Assemble:", comm);
+    setup_time.emplace_back(t1);
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
@@ -166,6 +171,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime() - t1;
     if(solver.verbose) print_time(t1, "Setup:", comm);
     print_time(t1, "Setup:", comm);
+    setup_time.front() += t1; // add matrix assemble time and AMG setup time to the first entry of setup_time.
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs_std, -1, "rhs_std", comm);
@@ -181,6 +187,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime() - t1;
     if(solver.verbose) print_time(t1, "Solve:", comm);
     print_time(t1, "Solve:", comm);
+    solve_time.emplace_back(t1);
 
 //    print_vector(u, -1, "u", comm);
 
@@ -266,6 +273,7 @@ int main(int argc, char* argv[]){
 
         t1 = MPI_Wtime() - t1;
         print_time(t1, "Setup:", comm);
+        setup_time.emplace_back(t1);
 
 //        MPI_Barrier(comm);
 //        if(!rank){
@@ -279,6 +287,7 @@ int main(int argc, char* argv[]){
         solver.solve_pcg(u, &opts);
         t1 = MPI_Wtime() - t1;
         print_time(t1, "Solve:", comm);
+        solve_time.emplace_back(t1);
 
 //        MPI_Barrier(comm);
 //        if(!rank){
@@ -287,6 +296,9 @@ int main(int argc, char* argv[]){
 //        }
 //        MPI_Barrier(comm);
     }
+
+    print_vector(setup_time, 0, "setup_time", comm);
+    print_vector(solve_time, 0, "solve_time", comm);
 
     // *************************** check correctness of the solution ****************************
 

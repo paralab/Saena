@@ -24,7 +24,7 @@ typedef unsigned int  index_t;
 typedef unsigned long nnz_t;
 typedef double        value_t;
 
-#define ITER_LAZY 10
+#define ITER_LAZY 2
 
 class strength_matrix;
 class saena_matrix;
