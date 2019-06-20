@@ -1,6 +1,3 @@
-#include <cmath>
-#include "superlu_ddefs.h"
-
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
@@ -10,7 +7,10 @@
 #include "aux_functions.h"
 #include "parUtils.h"
 #include "dollar.hpp"
+#include "superlu_ddefs.h"
+#include <superlu_defs.h>
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -18,12 +18,6 @@
 #include <set>
 #include <random>
 #include <mpi.h>
-#include <superlu_defs.h>
-
-#include <trsl/is_picked_systematic.hpp>
-#include <trsl/ppfilter_iterator.hpp>
-//#include <numeric> // accumulate
-//#include <cassert>
 
 
 int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){

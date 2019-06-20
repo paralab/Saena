@@ -4444,6 +4444,7 @@ int saena_object::compute_coarsen(Grid *grid) {
         // version 2: with sparsification
         // *******************************************************
 
+/*
         // remove duplicates.
         // compute Frobenius norm squared (norm_frob_sq).
         cooEntry_row temp;
@@ -4513,7 +4514,7 @@ int saena_object::compute_coarsen(Grid *grid) {
                 printf("\nerror: wrong sparsifier!");
             }
         }
-
+*/
     }
 
 #ifdef __DEBUG1__
