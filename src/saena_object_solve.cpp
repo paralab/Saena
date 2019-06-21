@@ -136,18 +136,19 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
     superlu_dist_options_t options;
     SuperLUStat_t stat;
-    SuperMatrix A_SLU;
+//    SuperMatrix A_SLU;
     ScalePermstruct_t ScalePermstruct;
     LUstruct_t LUstruct;
     SOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     double   *berr;
-//    double   *b, *xtrue;
     double   *b;
     int      m, n, m_loc, nnz_loc;
     int      nprow, npcol;
-//    int      iam, info, ldb, ldx, nrhs;
     int      iam, info, ldb, nrhs;
+
+//    double   *b, *xtrue;
+//    int      iam, info, ldb, ldx, nrhs;
 //    char     **cpp, c;
 //    FILE *fp, *fopen();
 //    FILE *fp;
@@ -260,12 +261,12 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     }
 #endif
 
-    m = A->Mbig;
-    m_loc = A->M;
-    n = m;
+    m       = A->Mbig;
+    m_loc   = A->M;
+    n       = m;
     nnz_loc = A->nnz_l;
-    ldb = m_loc;
-
+    ldb     = m_loc;
+/*
 #ifdef __DEBUG1__
     if(verbose_solve_coarse) {
         MPI_Barrier(comm);
@@ -324,7 +325,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
                                    SLU_NR_loc, SLU_D, SLU_GE);
 
 //    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
-
+*/
     if ( !(berr = doubleMalloc_dist(nrhs)) )
     ABORT("Malloc fails for berr[].");
 
@@ -400,7 +401,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     // Initialize the statistics variables.
     PStatInit(&stat);
     // Call the linear equation solver.
-    pdgssvx(&options, &A_SLU, &ScalePermstruct, b, ldb, nrhs, &grid,
+    pdgssvx(&options, &A_SLU2, &ScalePermstruct, b, ldb, nrhs, &grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
 #ifdef __DEBUG1__
@@ -448,7 +449,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 #endif
 
     PStatFree(&stat);
-    Destroy_CompRowLoc_Matrix_dist(&A_SLU);
+//    Destroy_CompRowLoc_Matrix_dist(&A_SLU);
     ScalePermstructFree(&ScalePermstruct);
     Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
@@ -464,9 +465,9 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
-    out:
+/*    out:
     superlu_gridexit(&grid);
-
+*/
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
@@ -665,7 +666,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             else {
                 if (rank == 0) printf("Error: Unknown direct solver is chosen! \n");
                 MPI_Finalize();
-                return -1;
+                exit(EXIT_FAILURE);
             }
 
             // scale the solution u
@@ -1094,7 +1095,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     u.assign(grids[0].A->M, 0);
 
     // ************** create matrix in SuperLU **************
-/*
+
     saena_matrix *A_coarsest = &grids.back().Ac;
 
     if(A_coarsest->active) {
@@ -1230,11 +1231,11 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         }
 #endif
 
-        m = A_coarsest->Mbig;
-        m_loc = A_coarsest->M;
-        n = m;
+        m       = A_coarsest->Mbig;
+        m_loc   = A_coarsest->M;
+        n       = m;
         nnz_loc = A_coarsest->nnz_l;
-        ldb = m_loc;
+        ldb     = m_loc;
 
 #ifdef __DEBUG1__
         if (verbose_solve_coarse) {
@@ -1291,7 +1292,6 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
 //    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
     }
-*/
 
     // ************** solve **************
 
@@ -1428,7 +1428,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 #endif
 
     // ************** destroy matrix from SuperLU **************
-/*
+
     if(A_coarsest->active) {
         Destroy_CompRowLoc_Matrix_dist(&A_SLU2);
 
@@ -1436,7 +1436,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         out:
         superlu_gridexit(&superlu_grid);
     }
-*/
+
     // ************** scale u **************
 
     scale_vector(u, grids[0].A->inv_sq_diag);

@@ -1238,7 +1238,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		fflush(stdout);
             }
 	} /* end printing stats */
-    
+
     } /* end if (!factored) */
 
     

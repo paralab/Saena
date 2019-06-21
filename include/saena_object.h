@@ -59,7 +59,7 @@ public:
 
     // SuperLU parameters
     SuperMatrix A_SLU2; // save matrix in SuperLU for solve_coarsest_SuperLU()
-    gridinfo_t superlu_grid;
+    gridinfo_t  superlu_grid;
 
     std::string coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
     const index_t matmat_size_thre1        = 50000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M
