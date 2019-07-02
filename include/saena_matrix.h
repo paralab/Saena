@@ -42,10 +42,12 @@ private:
     bool read_from_file = false;
     bool freeBoolean = false; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
 
-    bool verbose_saena_matrix = false;
-    bool verbose_repartition  = false;
-    bool verbose_matrix_setup = false;
+    bool verbose_saena_matrix       = false;
+    bool verbose_repartition        = false;
+    bool verbose_matrix_setup       = false;
     bool verbose_repartition_update = false;
+    bool verbose_matvec_dummy       = false;
+    bool verbose_comp_matvec_dummy  = false;
 
 public:
     MPI_Comm comm            = MPI_COMM_WORLD;

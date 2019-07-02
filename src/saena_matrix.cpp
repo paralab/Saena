@@ -45,226 +45,244 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
     read_from_file = true;
 
-    std::string filename = Aname;
-    size_t extIndex = filename.find_last_of(".");
+    std::string filename       = Aname;
+    size_t      extIndex       = filename.find_last_of(".");
     std::string file_extension = filename.substr(extIndex+1, 3);
-
 //    if(rank==0) std::cout << "file_extension: " << file_extension << std::endl;
 
     std::string bin_filename = filename.substr(0, extIndex) + ".bin";
 //    if(rank==0) std::cout << "bin_filename: " << bin_filename << std::endl;
 
-    if(file_extension == "mtx") {
+    if(file_extension != "bin") {
 
-        std::ifstream inFile_check_bin(bin_filename.c_str());
+        // check if file exists
+        // ====================
 
-        if (inFile_check_bin.is_open()) {
+        std::ifstream inFile_check(filename.c_str());
+        if (!inFile_check.is_open()) {
+            if (!rank) std::cout << "\nCould not open file <" << filename << ">" << std::endl;
+            MPI_Barrier(comm);
+            exit(EXIT_FAILURE);
+        }
+        inFile_check.close();
 
-            if (rank == 0)
-                std::cout << "\nA binary file with the same name exists. Using that file instead of the mtx"
-                             " file.\n\n";
-            inFile_check_bin.close();
+        // ====================
 
-        } else {
+        if (file_extension == "mtx") {
 
-            // write the file in binary by proc 0.
-            if (rank == 0) {
+            std::ifstream inFile_check_bin(bin_filename.c_str());
 
-                std::cout << "\nFirst a binary file with name \"" << bin_filename
-                          << "\" will be created in the same directory. \n\n";
+            if (inFile_check_bin.is_open()) {
 
-                std::string outFileName = filename.substr(0, extIndex) + ".bin";
+                if (rank == 0)
+                    std::cout << "\nA binary file with the same name exists. Using that file instead of the mtx"
+                                 " file.\n\n";
+                inFile_check_bin.close();
 
-                std::ifstream inFile(filename.c_str());
+            } else {
 
-                if (!inFile.is_open()) {
-                    std::cout << "Could not open the file!" << std::endl;
-                    return -1;
-                }
+                // write the file in binary by proc 0.
+                if (rank == 0) {
 
-                // ignore comments
-                while (inFile.peek() == '%') inFile.ignore(2048, '\n');
+                    std::cout << "\nFirst a binary file with name \"" << bin_filename
+                              << "\" will be created in the same directory. \n\n";
 
-                // M and N are the size of the matrix with nnz nonzeros
-                unsigned int M, N, nnz;
-                inFile >> M >> N >> nnz;
+                    std::string outFileName = filename.substr(0, extIndex) + ".bin";
+
+                    std::ifstream inFile(filename.c_str());
+
+//                if (!inFile.is_open()) {
+//                    std::cout << "Could not open the file!" << std::endl;
+//                    MPI_Barrier(comm);
+//                    return -1;
+//                }
+
+                    // ignore comments
+                    while (inFile.peek() == '%') inFile.ignore(2048, '\n');
+
+                    // M and N are the size of the matrix with nnz nonzeros
+                    unsigned int M, N, nnz;
+                    inFile >> M >> N >> nnz;
 
 //                printf("M = %u, N = %u, nnz = %u \n", M, N, nnz);
 
-                std::ofstream outFile;
-                outFile.open(outFileName.c_str(), std::ios::out | std::ios::binary);
+                    std::ofstream outFile;
+                    outFile.open(outFileName.c_str(), std::ios::out | std::ios::binary);
 
-                std::vector<cooEntry> entry_temp1;
+                    std::vector<cooEntry> entry_temp1;
 //                std::vector<cooEntry> entry;
-                // number of nonzeros is less than 2*nnz, considering the diagonal
-                // that's why there is a resize for entry when nnz is found.
+                    // number of nonzeros is less than 2*nnz, considering the diagonal
+                    // that's why there is a resize for entry when nnz is found.
 
-                unsigned int a, b, i = 0;
-                double c;
+                    unsigned int a, b, i = 0;
+                    double c;
 
-                if (input_type.empty()) {
+                    if (input_type.empty()) {
 
-                    while (inFile >> a >> b >> c) {
-                        entry_temp1.resize(nnz);
-                        // for mtx format, rows and columns start from 1, instead of 0.
+                        while (inFile >> a >> b >> c) {
+                            entry_temp1.resize(nnz);
+                            // for mtx format, rows and columns start from 1, instead of 0.
 //                        std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
-                        entry_temp1[i] = cooEntry(a - 1, b - 1, c);
-                        i++;
-//                        cout << entry_temp1[i] << endl;
-
-                    }
-
-                } else if (input_type == "triangle") {
-
-                    while (inFile >> a >> b >> c) {
-                        entry_temp1.resize(2 * nnz);
-                        // for mtx format, rows and columns start from 1, instead of 0.
-//                        std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
-                        entry_temp1[i] = cooEntry(a - 1, b - 1, c);
-                        i++;
-//                        cout << entry_temp1[i] << endl;
-                        // add the lower triangle, not any diagonal entry
-                        if (a != b) {
-                            entry_temp1[i] = cooEntry(b - 1, a - 1, c);
+                            entry_temp1[i] = cooEntry(a - 1, b - 1, c);
                             i++;
-                            nnz++;
-                        }
-                    }
-                    entry_temp1.resize(nnz);
-
-                } else if (input_type == "pattern") { // add 1 for value for a pattern matrix
-
-                    while (inFile >> a >> b) {
-                        entry_temp1.resize(nnz);
-                        // for mtx format, rows and columns start from 1, instead of 0.
-//                        std::cout << "a = " << a << ", b = " << b << std::endl;
-                        entry_temp1[i] = cooEntry(a - 1, b - 1, double(1));
-                        i++;
 //                        cout << entry_temp1[i] << endl;
 
-                    }
+                        }
 
-                } else if (input_type == "tripattern") {
+                    } else if (input_type == "triangle") {
 
-                    while (inFile >> a >> b) {
-                        entry_temp1.resize(2 * nnz);
-                        // for mtx format, rows and columns start from 1, instead of 0.
+                        while (inFile >> a >> b >> c) {
+                            entry_temp1.resize(2 * nnz);
+                            // for mtx format, rows and columns start from 1, instead of 0.
+//                        std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
+                            entry_temp1[i] = cooEntry(a - 1, b - 1, c);
+                            i++;
+//                        cout << entry_temp1[i] << endl;
+                            // add the lower triangle, not any diagonal entry
+                            if (a != b) {
+                                entry_temp1[i] = cooEntry(b - 1, a - 1, c);
+                                i++;
+                                nnz++;
+                            }
+                        }
+                        entry_temp1.resize(nnz);
+
+                    } else if (input_type == "pattern") { // add 1 for value for a pattern matrix
+
+                        while (inFile >> a >> b) {
+                            entry_temp1.resize(nnz);
+                            // for mtx format, rows and columns start from 1, instead of 0.
 //                        std::cout << "a = " << a << ", b = " << b << std::endl;
-                        entry_temp1[i] = cooEntry(a - 1, b - 1, double(1));
-                        i++;
+                            entry_temp1[i] = cooEntry(a - 1, b - 1, double(1));
+                            i++;
+//                        cout << entry_temp1[i] << endl;
+
+                        }
+
+                    } else if (input_type == "tripattern") {
+
+                        while (inFile >> a >> b) {
+                            entry_temp1.resize(2 * nnz);
+                            // for mtx format, rows and columns start from 1, instead of 0.
+//                        std::cout << "a = " << a << ", b = " << b << std::endl;
+                            entry_temp1[i] = cooEntry(a - 1, b - 1, double(1));
+                            i++;
 //                        std::cout << entry_temp1[i] << std::endl;
 
-                        // add the lower triangle, not any diagonal entry
-                        if (a != b) {
-                            entry_temp1[i] = cooEntry(b - 1, a - 1, double(1));
-                            i++;
-                            nnz++;
+                            // add the lower triangle, not any diagonal entry
+                            if (a != b) {
+                                entry_temp1[i] = cooEntry(b - 1, a - 1, double(1));
+                                i++;
+                                nnz++;
+                            }
                         }
+                        entry_temp1.resize(nnz);
+
+                    } else {
+                        std::cerr << "the input type is not acceptable!" << std::endl;
+                        MPI_Finalize();
+                        return -1;
                     }
-                    entry_temp1.resize(nnz);
 
-                } else {
-                    std::cerr << "the input type is not acceptable!" << std::endl;
-                    MPI_Finalize();
-                    return -1;
-                }
+                    std::sort(entry_temp1.begin(), entry_temp1.end());
 
-                std::sort(entry_temp1.begin(), entry_temp1.end());
-
-                for (i = 0; i < nnz; i++) {
+                    for (i = 0; i < nnz; i++) {
 //                    std::cout << entry_temp1[i] << std::endl;
-                    outFile.write((char *) &entry_temp1[i].row, sizeof(index_t));
-                    outFile.write((char *) &entry_temp1[i].col, sizeof(index_t));
-                    outFile.write((char *) &entry_temp1[i].val, sizeof(value_t));
+                        outFile.write((char *) &entry_temp1[i].row, sizeof(index_t));
+                        outFile.write((char *) &entry_temp1[i].col, sizeof(index_t));
+                        outFile.write((char *) &entry_temp1[i].val, sizeof(value_t));
+                    }
+
+                    inFile.close();
+                    outFile.close();
                 }
 
-                inFile.close();
-                outFile.close();
             }
 
-        }
+            // wait until the binary file writing by proc 0 is done.
+            MPI_Barrier(comm);
 
-        // wait until the binary file writing by proc 0 is done.
-        MPI_Barrier(comm);
+        } else if (file_extension == "dat") { // dense matrix
 
-    } else if(file_extension == "dat") { // dense matrix
+            std::ifstream inFile_check_bin(bin_filename.c_str());
 
-        std::ifstream inFile_check_bin(bin_filename.c_str());
+            if (inFile_check_bin.is_open()) {
 
-        if (inFile_check_bin.is_open()) {
+                if (rank == 0)
+                    std::cout << "\nA binary file with the same name exists. Using that file instead of the mtx"
+                                 " file.\n\n";
+                inFile_check_bin.close();
 
-            if (rank == 0)
-                std::cout << "\nA binary file with the same name exists. Using that file instead of the mtx"
-                             " file.\n\n";
-            inFile_check_bin.close();
+            } else {
 
-        } else {
+                if (rank == 0) {
 
-            if (rank == 0) {
+                    std::cout << "\nFirst a binary file with name \"" << bin_filename
+                              << "\" will be created in the same directory. \n\n";
 
-                std::cout << "\nFirst a binary file with name \"" << bin_filename
-                          << "\" will be created in the same directory. \n\n";
+                    std::string outFileName = filename.substr(0, extIndex) + ".bin";
 
-                std::string outFileName = filename.substr(0, extIndex) + ".bin";
+                    std::ifstream inFile(filename.c_str());
 
-                std::ifstream inFile(filename.c_str());
-
-                if (!inFile.is_open()) {
-                    std::cout << "Could not open the file!" << std::endl;
-                    return -1;
-                }
-
-                // ignore comments
-                while (inFile.peek() == '%') inFile.ignore(2048, '\n');
-
-                std::ofstream outFile;
-                outFile.open(outFileName.c_str(), std::ios::out | std::ios::binary);
-
-                std::vector<cooEntry> entry_temp1;
-
-                std::string line;
-                double temp;
-                unsigned int row = 0, col;
-
-                while (std::getline(inFile, line)) {
-                    std::istringstream iss(line);
-
-                    col = 0;
-                    while (iss >> temp) {
-                        if (temp != 0) {
-                            entry_temp1.emplace_back(cooEntry(row, col, temp));
-                        }
-                        col++;
+                    if (!inFile.is_open()) {
+                        std::cout << "Could not open the file!" << std::endl;
+                        return -1;
                     }
-                    row++;
-                }
 
-                std::sort(entry_temp1.begin(), entry_temp1.end());
+                    // ignore comments
+                    while (inFile.peek() == '%') inFile.ignore(2048, '\n');
+
+                    std::ofstream outFile;
+                    outFile.open(outFileName.c_str(), std::ios::out | std::ios::binary);
+
+                    std::vector<cooEntry> entry_temp1;
+
+                    std::string line;
+                    double temp;
+                    unsigned int row = 0, col;
+
+                    while (std::getline(inFile, line)) {
+                        std::istringstream iss(line);
+
+                        col = 0;
+                        while (iss >> temp) {
+                            if (temp != 0) {
+                                entry_temp1.emplace_back(cooEntry(row, col, temp));
+                            }
+                            col++;
+                        }
+                        row++;
+                    }
+
+                    std::sort(entry_temp1.begin(), entry_temp1.end());
 
 //                print_vector(entry_temp1, 0, "entry_temp1", comm);
 
-                for (nnz_t i = 0; i < entry_temp1.size(); i++) {
+                    for (nnz_t i = 0; i < entry_temp1.size(); i++) {
 //                    std::cout << entry_temp1[i] << std::endl;
-                    outFile.write((char *) &entry_temp1[i].row, sizeof(index_t));
-                    outFile.write((char *) &entry_temp1[i].col, sizeof(index_t));
-                    outFile.write((char *) &entry_temp1[i].val, sizeof(value_t));
+                        outFile.write((char *) &entry_temp1[i].row, sizeof(index_t));
+                        outFile.write((char *) &entry_temp1[i].col, sizeof(index_t));
+                        outFile.write((char *) &entry_temp1[i].val, sizeof(value_t));
+                    }
+
+                    inFile.close();
+                    outFile.close();
                 }
-
-                inFile.close();
-                outFile.close();
             }
-        }
 
-    } else {
-        if(file_extension != "bin" && rank==0) printf("The extension of file should be either mtx (matrix market)"
-                                                      " or bin (binary) or dat (dense)! \n");
+        } else {
+            if (rank == 0)
+                printf("The extension of file should be either mtx (matrix market)"
+                       " or bin (binary) or dat (dense)! \n");
+        }
     }
 
     // find number of general nonzeros of the input matrix
     struct stat st;
     if(stat(bin_filename.c_str(), &st)){
-        if(rank==0) printf("\nError: File does not exist!\n");
-//        abort();
+        if (!rank) std::cout << "\nCould not open file <" << filename << ">" << std::endl;
+        MPI_Barrier(comm);
+        exit(EXIT_FAILURE);
     }
 
     nnz_g = st.st_size / (2*sizeof(index_t) + sizeof(value_t));

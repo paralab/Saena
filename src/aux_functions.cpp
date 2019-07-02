@@ -138,55 +138,6 @@ double print_time_ave_consecutive(double t_dif, MPI_Comm comm){
 }
 
 
-int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
-
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    // check if the size of rhs match the number of rows of A
-    struct stat st;
-    stat(file, &st);
-    unsigned int rhs_size = st.st_size / sizeof(double);
-    if(rhs_size != A->Mbig){
-        if(rank==0) printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
-        if(rank==0) printf("Number of rows of LHS = %d\n", A->Mbig);
-        if(rank==0) printf("Size of RHS = %d\n", rhs_size);
-        MPI_Finalize();
-        return -1;
-    }
-
-    MPI_Status status;
-    MPI_File fh;
-    MPI_Offset offset;
-
-    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    if(mpiopen){
-        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
-        MPI_Finalize();
-        return -1;
-    }
-
-    // define the size of v as the local number of rows on each process
-//    std::vector <double> v(A.M);
-    v.resize(A->M);
-    double* vp = &(*(v.begin()));
-
-    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A->split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
-
-//    int count;
-//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
-    //printf("process %d read %d lines of triples\n", rank, count);
-    MPI_File_close(&fh);
-
-//    print_vector(v, -1, "v", comm);
-
-    return 0;
-}
-
-
 //template <class T>
 int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {
 
@@ -299,6 +250,59 @@ int generate_rhs_old(std::vector<value_t>& rhs){
 //        rhs[i] = (value_t)(i+1) / 100;
 //        std::cout << i << "\t" << rhs[i] << std::endl;
     }
+
+    return 0;
+}
+
+
+int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // check if the size of rhs match the number of rows of A
+    struct stat st;
+    stat(file, &st);
+    unsigned int rhs_size = st.st_size / sizeof(double);
+    if(rhs_size != A->Mbig){
+        if(!rank){
+            printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
+            printf("Number of rows of LHS = %d\n", A->Mbig);
+            printf("Size of RHS = %d\n", rhs_size);
+        }
+        MPI_Barrier(comm);
+        exit(EXIT_FAILURE);
+//        MPI_Finalize();
+//        return -1;
+    }
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
+        MPI_Finalize();
+        return -1;
+    }
+
+    // define the size of v as the local number of rows on each process
+//    std::vector <double> v(A.M);
+    v.resize(A->M);
+    double* vp = &(*(v.begin()));
+
+    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
+    offset = A->split[rank] * 8; // value(double=8)
+    MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
+
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+    //printf("process %d read %d lines of triples\n", rank, count);
+    MPI_File_close(&fh);
+
+//    print_vector(v, -1, "v", comm);
 
     return 0;
 }

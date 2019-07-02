@@ -25,6 +25,8 @@ typedef unsigned int  index_t;
 typedef unsigned long nnz_t;
 typedef double        value_t;
 
+#define ITER_LAZY 20
+
 class strength_matrix;
 class saena_matrix;
 class prolong_matrix;
@@ -58,7 +60,7 @@ public:
 
     // SuperLU parameters
     SuperMatrix A_SLU2; // save matrix in SuperLU for solve_coarsest_SuperLU()
-    gridinfo_t superlu_grid;
+    gridinfo_t  superlu_grid;
 
     std::string coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
     const index_t matmat_size_thre1        = 1000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
@@ -71,7 +73,8 @@ public:
     // memory pool used in compute_coarsen
     value_t *mempool1;
     index_t *mempool2;
-    index_t *mempool3;
+//    index_t *mempool3;
+    cooEntry *mempool3;
 //    std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
 //    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
@@ -114,6 +117,7 @@ public:
     bool verbose_vcycle           = false;
     bool verbose_vcycle_residuals = false;
     bool verbose_solve_coarse     = false;
+    bool verbose_update           = false;
 
     bool verbose_triple_mat_mult_test = false;
 
@@ -127,20 +131,23 @@ public:
     int setup(saena_matrix* A);
     int coarsen(Grid *grid);
     int compute_coarsen(Grid *grid);
-    int compute_coarsen_old(Grid *grid);
-    int compute_coarsen_old2(Grid *grid);
+//    int compute_coarsen_old(Grid *grid);
+//    int compute_coarsen_old2(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
-    int triple_mat_mult(Grid *grid);
-    int triple_mat_mult_old2(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+//    int triple_mat_mult(Grid *grid);
+//    int triple_mat_mult_old2(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+    int compute_coarsen_update_Ac_old(Grid *grid, std::vector<cooEntry> &diff);
+    int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
-    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
+//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
+//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
     int matmat(Grid *grid);
-    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble);
+    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+//    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble);
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
-    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+//    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 
     // matmat_ave:        transpose of B is used.
     // matmat_ave_orig_B: original B is used.
@@ -153,11 +160,19 @@ public:
     int compute_coarsen_test(Grid *grid);
     int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
-                 index_t *Br, value_t *Bv, index_t *Bc_scan,
+    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+                 nnz_t A_nnz, nnz_t B_nnz,
                  index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                  index_t B_col_size, index_t B_col_offset,
-                 std::vector<cooEntry> &C, MPI_Comm comm);
+                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
+                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
+                 MPI_Comm comm);
+
+//    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
+//                 index_t *Br, value_t *Bv, index_t *Bc_scan,
+//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+//                 index_t B_col_size, index_t B_col_offset,
+//                 std::vector<cooEntry> &C, MPI_Comm comm);
 
 //    void fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
 //                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,

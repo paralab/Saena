@@ -24,16 +24,21 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 2){
+    if(argc != 3){
         if(rank == 0) {
-            std::cout << "Usage: ./Saena <MatrixA>" << std::endl;
+            std::cout << "Usage: ./Saena <MatrixA> <rhs>" << std::endl;
         }
         MPI_Finalize();
         return -1;
     }
 
+    // *************************** Ssetup timing parameters ****************************
+
+    std::vector<double> setup_time_loc, solve_time_loc;
+
     // *************************** initialize the matrix ****************************
 
+    MPI_Barrier(comm);
     double t1 = MPI_Wtime();
 
     // ******** 1 - initialize the matrix: laplacian *************
@@ -64,15 +69,16 @@ int main(int argc, char* argv[]){
 
     // ********** print matrix and time **********
 
-    double t2 = MPI_Wtime();
-    if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-    print_time(t1, t2, "Matrix Assemble:", comm);
+    t1 = MPI_Wtime() - t1;
+    if(verbose) print_time(t1, "Matrix Assemble:", comm);
+    print_time(t1, "Matrix Assemble:", comm);
+    setup_time_loc.emplace_back(t1);
 
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
 //    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
 
-    petsc_viewer(A.get_internal_matrix());
+//    petsc_viewer(A.get_internal_matrix());
 
     // *************************** set rhs_std ****************************
 
@@ -81,7 +87,7 @@ int main(int argc, char* argv[]){
     std::vector<double> rhs_std;
 
     // ********** 1 - set rhs_std: random **********
-
+/*
     rhs_std.resize(num_local_row);
     generate_rhs_old(rhs_std);
 
@@ -93,7 +99,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-
+*/
     // ********** 2 - set rhs_std: ordered: 1, 2, 3, ... **********
 
 //    rhs_std.resize(num_local_row);
@@ -106,7 +112,7 @@ int main(int argc, char* argv[]){
 //    saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
 
     // ********** 4 - set rhs_std: read from file **********
-/*
+
     char* Vname(argv[2]);
 //    saena::read_vector_file(rhs_std, A, Vname, comm);
     read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
@@ -120,7 +126,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-*/
+
     // ********** print rhs_std **********
 
 //    print_vector(rhs_std, -1, "rhs_std", comm);
@@ -132,14 +138,15 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Setup ****************************
 
+    MPI_Barrier(comm);
     t1 = MPI_Wtime();
 
 //    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 400;
     double relative_tolerance = 1e-14;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
-    int preSmooth             = 3;
-    int postSmooth            = 3;
+    int preSmooth             = 1;
+    int postSmooth            = 1;
 
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 //    saena::options opts((char*)"options001.xml");
@@ -161,39 +168,64 @@ int main(int argc, char* argv[]){
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
-    t2 = MPI_Wtime();
-    if(solver.verbose) print_time(t1, t2, "Setup:", comm);
-//    print_time(t1, t2, "Setup:", comm);
+    t1 = MPI_Wtime() - t1;
+    if(solver.verbose) print_time(t1, "Setup:", comm);
+    print_time(t1, "Setup:", comm);
+    setup_time_loc.front() += t1; // add matrix assemble time and AMG setup time to the first entry of setup_time_loc.
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs_std, -1, "rhs_std", comm);
 
     // *************************** AMG - Solve ****************************
 
+    MPI_Barrier(comm);
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
     solver.solve_pcg(u, &opts);
 
-    t2 = MPI_Wtime();
-    if(solver.verbose) print_time(t1, t2, "Solve:", comm);
-    print_time(t1, t2, "Solve:", comm);
+    t1 = MPI_Wtime() - t1;
+    if(solver.verbose) print_time(t1, "Solve:", comm);
+    print_time(t1, "Solve:", comm);
+    solve_time_loc.emplace_back(t1);
 
 //    print_vector(u, -1, "u", comm);
 
     // *************************** lazy-update ****************************
-/*
+
+    std::string file_name2 = file_name;
+    char        file_name3[100];
+    std::size_t length = file_name2.copy(file_name3, strlen(file_name)-5, 0);
+    file_name3[length] = '\0';
+
+    size_t      extIndex       = file_name2.find_last_of(".");
+    std::string file_extension = file_name2.substr(extIndex+1, 3);
+
+//    std::cout << "file name: " << file_name << ", file_name2: " << file_name2 << ", file_name3: " << file_name3 << std::endl;
+
     saena::matrix B (comm);
     int lazy_step = 0;
 
-    int update_method = 1;
+    int update_method = 3;
     if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
 
-    for(int i = 2; i <= 10; i++){
-        std::string file_name_update = "mat";
-        file_name_update += std::to_string(i);
-        file_name_update += ".mtx";
+//    char pause1[10];
+//    MPI_Barrier(comm);
+//    if(!rank){
+//        printf("Enter any letter (then press enter) to continue!");
+//        scanf("%s", pause1);
+//    }
+//    MPI_Barrier(comm);
 
+    for(int i = 2; i <= ITER_LAZY; i++){
+        std::string file_name_update = file_name3;
+        file_name_update            += std::to_string(i);
+        file_name_update            += ".";
+        file_name_update            += file_extension;
+
+//        std::cout << "file_name_update: " << file_name_update << std::endl;
+
+        MPI_Barrier(comm);
         t1 = MPI_Wtime();
         if( lazy_step % 2 == 1) {
             A.erase_no_shrink_to_fit();
@@ -239,15 +271,54 @@ int main(int argc, char* argv[]){
             lazy_step++;
         }
 
-        t2 = MPI_Wtime();
-        print_time(t1, t2, "Setup:", comm);
+        t1 = MPI_Wtime() - t1;
+        print_time(t1, "Setup:", comm);
+        setup_time_loc.emplace_back(t1);
 
+//        MPI_Barrier(comm);
+//        if(!rank){
+//            printf("Enter any letter (then press enter) to continue!");
+//            scanf("%s", pause1);
+//        }
+//        MPI_Barrier(comm);
+
+        MPI_Barrier(comm);
         t1 = MPI_Wtime();
         solver.solve_pcg(u, &opts);
-        t2 = MPI_Wtime();
-        print_time(t1, t2, "Solve:", comm);
+        t1 = MPI_Wtime() - t1;
+        print_time(t1, "Solve:", comm);
+        solve_time_loc.emplace_back(t1);
+
+//        MPI_Barrier(comm);
+//        if(!rank){
+//            printf("Enter any letter (then press enter) to continue!");
+//            scanf("%s", pause1);
+//        }
+//        MPI_Barrier(comm);
     }
-*/
+
+    std::vector<double> setup_time(setup_time_loc.size()), solve_time(solve_time_loc.size());
+    MPI_Reduce(&setup_time_loc[0], &setup_time[0], setup_time_loc.size(), MPI_DOUBLE, MPI_SUM, 0, comm);
+    MPI_Reduce(&solve_time_loc[0], &solve_time[0], solve_time_loc.size(), MPI_DOUBLE, MPI_SUM, 0, comm);
+
+    if(!rank){
+        double ave_setup_time = 0, ave_solve_time = 0;
+
+        for(int i = 0; i < setup_time_loc.size(); i++){
+            setup_time[i] /= nprocs; // to print the right number in the following print_vector().
+            solve_time[i] /= nprocs;
+            ave_setup_time += setup_time[i];
+            ave_solve_time += solve_time[i];
+        }
+
+        print_vector(setup_time, 0, "setup_time", comm);
+        print_vector(solve_time, 0, "solve_time", comm);
+
+        ave_setup_time /= setup_time.size();
+        ave_solve_time /= solve_time.size();
+        printf("ave_setup_time = %f\nave_solve_time = %f\n", ave_setup_time, ave_solve_time);
+    }
+
     // *************************** check correctness of the solution ****************************
 
     // A is scaled. read it from the file and don't scale.
