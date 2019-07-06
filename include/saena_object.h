@@ -63,8 +63,8 @@ public:
     gridinfo_t  superlu_grid;
 
     std::string coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const index_t matmat_size_thre1        = 20; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
-    static const index_t matmat_size_thre2 = 20; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
+    const index_t matmat_size_thre1        = 100; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
+    static const index_t matmat_size_thre2 = 4; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;  // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
@@ -138,9 +138,9 @@ public:
     int compute_coarsen_update_Ac_old(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid);
 //    int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+//    int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+//    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+//    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
     int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
     int matmat(Grid *grid);
@@ -157,8 +157,14 @@ public:
     int reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz);
 
     // for fast_mm experiments
-    int compute_coarsen_test(Grid *grid);
-    int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+//    int compute_coarsen_test(Grid *grid);
+//    int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+
+    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
+                 index_t *Br, value_t *Bv, index_t *Bc_scan,
+                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                 index_t B_col_size, index_t B_col_offset,
+                 std::vector<cooEntry> &C, MPI_Comm comm);
 
 //    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
 //                 nnz_t A_nnz, nnz_t B_nnz,
@@ -167,12 +173,6 @@ public:
 //                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
 //                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
 //                 MPI_Comm comm);
-
-    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
-                 index_t *Br, value_t *Bv, index_t *Bc_scan,
-                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                 index_t B_col_size, index_t B_col_offset,
-                 std::vector<cooEntry> &C, MPI_Comm comm);
 
 //    void fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
 //                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,

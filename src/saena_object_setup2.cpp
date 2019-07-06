@@ -99,12 +99,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //    if(rank==verbose_rank) std::cout << "\n==========================" << __func__ << "==========================\n";
     if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
 
-//    print_vector(A, -1, "A", comm);
-//    print_vector(B, -1, "B", comm);
-//    MPI_Barrier(comm); printf("rank %d: A: %ux%u, B: %ux%u \n\n", rank, A_row_size, A_col_size, A_col_size, B_col_size); MPI_Barrier(comm);
-//    MPI_Barrier(comm); printf("rank %d: A_row_size = %u, A_row_offset = %u, A_col_size = %u, A_col_offset = %u, B_row_offset = %u, B_col_size = %u, B_col_offset = %u \n\n",
-//            rank, A_row_size, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size, B_col_offset);
-
 //    MPI_Barrier(comm);
     if(rank==verbose_rank){
 
@@ -372,7 +366,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
     index_t A_col_scan_end, B_col_scan_end;
 
-    if (A_row_size <= A_col_size) { //DOLLAR("case2")
+    // if A_col_size_half == 0, it means A_col_size = 1. In this case it goes to case3.
+    if (A_row_size <= A_col_size && A_col_size_half != 0){//DOLLAR("case2")
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) { printf("fast_mm: case 2: start \n"); }
@@ -387,7 +382,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 #ifdef SPLIT_SIZE
 
-        // this part is common with part for SPLIT_SIZE, so it moved after SPLIT_SIZE.
+        // this part is common with part for SPLIT_SIZE, so it is moved to after SPLIT_SIZE.
 
 #endif
 
@@ -396,6 +391,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         // =======================================================
 
 #ifdef SPLIT_NNZ
+
+        // todo: this part is not updated after changing fast_mm().
 
         // prepare splits of matrix A by column
         auto A_half_nnz = (nnz_t) ceil(A_nnz / 2);
@@ -454,7 +451,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         // =======================================================
 
-        // split B based on how A is split, so use A_col_size_half to split B. A_col_size_half is different based on
+        // split B based on how A is split, so use A_col_size_half to split B. A_col_size_half can be different based on
         // choosing the splitting method (nnz or size).
         index_t B_row_size_half = A_col_size_half;
         index_t B_row_threshold = B_row_size_half + B_row_offset;
@@ -748,11 +745,16 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (rank == verbose_rank && verbose_fastmm) printf("fast_mm: case 2: end \n");
 #endif
 
-    } else { //DOLLAR("case3") // (A_row_size > A_col_size)
+        return; // end of case 2 and fast_mm()
 
-        // ==============================================================
-        // case3
-        // ==============================================================
+    }
+
+
+    // ==============================================================
+    // case3
+    // ==============================================================
+
+    { //DOLLAR("case3") // (A_row_size > A_col_size)
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) printf("fast_mm: case 3: start \n");
@@ -3093,14 +3095,6 @@ int saena_object::triple_mat_mult(Grid *grid){
     }
 //    print_vector(RA.entry, -1, "RA.entry", comm);
 #endif
-
-
-
-
-//    exit(EXIT_FAILURE);
-
-
-
 
     // =======================================
     // free memory from the previous part
