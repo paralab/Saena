@@ -12,7 +12,7 @@
 
 
 int saena_object::update1(saena_matrix* A_new){
-
+#if 0
     // ************** update grids[0].A **************
 //    the difference between this function and solve_pcg(): the finest level matrix (original LHS) is updated with
 //    the new one.
@@ -36,12 +36,13 @@ int saena_object::update1(saena_matrix* A_new){
     // Since we only need an upper bound, this is good enough.
     A_new->eig_max_of_invdiagXA = grids[0].A->eig_max_of_invdiagXA;
     grids[0].A = A_new;
-
+#endif
     return 0;
 }
 
 
 int saena_object::update2(saena_matrix* A_new){
+#if 0
 
     // ************** update grids[i].A for all levels i **************
 
@@ -78,12 +79,13 @@ int saena_object::update2(saena_matrix* A_new){
     delete[] mempool2;
 
 //    if(rank==0) dollar::text(std::cout);
-
+#endif
     return 0;
 }
 
 
 int saena_object::update3(saena_matrix* A_new){
+#if 0
 
     // 1- replace grids[0].A with A_new.
     // 2- for grids[i].A for i = 1,2,... update parts of the diagonal blocks **************
@@ -204,7 +206,7 @@ int saena_object::update3(saena_matrix* A_new){
         if(!rank) printf("update3: end\n");
         MPI_Barrier(comm);
     }
-
+#endif
     return 0;
 }
 
@@ -1244,8 +1246,7 @@ int saena_object::local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEn
 
 
 int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff) {
-    printf("update fast_mm, then uncomment!\n");
-/*
+#if 0
     // Output: Ac = R * A * P
     // Steps:
     // 1- Compute AP = A * P. To do that use the transpose of R_i, instead of P. Pass all R_j's to all the processors,
@@ -1508,7 +1509,6 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
                 AP.back().val += AP_temp[++i].val;
             }
         }
-
         AP_temp.clear();
         AP_temp.shrink_to_fit();
 */
@@ -1819,13 +1819,13 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
     // view matrix Ac
     // --------------
 //    petsc_viewer(Ac);
-
+#endif
     return 0;
 } // compute_coarsen_update_Ac()
 
 
 int saena_object::compute_coarsen_update_Ac_old(Grid *grid, std::vector<cooEntry> &diff) {
-
+#if 0
     // Output: Ac = R * A * P
     // Steps:
     // 1- Compute AP = A * P. To do that use the transpose of R_i, instead of P. Pass all R_j's to all the processors,
@@ -2356,8 +2356,7 @@ int saena_object::compute_coarsen_update_Ac_old(Grid *grid, std::vector<cooEntry
     // --------------
 //    petsc_viewer(Ac);
 
-*/
-
+#endif
     return 0;
 } // compute_coarsen_update_Ac_old()
 

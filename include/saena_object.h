@@ -36,7 +36,7 @@ class Grid;
 class saena_object {
 public:
 
-    int max_level = 1; // fine grid is level 0.
+    int max_level = 10; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below 10.
     unsigned int least_row_threshold = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher this value,
@@ -63,8 +63,8 @@ public:
     gridinfo_t  superlu_grid;
 
     std::string coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const index_t matmat_size_thre1        = 1000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
-    static const index_t matmat_size_thre2 = 65; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
+    const index_t matmat_size_thre1        = 20; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
+    static const index_t matmat_size_thre2 = 20; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;  // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold = 50; //default 50
     const index_t matmat_nnz_thre = 200; //default 200
@@ -73,8 +73,7 @@ public:
     // memory pool used in compute_coarsen
     value_t *mempool1;
     index_t *mempool2;
-//    index_t *mempool3;
-    cooEntry *mempool3;
+    index_t *mempool3;
 //    std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
 //    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
@@ -109,9 +108,9 @@ public:
     bool verbose_triple_mat_mult  = false;
     bool verbose_matmat           = false;
     bool verbose_fastmm           = false;
-    bool verbose_matmat_recursive = true;
+    bool verbose_matmat_recursive = false;
     bool verbose_matmat_A         = false;
-    bool verbose_matmat_B         = true;
+    bool verbose_matmat_B         = false;
     bool verbose_matmat_assemble  = false;
     bool verbose_solve            = false;
     bool verbose_vcycle           = false;
@@ -137,15 +136,15 @@ public:
 //    int triple_mat_mult(Grid *grid);
 //    int triple_mat_mult_old2(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int compute_coarsen_update_Ac_old(Grid *grid, std::vector<cooEntry> &diff);
-    int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
+    int triple_mat_mult(Grid *grid);
+//    int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
     int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
-//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
+    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
+    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
     int matmat(Grid *grid);
-    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C);
-//    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble);
+    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble);
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 //    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 
@@ -155,24 +154,25 @@ public:
     int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
     int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
     int reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
+    int reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz);
 
     // for fast_mm experiments
     int compute_coarsen_test(Grid *grid);
     int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-                 nnz_t A_nnz, nnz_t B_nnz,
-                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                 index_t B_col_size, index_t B_col_offset,
-                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-                 MPI_Comm comm);
-
-//    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
-//                 index_t *Br, value_t *Bv, index_t *Bc_scan,
+//    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
+//                 nnz_t A_nnz, nnz_t B_nnz,
 //                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
 //                 index_t B_col_size, index_t B_col_offset,
-//                 std::vector<cooEntry> &C, MPI_Comm comm);
+//                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
+//                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
+//                 MPI_Comm comm);
+
+    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
+                 index_t *Br, value_t *Bv, index_t *Bc_scan,
+                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+                 index_t B_col_size, index_t B_col_offset,
+                 std::vector<cooEntry> &C, MPI_Comm comm);
 
 //    void fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
 //                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
@@ -259,9 +259,6 @@ public:
     int update1(saena_matrix* A_new);
     int update2(saena_matrix* A_new);
     int update3(saena_matrix* A_new);
-//    int solve_pcg_update1(std::vector<value_t>& u);
-//    int solve_pcg_update2(std::vector<value_t>& u);
-//    int solve_pcg_update3(std::vector<value_t>& u);
 
 //    to write saena matrix to a file use related function from saena_matrix class.
 //    int writeMatrixToFileA(saena_matrix* A, std::string name);

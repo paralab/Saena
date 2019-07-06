@@ -13,11 +13,13 @@
 #include <random>
 #include <mpi.h>
 
-#include <trsl/is_picked_systematic.hpp>
-#include <trsl/ppfilter_iterator.hpp>
 //#include <numeric> // accumulate
 //#include <cassert>
 
+// parts related to TRSL
+#if 0
+#include <trsl/is_picked_systematic.hpp>
+#include <trsl/ppfilter_iterator.hpp>
 
 typedef std::vector<cooEntry>::iterator population_iterator;
 
@@ -32,7 +34,6 @@ is_picked, std::vector<cooEntry>::const_iterator
 
 
 //int saena_object::sparsify_trsl1(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm)
-/*
 int saena_object::sparsify_trsl1(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm) { $
 
     int rank, nprocs;
@@ -139,8 +140,11 @@ int saena_object::sparsify_trsl2(std::vector<cooEntry>& A, std::vector<cooEntry>
 
     return 0;
 }
+#endif
 
 
+//int saena_object::sparsify_drineas
+#if 0
 int saena_object::sparsify_drineas(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm){
 
     int rank, nprocs;
@@ -197,7 +201,7 @@ int saena_object::sparsify_drineas(std::vector<cooEntry> & A, std::vector<cooEnt
 
     return 0;
 }
-*/
+#endif
 
 
 int saena_object::sparsify_majid(std::vector<cooEntry>& A, std::vector<cooEntry>& A_spars, double norm_frob_sq,
