@@ -35,7 +35,7 @@ int saena_object::destroy(){
 void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
     vcycle_num = vcycle_n;
-    relative_tolerance  = relT;
+    relative_tol  = relT;
     smoother = sm;
     preSmooth = preSm;
     postSmooth = postSm;

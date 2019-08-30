@@ -87,9 +87,9 @@ public:
     // repartition
     // *****************
 
-    bool switch_repartition = false;
+    bool  switch_repartition    = false;
     float repartition_threshold = 0.1;
-    int set_repartition_threshold(float thre);
+    int   set_repartition_threshold(float thre);
 
     // *****************
     // dense
@@ -104,19 +104,19 @@ public:
     // solve parameters
     // **********************************************
 
-    int         solver_max_iter = 150; //150
-    double      solver_tol      = 1e-12;
+    int    solver_max_iter = 150; //150
+    double solver_tol      = 1e-12;
 
     // AMG parameters
     // ****************
 
-    int         vcycle_num          = 500;
-    double      relative_tolerance  = 1e-12;
-    std::string smoother            = "chebyshev"; // choices: "jacobi", "chebyshev"
-    int         preSmooth           = 3;
-    int         postSmooth          = 3;
-    std::string direct_solver       = "SuperLU"; // options: 1- CG, 2- SuperLU
-    float       connStrength        = 0.2; // connection strength parameter: control coarsening aggressiveness
+    int         vcycle_num    = 500;
+    double      relative_tol  = 1e-12;
+    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
+    int         preSmooth     = 3;
+    int         postSmooth    = 3;
+    std::string direct_solver = "SuperLU"; // options: 1- CG, 2- SuperLU
+    float       connStrength  = 0.2; // connection strength parameter: control coarsening aggressiveness
 
     // ****************
 

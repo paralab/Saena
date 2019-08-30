@@ -965,7 +965,7 @@ int saena_object::solve(std::vector<value_t>& u){
 
 //        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
 //        if(rank==0) printf("vcycle iteration = %d, residual = %f \n\n", i, sqrt(current_dot));
-        if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
+        if( current_dot/initial_dot < relative_tol * relative_tol )
             break;
     }
 
@@ -1162,7 +1162,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         // print the "absolute residual" and the "convergence factor":
 //        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
 //        if(rank==0) printf("Vcycle %lu: aboslute residual = %.10f \n", i+1, sqrt(current_dot));
-        if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
+        if( current_dot/initial_dot < relative_tol * relative_tol )
             break;
 
         if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %u *****\n", i+1);
@@ -1546,7 +1546,7 @@ int saena_object::solve_pcg_update(std::vector<value_t>& u, saena_matrix* A_new)
         }
 
         dotProduct(res, res, &current_dot, comm);
-        if( current_dot/initial_dot < relative_tolerance * relative_tolerance )
+        if( current_dot/initial_dot < relative_tol * relative_tol )
             break;
 
         rho.assign(rho.size(), 0);
