@@ -165,9 +165,9 @@ int saena_matrix::remove_duplicates() {
     data_unsorted.shrink_to_fit();
 
     if(data_sorted_row.empty()) {
-        printf("error: data has no element on process %d! \n", rank);
-        MPI_Finalize();
-        return -1;}
+        printf("Error: data has no element on process %d! \n", rank);
+        exit(EXIT_FAILURE);
+    }
 
     // switch from cooEntry_row to cooEntry.
     std::vector<cooEntry> data_sorted(data_sorted_row.size());
