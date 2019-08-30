@@ -66,9 +66,9 @@ public:
     std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
 
     // memory pool used in compute_coarsen
-    value_t *mempool1;
-    index_t *mempool2;
-    index_t *mempool3;
+    value_t *mempool1 = nullptr;
+    index_t *mempool2 = nullptr;
+    index_t *mempool3 = nullptr;
 //    std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
 //    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
@@ -106,14 +106,13 @@ public:
     // **********************************************
 
     int    solver_max_iter      = 500; // 500
-//    double solver_tol           = 1e-12;
+    double solver_tol           = 1e-12;
     int    CG_coarsest_max_iter = 150; // 150
     double CG_coarsest_tol      = 1e-12;
 
     // AMG parameters
     // ****************
 
-    double      solver_tol  = 1e-12;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int         preSmooth     = 3;
     int         postSmooth    = 3;
@@ -166,9 +165,11 @@ public:
 
     // **********************************************
 
-    saena_object();
-    ~saena_object();
-    int destroy();
+    saena_object()  = default;
+    ~saena_object() = default;
+    int destroy(){
+        return 0;
+    }
 
     MPI_Comm get_orig_comm();
 
@@ -197,7 +198,7 @@ public:
     // matmat_ave:        transpose of B is used.
     // matmat_ave_orig_B: original B is used.
     int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
-    int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
+//    int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
     int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
     int reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
     int reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz);

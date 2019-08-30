@@ -21,17 +21,6 @@
 #include <mpi.h>
 
 
-saena_object::saena_object() = default;
-
-
-saena_object::~saena_object() = default;
-
-
-int saena_object::destroy(){
-    return 0;
-}
-
-
 void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm){
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
     solver_max_iter = max_iter;
