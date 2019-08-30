@@ -32,7 +32,7 @@ public:
     restrict_matrix R;
     std::vector<value_t> rhs;
     saena_vector *rhs_orig = nullptr;
-    int currentLevel, maxLevel;
+    int currentLevel;
     float row_reduction_min = 0;
     Grid* coarseGrid = nullptr;
 
@@ -54,9 +54,13 @@ public:
     bool active = false;
 //    MPI_Comm comm;
 
-    Grid();
-    Grid(saena_matrix* A, int maxLevel, int currentLevel);
-    ~Grid();
+    Grid() = default;
+    Grid(saena_matrix* A1, int currentLev){
+        A            = A1;
+        currentLevel = currentLev;
+        active       = A1->active;
+    }
+    ~Grid() = default;
 };
 
 #endif //SAENA_GRID_H

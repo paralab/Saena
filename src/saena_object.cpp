@@ -86,7 +86,7 @@ int saena_object::setup(saena_matrix* A) {
 
     if(verbose_setup_steps && rank==0) printf("setup: first Grid\n");
     grids.resize(max_level+1);
-    grids[0] = Grid(A, max_level, 0); // pass A to grids[0]
+    grids[0] = Grid(A, 0); // pass A to grids[0]
 
     if(verbose_setup_steps && rank==0) printf("setup: other Grids\n");
     for(int i = 0; i < max_level; i++){
@@ -95,7 +95,7 @@ int saena_object::setup(saena_matrix* A) {
             if (shrink_level_vector.size()>i+1) if(shrink_level_vector[i+1]) grids[i].A->enable_shrink_next_level = true;
             if (shrink_values_vector.size()>i+1) grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
             coarsen(&grids[i]); // create P, R and Ac for grid[i]
-            grids[i + 1] = Grid(&grids[i].Ac, max_level, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i]) // todo: use emplace_back for grids.
+            grids[i + 1] = Grid(&grids[i].Ac, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i]) // todo: use emplace_back for grids.
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
 
             if(grids[i].Ac.active) {
