@@ -23,18 +23,19 @@ typedef double value_t;
 
 class Grid{
 public:
-    saena_matrix* A     = nullptr;
-    saena_matrix* A_new = nullptr; // for solve_pcg_update() experiment
-    saena_matrix  Ac;
-//    saena_matrix_dense* A_d; // dense matrix
-    saena_matrix_dense Ac_d; // dense matrix
-    prolong_matrix P;
+    saena_matrix*   A     = nullptr;
+    saena_matrix*   A_new = nullptr; // for solve_pcg_update() experiment
+    saena_matrix    Ac;
+    prolong_matrix  P;
     restrict_matrix R;
+
     std::vector<value_t> rhs;
-    saena_vector *rhs_orig = nullptr;
-    int currentLevel;
+    saena_vector         *rhs_orig = nullptr;
+
+    Grid* coarseGrid        = nullptr;
+    int   currentLevel      = 0;
     float row_reduction_min = 0;
-    Grid* coarseGrid = nullptr;
+    bool  active            = false;
 
     std::vector<int> rcount;
     std::vector<int> scount;
@@ -50,9 +51,8 @@ public:
 //    std::vector<int> scount3;
 //    std::vector<int> rdispls3;
 //    std::vector<int> sdispls3;
-
-    bool active = false;
-//    MPI_Comm comm;
+//    saena_matrix_dense* A_d; // dense matrix
+//    saena_matrix_dense Ac_d; // dense matrix
 
     Grid() = default;
     Grid(saena_matrix* A1, int currentLev){
