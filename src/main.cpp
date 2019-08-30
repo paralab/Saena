@@ -104,7 +104,7 @@ int main(int argc, char* argv[]){
 
 //    int max_level             = 2; // this is moved to saena_object.
     int vcycle_num            = 400;
-    double relative_tolerance = 1e-12;
+    double relative_tolerance = 1e-8;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int preSmooth             = 3;
     int postSmooth            = 3;
@@ -142,6 +142,7 @@ int main(int argc, char* argv[]){
 
 //    solver.solve(u, &opts);
     solver.solve_pcg(u, &opts);
+//    solver.solve_pGMRES(u, &opts);
 
     t2 = MPI_Wtime();
     if(solver.verbose) print_time(t1, t2, "Solve:", comm);

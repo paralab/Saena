@@ -122,6 +122,8 @@ void setIJV(char* file_name, index_t* I,index_t* J, value_t* V, nnz_t nnz_g, nnz
 
 int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, double* dot, MPI_Comm comm);
 
+int pnorm(std::vector<value_t>& r, value_t &norm, MPI_Comm comm);
+value_t pnorm(std::vector<value_t>& r, MPI_Comm comm);
 
 double print_time(double t_start, double t_end, std::string function_name, MPI_Comm comm);
 

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <random>
 #include <fstream>
+#include <cmath>
 #include <math.h>
 #include <sys/stat.h>
 
@@ -61,6 +62,31 @@ int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, value_t* dot, M
     return 0;
 }
 
+
+// parallel norm
+int pnorm(std::vector<value_t>& r, value_t &norm, MPI_Comm comm){
+
+    double dot_l = 0;
+    for(index_t i=0; i<r.size(); i++)
+        dot_l += r[i] * r[i];
+    MPI_Allreduce(&dot_l, &norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+    norm = std::sqrt(norm);
+
+    return 0;
+}
+
+// parallel norm
+value_t pnorm(std::vector<value_t>& r, MPI_Comm comm){
+
+    double dot_l = 0, norm;
+    for(index_t i=0; i<r.size(); i++)
+        dot_l += r[i] * r[i];
+    MPI_Allreduce(&dot_l, &norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+//    std::cout << std::sqrt(norm) << std::endl;
+
+    return std::sqrt(norm);
+}
 
 double print_time(double t_start, double t_end, std::string function_name, MPI_Comm comm){
 

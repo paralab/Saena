@@ -3,6 +3,7 @@
 
 #include "vector"
 #include <mpi.h>
+#include <cstdlib>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -16,10 +17,11 @@ class saena_matrix_dense {
 
 public:
 
-    bool allocated = false;
-    index_t Nbig = 0, M = 0;
-    value_t **entry;
-    MPI_Comm comm;
+    bool     allocated = false;
+    index_t  M         = 0;
+    index_t  Nbig      = 0;
+    value_t  **entry   = nullptr;
+    MPI_Comm comm      = MPI_COMM_WORLD;
 
     std::vector<index_t> split; // (row-wise) partition of the matrix between processes
 
@@ -34,7 +36,24 @@ public:
 
     int erase();
 
-    int set(index_t row, index_t col, value_t val);
+    value_t get(index_t row, index_t col){
+        if(row >= M || col >= Nbig){
+            printf("\ndense matrix get out of range!\n");
+            exit(EXIT_FAILURE);
+        }else{
+            return entry[row][col];
+        }
+    }
+
+    void set(index_t row, index_t col, value_t val){
+        if(row >= M || col >= Nbig){
+            printf("\ndense matrix set out of range!\n");
+            exit(EXIT_FAILURE);
+        }else{
+            entry[row][col] = val;
+        }
+    }
+
 //    int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);
 //    int set2(index_t row, index_t col, value_t val);
 //    int set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);

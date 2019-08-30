@@ -546,6 +546,16 @@ int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts){
 }
 
 
+int saena::amg::solve_pGMRES(std::vector<value_t>& u, saena::options* opts){
+    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->pGMRES(u);
+    Grid *g = &m_pImpl->grids[0];
+    g->rhs_orig->return_vec(u);
+//    print_vector(u, -1, "u", g->rhs_orig->comm);
+    return 0;
+}
+
 int saena::amg::update1(saena::matrix* A_ne){
     m_pImpl->update1(A_ne->get_internal_matrix());
     return 0;

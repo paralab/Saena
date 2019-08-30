@@ -81,6 +81,8 @@ int saena_matrix::setup_initial_data(){
     Mbig++; // since indices start from 0, not 1.
 //    std::cout << "Mbig = " << Mbig << std::endl;
 
+    Nbig = Mbig; // todo: is the matrix always square?
+
     remove_duplicates();
 
     initial_nnz_l = data.size();
