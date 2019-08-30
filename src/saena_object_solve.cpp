@@ -1057,7 +1057,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
     // ************** setup SuperLU **************
 
-    saena_matrix *A_coarsest = &grids.back().Ac;
+//    saena_matrix *A_coarsest = &grids.back().Ac;
 
     if(A_coarsest->active) {
 
@@ -1254,7 +1254,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
 int saena_object::setup_SuperLU() {
 
-    saena_matrix *A_coarsest = &grids.back().Ac;
+//    saena_matrix *A_coarsest = &grids.back().Ac;
 
     MPI_Comm *comm_coarsest = &A_coarsest->comm;
     int nprocs_coarsest, rank_coarsest;

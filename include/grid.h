@@ -23,18 +23,18 @@ typedef double value_t;
 
 class Grid{
 public:
-    saena_matrix* A;
-    saena_matrix* A_new; // for solve_pcg_update() experiment
+    saena_matrix* A     = nullptr;
+    saena_matrix* A_new = nullptr; // for solve_pcg_update() experiment
     saena_matrix  Ac;
 //    saena_matrix_dense* A_d; // dense matrix
     saena_matrix_dense Ac_d; // dense matrix
     prolong_matrix P;
     restrict_matrix R;
     std::vector<value_t> rhs;
-    saena_vector *rhs_orig;
+    saena_vector *rhs_orig = nullptr;
     int currentLevel, maxLevel;
     float row_reduction_min = 0;
-    Grid* coarseGrid;
+    Grid* coarseGrid = nullptr;
 
     std::vector<int> rcount;
     std::vector<int> scount;

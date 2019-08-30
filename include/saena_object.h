@@ -40,29 +40,32 @@ public:
     // setup
     // **********************************************
 
-    int         max_level                   = 10; // fine grid is level 0.
+    int          max_level                   = 1; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below this parameter.
     unsigned int least_row_threshold        = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher than this parameter,
     // which means the number of rows was not reduced much.
-    double      row_reduction_up_thrshld    = 0.90;
-    double      row_reduction_down_thrshld  = 0.10;
+    double       row_reduction_up_thrshld    = 0.90;
+    double       row_reduction_down_thrshld  = 0.10;
 
     bool repartition         = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
     bool dynamic_levels      = true;
     bool adaptive_coarsening = false;
 //    bool shrink_cpu          = true;
 
+    saena_matrix *A_coarsest = nullptr;
+
     // *****************
     // matmat
     // *****************
 
-    std::string coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const index_t matmat_size_thre1        = 20000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
-    static const index_t matmat_size_thre2 = 1000000; // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
-//    const index_t matmat_size_thre3        = 100;  // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
+    std::string          coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
+    const        index_t matmat_size_thre1 = 20000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
+    static const index_t matmat_size_thre2 = 1000000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
+//    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold = 50; //default 50
-    const index_t matmat_nnz_thre = 200; //default 200
+    const index_t        matmat_nnz_thre = 200; //default 200
+
     std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
 
     // memory pool used in compute_coarsen
@@ -155,7 +158,7 @@ public:
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
     bool verbose_matmat_assemble  = false;
-    bool verbose_solve            = false;
+    bool verbose_solve            = true;
     bool verbose_vcycle           = false;
     bool verbose_vcycle_residuals = false;
     bool verbose_solve_coarse     = false;

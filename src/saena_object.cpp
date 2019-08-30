@@ -42,7 +42,7 @@ int saena_object::setup(saena_matrix* A) {
     MPI_Comm_rank(A->comm, &rank);
     A->active_old_comm = true;
 
-    #pragma omp parallel
+    #pragma omp parallel default(none) shared(rank, nprocs)
     if(!rank && omp_get_thread_num()==0)
         printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
 
@@ -159,6 +159,12 @@ int saena_object::setup(saena_matrix* A) {
     int max_level_send = max_level;
     MPI_Allreduce(&max_level_send, &max_level, 1, MPI_INT, MPI_MIN, grids[0].A->comm);
     grids.resize(max_level);
+
+    if(max_level == 0){
+        A_coarsest = A;
+    }else{
+        A_coarsest = &grids.back().Ac;
+    }
 
 //    printf("rank = %d, max_level = %d\n", rank, max_level);
 //    printf("i = %u, max_level = %u \n", i, max_level);
