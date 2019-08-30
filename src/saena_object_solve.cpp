@@ -44,7 +44,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 
     double dot = initial_dot;
     int max_iter = CG_coarsest_max_iter;
-    if (dot < solver_tol*solver_tol)
+    if (dot < CG_coarsest_tol*CG_coarsest_tol)
         max_iter = 0;
 
     std::vector<value_t> dir(A->M);
@@ -77,7 +77,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 //        if(rank==0) std::cout << sqrt(dot)/initialNorm << std::endl;
 
         if(verbose_solve_coarse && rank==0)
-            std::cout << "sqrt(dot)/sqrt(initial_dot) = " << sqrt(dot/initial_dot) << "  \tCG_tol = " << solver_tol << std::endl;
+            std::cout << "sqrt(dot)/sqrt(initial_dot) = " << sqrt(dot/initial_dot) << "  \tCG_tol = " << CG_coarsest_tol << std::endl;
 #ifdef __DEBUG1__
         if(verbose_solve_coarse) {
             MPI_Barrier(comm);
@@ -90,7 +90,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 //        dotProduct(res2, res2, &dot2, comm);
 //        if(rank==0) std::cout << "norm(res) = " << sqrt(dot2) << std::endl;
 
-        if (dot/initial_dot < solver_tol*solver_tol)
+        if (dot/initial_dot < CG_coarsest_tol * CG_coarsest_tol)
             break;
 
         factor = dot / dot_prev;
@@ -965,7 +965,7 @@ int saena_object::solve(std::vector<value_t>& u){
 
 //        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
 //        if(rank==0) printf("vcycle iteration = %d, residual = %f \n\n", i, sqrt(current_dot));
-        if( current_dot/initial_dot < relative_tol * relative_tol )
+        if( current_dot/initial_dot < solver_tol * solver_tol )
             break;
     }
 
@@ -1162,7 +1162,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         // print the "absolute residual" and the "convergence factor":
 //        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
 //        if(rank==0) printf("Vcycle %lu: aboslute residual = %.10f \n", i+1, sqrt(current_dot));
-        if( current_dot/initial_dot < relative_tol * relative_tol )
+        if( current_dot/initial_dot < solver_tol * solver_tol )
             break;
 
         if(verbose) if(rank==0) printf("_______________________________ \n\n***** Vcycle %u *****\n", i+1);
@@ -1546,7 +1546,7 @@ int saena_object::solve_pcg_update(std::vector<value_t>& u, saena_matrix* A_new)
         }
 
         dotProduct(res, res, &current_dot, comm);
-        if( current_dot/initial_dot < relative_tol * relative_tol )
+        if( current_dot/initial_dot < solver_tol * solver_tol )
             break;
 
         rho.assign(rho.size(), 0);

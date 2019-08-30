@@ -105,14 +105,15 @@ public:
     // solve parameters
     // **********************************************
 
-    int    solver_max_iter      = 500; //500
-    double solver_tol           = 1e-12;
-    int    CG_coarsest_max_iter = 150; //150
+    int    solver_max_iter      = 500; // 500
+//    double solver_tol           = 1e-12;
+    int    CG_coarsest_max_iter = 150; // 150
+    double CG_coarsest_tol      = 1e-12;
 
     // AMG parameters
     // ****************
 
-    double      relative_tol  = 1e-12;
+    double      solver_tol  = 1e-12;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int         preSmooth     = 3;
     int         postSmooth    = 3;

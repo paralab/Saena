@@ -388,7 +388,7 @@ saena::options::options(char* name){
 //    for (pugi::xml_attribute attr2 = opts.first_attribute(); attr2; attr2 = attr2.next_attribute())
 //        std::cout << attr2.name() << " = " << attr2.value() << std::endl;
 
-//    std::cout << "solver_max_iter = " << solver_max_iter << ", relative_tol = " << relative_tol
+//    std::cout << "solver_max_iter = " << solver_max_iter << ", solver_tol = " << solver_tol
 //              << ", smoother = " << smoother << ", preSmooth = " << preSmooth << ", postSmooth = " << postSmooth << std::endl;
 
 }

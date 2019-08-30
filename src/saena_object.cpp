@@ -32,13 +32,13 @@ int saena_object::destroy(){
 }
 
 
-void saena_object::set_parameters(int max_iter, double relT, std::string sm, int preSm, int postSm){
+void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm){
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
     solver_max_iter = max_iter;
-    relative_tol  = relT;
-    smoother = sm;
-    preSmooth = preSm;
-    postSmooth = postSm;
+    solver_tol      = tol;
+    smoother        = sm;
+    preSmooth       = preSm;
+    postSmooth      = postSm;
 }
 
 
