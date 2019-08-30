@@ -3,18 +3,11 @@
 
 #include "prolong_matrix.h"
 #include "restrict_matrix.h"
-#include "saena_matrix_dense.h"
 #include "saena_matrix.h"
 #include "saena_vector.h"
 
 #include <vector>
 #include <mpi.h>
-
-//class prolong_matrix;
-//class restrict_matrix;
-//class saena_matrix;
-//class saena_matrix_dense;
-//class saena_object;
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -28,6 +21,9 @@ public:
     saena_matrix    Ac;
     prolong_matrix  P;
     restrict_matrix R;
+
+//    saena_matrix_dense* A_d; // dense matrix
+//    saena_matrix_dense Ac_d; // dense matrix
 
     std::vector<value_t> rhs;
     saena_vector         *rhs_orig = nullptr;
@@ -46,13 +42,6 @@ public:
     std::vector<int> scount2;
     std::vector<int> rdispls2;
     std::vector<int> sdispls2;
-
-//    std::vector<int> rcount3;
-//    std::vector<int> scount3;
-//    std::vector<int> rdispls3;
-//    std::vector<int> sdispls3;
-//    saena_matrix_dense* A_d; // dense matrix
-//    saena_matrix_dense Ac_d; // dense matrix
 
     Grid() = default;
     Grid(saena_matrix* A1, int currentLev){
