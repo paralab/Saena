@@ -43,7 +43,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 //    if(rank==0) std::cout << "\nsolveCoarsest: initial norm(res) = " << sqrt(initial_dot) << std::endl;
 
     double dot = initial_dot;
-    int max_iter = solver_max_iter;
+    int max_iter = CG_coarsest_max_iter;
     if (dot < solver_tol*solver_tol)
         max_iter = 0;
 
@@ -958,7 +958,7 @@ int saena_object::solve(std::vector<value_t>& u){
 //    }
 
     int i;
-    for(i=0; i<vcycle_num; i++){
+    for(i=0; i < solver_max_iter; i++){
         vcycle(&grids[0], u, grids[0].rhs);
         grids[0].A->residual(u, grids[0].rhs, r);
         dotProduct(r, r, &current_dot, comm);
@@ -971,7 +971,7 @@ int saena_object::solve(std::vector<value_t>& u){
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
     if(rank==0){
@@ -1140,7 +1140,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     current_dot = initial_dot;
 //    previous_dot = initial_dot;
 
-    for(i = 0; i < vcycle_num; i++){
+    for(i = 0; i < solver_max_iter; i++){
         grids[0].A->matvec(p, h);
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
@@ -1181,14 +1181,14 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         beta /= rho_res;
 
 #pragma omp parallel for default(none) shared(u, p, rho, beta)
-        for(index_t j = 0; j < u.size(); j++)
+        for(index_t j = 0; j < u.size(); j++) {
             p[j] = rho[j] + beta * p[j];
-//        printf("beta = %e \n", beta);
-    }
+        }
+    } // for i
 
-    // set number of iterations that took to find the solution
+    // set number of iterations that took to find the solution.
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
 //    double t_dif = MPI_Wtime() - t1;
@@ -1532,7 +1532,7 @@ int saena_object::solve_pcg_update(std::vector<value_t>& u, saena_matrix* A_new)
     p = rho;
 
     double rho_res, pdoth, alpha, beta;
-    for(i=0; i<vcycle_num; i++){
+    for(i=0; i<solver_max_iter; i++){
         grids[0].A_new->matvec(p, h);
         dotProduct(res, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
@@ -1562,7 +1562,7 @@ int saena_object::solve_pcg_update(std::vector<value_t>& u, saena_matrix* A_new)
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
     if(rank==0){

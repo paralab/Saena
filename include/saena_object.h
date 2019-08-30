@@ -48,11 +48,12 @@ public:
     double      row_reduction_up_thrshld    = 0.90;
     double      row_reduction_down_thrshld  = 0.10;
 
-    bool repartition            = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
-    bool dynamic_levels         = true;
-    bool adaptive_coarsening    = false;
-//    bool shrink_cpu             = true;
+    bool repartition         = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
+    bool dynamic_levels      = true;
+    bool adaptive_coarsening = false;
+//    bool shrink_cpu          = true;
 
+    // *****************
     // matmat
     // *****************
 
@@ -104,13 +105,13 @@ public:
     // solve parameters
     // **********************************************
 
-    int    solver_max_iter = 150; //150
-    double solver_tol      = 1e-12;
+    int    solver_max_iter      = 500; //500
+    double solver_tol           = 1e-12;
+    int    CG_coarsest_max_iter = 150; //150
 
     // AMG parameters
     // ****************
 
-    int         vcycle_num    = 500;
     double      relative_tol  = 1e-12;
     std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int         preSmooth     = 3;

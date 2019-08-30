@@ -299,7 +299,7 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u){
     previous_dot = initial_dot;
     current_dot  = initial_dot;
     double rho_res, pdoth, alpha, beta;
-    for(i = 0; i < vcycle_num; i++){
+    for(i = 0; i < solver_max_iter; i++){
         grids[0].A->matvec(p, h);
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
@@ -338,7 +338,7 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u){
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
     if(rank==0){
@@ -461,7 +461,7 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
     previous_dot = initial_dot;
     current_dot  = initial_dot;
     double rho_res, pdoth, alpha, beta;
-    for(i = 0; i < vcycle_num; i++){
+    for(i = 0; i < solver_max_iter; i++){
         grids[0].A->matvec(p, h);
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
@@ -496,7 +496,7 @@ int saena_object::solve_pcg_update1(std::vector<value_t>& u, saena_matrix* A_new
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
     if(rank==0){
@@ -611,7 +611,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u){
     previous_dot = initial_dot;
     current_dot  = initial_dot;
     double rho_res, pdoth, alpha, beta;
-    for(i = 0; i < vcycle_num; i++){
+    for(i = 0; i < solver_max_iter; i++){
         grids[0].A->matvec(p, h);
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
@@ -650,7 +650,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u){
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
     if(rank==0){
@@ -783,7 +783,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new
     previous_dot = initial_dot;
     current_dot  = initial_dot;
     double rho_res, pdoth, alpha, beta;
-    for(i=0; i<vcycle_num; i++){
+    for(i=0; i<solver_max_iter; i++){
         grids[0].A->matvec(p, h);
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
@@ -817,7 +817,7 @@ int saena_object::solve_pcg_update2(std::vector<value_t>& u, saena_matrix* A_new
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
     if(rank==0){
@@ -932,7 +932,7 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u){
     previous_dot = initial_dot;
     current_dot  = initial_dot;
     double rho_res, pdoth, alpha, beta;
-    for(i = 0; i < vcycle_num; i++){
+    for(i = 0; i < solver_max_iter; i++){
         grids[0].A->matvec(p, h);
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
@@ -971,7 +971,7 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u){
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
     if(rank==0){
@@ -1111,7 +1111,7 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new
     previous_dot = initial_dot;
     current_dot = initial_dot;
     double rho_res, pdoth, alpha, beta;
-    for(i=0; i<vcycle_num; i++){
+    for(i=0; i<solver_max_iter; i++){
         grids[0].A->matvec(p, h);
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h, &pdoth, comm);
@@ -1145,7 +1145,7 @@ int saena_object::solve_pcg_update3(std::vector<value_t>& u, saena_matrix* A_new
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
-    if(i == vcycle_num)
+    if(i == solver_max_iter)
         i--;
 
     if(rank==0){
