@@ -303,6 +303,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
 //    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
 */
+
     if ( !(berr = doubleMalloc_dist(nrhs)) )
         ABORT("Malloc fails for berr[].");
 
@@ -311,7 +312,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
        ------------------------------------------------------------*/
 
     b = &rhs[0];
-    u = rhs;
+    u = rhs; // copy rhs to u. the solution will be save in b at the end. then, swap u and rhs.
 
     /* ------------------------------------------------------------
        .
@@ -377,11 +378,12 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     // Initialize the statistics variables.
     PStatInit(&stat);
     // Call the linear equation solver.
+    // b points to rhs. after calling pdgssvx it will be the solution.
     pdgssvx(&options, &A_SLU2, &ScalePermstruct, b, ldb, nrhs, &grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     // put the solution in u
-    // b points to rhs. after calling pdgssvx it will contain the solution.
+    // b points to rhs. after calling pdgssvx it will be the solution.
     u.swap(rhs);
 
 //    print_vector(u, -1, "u computed in superlu", comm);
@@ -597,7 +599,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     std::vector<value_t> temp;
 
 #ifdef __DEBUG1__
-//        print_vector(rhs, -1, "rhs in vcycle", comm);
+//    print_vector(rhs, -1, "rhs in vcycle", comm);
 
     if(verbose_vcycle){
         MPI_Barrier(comm);
@@ -628,8 +630,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         else if(direct_solver == "SuperLU")
             solve_coarsest_SuperLU(grid->A, u, rhs);
         else {
-            if (rank == 0) printf("Error: Unknown direct solver is chosen! \n");
-            MPI_Finalize();
+            if (rank == 0) printf("Error: Unknown direct solver! \n");
             exit(EXIT_FAILURE);
         }
 
@@ -1060,14 +1061,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 //    saena_matrix *A_coarsest = &grids.back().Ac;
 
     if(A_coarsest->active) {
-
-        // todo: bool active is not set correctly for inactive processors in the lower grids.
-        // check how the following command is set in setup() and try to fix it:
-        // if(!grids[i].Ac.active)
-        //     break;
-
         setup_SuperLU();
-
     }
 
     // ************** solve **************
@@ -1080,6 +1074,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 
     std::vector<value_t> r(grids[0].A->M);
     grids[0].A->residual(u, grids[0].rhs, r);
+
     double initial_dot, current_dot;
 //    double previous_dot;
     dotProduct(r, r, &initial_dot, comm);
@@ -1270,9 +1265,9 @@ int saena_object::setup_SuperLU() {
 //    gridinfo_t superlu_grid;
 //    double   *berr;
 //    double   *b;
+//    int      iam, info, ldb, nrhs;
     int m, n, m_loc, nnz_loc;
     int nprow, npcol;
-//    int      iam, info, ldb, nrhs;
     int iam, ldb;
 
     nprow = nprocs_coarsest;  // Default process rows.
@@ -1402,7 +1397,7 @@ int saena_object::setup_SuperLU() {
     // sort entries in row-major
     std::vector<cooEntry> entry_temp = A_coarsest->entry;
     std::sort(entry_temp.begin(), entry_temp.end(), row_major);
-//        print_vector(entry_temp, -1, "entry_temp", comm);
+//    print_vector(entry_temp, -1, "entry_temp", *comm_coarsest);
 
     index_t fst_row = A_coarsest->split[rank_coarsest];
     std::vector<int> nnz_per_row(m_loc, 0);
@@ -1416,25 +1411,25 @@ int saena_object::setup_SuperLU() {
 
     for (nnz_t i = 0; i < nnz_loc; i++) {
         nzval_loc[i] = entry_temp[i].val;
-//            nnz_per_row[entry_temp[i].row - fst_row]++;
+//        nnz_per_row[entry_temp[i].row - fst_row]++;
         nnz_per_row_p[entry_temp[i].row]++;
         colind[i] = entry_temp[i].col;
     }
 
-    // rowtptr is scan of nnz_per_row.
+    // rowptr is scan of nnz_per_row.
     rowptr[0] = 0;
     for (index_t i = 0; i < m_loc; i++) {
         rowptr[i + 1] = rowptr[i] + nnz_per_row[i];
     }
 
 //    grids[0].A->print_entry(-1);
-//    if(rank==0){
+//    if(rank_coarsest == 0){
 //        printf("\nmatrix entries in row-major format to be passed to SuperLU:\n");
 //        for(nnz_t i = 0; i < nnz_loc; i++)
-//            printf("%ld \t%d \t%lld \t%lf \n", i, entry_temp[i].row-fst_row, colind[i], nzval_loc[i]);
+//            printf("%ld \t%d \t%d \t%lf \n", i, entry_temp[i].row, colind[i], nzval_loc[i]);
 //        printf("\nrowptr:\n");
 //        for(nnz_t i = 0; i < m_loc+1; i++)
-//            printf("%ld \t%lld \n", i, rowptr[i]);
+//            printf("%ld \t%d \n", i, rowptr[i]);
 //    }
 
     dCreate_CompRowLoc_Matrix_dist(&A_SLU2, m, n, nnz_loc, m_loc, fst_row,
