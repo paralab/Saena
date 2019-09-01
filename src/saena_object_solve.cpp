@@ -475,51 +475,52 @@ int saena_object::setup_SuperLU() {
     int nprow, npcol;
     int iam, ldb;
 
-    nprow = nprocs_coarsest;  // Default process rows.
-    npcol = 1;  // Default process columns.
-//    nrhs  = 1;  // Number of right-hand side.
+    nprow = nprocs_coarsest;    // Default process rows.
+    npcol = 1;                  // Default process columns.
+//    nrhs  = 1;                // Number of right-hand side.
 
+#if 0
     // ------------------------------------------------------------
     //   INITIALIZE MPI ENVIRONMENT.
     // ------------------------------------------------------------
-//    MPI_Init( &argc, &argv );
+    MPI_Init( &argc, &argv );
 
-//    char* file_name(argv[5]);
-//    saena::matrix A_saena (file_name, comm);
-//    A_saena.assemble();
-//    A_saena.print_entry(-1);
-//    if(rank==0) printf("after matrix assemble.\n");
-
+    char* file_name(argv[5]);
+    saena::matrix A_saena (file_name, comm);
+    A_saena.assemble();
+    A_saena.print_entry(-1);
+    if(rank==0) printf("after matrix assemble.\n");
 
     // Parse command line argv[].
-//        for (cpp = argv+1; *cpp; ++cpp) {
-//            if ( **cpp == '-' ) {
-//                c = *(*cpp+1);
-//                ++cpp;
-//                switch (c) {
-//                    case 'h':
-//                        printf("Options:\n");
-//                        printf("\t-r <int>: process rows    (default %4d)\n", nprow);
-//                        printf("\t-c <int>: process columns (default %4d)\n", npcol);
-//                        exit(0);
-//                        break;
-//                    case 'r': nprow = atoi(*cpp);
-//                        break;
-//                    case 'c': npcol = atoi(*cpp);
-//                        break;
-//                }
-//            } else { // Last arg is considered a filename
-//    //            if ( !(fp = fopen(*cpp, "r")) ) {
-//    //                ABORT("File does not exist");
-//    //            }
-//
-//                saena::matrix A_saena (*cpp, comm);
-//                A_saena.assemble();
-//                A_saena.print_entry(-1);
-//                if(rank==0) printf("after matrix assemble.\n");
-//                break;
+    for (cpp = argv+1; *cpp; ++cpp) {
+        if ( **cpp == '-' ) {
+            c = *(*cpp+1);
+            ++cpp;
+            switch (c) {
+                case 'h':
+                    printf("Options:\n");
+                    printf("\t-r <int>: process rows    (default %4d)\n", nprow);
+                    printf("\t-c <int>: process columns (default %4d)\n", npcol);
+                    exit(0);
+                    break;
+                case 'r': nprow = atoi(*cpp);
+                    break;
+                case 'c': npcol = atoi(*cpp);
+                    break;
+            }
+        } else { // Last arg is considered a filename
+//            if ( !(fp = fopen(*cpp, "r")) ) {
+//                ABORT("File does not exist");
 //            }
-//        }
+
+            saena::matrix A_saena (*cpp, comm);
+            A_saena.assemble();
+            A_saena.print_entry(-1);
+            if(rank==0) printf("after matrix assemble.\n");
+            break;
+        }
+    }
+#endif
 
     // ------------------------------------------------------------
     //   INITIALIZE THE SUPERLU PROCESS GRID.
@@ -598,15 +599,16 @@ int saena_object::setup_SuperLU() {
     }
 #endif
 
-    // CSR format (compressed row)
-    // sort entries in row-major
+    // Create the matrix in CSR format (compressed row) to pass to SuperLU
+    // make a copy of entris and sort them in row-major order
     std::vector<cooEntry> entry_temp = A_coarsest->entry;
     std::sort(entry_temp.begin(), entry_temp.end(), row_major);
 //    print_vector(entry_temp, -1, "entry_temp", *comm_coarsest);
 
-    index_t fst_row = A_coarsest->split[rank_coarsest];
+    index_t fst_row = A_coarsest->split[rank_coarsest]; // the offset for the first row
     std::vector<int> nnz_per_row(m_loc, 0);
 
+    // todo: check if it is required to free the following parameters after creating the matrix.
     auto *rowptr    = (int_t *) intMalloc_dist(m_loc + 1);
     auto *nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
     auto *colind    = (int_t *) intMalloc_dist(nnz_loc);
@@ -616,11 +618,11 @@ int saena_object::setup_SuperLU() {
 
     for (nnz_t i = 0; i < nnz_loc; i++) {
         nzval_loc[i] = entry_temp[i].val;
-//        nnz_per_row[entry_temp[i].row - fst_row]++;
         nnz_per_row_p[entry_temp[i].row]++;
         colind[i] = entry_temp[i].col;
     }
 
+    // todo: avoid using nnz_per_row. use rowptr in-place.
     // rowptr is scan of nnz_per_row.
     rowptr[0] = 0;
     for (index_t i = 0; i < m_loc; i++) {
@@ -637,11 +639,11 @@ int saena_object::setup_SuperLU() {
 //            printf("%ld \t%d \n", i, rowptr[i]);
 //    }
 
+//    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+
     dCreate_CompRowLoc_Matrix_dist(&A_SLU2, m, n, nnz_loc, m_loc, fst_row,
                                    &nzval_loc[0], &colind[0], &rowptr[0],
                                    SLU_NR_loc, SLU_D, SLU_GE);
-
-//    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
 
     return 0;
 }
@@ -785,8 +787,8 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    double t1, t2;
-    value_t dot;
+    double t1 = 0, t2 = 0;
+    value_t dot = 0.0;
     std::string func_name;
     std::vector<value_t> res;
     std::vector<value_t> res_coarse;
@@ -815,11 +817,8 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             if(rank==0) std::cout << "vcycle: solving the coarsest level using " << direct_solver << std::endl;
             MPI_Barrier(comm);
         }
+        if (verbose) t1 = omp_get_wtime();
 #endif
-
-        res.resize(grid->A->M);
-
-        t1 = omp_get_wtime();
 
         if(direct_solver == "CG")
             solve_coarsest_CG(grid->A, u, rhs);
@@ -832,14 +831,17 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         // scale the solution u
         // -------------------------
-//            scale_vector(u, grid->A->inv_sq_diag);
+//        scale_vector(u, grid->A->inv_sq_diag);
 
 #ifdef __DEBUG1__
-        t2 = omp_get_wtime();
-        func_name = "vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
-        if (verbose) print_time(t1, t2, func_name, comm);
+        if (verbose){
+            t2 = omp_get_wtime();
+            func_name = "vcycle: level " + std::to_string(grid->currentLevel) + ": solve coarsest";
+            print_time(t1, t2, func_name, comm);
+        }
 
         if(verbose_vcycle_residuals){
+            res.resize(grid->A->M);
             grid->A->residual(u, rhs, res);
             dotProduct(res, res, &dot, comm);
             if(rank==0) std::cout << "\nlevel = " << grid->currentLevel
@@ -848,18 +850,19 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
         // print the solution
         // ------------------
-//            print_vector(u, -1, "solution from the direct solver", grid->A->comm);
+//        print_vector(u, -1, "solution from the direct solver", grid->A->comm);
 
         // check if the solution is correct
         // --------------------------------
-//            std::vector<double> rhs_matvec(u.size(), 0);
-//            grid->A->matvec(u, rhs_matvec);
-//            if(rank==0){
-//                printf("\nA*u - rhs:\n");
-//                for(i = 0; i < rhs_matvec.size(); i++){
-//                    if(rhs_matvec[i] - rhs[i] > 1e-6)
-//                        printf("%lu \t%f - %f = \t%f \n", i, rhs_matvec[i], rhs[i], rhs_matvec[i] - rhs[i]);}
-//                printf("-----------------------\n");}
+//        std::vector<double> rhs_matvec(u.size(), 0);
+//        grid->A->matvec(u, rhs_matvec);
+//        if(rank==0){
+//            printf("\nA*u - rhs:\n");
+//            for(i = 0; i < rhs_matvec.size(); i++){
+//                if(rhs_matvec[i] - rhs[i] > 1e-6)
+//                    printf("%lu \t%f - %f = \t%f \n", i, rhs_matvec[i], rhs[i], rhs_matvec[i] - rhs[i]);}
+//            printf("-----------------------\n");
+//        }
 #endif
 
         return 0;
@@ -960,8 +963,8 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 //            MPI_Barrier(comm); printf("before repartition_u_shrink: res_coarse.size = %ld \n", res_coarse.size()); MPI_Barrier(comm);
 #endif
 
-//            if (grid->Ac.shrinked && nprocs > 1)
-//                repartition_u_shrink(res_coarse, *grid);
+//        if (grid->Ac.shrinked && nprocs > 1)
+//            repartition_u_shrink(res_coarse, *grid);
 
         if (nprocs > 1){
             repartition_u_shrink(res_coarse, *grid);

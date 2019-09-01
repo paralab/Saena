@@ -40,13 +40,13 @@ public:
     // setup
     // **********************************************
 
-    int          max_level                   = 10; // fine grid is level 0.
+    int          max_level                  = 10; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below this parameter.
     unsigned int least_row_threshold        = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher than this parameter,
     // which means the number of rows was not reduced much.
-    double       row_reduction_up_thrshld    = 0.90;
-    double       row_reduction_down_thrshld  = 0.10;
+    double       row_reduction_up_thrshld   = 0.90;
+    double       row_reduction_down_thrshld = 0.10;
 
     bool repartition         = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
     bool dynamic_levels      = true;
@@ -270,6 +270,7 @@ public:
     int repartition_u_shrink_prepare(Grid *grid);
     int repartition_u_shrink(std::vector<value_t> &u, Grid &grid);
     int repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid);
+    int repartition_u_shrink_coarsest_prepare(Grid *grid);
 
     // if minor shrinking happens, u and rhs should be shrunk too.
 //    int repartition_u_shrink_minor_prepare(Grid *grid);
