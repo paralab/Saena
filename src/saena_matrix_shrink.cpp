@@ -3,11 +3,8 @@
 #include "dollar.hpp"
 
 #include <fstream>
-#include <cstring>
 #include <algorithm>
-//#include <sys/stat.h>
 #include <omp.h>
-//#include <printf.
 
 
 int saena_matrix::shrink_cpu(){
@@ -23,7 +20,7 @@ int saena_matrix::shrink_cpu(){
 //    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, nnz_l); MPI_Barrier(comm);
 //    print_vector(entry, -1, "entry", comm);
 
-    // assume cpu_shrink_thre2 is 4 (it is simpler to explain)
+    // For simplicity, assume cpu_shrink_thre2 is 4 (it is simpler to explain this way)
     // create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
     int color = rank / cpu_shrink_thre2;
     MPI_Comm_split(comm, color, rank, &comm_horizontal);
@@ -111,7 +108,7 @@ int saena_matrix::shrink_cpu_minor(){
     }
 
     ranks.resize(total_active_procs);
-    ranks.shrink_to_fit();
+//    ranks.shrink_to_fit();
 
 //    print_vector(split, 0, "split before shrinking", comm);
 
@@ -232,12 +229,12 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
         thre_loc  = (int) floor(prev_time[1] / matvec_dummy_time[1]);
         thre_comm = (int) ceil(matvec_dummy_time[0] / (4 * prev_time[0]));
         if(thre_comm >= nprocs) thre_comm = nprocs; // todo: cpu_shrink_thre2 = nprocs was causing issue. solve that, then change nprocs-1 to nprocs.
-        if(rank==0) printf("thre_loc = %d, thre_comm = %d \n", thre_loc, thre_comm);
+//        if(rank==0) printf("thre_loc = %d, thre_comm = %d \n", thre_loc, thre_comm);
 
         cpu_shrink_thre2 = std::max(thre_loc, thre_comm);
         if(cpu_shrink_thre2 == 1) cpu_shrink_thre2 = 2;
         if(cpu_shrink_thre2 > 5) cpu_shrink_thre2 = 5;
-        if(rank==0) printf("SHRINK: cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
+//        if(rank==0) printf("SHRINK: cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
 
     } else if( (matvec_dummy_time[3] > 2 * prev_time[3])
                && (matvec_dummy_time[0] > 3 * prev_time[0]) ){
@@ -245,9 +242,9 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
         do_shrink = true;
 
         cpu_shrink_thre2 = (int) ceil(matvec_dummy_time[0] / (4 * prev_time[0]));
-        if(rank==0) printf("cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
+//        if(rank==0) printf("cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
         if(cpu_shrink_thre2 == 1) cpu_shrink_thre2 = 2;
-        if(rank==0) printf("SHRINK: cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
+//        if(rank==0) printf("SHRINK: cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
     }
 
     return 0;
@@ -449,46 +446,6 @@ int saena_matrix::set_off_on_diagonal_dummy(){
 }
 
 
-// int saena_matrix::find_sortings_dummy()
-/*
-int saena_matrix::find_sortings_dummy(){
-    //find the sorting on rows on both local and remote data, which will be used in matvec
-
-    if(active){
-        int rank;
-        MPI_Comm_rank(comm, &rank);
-        if(verbose_matrix_setup) {
-            MPI_Barrier(comm);
-            printf("matrix_setup: rank = %d, find_sortings \n", rank);
-            MPI_Barrier(comm);
-        }
-
-        indicesP_local.resize(nnz_l_local);
-#pragma omp parallel for
-        for (nnz_t i = 0; i < nnz_l_local; i++)
-            indicesP_local[i] = i;
-
-        index_t *row_localP = &*row_local.begin();
-        std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
-
-//    if(rank==0)
-//        for(index_t i=0; i<nnz_l_local; i++)
-//            std::cout << row_local[indicesP_local[i]] << "\t" << col_local[indicesP_local[i]]
-//                      << "\t" << values_local[indicesP_local[i]] << std::endl;
-
-//        indicesP_remote.resize(nnz_l_remote);
-//        for (nnz_t i = 0; i < nnz_l_remote; i++)
-//            indicesP_remote[i] = i;
-//
-//        index_t *row_remoteP = &*row_remote.begin();
-//        std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
-    }
-
-    return 0;
-}
-*/
-
-
 int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
@@ -659,3 +616,42 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
     return 0;
 }
 
+
+// int saena_matrix::find_sortings_dummy()
+/*
+int saena_matrix::find_sortings_dummy(){
+    //find the sorting on rows on both local and remote data, which will be used in matvec
+
+    if(active){
+        int rank;
+        MPI_Comm_rank(comm, &rank);
+        if(verbose_matrix_setup) {
+            MPI_Barrier(comm);
+            printf("matrix_setup: rank = %d, find_sortings \n", rank);
+            MPI_Barrier(comm);
+        }
+
+        indicesP_local.resize(nnz_l_local);
+#pragma omp parallel for
+        for (nnz_t i = 0; i < nnz_l_local; i++)
+            indicesP_local[i] = i;
+
+        index_t *row_localP = &*row_local.begin();
+        std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
+
+//    if(rank==0)
+//        for(index_t i=0; i<nnz_l_local; i++)
+//            std::cout << row_local[indicesP_local[i]] << "\t" << col_local[indicesP_local[i]]
+//                      << "\t" << values_local[indicesP_local[i]] << std::endl;
+
+//        indicesP_remote.resize(nnz_l_remote);
+//        for (nnz_t i = 0; i < nnz_l_remote; i++)
+//            indicesP_remote[i] = i;
+//
+//        index_t *row_remoteP = &*row_remote.begin();
+//        std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
+    }
+
+    return 0;
+}
+*/

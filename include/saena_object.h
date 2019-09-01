@@ -167,6 +167,8 @@ public:
 //    bool verbose_triple_mat_mult_test = false;
 
     // **********************************************
+    // setup functions
+    // **********************************************
 
     saena_object()  = default;
     ~saena_object() = default;
@@ -175,8 +177,8 @@ public:
     }
 
     MPI_Comm get_orig_comm();
-
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
+
     int setup(saena_matrix* A);
     int coarsen(Grid *grid);
     int compute_coarsen(Grid *grid);
@@ -255,34 +257,8 @@ public:
     int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
-//    int sparsify_trsl1(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
-//    int sparsify_trsl2(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
-//    int sparsify_drineas(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
-    int sparsify_majid(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
-//    int sparsify_majid(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, std::vector<index_t> &splitNew, MPI_Comm comm);
-    int sparsify_majid_serial(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
-    int sparsify_majid_with_dup(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
-//    double spars_prob(cooEntry a, double norm_frob_sq);
-    double spars_prob(cooEntry a);
 
-    int solve(std::vector<value_t>& u);
-    int solve_pcg(std::vector<value_t>& u);
-    int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
-    int smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
-    int setup_SuperLU();
-    int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
-    int solve_coarsest_SuperLU(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
-//    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
-
-    // GMRES related functions
-    int  pGMRES(std::vector<double> &u);
-    void GMRES_update(std::vector<double> &x, index_t k, saena_matrix_dense &h, std::vector<double> &s, std::vector<std::vector<double>> &v);
-    void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
-    void ApplyPlaneRotation(double &dx, double &dy, const double &cs, const double &sn);
-//    int GMRES(const Operator &A, std::vector<double> &x, const std::vector<double> &b,
-//                            const Preconditioner &M, Matrix &H, int &m, int &max_iter, double &tol);
-
-//    int set_repartition_rhs(std::vector<value_t> rhs);
+    //    int set_repartition_rhs(std::vector<value_t> rhs);
     int set_repartition_rhs(saena_vector *rhs);
 
     // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
@@ -303,21 +279,63 @@ public:
     int shrink_cpu_A(saena_matrix* Ac, std::vector<index_t>& P_splitNew);
     int shrink_u_rhs(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int unshrink_u(Grid* grid, std::vector<value_t>& u);
-    bool active(int l);
 
     int find_eig(saena_matrix& A);
 //    int find_eig_Elemental(saena_matrix& A);
 
-    int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
-    int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
-    int transpose_locally(cooEntry *A, nnz_t size);
-    int transpose_locally(cooEntry *A, nnz_t size, cooEntry *B);
-    int transpose_locally(cooEntry *A, nnz_t size, index_t row_offset, cooEntry *B);
+    // *****************
+    // sparsification functions
+    // *****************
 
+//    int sparsify_trsl1(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
+//    int sparsify_trsl2(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
+//    int sparsify_drineas(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, MPI_Comm comm);
+    int sparsify_majid(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
+//    int sparsify_majid(std::vector<cooEntry_row> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, std::vector<index_t> &splitNew, MPI_Comm comm);
+    int sparsify_majid_serial(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
+    int sparsify_majid_with_dup(std::vector<cooEntry> & A, std::vector<cooEntry>& A_spars, double norm_frob_sq, nnz_t sample_size, double max_val, MPI_Comm comm);
+//    double spars_prob(cooEntry a, double norm_frob_sq);
+    double spars_prob(cooEntry a);
+
+    // *****************
+    // solve functions
+    // **********************************************
+
+    int solve(std::vector<value_t>& u);
+    int solve_pcg(std::vector<value_t>& u);
+    int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
+
+    // *****************
+    // GMRES functions
+    // *****************
+
+    int  pGMRES(std::vector<double> &u);
+    void GMRES_update(std::vector<double> &x, index_t k, saena_matrix_dense &h, std::vector<double> &s, std::vector<std::vector<double>> &v);
+    void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
+    void ApplyPlaneRotation(double &dx, double &dy, const double &cs, const double &sn);
+//    int GMRES(const Operator &A, std::vector<double> &x, const std::vector<double> &b,
+//                            const Preconditioner &M, Matrix &H, int &m, int &max_iter, double &tol);
+
+    // *****************
+    // direct solvers
+    // *****************
+    int setup_SuperLU();
+    int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int solve_coarsest_SuperLU(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+//    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+
+    // *****************
     // lazy update functions
+    // **********************************************
+
     int update1(saena_matrix* A_new);
     int update2(saena_matrix* A_new);
     int update3(saena_matrix* A_new);
+
+    // *****************
+    // I/O functions
+    // **********************************************
 
 //    to write saena matrix to a file use related function from saena_matrix class.
 //    int writeMatrixToFileA(saena_matrix* A, std::string name);
@@ -329,6 +347,19 @@ public:
     int writeVectorToFileui(std::vector<unsigned int>& v, std::string name, MPI_Comm comm);
 //    template <class T>
 //    int writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm);
+
+    // *****************
+    // Misc functions
+    // **********************************************
+
+    bool active(int l);
+
+    int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
+    int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
+    int transpose_locally(cooEntry *A, nnz_t size);
+    int transpose_locally(cooEntry *A, nnz_t size, cooEntry *B);
+    int transpose_locally(cooEntry *A, nnz_t size, index_t row_offset, cooEntry *B);
+
     int change_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew);
 
     // double versions

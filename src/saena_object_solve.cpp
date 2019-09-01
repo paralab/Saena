@@ -336,6 +336,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     set_default_options_dist(&options);
     options.ColPerm = NATURAL;
 //    options.SymPattern = YES;
+//    options.PrintStat = YES;
 
 #if 0
     options.RowPerm = NOROWPERM;
@@ -446,6 +447,201 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
         MPI_Barrier(comm);
     }
 #endif
+
+    return 0;
+}
+
+
+int saena_object::setup_SuperLU() {
+
+//    saena_matrix *A_coarsest = &grids.back().Ac;
+
+    MPI_Comm *comm_coarsest = &A_coarsest->comm;
+    int nprocs_coarsest, rank_coarsest;
+    MPI_Comm_size(*comm_coarsest, &nprocs_coarsest);
+    MPI_Comm_rank(*comm_coarsest, &rank_coarsest);
+
+//    superlu_dist_options_t options;
+//    SuperLUStat_t stat;
+//    SuperMatrix A_SLU;
+//    ScalePermstruct_t ScalePermstruct;
+//    LUstruct_t LUstruct;
+//    SOLVEstruct_t SOLVEstruct;
+//    gridinfo_t superlu_grid;
+//    double   *berr;
+//    double   *b;
+//    int      iam, info, ldb, nrhs;
+    int m, n, m_loc, nnz_loc;
+    int nprow, npcol;
+    int iam, ldb;
+
+    nprow = nprocs_coarsest;  // Default process rows.
+    npcol = 1;  // Default process columns.
+//    nrhs  = 1;  // Number of right-hand side.
+
+    // ------------------------------------------------------------
+    //   INITIALIZE MPI ENVIRONMENT.
+    // ------------------------------------------------------------
+//    MPI_Init( &argc, &argv );
+
+//    char* file_name(argv[5]);
+//    saena::matrix A_saena (file_name, comm);
+//    A_saena.assemble();
+//    A_saena.print_entry(-1);
+//    if(rank==0) printf("after matrix assemble.\n");
+
+
+    // Parse command line argv[].
+//        for (cpp = argv+1; *cpp; ++cpp) {
+//            if ( **cpp == '-' ) {
+//                c = *(*cpp+1);
+//                ++cpp;
+//                switch (c) {
+//                    case 'h':
+//                        printf("Options:\n");
+//                        printf("\t-r <int>: process rows    (default %4d)\n", nprow);
+//                        printf("\t-c <int>: process columns (default %4d)\n", npcol);
+//                        exit(0);
+//                        break;
+//                    case 'r': nprow = atoi(*cpp);
+//                        break;
+//                    case 'c': npcol = atoi(*cpp);
+//                        break;
+//                }
+//            } else { // Last arg is considered a filename
+//    //            if ( !(fp = fopen(*cpp, "r")) ) {
+//    //                ABORT("File does not exist");
+//    //            }
+//
+//                saena::matrix A_saena (*cpp, comm);
+//                A_saena.assemble();
+//                A_saena.print_entry(-1);
+//                if(rank==0) printf("after matrix assemble.\n");
+//                break;
+//            }
+//        }
+
+    // ------------------------------------------------------------
+    //   INITIALIZE THE SUPERLU PROCESS GRID.
+    // ------------------------------------------------------------
+
+#ifdef __DEBUG1__
+    if (verbose_solve_coarse) {
+        MPI_Barrier(*comm_coarsest);
+        if (rank_coarsest == 0) {
+            printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
+        }
+        MPI_Barrier(*comm_coarsest);
+    }
+#endif
+
+    superlu_gridinit(*comm_coarsest, nprow, npcol, &superlu_grid);
+
+    // Bail out if I do not belong in the grid.
+    iam = superlu_grid.iam; // my process rank in this group
+//    printf("iam = %d, nprow = %d, npcol = %d \n", iam, nprow, npcol);
+//    if ( iam >= nprow * npcol )	goto out;
+
+#ifdef __DEBUG1__
+    if (verbose_solve_coarse) {
+        MPI_Barrier(*comm_coarsest);
+        if (!iam) {
+            int v_major, v_minor, v_bugfix;
+            superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+            printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+//            printf("Input matrix file:\t%s\n", *cpp);
+            printf("Process grid:\t\t%d X %d\n", nprow, npcol);
+            fflush(stdout);
+        }
+        MPI_Barrier(*comm_coarsest);
+    }
+#endif
+
+#if (VAMPIR >= 1)
+    VT_traceoff();
+#endif
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Enter main()");
+#endif
+
+    // ------------------------------------------------------------
+    //   PASS THE MATRIX FROM SAENA
+    // ------------------------------------------------------------
+
+    // Set up the local A_SLU in NR_loc format
+//    dCreate_CompRowLoc_Matrix_dist(A_SLU, m, n, nnz_loc, m_loc, fst_row,
+//                                   nzval_loc, colind, rowptr,
+//                                   SLU_NR_loc, SLU_D, SLU_GE);
+
+#ifdef __DEBUG1__
+    if (verbose_solve_coarse) {
+        MPI_Barrier(*comm_coarsest);
+        if (rank_coarsest == 0) printf("PASS THE MATRIX FROM SAENA. \n");
+        MPI_Barrier(*comm_coarsest);
+    }
+#endif
+
+    m       = A_coarsest->Mbig;
+    m_loc   = A_coarsest->M;
+    n       = m;
+    nnz_loc = A_coarsest->nnz_l;
+    ldb     = m_loc;
+
+#ifdef __DEBUG1__
+    if (verbose_solve_coarse) {
+        MPI_Barrier(*comm_coarsest);
+        if (rank_coarsest == 0)
+            printf("m = %d, m_loc = %d, n = %d, nnz_g = %ld, nnz_loc = %d, ldb = %d \n",
+                   m, m_loc, n, A_coarsest->nnz_g, nnz_loc, ldb);
+        MPI_Barrier(*comm_coarsest);
+    }
+#endif
+
+    // CSR format (compressed row)
+    // sort entries in row-major
+    std::vector<cooEntry> entry_temp = A_coarsest->entry;
+    std::sort(entry_temp.begin(), entry_temp.end(), row_major);
+//    print_vector(entry_temp, -1, "entry_temp", *comm_coarsest);
+
+    index_t fst_row = A_coarsest->split[rank_coarsest];
+    std::vector<int> nnz_per_row(m_loc, 0);
+
+    auto *rowptr    = (int_t *) intMalloc_dist(m_loc + 1);
+    auto *nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
+    auto *colind    = (int_t *) intMalloc_dist(nnz_loc);
+
+    // Do this line to avoid this subtraction for each entry in the next "for" loop.
+    int *nnz_per_row_p = &nnz_per_row[0] - fst_row;
+
+    for (nnz_t i = 0; i < nnz_loc; i++) {
+        nzval_loc[i] = entry_temp[i].val;
+//        nnz_per_row[entry_temp[i].row - fst_row]++;
+        nnz_per_row_p[entry_temp[i].row]++;
+        colind[i] = entry_temp[i].col;
+    }
+
+    // rowptr is scan of nnz_per_row.
+    rowptr[0] = 0;
+    for (index_t i = 0; i < m_loc; i++) {
+        rowptr[i + 1] = rowptr[i] + nnz_per_row[i];
+    }
+
+//    grids[0].A->print_entry(-1);
+//    if(rank_coarsest == 0){
+//        printf("\nmatrix entries in row-major format to be passed to SuperLU:\n");
+//        for(nnz_t i = 0; i < nnz_loc; i++)
+//            printf("%ld \t%d \t%d \t%lf \n", i, entry_temp[i].row, colind[i], nzval_loc[i]);
+//        printf("\nrowptr:\n");
+//        for(nnz_t i = 0; i < m_loc+1; i++)
+//            printf("%ld \t%d \n", i, rowptr[i]);
+//    }
+
+    dCreate_CompRowLoc_Matrix_dist(&A_SLU2, m, n, nnz_loc, m_loc, fst_row,
+                                   &nzval_loc[0], &colind[0], &rowptr[0],
+                                   SLU_NR_loc, SLU_D, SLU_GE);
+
+//    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
 
     return 0;
 }
@@ -1242,201 +1438,6 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 #endif
 
 //    if(rank==0) dollar::text(std::cout);
-
-    return 0;
-}
-
-
-int saena_object::setup_SuperLU() {
-
-//    saena_matrix *A_coarsest = &grids.back().Ac;
-
-    MPI_Comm *comm_coarsest = &A_coarsest->comm;
-    int nprocs_coarsest, rank_coarsest;
-    MPI_Comm_size(*comm_coarsest, &nprocs_coarsest);
-    MPI_Comm_rank(*comm_coarsest, &rank_coarsest);
-
-//    superlu_dist_options_t options;
-//    SuperLUStat_t stat;
-//    SuperMatrix A_SLU;
-//    ScalePermstruct_t ScalePermstruct;
-//    LUstruct_t LUstruct;
-//    SOLVEstruct_t SOLVEstruct;
-//    gridinfo_t superlu_grid;
-//    double   *berr;
-//    double   *b;
-//    int      iam, info, ldb, nrhs;
-    int m, n, m_loc, nnz_loc;
-    int nprow, npcol;
-    int iam, ldb;
-
-    nprow = nprocs_coarsest;  // Default process rows.
-    npcol = 1;  // Default process columns.
-//    nrhs  = 1;  // Number of right-hand side.
-
-    // ------------------------------------------------------------
-    //   INITIALIZE MPI ENVIRONMENT.
-    // ------------------------------------------------------------
-//    MPI_Init( &argc, &argv );
-
-//    char* file_name(argv[5]);
-//    saena::matrix A_saena (file_name, comm);
-//    A_saena.assemble();
-//    A_saena.print_entry(-1);
-//    if(rank==0) printf("after matrix assemble.\n");
-
-
-    // Parse command line argv[].
-//        for (cpp = argv+1; *cpp; ++cpp) {
-//            if ( **cpp == '-' ) {
-//                c = *(*cpp+1);
-//                ++cpp;
-//                switch (c) {
-//                    case 'h':
-//                        printf("Options:\n");
-//                        printf("\t-r <int>: process rows    (default %4d)\n", nprow);
-//                        printf("\t-c <int>: process columns (default %4d)\n", npcol);
-//                        exit(0);
-//                        break;
-//                    case 'r': nprow = atoi(*cpp);
-//                        break;
-//                    case 'c': npcol = atoi(*cpp);
-//                        break;
-//                }
-//            } else { // Last arg is considered a filename
-//    //            if ( !(fp = fopen(*cpp, "r")) ) {
-//    //                ABORT("File does not exist");
-//    //            }
-//
-//                saena::matrix A_saena (*cpp, comm);
-//                A_saena.assemble();
-//                A_saena.print_entry(-1);
-//                if(rank==0) printf("after matrix assemble.\n");
-//                break;
-//            }
-//        }
-
-    // ------------------------------------------------------------
-    //   INITIALIZE THE SUPERLU PROCESS GRID.
-    // ------------------------------------------------------------
-
-#ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
-        MPI_Barrier(*comm_coarsest);
-        if (rank_coarsest == 0) {
-            printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
-        }
-        MPI_Barrier(*comm_coarsest);
-    }
-#endif
-
-    superlu_gridinit(*comm_coarsest, nprow, npcol, &superlu_grid);
-
-    // Bail out if I do not belong in the grid.
-    iam = superlu_grid.iam; // my process rank in this group
-//    printf("iam = %d, nprow = %d, npcol = %d \n", iam, nprow, npcol);
-//    if ( iam >= nprow * npcol )	goto out;
-
-#ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
-        MPI_Barrier(*comm_coarsest);
-        if (!iam) {
-            int v_major, v_minor, v_bugfix;
-            superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
-            printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
-//            printf("Input matrix file:\t%s\n", *cpp);
-            printf("Process grid:\t\t%d X %d\n", nprow, npcol);
-            fflush(stdout);
-        }
-        MPI_Barrier(*comm_coarsest);
-    }
-#endif
-
-#if (VAMPIR >= 1)
-    VT_traceoff();
-#endif
-
-#if (DEBUGlevel >= 1)
-    CHECK_MALLOC(iam, "Enter main()");
-#endif
-
-    // ------------------------------------------------------------
-    //   PASS THE MATRIX FROM SAENA
-    // ------------------------------------------------------------
-
-    // Set up the local A_SLU in NR_loc format
-//    dCreate_CompRowLoc_Matrix_dist(A_SLU, m, n, nnz_loc, m_loc, fst_row,
-//                                   nzval_loc, colind, rowptr,
-//                                   SLU_NR_loc, SLU_D, SLU_GE);
-
-#ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
-        MPI_Barrier(*comm_coarsest);
-        if (rank_coarsest == 0) printf("PASS THE MATRIX FROM SAENA. \n");
-        MPI_Barrier(*comm_coarsest);
-    }
-#endif
-
-    m       = A_coarsest->Mbig;
-    m_loc   = A_coarsest->M;
-    n       = m;
-    nnz_loc = A_coarsest->nnz_l;
-    ldb     = m_loc;
-
-#ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
-        MPI_Barrier(*comm_coarsest);
-        if (rank_coarsest == 0)
-            printf("m = %d, m_loc = %d, n = %d, nnz_g = %ld, nnz_loc = %d, ldb = %d \n",
-                   m, m_loc, n, A_coarsest->nnz_g, nnz_loc, ldb);
-        MPI_Barrier(*comm_coarsest);
-    }
-#endif
-
-    // CSR format (compressed row)
-    // sort entries in row-major
-    std::vector<cooEntry> entry_temp = A_coarsest->entry;
-    std::sort(entry_temp.begin(), entry_temp.end(), row_major);
-//    print_vector(entry_temp, -1, "entry_temp", *comm_coarsest);
-
-    index_t fst_row = A_coarsest->split[rank_coarsest];
-    std::vector<int> nnz_per_row(m_loc, 0);
-
-    auto *rowptr    = (int_t *) intMalloc_dist(m_loc + 1);
-    auto *nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
-    auto *colind    = (int_t *) intMalloc_dist(nnz_loc);
-
-    // Do this line to avoid this subtraction for each entry in the next "for" loop.
-    int *nnz_per_row_p = &nnz_per_row[0] - fst_row;
-
-    for (nnz_t i = 0; i < nnz_loc; i++) {
-        nzval_loc[i] = entry_temp[i].val;
-//        nnz_per_row[entry_temp[i].row - fst_row]++;
-        nnz_per_row_p[entry_temp[i].row]++;
-        colind[i] = entry_temp[i].col;
-    }
-
-    // rowptr is scan of nnz_per_row.
-    rowptr[0] = 0;
-    for (index_t i = 0; i < m_loc; i++) {
-        rowptr[i + 1] = rowptr[i] + nnz_per_row[i];
-    }
-
-//    grids[0].A->print_entry(-1);
-//    if(rank_coarsest == 0){
-//        printf("\nmatrix entries in row-major format to be passed to SuperLU:\n");
-//        for(nnz_t i = 0; i < nnz_loc; i++)
-//            printf("%ld \t%d \t%d \t%lf \n", i, entry_temp[i].row, colind[i], nzval_loc[i]);
-//        printf("\nrowptr:\n");
-//        for(nnz_t i = 0; i < m_loc+1; i++)
-//            printf("%ld \t%d \n", i, rowptr[i]);
-//    }
-
-    dCreate_CompRowLoc_Matrix_dist(&A_SLU2, m, n, nnz_loc, m_loc, fst_row,
-                                   &nzval_loc[0], &colind[0], &rowptr[0],
-                                   SLU_NR_loc, SLU_D, SLU_GE);
-
-//    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
 
     return 0;
 }
