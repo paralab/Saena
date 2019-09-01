@@ -254,6 +254,7 @@ public:
     int decide_shrinking(std::vector<double> &prev_time);
     int shrink_cpu();
     int shrink_cpu_minor();
+    int shrink_cpu_coarsest();
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);

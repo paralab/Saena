@@ -136,6 +136,76 @@ int saena_matrix::shrink_cpu_minor(){
 }
 
 
+int saena_matrix::shrink_cpu_coarsest(){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    MPI_Barrier(comm); if(rank==0) printf("******** shrink_cpu_coarsest ********\n"); MPI_Barrier(comm);
+//    print_vector(split, 0, "split before shrinking", comm);
+
+//    shrinked_minor = true;
+
+    bool active_c = false;
+//    if(split[rank+1] - split[rank] != 0){
+//        active_minor = true;
+//        printf("active: rank = %d \n", rank);
+//    }
+    if(rank == 0){
+        active_c = true;
+    }
+    active = active_c;
+
+    MPI_Group bigger_group;
+    MPI_Comm_group(comm, &bigger_group);
+
+//    total_active_procs = 0;
+//    std::vector<int> ranks(nprocs);
+//    for(unsigned int i = 0; i < nprocs; i++){
+//        if(split[i+1] - split[i] != 0){
+//            ranks[total_active_procs] = i;
+//            total_active_procs++;
+//        }
+//    }
+
+    total_active_procs = 1;
+    std::vector<int> ranks(total_active_procs);
+    ranks[0] = 0;
+//    for(unsigned int i = 0; i < nprocs; i++){
+//        if(split[i+1] - split[i] != 0){
+//            ranks[total_active_procs] = i;
+//            total_active_procs++;
+//        }
+//    }
+
+//    ranks.resize(total_active_procs);
+
+//    print_vector(split, 0, "split before shrinking", comm);
+
+//    comm_old_minor = comm;
+    MPI_Group group_new;
+    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
+    MPI_Comm_create_group(comm, group_new, 1, &comm);
+
+    split_old_minor = split;
+    split.clear();
+    if(active_c){
+        split.resize(total_active_procs+1);
+        split.shrink_to_fit();
+        split[0] = 0;
+        split[total_active_procs] = Mbig;
+//        for(unsigned int i = 1; i < total_active_procs; i++){
+//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
+//            split[i] = split_old_minor[ranks[i]];
+//        }
+//        print_vector(split, 0, "split after shrinking", comm);
+    }
+
+    return 0;
+}
+
+
 int saena_matrix::compute_matvec_dummy_time(){
 
     int rank;
