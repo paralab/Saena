@@ -2,8 +2,8 @@
 #define SAENA_SAENA_OBJECT_H
 
 //#include <spp.h> //sparsepp
-//#include "superlu_ddefs.h"
-#include "superlu_defs.h"
+#include "superlu_ddefs.h"
+//#include "superlu_defs.h"
 
 #include "aux_functions.h"
 #include "saena_vector.h"
@@ -59,12 +59,12 @@ public:
     // matmat
     // *****************
 
-    std::string          coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
+    std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
     const        index_t matmat_size_thre1 = 20000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
     static const index_t matmat_size_thre2 = 1000000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
-//    const index_t min_size_threshold = 50; //default 50
-    const index_t        matmat_nnz_thre = 200; //default 200
+//    const index_t min_size_threshold       = 50; //default 50
+    const index_t        matmat_nnz_thre   = 200; //default 200
 
     std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
 
@@ -104,7 +104,6 @@ public:
     // dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
 
     // *****************
-
     // solve parameters
     // **********************************************
 
@@ -113,20 +112,32 @@ public:
     int    CG_coarsest_max_iter = 150; // 150
     double CG_coarsest_tol      = 1e-12;
 
+    // ****************
     // AMG parameters
     // ****************
 
-    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     int         preSmooth     = 3;
     int         postSmooth    = 3;
+    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
     std::string direct_solver = "SuperLU"; // options: 1- CG, 2- SuperLU
     float       connStrength  = 0.2; // connection strength parameter: control coarsening aggressiveness
 
     // ****************
-
     // SuperLU
-    SuperMatrix A_SLU2; // save matrix in SuperLU for solve_coarsest_SuperLU()
+    // ****************
+
+    SuperMatrix A_SLU2; // save matrix in SuperLU format to be used in solve_coarsest_SuperLU()
     gridinfo_t  superlu_grid;
+//    int_t  *rowptr;
+//    double *nzval_loc;
+//    int_t  *colind;
+    bool   first_solve = TRUE;
+    index_t fst_row;
+    ScalePermstruct_t ScalePermstruct;
+    LUstruct_t LUstruct;
+    SOLVEstruct_t SOLVEstruct;
+    superlu_dist_options_t options;
+    bool superlu_active = TRUE;
 
     // **********************************************
 
@@ -144,6 +155,7 @@ public:
     nnz_t  sample_prcnt_denom       = 0;
     std::string sparsifier          = "majid"; // options: 1- TRSL, 2- drineas, majid
 
+    // **********************************************
     // vserbose
     // **********************************************
     bool verbose                  = false;
@@ -322,8 +334,9 @@ public:
     // direct solvers
     // *****************
     int setup_SuperLU();
-    int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int solve_coarsest_SuperLU(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int destroy_SuperLU();
+    int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
 //    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
 
     // *****************

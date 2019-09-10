@@ -18,6 +18,9 @@
 #include <iomanip>
 #include <mpi.h>
 
+#include "superlu_ddefs.h"
+
+
 void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                            index_t *Br, value_t *Bv, index_t *Bc_scan,
                            index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,

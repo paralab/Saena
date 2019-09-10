@@ -73,6 +73,8 @@ int saena_matrix::shrink_cpu(){
 
 //    print_vector(split, -1, "split", comm);
 
+    MPI_Group_free(&bigger_group);
+    MPI_Group_free(&group_new);
     return 0;
 }
 
@@ -132,6 +134,8 @@ int saena_matrix::shrink_cpu_minor(){
 //        print_vector(split, 0, "split after shrinking", comm);
     }
 
+    MPI_Group_free(&bigger_group);
+    MPI_Group_free(&group_new);
     return 0;
 }
 
@@ -202,6 +206,8 @@ int saena_matrix::shrink_cpu_coarsest(){
 //        print_vector(split, 0, "split after shrinking", comm);
     }
 
+    MPI_Group_free(&bigger_group);
+    MPI_Group_free(&group_new);
     return 0;
 }
 
