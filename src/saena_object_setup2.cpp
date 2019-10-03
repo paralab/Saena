@@ -9,7 +9,7 @@
 #include "dollar.hpp"
 
 //#include <spp.h> //sparsepp
-#include "petsc_functions.h"
+//#include "petsc_functions.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -1585,11 +1585,11 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
     // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
-    int valbyidx                = sizeof(value_t) / sizeof(index_t);
+    int   valbyidx              = sizeof(value_t) / sizeof(index_t);
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
-    mempool3                    = new index_t[2 * (send_size_max)];
+          mempool3              = new index_t[2 * (send_size_max)];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);

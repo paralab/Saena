@@ -191,6 +191,134 @@ int main(int argc, char* argv[]){
 
 //    print_vector(u, -1, "u", comm);
 
+    // *************************** lazy-update ****************************
+
+    std::string file_name2 = file_name;
+    char        file_name3[100];
+    std::size_t length = file_name2.copy(file_name3, strlen(file_name)-5, 0);
+    file_name3[length] = '\0';
+
+    size_t      extIndex       = file_name2.find_last_of(".");
+    std::string file_extension = file_name2.substr(extIndex+1, 3);
+
+//    std::cout << "file name: " << file_name << ", file_name2: " << file_name2 << ", file_name3: " << file_name3 << std::endl;
+
+    saena::matrix B (comm);
+    int lazy_step = 0;
+
+    int update_method = 3;
+    if(rank==0) printf("================================================\n\nupdate method: %d\n", update_method);
+
+//    char pause1[10];
+//    MPI_Barrier(comm);
+//    if(!rank){
+//        printf("Enter any letter (then press enter) to continue!");
+//        scanf("%s", pause1);
+//    }
+//    MPI_Barrier(comm);
+
+    for(int i = 2; i <= ITER_LAZY; i++){
+        std::string file_name_update = file_name3;
+        file_name_update            += std::to_string(i);
+        file_name_update            += ".";
+        file_name_update            += file_extension;
+
+//        std::cout << "file_name_update: " << file_name_update << std::endl;
+
+        MPI_Barrier(comm);
+        t1 = MPI_Wtime();
+        if( lazy_step % 2 == 1) {
+            A.erase_no_shrink_to_fit();
+            //        A.add_duplicates(true);
+
+            A.read_file(file_name_update.c_str());
+
+            if(update_method == 1) {
+                A.assemble();
+                solver.update1(&(A)); // update the AMG hierarchy
+            } else if(update_method == 2) {
+                A.assemble();
+                solver.update2(&(A)); // update the AMG hierarchy
+            } else if(update_method == 3) {
+                A.assemble_no_scale();
+                solver.update3(&(A)); // update the AMG hierarchy
+            } else {
+                printf("Error: Wrong update_method is set! Options: 1, 2, 3\n");
+            }
+
+            lazy_step++;
+
+        } else {
+
+            B.erase_no_shrink_to_fit();
+//            B.add_duplicates(true);
+
+            B.read_file(file_name_update.c_str());
+
+            if(update_method == 1) {
+                B.assemble();
+                solver.update1(&(B)); // update the AMG hierarchy
+            } else if(update_method == 2) {
+                B.assemble();
+                solver.update2(&(B)); // update the AMG hierarchy
+            } else if(update_method == 3) {
+                B.assemble_no_scale();
+                solver.update3(&(B)); // update the AMG hierarchy
+            } else {
+                printf("Error: Wrong update_method is set! Options: 1, 2, 3\n");
+            }
+
+            lazy_step++;
+        }
+
+        t1 = MPI_Wtime() - t1;
+        print_time(t1, "Setup:", comm);
+        setup_time_loc.emplace_back(t1);
+
+//        MPI_Barrier(comm);
+//        if(!rank){
+//            printf("Enter any letter (then press enter) to continue!");
+//            scanf("%s", pause1);
+//        }
+//        MPI_Barrier(comm);
+
+        MPI_Barrier(comm);
+        t1 = MPI_Wtime();
+        solver.solve_pcg(u, &opts);
+        t1 = MPI_Wtime() - t1;
+        print_time(t1, "Solve:", comm);
+        solve_time_loc.emplace_back(t1);
+
+//        MPI_Barrier(comm);
+//        if(!rank){
+//            printf("Enter any letter (then press enter) to continue!");
+//            scanf("%s", pause1);
+//        }
+//        MPI_Barrier(comm);
+    }
+
+    std::vector<double> setup_time(setup_time_loc.size()), solve_time(solve_time_loc.size());
+    MPI_Reduce(&setup_time_loc[0], &setup_time[0], setup_time_loc.size(), MPI_DOUBLE, MPI_SUM, 0, comm);
+    MPI_Reduce(&solve_time_loc[0], &solve_time[0], solve_time_loc.size(), MPI_DOUBLE, MPI_SUM, 0, comm);
+
+    if(!rank){
+        double ave_setup_time = 0, ave_solve_time = 0;
+
+        for(int i = 0; i < setup_time_loc.size(); i++){
+            setup_time[i] /= nprocs; // to print the right number in the following print_vector().
+            solve_time[i] /= nprocs;
+            ave_setup_time += setup_time[i];
+            ave_solve_time += solve_time[i];
+        }
+
+        print_vector(setup_time, 0, "setup_time", comm);
+        print_vector(solve_time, 0, "solve_time", comm);
+
+        ave_setup_time /= setup_time.size();
+        ave_solve_time /= solve_time.size();
+        printf("ave_setup_time = %f\nave_solve_time = %f\n", ave_setup_time, ave_solve_time);
+    }
+
     // *************************** check correctness of the solution ****************************
 
     // A is scaled. read it from the file and don't scale.
@@ -332,6 +460,36 @@ int main(int argc, char* argv[]){
                           << std::endl;
 
             outFile.close();
+        }
+    }
+*/
+
+    // *************************** test for lazy update functions ****************************
+/*
+    saena_matrix* A_saena = A.get_internal_matrix();
+    std::vector<index_t> rown(A.get_local_nnz());
+    std::vector<index_t> coln(A.get_local_nnz());
+    std::vector<value_t> valn(A.get_local_nnz());
+    for(nnz_t i = 0; i < A.get_local_nnz(); i++){
+        rown[i] = A_saena->entry[i].row;
+        coln[i] = A_saena->entry[i].col;
+        valn[i] = 2 * A_saena->entry[i].val;
+//        valn[i] = 0.33;
+//        if(i<50 && rank==1) printf("%f \t%f \n", A_saena->entry[i].val, valn[i]);
+    }
+
+    saena::matrix A_new(comm);
+    A_new.set(&rown[0], &coln[0], &valn[0], rown.size());
+    A_new.assemble();
+//    A_new.assemble_no_scale();
+//    solver.update1(&A_new);
+
+//    solver.get_object()->matrix_diff(*solver.get_object()->grids[0].A, *A_new.get_internal_matrix());
+
+    if(rank==0){
+        for(nnz_t i = 0; i < 50; i++){
+//            std::cout << A.get_internal_matrix()->entry[i] << "\t" << A_new.get_internal_matrix()->entry[i] << std::endl;
+            std::cout << A_saena->entry[i] << "\t" << A_new.get_internal_matrix()->entry[i] << std::endl;
         }
     }
 */

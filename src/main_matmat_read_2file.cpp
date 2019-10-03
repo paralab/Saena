@@ -72,8 +72,8 @@ int main(int argc, char* argv[]){
     solver.matmat(&A, &B, &C, true);
 
     // view A and C
-//    petsc_viewer(A.get_internal_matrix());
-//    petsc_viewer(C.get_internal_matrix());
+    petsc_viewer(A.get_internal_matrix());
+    petsc_viewer(C.get_internal_matrix());
 
     // check the correctness with PETSc
 //    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
