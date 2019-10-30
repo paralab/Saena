@@ -171,6 +171,44 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
 }
 
 template<class T>
+int print_agg(const std::vector<T> &v, const int ran, const std::string &name, MPI_Comm comm){
+    // if ran >= 0 print the vector elements on proc with rank = ran
+    // otherwise print the vector elements on all processors in order. (first on proc 0, then proc 1 and so on.)
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    index_t iter = 0;
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), ran, v.size());
+            for (auto i:v) {
+                std::cout << i << std::endl;
+                iter++;
+            }
+            printf("\n");
+        }
+    } else{
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), proc, v.size());
+                for (auto i:v) {
+                    std::cout << i << std::endl;
+                    iter++;
+                }
+                printf("\n");
+            }
+            MPI_Barrier(comm);
+        }
+    }
+
+    return 0;
+}
+
+
+template<class T>
 int print_array(const T &v, const nnz_t sz, const int ran, const std::string &name, MPI_Comm comm){
     // if ran >= 0 print the array elements on proc with rank = ran
     // otherwise print the array elements on all processors in order. (first on proc 0, then proc 1 and so on.)
@@ -211,6 +249,8 @@ int print_array(const T &v, const nnz_t sz, const int ran, const std::string &na
 int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm);
 
 int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm);
+
+int write_agg(std::vector<unsigned long>& v, std::string name, int level, MPI_Comm comm);
 
 
 int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm);

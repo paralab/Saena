@@ -9,7 +9,7 @@
 #include "ietl_saena.h"
 #include "dollar.hpp"
 
-//#include "petsc_functions.h"
+#include "petsc_functions.h"
 
 #include <sys/stat.h>
 #include <cstdio>
@@ -255,6 +255,7 @@ int saena_object::coarsen(Grid *grid){
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after find_aggregation!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(aggregate, -1, "aggregate", grid->A->comm);
+    write_agg(aggregate, "agg1", grid->currentLevel, grid->A->comm);
 #endif
 
     // **************************** changeAggregation ****************************
@@ -334,13 +335,14 @@ int saena_object::coarsen(Grid *grid){
 
     // **************************** compute_coarsen in PETSc ****************************
 //    petsc_viewer(&grid->Ac);
-//    map_matmat.clear();
 
     // this part is only for experiments.
 //    petsc_coarsen(&grid->R, grid->A, &grid->P);
 //    petsc_coarsen_PtAP(&grid->R, grid->A, &grid->P);
 //    petsc_coarsen_2matmult(&grid->R, grid->A, &grid->P);
 //    petsc_check_matmatmat(&grid->R, grid->A, &grid->P, &grid->Ac);
+
+//    map_matmat.clear();
 
     return 0;
 }

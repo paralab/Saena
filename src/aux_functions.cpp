@@ -194,6 +194,39 @@ int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name
     return 0;
 }
 
+int write_agg(std::vector<unsigned long>& v, std::string name, int level, MPI_Comm comm) {
+
+    // Create txt files with name name0.csv for processor 0, name1.csv for processor 1, etc.
+    // Then, concatenate them in terminal: cat name0.csv name1.csv > V.csv
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    std::ofstream outFileTxt;
+    std::string outFileNameTxt = "/home/majidrp/Dropbox/Projects/Saena/build/agg/";
+    outFileNameTxt += name;
+    outFileNameTxt += "_lev";
+    outFileNameTxt += std::to_string(level);
+//    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".csv";
+    outFileTxt.open(outFileNameTxt);
+
+    outFileTxt << "agg" << std::endl;
+
+    if (rank == 0)
+//        outFileTxt << vSize << std::endl;
+    for (long i = 0; i < v.size(); i++) {
+//        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
+        outFileTxt << v[i] << std::endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
+
+    return 0;
+}
+
 
 int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm) {
 

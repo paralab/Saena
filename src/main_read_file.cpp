@@ -64,8 +64,8 @@ int main(int argc, char* argv[]){
     saena::matrix A (comm);
     A.read_file(file_name);
 //    A.read_file(file_name, "triangle");
-    A.assemble();
-//    A.assemble_writeToFile("writeMatrix");
+//    A.assemble();
+    A.assemble_writeToFile("matrix_folder");
 
     // ********** print matrix and time **********
 
@@ -177,7 +177,7 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].rhs_std, -1, "rhs_std", comm);
 
     // *************************** AMG - Solve ****************************
-
+/*
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
 
@@ -190,7 +190,7 @@ int main(int argc, char* argv[]){
     solve_time_loc.emplace_back(t1);
 
 //    print_vector(u, -1, "u", comm);
-
+*/
     // *************************** check correctness of the solution ****************************
 
     // A is scaled. read it from the file and don't scale.
