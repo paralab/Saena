@@ -1139,8 +1139,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 
     if(bandwidth >= Mbig){
         printf("Error: bandwidth is greater than the size of the matrix\n");
-        MPI_Finalize();
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     //Type of random number distribution
@@ -1208,6 +1207,62 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 //    printf("rank %d: M = %u, Mbig = %u, nnz_l = %lu, nnz_g = %lu \n",
 //            rank, A.get_num_local_rows(), A.get_num_rows(), A.get_local_nnz(), A.get_nnz());
     if(!rank) printf("Mbig = %u, nnz_g = %lu, density = %.8f \n", A.get_num_rows(), A.get_nnz(), A.get_internal_matrix()->density);
+
+    return 0;
+}
+
+
+int saena::random_symm_matrix(saena::matrix &A, index_t M, float density){
+    // generates a random matrix with density of size "density".
+
+    int rank, nprocs;
+    MPI_Comm_size(A.get_comm(), &nprocs);
+    MPI_Comm_rank(A.get_comm(), &rank);
+
+    if(density <= 0 || density > 1){
+        printf("Error: density should be in the range (0,1].\n");
+        exit(EXIT_FAILURE);
+    }
+
+    index_t       Mbig  = nprocs * M;
+    unsigned long nnz_l = floor(density * M * M);
+
+    //Type of random number distribution
+    std::uniform_real_distribution<value_t> dist(0, 1);    //(min, max). this one is for the value of the entries.
+    std::uniform_int_distribution<index_t>  dist2(0, M-1); //(min, max). this one is for the indices of the entries.
+
+    //Mersenne Twister: Good quality random number generator
+    std::mt19937 rng(std::random_device{}());
+    std::mt19937 rng2(std::random_device{}());
+
+    index_t offset = M * rank;
+
+    std::cout << "M: " << M << ", Mbig: " << Mbig << ", nnz_l: " << nnz_l << ", nnz_g: " << nnz_l * nprocs
+              << ", offset: " << offset << ", density: " << density << std::endl;
+
+    // add the diagonal
+    for(index_t i = offset; i < offset + M; i++){
+        A.set(i , i, dist(rng));
+    }
+
+    index_t ii, jj;
+    value_t vv;
+
+    if(nnz_l > M){
+        for(nnz_t i = 0; i < nnz_l - M; i++) {
+            vv = dist(rng);
+            ii = dist2(rng2);
+            jj = dist2(rng2);
+            if(ii != jj){
+//                std::cout << ii << "\t" << jj << "\t" << vv << std::endl;
+                A.set(ii + offset, jj + offset, vv);
+//                A.set(dist2(rng2) + offset, dist2(rng2) + offset, dist(rng));
+            }
+        }
+    }
+
+    A.assemble();
+//    A.print(0);
 
     return 0;
 }

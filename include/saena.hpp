@@ -222,6 +222,8 @@ namespace saena {
 
     int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth);
 
+    int random_symm_matrix(saena::matrix &A, index_t M, float density);
+
     // ==========================
 
     int read_vector_file(std::vector<value_t>& v, saena::matrix &A, char *file, MPI_Comm comm);

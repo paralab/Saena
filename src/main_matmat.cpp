@@ -28,8 +28,9 @@ int main(int argc, char* argv[]){
 
     if(argc != 3){
         if(rank == 0){
-//            std::cout << "This is how you can make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
-            std::cout << "This is how you can make a banded matrix: ./Saena <local size> <bandwidth>" << std::endl;
+//            std::cout << "This is how you can generate a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
+//            std::cout << "This is how you can generate a banded matrix: ./Saena <local size> <bandwidth>" << std::endl;
+            std::cout << "This is how you can generate a random symmetric matrix: ./Saena <local size> <density>" << std::endl;
         }
         MPI_Finalize();
         return -1;
@@ -41,10 +42,14 @@ int main(int argc, char* argv[]){
     double t1 = MPI_Wtime();
 
     int M(std::stoi(argv[1]));
-    int band(std::stoi(argv[2]));
+    float dens(std::stof(argv[2]));
 
     saena::matrix A(comm);
-    saena::band_matrix(A, M, band);
+//    saena::band_matrix(A, M, band);
+    saena::random_symm_matrix(A, M, dens);
+
+    saena::matrix B(comm);
+    saena::random_symm_matrix(B, M, dens);
 
     // ********** print matrix and time **********
 
@@ -62,14 +67,15 @@ int main(int argc, char* argv[]){
 
     saena::amg solver;
     saena::matrix C(comm);
-    solver.matmat(&A, &A, &C, true);
+    solver.matmat(&A, &B, &C, true);
 
-    // view A and C
+    // view A, B and C
 //    petsc_viewer(A.get_internal_matrix());
+//    petsc_viewer(B.get_internal_matrix());
 //    petsc_viewer(C.get_internal_matrix());
 
     // check the correctness with PETSc
-//    petsc_check_matmat(A.get_internal_matrix(), A.get_internal_matrix(), C.get_internal_matrix());
+    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
 
 // *************************** matrix-matrix product ****************************
 
