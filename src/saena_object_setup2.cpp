@@ -2250,7 +2250,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     }
 
 #ifdef __DEBUG1__
-    print_vector(AB_temp, -1, "AB_temp", comm);
+//    print_vector(AB_temp, -1, "AB_temp", comm);
 #endif
 
     // =======================================

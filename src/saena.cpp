@@ -672,7 +672,7 @@ int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
     return 0;
 }
 
-
+// Note: the matrix-matrix multiplication only works on symmetric matrices.
 int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C){
 
     m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix(), true);
@@ -1226,6 +1226,10 @@ int saena::random_symm_matrix(saena::matrix &A, index_t M, float density){
     index_t       Mbig  = nprocs * M;
     unsigned long nnz_l = floor(density * M * M);
 
+    if(nnz_l < M){
+        printf("\nThe diagonal entries should be nonzero, so the density is increased to satisfy that.\n");
+    }
+
     //Type of random number distribution
     std::uniform_real_distribution<value_t> dist(0, 1);    //(min, max). this one is for the value of the entries.
     std::uniform_int_distribution<index_t>  dist2(0, M-1); //(min, max). this one is for the indices of the entries.
@@ -1247,14 +1251,19 @@ int saena::random_symm_matrix(saena::matrix &A, index_t M, float density){
     index_t ii, jj;
     value_t vv;
 
+    // The diagonal entries are added. Also, to keep the matrix symmetric, for each generated entry (i, j, v),
+    // the entry (j, i, v) is added.
+    unsigned long nnz_l_updated = (nnz_l - M) / 2;
+
     if(nnz_l > M){
-        for(nnz_t i = 0; i < nnz_l - M; i++) {
+        for(nnz_t i = 0; i < nnz_l_updated; i++) {
             vv = dist(rng);
             ii = dist2(rng2);
             jj = dist2(rng2);
             if(ii != jj){
 //                std::cout << ii << "\t" << jj << "\t" << vv << std::endl;
                 A.set(ii + offset, jj + offset, vv);
+                A.set(jj + offset, ii + offset, vv);        // to keep the matrix symmetric
 //                A.set(dist2(rng2) + offset, dist2(rng2) + offset, dist(rng));
             }
         }
