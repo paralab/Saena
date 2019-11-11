@@ -31,6 +31,11 @@ int saena_matrix::repartition_nnz_initial(){
 
     if(verbose_repartition && rank==0) printf("repartition - step 1!\n");
 
+    if(Mbig == 0){
+        std::cout << "Number of rows of the matrix is 0 in " << __func__ << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     density = (nnz_g / double(Mbig)) / (Mbig);
     last_density_shrink = density;
     last_M_shrink = Mbig;

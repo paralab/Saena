@@ -1234,7 +1234,7 @@ int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value
 }
 
 
-int saena_matrix::print_entry(int ran){
+int saena_matrix::print_entry(int ran, const std::string name){
 
     // if ran >= 0 print_entry the matrix entries on proc with rank = ran
     // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
@@ -1247,7 +1247,8 @@ int saena_matrix::print_entry(int ran){
         index_t iter = 0;
         if (ran >= 0) {
             if (rank == ran) {
-                printf("\nmatrix on proc = %d \n", ran);
+                std::cout << "\nmatrix " << name << " on proc " << ran << std::endl;
+//                printf("\nmatrix on proc = %d \n", ran);
                 printf("nnz = %lu \n", nnz_l);
                 for (auto i:entry) {
                     std::cout << iter << "\t" << i << std::endl;
@@ -1258,7 +1259,8 @@ int saena_matrix::print_entry(int ran){
             for (index_t proc = 0; proc < nprocs; proc++) {
                 MPI_Barrier(comm);
                 if (rank == proc) {
-                    printf("\nmatrix on proc = %d \n", proc);
+                    std::cout << "\nmatrix " << name << " on proc " << proc << std::endl;
+//                    printf("\nmatrix on proc = %d \n", proc);
                     printf("nnz = %lu \n", nnz_l);
                     for (auto i:entry) {
                         std::cout << iter << "\t" << i << std::endl;

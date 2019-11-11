@@ -192,11 +192,10 @@ nnz_t saena::matrix::get_local_nnz(){
     return m_pImpl->nnz_l;
 }
 
-int saena::matrix::print(int ran){
-    m_pImpl->print_entry(ran);
+int saena::matrix::print(int ran, std::string name){
+    m_pImpl->print_entry(ran, name);
     return 0;
 }
-
 
 int saena::matrix::enable_shrink(bool val){
     m_pImpl->enable_shrink = val;

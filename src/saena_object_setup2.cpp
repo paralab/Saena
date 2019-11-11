@@ -238,7 +238,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             index_t C_index;
             value_t C_val;
             index_t temp;
-//                bool C_not_zero = false;
+//            bool C_not_zero = false;
             const index_t *Ac_p = &Ac_scan[0] - B_row_offset;
 
             for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
@@ -2250,7 +2250,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     }
 
 #ifdef __DEBUG1__
-//    print_vector(AB_temp, -1, "AB_temp", comm);
+    print_vector(AB_temp, -1, "AB_temp", comm);
 #endif
 
     // =======================================

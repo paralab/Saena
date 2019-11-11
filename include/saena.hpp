@@ -51,7 +51,7 @@ namespace saena {
         nnz_t get_nnz();
         nnz_t get_local_nnz();
 
-        int print(int ran);
+        int print(int ran, std::string name = "");
 
         int enable_shrink(bool val);
 

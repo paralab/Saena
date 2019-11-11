@@ -47,9 +47,13 @@ int main(int argc, char* argv[]){
     saena::matrix A(comm);
 //    saena::band_matrix(A, M, band);
     saena::random_symm_matrix(A, M, dens);
+    A.assemble();
+//    A.print(-1, "A");
 
     saena::matrix B(comm);
     saena::random_symm_matrix(B, M, dens);
+    B.assemble();
+//    B.print(-1, "B");
 
     // ********** print matrix and time **********
 
@@ -67,7 +71,8 @@ int main(int argc, char* argv[]){
 
     saena::amg solver;
     saena::matrix C(comm);
-    solver.matmat(&A, &B, &C, true);
+    solver.matmat(&A, &B, &C);
+//    C.print(-1);
 
     // view A, B and C
 //    petsc_viewer(A.get_internal_matrix());
