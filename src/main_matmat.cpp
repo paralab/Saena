@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
 //    petsc_viewer(A.get_internal_matrix());
 
 // *************************** checking the correctness of matrix-matrix product ****************************
-
+/*
     saena::amg solver;
     saena::matrix C(comm);
     solver.matmat(&A, &B, &C, true);
@@ -83,35 +83,33 @@ int main(int argc, char* argv[]){
 
     // check the correctness with PETSc
 //    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
-
+*/
 // *************************** matrix-matrix product ****************************
 
-/*
-    double matmat_time = 0;
-    int matmat_iter_warmup = 5;
-    int matmat_iter = 5;
+    double matmat_time        = 0;
+    int    matmat_iter_warmup = 5;
+    int    matmat_iter        = 10;
 
     saena::amg solver;
 //    saena::matrix C(comm);
 
     // warm-up
     for(int i = 0; i < matmat_iter_warmup; i++){
-        solver.matmat_ave(&A, &A, matmat_time);
+        solver.matmat_ave(&A, &B, matmat_time);
     }
 
     MPI_Barrier(comm);
     matmat_time = 0;
     for(int i = 0; i < matmat_iter; i++){
-        solver.matmat_ave(&A, &A, matmat_time);
+        solver.matmat_ave(&A, &B, matmat_time);
     }
 
     if(!rank) printf("Saena matmat:\n%f\n", matmat_time / matmat_iter);
-*/
 
     // *************************** PETSc ****************************
 
-//    petsc_matmat_ave(A.get_internal_matrix(), A.get_internal_matrix(), matmat_iter);
-//    petsc_matmat(A.get_internal_matrix(), A.get_internal_matrix());
+//    petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
+    petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
 
     // *************************** CombBLAS ****************************
 

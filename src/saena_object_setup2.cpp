@@ -97,7 +97,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //    index_t B_row_size_half = A_col_size_half;
 //    index_t B_col_size_half = B_col_size/2;
 
-    int verbose_rank = 1;
+    int verbose_rank = 0;
 #ifdef __DEBUG1__
 //    if(rank==verbose_rank) std::cout << "\n==========================" << __func__ << "==========================\n";
     if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
@@ -1768,6 +1768,201 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // Convert the local transpose of B to CSC
     // =======================================
 
+    // make a copy of entries of B, then change their order to row-major
+    std::vector<cooEntry> B_ent(B->entry);
+    std::sort(B_ent.begin(), B_ent.end(), row_major);
+
+    // todo: change to smart pointers
+//    auto Brv = std::make_unique<vecEntry[]>(B->nnz_l); // row (actually col to have the transpose) and val
+//    auto Bc  = std::make_unique<index_t[]>(B->M+1); // col_idx
+
+//    auto Brv = new vecEntry[B->nnz_l]; // row and val
+//    auto Bc  = new index_t[B->M+1];    // col_idx
+
+    CSCMat Bcsc;
+    Bcsc.nnz      = B->nnz_l;
+    Bcsc.col_sz   = B->M;
+    Bcsc.max_nnz  = B->nnz_max;
+    Bcsc.max_M    = B->M_max;
+    Bcsc.row      = new index_t[Bcsc.nnz];
+    Bcsc.val      = new value_t[Bcsc.nnz];
+    Bcsc.col_scan = new index_t[Bcsc.col_sz + 1];
+
+    std::fill(&Bcsc.col_scan[0], &Bcsc.col_scan[Bcsc.col_sz + 1], 0);
+    index_t *Bc_tmp   = &Bcsc.col_scan[1];
+    index_t *Bc_tmp_p = &Bc_tmp[0] - B->split[rank]; // use this to avoid subtracting a fixed number,
+
+    for(nnz_t i = 0; i < Bcsc.nnz; i++){
+        Bcsc.row[i] = B_ent[i].col;
+        Bcsc.val[i] = B_ent[i].val;
+        Bc_tmp_p[B_ent[i].row]++;
+    }
+
+    for(nnz_t i = 0; i < Bcsc.col_sz; i++){
+        Bcsc.col_scan[i+1] += Bcsc.col_scan[i];
+    }
+
+    Bcsc.split    = B->split;
+    Bcsc.nnz_list = B->nnz_list;
+
+#ifdef __DEBUG1__
+//    B->print_entry(0);
+//    printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
+//    print_array(Bc, B->M+1, 0, "Bc", comm);
+//
+//    std::cout << "\nB: nnz: " << B->nnz_l << std::endl ;
+//    for(index_t j = 0; j < B->M; j++){
+//        for(index_t i = Bcsc.col_scan[j]; i < Bcsc.col_scan[j+1]; i++){
+//            std::cout << std::setprecision(4) << Bcsc.row[i] << "\t" << j << "\t" << Bcsc.val[i] << std::endl;
+//        }
+//    }
+#endif
+
+    // =======================================
+    // Preallocate Memory
+    // =======================================
+
+    // mempool1: used for the dense buffer
+    // mempool2: usages: for A: 1- nnzPerRow_left and 2- orig_row_idx. for B: 3- B_new_col_idx and 4- orig_col_idx
+    // mempool2 size: 2 * A_row_size + 2 * B_col_size
+    // important: it depends if B or transpose of B is being used for the multiplciation. if originl B is used then
+    // B_col_size is B->Mbig, but for the transpos it is B->M, which is scalable.
+    // mempool3: is used to store the the received part of B.
+    // mempool3 size: it should store remote B, so we allocate the max size of B on all the procs.
+    //                sizeof(row index) + sizeof(value) + sizeof(col_scan) =
+    //                nnz * index_t + nnz * value_t + (col_size+1) * index_t
+
+    index_t A_row_size = A->M;
+//    index_t B_col_size = B->Mbig; // for original B
+//    index_t B_col_size = B->M;      // for when tranpose of B is used to do the multiplication.
+
+    mempool1 = new value_t[matmat_size_thre2];
+    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
+
+    // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
+    // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
+    int   valbyidx              = sizeof(value_t) / sizeof(index_t);
+    nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
+    nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
+    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
+          mempool3              = new index_t[2 * send_size_max];
+
+//    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
+//    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
+
+#ifdef __DEBUG1__
+//    if(rank==0) std::cout << "vecbyint = " << vecbyint << std::endl;
+
+//    if(rank==0){
+//        std::cout << "mempool1 size = " << matmat_size_thre2 << std::endl;
+//        std::cout << "mempool2 size = " << 2 * A_row_size + 2 * Bcsc.col_sz << std::endl;
+//        std::cout << "mempool3 size = " << 2 * send_size_max << std::endl;
+//        std::cout << "B->nnz_max = " << B->nnz_max << "\t, B->M_max = " << B->M_max << std::endl;
+//    }
+#endif
+
+    // =======================================
+    // perform the multiplication
+    // =======================================
+
+    saena_matrix C(A->comm);
+    matmat(Acsc, Bcsc, C, send_size_max, matmat_time);
+
+    // =======================================
+    // finalize
+    // =======================================
+
+//    mat_send.clear();
+//    mat_send.shrink_to_fit();
+//    AB_temp.clear();
+//    AB_temp.shrink_to_fit();
+
+//    delete []Arv;
+//    delete []Ac;
+//    delete []Brv;
+//    delete []Bc;
+
+    delete []Acsc.row;
+    delete []Acsc.val;
+    delete []Acsc.col_scan;
+    delete []Bcsc.row;
+    delete []Bcsc.val;
+    delete []Bcsc.col_scan;
+
+    delete[] mempool1;
+    delete[] mempool2;
+    delete[] mempool3;
+
+    return 0;
+}
+
+// older version
+//int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time)
+/*
+int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time){
+    // This version only works on symmetric matrices, since local transpose of B is being used.
+    // this version is only for experiments.
+    // B1 should be symmetric. Because we need its transpose. Use its row indices as column indices and vice versa.
+
+    MPI_Comm comm = A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // =======================================
+    // Convert A to CSC
+    // =======================================
+
+//    auto Arv = new vecEntry[A->nnz_l]; // row and val
+//    auto Ac  = new index_t[A->Mbig+1]; // col_idx
+
+    // todo: change to smart pointers
+//    auto Arv = std::make_unique<vecEntry[]>(A->nnz_l); // row and val
+//    auto Ac  = std::make_unique<index_t[]>(A->Mbig+1); // col_idx
+
+    CSCMat Acsc;
+    Acsc.nnz      = A->nnz_l;
+    Acsc.col_sz   = A->Mbig;
+    Acsc.max_nnz  = A->nnz_max;
+    Acsc.max_M    = A->M_max;
+    Acsc.row      = new index_t[Acsc.nnz];
+    Acsc.val      = new value_t[Acsc.nnz];
+    Acsc.col_scan = new index_t[Acsc.col_sz + 1];
+
+    std::fill(&Acsc.col_scan[0], &Acsc.col_scan[Acsc.col_sz + 1], 0);
+    index_t *Ac_tmp = &Acsc.col_scan[1];
+    for(nnz_t i = 0; i < Acsc.nnz; i++){
+        Acsc.row[i] = A->entry[i].row;
+        Acsc.val[i] = A->entry[i].val;
+        Ac_tmp[A->entry[i].col]++;
+    }
+
+    for(nnz_t i = 0; i < Acsc.col_sz; i++){
+        Acsc.col_scan[i+1] += Acsc.col_scan[i];
+    }
+
+    Acsc.split    = A->split;
+    Acsc.nnz_list = A->nnz_list;
+
+#ifdef __DEBUG1__
+//    A->print_entry(0);
+//    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
+//    print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
+//    print_array(Acsc.val, Acsc.nnz, 0, "Acsc.val", comm);
+//    print_array(Acsc.col_scan, Acsc.col_sz + 1, 0, "Acsc.col_scan", comm);
+
+//    std::cout << "\nA: nnz: " << Acsc.nnz << std::endl ;
+//    for(index_t j = 0; j < Acsc.col_sz; j++){
+//        for(index_t i = Acsc.col_scan[j]; i < Acsc.col_scan[j+1]; i++){
+//            std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
+//        }
+//    }
+#endif
+
+    // =======================================
+    // Convert the local transpose of B to CSC
+    // =======================================
+
     std::vector<cooEntry> B_ent(B->entry);
     std::sort(B_ent.begin(), B_ent.end(), row_major);
 
@@ -1865,7 +2060,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // =======================================
 
     saena_matrix C(A->comm);
-    matmat(Acsc, Bcsc, C, matmat_time);
+    matmat(Acsc, Bcsc, C, send_size_max, matmat_time);
 
     // =======================================
     // finalize
@@ -1894,6 +2089,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
     return 0;
 }
+*/
 
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time){
     MPI_Comm comm = C.comm;
