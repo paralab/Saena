@@ -97,7 +97,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //    index_t B_row_size_half = A_col_size_half;
 //    index_t B_col_size_half = B_col_size/2;
 
-    int verbose_rank = 0;
+    int verbose_rank = 1;
 #ifdef __DEBUG1__
 //    if(rank==verbose_rank) std::cout << "\n==========================" << __func__ << "==========================\n";
     if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
@@ -169,13 +169,13 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //        std::cout << "\nA_row_offset = " << A_row_offset << std::endl;
         for (nnz_t i = 0; i < A_col_size; i++) {
             for (nnz_t j = Ac_scan[i]; j < Ac_scan[i+1]; j++) {
-//                std::cout << i << "\t" << A[j].row << "\t" << A[j].row - A_row_offset << std::endl;
+//                if(rank==1) std::cout << j << "\t" << Ar[j] << "\t" << i + A_col_offset << "\t" << Av[j] << std::endl;
                 nnzPerRow_left_p[Ar[j]]++;
             }
         }
 
 #ifdef __DEBUG1__
-//        print_array(nnzPerRow_left, A_row_size, 1, "nnzPerRow_left", comm);
+//        print_array(nnzPerRow_left, A_row_size, verbose_rank, "nnzPerRow_left", comm);
 #endif
 
         index_t *A_new_row_idx   = &nnzPerRow_left[0];
@@ -192,8 +192,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 
 #ifdef __DEBUG1__
-//        print_array(orig_row_idx,  A_nnz_row_sz, 1, "orig_row_idx",  comm);
-//        print_array(A_new_row_idx, A_row_size,   1, "A_new_row_idx", comm);
+//        print_array(orig_row_idx,  A_nnz_row_sz, verbose_rank, "orig_row_idx",  comm);
+//        print_array(A_new_row_idx, A_row_size,   verbose_rank, "A_new_row_idx", comm);
 #endif
 
         index_t *B_new_col_idx   = &mempool2[A_row_size * 2];
@@ -203,21 +203,21 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         for (index_t i = 0; i < B_col_size; i++) {
             if (Bc_scan[i+1] != Bc_scan[i]) {
+//                if(rank==0) printf("orig_col_idx index = %u\n", (A_row_size * 2 + B_col_size) + B_nnz_col_sz);
                 B_new_col_idx[i] = B_nnz_col_sz;
                 orig_col_idx[B_nnz_col_sz] = i + B_col_offset;
                 B_nnz_col_sz++;
             }
         }
 
-
 #ifdef __DEBUG1__
 //        std::cout << "orig_col_idx max: " << A_row_size * 2 + B_col_size + B_nnz_col_sz - 1 << std::endl;
 
-//        print_array(orig_col_idx,  B_nnz_col_sz, 1, "B orig_col_idx", comm);
-//        print_array(B_new_col_idx, B_col_size,   1, "B_new_col_idx",  comm);
+//        print_array(orig_col_idx,  B_nnz_col_sz, verbose_rank, "B orig_col_idx", comm);
+//        print_array(B_new_col_idx, B_col_size,   verbose_rank, "B_new_col_idx",  comm);
 
-//        printf("A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
-//            A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
+//        printf("rank %d: A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
+//            rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
@@ -322,7 +322,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                     for (index_t i = 0; i < A_nnz_row_sz; i++) {
                         temp2 = i + temp;
                         if(mapbit[temp2]){
-//                                if(rank==0) std::cout << i << "\t" << j << "\t" << temp2 << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
+//                            if(rank==verbose_rank) std::cout << i << "\t" << j << "\t" << temp2 << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
                             C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[temp2]);
                         }
                     }
@@ -1581,7 +1581,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //    index_t B_col_size = B->M;      // for when tranpose of B is used to do the multiplication.
 
     mempool1 = new value_t[matmat_size_thre2];
-    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.col_sz];
+    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
 
     // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
@@ -1589,13 +1589,20 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
-          mempool3              = new index_t[2 * (send_size_max)];
+          mempool3              = new index_t[2 * send_size_max];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
 
 #ifdef __DEBUG1__
 //    if(rank==0) std::cout << "vecbyint = " << vecbyint << std::endl;
+
+//    if(rank==0){
+//        std::cout << "mempool1 size = " << matmat_size_thre2 << std::endl;
+//        std::cout << "mempool2 size = " << 2 * A_row_size + 2 * Bcsc.col_sz << std::endl;
+//        std::cout << "mempool3 size = " << 2 * send_size_max << std::endl;
+//        std::cout << "B->nnz_max = " << B->nnz_max << "\t, B->M_max = " << B->M_max << std::endl;
+//    }
 #endif
 
     // =======================================
@@ -1829,7 +1836,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    index_t B_col_size = B->M;      // for when tranpose of B is used to do the multiplication.
 
     mempool1 = new value_t[matmat_size_thre2];
-    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.col_sz];
+    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
 
     // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
@@ -1837,13 +1844,20 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
-    mempool3                    = new index_t[2 * (send_size_max)];
+    mempool3                    = new index_t[2 * send_size_max];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
 
 #ifdef __DEBUG1__
 //    if(rank==0) std::cout << "valbyidx = " << valbyidx << std::endl;
+
+//    if(rank==0){
+//        std::cout << "mempool1 size = " << matmat_size_thre2 << std::endl;
+//        std::cout << "mempool2 size = " << 2 * A_row_size + 2 * Bcsc.col_sz << std::endl;
+//        std::cout << "mempool3 size = " << 2 * send_size_max << std::endl;
+//        std::cout << "B->nnz_max = " << B->nnz_max << "\t, B->M_max = " << B->M_max << std::endl;
+//    }
 #endif
 
     // =======================================
@@ -1971,8 +1985,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
             MPI_Barrier(comm);
             if (rank == verbose_rank) printf("matmat: step 2\n");
             MPI_Barrier(comm);
-            print_vector(Bcsc.split, 0, "Bcsc.split", comm);
-            print_vector(Bcsc.nnz_list, 0, "Bcsc.nnz_list", comm);
+//            print_vector(Bcsc.split, 0, "Bcsc.split", comm);
+//            print_vector(Bcsc.nnz_list, 0, "Bcsc.nnz_list", comm);
 //            MPI_Barrier(comm);
         }
 //        print_array(mat_send_cscan, Bcsc.col_sz+1, 1, "mat_send_cscan", comm);
@@ -3078,6 +3092,11 @@ int saena_object::triple_mat_mult(Grid *grid){
 //        if (rank == 0) std::cout << "send_size_max_RA: "     << send_size_max_RA
 //                                 << ",\tsend_size_max_RAP: " << send_size_max_RAP
 //                                 << ",\tsend_size_max: "     << send_size_max << ",\tvalbyidx:" << valbyidx << std::endl;
+//        if(rank==0){
+//            std::cout << "mempool1 size = " << matmat_size_thre2 << std::endl;
+//            std::cout << "mempool2 size = " << 2 * R_row_size + 2 * max_col_sz << std::endl;
+//            std::cout << "mempool3 size = " << 2 * send_size_max << std::endl;
+//        }
 //        MPI_Barrier(comm);
     }
 //    if(rank==0) std::cout << "valbyidx = " << valbyidx << std::endl;

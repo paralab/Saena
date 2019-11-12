@@ -36,7 +36,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    if(!rank) std::cout << "nprocs = " << nprocs << std::endl;
+    if(!rank) std::cout << "nprocs = " << nprocs << "\n\n";
 
     // *************************** initialize the matrix: banded ****************************
     double t1 = MPI_Wtime();
@@ -47,13 +47,15 @@ int main(int argc, char* argv[]){
     saena::matrix A(comm);
 //    saena::band_matrix(A, M, band);
     saena::random_symm_matrix(A, M, dens);
-    A.assemble();
+
 //    A.print(-1, "A");
+//    A.get_internal_matrix()->print_info(-1, "A");
 
     saena::matrix B(comm);
     saena::random_symm_matrix(B, M, dens);
-    B.assemble();
+
 //    B.print(-1, "B");
+//    B.get_internal_matrix()->print_info(-1, "B");
 
     // ********** print matrix and time **********
 
@@ -71,7 +73,7 @@ int main(int argc, char* argv[]){
 
     saena::amg solver;
     saena::matrix C(comm);
-    solver.matmat(&A, &B, &C);
+    solver.matmat(&A, &B, &C, true);
 //    C.print(-1);
 
     // view A, B and C
@@ -80,7 +82,7 @@ int main(int argc, char* argv[]){
 //    petsc_viewer(C.get_internal_matrix());
 
     // check the correctness with PETSc
-    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
+//    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
 
 // *************************** matrix-matrix product ****************************
 

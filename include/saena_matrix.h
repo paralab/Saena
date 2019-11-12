@@ -274,7 +274,7 @@ public:
     int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
 
     int print_entry(int ran, std::string name = "");
-    int print_info(int ran);
+    int print_info(int ran, std::string name = "");
     int writeMatrixToFile();
     int writeMatrixToFile(const char *folder_name);
 

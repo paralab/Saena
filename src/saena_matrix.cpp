@@ -1275,7 +1275,7 @@ int saena_matrix::print_entry(int ran, const std::string name){
 }
 
 
-int saena_matrix::print_info(int ran) {
+int saena_matrix::print_info(int ran, const std::string name) {
 
     // if ran >= 0 print the matrix info on proc with rank = ran
     // otherwise print the matrix info on all processors in order. (first on proc 0, then proc 1 and so on.)
@@ -1286,16 +1286,16 @@ int saena_matrix::print_info(int ran) {
 
     if(ran >= 0) {
         if (rank == ran) {
-            printf("\nmatrix A info on proc = %d \n", ran);
+            std::cout << "\nmatrix " << name << " info on proc " << ran << std::endl;
             printf("Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", Mbig, M, nnz_g, nnz_l);
         }
     } else{
         MPI_Barrier(comm);
-        if(rank==0) printf("\nmatrix A info:      Mbig = %u, \tnnz_g = %lu \n", Mbig, nnz_g);
+        if(rank==0) printf("\nmatrix %s info:      Mbig = %u, \tnnz_g = %lu \n", name.c_str(), Mbig, nnz_g);
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("matrix A on rank %d: M    = %u, \tnnz_l = %lu \n", proc, M, nnz_l);
+                printf("matrix %s on rank %d: M    = %u, \tnnz_l = %lu \n", name.c_str(), proc, M, nnz_l);
             }
             MPI_Barrier(comm);
         }
