@@ -36,7 +36,9 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    if(!rank) std::cout << "nprocs = " << nprocs << "\n\n";
+#pragma omp parallel default(none) shared(rank, nprocs)
+    if(!rank && omp_get_thread_num()==0)
+        printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
 
     // *************************** initialize the matrix: banded ****************************
     double t1 = MPI_Wtime();
@@ -84,13 +86,24 @@ int main(int argc, char* argv[]){
     // check the correctness with PETSc
 //    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
 */
+
+// *************************** print info ****************************
+
+    saena::amg solver;
+
+    if(!rank){
+        printf("A.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n", A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g,
+                B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
+        printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
+    }
+
 // *************************** matrix-matrix product ****************************
 
     double matmat_time        = 0;
     int    matmat_iter_warmup = 5;
     int    matmat_iter        = 10;
 
-    saena::amg solver;
+//    saena::amg solver;
 //    saena::matrix C(comm);
 
     // warm-up
@@ -104,12 +117,12 @@ int main(int argc, char* argv[]){
         solver.matmat_ave(&A, &B, matmat_time);
     }
 
-    if(!rank) printf("Saena matmat:\n%f\n", matmat_time / matmat_iter);
+    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
 
     // *************************** PETSc ****************************
 
 //    petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
-    petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
+//    petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
 
     // *************************** CombBLAS ****************************
 
