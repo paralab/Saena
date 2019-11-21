@@ -72,10 +72,10 @@ int main(int argc, char* argv[]){
 //    petsc_viewer(A.get_internal_matrix());
 
 // *************************** checking the correctness of matrix-matrix product ****************************
-/*
-    saena::amg solver;
-    saena::matrix C(comm);
-    solver.matmat(&A, &B, &C, true);
+
+//    saena::amg solver;
+//    saena::matrix C(comm);
+//    solver.matmat(&A, &B, &C, true);
 //    C.print(-1);
 
     // view A, B and C
@@ -85,7 +85,6 @@ int main(int argc, char* argv[]){
 
     // check the correctness with PETSc
 //    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
-*/
 
 // *************************** print info ****************************
 
@@ -94,13 +93,13 @@ int main(int argc, char* argv[]){
     if(!rank){
         printf("A.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n", A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g,
                 B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
-        printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
+//        printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
     }
 
 // *************************** matrix-matrix product ****************************
 
     double matmat_time        = 0;
-    int    matmat_iter_warmup = 5;
+    int    matmat_iter_warmup = 1;
     int    matmat_iter        = 10;
 
 //    saena::amg solver;
@@ -111,13 +110,13 @@ int main(int argc, char* argv[]){
         solver.matmat_ave(&A, &B, matmat_time);
     }
 
-    MPI_Barrier(comm);
-    matmat_time = 0;
-    for(int i = 0; i < matmat_iter; i++){
-        solver.matmat_ave(&A, &B, matmat_time);
-    }
+//    MPI_Barrier(comm);
+//    matmat_time = 0;
+//    for(int i = 0; i < matmat_iter; i++){
+//        solver.matmat_ave(&A, &B, matmat_time);
+//    }
 
-    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
+//    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
 
     // *************************** PETSc ****************************
 

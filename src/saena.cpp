@@ -1219,9 +1219,10 @@ int saena::random_symm_matrix(saena::matrix &A, index_t M, float density){
     index_t       Mbig  = nprocs * M;
     unsigned long nnz_l = floor(density * M * Mbig);
 
-    if(nnz_l < M){
-        printf("\nrank %d: The diagonal entries should be nonzero, so the density is increased to satisfy that.\n", rank);
-    }
+//    if(nnz_l < M){
+//        printf("\nrank %d: The diagonal entries should be nonzero, so the density is increased to satisfy that.\n"
+//               "nnz_l = %ld, density = %f, M = %u, Mbig = %u\n", rank, nnz_l, density, M, Mbig);
+//    }
 
     //Type of random number distribution
     std::uniform_real_distribution<value_t> dist(0, 1);       //(min, max). this one is for the value of the entries.
