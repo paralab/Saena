@@ -99,8 +99,8 @@ int main(int argc, char* argv[]){
 // *************************** matrix-matrix product ****************************
 
     double matmat_time        = 0;
-    int    matmat_iter_warmup = 1;
-    int    matmat_iter        = 10;
+    int    matmat_iter_warmup = 5;
+    int    matmat_iter        = 5;
 
 //    saena::amg solver;
 //    saena::matrix C(comm);
@@ -110,13 +110,15 @@ int main(int argc, char* argv[]){
         solver.matmat_ave(&A, &B, matmat_time);
     }
 
-//    MPI_Barrier(comm);
-//    matmat_time = 0;
-//    for(int i = 0; i < matmat_iter; i++){
-//        solver.matmat_ave(&A, &B, matmat_time);
-//    }
+    MPI_Barrier(comm);
+    matmat_time = 0;
+    for(int i = 0; i < matmat_iter; i++){
+        solver.matmat_ave(&A, &B, matmat_time);
+    }
 
-//    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
+    // matmat_ave computes the average matmat time on processor 0.
+    // so it is fine to just print the time on proc 0.
+    if(!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
 
     // *************************** PETSc ****************************
 
