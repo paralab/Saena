@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 project(Saena)
 
 #set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD 14) #CombBLAS required 14
+set(CMAKE_CXX_STANDARD 14) #CombBLAS requires 14
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -57,6 +57,16 @@ set(METIS_LIBRARY        ${CMAKE_BINARY_DIR}/build_metis/lib/libmetis.so)
 set(PARMETIS_LIBRARY     ${CMAKE_BINARY_DIR}/build_parmetis/lib/libparmetis.a)
 set(METIS_INCLUDE_DIR    ${CMAKE_BINARY_DIR}/build_metis/include)
 set(PARMETIS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/build_parmetis/include)
+
+# -----------------------------------------------------------------------
+# BOOST
+
+#find_package(BOOST REQUIRED)
+#message(STATUS BOOST found: ${BOOST_LIBRARIES})
+#include_directories(${Boost_INCLUDE_DIRS})
+
+# For Colorado Summit cluster:
+#include_directories("/curc/sw/intel/17.4/mkl/include")
 
 # -----------------------------------------------------------------------
 # BLAS
@@ -124,6 +134,7 @@ include_directories(
 #PETSc
 
 set(PETSC_DIR "~/Software/petsc-3.8.4")
+#set(PETSC_DIR "~/softwares/petsc-3.8.0")
 #set(PETSC_ARCH "arch-linux2-c-debug")
 set(PETSC_ARCH "arch-linux2-c-opt")
 set(PETSC_LIB ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so)
@@ -135,11 +146,10 @@ include_directories(
 # -----------------------------------------------------------------------
 #CombBLAS
 
-#set(COMBBLAS_DIR /home/majidrp/Software/CombBLAS_beta_16_2)
-#include_directories("${COMBBLAS_DIR}/install/include")
-#set(COMBBLAS_LIB ${COMBBLAS_DIR}/install/lib/libCombBLAS.a)
-
-#include_directories("${COMBBLAS_DIR}")
+#set(COMBBLAS_DIR /home/boss/Software/CombBLAS_beta_16_2)
+set(COMBBLAS_DIR /home/majidrp/Software/CombBLAS_beta_16_2)
+include_directories("${COMBBLAS_DIR}/install/include")
+set(COMBBLAS_LIB ${COMBBLAS_DIR}/install/lib/libCombBLAS.a)
 
 # -----------------------------------------------------------------------
 # dollar (profiler)
@@ -152,9 +162,17 @@ include_directories(
 # -----------------------------------------------------------------------
 # trsl: for sampling
 
-set(TRSL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/trsl-0.2.2)
+#set(TRSL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/trsl-0.2.2)
+#include_directories(
+#        ${TRSL_DIR}
+#)
+
+# -----------------------------------------------------------------------
+# sparsepp: alternative for unordered_map and unordered_set
+
+set(SPARSEPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/sparsepp)
 include_directories(
-        ${TRSL_DIR}
+        ${SPARSEPP_DIR}
 )
 
 # -----------------------------------------------------------------------
@@ -164,27 +182,30 @@ include_directories(include)
 
 set(HEADER_FILES ${HEADER_FILES}
         include/saena.hpp
+        include/aux_functions.h
+        include/data_struct.h
         include/saena_matrix.h
         include/saena_matrix_dense.h
         include/saena_object.h
         include/strength_matrix.h
         include/prolong_matrix.h
         include/restrict_matrix.h
-        include/aux_functions.h
         include/grid.h
+        include/saena_vector.h
         include/petsc_functions.h
-//        include/combblas_functions.h
+#        include/combblas_functions.h
         )
 
 set(SOURCE_FILES ${SOURCE_FILES}
         ${HEADER_FILES}
         src/saena.cpp
-        src/saena_matrix_dense.cpp
+        src/aux_functions.cpp
+        src/data_struct.cpp
         src/strength_matrix.cpp
         src/prolong_matrix.cpp
         src/restrict_matrix.cpp
-        src/aux_functions.cpp
-        src/grid.cpp
+        src/saena_matrix_dense.cpp
+        src/saena_vector.cpp
 
         src/saena_matrix.cpp
         src/saena_matrix_repart.cpp
@@ -196,16 +217,17 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_object.cpp
         src/saena_object_setup1.cpp
         src/saena_object_setup2.cpp
+#        src/saena_object_setup2_backup.cpp
         src/saena_object_solve.cpp
         src/saena_object_lazy.cpp
         src/saena_object_repart_shrink.cpp
         src/saena_object_sparsify.cpp
         src/saena_object_elemental.cpp
         src/saena_object_write2file.cpp
-        src/saena_object_setup2_test.cpp
+#        src/saena_object_setup2_test.cpp
 
         src/petsc_functions.cpp
-//        src/combblas_functions.cpp
+#        src/combblas_functions.cpp
         )
 
 # -----------------------------------------------------------------------
@@ -213,14 +235,20 @@ set(SOURCE_FILES ${SOURCE_FILES}
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=c++14 -DTHREADED -fopenmp -DNDEBUG -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -Drestrict=__restrict__ -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 
-add_executable(Saena           src/main.cpp           ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena_read_file src/main_read_file.cpp ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena2_read_file src/main_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
-add_executable(Saena_band       src/main_band_matrix.cpp ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena                   src/main.cpp               ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_read_file         src/main_read_file.cpp     ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena2_read_file        src/main_read_2file.cpp    ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_band              src/main_band_matrix.cpp   ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Saena_matmat            src/main_matmat.cpp        ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_lazy              src/main_lazy.cpp          ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_matmat_read_2file src/main_matmat_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 # -----------------------------------------------------------------------
 
-target_link_libraries(Saena            ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
+#target_link_libraries(Saena            ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
 #target_link_libraries(Saena_read_file  ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
 #target_link_libraries(Saena2_read_file ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
-target_link_libraries(Saena_band       ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
+#target_link_libraries(Saena_band       ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
+target_link_libraries(Saena_matmat     ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
+#target_link_libraries(Saena_lazy       ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
+#target_link_libraries(Saena_matmat_read_2file ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
