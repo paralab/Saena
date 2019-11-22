@@ -6,7 +6,7 @@
 
 # Required version
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99")
 
 # Project version numbers
 project(SuperLU_DIST C)
@@ -70,7 +70,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 
 # when building, don't use the install RPATH already
 # (but later on when installing)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 # the RPATH to be used when installing
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -126,7 +126,7 @@ endif()
 if(NOT MSVC)
   include(GNUInstallDirs)
   set(default_install_inc_dir ${CMAKE_INSTALL_INCLUDEDIR})
-#  set(default_install_lib_dir ${CMAKE_INSTALL_LIBDIR}) 
+#  set(default_install_lib_dir ${CMAKE_INSTALL_LIBDIR})
   set(default_install_lib_dir "lib") # changed by Majid
   set(default_install_bin_dir ${CMAKE_INSTALL_BINDIR})
 else()
@@ -146,7 +146,7 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 set(XSDK_INDEX_SIZE 32)
 if(XSDK_INDEX_SIZE EQUAL 32)
     message("-- Using 32 bit integer for index size")
-endif()	
+endif()
 set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
 
