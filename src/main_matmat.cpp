@@ -63,7 +63,6 @@ int main(int argc, char* argv[]){
     float dens(std::stof(argv[2]));
 
     saena::matrix A(comm);
-//    saena::band_matrix(A, M, band);
     saena::random_symm_matrix(A, M, dens);
 
 //    A.print(-1, "A");
@@ -105,11 +104,11 @@ int main(int argc, char* argv[]){
         solver.matmat(&A, &B, &C, true);
 
 //        C.get_internal_matrix()->print_info(0);
-        //    C.print(-1);
+//        C.print(-1);
 
         // view A, B and C
-    //    petsc_viewer(A.get_internal_matrix());
-    //    petsc_viewer(B.get_internal_matrix());
+//        petsc_viewer(A.get_internal_matrix());
+//        petsc_viewer(B.get_internal_matrix());
 //        petsc_viewer(C.get_internal_matrix());
 
         // check the correctness with PETSc
@@ -123,7 +122,7 @@ int main(int argc, char* argv[]){
             printf("A.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n", A.get_internal_matrix()->Mbig,
                    A.get_internal_matrix()->nnz_g,
                    B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
-    //        printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
+//            printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
         }
 
 // *************************** matrix-matrix product ****************************
@@ -132,8 +131,8 @@ int main(int argc, char* argv[]){
         int matmat_iter_warmup = 5;
         int matmat_iter = 5;
 
-    //    saena::amg solver;
-    //    saena::matrix C(comm);
+//        saena::amg solver;
+//        saena::matrix C(comm);
 
         // warm-up
         for (int i = 0; i < matmat_iter_warmup; i++) {
@@ -155,12 +154,15 @@ int main(int argc, char* argv[]){
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
         petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
     }
+
     // *************************** CombBLAS ****************************
 
-//    combblas_matmult_DoubleBuff(Aname, Aname);
-//    combblas_matmult_Synch(Aname, Aname);
-    combblas_matmult_experiment(Aname, Aname, comm);
-//    combblas_GalerkinNew();
+    {
+//        combblas_matmult_DoubleBuff(Aname, Aname);
+//        combblas_matmult_Synch(Aname, Aname);
+        combblas_matmult_experiment(Aname, Aname, comm);
+//        combblas_GalerkinNew();
+    }
 
     // *************************** finalize ****************************
 
