@@ -26,11 +26,12 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 3){
-        if(rank == 0){
+    if(argc != 2){
+        if(!rank){
 //            std::cout << "This is how you can generate a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
 //            std::cout << "This is how you can generate a banded matrix: ./Saena <local size> <bandwidth>" << std::endl;
-            std::cout << "This is how you can generate a random symmetric matrix: ./Saena <local size> <density>" << std::endl;
+//            std::cout << "This is how you can generate a random symmetric matrix: ./Saena <local size> <density>" << std::endl;
+            std::cout << "This is how you can read a matrix from a file: ./Saena <MatrixA>" << std::endl;
         }
         MPI_Finalize();
         return -1;
@@ -40,9 +41,23 @@ int main(int argc, char* argv[]){
     if(!rank && omp_get_thread_num()==0)
         printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
 
-    // *************************** initialize the matrix: banded ****************************
+    // *************************** initialize the matrix ****************************
+
     double t1 = MPI_Wtime();
 
+    // *************************** option 1: banded ****************************
+/*
+    int M(std::stoi(argv[1]));
+    int band(std::stoi(argv[2]));
+
+    saena::matrix A(comm);
+    saena::band_matrix(A, M, band);
+
+//    A.print(-1, "A");
+//    A.get_internal_matrix()->print_info(-1, "A");
+*/
+    // *************************** option 2: random symmetric ****************************
+/*
     int M(std::stoi(argv[1]));
     float dens(std::stof(argv[2]));
 
@@ -58,6 +73,16 @@ int main(int argc, char* argv[]){
 
 //    B.print(-1, "B");
 //    B.get_internal_matrix()->print_info(-1, "B");
+*/
+    // *************************** option 3: read from file ****************************
+
+    char* Aname(argv[1]);
+    saena::matrix A (comm);
+//    A.read_file(Aname);
+    A.read_file(Aname, "triangle");
+    A.assemble();
+
+    saena::matrix B (A);
 
     // ********** print matrix and time **********
 
@@ -68,14 +93,13 @@ int main(int argc, char* argv[]){
 //    A.print(0);
 //    A.get_internal_matrix()->print_info(0);
 //    A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
-
 //    petsc_viewer(A.get_internal_matrix());
 
 // *************************** checking the correctness of matrix-matrix product ****************************
 
-//    saena::amg solver;
-//    saena::matrix C(comm);
-//    solver.matmat(&A, &B, &C, true);
+    saena::amg solver;
+    saena::matrix C(comm);
+    solver.matmat(&A, &B, &C, true);
 //    C.print(-1);
 
     // view A, B and C
@@ -88,7 +112,7 @@ int main(int argc, char* argv[]){
 
 // *************************** print info ****************************
 
-    saena::amg solver;
+//    saena::amg solver;
 
     if(!rank){
         printf("A.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n", A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g,
