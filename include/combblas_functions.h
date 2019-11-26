@@ -20,8 +20,9 @@ public:
 
 #define ElementType double
 
-int combblas_matmult_DoubleBuff();
-int combblas_matmult_Synch();
+int combblas_matmult_DoubleBuff(const string &Aname, const string &Bname);
+int combblas_matmult_Synch(const string &Aname, const string &Bname);
+int combblas_matmult_experiment(const string &Aname, const string &Bname, MPI_Comm comm);
 int combblas_GalerkinNew();
 
 #endif //SAENA_COMBBLAS_FUNCTIONS_H

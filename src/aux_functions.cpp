@@ -5,7 +5,6 @@
 #include <random>
 #include <fstream>
 #include <cmath>
-#include <math.h>
 #include <sys/stat.h>
 
 class saena_matrix;
