@@ -75,7 +75,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
             if (inFile_check_bin.is_open()) {
 
                 if (rank == 0)
-                    std::cout << "\nA binary file with the same name exists. Using that file instead of the mtx"
+                    std::cout << "A binary file with the same name exists. Using that file instead of the mtx"
                                  " file.\n\n";
                 inFile_check_bin.close();
 
@@ -84,7 +84,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                 // write the file in binary by proc 0.
                 if (rank == 0) {
 
-                    std::cout << "\nFirst a binary file with name \"" << bin_filename
+                    std::cout << "First a binary file with name \"" << bin_filename
                               << "\" will be created in the same directory. \n\n";
 
                     std::string outFileName = filename.substr(0, extIndex) + ".bin";
