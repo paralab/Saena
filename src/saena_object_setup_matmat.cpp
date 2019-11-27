@@ -2618,9 +2618,9 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-    print_time_ave(t1, "prepare", comm);
-    print_time_ave(t2, "comm and multiply", comm);
-    print_time_ave(t3, "sort", comm);
+    print_time(t1, "prepare", comm);
+    print_time(t2, "comm and multiply", comm);
+    print_time(t3, "sort", comm);
 
     return 0;
 }

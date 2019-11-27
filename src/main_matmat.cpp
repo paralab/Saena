@@ -128,8 +128,8 @@ int main(int argc, char* argv[]){
 // *************************** matrix-matrix product ****************************
 
         double matmat_time = 0;
-        int matmat_iter_warmup = 5;
-        int matmat_iter = 5;
+        int matmat_iter_warmup = 3;
+        int matmat_iter = 1;
 
 //        saena::amg solver;
 //        saena::matrix C(comm);
@@ -140,6 +140,9 @@ int main(int argc, char* argv[]){
         }
 
         MPI_Barrier(comm);
+        if (!rank) printf("\n\n");
+        MPI_Barrier(comm);
+
         matmat_time = 0;
         for (int i = 0; i < matmat_iter; i++) {
             solver.matmat_ave(&A, &B, matmat_time);
@@ -151,19 +154,19 @@ int main(int argc, char* argv[]){
 
         // *************************** PETSc ****************************
 
-        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
+//        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
 //        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
     }
 
     // *************************** CombBLAS ****************************
-
+/*
     {
 //        combblas_matmult_DoubleBuff(Aname, Aname);
 //        combblas_matmult_Synch(Aname, Aname);
         combblas_matmult_experiment(Aname, Aname, comm);
 //        combblas_GalerkinNew();
     }
-
+*/
     // *************************** finalize ****************************
 
 //    if(rank==0) dollar::text(std::cout);
