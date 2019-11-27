@@ -2563,6 +2563,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
         MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
 
+        /*
         if(Acsc.nnz == 0 || send_nnz==0){ // skip!
 
         } else {
@@ -2575,7 +2576,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                     Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
                     AB_temp, comm);
         }
-
+*/
+        
         MPI_Waitall(2, requests, statuses);
 
         send_size = recv_size;
