@@ -287,6 +287,13 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
     nnz_g = st.st_size / (2*sizeof(index_t) + sizeof(value_t));
 
+    if(nnz_g == 0){
+        std::ostringstream errmsg;
+        errmsg << "number of nonzeros is 0 on rank " << rank << "inside function " << __func__ << std::endl;
+        std::cout << errmsg.str();
+        exit(EXIT_FAILURE);
+    }
+
     // find initial local nonzero
     initial_nnz_l = nnz_t(floor(1.0 * nnz_g / nprocs)); // initial local nnz
     if (rank == nprocs - 1) {
