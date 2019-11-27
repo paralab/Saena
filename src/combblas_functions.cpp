@@ -1,5 +1,5 @@
 #include "combblas_functions.h"
-#include <aux_functions.h>
+#include "aux_functions.h"
 
 #include <mpi.h>
 #include <sys/time.h>
@@ -8,10 +8,20 @@
 #include <algorithm>
 #include <vector>
 #include <sstream>
-//#include "CombBLAS/CombBLAS.h"
 
+#define COMBBLAS_ITER 5
+#define ElementType double
 
-//double print_time_ave(double t_dif, const std::string &function_name, MPI_Comm comm);
+// Simple helper class for declarations: Just the numerical type is templated
+// The index type and the sequential matrix type stays the same for the whole code
+// In this case, they are "int" and "SpDCCols"
+template <class NT>
+class PSpMat
+{
+public:
+    typedef SpDCCols < int, NT > DCCols;
+    typedef SpParMat < int, NT, DCCols > MPI_DCCols;
+};
 
 
 int combblas_matmult_DoubleBuff(const string &Aname, const string &Bname){
@@ -44,7 +54,7 @@ int combblas_matmult_DoubleBuff(const string &Aname, const string &Bname){
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Pcontrol(1,"SpGEMM_DoubleBuff");
     double t1 = MPI_Wtime(); 	// initilize (wall-clock) timer
-    for(int i=0; i<ITERATIONS; i++)
+    for(int i=0; i<COMBBLAS_ITER; i++)
     {
         PSpMat<ElementType>::MPI_DCCols C = Mult_AnXBn_DoubleBuff<PTDOUBLEDOUBLE, ElementType, PSpMat<ElementType>::DCCols >(A, B);
     }
@@ -54,7 +64,7 @@ int combblas_matmult_DoubleBuff(const string &Aname, const string &Bname){
     if(myrank == 0)
     {
         cout<<"Double buffered multiplications finished"<<endl;
-        printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)ITERATIONS);
+        printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)COMBBLAS_ITER);
     }
 
     return 0;
@@ -92,7 +102,7 @@ int combblas_matmult_Synch(const string &Aname, const string &Bname){
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Pcontrol(1,"SpGEMM_Synch");
     double t1 = MPI_Wtime(); 	// initilize (wall-clock) timer
-    for(int i=0; i<ITERATIONS; i++)
+    for(int i=0; i<COMBBLAS_ITER; i++)
     {
         PSpMat<ElementType>::MPI_DCCols C = Mult_AnXBn_Synch<PTDOUBLEDOUBLE, ElementType, PSpMat<ElementType>::DCCols >(A, B);
     }
@@ -102,7 +112,7 @@ int combblas_matmult_Synch(const string &Aname, const string &Bname){
     if(myrank == 0)
     {
         cout<<"Synchronous multiplications finished"<<endl;
-        printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)ITERATIONS);
+        printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)COMBBLAS_ITER);
     }
 
     return 0;
@@ -147,7 +157,7 @@ int combblas_matmult_experiment(const string &Aname, const string &Bname, MPI_Co
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Pcontrol(1,"SpGEMM_DoubleBuff");
         double t1 = MPI_Wtime(); 	// initialize (wall-clock) timer
-        for(int i=0; i<ITERATIONS; i++)
+        for(int i=0; i<COMBBLAS_ITER; i++)
         {
             PSpMat<ElementType>::MPI_DCCols C = Mult_AnXBn_DoubleBuff<PTDOUBLEDOUBLE, ElementType, PSpMat<ElementType>::DCCols >(A, B);
         }
@@ -155,11 +165,11 @@ int combblas_matmult_experiment(const string &Aname, const string &Bname, MPI_Co
         double t2 = MPI_Wtime();
         MPI_Pcontrol(-1,"SpGEMM_DoubleBuff");
 
-        print_time_ave((t2-t1)/(double)ITERATIONS, "CombBLAS double buffered multiplication", comm);
+        print_time_ave((t2-t1)/(double)COMBBLAS_ITER, "CombBLAS double buffered multiplication", comm);
 //        if(myrank == 0)
 //        {
 //            cout<<"CombBLAS double buffered multiplication:"<<endl;
-//            printf("%.6lf \n", (t2-t1)/(double)ITERATIONS);
+//            printf("%.6lf \n", (t2-t1)/(double)COMBBLAS_ITER);
 //        }
 
         {// force the calling of C's destructor
@@ -174,7 +184,7 @@ int combblas_matmult_experiment(const string &Aname, const string &Bname, MPI_Co
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Pcontrol(1,"SpGEMM_Synch");
         t1 = MPI_Wtime(); 	// initilize (wall-clock) timer
-        for(int i=0; i<ITERATIONS; i++)
+        for(int i=0; i<COMBBLAS_ITER; i++)
         {
             PSpMat<ElementType>::MPI_DCCols C = Mult_AnXBn_Synch<PTDOUBLEDOUBLE, ElementType, PSpMat<ElementType>::DCCols >(A, B);
         }
@@ -182,11 +192,11 @@ int combblas_matmult_experiment(const string &Aname, const string &Bname, MPI_Co
         MPI_Pcontrol(-1,"SpGEMM_Synch");
         t2 = MPI_Wtime();
 
-        print_time_ave((t2-t1)/(double)ITERATIONS, "CombBLAS synchronous multiplication", comm);
+        print_time_ave((t2-t1)/(double)COMBBLAS_ITER, "CombBLAS synchronous multiplication", comm);
 //        if(myrank == 0)
 //        {
 //            cout<<"CombBLAS synchronous multiplication:"<<endl;
-//            printf("%.6lf \n", (t2-t1)/(double)ITERATIONS);
+//            printf("%.6lf \n", (t2-t1)/(double)COMBBLAS_ITER);
 //        }
     }
 
@@ -271,7 +281,7 @@ int combblas_GalerkinNew(){
         }
         MPI_Barrier(MPI_COMM_WORLD);
         double t1 = MPI_Wtime(); 	// initilize (wall-clock) timer
-        for(int i=0; i<ITERATIONS; i++)
+        for(int i=0; i<COMBBLAS_ITER; i++)
         {
             PSpMat<double>::MPI_DCCols AT = PSpGEMM<PTDD>(A, T);
             PSpMat<double>::MPI_DCCols SAT = PSpGEMM<PTDD>(S, AT);
@@ -281,12 +291,12 @@ int combblas_GalerkinNew(){
         if(myrank == 0)
         {
             cout<<"Full restriction (without splitting) finished"<<endl;
-            printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)ITERATIONS);
+            printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)COMBBLAS_ITER);
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
         t1 = MPI_Wtime(); 	// initilize (wall-clock) timer
-        for(int i=0; i<ITERATIONS; i++)
+        for(int i=0; i<COMBBLAS_ITER; i++)
         {
 
             PSpMat<double>::MPI_DCCols LT = PSpGEMM<PTDD>(L, T);
@@ -301,28 +311,10 @@ int combblas_GalerkinNew(){
         if(myrank == 0)
         {
             cout<<"Full restriction (with splitting) finished"<<endl;
-            printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)ITERATIONS);
+            printf("%.6lf seconds elapsed per iteration\n", (t2-t1)/(double)COMBBLAS_ITER);
         }
         inputD.clear();inputD.close();
     }
 
     return 0;
 }
-
-/*
-double print_time_ave(double t_dif, const std::string &function_name, MPI_Comm comm){
-
-    int rank, nprocs;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &nprocs);
-
-    double average;
-    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-    average /= nprocs;
-
-    if (rank==0)
-        std::cout << function_name << "\n" << average << std::endl;
-
-    return average;
-}
-*/
