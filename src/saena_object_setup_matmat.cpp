@@ -15,7 +15,7 @@
 #include <mpi.h>
 
 
-double case0 = 0, case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
+double case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
 
 
 void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
@@ -224,7 +224,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
 
-            double t1 = MPI_Wtime();
+            double t11 = MPI_Wtime();
 
             // initialize
             value_t *C_temp = &mempool1[0];
@@ -314,9 +314,14 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            print_array(C_temp, A_nnz_row_sz * B_nnz_col_sz, -1, "C_temp", comm);
 #endif
 
+            t11 = MPI_Wtime() - t11;
+            case11 += t11;
+
             // =======================================
             // Extract nonzeros
             // =======================================
+
+            double t12 = MPI_Wtime();
 
             nnz_t temp2;
             if(mapbit.count()){
@@ -332,7 +337,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                 }
             }
 
-//                t11 = MPI_Wtime() - t11;
+//            t11 = MPI_Wtime() - t11;
+            t12 = MPI_Wtime() - t12;
+            case12 += t12;
 
 #ifdef __DEBUG1__
 //                nnz_t C_nnz = 0; // not required
@@ -360,9 +367,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
 //            }
-
-            t1 = MPI_Wtime() - t1;
-            case1 += t1;
 
             return;
         }
@@ -2128,7 +2132,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
     print_time(case0, "case0", comm);
-    print_time(case1, "case1", comm);
+    print_time(case11, "case11", comm);
+    print_time(case12, "case12", comm);
     print_time(case2, "case2", comm);
     print_time(case3, "case3", comm);
 
