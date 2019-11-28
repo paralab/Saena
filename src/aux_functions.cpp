@@ -129,7 +129,7 @@ double print_time(double t_dif, std::string function_name, MPI_Comm comm){
 }
 
 
-double print_time_ave(double t_dif, std::string function_name, MPI_Comm comm){
+double print_time_ave(double t_dif, std::string function_name, MPI_Comm comm, bool print_time /*= false*/){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -139,8 +139,11 @@ double print_time_ave(double t_dif, std::string function_name, MPI_Comm comm){
     MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
     average /= nprocs;
 
-    if (rank==0)
-        std::cout << function_name << "\n" << average << std::endl;
+//    if (print_time && rank==0)
+//        std::cout << function_name << "\n" << average << std::endl;
+
+    if (print_time && rank==0)
+        std::cout << average << std::endl;
 
     return average;
 }
