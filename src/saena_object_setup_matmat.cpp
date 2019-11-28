@@ -16,7 +16,7 @@
 
 
 double case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
-
+int ctr = 0;
 
 void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                            index_t *Br, value_t *Bv, index_t *Bc_scan,
@@ -219,6 +219,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
         t0 = MPI_Wtime() - t0;
+//        print_time_ave(t0, "case0", comm, true);
         case0 += t0;
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
@@ -315,13 +316,17 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
             t11 = MPI_Wtime() - t11;
+//            print_time_ave(t11, "case11", comm, true);
             case11 += t11;
 
             // =======================================
             // Extract nonzeros
             // =======================================
+            // Go through a dense matrix of size (A_nnz_row_sz * B_nnz_col_sz) and check if mapbit of that entry
+            // is true. If so, then extract that entry.
 
             double t12 = MPI_Wtime();
+            ctr++;
 
             nnz_t temp2;
             if(mapbit.count()){
@@ -339,6 +344,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 //            t11 = MPI_Wtime() - t11;
             t12 = MPI_Wtime() - t12;
+//            print_time_ave(t12, "case12", comm, true);
             case12 += t12;
 
 #ifdef __DEBUG1__
@@ -497,6 +503,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         auto B2_col_offset = B_col_offset;
 
         t2 = MPI_Wtime() - t2;
+//        print_time_ave(t2, "case2", comm, true);
         case2 += t2;
 
         // Check Split Fact 1
@@ -2122,9 +2129,19 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 */
 
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time){
+
+
     MPI_Comm comm = C.comm;
     MPI_Barrier(comm);
     double t_AP = MPI_Wtime();
+
+
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+
 
     matmat(Acsc, Bcsc, C, send_size_max);
 
@@ -2136,6 +2153,10 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     print_time_ave(case12, "case12", comm, true);
     print_time_ave(case2, "case2", comm, true);
     print_time_ave(case3, "case3", comm, true);
+
+    int ctr_par;
+    MPI_Reduce(&ctr, &ctr_par, 1, MPI_INT, MPI_SUM, 0, comm);
+    if(!rank) printf("\ncase12 being performed: %d\n", ctr_par / nprocs);
 
     return 0;
 }
