@@ -2131,11 +2131,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     t_AP = MPI_Wtime() - t_AP;
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
-    print_time(case0, "case0", comm);
-    print_time(case11, "case11", comm);
-    print_time(case12, "case12", comm);
-    print_time(case2, "case2", comm);
-    print_time(case3, "case3", comm);
+    print_time_ave(case0, "case0", comm, true);
+    print_time_ave(case11, "case11", comm, true);
+    print_time_ave(case12, "case12", comm, true);
+    print_time_ave(case2, "case2", comm, true);
+    print_time_ave(case3, "case3", comm, true);
 
     return 0;
 }
