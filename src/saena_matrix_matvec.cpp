@@ -10,9 +10,11 @@
 //#include <printf.h>
 #include "mpi.h"
 
-#pragma omp declare reduction(vec_double_plus : std::vector<value_t> : \
-                              std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus<value_t>())) \
-                    initializer(omp_priv = omp_orig)
+// the following defines the reduction operation on a vector in OpenMP.
+// this is used in one of the matvec implementations (matvec_timing1).
+//#pragma omp declare reduction(vec_double_plus : std::vector<value_t> : \
+//                              std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus<value_t>())) \
+//                    initializer(omp_priv = omp_orig)
 
 
 int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
@@ -22,13 +24,13 @@ int saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
 //    if(rank==0) printf("matvec! \n");
 
     if(switch_to_dense && density >= dense_threshold){
+        std::cout << "dense matvec is commented out!" << std::endl;
         // uncomment to enable DENSE
-        /*
-        if(!dense_matrix_generated){
-            generate_dense_matrix();
-        }
-        dense_matrix.matvec(v, w);
-         */
+//        if(!dense_matrix_generated){
+//            generate_dense_matrix();
+//        }
+//        dense_matrix.matvec(v, w);
+
     }else{
         matvec_sparse(v,w);
 //        matvec_sparse_zfp(v,w);
@@ -159,7 +161,8 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
     return 0;
 }
 
-
+// different implementations of matvec
+/*
 int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time) {
 
     int nprocs, rank;
@@ -659,7 +662,7 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
     double t2_start = omp_get_wtime();
 
     // this version is not parallel with OpenMP.
-    /*
+#if 0
     nnz_t iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
         for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
@@ -672,7 +675,8 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
 //                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
         }
     }
-*/
+#endif
+
     // the previous part is parallelized with OpenMP.
 #pragma omp parallel
     {
@@ -847,7 +851,7 @@ int saena_matrix::matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<v
     double t2_end = omp_get_wtime();
 //    double t3_end = omp_get_wtime();
 
-/*
+#if 0
     double time0_local = t0_end-t0_start;
     double time0;
     MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
@@ -873,7 +877,8 @@ int saena_matrix::matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<v
     time[2] += time2/nprocs;
 //    time[3] += time3/nprocs;
     time[4] += time4/nprocs;
-*/
+#endif
+
 //    time[0] += time0_local;
 //    time[1] += time1_local;
 //    time[2] += time2_local;
@@ -989,7 +994,8 @@ int saena_matrix::matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& 
 
     delete [] requests;
     delete [] statuses;
-/*
+
+#if 0
     double time0_local = t0_end-t0_start;
     double time0;
     MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
@@ -1015,7 +1021,8 @@ int saena_matrix::matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& 
     time[2] += time2/nprocs;
     time[3] += time3/nprocs;
     time[4] += time4/nprocs;
-*/
+#endif
+
 //    time[0] += time0_local;
 //    time[1] += time1_local;
 //    time[2] += time2_local;
@@ -1054,11 +1061,11 @@ int saena_matrix::matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<v
     MPI_Alltoallv(&vSend[0], &sendCount[0], &sendCountScan[0], MPI_INT, &vecValues[0], &recvCount[0], &recvCountScan[0], MPI_INT, comm);
     double t4_end = omp_get_wtime();
 
-/*    if (rank==0){
-        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
-        for(int i=0; i<recvSize; i++)
-            std::cout << vecValues[i] << std::endl;
-    }*/
+//    if (rank==0){
+//        std::cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << std::endl;
+//        for(int i=0; i<recvSize; i++)
+//            std::cout << vecValues[i] << std::endl;
+//    }
 
     double t1_start = omp_get_wtime();
     value_t* v_p = &v[0] - split[rank];
@@ -1111,33 +1118,34 @@ int saena_matrix::matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<v
     double t2_end = omp_get_wtime();
 //    double t3_end = omp_get_wtime();
 
-    /*
-double time0_local = t0_end-t0_start;
-double time0;
-MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
+#if 0
+    double time0_local = t0_end-t0_start;
+    double time0;
+    MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
 
-double time1_local = t1_end-t1_start;
-double time1;
-MPI_Allreduce(&time1_local, &time1, 1, MPI_DOUBLE, MPI_SUM, comm);
+    double time1_local = t1_end-t1_start;
+    double time1;
+    MPI_Allreduce(&time1_local, &time1, 1, MPI_DOUBLE, MPI_SUM, comm);
 
-double time2_local = t2_end-t2_start;
-double time2;
-MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
+    double time2_local = t2_end-t2_start;
+    double time2;
+    MPI_Allreduce(&time2_local, &time2, 1, MPI_DOUBLE, MPI_SUM, comm);
 
-//    double time3_local = t3_end-t3_start;
-//    double time3;
-//    MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
+    //    double time3_local = t3_end-t3_start;
+    //    double time3;
+    //    MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
 
-double time4_local = t4_end-t4_start;
-double time4;
-MPI_Allreduce(&time4_local, &time4, 1, MPI_DOUBLE, MPI_SUM, comm);
+    double time4_local = t4_end-t4_start;
+    double time4;
+    MPI_Allreduce(&time4_local, &time4, 1, MPI_DOUBLE, MPI_SUM, comm);
 
-time[0] += time0/nprocs;
-time[1] += time1/nprocs;
-time[2] += time2/nprocs;
-//    time[3] += time3/nprocs;
-time[4] += time4/nprocs;
-*/
+    time[0] += time0/nprocs;
+    time[1] += time1/nprocs;
+    time[2] += time2/nprocs;
+    //    time[3] += time3/nprocs;
+    time[4] += time4/nprocs;
+#endif
+
 //    time[0] += time0_local;
 //    time[1] += time1_local;
 //    time[2] += time2_local;
@@ -1146,3 +1154,4 @@ time[4] += time4/nprocs;
 
     return 0;
 }
+*/

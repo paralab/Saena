@@ -574,6 +574,14 @@ int petsc_matmat_ave(saena_matrix *A, saena_matrix *B, int matmat_iter){
     MPI_Barrier(comm);
     double t1 = MPI_Wtime();
 
+/*
+    MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &AB);
+
+    for(int i = 1; i < matmat_iter; i++){
+        MatMatMult(A2, B2, MAT_REUSE_MATRIX, PETSC_DEFAULT, &AB);
+    }
+*/
+
     for(int i = 0; i < matmat_iter; i++){
         MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &AB);
     }

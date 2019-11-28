@@ -4,7 +4,7 @@
 #include <iostream>
 #include <random>
 #include <fstream>
-#include <math.h>
+#include <cmath>
 #include <sys/stat.h>
 
 class saena_matrix;
@@ -61,6 +61,31 @@ int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, value_t* dot, M
     return 0;
 }
 
+
+// parallel norm
+int pnorm(std::vector<value_t>& r, value_t &norm, MPI_Comm comm){
+
+    double dot_l = 0;
+    for(index_t i=0; i<r.size(); i++)
+        dot_l += r[i] * r[i];
+    MPI_Allreduce(&dot_l, &norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+    norm = std::sqrt(norm);
+
+    return 0;
+}
+
+// parallel norm
+value_t pnorm(std::vector<value_t>& r, MPI_Comm comm){
+
+    double dot_l = 0, norm;
+    for(index_t i=0; i<r.size(); i++)
+        dot_l += r[i] * r[i];
+    MPI_Allreduce(&dot_l, &norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+//    std::cout << std::sqrt(norm) << std::endl;
+
+    return std::sqrt(norm);
+}
 
 double print_time(double t_start, double t_end, std::string function_name, MPI_Comm comm){
 
@@ -138,55 +163,6 @@ double print_time_ave_consecutive(double t_dif, MPI_Comm comm){
 }
 
 
-int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
-
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    // check if the size of rhs match the number of rows of A
-    struct stat st;
-    stat(file, &st);
-    unsigned int rhs_size = st.st_size / sizeof(double);
-    if(rhs_size != A->Mbig){
-        if(rank==0) printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
-        if(rank==0) printf("Number of rows of LHS = %d\n", A->Mbig);
-        if(rank==0) printf("Size of RHS = %d\n", rhs_size);
-        MPI_Finalize();
-        return -1;
-    }
-
-    MPI_Status status;
-    MPI_File fh;
-    MPI_Offset offset;
-
-    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    if(mpiopen){
-        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
-        MPI_Finalize();
-        return -1;
-    }
-
-    // define the size of v as the local number of rows on each process
-//    std::vector <double> v(A.M);
-    v.resize(A->M);
-    double* vp = &(*(v.begin()));
-
-    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A->split[rank] * 8; // value(double=8)
-    MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
-
-//    int count;
-//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
-    //printf("process %d read %d lines of triples\n", rank, count);
-    MPI_File_close(&fh);
-
-//    print_vector(v, -1, "v", comm);
-
-    return 0;
-}
-
-
 //template <class T>
 int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {
 
@@ -206,6 +182,39 @@ int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name
 
     if (rank == 0)
         outFileTxt << vSize << std::endl;
+    for (long i = 0; i < v.size(); i++) {
+//        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
+        outFileTxt << v[i] << std::endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
+
+    return 0;
+}
+
+int write_agg(std::vector<unsigned long>& v, std::string name, int level, MPI_Comm comm) {
+
+    // Create txt files with name name0.csv for processor 0, name1.csv for processor 1, etc.
+    // Then, concatenate them in terminal: cat name0.csv name1.csv > V.csv
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    std::ofstream outFileTxt;
+    std::string outFileNameTxt = "/home/majidrp/Dropbox/Projects/Saena/build/agg/";
+    outFileNameTxt += name;
+    outFileNameTxt += "_lev";
+    outFileNameTxt += std::to_string(level);
+//    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".csv";
+    outFileTxt.open(outFileNameTxt);
+
+    outFileTxt << "agg" << std::endl;
+
+    if (rank == 0)
+//        outFileTxt << vSize << std::endl;
     for (long i = 0; i < v.size(); i++) {
 //        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
         outFileTxt << v[i] << std::endl;
@@ -299,6 +308,59 @@ int generate_rhs_old(std::vector<value_t>& rhs){
 //        rhs[i] = (value_t)(i+1) / 100;
 //        std::cout << i << "\t" << rhs[i] << std::endl;
     }
+
+    return 0;
+}
+
+
+int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // check if the size of rhs match the number of rows of A
+    struct stat st;
+    stat(file, &st);
+    unsigned int rhs_size = st.st_size / sizeof(double);
+    if(rhs_size != A->Mbig){
+        if(!rank){
+            printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
+            printf("Number of rows of LHS = %d\n", A->Mbig);
+            printf("Size of RHS = %d\n", rhs_size);
+        }
+        MPI_Barrier(comm);
+        exit(EXIT_FAILURE);
+//        MPI_Finalize();
+//        return -1;
+    }
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
+        MPI_Finalize();
+        return -1;
+    }
+
+    // define the size of v as the local number of rows on each process
+//    std::vector <double> v(A.M);
+    v.resize(A->M);
+    double* vp = &(*(v.begin()));
+
+    // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
+    offset = A->split[rank] * 8; // value(double=8)
+    MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
+
+//    int count;
+//    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
+    //printf("process %d read %d lines of triples\n", rank, count);
+    MPI_File_close(&fh);
+
+//    print_vector(v, -1, "v", comm);
 
     return 0;
 }

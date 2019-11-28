@@ -1,0 +1,79 @@
+\section{Numerical Results}
+\label{sec:results}
+
+Our code is written in \texttt{C++} using \texttt{MPI} and \texttt{OpenMP} and is freely available on github (url withheld for review) under an MIT license. 
+All experiments were conducted on the RMACC Summit Supercomputer at the University of Colorado, Boulder (via XSEDE). Each node has 24 cores and it uses Intel Xeon E5-2680 with $4.84GB$ of memory per core. All experiments were run in the hybrid \texttt{MPI+OpenMP} mode. 
+
+For these experiments we have multiplied a banded matrix with itself, assuming that the matrix is being multiplied with a separate matrix, so not using any information from the left-hand side matrix for the right-hand side one.
+
+Figure~\ref{fig:strong2} is the strong scaling for four banded matrices of the same size ($192k$), but with different bandwidth. The legend shows the density ($\frac{nonzero}{size^2}$) of each matrix. Our solver scales consistently for different density values.
+
+\begin{figure}[!b]
+    \centering
+    \includegraphics[width=8.5cm,height=4.6cm]{./figures/weak2.pdf}
+    \caption{Weak scaling for two banded matrices: blue line shows the one with $24k$ on each node ($1k$ on each core) and red line shows a larger one with $100k$ on each node ($4166$ on each core).}
+    \label{fig:weak1}
+\end{figure}
+
+\begin{figure*}[p]
+    \centering
+    \includegraphics[width=12cm,height=6.2cm]{./figures/strong2.pdf}
+    \caption{Strong scaling for four banded matrices of the same size ($192k$), but with different bandwidth. The legend shows the density ($\frac{nonzero}{size^2}$) of each matrix.}
+    \label{fig:strong2}
+\end{figure*}
+
+\iffalse
+\begin{figure}[tbh]
+ \centering
+ %\Description{Description}
+ \includegraphics[width=8.5cm,height=4.9cm]{./figures/strong_size.pdf}
+ \caption{Strong scaling for five banded matrices of the same size (192k), but with different bandwidth. The legend shows the density ($\frac{nonzero}{size^2}$) of each matrix.}
+ \label{fig:strong1}
+\end{figure}
+\fi
+
+Figure~\ref{fig:strongvs} compares the scaling time for when we split the matrices based on matrix size and when we split based on number of nonzeros. The one that uses the matrix size is more scalable than the other one.
+
+Figure~\ref{fig:petsc1} compares the strong scaling between our solver with PETSc. For the matrices with lower density (more sparse) PETSc performs better when using higher number of processes, but for denser matrices our solver is faster. In multigrid hierarchy, the coarse matrices get denser as we go to lower levels, so it becomes expensive to perform \mm at those levels, so switching to our algorithm for lower levels of multigrid would improve the performance and scalibility significantly.
+
+Figure~\ref{fig:weak1} shows the weak scaling for two banded matrices: one with $24k$ on each node and the other one with $100k$ on each node. Our solver scales better when there is a smaller block of the matrix on each core, which happens when we use more processors or when the matrix is smaller. So, for the same matrix if we use more processors, we will have better performance.
+
+\begin{figure*}[p]
+    \centering
+    \includegraphics[width=11cm,height=6.2cm]{./figures/strong_size_vs_nnz2.pdf}
+    \caption{Comparison of the the strong scaling when using two different splitting strategies: based on matrix size and based on number of nonzeros. The legend shows the density of each matrix together with the splitting strategy. The solid and dash lines show the splitting based on nonzeros and matrix sizes, respectively. The lines for the cases with the same densities have the same marker (e.g. square) to easily compare them.}
+    \label{fig:strongvs}
+\end{figure*}
+
+\begin{figure*}[p]
+    \centering
+    \includegraphics[width=11cm,height=6.2cm]{./figures/strong_size_vs_petsc2.pdf}
+    \caption{Comparison of the the strong scaling between our solver (solid lines) and PETSc (dash lines). The legend shows the density of each matrix. The lines for the cases with the same densities have the same marker (e.g. square) to easily compare them.}
+    \label{fig:petsc1}
+\end{figure*}
+
+
+\iffalse
+\begin{figure}[tbh]
+ \centering
+ \includegraphics[width=7cm,height=7cm]{./figures/strong_size_vs_petsc.pdf}
+ \caption{Comparison of the the strong scaling between our solver and PETSc. The number for each line shows the density for that matrix. The legend shows the density of each matrix.}
+ \label{fig:petsc1}
+\end{figure}
+\fi
+
+\iffalse
+\begin{figure}[tbh]
+ \centering
+ \includegraphics[width=8.5cm,height=4.8cm]{./figures/weak1.pdf}
+ \caption{Weak scaling for two banded matrices: blue line shows the one with $24k$ on each node ($1k$ on each core) and red line shows the larger one with $100k$ on each node ($4166$ on each core)}
+ \label{fig:weak1}
+\end{figure}
+\fi
+
+\section{Conclusion}
+\label{sec:conc}
+
+We have presented a divide and conquer approach to improve the performance and scalibility of \mm. Our \mm~ has a very good performance and is scalable even when the matrix becomes very dense, as in the case of AMG matrix hierarchies. We have also designed an overlapped communication method to improve the efficiency of our recursive algorithm. We demonstrated performance gains from using our methods and compared our multiplication with the in-built functions within PETSc. In our future work, we want to further improve our performance and scalability and also focus on using sparsification algorithms to ensure the sparsity of coarser levels in the AMG application. 
+
+

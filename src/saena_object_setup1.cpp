@@ -1,6 +1,3 @@
-#include <cmath>
-#include "superlu_ddefs.h"
-
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
@@ -10,7 +7,10 @@
 #include "aux_functions.h"
 #include "parUtils.h"
 #include "dollar.hpp"
+#include "superlu_ddefs.h"
+#include <superlu_defs.h>
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -18,12 +18,6 @@
 #include <set>
 #include <random>
 #include <mpi.h>
-#include <superlu_defs.h>
-
-#include <trsl/is_picked_systematic.hpp>
-#include <trsl/ppfilter_iterator.hpp>
-//#include <numeric> // accumulate
-//#include <cassert>
 
 
 int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){
@@ -82,12 +76,12 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
         for (index_t j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
             if(A->row_local[A->indicesP_local[iter]] == A->col_local[A->indicesP_local[iter]]-A->split[rank]){ // diagonal element
                 PEntryTemp.emplace_back(cooEntry(A->row_local[A->indicesP_local[iter]],
-                                              aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
-                                              1 - omega));
+                                                 aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
+                                                 1 - omega));
             }else{
                 PEntryTemp.emplace_back(cooEntry(A->row_local[A->indicesP_local[iter]],
-                                              aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
-                                              -omega * A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]]));
+                                                 aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
+                                                 -omega * A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]]));
             }
 //            std::cout << A->row_local[A->indicesP_local[iter]] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]] << std::endl;
         }
@@ -101,8 +95,8 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     for (index_t i = 0; i < A->col_remote_size; ++i) {
         for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
             PEntryTemp.emplace_back(cooEntry(A->row_remote[iter],
-                                          A->vecValuesULong[A->col_remote[iter]],
-                                          -omega * A->values_remote[iter] * A->inv_diag[A->row_remote[iter]]));
+                                             A->vecValuesULong[A->col_remote[iter]],
+                                             -omega * A->values_remote[iter] * A->inv_diag[A->row_remote[iter]]));
 //            P->values.emplace_back(A->values_remote[iter]);
 //            std::cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t"
 //                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << std::endl;

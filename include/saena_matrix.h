@@ -42,10 +42,12 @@ private:
     bool read_from_file = false;
     bool freeBoolean = false; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
 
-    bool verbose_saena_matrix = false;
-    bool verbose_repartition  = false;
-    bool verbose_matrix_setup = false;
+    bool verbose_saena_matrix       = false;
+    bool verbose_repartition        = false;
+    bool verbose_matrix_setup       = false;
     bool verbose_repartition_update = false;
+    bool verbose_matvec_dummy       = false;
+    bool verbose_comp_matvec_dummy  = false;
 
 public:
     MPI_Comm comm            = MPI_COMM_WORLD;
@@ -252,6 +254,7 @@ public:
     int decide_shrinking(std::vector<double> &prev_time);
     int shrink_cpu();
     int shrink_cpu_minor();
+    int shrink_cpu_coarsest();
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
@@ -265,12 +268,13 @@ public:
     int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
 
     int residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res);
+    int residual_negative(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res);
     int inverse_diag();
     int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
     int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
 
-    int print_entry(int ran);
-    int print_info(int ran);
+    int print_entry(int ran, std::string name = "");
+    int print_info(int ran, std::string name = "");
     int writeMatrixToFile();
     int writeMatrixToFile(const char *folder_name);
 

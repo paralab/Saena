@@ -51,7 +51,7 @@ namespace saena {
         nnz_t get_nnz();
         nnz_t get_local_nnz();
 
-        int print(int ran);
+        int print(int ran, std::string name = "");
 
         int enable_shrink(bool val);
 
@@ -172,6 +172,8 @@ namespace saena {
 //        int solve_pcg_update(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update, but updates the LHS with A_new.
 
+        int solve_pGMRES(std::vector<value_t>& u, saena::options* opts);
+
         int update1(saena::matrix* A_ne); // only update the finest level A, which is the input matrix.
         int update2(saena::matrix* A_ne); // updates grids[i].A for all levels, using the previously made grids[i].P and R.
         int update3(saena::matrix* A_ne); // like update 2, but only update local parts of As.
@@ -195,7 +197,6 @@ namespace saena {
 
         int lazy_update_counter = 0; // note: for lazy update project. delete it when done.
 
-        int matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C);
         int matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble);
         int matmat_ave(saena::matrix *A, saena::matrix *B, double &matmat_time); // this version is only for experiments.
 
@@ -219,6 +220,8 @@ namespace saena {
     int laplacian3D_old(saena::matrix* A, unsigned int dof_local);
 
     int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth);
+
+    int random_symm_matrix(saena::matrix &A, index_t M, float density);
 
     // ==========================
 

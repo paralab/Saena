@@ -22,7 +22,9 @@ data/2DMed_sorted3.mtx
 data/2DMed_sorted3_changed_entries.txt
 data/CombBLAS/
 CMakeLists (copy).txt
+data/
 data/vectors/vector_generator001
+vector_generator001
 papers/ICCS19_lazy/ICCS19.aux
 papers/ICCS19_lazy/ICCS19.bbl
 papers/ICCS19_lazy/ICCS19.blg
@@ -43,7 +45,6 @@ papers/ICS19/ICS19.log
 papers/ICS19/ICS19.out
 papers/ICS19/ICS19.pdf
 papers/ICS19/ICS19.synctex.gz
-data/
 papers/ICPP19 (copy)/
 papers/ICPP19/ICPP19.aux
 papers/ICPP19/ICPP19.bbl
@@ -58,3 +59,6 @@ papers/lazy/ICCS19.blg
 papers/lazy/ICCS19.log
 papers/lazy/ICCS19.pdf
 papers/lazy/ICCS19.synctex.gz
+papers/Presentations/SA-AMG for Asymmetric/
+src/saena_object_setup2.cpp (backup)
+src/saena_object_setup2_backup3.cpp

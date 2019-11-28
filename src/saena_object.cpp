@@ -9,7 +9,7 @@
 #include "ietl_saena.h"
 #include "dollar.hpp"
 
-//#include "petsc_functions.h"
+#include "petsc_functions.h"
 
 #include <sys/stat.h>
 #include <cstdio>
@@ -21,24 +21,13 @@
 #include <mpi.h>
 
 
-saena_object::saena_object() = default;
-
-
-saena_object::~saena_object() = default;
-
-
-int saena_object::destroy(){
-    return 0;
-}
-
-
-void saena_object::set_parameters(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
+void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm){
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
-    vcycle_num = vcycle_n;
-    relative_tolerance  = relT;
-    smoother = sm;
-    preSmooth = preSm;
-    postSmooth = postSm;
+    solver_max_iter = max_iter;
+    solver_tol      = tol;
+    smoother        = sm;
+    preSmooth       = preSm;
+    postSmooth      = postSm;
 }
 
 
@@ -53,7 +42,7 @@ int saena_object::setup(saena_matrix* A) {
     MPI_Comm_rank(A->comm, &rank);
     A->active_old_comm = true;
 
-    #pragma omp parallel
+    #pragma omp parallel default(none) shared(rank, nprocs)
     if(!rank && omp_get_thread_num()==0)
         printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
 
@@ -97,7 +86,7 @@ int saena_object::setup(saena_matrix* A) {
 
     if(verbose_setup_steps && rank==0) printf("setup: first Grid\n");
     grids.resize(max_level+1);
-    grids[0] = Grid(A, max_level, 0); // pass A to grids[0]
+    grids[0] = Grid(A, 0); // pass A to grids[0]
 
     if(verbose_setup_steps && rank==0) printf("setup: other Grids\n");
     for(int i = 0; i < max_level; i++){
@@ -106,7 +95,7 @@ int saena_object::setup(saena_matrix* A) {
             if (shrink_level_vector.size()>i+1) if(shrink_level_vector[i+1]) grids[i].A->enable_shrink_next_level = true;
             if (shrink_values_vector.size()>i+1) grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
             coarsen(&grids[i]); // create P, R and Ac for grid[i]
-            grids[i + 1] = Grid(&grids[i].Ac, max_level, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i]) // todo: use emplace_back for grids.
+            grids[i + 1] = Grid(&grids[i].Ac, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i]) // todo: use emplace_back for grids.
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
 
             if(grids[i].Ac.active) {
@@ -170,6 +159,12 @@ int saena_object::setup(saena_matrix* A) {
     int max_level_send = max_level;
     MPI_Allreduce(&max_level_send, &max_level, 1, MPI_INT, MPI_MIN, grids[0].A->comm);
     grids.resize(max_level);
+
+    if(max_level == 0){
+        A_coarsest = A;
+    }else{
+        A_coarsest = &grids.back().Ac;
+    }
 
 //    printf("rank = %d, max_level = %d\n", rank, max_level);
 //    printf("i = %u, max_level = %u \n", i, max_level);
@@ -260,6 +255,7 @@ int saena_object::coarsen(Grid *grid){
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after find_aggregation!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(aggregate, -1, "aggregate", grid->A->comm);
+    write_agg(aggregate, "agg1", grid->currentLevel, grid->A->comm);
 #endif
 
     // **************************** changeAggregation ****************************
@@ -339,13 +335,14 @@ int saena_object::coarsen(Grid *grid){
 
     // **************************** compute_coarsen in PETSc ****************************
 //    petsc_viewer(&grid->Ac);
-//    map_matmat.clear();
 
     // this part is only for experiments.
 //    petsc_coarsen(&grid->R, grid->A, &grid->P);
 //    petsc_coarsen_PtAP(&grid->R, grid->A, &grid->P);
 //    petsc_coarsen_2matmult(&grid->R, grid->A, &grid->P);
 //    petsc_check_matmatmat(&grid->R, grid->A, &grid->P, &grid->Ac);
+
+//    map_matmat.clear();
 
     return 0;
 }

@@ -3,18 +3,11 @@
 
 #include "prolong_matrix.h"
 #include "restrict_matrix.h"
-#include "saena_matrix_dense.h"
 #include "saena_matrix.h"
 #include "saena_vector.h"
 
 #include <vector>
 #include <mpi.h>
-
-//class prolong_matrix;
-//class restrict_matrix;
-//class saena_matrix;
-//class saena_matrix_dense;
-//class saena_object;
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -23,18 +16,22 @@ typedef double value_t;
 
 class Grid{
 public:
-    saena_matrix* A;
-    saena_matrix* A_new; // for solve_pcg_update() experiment
-    saena_matrix  Ac;
-//    saena_matrix_dense* A_d; // dense matrix
-    saena_matrix_dense Ac_d; // dense matrix
-    prolong_matrix P;
+    saena_matrix*   A     = nullptr;
+    saena_matrix*   A_new = nullptr; // for solve_pcg_update() experiment
+    saena_matrix    Ac;
+    prolong_matrix  P;
     restrict_matrix R;
+
+//    saena_matrix_dense* A_d; // dense matrix
+//    saena_matrix_dense Ac_d; // dense matrix
+
     std::vector<value_t> rhs;
-    saena_vector *rhs_orig;
-    int currentLevel, maxLevel;
+    saena_vector         *rhs_orig = nullptr;
+
+    Grid* coarseGrid        = nullptr;
+    int   currentLevel      = 0;
     float row_reduction_min = 0;
-    Grid* coarseGrid;
+    bool  active            = false;
 
     std::vector<int> rcount;
     std::vector<int> scount;
@@ -46,17 +43,13 @@ public:
     std::vector<int> rdispls2;
     std::vector<int> sdispls2;
 
-//    std::vector<int> rcount3;
-//    std::vector<int> scount3;
-//    std::vector<int> rdispls3;
-//    std::vector<int> sdispls3;
-
-    bool active = false;
-//    MPI_Comm comm;
-
-    Grid();
-    Grid(saena_matrix* A, int maxLevel, int currentLevel);
-    ~Grid();
+    Grid() = default;
+    Grid(saena_matrix* A1, int currentLev){
+        A            = A1;
+        currentLevel = currentLev;
+        active       = A1->active;
+    }
+    ~Grid() = default;
 };
 
 #endif //SAENA_GRID_H

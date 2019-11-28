@@ -9,7 +9,7 @@ saena_matrix_dense::saena_matrix_dense() = default;
 
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
-    M = M1;
+    M    = M1;
     Nbig = Nbig1;
 
     entry = new value_t*[M];
@@ -22,7 +22,7 @@ saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
 
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1){
-    M = M1;
+    M    = M1;
     Nbig = Nbig1;
     comm = comm1;
 
@@ -38,7 +38,7 @@ saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1
 // copy constructor
 saena_matrix_dense::saena_matrix_dense(const saena_matrix_dense &B){
     comm = B.comm;
-    M = B.M;
+    M    = B.M;
     Nbig = B.Nbig;
 
     entry = new value_t*[M];
@@ -62,7 +62,7 @@ saena_matrix_dense::~saena_matrix_dense() {
 
 saena_matrix_dense& saena_matrix_dense::operator=(const saena_matrix_dense &B){
     comm = B.comm;
-    M = B.M;
+    M    = B.M;
     Nbig = B.Nbig;
 
     entry = new value_t*[M];
@@ -82,19 +82,14 @@ int saena_matrix_dense::erase(){
         for(index_t i = 0; i < M; i++)
             delete [] entry[i];
         delete [] entry;
+
+        allocated = false;
     }
 
-    allocated = false;
     split.clear();
     Nbig = 0;
     M = 0;
 
-    return 0;
-}
-
-
-int saena_matrix_dense::set(index_t row, index_t col, value_t val){
-    entry[row][col] = val;
     return 0;
 }
 
