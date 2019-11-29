@@ -336,7 +336,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                         temp2 = i + temp;
                         if(mapbit[temp2]){
 //                            if(rank==verbose_rank) std::cout << i << "\t" << j << "\t" << temp2 << "\t" << orig_row_idx[i] << "\t" << orig_col_idx[j] << "\t" << C_temp[i + temp] << std::endl;
-//                            C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[temp2]);
+                            C.emplace_back(orig_row_idx[i], orig_col_idx[j], C_temp[temp2]);
                         }
                     }
                 }
