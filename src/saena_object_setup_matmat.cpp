@@ -328,6 +328,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             double t12 = MPI_Wtime();
             ctr++;
 
+            C.reserve(C.size() + mapbit.count());
+
             nnz_t temp2;
             if(mapbit.count()){
                 for (index_t j = 0; j < B_nnz_col_sz; j++) {
