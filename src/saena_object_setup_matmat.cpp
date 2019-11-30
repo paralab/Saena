@@ -16,7 +16,6 @@
 
 
 double case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
-int ctr = 0;
 
 void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                            index_t *Br, value_t *Bv, index_t *Bc_scan,
@@ -148,6 +147,14 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     // case1
     // ==============================================================
 
+
+
+
+    MPI_Barrier(comm);
+
+
+
+
     if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
 
 #ifdef __DEBUG1__
@@ -229,7 +236,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             // initialize
             value_t *C_temp = &mempool1[0];
-//                std::fill(&C_temp[0], &C_temp[A_nnz_row_sz * B_nnz_col_sz], 0);
+//            std::fill(&C_temp[0], &C_temp[A_nnz_row_sz * B_nnz_col_sz], 0);
 
 #ifdef __DEBUG1__
             if (rank == verbose_rank && verbose_fastmm) { printf("fast_mm: case 1: step 1 \n"); }
@@ -251,13 +258,13 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
                     temp = A_nnz_row_sz * B_new_col_idx[j];
 
-//                        if(rank==1) std::cout << "\n" << Br[k] << "\t" << Br[k] - B_row_offset
-//                                              << "\t" << Ac_p[Br[k]] << "\t" << Ac_p[Br[k]+1] << std::endl;
+//                    if(rank==1) std::cout << "\n" << Br[k] << "\t" << Br[k] - B_row_offset
+//                                          << "\t" << Ac_p[Br[k]] << "\t" << Ac_p[Br[k]+1] << std::endl;
 
                     for (nnz_t i = Ac_p[Br[k]]; i < Ac_p[Br[k] + 1]; i++) { // nonzeros in column (Br[k]) of A
 
 #ifdef __DEBUG1__
-//                            std::cout << Ar[i] << "\t" << j+B_col_offset << "\t" << Av[i] << "\t" << Bv[k] << std::endl;
+//                        std::cout << Ar[i] << "\t" << j+B_col_offset << "\t" << Av[i] << "\t" << Bv[k] << std::endl;
 
 //                        if(Ar[i] == 9 && j+B_col_offset==23)
 //                            std::cout << "===========" << Ar[i] << "\t" << Br[k]          << "\t" << Av[i] << "\t"
@@ -326,7 +333,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             // is true. If so, then extract that entry.
 
             double t12 = MPI_Wtime();
-            ctr++;
 
 //            C.reserve(C.size() + mapbit.count());
 
@@ -2155,10 +2161,6 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     print_time_ave(case12, "case12", comm, true);
     print_time_ave(case2, "case2", comm, true);
     print_time_ave(case3, "case3", comm, true);
-
-    int ctr_par;
-    MPI_Reduce(&ctr, &ctr_par, 1, MPI_INT, MPI_SUM, 0, comm);
-    if(!rank) printf("\ncase12 being performed: %d\n", ctr_par / nprocs);
 
     return 0;
 }

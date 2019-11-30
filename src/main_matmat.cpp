@@ -98,11 +98,11 @@ int main(int argc, char* argv[]){
     //    petsc_viewer(A.get_internal_matrix());
 
 // *************************** checking the correctness of matrix-matrix product ****************************
-
+/*
         saena::amg solver;
         saena::matrix C(comm);
         solver.matmat(&A, &B, &C, true);
-
+*/
 //        C.get_internal_matrix()->print_info(0);
 //        C.print(-1);
 
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
         int matmat_iter_warmup = 0;
         int matmat_iter = 1;
 
-//        saena::amg solver;
+        saena::amg solver;
 //        saena::matrix C(comm);
 
         // warm-up
