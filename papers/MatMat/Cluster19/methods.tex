@@ -270,6 +270,42 @@ If we partition $B$ in column blocks, then we don't even need $B$ to be symmetri
 
 There are at least two advantages for using Algorithm~\ref{alg:comm2} instead of Algorithm~\ref{alg:comm1}. First, we can sort subsets of entries of $C_i$ separately and add duplicates (compare line 9 of Algorithm~\ref{alg:comm1} with line $8$ of Algorithm~\ref{alg:comm2}, which is cheaper than doing that on the final matrix. The other advantage is having better divided blocks of $B$ for \recmm. The way the splitting procedure is being executed, it is more efficient to have matrix $B$ horizontal if $A$ is vertical and vice versa. Figure~\ref{fig:partition6} compares both ways of dividing matrix $B$ on processor $P0$. Algorithm~\ref{alg:comm1} makes $B$ skinnier, but Algorithm~\ref{alg:comm2} helps to reach the threshold faster.
 
+
+
+\subsection{Comparison of the Splitting Methods}
+\label{sec:compare}
+
+In this section we compare \textit{Case 2} (vertical split) with \textit{Case 3} (horizontal split). Starting with the advantage of \textit{Case 2}, it consists of $2$ recursive calls, but \textit{Case 3} has $4$. So the cost of preparing for the recursive calls and also the cost of function calls themselves are half in \textit{Case 2}. 
+
+Splitting vertically (\textit{Case 2}) has a property that makes it less scalable than \textit{Case 3}. Consider the simplest case, Figure \ref{fig:skinny1}, splitting $A$ vertically once and we assume this is done in serial. When $A1 \times B1$ and $A2 \times B2$ are computed, they should be added together to have the final result in $C$. This process, adding the duplicates, has at least three disadvantages. First, more entries are being stored, because of the duplicates of the nonzeros. Second, we need to perform the sorting on a multiple of number of nonzeros of $C$, to prepare for the duplicate addition step. And finally, adding the duplicates. Also note that in the worst case, the size of the result data before adding the duplicates would be: \textit{number of vertical splits} $\times$ \textit{nnz(C)}. \mr{add a figure to clarify this claim.} 
+
+The other problem with \textit{Case 2} is that, the dense buffer needed to do $A1 \times B1$ is of size $m \times n$, which is the same as the total size of the result matrix $C$. The same is true for the second part of the multiplication, $A2 \times B2$. In other words, the dense buffer is of size \textit{row size of A} $\times$ \textit{column size of B}, so performing \textit{Case 2} does not help reaching the recursion threshold.
+But, after each horizontal split, the sizes of submatrices get closer to the threshold in the factor of $4$, because of halving $A$ row-wise and halving $B$ column-wise.
+%It means we need to split the matrices to smaller submatrices following the other splitting method to reach the threshold, and obviously the longer the recursive sequence, the worse the performance gets.
+
+As the last comparison point, we will compare the last step of the recursive function, which is extracting the nonzeros from the dense buffer.
+By performing \textit{Case 3}, we can compute each block of the result matrix $C$ (see Figure \ref{fig:skinny2}) independently after calling each recursive call. So actually dense buffers are a partition of the result matrix $C$. But, for \textit{Case 2}, for each of the two recursive calls in Figure \ref{fig:skinny1} we need to extract nonzeros from two dense buffers, each as the size of the whole matrix $C$, which makes this case more expensive.
+
+%To avoid having the mentioned issues, we will only use the horizontal split method. By doing that, we can actually compute each block of the result matrix $C$ (see Figure \ref{fig:skinny2}) independently after calling each recursive call. To compute entry $C(i,j)$ and avoiding having any duplicates, we multiply the whole row $i$ of matrix $A$, with the whole column $j$ of matrix $B$. Also, after each horizontal split, the sizes of submatrices get closer to the threshold in the factor of $4$, because of halving $A$ row size and halving $B$ column size.
+
+\begin{figure}[thb]
+    %\centering
+    \includegraphics[width=8.8cm,height=3.1cm]{./figures/skinny001.pdf}
+    \caption{Multiplication by performing \textit{Case 2} once. At the end duplicates should be added together.}
+    \label{fig:skinny1}
+\end{figure}
+
+\begin{figure}[thb]
+    %\centering
+    \includegraphics[width=8.8cm,height=3.1cm]{./figures/skinny002.pdf}
+    \caption{Multiplication by performing \textit{Case 3} once. In this case, the dense buffers are independent and all together make a partition for the matrix $C$.}
+    \label{fig:skinny2}
+\end{figure}
+
+
+
+
+\iffalse
 \subsection{Skinny Split}
 \label{sec:1split}
 
@@ -296,11 +332,12 @@ To avoid having the mentioned issues, we will only use the horizontal split meth
     \label{fig:skinny2}
 \end{figure}
 
+\fi
 
 %Talk about the steps to compute nonzero rows of A, nonzero columns of B. Then explain why using CSR for A would help.
-To further improve the scalability of our method, we change the data format for storing matrix $A$. Since in this section we want to iterate through rows of $A$ and columns of $B$, we have the matrix $A$ in the \textit{CSR} (compressed sparse row) format and matrix $B$ in \textit{CSC} (compressed sparse column) format. Recall that the matrices were in \textit{CSC} in the previous section. Following this change in storing matrix $A$, we gain another speed-up. Also recall that to stop the recursion we check:
-\begin{equation*}
-  \textit{\#nonzero rows of A} \times \textit{\#nonzero columns of B} < threshold 
-\end{equation*}
+%To further improve the scalability of our method, we change the data format for storing matrix $A$. Since in this section we want to iterate through rows of $A$ and columns of $B$, we have the matrix $A$ in the \textit{CSR} (compressed sparse row) format and matrix $B$ in \textit{CSC} (compressed sparse column) format. Recall that the matrices were in \textit{CSC} in the previous section. Following this change in storing matrix $A$, we gain another speed-up. Also recall that to stop the recursion we check:
+%\begin{equation*}
+%  \textit{\#nonzero rows of A} \times \textit{\#nonzero columns of B} < threshold 
+%\end{equation*}
 
-Since $B$ was in the CSC format, we could quickly find how many columns of $B$ are nonzero. But for $A$ we had a loop of complexity $O(nnz(A))$ to compute the number of nonzero rows of $A$. Note that we could not compute it once and use it for all the next recursive call, because splitting based on \textit{Case 2} would make that invalid.
+%Since $B$ was in the CSC format, we could quickly find how many columns of $B$ are nonzero. But for $A$ we had a loop of complexity $O(nnz(A))$ to compute the number of nonzero rows of $A$. Note that we could not compute it once and use it for all the next recursive call, because splitting based on \textit{Case 2} would make that invalid.
