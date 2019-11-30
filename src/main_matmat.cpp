@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
         int matmat_iter_warmup = 5;
         int matmat_iter = 5;
 
-//        saena::amg solver;
+        saena::amg solver;
 //        saena::matrix C(comm);
 
         // warm-up
