@@ -250,8 +250,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
                     temp = A_nnz_row_sz * B_new_col_idx[j];
 
-//                        if(rank==1) std::cout << "\n" << Br[k] << "\t" << Br[k] - B_row_offset
-//                                              << "\t" << Ac_p[Br[k]] << "\t" << Ac_p[Br[k]+1] << std::endl;
+//                    if(rank==1) std::cout << "\n" << Br[k] << "\t" << Br[k] - B_row_offset
+//                                          << "\t" << Ac_p[Br[k]] << "\t" << Ac_p[Br[k]+1] << std::endl;
 
                     for (nnz_t i = Ac_p[Br[k]]; i < Ac_p[Br[k] + 1]; i++) { // nonzeros in column (Br[k]) of A
 
