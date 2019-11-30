@@ -147,6 +147,14 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     // case1
     // ==============================================================
 
+
+
+
+    MPI_Barrier(comm);
+
+
+
+
     if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
 
 #ifdef __DEBUG1__
