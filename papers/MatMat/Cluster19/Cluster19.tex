@@ -148,6 +148,8 @@ The important factor in this part is how large the threshold is set. We have don
 
 For instance, on 256 processors to do the nonzero extraction during performing one matrix-matrix multiplication, it takes $0.47s$ when the threshold is set to $10M$ and $0.03s$ when the threshold is set to $10k$. Obviously the trade-off of having a smaller threshold is being required to split the submatrices into smaller blocks and the longer the recursive sequence, the more expensive the recursive calls part gets.
 
+Figure \ref{fig:strong003} shows the total time to do one matrix-matrix product for the mentioned thresholds.
+
 \newpage
 
 \begin{figure}[htbp]
@@ -157,7 +159,7 @@ For instance, on 256 processors to do the nonzero extraction during performing o
     \label{fig:strong001}
 \end{figure}
 
-\balance
+
 
 \begin{figure}[htbp]
     %\centering
@@ -166,6 +168,16 @@ For instance, on 256 processors to do the nonzero extraction during performing o
     \label{fig:strong002}
 \end{figure}
 
+
+
+\begin{figure}[htbp]
+    %\centering
+    \includegraphics[width=9cm,height=5.9cm]{./figures/strong003.png}
+    \caption{Strong scaling of performing one matrix-matrix product on matrix $1365$ from the Florida Matrix Collection, when $2$ different thresholds.}
+    \label{fig:strong003}
+\end{figure}
+
+\balance
 
 %\input{intro}
 %\input{methods}

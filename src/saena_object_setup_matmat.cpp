@@ -164,7 +164,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
 //        double t1 = MPI_Wtime();
-//        double t0 = MPI_Wtime();
+        double t0 = MPI_Wtime();
 
         index_t *nnzPerRow_left = &mempool2[0];
         std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
@@ -225,14 +225,14 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
-//        t0 = MPI_Wtime() - t0;
+        t0 = MPI_Wtime() - t0;
 //        print_time_ave(t0, "case0", comm, true);
-//        case0 += t0;
+        case0 += t0;
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
 
-//            double t11 = MPI_Wtime();
+            double t11 = MPI_Wtime();
 
             // initialize
             value_t *C_temp = &mempool1[0];
@@ -322,9 +322,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            print_array(C_temp, A_nnz_row_sz * B_nnz_col_sz, -1, "C_temp", comm);
 #endif
 
-//            t11 = MPI_Wtime() - t11;
+            t11 = MPI_Wtime() - t11;
 //            print_time_ave(t11, "case11", comm, true);
-//            case11 += t11;
+            case11 += t11;
 
             // =======================================
             // Extract nonzeros
@@ -332,7 +332,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             // Go through a dense matrix of size (A_nnz_row_sz * B_nnz_col_sz) and check if mapbit of that entry
             // is true. If so, then extract that entry.
 
-//            double t12 = MPI_Wtime();
+            double t12 = MPI_Wtime();
 
 //            C.reserve(C.size() + mapbit.count());
 
@@ -351,9 +351,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             }
 
 //            t11 = MPI_Wtime() - t11;
-//            t12 = MPI_Wtime() - t12;
+            t12 = MPI_Wtime() - t12;
 //            print_time_ave(t12, "case12", comm, true);
-//            case12 += t12;
+            case12 += t12;
 
 #ifdef __DEBUG1__
 //                nnz_t C_nnz = 0; // not required
@@ -2156,11 +2156,13 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     t_AP = MPI_Wtime() - t_AP;
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
-//    print_time_ave(case0, "case0", comm, true);
-//    print_time_ave(case11, "case11", comm, true);
-//    print_time_ave(case12, "case12", comm, true);
-//    print_time_ave(case2, "case2", comm, true);
-//    print_time_ave(case3, "case3", comm, true);
+    if (!rank) printf("\n");
+
+    print_time_ave(case0, "case0", comm, true);
+    print_time_ave(case11, "case11", comm, true);
+    print_time_ave(case12, "case12", comm, true);
+    print_time_ave(case2, "case2", comm, true);
+    print_time_ave(case3, "case3", comm, true);
 
     return 0;
 }
