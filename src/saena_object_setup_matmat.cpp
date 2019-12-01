@@ -2138,18 +2138,15 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time){
 
-
     MPI_Comm comm = C.comm;
-    MPI_Barrier(comm);
-    double t_AP = MPI_Wtime();
 
-
-
+    //todo: comment out these 3 lines.
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-
+    MPI_Barrier(comm);
+    double t_AP = MPI_Wtime();
 
     matmat(Acsc, Bcsc, C, send_size_max);
 
@@ -2157,7 +2154,6 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
     if (!rank) printf("\n");
-
     print_time_ave(case0, "case0", comm, true);
     print_time_ave(case11, "case11", comm, true);
     print_time_ave(case12, "case12", comm, true);
