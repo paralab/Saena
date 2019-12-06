@@ -147,14 +147,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     // case1
     // ==============================================================
 
-
-
-
-//    MPI_Barrier(comm);
-
-
-
-
     if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
 
 #ifdef __DEBUG1__
@@ -164,7 +156,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
 //        double t1 = MPI_Wtime();
-//        double t0 = MPI_Wtime();
+        double t0 = MPI_Wtime();
 
         index_t *nnzPerRow_left = &mempool2[0];
         std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
@@ -215,6 +207,17 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             }
         }
 
+
+        MPI_Barrier(comm);
+        if(!rank) printf("\n");
+        MPI_Barrier(comm);
+        printf("rank %d: A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
+               rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
+        MPI_Barrier(comm);
+
+
+
+
 #ifdef __DEBUG1__
 //        std::cout << "orig_col_idx max: " << A_row_size * 2 + B_col_size + B_nnz_col_sz - 1 << std::endl;
 
@@ -225,14 +228,14 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
-//        t0 = MPI_Wtime() - t0;
+        t0 = MPI_Wtime() - t0;
 //        print_time_ave(t0, "case0", comm, true);
-//        case0 += t0;
+        case0 += t0;
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
 
-//            double t11 = MPI_Wtime();
+            double t11 = MPI_Wtime();
 
             // initialize
             value_t *C_temp = &mempool1[0];
@@ -322,9 +325,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            print_array(C_temp, A_nnz_row_sz * B_nnz_col_sz, -1, "C_temp", comm);
 #endif
 
-//            t11 = MPI_Wtime() - t11;
+            t11 = MPI_Wtime() - t11;
 //            print_time_ave(t11, "case11", comm, true);
-//            case11 += t11;
+            case11 += t11;
 
             // =======================================
             // Extract nonzeros
@@ -332,7 +335,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             // Go through a dense matrix of size (A_nnz_row_sz * B_nnz_col_sz) and check if mapbit of that entry
             // is true. If so, then extract that entry.
 
-//            double t12 = MPI_Wtime();
+            double t12 = MPI_Wtime();
 
 //            C.reserve(C.size() + mapbit.count());
 
@@ -351,9 +354,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             }
 
 //            t11 = MPI_Wtime() - t11;
-//            t12 = MPI_Wtime() - t12;
+            t12 = MPI_Wtime() - t12;
 //            print_time_ave(t12, "case12", comm, true);
-//            case12 += t12;
+            case12 += t12;
 
 #ifdef __DEBUG1__
 //                nnz_t C_nnz = 0; // not required
@@ -386,6 +389,20 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 
     }
+
+
+
+
+
+    //todo: delete this
+    MPI_Barrier(comm);
+    if(!rank) std::cout << "case2 is being performed! exit!" << std::endl;
+    MPI_Barrier(comm);
+    exit(EXIT_FAILURE);
+
+
+
+
 
     // ==============================================================
     // Case2
@@ -2138,29 +2155,30 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time){
 
-
     MPI_Comm comm = C.comm;
-    MPI_Barrier(comm);
-    double t_AP = MPI_Wtime();
 
-
-
+    //todo: comment out these 3 lines.
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-
+    MPI_Barrier(comm);
+    double t_AP = MPI_Wtime();
 
     matmat(Acsc, Bcsc, C, send_size_max);
 
     t_AP = MPI_Wtime() - t_AP;
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
-//    print_time_ave(case0, "case0", comm, true);
+//    if (!rank) printf("\n");
+//    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
+//    print_time_ave(case0,  "case0", comm, true);
 //    print_time_ave(case11, "case11", comm, true);
 //    print_time_ave(case12, "case12", comm, true);
-//    print_time_ave(case2, "case2", comm, true);
-//    print_time_ave(case3, "case3", comm, true);
+//    print_time_ave(case2,  "case2", comm, true);
+//    print_time_ave(case3,  "case3", comm, true);
+
+//    print_time(case12, "case12", comm);
 
     return 0;
 }
@@ -2613,6 +2631,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     t1 = MPI_Wtime() - t1;
 
     double t2 = MPI_Wtime();
+    double tf, tf_tot = 0; // for timing fast_mm
 
     for(int k = rank; k < rank+nprocs; k++){
         // This is overlapped. Both local and remote loops are done here.
@@ -2631,6 +2650,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
         MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
 
+        tf = MPI_Wtime();
+
         if(Acsc.nnz == 0 || send_nnz==0){ // skip!
 
         } else {
@@ -2643,6 +2664,9 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                     Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
                     AB_temp, comm);
         }
+
+        tf = MPI_Wtime() - tf;
+        tf_tot += tf;
 
         MPI_Waitall(2, requests, statuses);
 
@@ -2686,9 +2710,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-//    print_time(t1, "prepare", comm);
-//    print_time(t2, "comm and multiply", comm);
-//    print_time(t3, "sort", comm);
+//    if (!rank) printf("\nprepare\ncomm and multiply\nsort\nfast_mm\n\n");
+//    print_time_ave(t1, "prepare",           comm, true);
+//    print_time_ave(t2, "comm and multiply", comm, true);
+//    print_time_ave(t3, "sort",              comm, true);
+//
+//    print_time_ave(tf_tot, "fast_mm", comm, true);
 
     return 0;
 }

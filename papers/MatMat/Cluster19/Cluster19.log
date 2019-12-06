@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.1.1)  30 NOV 2019 09:36
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.1.1)  30 NOV 2019 09:55
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -531,20 +531,30 @@ Package pdftex.def Info: ./figures/skinny002.pdf  used on input line 133.
 <./figures/strong001.png, id=44, 668.4975pt x 484.05844pt>
 File: ./figures/strong001.png Graphic file (type png)
 <use ./figures/strong001.png>
-Package pdftex.def Info: ./figures/strong001.png  used on input line 155.
+Package pdftex.def Info: ./figures/strong001.png  used on input line 157.
 (pdftex.def)             Requested size: 256.08197pt x 167.8719pt.
 
-Overfull \hbox (4.08197pt too wide) in paragraph at lines 155--156
+Overfull \hbox (4.08197pt too wide) in paragraph at lines 157--158
 [][] 
  []
 
 <./figures/strong002.png, id=45, 668.4975pt x 484.05844pt>
 File: ./figures/strong002.png Graphic file (type png)
 <use ./figures/strong002.png>
-Package pdftex.def Info: ./figures/strong002.png  used on input line 164.
+Package pdftex.def Info: ./figures/strong002.png  used on input line 166.
 (pdftex.def)             Requested size: 256.08197pt x 167.8719pt.
 
-Overfull \hbox (4.08197pt too wide) in paragraph at lines 164--165
+Overfull \hbox (4.08197pt too wide) in paragraph at lines 166--167
+[][] 
+ []
+
+<./figures/strong003.png, id=46, 720.44156pt x 496.85625pt>
+File: ./figures/strong003.png Graphic file (type png)
+<use ./figures/strong003.png>
+Package pdftex.def Info: ./figures/strong003.png  used on input line 175.
+(pdftex.def)             Requested size: 256.07184pt x 167.86748pt.
+
+Overfull \hbox (4.07184pt too wide) in paragraph at lines 175--176
 [][] 
  []
 
@@ -559,30 +569,31 @@ Before submitting the final camera ready copy, remember to:
  uses only Type 1 fonts and that every step in the generation
  process uses the appropriate paper size.
 
-[2 <./figures/strong001.png (PNG copy)> <./figures/strong002.png (PNG copy)>]
-(./Cluster19.aux) ) 
+[2 <./figures/strong003.png (PNG copy)> <./figures/strong001.png (PNG copy)> <.
+/figures/strong002.png (PNG copy)>] (./Cluster19.aux) ) 
 Here is how much of TeX's memory you used:
- 5336 strings out of 492982
- 75574 string characters out of 6134897
- 243300 words of memory out of 5000000
- 8794 multiletter control sequences out of 15000+600000
+ 5342 strings out of 492982
+ 75713 string characters out of 6134897
+ 243308 words of memory out of 5000000
+ 8799 multiletter control sequences out of 15000+600000
  41221 words of font info for 91 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  41i,8n,35p,952b,242s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}<
-/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/s
-hare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/te
-xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/t
-exmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dis
-t/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/font
-s/type1/public/amsfonts/symbols/msam10.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/urw/helvetic/uhvb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/h
-elvetic/uhvro8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a
-.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on Cluster19.pdf (2 pages, 180532 bytes).
+{/usr/share/texlive/texm
+f-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/p
+ublic/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
+amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfont
+s/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cm
+r8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
+></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
+</usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/
+texlive/texmf-dist/fonts/type1/urw/helvetic/uhvro8a.pfb></usr/share/texlive/tex
+mf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/t
+ype1/urw/times/utmri8a.pfb>
+Output written on Cluster19.pdf (2 pages, 222424 bytes).
 PDF statistics:
- 83 PDF objects out of 1000 (max. 8388607)
+ 84 PDF objects out of 1000 (max. 8388607)
  56 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 21 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 26 words of extra memory for PDF output out of 10000 (max. 10000000)
 

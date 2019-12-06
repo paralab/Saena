@@ -116,22 +116,22 @@ int main(int argc, char* argv[]){
 
 // *************************** print info ****************************
 
-    //    saena::amg solver;
+        saena::amg solver;
 
         if (!rank) {
             printf("A.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n", A.get_internal_matrix()->Mbig,
                    A.get_internal_matrix()->nnz_g,
                    B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
-//            printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
+            printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
         }
 
 // *************************** matrix-matrix product ****************************
 
         double matmat_time = 0;
-        int matmat_iter_warmup = 5;
-        int matmat_iter = 5;
+        int matmat_iter_warmup = 0;
+        int matmat_iter = 1;
 
-        saena::amg solver;
+//        saena::amg solver;
 //        saena::matrix C(comm);
 
         // warm-up
