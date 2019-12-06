@@ -208,14 +208,14 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 
 
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
 //        if(!rank) printf("\n");
 //        MPI_Barrier(comm);
 //        printf("rank %d: A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
 //               rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
-        if(!rank)
-            printf("A_row_size = %u, \tA_nnz = %ld, \tB_col_size = %u, \tB_nnz = %ld\n", A_row_size, A_nnz, B_col_size, B_nnz);
-        MPI_Barrier(comm);
+//        if(!rank)
+//            printf("A_row_size = %u, \tA_nnz = %ld, \tB_col_size = %u, \tB_nnz = %ld\n", A_row_size, A_nnz, B_col_size, B_nnz);
+//        MPI_Barrier(comm);
 
 
 
@@ -231,7 +231,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
         t0 = MPI_Wtime() - t0;
-//        print_time_ave(t0, "case0", comm, true);
+        if(!rank) printf("\n");
+        print_time_ave(t0, "case0", comm, true);
         case0 += t0;
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
@@ -328,7 +329,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
             t11 = MPI_Wtime() - t11;
-//            print_time_ave(t11, "case11", comm, true);
+            print_time_ave(t11, "case11", comm, true);
             case11 += t11;
 
             // =======================================
@@ -357,7 +358,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 //            t11 = MPI_Wtime() - t11;
             t12 = MPI_Wtime() - t12;
-//            print_time_ave(t12, "case12", comm, true);
+            print_time_ave(t12, "case12", comm, true);
             case12 += t12;
 
 #ifdef __DEBUG1__
