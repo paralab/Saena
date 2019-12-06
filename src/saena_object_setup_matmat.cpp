@@ -387,6 +387,20 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
     }
 
+
+
+
+
+    //todo: delete this
+    MPI_Barrier(comm);
+    if(!rank) std::cout << "case2 is being performed! exit!" << std::endl;
+    MPI_Barrier(comm);
+    exit(EXIT_FAILURE);
+
+
+
+
+
     // ==============================================================
     // Case2
     // ==============================================================
