@@ -324,7 +324,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             t11 = MPI_Wtime() - t11;
 //            print_time_ave(t11, "case11", comm, true);
-            case11 + t11;
+            case11 = t11;
 
             // =======================================
             // Extract nonzeros
@@ -2154,13 +2154,14 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
     if (!rank) printf("\n");
-//    print_time_ave(case0, "case0", comm, true);
-//    print_time_ave(case11, "case11", comm, true);
-//    print_time_ave(case12, "case12", comm, true);
-//    print_time_ave(case2, "case2", comm, true);
-//    print_time_ave(case3, "case3", comm, true);
+    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
+    print_time_ave(case0, "case0", comm, true);
+    print_time_ave(case11, "case11", comm, true);
+    print_time_ave(case12, "case12", comm, true);
+    print_time_ave(case2, "case2", comm, true);
+    print_time_ave(case3, "case3", comm, true);
 
-    print_time(case12, "case12", comm);
+//    print_time(case12, "case12", comm);
 
     return 0;
 }
