@@ -147,14 +147,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     // case1
     // ==============================================================
 
-
-
-
-//    MPI_Barrier(comm);
-
-
-
-
     if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
 
 #ifdef __DEBUG1__
@@ -227,7 +219,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         t0 = MPI_Wtime() - t0;
 //        print_time_ave(t0, "case0", comm, true);
-        case0 = t0;
+        case0 += t0;
 
         // check if A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre1, then do dense multiplication. otherwise, do case2 or 3.
         if(A_nnz_row_sz * B_nnz_col_sz < matmat_size_thre2) {
@@ -324,7 +316,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             t11 = MPI_Wtime() - t11;
 //            print_time_ave(t11, "case11", comm, true);
-            case11 = t11;
+            case11 += t11;
 
             // =======================================
             // Extract nonzeros
@@ -353,7 +345,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            t11 = MPI_Wtime() - t11;
             t12 = MPI_Wtime() - t12;
 //            print_time_ave(t12, "case12", comm, true);
-            case12 = t12;
+            case12 += t12;
 
 #ifdef __DEBUG1__
 //                nnz_t C_nnz = 0; // not required
@@ -526,7 +518,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         t2 = MPI_Wtime() - t2;
 //        print_time_ave(t2, "case2", comm, true);
-        case2 = t2;
+        case2 += t2;
 
         // Check Split Fact 1
 //        index_t B1_col_scan_start = Bc1[0];
@@ -962,7 +954,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                  << "\tA1_col_offset: " << A1_col_offset << "\tA2_col_offset: " << A2_col_offset << std::endl;
 
     t3 = MPI_Wtime() - t3;
-    case3 = t3;
+    case3 += t3;
 
 #ifdef __DEBUG1__
 //        print_array(Ac1, A_col_size+1, 0, "Ac1", comm);
