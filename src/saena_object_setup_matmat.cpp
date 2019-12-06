@@ -2628,6 +2628,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     t1 = MPI_Wtime() - t1;
 
     double t2 = MPI_Wtime();
+    double tf, tf_tot = 0; // for timing fast_mm
 
     for(int k = rank; k < rank+nprocs; k++){
         // This is overlapped. Both local and remote loops are done here.
@@ -2646,6 +2647,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
         MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
 
+        tf = MPI_Wtime();
+
         if(Acsc.nnz == 0 || send_nnz==0){ // skip!
 
         } else {
@@ -2658,6 +2661,9 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                     Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
                     AB_temp, comm);
         }
+
+        tf = MPI_Wtime() - tf;
+        tf_tot += tf;
 
         MPI_Waitall(2, requests, statuses);
 
@@ -2701,10 +2707,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-//    if (!rank) printf("prepare\ncomm and multiply\nsort\n\n");
-//    print_time_ave(t1, "prepare", comm, true);
-//    print_time_ave(t2, "comm and multiply", comm, true);
-//    print_time_ave(t3, "sort", comm, true);
+    if (!rank) printf("\nprepare\ncomm and multiply\nsort\nfast_mm\n\n");
+    print_time_ave(t1, "prepare",           comm, true);
+    print_time_ave(t2, "comm and multiply", comm, true);
+    print_time_ave(t3, "sort",              comm, true);
+
+    print_time_ave(tf_tot, "fast_mm", comm, true);
 
     return 0;
 }
