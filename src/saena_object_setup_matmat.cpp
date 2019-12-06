@@ -211,8 +211,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         MPI_Barrier(comm);
         if(!rank) printf("\n");
         MPI_Barrier(comm);
-        printf("rank %d: A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
-               rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
+        if(A_row_size != A_nnz_row_sz || B_col_size != B_nnz_col_sz)
+            printf("rank %d: A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
+                   rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
         MPI_Barrier(comm);
 
 
