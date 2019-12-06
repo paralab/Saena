@@ -2153,13 +2153,13 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     t_AP = MPI_Wtime() - t_AP;
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
-    if (!rank) printf("\n");
-    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
-    print_time_ave(case0, "case0", comm, true);
-    print_time_ave(case11, "case11", comm, true);
-    print_time_ave(case12, "case12", comm, true);
-    print_time_ave(case2, "case2", comm, true);
-    print_time_ave(case3, "case3", comm, true);
+//    if (!rank) printf("\n");
+//    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
+//    print_time_ave(case0, "case0", comm, true);
+//    print_time_ave(case11, "case11", comm, true);
+//    print_time_ave(case12, "case12", comm, true);
+//    print_time_ave(case2, "case2", comm, true);
+//    print_time_ave(case3, "case3", comm, true);
 
 //    print_time(case12, "case12", comm);
 
@@ -2687,9 +2687,10 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-//    print_time(t1, "prepare", comm);
-//    print_time(t2, "comm and multiply", comm);
-//    print_time(t3, "sort", comm);
+    if (!rank) printf("prepare\ncomm and multiply\nsort\n\n");
+    print_time_ave(t1, "prepare", comm, true);
+    print_time_ave(t2, "comm and multiply", comm, true);
+    print_time_ave(t3, "sort", comm, true);
 
     return 0;
 }
