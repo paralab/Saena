@@ -270,3 +270,72 @@ If we partition $B$ in column blocks, then we don't even need $B$ to be symmetri
 
 There are at least two advantages for using Algorithm~\ref{alg:comm2} instead of Algorithm~\ref{alg:comm1}. First, we can sort subsets of entries of $C_i$ separately and add duplicates (compare line 9 of Algorithm~\ref{alg:comm1} with line $8$ of Algorithm~\ref{alg:comm2}, which is cheaper than doing that on the final matrix. The other advantage is having better divided blocks of $B$ for \recmm. The way the splitting procedure is being executed, it is more efficient to have matrix $B$ horizontal if $A$ is vertical and vice versa. Figure~\ref{fig:partition6} compares both ways of dividing matrix $B$ on processor $P0$. Algorithm~\ref{alg:comm1} makes $B$ skinnier, but Algorithm~\ref{alg:comm2} helps to reach the threshold faster.
 
+
+\subsection{Analysis of The Recursive Function}
+\label{sec:compare}
+
+First, we compare \textit{Case 2} (vertical split) with \textit{Case 3} (horizontal split). Starting with the advantage of \textit{Case 2}, it consists of $2$ recursive calls, but \textit{Case 3} has $4$. So the cost of preparing for the recursive calls and also the cost of function calls themselves are half in \textit{Case 2}. 
+
+Splitting vertically (\textit{Case 2}) has a property that makes it less scalable than \textit{Case 3}. Consider the simplest case, Figure \ref{fig:skinny1}, splitting $A$ vertically once and we assume this is done in serial. When $A1 \times B1$ and $A2 \times B2$ are computed, they should be added together to have the final result in $C$. This process, adding the duplicates, has at least three disadvantages. First, more entries are being stored, because of the duplicates of the nonzeros. Second, we need to perform the sorting on a multiple of number of nonzeros of $C$, to prepare for the duplicate addition step. And finally, adding the duplicates. Also note that in the worst case, the size of the result data before adding the duplicates would be: \textit{number of vertical splits} $\times$ \textit{nnz(C)}. \mr{add a figure to clarify this claim.} 
+
+The other problem with \textit{Case 2} is that, the dense buffer needed to do $A1 \times B1$ is of size $m \times n$, which is the same as the total size of the result matrix $C$. The same is true for the second part of the multiplication, $A2 \times B2$. In other words, the dense buffer is of size \textit{row size of A} $\times$ \textit{column size of B}, so performing \textit{Case 2} does not help reaching the recursion threshold.
+But, after each horizontal split, the sizes of submatrices get closer to the threshold in the factor of $4$, because of halving $A$ row-wise and halving $B$ column-wise.
+
+As the last comparison point, we will compare the last step of the recursive function, which is extracting the nonzeros from the dense buffer.
+By performing \textit{Case 3}, we can compute each block of the result matrix $C$ (see Figure \ref{fig:skinny2}) independently after calling each recursive call. So actually dense buffers are a partition of the result matrix $C$. But, for \textit{Case 2}, for each of the two recursive calls in Figure \ref{fig:skinny1} we need to extract nonzeros from two dense buffers, each as the size of the whole matrix $C$, which makes this case more expensive.
+
+\begin{figure}[thb]
+    %\centering
+    \includegraphics[width=8.8cm,height=3.1cm]{./figures/skinny001.pdf}
+    \caption{Multiplication by performing \textit{Case 2} once. At the end duplicates should be added together.}
+    \label{fig:skinny1}
+\end{figure}
+
+\begin{figure}[thb]
+    %\centering
+    \includegraphics[width=8.8cm,height=3.1cm]{./figures/skinny002.pdf}
+    \caption{Multiplication by performing \textit{Case 3} once. In this case, the dense buffers are independent and all together make a partition for the matrix $C$.}
+    \label{fig:skinny2}
+\end{figure}
+
+Now we analyze the other step of the recursive function, \textit{Case 1}, which has $3$ parts:
+\begin{enumerate}
+ \item prepare data,
+ \item perform the multiplication, and
+ \item extract nonzeros from the dense buffer
+\end{enumerate}
+
+\mr{add more details about the above steps, especially the first one.}
+
+The important factor in this part is how large the threshold is set. We have done two experiments, one with threshold set to $10M$ (Figure \ref{fig:strong001}) and the other one set to $10k$ (Figure \ref{fig:strong002}). In these experiments the matrix is chosen small (5041 dof) to avoid performing any splitting, to show how much a difference the threshold makes just to perform \textit{Case 1}. Extracting the nonzeros is the dominant part of this case, which is dependent on the size of the threshold.
+
+For instance, on 256 processors to do the nonzero extraction during performing one matrix-matrix multiplication, it takes $0.47s$ when the threshold is set to $10M$ and $0.03s$ when the threshold is set to $10k$. Obviously the trade-off of having a smaller threshold is being required to split the submatrices into smaller blocks and the longer the recursive sequence, the more expensive the recursive calls part gets.
+
+Figure \ref{fig:strong003} shows the total time to do one matrix-matrix product for the mentioned thresholds.
+
+\newpage
+
+\begin{figure}[htbp]
+    %\centering
+    \includegraphics[width=9cm,height=5.9cm]{./figures/strong001.png}
+    \caption{Strong scaling of only performing \textit{Case 1} of matrix-matrix product on matrix $1365$ from the Florida Matrix Collection, when the threshold is set to $10M$.}
+    \label{fig:strong001}
+\end{figure}
+
+
+
+\begin{figure}[htbp]
+    %\centering
+    \includegraphics[width=9cm,height=5.9cm]{./figures/strong002.png}
+    \caption{Strong scaling of only performing \textit{Case 1} of matrix-matrix product on matrix $1365$ from the Florida Matrix Collection, when the threshold is set to $10k$.}
+    \label{fig:strong002}
+\end{figure}
+
+
+
+\begin{figure}[htbp]
+    %\centering
+    \includegraphics[width=9cm,height=5.9cm]{./figures/strong003.png}
+    \caption{Strong scaling of performing one matrix-matrix product on matrix $1365$ from the Florida Matrix Collection, when $2$ different thresholds.}
+    \label{fig:strong003}
+\end{figure}
