@@ -178,20 +178,24 @@ public:
 
     // zfp parameters
     // ***********************************************************
-/*    zfp_field* field; // array meta data
+    zfp_field*  field;  // array meta data
     zfp_stream* zfp;    // compressed stream
-    bitstream* stream;  // bit stream to write to or read from
+    bitstream*  stream; // bit stream to write to or read from
+
+    zfp_field*  field2;  // array meta data
+    zfp_stream* zfp2;    // compressed stream
+    bitstream*  stream2; // bit stream to write to or read from
+
+    bool     free_zfp_buff    = false;
+    double   *zfp_send_buffer = nullptr, // storage for compressed stream
+             *zfp_recv_buffer = nullptr;
+    unsigned rate             = 64,
+             zfp_send_bufsize = 0,
+             zfp_recv_bufsize = 0;
+
 //    unsigned char *send_buffer; // storage for compressed stream
 //    unsigned char *recv_buffer;
-    bool free_zfp_buff = false;
-    double *zfp_send_buffer; // storage for compressed stream
-    double *zfp_recv_buffer;
-    unsigned rate = 64;
-    unsigned zfp_send_bufsize = 0, zfp_recv_bufsize = 0;
-    zfp_field* field2;  // array meta data
-    zfp_stream* zfp2;   // compressed stream
-    bitstream* stream2; // bit stream to write to or read from
-*/
+
     int allocate_zfp();
     int deallocate_zfp();
     // ***********************************************************

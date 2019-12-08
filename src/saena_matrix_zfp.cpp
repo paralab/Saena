@@ -1,34 +1,40 @@
 #include "saena_matrix.h"
 #include "zfparray1.h"
+#include <omp.h>
+
+
+// The zfp_field parameter object holds information about the uncompressed array. To specify the compressed array,
+//a zfp_stream object must be allocated.
 
 
 // zfp functions:
 
 int saena_matrix::allocate_zfp(){
-/*
+
     zfp_send_bufsize = rate / 2 * (unsigned)ceil(vIndexSize/4.0); // rate/8 * 4 * ceil(size/4). This is in bytes.
     zfp_recv_bufsize = rate / 2 * (unsigned)ceil(recvSize/4.0);
     zfp_send_buffer = (double*)malloc(zfp_send_bufsize);
     zfp_recv_buffer = (double*)malloc(zfp_recv_bufsize);
     free_zfp_buff = true;
-*/
+
     return 0;
 }
 
 int saena_matrix::deallocate_zfp(){
-/*
+
     if(free_zfp_buff){
         free(zfp_send_buffer);
         free(zfp_recv_buffer);
         free_zfp_buff = false;
     }
-*/
+
     return 0;
 }
 
 
 int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t>& w) {
-/*
+    // todo: add back the openmp parts
+
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -37,7 +43,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
-#pragma omp parallel for
+//#pragma omp parallel for // todo: add back the openmp parts
     for(index_t i=0;i<vIndexSize;i++)
         vSend[i] = v[(vIndex[i])];
 
@@ -58,9 +64,9 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 //    double rate_return;
     unsigned long size1;
     if(vIndexSize || recvSize){
-        field = zfp_field_1d(&vSend[0], zfp_type_double, vIndexSize);
+        field  = zfp_field_1d(&vSend[0], zfp_type_double, vIndexSize);
         stream = stream_open(zfp_send_buffer, zfp_send_bufsize);
-        zfp = zfp_stream_open(stream);
+        zfp    = zfp_stream_open(stream);
         zfp_stream_set_rate(zfp, rate, zfp_type_double, 1, 0);
 //        zfp_stream_set_bit_stream(zfp, stream);
 //        zfp_stream_params(zfp, &minbits, &maxbits, &maxprec, &minexp);
@@ -110,6 +116,17 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
     value_t* v_p = &v[0] - split[rank];
+    nnz_t iter = 0;
+    for (index_t i = 0; i < M; ++i) {
+        w[i] = 0;
+        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+            w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+        }
+    }
+
+    // the openmp version
+    // todo: add back the openmp parts
+/*
 #pragma omp parallel
     {
         nnz_t iter = iter_local_array[omp_get_thread_num()];
@@ -121,6 +138,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
             }
         }
     }
+*/
 
     // Wait for the receive communication to finish.
     MPI_Waitall(numRecvProc, requests, statuses);
@@ -154,7 +172,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     // the corresponding vector element is saved in vecValues[0]. and so on.
 
     unsigned int i;
-    nnz_t iter = 0;
+    iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
         for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
             w[row_remote[iter]] += values_remote[iter] * vecValues[j];
@@ -175,6 +193,6 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     delete [] requests;
     delete [] statuses;
-    */
+
     return 0;
 }
