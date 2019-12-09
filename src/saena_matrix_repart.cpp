@@ -158,6 +158,15 @@ int saena_matrix::repartition_nnz_initial(){
     firstSplit.clear();
     firstSplit.shrink_to_fit();
 
+
+    // update split to make zfp work, since it only works on arrays of size 4k.
+    if(Mbig / nprocs > 4){
+        for(index_t i = 1; i < nprocs; ++i){
+            split[i] += 3 - (split[i] % 4);
+        }
+    }
+
+
 //    print_vector(split, 0, "split", comm);
 
     // set the number of rows for each process
