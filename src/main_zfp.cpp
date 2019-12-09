@@ -181,8 +181,8 @@ int main(int argc, char* argv[]){
 
     // *************************** zfp ****************************
 
-    int matvec_warmup_iter = 5;
-    int matvec_iter = 5;
+    int matvec_warmup_iter = 3;
+    int matvec_iter = 3;
 
 //    solver.get_object()->grids[0].A->allocate_zfp(solver.get_object()->grids[0].rhs);
     saena_matrix *B = solver.get_object()->grids[0].A;
