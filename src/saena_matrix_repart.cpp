@@ -172,7 +172,7 @@ int saena_matrix::repartition_nnz_initial(){
     }
 
 //    MPI_Barrier(comm);
-    print_vector(split, 0, "split", comm);
+//    print_vector(split, 0, "split", comm);
 //    MPI_Barrier(comm);
 
     // set the number of rows for each process
