@@ -181,6 +181,9 @@ int main(int argc, char* argv[]){
 
     // *************************** zfp ****************************
 
+    int matvec_warmup_iter = 5;
+    int matvec_iter = 5;
+
 //    solver.get_object()->grids[0].A->allocate_zfp(solver.get_object()->grids[0].rhs);
     saena_matrix *B = solver.get_object()->grids[0].A;
 
@@ -191,8 +194,25 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 //    print_vector(v, -1, "v", comm);
 
-    B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
-    B->matvec_sparse_zfp(solver.get_object()->grids[0].rhs, w);
+    for(int i = 0; i < matvec_warmup_iter; ++i){
+        B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
+    }
+
+    t1 = MPI_Wtime();
+    for(int i = 0; i < v.size(); ++i){
+        B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
+    }
+    t1 = t1 - MPI_Wtime();
+    print_time_ave(t1, "matvec original:", comm, true);
+
+
+    t1 = MPI_Wtime();
+    for(int i = 0; i < v.size(); ++i){
+        B->matvec_sparse_zfp(solver.get_object()->grids[0].rhs, w);
+    }
+    t1 = t1 - MPI_Wtime();
+    print_time_ave(t1, "matvec zfp:", comm, true);
+
 
     for(int i = 0; i < v.size(); ++i){
         if(fabs(w[i] - v[i]) > 1e-8)
