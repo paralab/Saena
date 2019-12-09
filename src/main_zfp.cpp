@@ -72,40 +72,32 @@ int main(int argc, char* argv[]){
 /*
     char *Aname(argv[1]);
 
-    {
-        saena::matrix A(comm);
-//        A.read_file(Aname);
-        A.read_file(Aname, "triangle");
-        A.assemble();
+    saena::matrix A(comm);
+//    A.read_file(Aname);
+    A.read_file(Aname, "triangle");
+    A.assemble();
 
-        saena::matrix B(A);
-
-        // ********** print matrix and time **********
-
-        double t2 = MPI_Wtime();
-        if (verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-    //    print_time(t1, t2, "Matrix Assemble:", comm);
-
-    //    A.print(0);
-    //    A.get_internal_matrix()->print_info(0);
-    //    A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
-    //    petsc_viewer(A.get_internal_matrix());
+    saena::matrix B(A);
 */
-// *************************** print info ****************************
+    // ********** print matrix info and time **********
 
     double t2 = MPI_Wtime();
-//    if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
+    if (verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 //    print_time(t1, t2, "Matrix Assemble:", comm);
 
-//    saena::amg solver;
+//    A.print(0);
+//    A.get_internal_matrix()->print_info(0);
+//    A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
+//    petsc_viewer(A.get_internal_matrix());
+//    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
 
     if (!rank) {
         printf("A.Mbig = %u,\tA.nnz = %ld\n", A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g);
-//            printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
+//        printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
     }
 
     // *************************** set rhs_std ****************************
-
+/*
     saena::vector rhs(comm);
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
@@ -123,7 +115,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-
+*/
     // ********** 2 - set rhs_std: ordered: 1, 2, 3, ... **********
 
 //    rhs_std.resize(num_local_row);
@@ -157,7 +149,7 @@ int main(int argc, char* argv[]){
 //    rhs.print_entry(-1);
 
     // *************************** set u0 ****************************
-
+/*
     std::vector<double> u(num_local_row, 0);
 
     // *************************** AMG - Setup ****************************
@@ -197,9 +189,9 @@ int main(int argc, char* argv[]){
 
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
-
+*/
     // *************************** AMG - Solve ****************************
-
+/*
     t1 = MPI_Wtime();
 
 //    solver.solve(u, &opts);
@@ -211,7 +203,7 @@ int main(int argc, char* argv[]){
     print_time(t1, t2, "Solve:", comm);
 
 //    print_vector(u, -1, "u", comm);
-
+*/
 // *************************** finalize ****************************
 
 //    if(rank==0) dollar::text(std::cout);

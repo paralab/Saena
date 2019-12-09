@@ -158,20 +158,31 @@ int saena_matrix::repartition_nnz_initial(){
     firstSplit.clear();
     firstSplit.shrink_to_fit();
 
+//    MPI_Barrier(comm);
+//    print_vector(split, 0, "split before", comm);
+//    MPI_Barrier(comm);
 
-    // update split to make zfp work, since it only works on arrays of size 4k.
+    // todo: return split to its original form
+    // update split to make zfp work, since it only works on arrays of size 4k,
+    // if Mbig is 4k, then each split[i] should be a multiple of 4.
     if(Mbig / nprocs > 4){
         for(index_t i = 1; i < nprocs; ++i){
-            split[i] += 3 - (split[i] % 4);
+            split[i] += (4 - (split[i] % 4)) % 4;
         }
     }
 
-
-//    print_vector(split, 0, "split", comm);
+//    MPI_Barrier(comm);
+    print_vector(split, 0, "split", comm);
+//    MPI_Barrier(comm);
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
 //    M_old = M;
+
+    if(M % 4){
+        printf("\nM is not a multiple of 4 on proc %d: M = %u \nzfp will no work!\n", rank, M);
+        exit(EXIT_FAILURE);
+    }
 
     if(verbose_repartition && rank==0) printf("repartition - step 4!\n");
 
