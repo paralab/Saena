@@ -15,9 +15,9 @@ cd build_parmetis
 make install
 cd ..
 
-#zfp
+#send_zfp
 mkdir build_zfp && cd build_zfp
-cmake ../../external/zfp-0.5.3
+cmake ../../external/send_zfp-0.5.3
 make -j28
 cd ..
 

@@ -99,8 +99,8 @@ public:
     std::vector<value_t> vecValues;
     std::vector<unsigned long> vSendULong;
     std::vector<unsigned long> vecValuesULong;
-//    zfp::array1<double> vSend_zfp;
-//    zfp::array1<double> vecValues_zfp;
+//    send_zfp::array1<double> vSend_zfp;
+//    send_zfp::array1<double> vecValues_zfp;
 
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;
@@ -176,27 +176,35 @@ public:
     int generate_dense_matrix();
     // ***********************************************************
 
-    // zfp parameters
+    // send_zfp parameters
     // ***********************************************************
-    zfp_field*  field;  // array meta data
-    zfp_stream* zfp;    // compressed stream
-    bitstream*  stream; // bit stream to write to or read from
+    zfp_type    zfptype = zfp_type_double;
 
-    zfp_field*  field2;  // array meta data
-    zfp_stream* zfp2;    // compressed stream
-    bitstream*  stream2; // bit stream to write to or read from
+    zfp_field*  send_field;  // array meta data
+    zfp_stream* send_zfp;    // compressed stream
+    bitstream*  send_stream; // bit stream to write to or read from
 
-    bool     free_zfp_buff    = false;
-    double   *zfp_send_buffer = nullptr, // storage for compressed stream
-             *zfp_recv_buffer = nullptr;
-    unsigned rate             = 64,
-             zfp_send_bufsize = 0,
-             zfp_recv_bufsize = 0;
+    zfp_field*  recv_field;  // array meta data
+    zfp_stream* recv_zfp;    // compressed stream
+    bitstream*  recv_stream; // bit stream to write to or read from
 
-//    unsigned char *send_buffer; // storage for compressed stream
+    bool          free_zfp_buff    = false;
+    unsigned char *zfp_send_buff   = nullptr, // storage for compressed stream to be sent
+                  *zfp_recv_buff   = nullptr; // storage for compressed stream to be received
+    unsigned      zfp_send_buff_sz = 0,
+                  zfp_send_comp_sz = 0,
+                  zfp_recv_buff_sz = 0;
+
+    unsigned zfp_rate      = 64;
+    double   zfp_precision = 32;
+
+//    double  *zfp_send_buff = nullptr, // storage for compressed send_stream
+//            *zfp_recv_buff = nullptr;
+//    unsigned char *send_buffer; // storage for compressed send_stream
 //    unsigned char *recv_buffer;
 
     int allocate_zfp();
+//    int allocate_zfp(const std::vector<double> &v);
     int deallocate_zfp();
     // ***********************************************************
 

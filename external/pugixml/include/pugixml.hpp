@@ -208,10 +208,10 @@ namespace pugi
 
 	// Formatting flags
 
-	// Indent the nodes that are written to output stream with as many indentation strings as deep the node is in DOM tree. This flag is on by default.
+	// Indent the nodes that are written to output send_stream with as many indentation strings as deep the node is in DOM tree. This flag is on by default.
 	const unsigned int format_indent = 0x01;
 
-	// Write encoding-specific BOM to the output stream. This flag is off by default.
+	// Write encoding-specific BOM to the output send_stream. This flag is off by default.
 	const unsigned int format_write_bom = 0x02;
 
 	// Use raw output mode (no indentation and no line breaks are written). This flag is off by default.
@@ -283,7 +283,7 @@ namespace pugi
 	public:
 		virtual ~xml_writer() {}
 
-		// Write memory chunk into stream/file/whatever
+		// Write memory chunk into send_stream/file/whatever
 		virtual void write(const void* data, size_t size) = 0;
 	};
 
@@ -305,7 +305,7 @@ namespace pugi
 	class PUGIXML_CLASS xml_writer_stream: public xml_writer
 	{
 	public:
-		// Construct writer from an output stream object
+		// Construct writer from an output send_stream object
 		xml_writer_stream(std::basic_ostream<char, std::char_traits<char> >& stream);
 		xml_writer_stream(std::basic_ostream<wchar_t, std::char_traits<wchar_t> >& stream);
 
@@ -640,7 +640,7 @@ namespace pugi
 		void print(xml_writer& writer, const char_t* indent = PUGIXML_TEXT("\t"), unsigned int flags = format_default, xml_encoding encoding = encoding_auto, unsigned int depth = 0) const;
 
 	#ifndef PUGIXML_NO_STL
-		// Print subtree to stream
+		// Print subtree to send_stream
 		void print(std::basic_ostream<char, std::char_traits<char> >& os, const char_t* indent = PUGIXML_TEXT("\t"), unsigned int flags = format_default, xml_encoding encoding = encoding_auto, unsigned int depth = 0) const;
 		void print(std::basic_ostream<wchar_t, std::char_traits<wchar_t> >& os, const char_t* indent = PUGIXML_TEXT("\t"), unsigned int flags = format_default, unsigned int depth = 0) const;
 	#endif
@@ -926,7 +926,7 @@ namespace pugi
 		status_ok = 0,				// No error
 
 		status_file_not_found,		// File was not found during load_file()
-		status_io_error,			// Error reading from file/stream
+		status_io_error,			// Error reading from file/send_stream
 		status_out_of_memory,		// Could not allocate memory
 		status_internal_error,		// Internal error occurred
 
@@ -998,7 +998,7 @@ namespace pugi
 		void reset(const xml_document& proto);
 
 	#ifndef PUGIXML_NO_STL
-		// Load document from stream.
+		// Load document from send_stream.
 		xml_parse_result load(std::basic_istream<char, std::char_traits<char> >& stream, unsigned int options = parse_default, xml_encoding encoding = encoding_auto);
 		xml_parse_result load(std::basic_istream<wchar_t, std::char_traits<wchar_t> >& stream, unsigned int options = parse_default);
 	#endif
@@ -1028,7 +1028,7 @@ namespace pugi
 		void save(xml_writer& writer, const char_t* indent = PUGIXML_TEXT("\t"), unsigned int flags = format_default, xml_encoding encoding = encoding_auto) const;
 
 	#ifndef PUGIXML_NO_STL
-		// Save XML document to stream (semantics is slightly different from xml_node::print, see documentation for details).
+		// Save XML document to send_stream (semantics is slightly different from xml_node::print, see documentation for details).
 		void save(std::basic_ostream<char, std::char_traits<char> >& stream, const char_t* indent = PUGIXML_TEXT("\t"), unsigned int flags = format_default, xml_encoding encoding = encoding_auto) const;
 		void save(std::basic_ostream<wchar_t, std::char_traits<wchar_t> >& stream, const char_t* indent = PUGIXML_TEXT("\t"), unsigned int flags = format_default) const;
 	#endif

@@ -1902,7 +1902,7 @@ PUGI__NS_BEGIN
 		if (size < 6 || !((data[0] == '<') & (data[1] == '?') & (data[2] == 'x') & (data[3] == 'm') & (data[4] == 'l') && PUGI__IS_CHARTYPE(data[5], ct_space)))
 			return false;
 
-		// scan XML declaration until the encoding field
+		// scan XML declaration until the encoding send_field
 		for (size_t i = 6; i + 1 < size; ++i)
 		{
 			// declaration can not contain ? in quoted values
@@ -1913,7 +1913,7 @@ PUGI__NS_BEGIN
 			{
 				size_t offset = i;
 
-				// encoding follows the version field which can't contain 'en' so this has to be the encoding if XML is well formed
+				// encoding follows the version send_field which can't contain 'en' so this has to be the encoding if XML is well formed
 				PUGI__SCANCHAR('e'); PUGI__SCANCHAR('n'); PUGI__SCANCHAR('c'); PUGI__SCANCHAR('o');
 				PUGI__SCANCHAR('d'); PUGI__SCANCHAR('i'); PUGI__SCANCHAR('n'); PUGI__SCANCHAR('g');
 
@@ -4867,7 +4867,7 @@ PUGI__NS_BEGIN
 
 	template <typename T> PUGI__FN xml_parse_status load_stream_data_seek(std::basic_istream<T>& stream, void** out_buffer, size_t* out_size)
 	{
-		// get length of remaining data in stream
+		// get length of remaining data in send_stream
 		typename std::basic_istream<T>::pos_type pos = stream.tellg();
 		stream.seekg(0, std::ios::end);
 		std::streamoff length = stream.tellg() - pos;
@@ -4882,7 +4882,7 @@ PUGI__NS_BEGIN
 
 		size_t max_suffix_size = sizeof(char_t);
 
-		// read stream data into memory (guard against stream exceptions with buffer holder)
+		// read send_stream data into memory (guard against send_stream exceptions with buffer holder)
 		auto_deleter<void> buffer(xml_memory::allocate(read_length * sizeof(T) + max_suffix_size), xml_memory::deallocate);
 		if (!buffer.data) return status_out_of_memory;
 
@@ -4907,10 +4907,10 @@ PUGI__NS_BEGIN
 		size_t size = 0;
 		xml_parse_status status = status_ok;
 
-		// if stream has an error bit set, bail out (otherwise tellg() can fail and we'll clear error bits)
+		// if send_stream has an error bit set, bail out (otherwise tellg() can fail and we'll clear error bits)
 		if (stream.fail()) return make_parse_result(status_io_error);
 
-		// load stream to memory (using seek-based implementation if possible, since it's faster and takes less memory)
+		// load send_stream to memory (using seek-based implementation if possible, since it's faster and takes less memory)
 		if (stream.tellg() < 0)
 		{
 			stream.clear(); // clear error flags that could be set by a failing tellg
@@ -6774,7 +6774,7 @@ namespace pugi
 		case status_ok: return "No error";
 
 		case status_file_not_found: return "File was not found";
-		case status_io_error: return "Error reading from file/stream";
+		case status_io_error: return "Error reading from file/send_stream";
 		case status_out_of_memory: return "Could not allocate memory";
 		case status_internal_error: return "Internal error occurred";
 

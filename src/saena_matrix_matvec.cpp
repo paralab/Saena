@@ -98,7 +98,7 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
         // Wait for the receive communication to finish.
         MPI_Waitall(numRecvProc, requests, statuses);
 
-//        print_vector(vecValues, 1, "vecValues", comm);
+//        print_vector(vecValues, -1, "vecValues", comm);
 
         // remote loop
         // -----------

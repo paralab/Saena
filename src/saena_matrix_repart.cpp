@@ -163,7 +163,7 @@ int saena_matrix::repartition_nnz_initial(){
 //    MPI_Barrier(comm);
 
     // todo: return split to its original form
-    // update split to make zfp work, since it only works on arrays of size 4k,
+    // update split to make send_zfp work, since it only works on arrays of size 4k,
     // if Mbig is 4k, then each split[i] should be a multiple of 4.
     if(Mbig / nprocs > 4){
         for(index_t i = 1; i < nprocs; ++i){

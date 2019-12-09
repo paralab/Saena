@@ -7,15 +7,42 @@
 //a zfp_stream object must be allocated.
 
 
-// zfp functions:
+// send_zfp functions:
 
 int saena_matrix::allocate_zfp(){
 
-    zfp_send_bufsize = rate / 2 * (unsigned)ceil(vIndexSize/4.0); // rate/8 * 4 * ceil(size/4). This is in bytes.
-    zfp_recv_bufsize = rate / 2 * (unsigned)ceil(recvSize/4.0);
-    zfp_send_buffer = (double*)malloc(zfp_send_bufsize);
-    zfp_recv_buffer = (double*)malloc(zfp_recv_bufsize);
     free_zfp_buff = true;
+
+    zfp_send_buff_sz = zfp_rate / 2 * (unsigned)ceil(vIndexSize/4.0); // rate/8 * 4 * ceil(size/4). This is in bytes.
+    zfp_recv_buff_sz = zfp_rate / 2 * (unsigned)ceil(recvSize/4.0);
+//    zfp_send_buff = (double*)malloc(zfp_send_buff_sz);
+//    zfp_recv_buff = (double*)malloc(zfp_recv_buff_sz);
+    zfp_send_buff    = new uchar[zfp_send_buff_sz];
+    zfp_recv_buff    = new uchar[zfp_recv_buff_sz];
+
+    send_field = zfp_field_1d(&vSend[0], zfptype, vIndexSize);
+
+    send_zfp   = zfp_stream_open(nullptr);
+    zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
+//    zfp_stream_set_precision(send_zfp, zfp_precision);
+
+//    zfp_send_buff_sz = zfp_stream_maximum_size(send_zfp, send_field);
+//    zfp_send_buff    = new uchar[zfp_send_buff_sz];
+    send_stream      = stream_open(zfp_send_buff, zfp_send_buff_sz);
+    zfp_stream_set_bit_stream(send_zfp, send_stream);
+
+//    printf("M = %u, \tvIndexSize = %u, \tzfp_send_buff_sz = %u\n", M, vIndexSize, zfp_send_buff_sz);
+
+//    recv_field = zfp_field_1d(&vecValues[0], zfptype, recvSize);
+//    recv_zfp   = zfp_stream_open(nullptr);
+//    zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
+//    recv_stream      = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
+//    zfp_stream_set_bit_stream(recv_zfp, recv_stream);
+
+    recv_field = zfp_field_1d(&vecValues[0], zfptype, recvSize);
+    recv_stream = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
+    recv_zfp = zfp_stream_open(recv_stream);
+    zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
 
     return 0;
 }
@@ -23,9 +50,19 @@ int saena_matrix::allocate_zfp(){
 int saena_matrix::deallocate_zfp(){
 
     if(free_zfp_buff){
-        free(zfp_send_buffer);
-        free(zfp_recv_buffer);
+
+        zfp_field_free(send_field);
+        zfp_stream_close(send_zfp);
+        stream_close(send_stream);
+
+        zfp_field_free(recv_field);
+        zfp_stream_close(recv_zfp);
+        stream_close(recv_stream);
+
+        delete []zfp_send_buff;
+        delete []zfp_recv_buff;
         free_zfp_buff = false;
+
     }
 
     return 0;
@@ -44,8 +81,9 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
 //#pragma omp parallel for // todo: add back the openmp parts
-    for(index_t i = 0;i < vIndexSize; ++i)
+    for(index_t i = 0;i < vIndexSize; ++i){
         vSend[i] = v[(vIndex[i])];
+    }
 
 //    if(rank==1)
 //        for(index_t i=0;i<vIndexSize;i++)
@@ -57,31 +95,44 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 //    for(index_t i = 0; i < rem; i++)
 //        vSend.push_back(0);
 
-    unsigned minbits;      // min bits per block
-    unsigned maxbits;      // max bits per block
-    unsigned maxprec;      // max precision
-    int      minexp;       // min bit plane encoded
+//    unsigned minbits;      // min bits per block
+//    unsigned maxbits;      // max bits per block
+//    unsigned maxprec;      // max precision
+//    int      minexp;       // min bit plane encoded
 //    double rate_return;
-    unsigned long size1;
+//    unsigned long size1;
+
     if(vIndexSize || recvSize){
-        field  = zfp_field_1d(&vSend[0], zfp_type_double, vIndexSize);
-        stream = stream_open(zfp_send_buffer, zfp_send_bufsize);
-        zfp    = zfp_stream_open(stream);
-        zfp_stream_set_rate(zfp, rate, zfp_type_double, 1, 0);
-//        zfp_stream_set_bit_stream(zfp, stream);
-//        zfp_stream_params(zfp, &minbits, &maxbits, &maxprec, &minexp);
-//        if(rank==1) printf("minbits = %u, maxbits = %u \n", minbits, maxbits);
-//        maxbits = send_bufsize;
-//        minbits = maxbits;
-//        zfp_stream_set_params(zfp, 4*rate, 4*rate, maxprec, minexp);
-//        zfp_stream_flush(zfp);
-        zfp_stream_rewind(zfp);
-        if(vIndexSize)
-            size1 = zfp_compress(zfp, field);
-//        size1 = zfp_stream_compressed_size(zfp);
+
+//        send_field = zfp_field_1d(&vSend[0], zfptype, vIndexSize);
+
+//        send_zfp   = zfp_stream_open(nullptr);
+//        zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
+//        zfp_stream_set_precision(send_zfp, zfp_precision);
+
+//        zfp_send_buff_sz = zfp_stream_maximum_size(send_zfp, send_field);
+//        zfp_send_buff    = new uchar[zfp_send_buff_sz];
+//        send_stream      = stream_open(zfp_send_buff, zfp_send_buff_sz);
+//        zfp_stream_set_bit_stream(send_zfp, send_stream);
+
+        zfp_stream_rewind(send_zfp);
+        if(vIndexSize){
+            zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
+//            printf("rank %d: vIndexSize = %u, zfp_send_buff_sz = %u, \tzfp_send_comp_sz = %u\n", rank, vIndexSize, zfp_send_buff_sz, zfp_send_comp_sz);
+            if(zfp_send_buff_sz != zfp_send_comp_sz){
+                printf("ERROR: rank %d: vIndexSize = %u, zfp_send_buff_sz = %u, \tzfp_send_comp_sz = %u\n", rank, vIndexSize, zfp_send_buff_sz, zfp_send_comp_sz);
+            }
+        }
+
+//        size1 = zfp_stream_compressed_size(send_zfp);
 //        if(rank==0) fprintf(stderr, "%u compressed bytes (%.2f bps)\n", (uint)size1, (double)size1 * CHAR_BIT / M);
 //        printf("rank %d: passed rate = %u, rate_return = %f \n", rank, rate, rate_return);
+//        printf("rank %d: passed rate = %u, rate_return = %f \n", rank, rate, rate_return);
     }
+
+
+
+
 
 //    printf("here111\n");
 //    print_vector(rdispls, -1, "rdispls", comm);
@@ -95,20 +146,29 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     // they are received in order: first put the values from the lowest rank matrix, and so on.
     int size4k;
     for(int i = 0; i < numRecvProc; i++) {
-        size4k = 4 * (int)ceil(recvProcCount[i]/4.0);
-        MPI_Irecv(&zfp_recv_buffer[rdispls[recvProcRank[i]]], size4k, MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
-//        MPI_Irecv(&recv_buffer[(rate/CHAR_BIT)*rdispls[recvProcRank[i]]], (rate/CHAR_BIT)*recvProcCount[i], MPI_UNSIGNED_CHAR, recvProcRank[i], 1, comm, &(requests[i]));
-//        if(rank==0) printf("(rate/CHAR_BIT)*rdispls[recvProcRank[i]] = %d, (rate/CHAR_BIT)*recvProcCount[i] = %d, recvProcRank[i] = %d \n",
-//                           (rate/CHAR_BIT)*rdispls[recvProcRank[i]], (rate/CHAR_BIT)*recvProcCount[i], recvProcRank[i]);
+//        size4k = 4 * (int)ceil(recvProcCount[i]/4.0);
+//        MPI_Irecv(&zfp_recv_buff[rdispls[recvProcRank[i]]], size4k, MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+//        MPI_Irecv(&zfp_recv_buff[(zfp_rate/CHAR_BIT)*rdispls[recvProcRank[i]]], (zfp_rate/CHAR_BIT)*recvProcCount[i], MPI_UNSIGNED_CHAR, recvProcRank[i], 1, comm, &(requests[i]));
+
+        MPI_Irecv(&zfp_recv_buff[(zfp_rate/CHAR_BIT)*rdispls[recvProcRank[i]]], (zfp_rate/CHAR_BIT)*recvProcCount[i], MPI_UNSIGNED_CHAR, recvProcRank[i], 1, comm, &(requests[i]));
+//        if(rank==0) printf("(rate/CHAR_BIT)*rdispls[recvProcRank[i]] = %d, (rate/CHAR_BIT)*recvProcCount[i] = %d, recvProcRank[i] = %d, \tzfp_rate/CHAR_BIT = %u \n",
+//                           (zfp_rate/CHAR_BIT)*rdispls[recvProcRank[i]], (zfp_rate/CHAR_BIT)*recvProcCount[i], recvProcRank[i], zfp_rate/CHAR_BIT);
     }
 
     for(int i = 0; i < numSendProc; i++){
-        size4k = 4 * (int)ceil(sendProcCount[i]/4.0);
-        MPI_Isend(&zfp_send_buffer[vdispls[sendProcRank[i]]], size4k, MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
-//        MPI_Isend(&send_buffer[(rate/CHAR_BIT)*vdispls[sendProcRank[i]]], (rate/CHAR_BIT), MPI_UNSIGNED_CHAR, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+//        size4k = 4 * (int)ceil(sendProcCount[i]/4.0);
+//        MPI_Isend(&zfp_send_buff[vdispls[sendProcRank[i]]], size4k, MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc + i]));
+//        MPI_Isend(&zfp_send_buff[(zfp_rate/CHAR_BIT)*vdispls[sendProcRank[i]]], (zfp_rate/CHAR_BIT), MPI_UNSIGNED_CHAR, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+
+        MPI_Isend(&zfp_send_buff[(zfp_rate/CHAR_BIT)*vdispls[sendProcRank[i]]], (zfp_rate/CHAR_BIT)*sendProcCount[i], MPI_UNSIGNED_CHAR, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
 //        if(rank==1) printf("(rate/CHAR_BIT)*vdispls[sendProcRank[i]] = %d, (rate/CHAR_BIT)*sendProcCount[i] = %d, sendProcRank[i] = %d \n",
-//                           (rate/CHAR_BIT)*vdispls[sendProcRank[i]], (rate/CHAR_BIT)*sendProcCount[i], sendProcRank[i]);
+//                           (zfp_rate/CHAR_BIT)*vdispls[sendProcRank[i]], (zfp_rate/CHAR_BIT)*sendProcCount[i], sendProcRank[i]);
     }
+
+//    MPI_Waitall(numRecvProc, requests, statuses);
+//    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
+//    delete [] requests;
+//    delete [] statuses;
 
     // local loop
     // ----------
@@ -126,7 +186,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 
     // the openmp version
     // todo: add back the openmp parts
-/*
+#if 0
 #pragma omp parallel
     {
         nnz_t iter = iter_local_array[omp_get_thread_num()];
@@ -138,30 +198,31 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
             }
         }
     }
-*/
-
+#endif
     // Wait for the receive communication to finish.
     MPI_Waitall(numRecvProc, requests, statuses);
 
 //    if(recvSize){
-//        stream = stream_open(recv_buffer, recv_bufsize);
-//        zfp_stream_set_bit_stream(zfp, stream);
-//        zfp_stream_set_params(zfp, 4*send_bufsize, 4*send_bufsize, maxprec, minexp);
-//        zfp_stream_rewind(zfp);
-//        zfp_field_set_pointer(field, &vecValues[0]);
-//        zfp_field_set_size_1d(field, recvSize);
-//        zfp_decompress(zfp, field);
+//        send_stream = stream_open(recv_buffer, recv_bufsize);
+//        zfp_stream_set_bit_stream(send_zfp, send_stream);
+//        zfp_stream_set_params(send_zfp, 4*send_bufsize, 4*send_bufsize, maxprec, minexp);
+//        zfp_stream_rewind(send_zfp);
+//        zfp_field_set_pointer(send_field, &vecValues[0]);
+//        zfp_field_set_size_1d(send_field, recvSize);
+//        zfp_decompress(send_zfp, send_field);
 //    }
 
     if(recvSize){
-        field2 = zfp_field_1d(&vecValues[0], zfp_type_double, recvSize);
-        stream2 = stream_open(zfp_recv_buffer, zfp_recv_bufsize);
-        zfp2 = zfp_stream_open(stream2);
-        zfp_stream_set_rate(zfp2, rate, zfp_type_double, 1, 0);
-//        zfp_stream_params(zfp2, &minbits, &maxbits, &maxprec, &minexp);
-//        zfp_stream_set_params(zfp2, 4*rate, 4*rate, maxprec, minexp);
-        zfp_stream_rewind(zfp2);
-        zfp_decompress(zfp2, field2);
+//        recv_field = zfp_field_1d(&vecValues[0], zfptype, recvSize);
+//        recv_stream = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
+//        recv_zfp = zfp_stream_open(recv_stream);
+//        zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
+
+//        zfp_stream_params(recv_zfp, &minbits, &maxbits, &maxprec, &minexp);
+//        zfp_stream_set_params(recv_zfp, 4*rate, 4*rate, maxprec, minexp);
+
+        zfp_stream_rewind(recv_zfp);
+        zfp_decompress(recv_zfp, recv_field);
     }
 
 //    print_vector(vecValues, -1, "vecValues", comm);
@@ -179,17 +240,17 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 //            if(rank==1) std::cout << vecValues[j] << std::endl;
         }
     }
-
+/*
     if(vIndexSize || recvSize){
-        zfp_field_free(field);
-        zfp_stream_close(zfp);
-        stream_close(stream);
+        zfp_field_free(send_field);
+        zfp_stream_close(send_zfp);
+        stream_close(send_stream);
 
-        zfp_field_free(field2);
-        zfp_stream_close(zfp2);
-        stream_close(stream2);
+        zfp_field_free(recv_field);
+        zfp_stream_close(recv_zfp);
+        stream_close(recv_stream);
     }
-
+    */
     MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     delete [] requests;
     delete [] statuses;
@@ -232,21 +293,21 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 //    double rate_return;
     unsigned long size1;
     if(vIndexSize || recvSize){
-        field  = zfp_field_1d(&vSend[0], zfp_type_double, vIndexSize);
-        stream = stream_open(zfp_send_buffer, zfp_send_bufsize);
-        zfp    = zfp_stream_open(stream);
-        zfp_stream_set_rate(zfp, rate, zfp_type_double, 1, 0);
-//        zfp_stream_set_bit_stream(zfp, stream);
-//        zfp_stream_params(zfp, &minbits, &maxbits, &maxprec, &minexp);
+        send_field  = zfp_field_1d(&vSend[0], zfptype, vIndexSize);
+        send_stream = stream_open(zfp_send_buff, zfp_send_buff_sz);
+        send_zfp    = zfp_stream_open(send_stream);
+        zfp_stream_set_rate(send_zfp, rate, zfptype, 1, 0);
+//        zfp_stream_set_bit_stream(send_zfp, send_stream);
+//        zfp_stream_params(send_zfp, &minbits, &maxbits, &maxprec, &minexp);
 //        if(rank==1) printf("minbits = %u, maxbits = %u \n", minbits, maxbits);
 //        maxbits = send_bufsize;
 //        minbits = maxbits;
-//        zfp_stream_set_params(zfp, 4*rate, 4*rate, maxprec, minexp);
-//        zfp_stream_flush(zfp);
-        zfp_stream_rewind(zfp);
+//        zfp_stream_set_params(send_zfp, 4*rate, 4*rate, maxprec, minexp);
+//        zfp_stream_flush(send_zfp);
+        zfp_stream_rewind(send_zfp);
         if(vIndexSize)
-            size1 = zfp_compress(zfp, field);
-//        size1 = zfp_stream_compressed_size(zfp);
+            size1 = zfp_compress(send_zfp, send_field);
+//        size1 = zfp_stream_compressed_size(send_zfp);
 //        if(rank==0) fprintf(stderr, "%u compressed bytes (%.2f bps)\n", (uint)size1, (double)size1 * CHAR_BIT / M);
 //        printf("rank %d: passed rate = %u, rate_return = %f \n", rank, rate, rate_return);
     }
@@ -264,7 +325,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     int size4k;
     for(int i = 0; i < numRecvProc; i++) {
         size4k = 4 * (int)ceil(recvProcCount[i]/4.0);
-        MPI_Irecv(&zfp_recv_buffer[rdispls[recvProcRank[i]]], size4k, MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+        MPI_Irecv(&zfp_recv_buff[rdispls[recvProcRank[i]]], size4k, MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
 //        MPI_Irecv(&recv_buffer[(rate/CHAR_BIT)*rdispls[recvProcRank[i]]], (rate/CHAR_BIT)*recvProcCount[i], MPI_UNSIGNED_CHAR, recvProcRank[i], 1, comm, &(requests[i]));
 //        if(rank==0) printf("(rate/CHAR_BIT)*rdispls[recvProcRank[i]] = %d, (rate/CHAR_BIT)*recvProcCount[i] = %d, recvProcRank[i] = %d \n",
 //                           (rate/CHAR_BIT)*rdispls[recvProcRank[i]], (rate/CHAR_BIT)*recvProcCount[i], recvProcRank[i]);
@@ -272,7 +333,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
 
     for(int i = 0; i < numSendProc; i++){
         size4k = 4 * (int)ceil(sendProcCount[i]/4.0);
-        MPI_Isend(&zfp_send_buffer[vdispls[sendProcRank[i]]], size4k, MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+        MPI_Isend(&zfp_send_buff[vdispls[sendProcRank[i]]], size4k, MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
 //        MPI_Isend(&send_buffer[(rate/CHAR_BIT)*vdispls[sendProcRank[i]]], (rate/CHAR_BIT), MPI_UNSIGNED_CHAR, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
 //        if(rank==1) printf("(rate/CHAR_BIT)*vdispls[sendProcRank[i]] = %d, (rate/CHAR_BIT)*sendProcCount[i] = %d, sendProcRank[i] = %d \n",
 //                           (rate/CHAR_BIT)*vdispls[sendProcRank[i]], (rate/CHAR_BIT)*sendProcCount[i], sendProcRank[i]);
@@ -312,24 +373,24 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     MPI_Waitall(numRecvProc, requests, statuses);
 
 //    if(recvSize){
-//        stream = stream_open(recv_buffer, recv_bufsize);
-//        zfp_stream_set_bit_stream(zfp, stream);
-//        zfp_stream_set_params(zfp, 4*send_bufsize, 4*send_bufsize, maxprec, minexp);
-//        zfp_stream_rewind(zfp);
-//        zfp_field_set_pointer(field, &vecValues[0]);
-//        zfp_field_set_size_1d(field, recvSize);
-//        zfp_decompress(zfp, field);
+//        send_stream = stream_open(recv_buffer, recv_bufsize);
+//        zfp_stream_set_bit_stream(send_zfp, send_stream);
+//        zfp_stream_set_params(send_zfp, 4*send_bufsize, 4*send_bufsize, maxprec, minexp);
+//        zfp_stream_rewind(send_zfp);
+//        zfp_field_set_pointer(send_field, &vecValues[0]);
+//        zfp_field_set_size_1d(send_field, recvSize);
+//        zfp_decompress(send_zfp, send_field);
 //    }
 
     if(recvSize){
-        field2 = zfp_field_1d(&vecValues[0], zfp_type_double, recvSize);
-        stream2 = stream_open(zfp_recv_buffer, zfp_recv_bufsize);
-        zfp2 = zfp_stream_open(stream2);
-        zfp_stream_set_rate(zfp2, rate, zfp_type_double, 1, 0);
-//        zfp_stream_params(zfp2, &minbits, &maxbits, &maxprec, &minexp);
-//        zfp_stream_set_params(zfp2, 4*rate, 4*rate, maxprec, minexp);
-        zfp_stream_rewind(zfp2);
-        zfp_decompress(zfp2, field2);
+        recv_field = zfp_field_1d(&vecValues[0], zfptype, recvSize);
+        recv_stream = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
+        recv_zfp = zfp_stream_open(recv_stream);
+        zfp_stream_set_rate(recv_zfp, rate, zfptype, 1, 0);
+//        zfp_stream_params(recv_zfp, &minbits, &maxbits, &maxprec, &minexp);
+//        zfp_stream_set_params(recv_zfp, 4*rate, 4*rate, maxprec, minexp);
+        zfp_stream_rewind(recv_zfp);
+        zfp_decompress(recv_zfp, recv_field);
     }
 
 //    print_vector(vecValues, -1, "vecValues", comm);
@@ -349,13 +410,13 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     }
 
     if(vIndexSize || recvSize){
-        zfp_field_free(field);
-        zfp_stream_close(zfp);
-        stream_close(stream);
+        zfp_field_free(send_field);
+        zfp_stream_close(send_zfp);
+        stream_close(send_stream);
 
-        zfp_field_free(field2);
-        zfp_stream_close(zfp2);
-        stream_close(stream2);
+        zfp_field_free(recv_field);
+        zfp_stream_close(recv_zfp);
+        stream_close(recv_stream);
     }
 
     MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);

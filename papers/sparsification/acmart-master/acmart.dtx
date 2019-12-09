@@ -1426,13 +1426,13 @@
 %  lastaccessed = "March 2, 2005",
 % }
 % \end{verbatim}
-% For these entry types you can use the \path{lastaccessed} field to add
+% For these entry types you can use the \path{lastaccessed} send_field to add
 % the access date for the URL.
 %
 % There are two ways to enter video or audio sources in the
 % bibliograpy corresponding to two different possibilies.  For
 % standalone sources available online, you can use an \path{online}
-% entry and set its \path{howpublished} field.  For example,
+% entry and set its \path{howpublished} send_field.  For example,
 % \begin{verbatim}
 % @online{Obama08,
 %  author =       "Barack Obama",
@@ -1448,7 +1448,7 @@
 %
 % For sources available as attachments to conference proceedings
 % and similar documents, you can use the usual \path{inproceedings}
-% entry type and set its \path{howpublished} field:
+% entry type and set its \path{howpublished} send_field:
 % \begin{verbatim}
 % @Inproceedings{Novak03,
 %  author =       "Dave Novak",
@@ -1483,7 +1483,7 @@
 % ``[n. d.]'' (for ``no date'') to the entry.
 %
 % If you do not know the author (this is often the case for online
-% entries), use the |key| field to add a key for sorting and citations,
+% entries), use the |key| send_field to add a key for sorting and citations,
 % for example,
 % \begin{verbatim}
 % @online{TUGInstmem,

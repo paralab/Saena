@@ -179,6 +179,26 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 //    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
 
+    // *************************** zfp ****************************
+
+//    solver.get_object()->grids[0].A->allocate_zfp(solver.get_object()->grids[0].rhs);
+    saena_matrix *B = solver.get_object()->grids[0].A;
+
+    std::vector<double> v(B->split[rank+1] - B->split[rank], 0);
+    std::vector<double> w(B->split[rank+1] - B->split[rank], 0);
+
+//    print_vector(B->split, 0, "B.split", comm);
+//    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
+//    print_vector(v, -1, "v", comm);
+
+    B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
+    B->matvec_sparse_zfp(solver.get_object()->grids[0].rhs, w);
+
+    for(int i = 0; i < v.size(); ++i){
+        if(fabs(w[i] - v[i]) > 1e-8)
+            std::cout << v[i] << "\t" << w[i] << std::endl;
+    }
+
     // *************************** AMG - Solve ****************************
 /*
     t1 = MPI_Wtime();
