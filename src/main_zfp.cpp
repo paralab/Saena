@@ -198,6 +198,7 @@ int main(int argc, char* argv[]){
         B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
     }
 
+    MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
         B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
