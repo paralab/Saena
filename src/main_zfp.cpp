@@ -199,19 +199,19 @@ int main(int argc, char* argv[]){
     }
 
     t1 = MPI_Wtime();
-    for(int i = 0; i < v.size(); ++i){
+    for(int i = 0; i < matvec_iter; ++i){
         B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
     }
-    t1 = t1 - MPI_Wtime();
-    print_time_ave(t1, "matvec original:", comm, true);
+    t1 = MPI_Wtime() - t1;
+    print_time(t1 / matvec_iter, "matvec original:", comm);
 
 
     t1 = MPI_Wtime();
-    for(int i = 0; i < v.size(); ++i){
+    for(int i = 0; i < matvec_iter; ++i){
         B->matvec_sparse_zfp(solver.get_object()->grids[0].rhs, w);
     }
-    t1 = t1 - MPI_Wtime();
-    print_time_ave(t1, "matvec zfp:", comm, true);
+    t1 = MPI_Wtime() - t1;
+    print_time(t1 / matvec_iter, "matvec zfp:", comm);
 
 
     for(int i = 0; i < v.size(); ++i){
