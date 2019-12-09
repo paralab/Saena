@@ -65,15 +65,15 @@ int saena_matrix::repartition_nnz_initial(){
 
 //    if (rank==0) std::cout << "n_buckets = " << n_buckets << ", Mbig = " << Mbig << std::endl;
 
-    std::vector<index_t > splitOffset(n_buckets);
-    auto baseOffset = index_t(floor(1.0 * Mbig / n_buckets));
-    float offsetRes = float(1.0 * Mbig / n_buckets) - baseOffset;
+    std::vector<index_t> splitOffset(n_buckets);
+    auto  baseOffset = index_t(floor(1.0 * Mbig / n_buckets));
+    float offsetRes  = float(1.0 * Mbig / n_buckets) - baseOffset;
 //    if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
     float offsetResSum = 0;
     splitOffset[0] = 0;
-    for(index_t i=1; i<n_buckets; i++){
+    for(index_t i = 1; i < n_buckets; ++i){
         splitOffset[i] = baseOffset;
-        offsetResSum += offsetRes;
+        offsetResSum  += offsetRes;
         if (offsetResSum >= 1){
             splitOffset[i]++;
             offsetResSum -= 1;
@@ -86,7 +86,7 @@ int saena_matrix::repartition_nnz_initial(){
 
     std::vector<index_t > firstSplit(n_buckets+1);
     firstSplit[0] = 0;
-    for(index_t i=1; i<n_buckets; i++){
+    for(index_t i = 1; i < n_buckets; ++i){
         firstSplit[i] = firstSplit[i-1] + splitOffset[i];
     }
     firstSplit[n_buckets] = Mbig;
@@ -142,11 +142,11 @@ int saena_matrix::repartition_nnz_initial(){
 
     index_t procNum = 0;
     split.resize(nprocs+1);
-    split[0]=0;
-    for (index_t i = 1; i < n_buckets; i++){
+    split[0] = 0;
+    for (index_t i = 1; i < n_buckets; ++i){
         //if (rank==0) std::cout << "(procNum+1)*nnz_g/nprocs = " << (procNum+1)*nnz_g/nprocs << std::endl;
-        if (H_g_scan[i] > ((procNum+1)*nnz_g/nprocs)){
-            procNum++;
+        if (H_g_scan[i] > ((procNum+1) * nnz_g / nprocs)){
+            ++procNum;
             split[procNum] = firstSplit[i];
         }
     }
