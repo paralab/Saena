@@ -1,0 +1,24 @@
+# - Config file for the send_zfp package
+#
+# It defines the following variables
+#  ZFP_INCLUDE_DIRS - include directories for send_zfp
+#  ZFP_LIBRARIES    - libraries to link against
+#
+# And the following imported targets:
+#   send_zfp::send_zfp
+#
+
+include("${CMAKE_CURRENT_LIST_DIR}/send_zfp-config-version.cmake")
+
+include(FindPackageHandleStandardArgs)
+set(${CMAKE_FIND_PACKAGE_NAME}_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
+find_package_handle_standard_args(${CMAKE_FIND_PACKAGE_NAME} CONFIG_MODE)
+
+if(NOT TARGET send_zfp::send_zfp)
+  include("${CMAKE_CURRENT_LIST_DIR}/send_zfp-targets.cmake")
+endif()
+
+set(ZFP_LIBRARIES send_zfp::send_zfp)
+set(ZFP_INCLUDE_DIRS
+  $<TARGET_PROPERTY:send_zfp::send_zfp,INTERFACE_INCLUDE_DIRECTORIES>
+)
