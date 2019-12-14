@@ -209,7 +209,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 
         MPI_Barrier(comm);
-        if(!rank) printf("\n");
+//        if(!rank) printf("\n");
 //        MPI_Barrier(comm);
 //        printf("rank %d: A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
 //               rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
@@ -2713,12 +2713,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-//    if (!rank) printf("\nprepare\ncomm and multiply\nsort\nfast_mm\n\n");
-//    print_time_ave(t1, "prepare",           comm, true);
-//    print_time_ave(t2, "comm and multiply", comm, true);
-//    print_time_ave(t3, "sort",              comm, true);
+    if (!rank) printf("\nprepare\ncomm and multiply\nsort\nfast_mm\n\n");
+    print_time_ave(t1, "prepare",           comm, true);
+    print_time_ave(t2, "comm and multiply", comm, true);
+    print_time_ave(t3, "sort",              comm, true);
 //
-//    print_time_ave(tf_tot, "fast_mm", comm, true);
+    print_time_ave(tf_tot, "fast_mm", comm, true);
 
     return 0;
 }
