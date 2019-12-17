@@ -208,14 +208,14 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 
 
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
 //        if(!rank) printf("\n");
 //        MPI_Barrier(comm);
 //        printf("rank %d: A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
 //               rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
-        if(!rank)
-            printf("A_row_size = %u, \tA_nnz = %ld, \tB_col_size = %u, \tB_nnz = %ld\n", A_row_size, A_nnz, B_col_size, B_nnz);
-        MPI_Barrier(comm);
+//        if(!rank)
+//            printf("A_row_size = %u, \tA_nnz = %ld, \tB_col_size = %u, \tB_nnz = %ld\n", A_row_size, A_nnz, B_col_size, B_nnz);
+//        MPI_Barrier(comm);
 
 
 
@@ -2654,7 +2654,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
 
         tf = MPI_Wtime();
-
+/*
         if(Acsc.nnz == 0 || send_nnz==0){ // skip!
 
         } else {
@@ -2667,7 +2667,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                     Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
                     AB_temp, comm);
         }
-
+*/
         tf = MPI_Wtime() - tf;
         tf_tot += tf;
 
@@ -2713,12 +2713,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-    if (!rank) printf("\nprepare\ncomm and multiply\nsort\nfast_mm\n\n");
-    print_time_ave(t1, "prepare",           comm, true);
-    print_time_ave(t2, "comm and multiply", comm, true);
-    print_time_ave(t3, "sort",              comm, true);
-//
-    print_time_ave(tf_tot, "fast_mm", comm, true);
+    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
+    print_time_ave(t1,          "prepare", comm, true);
+    print_time_ave(tf_tot,      "fast_mm", comm, true);
+    print_time_ave(t2 - tf_tot, "comm",    comm, true);
+    print_time_ave(t3,          "sort",    comm, true);
 
     return 0;
 }
