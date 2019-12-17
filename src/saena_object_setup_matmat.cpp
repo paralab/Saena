@@ -2186,7 +2186,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     return 0;
 }
 
-//original int saena_object::matmat
+//original
 /*
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max){
 
@@ -2589,10 +2589,10 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if(nprocs == 1){
-//        printf("this experimental version of matmat does not work in serial!");
-//        exit(EXIT_FAILURE);
-//    }
+    if(nprocs == 1){
+        printf("this experimental version of matmat does not work in serial!");
+        exit(EXIT_FAILURE);
+    }
 
     double t1 = MPI_Wtime();
 
@@ -2605,57 +2605,55 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     std::vector<cooEntry> AB_temp;
 
-    if(nprocs > 1) {
+    auto mat_send       = &mempool3[0];
+    auto mat_send_r     = &mat_send[0];
+    auto mat_send_cscan = &mat_send[send_nnz];
+    auto mat_send_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + Bcsc.col_sz + 1]);
 
-        auto mat_send = &mempool3[0];
-        auto mat_send_r = &mat_send[0];
-        auto mat_send_cscan = &mat_send[send_nnz];
-        auto mat_send_v = reinterpret_cast<value_t *>(&mat_send[send_nnz + Bcsc.col_sz + 1]);
+    memcpy(mat_send_r,     Bcsc.row,      Bcsc.nnz * sizeof(index_t));
+    memcpy(mat_send_cscan, Bcsc.col_scan, (Bcsc.col_sz + 1) * sizeof(index_t));
+    memcpy(mat_send_v,     Bcsc.val,      Bcsc.nnz * sizeof(value_t));
 
-        memcpy(mat_send_r, Bcsc.row, Bcsc.nnz * sizeof(index_t));
-        memcpy(mat_send_cscan, Bcsc.col_scan, (Bcsc.col_sz + 1) * sizeof(index_t));
-        memcpy(mat_send_v, Bcsc.val, Bcsc.nnz * sizeof(value_t));
+    int right_neighbor = (rank + 1)%nprocs;
+    int left_neighbor  = rank - 1;
+    if (left_neighbor < 0){
+        left_neighbor += nprocs;
+    }
 
-        int right_neighbor = (rank + 1) % nprocs;
-        int left_neighbor = rank - 1;
-        if (left_neighbor < 0) {
-            left_neighbor += nprocs;
-        }
+    nnz_t recv_nnz;
+    nnz_t recv_size;
+    index_t mat_recv_M, mat_current_M;
 
-        nnz_t recv_nnz;
-        nnz_t recv_size;
-        index_t mat_recv_M, mat_current_M;
+    auto mat_recv = &mempool3[send_size_max];
 
-        auto mat_recv = &mempool3[send_size_max];
+    auto mat_temp = mat_send;
+    int  owner, next_owner;
+    auto *requests = new MPI_Request[2];
+    auto *statuses = new MPI_Status[2];
 
-        auto mat_temp = mat_send;
-        int owner, next_owner;
-        auto *requests = new MPI_Request[2];
-        auto *statuses = new MPI_Status[2];
+    t1 = MPI_Wtime() - t1;
 
-        t1 = MPI_Wtime() - t1;
+    double t2 = MPI_Wtime();
+    double tf, tf_tot = 0; // for timing fast_mm
 
-        double t2 = MPI_Wtime();
-        double tf, tf_tot = 0; // for timing fast_mm
+    for(int k = rank; k < rank+nprocs; k++){
+        // This is overlapped. Both local and remote loops are done here.
+        // The first iteration is the local loop. The rest are remote.
+        // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor.
+        // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
+        // receive R_tranpose from the right_neighbor. And so on.
+        // --------------------------------------------------------------------
 
-        for (int k = rank; k < rank + nprocs; k++) {
-            // This is overlapped. Both local and remote loops are done here.
-            // The first iteration is the local loop. The rest are remote.
-            // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor.
-            // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
-            // receive R_tranpose from the right_neighbor. And so on.
-            // --------------------------------------------------------------------
+        next_owner = (k+1)%nprocs;
+        mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
+        recv_nnz   = Bcsc.nnz_list[next_owner];
+        recv_size  = (valbyidx + 1) * recv_nnz + mat_recv_M + 1;
 
-            next_owner = (k + 1) % nprocs;
-            mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
-            recv_nnz = Bcsc.nnz_list[next_owner];
-            recv_size = (valbyidx + 1) * recv_nnz + mat_recv_M + 1;
+        // communicate data
+        MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
+        MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
 
-            // communicate data
-            MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
-            MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor, rank, comm, requests + 1);
-
-            tf = MPI_Wtime();
+        tf = MPI_Wtime();
 /*
         if(Acsc.nnz == 0 || send_nnz==0){ // skip!
 
@@ -2670,36 +2668,27 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                     AB_temp, comm);
         }
 */
-            tf = MPI_Wtime() - tf;
-            tf_tot += tf;
+        tf = MPI_Wtime() - tf;
+        tf_tot += tf;
 
-            MPI_Waitall(2, requests, statuses);
+        MPI_Waitall(2, requests, statuses);
 
-            send_size = recv_size;
-            send_nnz = recv_nnz;
+        send_size = recv_size;
+        send_nnz  = recv_nnz;
 
-            mat_temp = mat_send;
-            mat_send = mat_recv;
-            mat_recv = mat_temp;
+        mat_temp = mat_send;
+        mat_send = mat_recv;
+        mat_recv = mat_temp;
 
-            mat_send_r = &mat_send[0];
-            mat_send_cscan = &mat_send[send_nnz];
-            mat_send_v = reinterpret_cast<value_t *>(&mat_send[send_nnz + mat_recv_M + 1]);
-        }
-
-        delete[] requests;
-        delete[] statuses;
-
-        t2 = MPI_Wtime() - t2;
-
-    }else{ //serial
-        if(Acsc.nnz != 0 && send_nnz != 0){
-            fast_mm(&Acsc.row[0], &Acsc.val[0], &Acsc.col_scan[0],
-                    &Bcsc.row[0], &Bcsc.val[0], &Bcsc.col_scan[0],
-                    Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank],
-                    AB_temp, comm);
-        }
+        mat_send_r     = &mat_send[0];
+        mat_send_cscan = &mat_send[send_nnz];
+        mat_send_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + mat_recv_M + 1]);
     }
+
+    delete [] requests;
+    delete [] statuses;
+
+    t2 = MPI_Wtime() - t2;
 
     // =======================================
     // sort and remove duplicates
@@ -2724,11 +2713,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-//    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
-//    print_time_ave(t1,          "prepare", comm, true);
-//    print_time_ave(tf_tot,      "fast_mm", comm, true);
-//    print_time_ave(t2 - tf_tot, "comm",    comm, true);
-//    print_time_ave(t3,          "sort",    comm, true);
+    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
+    print_time_ave(t1,          "prepare", comm, true);
+    print_time_ave(tf_tot,      "fast_mm", comm, true);
+    print_time_ave(t2 - tf_tot, "comm",    comm, true);
+    print_time_ave(t3,          "sort",    comm, true);
 
     return 0;
 }
