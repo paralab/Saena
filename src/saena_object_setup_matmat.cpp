@@ -2186,8 +2186,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     return 0;
 }
 
-//original
-
+//original int saena_object::matmat
+/*
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max){
 
     MPI_Comm comm = C.comm;
@@ -2580,7 +2580,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     return 0;
 }
-
+*/
 
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max){
 
@@ -2724,11 +2724,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
-    print_time_ave(t1,          "prepare", comm, true);
-    print_time_ave(tf_tot,      "fast_mm", comm, true);
-    print_time_ave(t2 - tf_tot, "comm",    comm, true);
-    print_time_ave(t3,          "sort",    comm, true);
+//    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
+//    print_time_ave(t1,          "prepare", comm, true);
+//    print_time_ave(tf_tot,      "fast_mm", comm, true);
+//    print_time_ave(t2 - tf_tot, "comm",    comm, true);
+//    print_time_ave(t3,          "sort",    comm, true);
 
     return 0;
 }
