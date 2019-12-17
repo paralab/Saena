@@ -2654,11 +2654,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
 
         tf = MPI_Wtime();
-/*
-        if(Acsc.nnz == 0 || send_nnz==0){ // skip!
 
-        } else {
-
+        if(Acsc.nnz != 0 && send_nnz != 0){
             owner         = k%nprocs;
             mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
 
@@ -2667,7 +2664,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                     Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
                     AB_temp, comm);
         }
-*/
+
         tf = MPI_Wtime() - tf;
         tf_tot += tf;
 
