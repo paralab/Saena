@@ -68,7 +68,7 @@ int main(int argc, char* argv[]){
 //    A.print(-1, "A");
 //    A.get_internal_matrix()->print_info(-1, "A");
 
-    saena::matrix B(A);
+//    saena::matrix B(A);
 
 //    saena::matrix B(comm);
 //    saena::random_symm_matrix(B, M, dens);
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
 
     // *************************** option 3: read from file ****************************
 
-    char *Aname(argv[1]);
+//    char *Aname(argv[1]);
 
     {
 /*
