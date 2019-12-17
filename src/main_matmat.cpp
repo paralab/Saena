@@ -131,10 +131,10 @@ int main(int argc, char* argv[]){
 // *************************** matrix-matrix product ****************************
 
         double matmat_time = 0;
-        int matmat_iter_warmup = 4;
-        int matmat_iter = 2;
+        int matmat_iter_warmup = 3;
+        int matmat_iter = 1;
 
-        saena::amg solver;
+//        saena::amg solver;
 //        saena::matrix C(comm);
 
         // warm-up
