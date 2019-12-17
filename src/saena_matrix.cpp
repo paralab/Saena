@@ -363,7 +363,11 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 }
 
 
-saena_matrix::~saena_matrix() = default;
+saena_matrix::~saena_matrix(){
+    if(free_zfp_buff){
+        deallocate_zfp();
+    }
+};
 
 
 int saena_matrix::set(index_t row, index_t col, value_t val){

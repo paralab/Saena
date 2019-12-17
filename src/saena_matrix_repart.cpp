@@ -65,15 +65,15 @@ int saena_matrix::repartition_nnz_initial(){
 
 //    if (rank==0) std::cout << "n_buckets = " << n_buckets << ", Mbig = " << Mbig << std::endl;
 
-    std::vector<index_t > splitOffset(n_buckets);
-    auto baseOffset = index_t(floor(1.0 * Mbig / n_buckets));
-    float offsetRes = float(1.0 * Mbig / n_buckets) - baseOffset;
+    std::vector<index_t> splitOffset(n_buckets);
+    auto  baseOffset = index_t(floor(1.0 * Mbig / n_buckets));
+    float offsetRes  = float(1.0 * Mbig / n_buckets) - baseOffset;
 //    if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
     float offsetResSum = 0;
     splitOffset[0] = 0;
-    for(index_t i=1; i<n_buckets; i++){
+    for(index_t i = 1; i < n_buckets; ++i){
         splitOffset[i] = baseOffset;
-        offsetResSum += offsetRes;
+        offsetResSum  += offsetRes;
         if (offsetResSum >= 1){
             splitOffset[i]++;
             offsetResSum -= 1;
@@ -86,7 +86,7 @@ int saena_matrix::repartition_nnz_initial(){
 
     std::vector<index_t > firstSplit(n_buckets+1);
     firstSplit[0] = 0;
-    for(index_t i=1; i<n_buckets; i++){
+    for(index_t i = 1; i < n_buckets; ++i){
         firstSplit[i] = firstSplit[i-1] + splitOffset[i];
     }
     firstSplit[n_buckets] = Mbig;
@@ -142,11 +142,11 @@ int saena_matrix::repartition_nnz_initial(){
 
     index_t procNum = 0;
     split.resize(nprocs+1);
-    split[0]=0;
-    for (index_t i = 1; i < n_buckets; i++){
+    split[0] = 0;
+    for (index_t i = 1; i < n_buckets; ++i){
         //if (rank==0) std::cout << "(procNum+1)*nnz_g/nprocs = " << (procNum+1)*nnz_g/nprocs << std::endl;
-        if (H_g_scan[i] > ((procNum+1)*nnz_g/nprocs)){
-            procNum++;
+        if (H_g_scan[i] > ((procNum+1) * nnz_g / nprocs)){
+            ++procNum;
             split[procNum] = firstSplit[i];
         }
     }
@@ -158,11 +158,31 @@ int saena_matrix::repartition_nnz_initial(){
     firstSplit.clear();
     firstSplit.shrink_to_fit();
 
+//    MPI_Barrier(comm);
+//    print_vector(split, 0, "split before", comm);
+//    MPI_Barrier(comm);
+
+    // todo: return split to its original form
+    // update split to make send_zfp work, since it only works on arrays of size 4k,
+    // if Mbig is 4k, then each split[i] should be a multiple of 4.
+    if(Mbig / nprocs > 4){
+        for(index_t i = 1; i < nprocs; ++i){
+            split[i] += (4 - (split[i] % 4)) % 4;
+        }
+    }
+
+//    MPI_Barrier(comm);
 //    print_vector(split, 0, "split", comm);
+//    MPI_Barrier(comm);
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
 //    M_old = M;
+
+    if(M % 4){
+        printf("\nM is not a multiple of 4 on proc %d: M = %u \nzfp will no work!\n", rank, M);
+        exit(EXIT_FAILURE);
+    }
 
     if(verbose_repartition && rank==0) printf("repartition - step 4!\n");
 

@@ -1,12 +1,12 @@
 include ../Config
 
-TARGET = ../bin/zfp
+TARGET = ../bin/send_zfp
 
 all: $(TARGET)
 
-$(TARGET): zfp.c ../lib/libzfp.a
+$(TARGET): send_zfp.c ../lib/libzfp.a
 	mkdir -p ../bin
-	$(CC) $(CFLAGS) zfp.c -L../lib -lzfp -lm -o $(TARGET)
+	$(CC) $(CFLAGS) send_zfp.c -L../lib -lzfp -lm -o $(TARGET)
 
 clean:
 	rm -f $(TARGET) fields.o
