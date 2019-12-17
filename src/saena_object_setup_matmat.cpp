@@ -2693,7 +2693,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     // =======================================
     // sort and remove duplicates
     // =======================================
-/*
+
     double t3 = MPI_Wtime();
 
     if(!AB_temp.empty()) {
@@ -2712,12 +2712,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     }
 
     t3 = MPI_Wtime() - t3;
-*/
-//    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
-//    print_time_ave(t1,          "prepare", comm, true);
-//    print_time_ave(tf_tot,      "fast_mm", comm, true);
-//    print_time_ave(t2 - tf_tot, "comm",    comm, true);
-//    print_time_ave(t3,          "sort",    comm, true);
+
+    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
+    print_time_ave(t1,          "prepare", comm, true);
+    print_time_ave(tf_tot,      "fast_mm", comm, true);
+    print_time_ave(t2 - tf_tot, "comm",    comm, true);
+    print_time_ave(t3,          "sort",    comm, true);
 
     return 0;
 }
