@@ -68,7 +68,7 @@ int main(int argc, char* argv[]){
 //    A.print(-1, "A");
 //    A.get_internal_matrix()->print_info(-1, "A");
 
-//    saena::matrix B(A);
+    saena::matrix B(A);
 
 //    saena::matrix B(comm);
 //    saena::random_symm_matrix(B, M, dens);
