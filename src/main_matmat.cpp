@@ -118,7 +118,7 @@ int main(int argc, char* argv[]){
     //    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
 
 // *************************** print info ****************************
-
+/*
         saena::amg solver;
 
         if (!rank) {
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]){
         // matmat_ave computes the average matmat time on processor 0.
         // so it is fine to just print the time on proc 0.
         if (!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
-
+*/
         // *************************** PETSc ****************************
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
