@@ -237,7 +237,7 @@ FUNCTION {new.sentence.checkb}
     'new.sentence
   if$
 }
-FUNCTION {field.or.null}
+FUNCTION {send_field.or.null}
 { duplicate$ empty$
     { pop$ "" }
     'skip$
@@ -683,7 +683,7 @@ FUNCTION {format.bvolume}
 FUNCTION {format.number.series}
 { volume empty$
     { number empty$
-        { series field.or.null }
+        { series send_field.or.null }
         { output.state mid.sentence =
             { bbl.number }
             { bbl.number capitalize }
@@ -785,7 +785,7 @@ FUNCTION {format.journal.eid}
   if$
 }
 FUNCTION {format.vol.num.pages} % this function is used only for journal entries
-{ volume field.or.null embolden
+{ volume send_field.or.null embolden
   duplicate$ empty$ 'skip$
     {
 %    bbl.volume swap$ tie.or.space.prefix
@@ -937,7 +937,7 @@ FUNCTION {format.book.crossref}
     }
   if$
   editor empty$
-  editor field.or.null author field.or.null =
+  editor send_field.or.null author send_field.or.null =
   or
     { key empty$
         { series empty$
@@ -958,7 +958,7 @@ FUNCTION {format.book.crossref}
 FUNCTION {format.incoll.inproc.crossref}
 {
   editor empty$
-  editor field.or.null author field.or.null =
+  editor send_field.or.null author send_field.or.null =
   or
     { key empty$
         { format.booktitle duplicate$ empty$
@@ -1490,11 +1490,11 @@ FUNCTION {presort}
   if$
   "    "
   *
-  year field.or.null sortify
+  year send_field.or.null sortify
   *
   "    "
   *
-  title field.or.null
+  title send_field.or.null
   sort.format.title
   *
   #1 entry.max$ substring$

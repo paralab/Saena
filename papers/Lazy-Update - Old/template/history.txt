@@ -16,7 +16,7 @@ Version history for the LLNCS LaTeX2e class
                                   reported by Ralf Heckmann and Graham Gough
                                   solution by David Carlisle
 
- 10.6.96  llncs.cls               problems with fragile commands in \author field
+ 10.6.96  llncs.cls               problems with fragile commands in \author send_field
                                   reported by Michael Gschwind, TU Wien
 
  25.7.96  llncs.cls               revision a corrects:
@@ -131,7 +131,7 @@ Version history for the LLNCS LaTeX2e class
 10.03.18  llncs.cls        2.20   adjusted \doi according to CrossRef requirements;
                                   TOC: removed affiliation numbers
 
-          splncs04.bst            added doi field;
+          splncs04.bst            added doi send_field;
                                   bold journal numbers
 
           samplepaper.tex         new sample paper

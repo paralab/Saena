@@ -358,7 +358,7 @@ FUNCTION { output.check }
 }
 
 FUNCTION { bibinfo.output.check }
-{ % like output.check, adding bibinfo field
+{ % like output.check, adding bibinfo send_field
   't :=
   duplicate$ empty.or.unknown
     { pop$ "empty " t * " in " * cite$ * warning$ }
@@ -435,7 +435,7 @@ FUNCTION { format.articleno }
      { "" }
      {
         numpages empty.or.unknown
-          { "articleno or eid field, but no numpages field, in "
+          { "articleno or eid send_field, but no numpages send_field, in "
             cite$ * warning$ }
           { }
         if$
@@ -449,7 +449,7 @@ FUNCTION { format.articleno }
 
 FUNCTION { format.year }
 { % push year string or "[n. d.]" onto output stack
-  %% Because year is a mandatory field, we always force SOMETHING
+  %% Because year is a mandatory send_field, we always force SOMETHING
   %% to be output
   "\bibinfo{year}{"
   year empty.or.unknown
@@ -958,7 +958,7 @@ FUNCTION { new.block.checkb }
   if$
 }
 
-FUNCTION { field.or.null }
+FUNCTION { send_field.or.null }
 { % convert empty value to null string, else return value
   duplicate$ empty.or.unknown
     { pop$ "" }
@@ -1111,7 +1111,7 @@ FUNCTION { format.authors }
 FUNCTION { format.key }
 {
   empty.or.unknown
-    { key field.or.null }
+    { key send_field.or.null }
     { "" }
   if$
 }
@@ -1327,7 +1327,7 @@ FUNCTION { format.number.series }
             if$
           }
           if$
-        }                                       %    { series field.or.null }
+        }                                       %    { series send_field.or.null }
         {
           output.state mid.sentence =
             { "Number" }                        % gnp - changed to mixed case always
@@ -1382,7 +1382,7 @@ FUNCTION { format.pages }
 }
 
 FUNCTION { format.pages.check.without.articleno }
-{ %% format pages field only if articleno is absent
+{ %% format pages send_field only if articleno is absent
   %% Stack out: pages-specification
   numpages missing$ pages missing$ and
     { "page numbers missing in both pages and numpages fields in " cite$ * warning$ }
@@ -1427,7 +1427,7 @@ FUNCTION { format.named.pages }
 %
 % Changed by Boris Veytsman, 2011-03-13
 % Now the word "pages" is printed even if
-% there field pages is not empty.
+% there send_field pages is not empty.
 %
 
 FUNCTION { format.page.count }
@@ -1462,7 +1462,7 @@ FUNCTION { format.articleno.numpages }
     {
 %%      numpages empty.or.unknown
 %%        { }
-%%        { "numpages field, but no articleno or eid field, in "
+%%        { "numpages send_field, but no articleno or eid send_field, in "
 %%          cite$ * warning$ }
 %%      if$
       ""
@@ -1472,7 +1472,7 @@ FUNCTION { format.articleno.numpages }
         {
           pages empty.or.unknown
             {
-              "articleno or eid, but no pages or numpages field in "
+              "articleno or eid, but no pages or numpages send_field in "
                  cite$ * warning$
               "" 'page.count :=
             }
@@ -1767,7 +1767,7 @@ FUNCTION { format.book.crossref }
     }
   if$
   editor empty.or.unknown
-  editor field.or.null author field.or.null =
+  editor send_field.or.null author send_field.or.null =
   or
     { key empty.or.unknown
     { series empty.or.unknown
@@ -1923,7 +1923,7 @@ FUNCTION { calc.basic.label }
   duplicate$
   year empty.or.unknown
     { "[n. d.]" }
-    { year field.or.null purify$ #-1 #4 substring$}
+    { year send_field.or.null purify$ #-1 #4 substring$}
   if$
   *
   'basic.label.year :=
@@ -1965,13 +1965,13 @@ FUNCTION { calc.label }
   % leave label on the stack, to be popped when required.
 
   "}{" * swap$ * "}{" *
-  %  year field.or.null purify$ #-1 #4 substring$ *
+  %  year send_field.or.null purify$ #-1 #4 substring$ *
   %
   % save the year for sort processing afterwards (adding a, b, c, etc.)
   %
   year empty.or.unknown
     { "[n. d.]" }
-    { year field.or.null purify$ #-1 #4 substring$}
+    { year send_field.or.null purify$ #-1 #4 substring$}
   if$
   'label.year :=
 }
@@ -2686,7 +2686,7 @@ FUNCTION { presort }
   "    "
   *
   sortify
-  year field.or.null purify$ #-1 #4 substring$ * % add year
+  year send_field.or.null purify$ #-1 #4 substring$ * % add year
   "    "
   *
   type$ "book" =
@@ -2713,7 +2713,7 @@ FUNCTION { presort }
   *
   "    "
   *
-  title field.or.null
+  title send_field.or.null
   sort.format.title
   *
   #1 entry.max$ substring$
@@ -2755,14 +2755,14 @@ FUNCTION { forward.pass }
   % if two entries are the same (see presort)
 
   last.label
-  calc.basic.label year field.or.null purify$ #-1 #4 substring$ * % add year
+  calc.basic.label year send_field.or.null purify$ #-1 #4 substring$ * % add year
   #1 entry.max$ substring$ =     % are they equal?
      { last.extra.num #1 + 'last.extra.num :=
        last.extra.num int.to.chr$ 'extra.label :=
      }
      { "a" chr.to.int$ 'last.extra.num :=
        "" 'extra.label :=
-       calc.basic.label year field.or.null purify$ #-1 #4 substring$ * % add year
+       calc.basic.label year send_field.or.null purify$ #-1 #4 substring$ * % add year
        #1 entry.max$ substring$ 'last.label := % assign to last.label
      }
   if$
@@ -2792,11 +2792,11 @@ FUNCTION { bib.sort.order }
   sort.label
   "    "
   *
-  year field.or.null sortify
+  year send_field.or.null sortify
   *
   "    "
   *
-  title field.or.null
+  title send_field.or.null
   sort.format.title
   *
   #1 entry.max$ substring$
@@ -2832,7 +2832,7 @@ FUNCTION { begin.bib }
   "%%% do not use final punctuation, in order to avoid confusing it with"    writeln
   "%%% the Web address."                                                     writeln
   "%%%"                                                                      writeln
-  "%%% To suppress output of a particular field, define its macro to expand" writeln
+  "%%% To suppress output of a particular send_field, define its macro to expand" writeln
   "%%% to an empty string, or better, \unskip, like this:"                   writeln
   "%%%"                                                                      writeln
   "%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax"                   writeln

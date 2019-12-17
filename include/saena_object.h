@@ -40,7 +40,7 @@ public:
     // setup
     // **********************************************
 
-    int          max_level                  = 10; // fine grid is level 0.
+    int          max_level                  = 1; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below this parameter.
     unsigned int least_row_threshold        = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher than this parameter,
