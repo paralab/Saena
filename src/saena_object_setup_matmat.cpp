@@ -15,6 +15,11 @@
 #include <mpi.h>
 
 
+
+// remove this
+#include <unistd.h>
+
+
 double case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
 
 void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
@@ -339,6 +344,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             // is true. If so, then extract that entry.
 
             double t12 = MPI_Wtime();
+
+//            sleep(1);
 
 //            C.reserve(C.size() + mapbit.count());
 
@@ -2164,6 +2171,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0;
 
     MPI_Barrier(comm);
     double t_AP = MPI_Wtime();
