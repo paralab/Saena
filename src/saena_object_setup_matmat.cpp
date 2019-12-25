@@ -342,16 +342,21 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             // Go through a dense matrix of size (A_nnz_row_sz * B_nnz_col_sz) and check if mapbit of that entry
             // is true. If so, then extract that entry.
 
+            if(mapbit.count() == 0){
+                return;
+            }
+
+//            if(rank == 1){
+//                printf("Arow = %d,\tBcol = %d,\tAr*Bc = %d,\tmapbit = %ld\n",
+//                       A_nnz_row_sz, B_nnz_col_sz, A_nnz_row_sz*B_nnz_col_sz, mapbit.count());
+//            }
+//            MPI_Barrier(comm);
+
             double t12 = MPI_Wtime();
 
 //            sleep(1);
 
 //            C.reserve(C.size() + mapbit.count());
-
-            if(rank == 1){
-                printf("Arow = %d,\tBcol = %d,\tAr*Bc = %d,\tmapbit = %ld\n",
-                       A_nnz_row_sz, B_nnz_col_sz, A_nnz_row_sz*B_nnz_col_sz, mapbit.count());
-            }
 
             nnz_t temp2;
             if(mapbit.count()){
@@ -371,6 +376,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             t12 = MPI_Wtime() - t12;
 //            print_time_ave(t12, "case12", comm, true);
             case12 += t12;
+
+//            if(rank == 1) printf("%f\t%f\n", t12, case12);
 
 #ifdef __DEBUG1__
 //                nnz_t C_nnz = 0; // not required
@@ -2196,11 +2203,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
 //    print_time(case12, "case12", comm);
 
-    if(rank == 1){
-        printf("\ncase0  = %f\n", case0);
-        printf("case11 = %f\n", case11);
-        printf("case12 = %f\n", case12);
-    }
+//    if(rank == 1){
+//        printf("\ncase0  = %f\n", case0);
+//        printf("case11 = %f\n", case11);
+//        printf("case12 = %f\n", case12);
+//    }
 
     return 0;
 }
