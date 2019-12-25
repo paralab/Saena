@@ -263,16 +263,15 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            bool C_not_zero = false;
             const index_t *Ac_p = &Ac_scan[0] - B_row_offset;
 
-            for (nnz_t j = 0; j < B_col_size; j++) { // columns of B
+            for (nnz_t j = 0; j < B_col_size; ++j) { // columns of B
+                temp = A_nnz_row_sz * B_new_col_idx[j];
 
-                for (nnz_t k = Bc_scan[j]; k < Bc_scan[j+1]; k++) { // nonzeros in column j of B
-
-                    temp = A_nnz_row_sz * B_new_col_idx[j];
+                for (nnz_t k = Bc_scan[j]; k < Bc_scan[j+1]; ++k) { // nonzeros in column j of B
 
 //                    if(rank==1) std::cout << "\n" << Br[k] << "\t" << Br[k] - B_row_offset
 //                                          << "\t" << Ac_p[Br[k]] << "\t" << Ac_p[Br[k]+1] << std::endl;
 
-                    for (nnz_t i = Ac_p[Br[k]]; i < Ac_p[Br[k] + 1]; i++) { // nonzeros in column (Br[k]) of A
+                    for (nnz_t i = Ac_p[Br[k]]; i < Ac_p[Br[k] + 1]; ++i) { // nonzeros in column (Br[k]) of A
 
 #ifdef __DEBUG1__
 //                        std::cout << Ar[i] << "\t" << j+B_col_offset << "\t" << Av[i] << "\t" << Bv[k] << std::endl;
@@ -356,6 +355,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             nnz_t temp2;
             if(mapbit.count()){
+                if(rank == 1) printf("mapbit.count() = %ld\n", mapbit.count());
                 for (index_t j = 0; j < B_nnz_col_sz; j++) {
                     temp = A_nnz_row_sz * j;
                     for (index_t i = 0; i < A_nnz_row_sz; i++) {
