@@ -349,13 +349,12 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            C.reserve(C.size() + mapbit.count());
 
             if(rank == 1){
-                printf("rank %d: A_nnz_row_sz = %d,\tB_nnz_col_sz = %d,\tAr*Bc = %d,\tmapbit.count = %ld\n",
-                        rank, A_nnz_row_sz, B_nnz_col_sz, A_nnz_row_sz*B_nnz_col_sz, mapbit.count());
+                printf("Arow = %d,\tBcol = %d,\tAr*Bc = %d,\tmapbit = %ld\n",
+                       A_nnz_row_sz, B_nnz_col_sz, A_nnz_row_sz*B_nnz_col_sz, mapbit.count());
             }
 
             nnz_t temp2;
             if(mapbit.count()){
-                if(rank == 1) printf("mapbit.count() = %ld\n", mapbit.count());
                 for (index_t j = 0; j < B_nnz_col_sz; j++) {
                     temp = A_nnz_row_sz * j;
                     for (index_t i = 0; i < A_nnz_row_sz; i++) {
