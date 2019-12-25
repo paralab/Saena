@@ -349,6 +349,11 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 //            C.reserve(C.size() + mapbit.count());
 
+            if(rank == 1){
+                printf("rank %d: A_nnz_row_sz = %d,\tB_nnz_col_sz = %d,\tAr*Bc = %d,\tmapbit.count = %ld\n",
+                        rank, A_nnz_row_sz, B_nnz_col_sz, A_nnz_row_sz*B_nnz_col_sz, mapbit.count());
+            }
+
             nnz_t temp2;
             if(mapbit.count()){
                 for (index_t j = 0; j < B_nnz_col_sz; j++) {
@@ -2191,6 +2196,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     print_time_ave(case3,  "case3", comm, true);
 
 //    print_time(case12, "case12", comm);
+
+    if(rank == 1){
+        printf("\ncase0  = %f\n", case0);
+        printf("case11 = %f\n", case11);
+        printf("case12 = %f\n", case12);
+    }
 
     return 0;
 }
