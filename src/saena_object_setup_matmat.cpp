@@ -162,12 +162,15 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 //        double t1 = MPI_Wtime();
         double t0 = MPI_Wtime();
-        double t01 = MPI_Wtime();
+        double t00 = MPI_Wtime();
 
         index_t *nnzPerRow_left = &mempool2[0];
         std::fill(&nnzPerRow_left[0], &nnzPerRow_left[A_row_size], 0);
         index_t *nnzPerRow_left_p = &nnzPerRow_left[0] - A_row_offset;
 //        index_t *nnzPerRow_left_p = &nnzPerRow_left[0];
+
+        t00 = MPI_Wtime() - t00;
+        double t01 = MPI_Wtime();
 
 //        std::cout << "\nA_row_offset = " << A_row_offset << std::endl;
         for (nnz_t i = 0; i < A_col_size; i++) {
@@ -253,7 +256,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 
         if(rank == 1){
-            printf("%f\t%f\t%f\n", t01, t02, t03);
+            printf("\nA: %ld\t%d\t%d\tB: %ld\t%d\t%d\n", A_nnz, A_row_size, A_col_size, B_nnz, B_row_size, B_col_size);
+            printf("%f\t%f\t%f\t%f\n", t00, t01, t02, t03);
         }
 
 
