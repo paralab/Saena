@@ -228,7 +228,7 @@ public:
                  index_t *Br, value_t *Bv, index_t *Bc_scan,
                  index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                  index_t B_col_size, index_t B_col_offset,
-                 std::vector<cooEntry> &C, MPI_Comm comm);
+                 std::vector<cooEntry> &C, MPI_Comm comm, index_t *Ar_scan);
 
 //    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
 //                 nnz_t A_nnz, nnz_t B_nnz,
