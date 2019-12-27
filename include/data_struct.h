@@ -415,10 +415,6 @@ public:
     value_t *val      = nullptr;
     index_t *col_scan = nullptr;
 
-    // todo: delete
-    index_t *row_scan = nullptr;
-    index_t row_sz    = 0;
-
     index_t col_sz  = 0;
     nnz_t   nnz     = 0;
     nnz_t   max_nnz = 0;

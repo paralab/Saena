@@ -26,7 +26,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                            index_t *Br, value_t *Bv, index_t *Bc_scan,
                            index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
                            index_t B_col_size, index_t B_col_offset,
-                           std::vector<cooEntry> &C, MPI_Comm comm, index_t *Ar_scan){
+                           std::vector<cooEntry> &C, MPI_Comm comm){
 
     // =============================================================
     // Compute: C = A * B
@@ -160,10 +160,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 #endif
 
-
-
-
-/*
 //        double t1 = MPI_Wtime();
         double t0 = MPI_Wtime();
         double t00 = MPI_Wtime();
@@ -185,27 +181,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 
         t01 = MPI_Wtime() - t01;
-*/
-
-
-
-
-
-
-        double t0 = MPI_Wtime();
-        double t00 = MPI_Wtime();
-
-        index_t *nnzPerRow_left = Ar_scan;
-
-        t00 = MPI_Wtime() - t00;
-        double t01 = MPI_Wtime();
-        t01 = MPI_Wtime() - t01;
-
-
-
-
-
-
 
 #ifdef __DEBUG1__
 //        print_array(nnzPerRow_left, A_row_size, verbose_rank, "nnzPerRow_left", comm);
@@ -280,10 +255,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 
 
-//        if(rank == 1){
-//            printf("\nA: %ld\t%d\t%d\tB: %ld\t%d\t%d\n", A_nnz, A_row_size, A_col_size, B_nnz, B_row_size, B_col_size);
-//            printf("%f\t%f\t%f\t%f\n", t00, t01, t02, t03);
-//        }
+        if(rank == 1){
+            printf("\nA: %ld\t%d\t%d\tB: %ld\t%d\t%d\n", A_nnz, A_row_size, A_col_size, B_nnz, B_row_size, B_col_size);
+            printf("%f\t%f\t%f\t%f\n", t00, t01, t02, t03);
+        }
 
 
 
@@ -476,7 +451,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     // ==============================================================
     // Case2
     // ==============================================================
-/*
+
     index_t A_col_scan_end, B_col_scan_end;
 
     // if A_col_size_half == 0, it means A_col_size = 1. In this case it goes to case3.
@@ -1431,7 +1406,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
     }
-*/
+
 //    Ac[0] = A_col_scan_start_tmp;
 //    Bc[0] = B_col_scan_start_tmp;
 
@@ -2699,34 +2674,6 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     auto *requests = new MPI_Request[2];
     auto *statuses = new MPI_Status[2];
 
-
-
-
-
-//    index_t *nnzPerRow_left = &mempool2[0];
-//    std::fill(&nnzPerRow_left[0], &nnzPerRow_left[Acsc_M], 0);
-//    index_t *nnzPerRow_left_p = &nnzPerRow_left[0] - Acsc.split[rank];
-//
-//    for (nnz_t i = 0; i < Acsc.col_sz; i++) {
-//        for (nnz_t j = Acsc.col_scan[i]; j < Acsc.col_scan[i+1]; j++) {
-//            nnzPerRow_left_p[Acsc.row[j]]++;
-//        }
-//    }
-
-    Acsc.row_scan = &mempool2[0];
-    std::fill(&Acsc.row_scan[0], &Acsc.row_scan[Acsc_M], 0);
-    index_t *nnzPerRow_left_p = &Acsc.row_scan[0] - Acsc.split[rank];
-
-    for (nnz_t i = 0; i < Acsc.col_sz; i++) {
-        for (nnz_t j = Acsc.col_scan[i]; j < Acsc.col_scan[i+1]; j++) {
-            nnzPerRow_left_p[Acsc.row[j]]++;
-        }
-    }
-
-
-
-
-
     t1 = MPI_Wtime() - t1;
 
     double t2 = MPI_Wtime();
@@ -2758,7 +2705,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
             fast_mm(&Acsc.row[0],   &Acsc.val[0],   &Acsc.col_scan[0],
                     &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
                     Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
-                    AB_temp, comm, &Acsc.row_scan[0]);
+                    AB_temp, comm);
         }
 
         tf = MPI_Wtime() - tf;
