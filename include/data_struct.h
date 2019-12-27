@@ -429,4 +429,23 @@ public:
     CSCMat() = default;
 };
 
+
+class CSRMat{
+private:
+
+public:
+    index_t *col      = nullptr;
+    value_t *val      = nullptr;
+    index_t *row_scan = nullptr;
+
+    index_t row_sz  = 0;
+    nnz_t   nnz     = 0;
+    nnz_t   max_nnz = 0;
+    index_t max_M   = 0;
+    std::vector<index_t> split;
+    std::vector<nnz_t>   nnz_list;
+
+    CSRMat() = default;
+};
+
 #endif //SAENA_DATA_STRUCT_H
