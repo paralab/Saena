@@ -206,6 +206,11 @@ public:
     int allocate_zfp();
 //    int allocate_zfp(const std::vector<double> &v);
     int deallocate_zfp();
+
+    void zfp_print_time();
+    unsigned long matvec_iter = 0;
+    double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0;
+
     // ***********************************************************
 
     saena_matrix();

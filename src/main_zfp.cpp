@@ -206,12 +206,15 @@ int main(int argc, char* argv[]){
     print_time(t1 / matvec_iter, "matvec original:", comm);
 
 
+    MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
         B->matvec_sparse_zfp(solver.get_object()->grids[0].rhs, w);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec zfp:", comm);
+
+    B->zfp_print_time();
 
     // *************************** zfp: check the accuracy ****************************
 
