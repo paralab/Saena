@@ -72,7 +72,7 @@ void saena_matrix::zfp_print_time(){
 
     print_time(part1 / tmp, "send vector", comm);
     print_time(part2 / tmp, "compress", comm);
-    print_time(part3 / tmp, "comm", comm);
+    print_time((part3-part4-part5-part6) / tmp, "comm", comm);
     print_time(part4 / tmp, "local", comm);
     print_time(part5 / tmp, "decompress", comm);
     print_time(part6 / tmp, "remote", comm);
