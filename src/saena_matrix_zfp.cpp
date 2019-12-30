@@ -65,17 +65,32 @@ int saena_matrix::deallocate_zfp(){
 }
 
 void saena_matrix::zfp_print_time(){
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
     double tmp = 1;
     if(matvec_iter != 0){
         tmp = static_cast<double>(matvec_iter);
     }
 
-    print_time(part1 / tmp, "send vector", comm);
-    print_time(part2 / tmp, "compress", comm);
-    print_time((part3-part4-part5-part6) / tmp, "comm", comm);
-    print_time(part4 / tmp, "local", comm);
-    print_time(part5 / tmp, "decompress", comm);
-    print_time(part6 / tmp, "remote", comm);
+//    print_time(part1 / tmp, "send vector", comm);
+//    print_time(part2 / tmp, "compress", comm);
+//    print_time((part3-part4-part5-part6) / tmp, "comm", comm);
+//    print_time(part4 / tmp, "local", comm);
+//    print_time(part5 / tmp, "decompress", comm);
+//    print_time(part6 / tmp, "remote", comm);
+
+    double p1ave = print_time_ave_consecutive(part1 / tmp, comm);
+    double p2ave = print_time_ave_consecutive(part2 / tmp, comm);
+    double p3ave = print_time_ave_consecutive((part3-part4-part5-part6) / tmp, comm);
+    double p4ave = print_time_ave_consecutive(part4 / tmp, comm);
+    double p5ave = print_time_ave_consecutive(part5 / tmp, comm);
+    double p6ave = print_time_ave_consecutive(part6 / tmp, comm);
+    if(!rank){
+        printf("average time:\nsend buff\ncompress\ncomm\nlocal\ndecompress\nremote\n\n"
+               "%f\n%f\n%f\n%f\n%f\n%f\n", p1ave, p2ave, p3ave, p4ave, p5ave, p6ave);
+    }
+
 }
 
 
