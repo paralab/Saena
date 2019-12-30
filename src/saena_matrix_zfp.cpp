@@ -64,7 +64,7 @@ int saena_matrix::deallocate_zfp(){
     return 0;
 }
 
-void saena_matrix::zfp_print_time(){
+void saena_matrix::matvec_print_time(){
     int rank;
     MPI_Comm_rank(comm, &rank);
 
@@ -87,6 +87,7 @@ void saena_matrix::zfp_print_time(){
     double p5ave = print_time_ave_consecutive(part5 / tmp, comm);
     double p6ave = print_time_ave_consecutive(part6 / tmp, comm);
     if(!rank){
+//        printf("matvec iteration: %ld", matvec_iter);
         printf("average time:\nsend buff\ncompress\ncomm\nlocal\ndecompress\nremote\n\n"
                "%f\n%f\n%f\n%f\n%f\n%f\n", p1ave, p2ave, p3ave, p4ave, p5ave, p6ave);
     }

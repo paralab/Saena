@@ -205,6 +205,8 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec original:", comm);
 
+    B->matvec_print_time();
+
 
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
@@ -214,7 +216,7 @@ int main(int argc, char* argv[]){
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec zfp:", comm);
 
-    B->zfp_print_time();
+    B->matvec_print_time();
 
     // *************************** zfp: check the accuracy ****************************
 

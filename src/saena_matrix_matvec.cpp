@@ -54,15 +54,20 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
 
-    if(nprocs > 1){
+//    if(nprocs > 1){
+        double t = MPI_Wtime();
         // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
         // put the values of thoss indices in vSend to send to other procs.
 #pragma omp parallel for
         for(index_t i=0;i<vIndexSize;i++)
             vSend[i] = v[(vIndex[i])];
 
+        t = MPI_Wtime() - t;
+        part1 += t;
+
 //        print_vector(vSend, 0, "vSend", comm);
 
+        double tcomm = MPI_Wtime();
         requests = new MPI_Request[numSendProc+numRecvProc];
         statuses = new MPI_Status[numSendProc+numRecvProc];
 
@@ -73,12 +78,14 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
 
         for(int i = 0; i < numSendProc; i++)
             MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
-    }
+//    }
 
     // local loop
     // ----------
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
+
+    t = MPI_Wtime();
 
     value_t* v_p = &v[0] - split[rank];
 #pragma omp parallel
@@ -94,7 +101,10 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
         }
     }
 
-    if(nprocs > 1){
+    t = MPI_Wtime() - t;
+    part4 += t;
+
+//    if(nprocs > 1){
         // Wait for the receive communication to finish.
         MPI_Waitall(numRecvProc, requests, statuses);
 
@@ -105,7 +115,9 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
         // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
         // the corresponding vector element is saved in vecValues[0]. and so on.
 
-        #pragma omp parallel
+    t = MPI_Wtime();
+
+#pragma omp parallel
         {
             unsigned int i, l;
             int thread_id = omp_get_thread_num();
@@ -144,6 +156,9 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
             }
         }
 
+    t = MPI_Wtime() - t;
+    part6 += t;
+
         // basic remote loop without openmp
 //        nnz_t iter = 0;
 //        for (index_t j = 0; j < col_remote_size; ++j) {
@@ -156,7 +171,10 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
         MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
         delete [] requests;
         delete [] statuses;
-    }
+//    }
+
+    tcomm = MPI_Wtime() - tcomm;
+    part3 += tcomm;
 
     return 0;
 }
