@@ -44,7 +44,7 @@ ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
 
 Algebraic multigrid (AMG) is one of the most effective methods for
 solving elliptic PDEs. It is especially attractive when it is combined with Krylov Methods, e.g. Conjugate Gradient (CG) preconditioned with AMG. The matrix-vector product (MatVec) is the dominant operation of AMG, and the communication cost is usually the bottleneck of its scalability.
-To address this issue, we use send_zfp, an integer and floating-point compressor, to reduce the communication cost, by using some approximations for the vector being communicated. The trade-off when using this method for CG precondioned with AMG, would be more iterations to solve the linear system, but due to a cheaper matvec, the total solve time will be reduced significantly. We present strong and weak scaling results to prove our claim.
+To address this issue, we use zfp, an integer and floating-point compressor, to reduce the communication cost, by using some approximations for the vector being communicated. The trade-off when using this method for CG precondioned with AMG, would be more iterations to solve the linear system, but due to a cheaper matvec, the total solve time will be reduced significantly. We present strong and weak scaling results to prove our claim.
 
 \keywords{Floating-point tuning \and compressor \and Matrix-Vector Product \and matvec \and Algebraic Multigrid \and AMG \and Iterative Solver \and Preconditioner \and Sparse.}
 \end{abstract}

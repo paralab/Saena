@@ -46,7 +46,7 @@ To style the tags as appropriate (you'll want to make sure the font matches):
 		cursor: text;				<--- display a cursor to match the text input
 
 		padding: 4px 4px 4px 4px;   <--- this should match the border+padding 
-											for the input send_field(s)
+											for the input field(s)
 		color: #999999;				<--- this will display as faded
 	}
 
@@ -112,9 +112,9 @@ Thanks to...
 
 			input
 				.data(phl, '#' + label.attr('id'))	//set a reference to the label
-				.data(ph,ph)		//set that the send_field is watermarked
+				.data(ph,ph)		//set that the field is watermarked
 				.addClass(ph)		//add the watermark class
-				.after(label);		//add the label send_field to the page
+				.after(label);		//add the label field to the page
 
 			//setup overlay
 			itemIn.call(this);
@@ -345,7 +345,7 @@ Thanks to...
 			// disable if you don't want to show the overlay
 			showOverlay: true,
 
-			// if true, focus will be placed in the first available input send_field when
+			// if true, focus will be placed in the first available input field when
 			// page blocking
 			focusInput: true,
 
@@ -606,7 +606,7 @@ Thanks to...
 			}
 
 			var els;
-			if (full) // crazy selector to handle odd send_field errors in ie6/7
+			if (full) // crazy selector to handle odd field errors in ie6/7
 				els = $('body').children().filter('.blockUI').add('body > .blockUI');
 			else
 				els = $el.find('>.blockUI');
@@ -1122,7 +1122,7 @@ Copyright (c) 2011 by Harvest
       };
       container_div = $("<div />", container_props);
       if (this.is_multiple) {
-        container_div.html('<ul class="chzn-choices"><li class="search-send_field"><input type="text" value="' + this.default_text + '" class="default" autocomplete="off" style="width:25px;" /></li></ul><div class="chzn-drop" style="left:-9000px;"><ul class="chzn-results"></ul></div>');
+        container_div.html('<ul class="chzn-choices"><li class="search-field"><input type="text" value="' + this.default_text + '" class="default" autocomplete="off" style="width:25px;" /></li></ul><div class="chzn-drop" style="left:-9000px;"><ul class="chzn-results"></ul></div>');
       } else {
         container_div.html('<a href="javascript:void(0)" class="chzn-single chzn-default" tabindex="-1"><span>' + this.default_text + '</span><div><b></b></div></a><div class="chzn-drop" style="left:-9000px;"><div class="chzn-search"><input type="text" autocomplete="off" /></div><ul class="chzn-results"></ul></div>');
       }
@@ -1148,7 +1148,7 @@ Copyright (c) 2011 by Harvest
       this.search_no_results = this.container.find('li.no-results').first();
       if (this.is_multiple) {
         this.search_choices = this.container.find('ul.chzn-choices').first();
-        this.search_container = this.container.find('li.search-send_field').first();
+        this.search_container = this.container.find('li.search-field').first();
       } else {
         this.search_container = this.container.find('div.chzn-search').first();
         this.selected_item = this.container.find('.chzn-single').first();
@@ -2419,11 +2419,11 @@ $(function(){
 
     /* Autosuggest
     ------------------------------------------------------------------------------*/
-    searchWidth = $('.search-send_field').width() - 53;
-    searchWidth = $('.search-send_field').width() - 53;
+    searchWidth = $('.search-field').width() - 53;
+    searchWidth = $('.search-field').width() - 53;
     $(window).resize(function(){
         $('.ui-autocomplete').hide();
-        searchWidth = $('.search-send_field').width() - 53;
+        searchWidth = $('.search-field').width() - 53;
     });
     $('.ui-autocomplete').width(searchWidth);
 

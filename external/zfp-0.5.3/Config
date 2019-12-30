@@ -25,13 +25,13 @@ OMPFLAGS = -fopenmp
 # DEFS += -DZFP_INT64='long long' -DZFP_INT64_SUFFIX='ll'
 # DEFS += -DZFP_UINT64='unsigned long long' -DZFP_UINT64_SUFFIX='ull'
 
-# use smaller bit send_stream word type for finer rate granularity
+# use smaller bit stream word type for finer rate granularity
 # DEFS += -DBIT_STREAM_WORD_TYPE=uint8
 # DEFS += -DBIT_STREAM_WORD_TYPE=uint16
 # DEFS += -DBIT_STREAM_WORD_TYPE=uint32
 # DEFS += -DBIT_STREAM_WORD_TYPE=uint64
 
-# enable strided access for progressive send_zfp streams
+# enable strided access for progressive zfp streams
 # DEFS += -DBIT_STREAM_STRIDED
 
 # use aligned memory allocation

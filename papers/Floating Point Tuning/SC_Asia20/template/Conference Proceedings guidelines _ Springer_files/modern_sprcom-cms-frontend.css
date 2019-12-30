@@ -3004,11 +3004,11 @@ body.show-menu.show-search #header .panel-menu {
     font-size: 1.3rem;
     margin-bottom: 8px;
   }
-  .browse .send_field {
+  .browse .field {
     float: left;
     margin-right: 6px;
   }
-  .browse .send_field .error-message {
+  .browse .field .error-message {
     bottom: 32px;
   }
   .browse input.text {
@@ -4471,12 +4471,12 @@ body.show-menu.show-search #header .panel-menu {
     margin: 0;
   }
 
-  #cboxLoadedContent .facet-expanded .functions-bar-top .send_field .error-message {
+  #cboxLoadedContent .facet-expanded .functions-bar-top .field .error-message {
     bottom: auto;
     top: 28px;
   }
 
-  #cboxLoadedContent .facet-expanded .functions-bar-top .send_field .error-message:after {
+  #cboxLoadedContent .facet-expanded .functions-bar-top .field .error-message:after {
     background: url(../images/error_tooltip_up.png) no-repeat;
     bottom: auto;
     top: -13px;
@@ -5731,14 +5731,14 @@ label.extend-error, .form-row label.error {
     border-left: 1px solid #fff;
   }
 
-  .js .edit-send_field,
-  .js .editing-form .edit-send_field:hover {
+  .js .edit-field,
+  .js .editing-form .edit-field:hover {
     background: #fff;
     border: 1px solid #fff;
     cursor: default;
   }
 
-  .js .edit-send_field:hover {
+  .js .edit-field:hover {
     background: #f4f4f4;
     cursor: pointer;
   }
@@ -5887,17 +5887,17 @@ label.extend-error, .form-row label.error {
 
   /* New generic form components
   ------------------------------------------------------------------------------*/
-  /* form send_field */
-  .form-send_field {
+  /* form field */
+  .form-field {
     margin-top: 14px;
-    /* inline form send_field */
+    /* inline form field */
   }
-  .form-send_field label {
+  .form-field label {
     color: #666666;
     font-weight: bold;
   }
-  .form-send_field input,
-  .form-send_field select {
+  .form-field input,
+  .form-field select {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
@@ -5905,7 +5905,7 @@ label.extend-error, .form-row label.error {
     margin: 4px 0;
     width: 100%;
   }
-  .form-send_field.inline-send_field input {
+  .form-field.inline-field input {
     -webkit-box-sizing: content-box;
     -moz-box-sizing: content-box;
     box-sizing: content-box;
@@ -5913,7 +5913,7 @@ label.extend-error, .form-row label.error {
     margin: 2px;
     display: inline-block;
   }
-  .form-send_field.inline-send_field select {
+  .form-field.inline-field select {
     -webkit-box-sizing: content-box;
     -moz-box-sizing: content-box;
     box-sizing: content-box;
@@ -5932,7 +5932,7 @@ label.extend-error, .form-row label.error {
   .form-fields-col1:after {
     clear: both;
   }
-  .form-fields-col1 .form-send_field {
+  .form-fields-col1 .form-field {
     float: left;
     width: 100%;
   }
@@ -5948,11 +5948,11 @@ label.extend-error, .form-row label.error {
   .form-fields-col2:after {
     clear: both;
   }
-  .form-fields-col2 .form-send_field {
+  .form-fields-col2 .form-field {
     float: left;
     width: 47%;
   }
-  .form-fields-col2 .form-send_field + .form-send_field {
+  .form-fields-col2 .form-field + .form-field {
     margin-left: 6%;
   }
 
@@ -5967,11 +5967,11 @@ label.extend-error, .form-row label.error {
   .form-fields-col3:after {
     clear: both;
   }
-  .form-fields-col3 .form-send_field {
+  .form-fields-col3 .form-field {
     float: left;
     width: 30%;
   }
-  .form-fields-col3 .form-send_field + .form-send_field {
+  .form-fields-col3 .form-field + .form-field {
     margin-left: 5%;
   }
 
@@ -6004,7 +6004,7 @@ label.extend-error, .form-row label.error {
     font-weight: normal;
     color: #333;
   }
-  .deposit-interruption .form-send_field.inline-send_field input {
+  .deposit-interruption .form-field.inline-field input {
     margin: 11px 2px 2px 4px;
   }
   .deposit-interruption .form-submit-section {
@@ -6134,11 +6134,11 @@ label.extend-error, .form-row label.error {
     color: #C30000;
   }
 
-  /* in a send_field */
-  .send_field {
+  /* in a field */
+  .field {
     position: relative;
   }
-  .send_field .error-message {
+  .field .error-message {
     -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.14);
     -moz-box-shadow: 0 0 5px rgba(0, 0, 0, 0.14);
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.14);
@@ -6152,7 +6152,7 @@ label.extend-error, .form-row label.error {
     width: 137px;
     word-wrap: break-word;
   }
-  .send_field .error-message:after {
+  .field .error-message:after {
     background: url(../images/error_tooltip_down.png) no-repeat;
     content: '';
     display: block;
@@ -6163,12 +6163,12 @@ label.extend-error, .form-row label.error {
     bottom: -13px;
     width: 25px;
   }
-  .send_field .pagination-error {
+  .field .pagination-error {
     left: 52%;
     top: 28px;
     bottom: auto;
   }
-  .send_field .pagination-error:after {
+  .field .pagination-error:after {
     background: url(../images/error_tooltip_up.png) no-repeat;
     content: '';
     display: block;
@@ -7036,7 +7036,7 @@ label.extend-error, .form-row label.error {
   .big-search input {
     vertical-align: bottom;
   }
-  .big-search .search-send_field {
+  .big-search .search-field {
     /* extra div needed because IE doesn't support padding-right on input fields therefore text would overlap the "new search" link */
     background-color: #FFF;
     border: 1px solid #bcbcbc;
@@ -7052,22 +7052,22 @@ label.extend-error, .form-row label.error {
     padding-right: 52px;
     position: relative;
   }
-  .lt-ie8 .big-search .search-send_field {
+  .lt-ie8 .big-search .search-field {
     width: auto;
     height: 35px;
   }
-  .big-search.contains-new-search-link .search-send_field {
+  .big-search.contains-new-search-link .search-field {
     padding-right: 107px;
   }
 }
 @media screen and (min-device-width: 320px) and (min-width: 1004px) {
-  .big-search.contains-new-search-link .search-send_field {
+  .big-search.contains-new-search-link .search-field {
     /* MQ: Widescreen */
     padding-right: 157px;
   }
 }
 @media screen and (min-device-width: 320px) {
-  .big-search.has-focus .search-send_field {
+  .big-search.has-focus .search-field {
     /* this selector needed for :focus styles, class applied with JS */
     border-color: #0176c3;
     -webkit-box-shadow: 0 0 3px #0176c3;
@@ -8309,30 +8309,30 @@ label.extend-error, .form-row label.error {
     padding: 4px 3px;
   }
 
-  .form-fields-col1 .form-send_field {
+  .form-fields-col1 .form-field {
     width: 100%;
     float: left;
     margin-top: 0;
   }
 }
 @media screen and (min-device-width: 320px) and (min-width: 600px) {
-  .form-fields-col1 .form-send_field {
+  .form-fields-col1 .form-field {
     /* MQ: Tablet */
   }
-  .form-fields-col1 .form-send_field.half-width {
+  .form-fields-col1 .form-field.half-width {
     width: 47%;
   }
-  .form-fields-col1 .form-send_field.third-width {
+  .form-fields-col1 .form-field.third-width {
     width: 31.333333%;
   }
-  .form-fields-col1 .form-send_field.two-third-width {
+  .form-fields-col1 .form-field.two-third-width {
     width: 62.666666%;
   }
 }
 
 @media screen and (min-device-width: 320px) {
   /* form fields in a 2 column layout */
-  .form-fields-col2 .form-send_field {
+  .form-fields-col2 .form-field {
     width: 100%;
     float: left;
     margin-top: 0;
@@ -8340,44 +8340,44 @@ label.extend-error, .form-row label.error {
   }
 }
 @media screen and (min-device-width: 320px) and (min-width: 600px) {
-  .form-fields-col2 .form-send_field {
+  .form-fields-col2 .form-field {
     /* MQ: Tablet */
     clear: both;
     width: 100%;
   }
-  .form-fields-col2 .form-send_field.half-width {
+  .form-fields-col2 .form-field.half-width {
     width: 47%;
   }
-  .form-fields-col2 .form-send_field.third-width {
+  .form-fields-col2 .form-field.third-width {
     width: 31.333333%;
   }
-  .form-fields-col2 .form-send_field.two-third-width {
+  .form-fields-col2 .form-field.two-third-width {
     width: 62.666666%;
   }
 }
 @media screen and (min-device-width: 320px) and (min-width: 1004px) {
-  .form-fields-col2 .form-send_field {
+  .form-fields-col2 .form-field {
     /* MQ: Widescreen */
     clear: none;
     width: 47%;
   }
-  .form-fields-col2 .form-send_field.half-width {
+  .form-fields-col2 .form-field.half-width {
     width: 20.5%;
   }
-  .form-fields-col2 .form-send_field.third-width {
+  .form-fields-col2 .form-field.third-width {
     width: 13.666666%;
   }
-  .form-fields-col2 .form-send_field.two-third-width {
+  .form-fields-col2 .form-field.two-third-width {
     width: 27.333333%;
   }
 }
 @media screen and (min-device-width: 320px) {
-  .form-fields-col2 .form-send_field + .form-send_field {
+  .form-fields-col2 .form-field + .form-field {
     margin: 15px 0 0 0;
   }
 }
 @media screen and (min-device-width: 320px) and (min-width: 1004px) {
-  .form-fields-col2 .form-send_field + .form-send_field {
+  .form-fields-col2 .form-field + .form-field {
     /* MQ: Widescreen */
     margin: 0 0 0 6%;
   }
@@ -8385,43 +8385,43 @@ label.extend-error, .form-row label.error {
 
 @media screen and (min-device-width: 320px) {
   /* form fields in a 3 column layout */
-  .form-fields-col3 .form-send_field {
+  .form-fields-col3 .form-field {
     width: 100%;
   }
 }
 @media screen and (min-device-width: 320px) and (min-width: 1004px) {
-  .form-fields-col3 .form-send_field {
+  .form-fields-col3 .form-field {
     /* MQ: Widescreen */
     width: 30%;
   }
-  .form-fields-col3 .form-send_field.double-width {
+  .form-fields-col3 .form-field.double-width {
     width: 65%;
   }
-  .form-fields-col3 .form-send_field.half-width {
+  .form-fields-col3 .form-field.half-width {
     width: 12.5%;
   }
 }
 @media screen and (min-device-width: 320px) {
-  .form-fields-col3 .form-send_field + .form-send_field {
+  .form-fields-col3 .form-field + .form-field {
     margin-left: 0;
   }
 }
 @media screen and (min-device-width: 320px) and (min-width: 1004px) {
-  .form-fields-col3 .form-send_field + .form-send_field {
+  .form-fields-col3 .form-field + .form-field {
     /* MQ: Widescreen */
     margin-left: 5%;
   }
 }
 @media screen and (min-device-width: 320px) {
-  .form-fields-col3.form-fields-reverse .form-send_field {
+  .form-fields-col3.form-fields-reverse .form-field {
     float: right;
   }
-  .form-fields-col3.form-fields-reverse .form-send_field + .form-send_field {
+  .form-fields-col3.form-fields-reverse .form-field + .form-field {
     margin-left: 0;
   }
 }
 @media screen and (min-device-width: 320px) and (min-width: 1004px) {
-  .form-fields-col3.form-fields-reverse .form-send_field + .form-send_field {
+  .form-fields-col3.form-fields-reverse .form-field + .form-field {
     /* MQ: Widescreen */
     margin-right: 5%;
   }
@@ -11264,13 +11264,13 @@ label.extend-error, .form-row label.error {
     min-width: 120px;
   }
 }
-#search-send_field {
+#search-field {
   z-index: 1;
   position: absolute;
   right: 0;
   left: 0;
 }
-#search-send_field .search-send_field--suggestions {
+#search-field .search-field--suggestions {
   position: relative;
   overflow: hidden;
   z-index: 1;
@@ -11279,20 +11279,20 @@ label.extend-error, .form-row label.error {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   background: #fff;
 }
-#search-send_field .search-send_field--suggestions li {
+#search-field .search-field--suggestions li {
   background-color: #fff;
   cursor: pointer;
   line-height: 1.3;
   font-size: 15px;
   padding: 8px 16px;
 }
-#search-send_field .search-send_field--suggestions li:last-child {
+#search-field .search-field--suggestions li:last-child {
   margin-bottom: 8px;
 }
-#search-send_field .search-send_field--suggestions li:hover, #search-send_field .search-send_field--suggestions li.selected {
+#search-field .search-field--suggestions li:hover, #search-field .search-field--suggestions li.selected {
   background-color: #edf5fb;
 }
-#search-send_field .search-send_field--suggestions li mark {
+#search-field .search-field--suggestions li mark {
   background: none;
   font-weight: bold;
 }
@@ -15559,7 +15559,7 @@ label.extend-error, .form-row label.error {
     border: 1px solid #0176c3;
   }
 
-  .chzn-container-active .chzn-choices .search-send_field input {
+  .chzn-container-active .chzn-choices .search-field input {
     color: #111 !important;
   }
 

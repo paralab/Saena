@@ -98,7 +98,7 @@ version 1.33    New option `timestamp' (Michael D. Adams)
                 Added SubmissionID
                 Added right line count ruler for two-column formats
                 Added workaround for Adobe Acrobat bugs in selection
-                Added eid send_field to the bibliography
+                Added eid field to the bibliography
 
 version 1.34    Deleted DOI from doi numbers
                 Changed bibstrip formatting

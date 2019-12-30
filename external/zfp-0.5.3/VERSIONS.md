@@ -1,18 +1,18 @@
-# send_zfp Release Notes
+# zfp Release Notes
 
 ## 0.5.3 (March 28, 2018)
 
 - Added support for OpenMP multithreaded compression (but not decompression).
 
-- Added options for OpenMP execution to send_zfp command-line tool.
+- Added options for OpenMP execution to zfp command-line tool.
 
-- Changed return value of send_zfp\_decompress to indicate the number of compressed
-  bytes processed so far (now returns same value as send_zfp\_compress on success).
+- Changed return value of zfp\_decompress to indicate the number of compressed
+  bytes processed so far (now returns same value as zfp\_compress on success).
 
 - Added compressed array support for copy construction and assignment via
   deep copies.
 
-- Added virtual destructors to enable inheritance from send_zfp arrays.
+- Added virtual destructors to enable inheritance from zfp arrays.
 
 
 ## 0.5.2 (September 28, 2017)
@@ -23,14 +23,14 @@
 
 - Modified diffusion example to optionally use iterators.
 
-- Moved internal headers under array to array/send_zfp.
+- Moved internal headers under array to array/zfp.
 
 - Modified 64-bit integer typedefs to avoid the C89 non-compliant long long
   and allow for user-supplied types and literal suffixes.
 
 - Renamed compile-time macros that did not have a ZFP prefix.
 
-- Fixed issue with setting send_stream word type via CMake.
+- Fixed issue with setting stream word type via CMake.
 
 - Rewrote documentation in reStructuredText and added complete
   documentation of all public functions, classes, types, and macros.
@@ -57,16 +57,16 @@
 
 - Renamed some of the header bit mask macros.
 
-- Added return values to send_stream\_skip and send_stream\_flush to indicate the
+- Added return values to stream\_skip and stream\_flush to indicate the
   number of bits skipped or output.
 
-- Renamed send_stream\_block and send_stream\_delta to make it clear that they refer
-  to strided streams.  Added missing definition of send_stream\_stride\_block.
+- Renamed stream\_block and stream\_delta to make it clear that they refer
+  to strided streams.  Added missing definition of stream\_stride\_block.
 
 - Changed int/uint types in places to use ptrdiff\_t/size\_t where
   appropriate.
 
-- Changed API for send_zfp\_set\_precision and send_zfp\_set\_accuracy to not require
+- Changed API for zfp\_set\_precision and zfp\_set\_accuracy to not require
   the scalar type.
 
 - Added missing static keyword in decode\_block.
@@ -76,7 +76,7 @@
 
 - Fixed bug that prevented defining uninitialized arrays.
 
-- Fixed incorrect computation of array sizes in send_zfp\_field\_size.
+- Fixed incorrect computation of array sizes in zfp\_field\_size.
 
 - Fixed minor issues that prevented code from compiling on Windows.
 
@@ -84,7 +84,7 @@
 
 - Modified directory structure.
 
-- Added documentation that discusses common issues with using send_zfp.
+- Added documentation that discusses common issues with using zfp.
 
 
 ## 0.5.0 (February 29, 2016)
@@ -92,20 +92,20 @@
 - Modified CODEC to more efficiently encode blocks whose values are all
   zero or are smaller in magnitude than the absolute error tolerance.
   This allows representing "empty" blocks using only one bit each.  This
-  version is not backwards compatible with prior send_zfp versions.
+  version is not backwards compatible with prior zfp versions.
 
-- Changed behavior of send_zfp\_compress and send_zfp\_decompress to not automatically
-  rewind the bit send_stream.  This makes it easier to concatenate multiple
+- Changed behavior of zfp\_compress and zfp\_decompress to not automatically
+  rewind the bit stream.  This makes it easier to concatenate multiple
   compressed bit streams, e.g. when compressing vector fields or multiple
   scalars together.
 
 - Added functions for compactly encoding the compression parameters
-  and send_field meta data, e.g. for producing self-contained compressed
+  and field meta data, e.g. for producing self-contained compressed
   streams.  Also added functions for reading and writing a header
   containing these parameters.
 
-- Changed the send_zfp example program interface to allow reading and writing
-  compressed streams, optionally with a header.  The send_zfp tool can now be
+- Changed the zfp example program interface to allow reading and writing
+  compressed streams, optionally with a header.  The zfp tool can now be
   used to compress and decompress files as a stand alone utility.
 
 
@@ -130,7 +130,7 @@
 
 - Substantial changes to the compression algorithm that improve PSNR
   by about 6 dB and speed by a factor of 2-3.  These changes are not
-  backward compatible with previous versions of send_zfp.
+  backward compatible with previous versions of zfp.
 
 - Added support for 31-bit and 63-bit integer data, as well as shorter
   integer types.
@@ -213,7 +213,7 @@
 
 - The compression interface from zfpcompress was relocated to a
   separate library, called libzfp, and modified to be callable from C.
-  This API now uses a parameter object (send_zfp\_params) to specify array
+  This API now uses a parameter object (zfp\_params) to specify array
   type and dimensions as well as compression parameters.
 
 - Several utility functions were added to simplify libzfp usage:
@@ -225,7 +225,7 @@
 
 - The Array class functionality was expanded:
 
-  * Support for accessing the compressed bit send_stream stored with an
+  * Support for accessing the compressed bit stream stored with an
     array, e.g. for offline compressed storage and for initializing
     an already compressed array.
 

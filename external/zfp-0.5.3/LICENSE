@@ -4,8 +4,8 @@ Written by Peter Lindstrom and Markus Salasoo.
 LLNL-CODE-663824.
 All rights reserved.
 
-This file is part of the send_zfp library.
-For details, see http://computation.llnl.gov/casc/send_zfp/.
+This file is part of the zfp library.
+For details, see http://computation.llnl.gov/casc/zfp/.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
