@@ -140,7 +140,7 @@ int main(int argc, char* argv[]){
         for (int i = 0; i < matmat_iter_warmup; i++) {
             solver.matmat_ave(&A, &B, matmat_time);
         }
-
+/*
         MPI_Barrier(comm);
         if (!rank) printf("\n\n");
         MPI_Barrier(comm);
@@ -155,7 +155,7 @@ int main(int argc, char* argv[]){
         if (!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
 
         // *************************** PETSc ****************************
-
+*/
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
 //        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
     }
