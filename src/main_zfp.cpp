@@ -27,12 +27,12 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 2){
+    if(argc != 3){
         if(!rank){
 //            std::cout << "This is how you can generate a 3DLaplacian:\n./Saena_zfp <x grid size> <y grid size> <z grid size>" << std::endl;
 //            std::cout << "This is how you can generate a banded matrix:\n./Saena_zfp <local size> <bandwidth>" << std::endl;
-//            std::cout << "This is how you can generate a random symmetric matrix:\n./Saena_zfp <local size> <density>" << std::endl;
-            std::cout << "This is how you can read a matrix from a file:\n./Saena_zfp <MatrixA>" << std::endl;
+            std::cout << "This is how you can generate a random symmetric matrix:\n./Saena_zfp <local size> <density>" << std::endl;
+//            std::cout << "This is how you can read a matrix from a file:\n./Saena_zfp <MatrixA>" << std::endl;
         }
         MPI_Finalize();
         return -1;
@@ -58,27 +58,26 @@ int main(int argc, char* argv[]){
 //    A.get_internal_matrix()->print_info(-1, "A");
 */
     // *************************** option 2: random symmetric ****************************
-/*
+
     int M(std::stoi(argv[1]));
     float dens(std::stof(argv[2]));
 
     saena::matrix A(comm);
     saena::random_symm_matrix(A, M, dens);
-*/
+
 //    A.print(-1, "A");
 //    A.get_internal_matrix()->print_info(-1, "A");
 
     // *************************** option 3: read from file ****************************
-
+/*
     char *Aname(argv[1]);
-
     saena::matrix A(comm);
 //    A.read_file(Aname);
     A.read_file(Aname, "triangle");
     A.assemble();
 
 //    saena::matrix B(A);
-
+*/
     // ********** print matrix info and time **********
 
     double t2 = MPI_Wtime();
@@ -213,6 +212,8 @@ int main(int argc, char* argv[]){
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec zfp:", comm);
+
+    // *************************** zfp: check the accuracy ****************************
 
 //    if(rank == 1){
 //        for(int i = 0; i < v.size(); ++i){
