@@ -77,10 +77,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //     A
 // =============================================================
 
-
-//    return;
-
-
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -989,8 +985,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                  << "\tA1_col_size: " << A1_col_size << "\tA2_col_size: " << A2_col_size
 //                  << "\tA1_col_offset: " << A1_col_offset << "\tA2_col_offset: " << A2_col_offset << std::endl;
 
-    t3 = MPI_Wtime() - t3;
-    case3 += t3;
+        t3 = MPI_Wtime() - t3;
+        case3 += t3;
 
 #ifdef __DEBUG1__
 //        print_array(Ac1, A_col_size+1, 0, "Ac1", comm);
@@ -1539,7 +1535,7 @@ void saena_object::fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vect
 int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, const bool assemble){
     // This version only works when B is symmetric, since local transpose of B is used.
     // Use B's row indices as column indices and vice versa.
-/*
+
     MPI_Comm comm = A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1726,7 +1722,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     delete[] mempool1;
     delete[] mempool2;
     delete[] mempool3;
-*/
+
     return 0;
 }
 
@@ -1802,7 +1798,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     MPI_Comm_rank(comm, &rank);
 
     // =======================================
-    // Convert A to CSR
+    // Convert A to CSC
     // =======================================
 
 //    auto Arv = new vecEntry[A->nnz_l]; // row and val
@@ -1812,41 +1808,41 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    auto Arv = std::make_unique<vecEntry[]>(A->nnz_l); // row and val
 //    auto Ac  = std::make_unique<index_t[]>(A->Mbig+1); // col_idx
 
-    CSRMat Acsr;
-    Acsr.nnz      = A->nnz_l;
-    Acsr.row_sz   = A->M;
-    Acsr.max_nnz  = A->nnz_max;
-    Acsr.max_M    = A->M_max;
-    Acsr.col      = new index_t[Acsr.nnz];
-    Acsr.val      = new value_t[Acsr.nnz];
-    Acsr.row_scan = new index_t[Acsr.row_sz + 1];
+    CSCMat Acsc;
+    Acsc.nnz      = A->nnz_l;
+    Acsc.col_sz   = A->Mbig;
+    Acsc.max_nnz  = A->nnz_max;
+    Acsc.max_M    = A->M_max;
+    Acsc.row      = new index_t[Acsc.nnz];
+    Acsc.val      = new value_t[Acsc.nnz];
+    Acsc.col_scan = new index_t[Acsc.col_sz + 1];
 
-    std::fill(&Acsr.row_scan[0], &Acsr.row_scan[Acsr.row_sz + 1], 0);
-    index_t *Ar_tmp = &Acsr.row_scan[1];
-    for(nnz_t i = 0; i < Acsr.nnz; ++i){
-        Acsr.col[i] = A->entry[i].col;
-        Acsr.val[i] = A->entry[i].val;
-        Ar_tmp[A->entry[i].row - A->split[rank]]++;
+    std::fill(&Acsc.col_scan[0], &Acsc.col_scan[Acsc.col_sz + 1], 0);
+    index_t *Ac_tmp = &Acsc.col_scan[1];
+    for(nnz_t i = 0; i < Acsc.nnz; i++){
+        Acsc.row[i] = A->entry[i].row;
+        Acsc.val[i] = A->entry[i].val;
+        Ac_tmp[A->entry[i].col]++;
     }
 
-    for(nnz_t i = 0; i < Acsr.row_sz; i++){
-        Acsr.row_scan[i+1] += Acsr.row_scan[i];
+    for(nnz_t i = 0; i < Acsc.col_sz; i++){
+        Acsc.col_scan[i+1] += Acsc.col_scan[i];
     }
 
-    Acsr.split    = A->split;
-    Acsr.nnz_list = A->nnz_list;
+    Acsc.split    = A->split;
+    Acsc.nnz_list = A->nnz_list;
 
 #ifdef __DEBUG1__
 //    A->print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
-//    print_array(Acsr.row, Acsr.nnz, 0, "Acsr.row", comm);
-//    print_array(Acsr.val, Acsr.nnz, 0, "Acsr.val", comm);
-//    print_array(Acsr.col_scan, Acsr.col_sz + 1, 0, "Acsr.col_scan", comm);
+//    print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
+//    print_array(Acsc.val, Acsc.nnz, 0, "Acsc.val", comm);
+//    print_array(Acsc.col_scan, Acsc.col_sz + 1, 0, "Acsc.col_scan", comm);
 
-//    std::cout << "\nA: nnz: " << Acsr.nnz << std::endl ;
-//    for(index_t j = 0; j < Acsr.col_sz; j++){
-//        for(index_t i = Acsr.col_scan[j]; i < Acsr.col_scan[j+1]; i++){
-//            std::cout << std::setprecision(4) << Acsr.row[i] << "\t" << j << "\t" << Acsr.val[i] << std::endl;
+//    std::cout << "\nA: nnz: " << Acsc.nnz << std::endl ;
+//    for(index_t j = 0; j < Acsc.col_sz; j++){
+//        for(index_t i = Acsc.col_scan[j]; i < Acsc.col_scan[j+1]; i++){
+//            std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
 //        }
 //    }
 #endif
@@ -1919,13 +1915,13 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     //                sizeof(row index) + sizeof(value) + sizeof(col_scan) =
     //                nnz * index_t + nnz * value_t + (col_size+1) * index_t
 
-//    index_t A_row_size = A->M;
+    index_t A_row_size = A->M;
 //    index_t B_col_size = B->Mbig; // for original B
 //    index_t B_col_size = B->M;      // for when tranpose of B is used to do the multiplication.
 
     mempool1 = new value_t[matmat_size_thre2];
-    mempool2 = new index_t[2 * Acsr.row_sz + 2 * Bcsc.max_M];
-/*
+    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
+
     // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
     int   valbyidx              = sizeof(value_t) / sizeof(index_t);
@@ -1947,14 +1943,13 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //        std::cout << "B->nnz_max = " << B->nnz_max << "\t, B->M_max = " << B->M_max << std::endl;
 //    }
 #endif
-*/
+
     // =======================================
     // perform the multiplication
     // =======================================
 
-    if(!rank) printf("uncomment matmat in matamt_ave\n");
-//    saena_matrix C(A->comm);
-//    matmat(Acsr, Bcsc, C, send_size_max, matmat_time);
+    saena_matrix C(A->comm);
+    matmat(Acsc, Bcsc, C, send_size_max, matmat_time);
 
     // =======================================
     // finalize
@@ -1970,16 +1965,16 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    delete []Brv;
 //    delete []Bc;
 
-    delete []Acsr.col;
-    delete []Acsr.val;
-    delete []Acsr.row_scan;
+    delete []Acsc.row;
+    delete []Acsc.val;
+    delete []Acsc.col_scan;
     delete []Bcsc.row;
     delete []Bcsc.val;
     delete []Bcsc.col_scan;
 
     delete[] mempool1;
     delete[] mempool2;
-//    delete[] mempool3;
+    delete[] mempool3;
 
     return 0;
 }
@@ -2179,7 +2174,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 }
 */
 
-int saena_object::matmat(CSRMat &Acsr, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time){
+int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time){
 
     MPI_Comm comm = C.comm;
 
@@ -2193,18 +2188,18 @@ int saena_object::matmat(CSRMat &Acsr, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     MPI_Barrier(comm);
     double t_AP = MPI_Wtime();
 
-    matmat(Acsr, Bcsc, C, send_size_max);
+    matmat(Acsc, Bcsc, C, send_size_max);
 
     t_AP = MPI_Wtime() - t_AP;
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
-//    if (!rank) printf("\n");
-//    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
-//    print_time_ave(case0,  "case0", comm, true);
-//    print_time_ave(case11, "case11", comm, true);
-//    print_time_ave(case12, "case12", comm, true);
-//    print_time_ave(case2,  "case2", comm, true);
-//    print_time_ave(case3,  "case3", comm, true);
+    if (!rank) printf("\n");
+    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
+    print_time_ave(case0,  "case0", comm, true);
+    print_time_ave(case11, "case11", comm, true);
+    print_time_ave(case12, "case12", comm, true);
+    print_time_ave(case2,  "case2", comm, true);
+    print_time_ave(case3,  "case3", comm, true);
 
 //    print_time(case12, "case12", comm);
 
@@ -2613,7 +2608,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 }
 */
 
-int saena_object::matmat(CSRMat &Acsr, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max){
+int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max){
 
     MPI_Comm comm = C.comm;
     int nprocs, rank;
@@ -2632,7 +2627,7 @@ int saena_object::matmat(CSRMat &Acsr, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     nnz_t send_nnz  = Bcsc.nnz;
     nnz_t send_size = (valbyidx + 1) * send_nnz + Bcsc.col_sz + 1; // valbyidx for val, 1 for row, Bcsc.col_sz + 1 for c_scan
 
-    index_t Acsr_M = Acsr.split[rank+1] - Acsr.split[rank];
+    index_t Acsc_M = Acsc.split[rank+1] - Acsc.split[rank];
 
     std::vector<cooEntry> AB_temp;
 
@@ -2686,14 +2681,14 @@ int saena_object::matmat(CSRMat &Acsr, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
         tf = MPI_Wtime();
 
-        if(Acsr.nnz != 0 && send_nnz != 0){
+        if(Acsc.nnz != 0 && send_nnz != 0){
             owner         = k%nprocs;
             mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
 
-//            fast_mm(&Acsr.col[0],   &Acsr.val[0],   &Acsr.row_scan[0],
-//                    &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
-//                    Acsr_M, Acsr.split[rank], Acsr.row_sz, 0, mat_current_M, Bcsc.split[owner],
-//                    AB_temp, comm);
+            fast_mm(&Acsc.row[0],   &Acsc.val[0],   &Acsc.col_scan[0],
+                    &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
+                    Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
+                    AB_temp, comm);
         }
 
         tf = MPI_Wtime() - tf;
@@ -2741,7 +2736,7 @@ int saena_object::matmat(CSRMat &Acsr, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     t3 = MPI_Wtime() - t3;
 
-    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
+//    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
 //    print_time_ave(t1,          "prepare", comm, true);
 //    print_time_ave(tf_tot,      "fast_mm", comm, true);
 //    print_time_ave(t2 - tf_tot, "comm",    comm, true);
