@@ -2193,13 +2193,13 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     t_AP = MPI_Wtime() - t_AP;
     matmat_time += print_time_ave_consecutive(t_AP, comm);
 
-    if (!rank) printf("\n");
-    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
-    print_time_ave(case0,  "case0", comm, true);
-    print_time_ave(case11, "case11", comm, true);
-    print_time_ave(case12, "case12", comm, true);
-    print_time_ave(case2,  "case2", comm, true);
-    print_time_ave(case3,  "case3", comm, true);
+//    if (!rank) printf("\n");
+//    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
+//    print_time_ave(case0,  "case0", comm, true);
+//    print_time_ave(case11, "case11", comm, true);
+//    print_time_ave(case12, "case12", comm, true);
+//    print_time_ave(case2,  "case2", comm, true);
+//    print_time_ave(case3,  "case3", comm, true);
 
 //    print_time(case12, "case12", comm);
 
@@ -2213,6 +2213,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 }
 
 //original
+//int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max)
 /*
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max){
 

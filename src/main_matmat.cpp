@@ -82,8 +82,8 @@ int main(int argc, char* argv[]){
 
     {
         saena::matrix A(comm);
-//        A.read_file(Aname);
-        A.read_file(Aname, "triangle");
+        A.read_file(Aname);
+//        A.read_file(Aname, "triangle");
         A.assemble();
 
         saena::matrix B(A);
@@ -100,11 +100,11 @@ int main(int argc, char* argv[]){
     //    petsc_viewer(A.get_internal_matrix());
 
 // *************************** checking the correctness of matrix-matrix product ****************************
-/*
+
         saena::amg solver;
         saena::matrix C(comm);
         solver.matmat(&A, &B, &C, true);
-*/
+
 //        C.get_internal_matrix()->print_info(0);
 //        C.print(-1);
 
@@ -114,10 +114,10 @@ int main(int argc, char* argv[]){
 //        petsc_viewer(C.get_internal_matrix());
 
         // check the correctness with PETSc
-    //    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
+        petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
 
 // *************************** print info ****************************
-
+/*
         saena::amg solver;
 
         if (!rank) {
@@ -130,7 +130,7 @@ int main(int argc, char* argv[]){
 // *************************** matrix-matrix product ****************************
 
         double matmat_time = 0;
-        int matmat_iter_warmup = 3;
+        int matmat_iter_warmup = 1;
         int matmat_iter = 1;
 
 //        saena::amg solver;
@@ -140,6 +140,7 @@ int main(int argc, char* argv[]){
         for (int i = 0; i < matmat_iter_warmup; i++) {
             solver.matmat_ave(&A, &B, matmat_time);
         }
+*/
 /*
         MPI_Barrier(comm);
         if (!rank) printf("\n\n");
@@ -153,9 +154,9 @@ int main(int argc, char* argv[]){
         // matmat_ave computes the average matmat time on processor 0.
         // so it is fine to just print the time on proc 0.
         if (!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
-
-        // *************************** PETSc ****************************
 */
+        // *************************** PETSc ****************************
+
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
 //        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
     }
