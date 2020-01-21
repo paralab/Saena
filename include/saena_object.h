@@ -205,8 +205,8 @@ public:
 //    int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 //    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 //    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int matmat(CSRMat &Acsr, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
-    int matmat(CSRMat &Acsr, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
+    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
+    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
     int matmat(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble=true);
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
