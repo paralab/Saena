@@ -601,9 +601,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     // =======================================
 
     saena_matrix RA(comm);
-
-    if(rank==0) printf("uncomment matmat in triple_mat_mult!");
-//    matmat(Rcsc, Acsc, RA, send_size_max);
+    matmat(Rcsc, Acsc, RA, send_size_max);
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
@@ -761,12 +759,10 @@ int saena_object::triple_mat_mult(Grid *grid){
     // perform the multiplication RA * P
     // =======================================
 
-    if(rank==0) printf("uncomment matmat in triple_mat_mult! second call!");
-
 //    saena_matrix RAP;
     MPI_Comm comm_temp = Ac->comm;
     Ac->comm           = A->comm;
-//    matmat(RAcsc, Pcsc, *Ac, send_size_max);
+    matmat(RAcsc, Pcsc, *Ac, send_size_max);
     Ac->comm           = comm_temp;
 
 #ifdef __DEBUG1__
