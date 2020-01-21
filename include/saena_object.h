@@ -230,38 +230,13 @@ public:
                  index_t B_col_size, index_t B_col_offset,
                  std::vector<cooEntry> &C, MPI_Comm comm);
 
-//    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                 nnz_t A_nnz, nnz_t B_nnz,
-//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                 index_t B_col_size, index_t B_col_offset,
-//                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-//                 MPI_Comm comm);
-
-//    void fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
-//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                 index_t B_col_size, index_t B_col_offset,
-//                 index_t *Ac, index_t *Bc, MPI_Comm comm);
-
-//    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                 nnz_t A_nnz, nnz_t B_nnz,
-//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                 index_t B_col_size, index_t B_col_offset,
-//                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-//                 std::unordered_map<index_t, value_t> &map_matmat, MPI_Comm comm);
-
-    void fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-                       nnz_t A_nnz, nnz_t B_nnz,
-                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                       index_t B_col_size, index_t B_col_offset,
-                       const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                       const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-                       MPI_Comm comm);
-
 //    void fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                 nnz_t A_nnz, nnz_t B_nnz, index_t A_row_size, index_t A_col_size, index_t B_col_size,
-//                 const index_t *nnzPerRowScan_left, const index_t *nnzPerColScan_right, MPI_Comm comm);
+//                       nnz_t A_nnz, nnz_t B_nnz,
+//                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+//                       index_t B_col_size, index_t B_col_offset,
+//                       const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
+//                       const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
+//                       MPI_Comm comm);
 
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
