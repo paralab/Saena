@@ -167,8 +167,8 @@ public:
     bool verbose_matmat           = false;
     bool verbose_fastmm           = false;
     bool verbose_matmat_recursive = false;
-    bool verbose_matmat_A         = false;
-    bool verbose_matmat_B         = false;
+    bool verbose_matmat_A         = true;
+    bool verbose_matmat_B         = true;
     bool verbose_matmat_assemble  = false;
     bool verbose_solve            = false;
     bool verbose_vcycle           = false;

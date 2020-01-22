@@ -6,6 +6,8 @@
 #include "parUtils.h"
 #include "dollar.hpp"
 
+#include <mkl_spblas.h>
+
 #include <cstdio>
 #include <fstream>
 #include <algorithm>
@@ -13,6 +15,19 @@
 
 
 double case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
+
+// from an MKL example
+/* To avoid constantly repeating the part of code that checks inbound SparseBLAS functions' status,
+   use macro CALL_AND_CHECK_STATUS */
+#define CALL_AND_CHECK_STATUS(function, error_message) do { \
+          if(function != SPARSE_STATUS_SUCCESS)             \
+          {                                                 \
+          printf(error_message); fflush(0);                 \
+          status = 1;                                       \
+          goto memory_free;                                 \
+          }                                                 \
+} while(0)
+
 
 void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                            index_t *Br, value_t *Bv, index_t *Bc_scan,
@@ -74,6 +89,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     MPI_Comm_rank(comm, &rank);
 
 //    if(!rank) std::cout << __func__ << std::endl;
+//    if(rank==3) std::cout << std::endl << std::endl << __func__ << std::endl;
 
     nnz_t A_nnz = Ac_scan[A_col_size] - Ac_scan[0];
     nnz_t B_nnz = Bc_scan[B_col_size] - Bc_scan[0];
@@ -109,7 +125,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             std::cout << "\nA: nnz = " << A_nnz << std::endl;
             for(nnz_t i = 0; i < A_col_size; i++){
                 for(nnz_t j = Ac_scan[i]; j < Ac_scan[i+1]; j++) {
-                    std::cout << j << "\t" << Ar[j] << "\t" << i + A_col_offset << "\t" << Av[j] << std::endl;
+//                    std::cout << j << "\t" << Ar[j]+1 << "\t" << i + A_col_offset+1 << "\t" << Av[j] << std::endl;
+                    std::cout << Ar[j]+1 << "\t" << i + A_col_offset+1 << "\t" << Av[j] << std::endl;
                 }
             }
         }
@@ -125,7 +142,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             std::cout << "\nB: nnz = " << B_nnz << std::endl;
             for (nnz_t i = 0; i < B_col_size; i++) {
                 for (nnz_t j = Bc_scan[i]; j < Bc_scan[i+1]; j++) {
-                    std::cout << j << "\t" << Br[j] << "\t" << i + B_col_offset << "\t" << Bv[j] << std::endl;
+//                    std::cout << j << "\t" << Br[j]+1 << "\t" << i + B_col_offset+1 << "\t" << Bv[j] << std::endl;
+                    std::cout << Br[j]+1 << "\t" << i + B_col_offset+1 << "\t" << Bv[j] << std::endl;
                 }
             }
         }
@@ -153,7 +171,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
 //        double t1 = MPI_Wtime();
-        double t0 = MPI_Wtime();
 
 #ifdef __DEBUG1__
 //        std::cout << "orig_col_idx max: " << A_row_size * 2 + B_col_size + B_nnz_col_sz - 1 << std::endl;
@@ -165,13 +182,120 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
-        t0 = MPI_Wtime() - t0;
-//        if(!rank) printf("\n");
-//        print_time_ave(t0, "case0", comm, true);
-        case0 += t0;
+//        if(rank==3) printf("Create MKL matrices\n"); fflush(nullptr);
 
+//        struct matrix_descr descr;
+//        descr.type = SPARSE_MATRIX_TYPE_GENERAL;
 
+        sparse_matrix_t Amkl = nullptr;
+        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A_row_size, A_col_size, (int*)Ac_scan, (int*)(Ac_scan+1), (int*)Ar, Av);
 
+        sparse_matrix_t Bmkl = nullptr;
+        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_row_size, B_col_size, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
+
+//        MPI_Barrier(comm);
+//        if(rank==3) printf("Perform MKL matmult\n"); fflush(nullptr);
+//        MPI_Barrier(comm);
+
+        // Compute C = A * B
+        sparse_matrix_t Cmkl = nullptr;
+        mkl_sparse_spmm( SPARSE_OPERATION_NON_TRANSPOSE, Amkl, Bmkl, &Cmkl );
+
+//        CALL_AND_CHECK_STATUS(mkl_sparse_spmm( SPARSE_OPERATION_NON_TRANSPOSE, Amkl, Bmkl, &Cmkl ),
+//                              "Error after MKL_SPARSE_SPMM \n");
+
+//        mkl_sparse_sp2m(SPARSE_OPERATION_NON_TRANSPOSE, descr, Amkl,
+//                        SPARSE_OPERATION_NON_TRANSPOSE, descr, Bmkl,
+//                        SPARSE_STAGE_FULL_MULT, &Cmkl);
+
+//        MPI_Barrier(comm);
+//        if(rank==3) printf("Export C\n"); fflush(nullptr);
+//        MPI_Barrier(comm);
+
+        double  *values_C = nullptr;
+        MKL_INT *rows_C = nullptr, *columns_C = nullptr;
+        MKL_INT *pointerB_C = nullptr, *pointerE_C = nullptr;
+        MKL_INT  rows, cols, i, j, ii, status;
+        sparse_index_base_t indexing;
+
+        CALL_AND_CHECK_STATUS(mkl_sparse_d_export_csc( Cmkl, &indexing, &rows, &cols, &pointerB_C, &pointerE_C, &rows_C, &values_C ),
+                              "Error after MKL_SPARSE_D_EXPORT_CSC  \n");
+
+//        CALL_AND_CHECK_STATUS(mkl_sparse_d_export_csr( Cmkl, &indexing, &rows, &cols, &pointerB_C, &pointerE_C, &columns_C, &values_C ),
+//                              "Error after MKL_SPARSE_D_EXPORT_CSR  \n");
+
+        // todo: instead of staring column from 0, start from a better one,
+        //  to avoid going through the first certain zero coulmns.
+
+//        MPI_Barrier(comm);
+//        if(rank==3) printf("Extract nonzeros\n"); fflush(nullptr);
+        printf("\nC:\n");
+//        MPI_Barrier(comm);
+
+//        if(rank!=3) {
+            ii = 0;
+            for (j = 0; j < B_col_size; ++j) {
+                for (i = pointerB_C[j]; i < pointerE_C[j]; ++i) {
+//                    if (rank == 3)
+//                    printf("%3d: (%3d , %3d) = %8f\n", ii, rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
+                    printf("(%3d , %3d) = %8f\n", rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
+                    C.emplace_back(rows_C[ii], j + B_col_offset, values_C[ii]);
+                    ++ii;
+                }
+            }
+//        }
+/*
+        MPI_Barrier(comm);
+
+        if(rank==3) {
+//            printf("START!\n"); fflush(nullptr);
+            ii = 0;
+            for (j = 0; j < B_col_size; ++j) {
+//                printf("col %d: (%3d , %3d)\n", j, pointerB_C[j], pointerE_C[j]); fflush(nullptr);
+                for (i = pointerB_C[j]; i < pointerE_C[j]; ++i) {
+//                    if (rank == 3)
+//                    printf("%3d: (%3d , %3d) = %8f\n", ii, rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
+                    C.emplace_back(rows_C[ii], j + B_col_offset, values_C[ii]);
+                    ++ii;
+                }
+            }
+        }
+*/
+
+//        ii = 0;
+//        for( i = 0; i < A_row_size; i++ ){
+//            for( j = pointerB_C[i]; j < pointerE_C[i]; j++ ){
+//                printf("%3d: (%3d , %3d) = %8f\n", ii, i + A_row_offset + 1, columns_C[ii] + 1, values_C[ii]); fflush(nullptr);
+//                C.emplace_back(i+A_row_offset, columns_C[ii], values_C[ii]);
+//                ii++;
+//            }
+//        }
+
+        memory_free:
+        //Release matrix handle. Not necessary to deallocate arrays for which we don't allocate memory:
+        // values_C, columns_C, pointerB_C, and pointerE_C.
+        //These arrays will be deallocated together with csrC structure.
+        if( mkl_sparse_destroy( Cmkl ) != SPARSE_STATUS_SUCCESS)
+        { printf(" Error after MKL_SPARSE_DESTROY, csrC \n");fflush(nullptr); }
+
+        //Release matrix handle and deallocate arrays for which we allocate memory ourselves.
+//        if( mkl_sparse_destroy( Amkl ) != SPARSE_STATUS_SUCCESS)
+//        { printf(" Error after MKL_SPARSE_DESTROY, csrA \n");fflush(nullptr); }
+//        mkl_free(values_A); mkl_free(columns_A); mkl_free(rowIndex_A);
+
+//        if( mkl_sparse_destroy( Bmkl ) != SPARSE_STATUS_SUCCESS)
+//        { printf(" Error after MKL_SPARSE_DESTROY, csrB \n");fflush(nullptr); }
+//        mkl_free(values_B); mkl_free(columns_B); mkl_free(rowIndex_B);
+
+//        mkl_sparse_destroy(Amkl);
+//        mkl_sparse_destroy(Bmkl);
+//        mkl_sparse_destroy(Cmkl);
+
+//        MPI_Barrier(comm);
+//        if(rank==3) printf("rank %d: DONE\n", rank); fflush(nullptr);
+//        MPI_Barrier(comm);
+
+        return;
     }
 
 
@@ -1294,7 +1418,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
-    mempool3              = new index_t[2 * send_size_max];
+          mempool3              = new index_t[2 * send_size_max];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
@@ -1646,109 +1770,351 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(nprocs == 1){
-        printf("this experimental version of matmat does not work in serial!");
-        exit(EXIT_FAILURE);
+    int verbose_rank = 0;
+#ifdef __DEBUG1__
+    if (verbose_matmat) {
+        MPI_Barrier(comm);
+        if (rank == verbose_rank) printf("\nstart of matmat: nprocs: %d \n", nprocs);
+        MPI_Barrier(comm);
     }
+#endif
 
-    double t1 = MPI_Wtime();
+    // =======================================
+    // perform the multiplication - serial implementation
+    // =======================================
+    // this needs to be updated.
 
-    int valbyidx = sizeof(value_t) / sizeof(index_t);
+//    std::vector<cooEntry> AB_temp;
+//    fast_mm(Arv, Brv, AB_temp,
+//            A->M, A->split[rank], A->Mbig, 0, B->M, B->split[rank],
+//            &Ac[0], &Bc[0], A->comm);
+
+#ifdef __DEBUG1__
+//    print_vector(AB_temp, -1, "AB_temp", comm);
+#endif
+
+    // =======================================
+    // communication and multiplication - parallel implementation
+    // =======================================
+
+    int   valbyidx              = sizeof(value_t) / sizeof(index_t);
+//    nnz_t v_buffer_sz_max       = valbyidx * Bcsc.max_nnz;
+//    nnz_t r_cscan_buffer_sz_max = Bcsc.max_nnz + Bcsc.max_M + 1;
+//    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
     nnz_t send_nnz  = Bcsc.nnz;
     nnz_t send_size = (valbyidx + 1) * send_nnz + Bcsc.col_sz + 1; // valbyidx for val, 1 for row, Bcsc.col_sz + 1 for c_scan
 
     index_t Acsc_M = Acsc.split[rank+1] - Acsc.split[rank];
 
+#ifdef __DEBUG1__
+    if (verbose_matmat) {
+        MPI_Barrier(comm);
+        if (rank == verbose_rank) printf("matmat: step 1\n");
+        MPI_Barrier(comm);
+//        if (rank == verbose_rank) std::cout << "send_nnz: " << send_nnz      << ",\tsend_size: " << send_size
+//                                    << ",\tsend_size_max: " << send_size_max << ",\tAcsc_M: "    << Acsc_M << std::endl;
+//        MPI_Barrier(comm);
+    }
+#endif
+
     std::vector<cooEntry> AB_temp;
 
-    auto mat_send       = &mempool3[0];
-    auto mat_send_r     = &mat_send[0];
-    auto mat_send_cscan = &mat_send[send_nnz];
-    auto mat_send_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + Bcsc.col_sz + 1]);
+    if(nprocs > 1){
 
-    memcpy(mat_send_r,     Bcsc.row,      Bcsc.nnz * sizeof(index_t));
-    memcpy(mat_send_cscan, Bcsc.col_scan, (Bcsc.col_sz + 1) * sizeof(index_t));
-    memcpy(mat_send_v,     Bcsc.val,      Bcsc.nnz * sizeof(value_t));
+        // set the mat_send data
+        // structure of mat_send:
+        // 1- row:    type: index_t, size: send_nnz
+        // 2- c_scan: type: index_t, size: Bcsc.col_sz + 1
+        // 3- val:    type: value_t, size: send_nnz
+        auto mat_send       = &mempool3[0];
+        auto mat_send_r     = &mat_send[0];
+        auto mat_send_cscan = &mat_send[send_nnz];
+        auto mat_send_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + Bcsc.col_sz + 1]);
 
-    int right_neighbor = (rank + 1)%nprocs;
-    int left_neighbor  = rank - 1;
-    if (left_neighbor < 0){
-        left_neighbor += nprocs;
-    }
+        memcpy(mat_send_r,     Bcsc.row,      Bcsc.nnz * sizeof(index_t));
+        memcpy(mat_send_cscan, Bcsc.col_scan, (Bcsc.col_sz + 1) * sizeof(index_t));
+        memcpy(mat_send_v,     Bcsc.val,      Bcsc.nnz * sizeof(value_t));
 
-    nnz_t recv_nnz;
-    nnz_t recv_size;
-    index_t mat_recv_M, mat_current_M;
+#ifdef __DEBUG1__
+        if (verbose_matmat) {
+            MPI_Barrier(comm);
+            if (rank == verbose_rank) printf("matmat: step 2\n");
+            MPI_Barrier(comm);
+//            print_vector(Bcsc.split, 0, "Bcsc.split", comm);
+//            print_vector(Bcsc.nnz_list, 0, "Bcsc.nnz_list", comm);
+//            MPI_Barrier(comm);
+        }
+//        print_array(mat_send_cscan, Bcsc.col_sz+1, 1, "mat_send_cscan", comm);
+//        MPI_Barrier(comm);
+#endif
 
-    auto mat_recv = &mempool3[send_size_max];
-
-    auto mat_temp = mat_send;
-    int  owner, next_owner;
-    auto *requests = new MPI_Request[2];
-    auto *statuses = new MPI_Status[2];
-
-    t1 = MPI_Wtime() - t1;
-
-    double t2 = MPI_Wtime();
-    double tf, tf_tot = 0; // for timing fast_mm
-
-    for(int k = rank; k < rank+nprocs; k++){
-        // This is overlapped. Both local and remote loops are done here.
-        // The first iteration is the local loop. The rest are remote.
-        // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor.
-        // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
-        // receive R_tranpose from the right_neighbor. And so on.
-        // --------------------------------------------------------------------
-
-        next_owner = (k+1)%nprocs;
-        mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
-        recv_nnz   = Bcsc.nnz_list[next_owner];
-        recv_size  = (valbyidx + 1) * recv_nnz + mat_recv_M + 1;
-
-        // communicate data
-        MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
-        MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
-
-        tf = MPI_Wtime();
-
-        if(Acsc.nnz != 0 && send_nnz != 0){
-            owner         = k%nprocs;
-            mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
-
-            fast_mm(&Acsc.row[0],   &Acsc.val[0],   &Acsc.col_scan[0],
-                    &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
-                    Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
-                    AB_temp, comm);
+        int right_neighbor = (rank + 1)%nprocs;
+        int left_neighbor  = rank - 1;
+        if (left_neighbor < 0){
+            left_neighbor += nprocs;
         }
 
-        tf = MPI_Wtime() - tf;
-        tf_tot += tf;
+        // set the mat_recv data
+        nnz_t recv_nnz;
+        nnz_t recv_size;
+        index_t mat_recv_M, mat_current_M;
+//        auto mat_recv = &mempool3[send_size_max];
 
-        MPI_Waitall(2, requests, statuses);
+        auto mat_recv = &mempool3[send_size_max];
+//        auto mat_recv_rv    = reinterpret_cast<vecEntry*>(&mat_recv[0]);
+//        auto mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
+//        auto mat_recv_cscan = reinterpret_cast<index_t*>(&mat_recv[rv_buffer_sz_max]);
 
-        send_size = recv_size;
-        send_nnz  = recv_nnz;
+        auto mat_temp = mat_send;
+        int  owner, next_owner;
+        auto *requests = new MPI_Request[2];
+        auto *statuses = new MPI_Status[2];
 
-        mat_temp = mat_send;
-        mat_send = mat_recv;
-        mat_recv = mat_temp;
+//        std::vector<cooEntry> AB_temp_no_dup;
+//        std::vector<nnz_t> AB_nnz_start(nprocs), AB_nnz_end(nprocs);
 
-        mat_send_r     = &mat_send[0];
-        mat_send_cscan = &mat_send[send_nnz];
-        mat_send_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + mat_recv_M + 1]);
+        // todo: the last communication means each proc receives a copy of its already owned B, which is redundant,
+        //   so the communication should be avoided but the multiplication should be done. consider this:
+        //   change to k < rank+nprocs-1. Then, copy fast_mm after the end of the for loop to perform the last multiplication
+        for(int k = rank; k < rank+nprocs; ++k){
+            // This is overlapped. Both local and remote loops are done here.
+            // The first iteration is the local loop. The rest are remote.
+            // Send R_tranpose to the left_neighbor processor, receive R_tranpose from the right_neighbor.
+            // In the next step: send R_tranpose that was received in the previous step to the left_neighbor processor,
+            // receive R_tranpose from the right_neighbor. And so on.
+            // --------------------------------------------------------------------
+
+            next_owner = (k+1)%nprocs;
+            mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
+            recv_nnz   = Bcsc.nnz_list[next_owner];
+            recv_size  = (valbyidx + 1) * recv_nnz + mat_recv_M + 1;
+
+#ifdef __DEBUG1__
+            if (verbose_matmat) {
+                MPI_Barrier(comm);
+                if (rank == verbose_rank) printf("matmat: step 3 - in for loop\n");
+                MPI_Barrier(comm);
+                printf("rank %d: next_owner: %d, recv_nnz: %lu, recv_size: %lu, send_nnz = %lu, send_size: %lu, mat_recv_M: %u\n",
+                       rank, next_owner, recv_nnz, recv_size, send_nnz, send_size, mat_recv_M);
+                MPI_Barrier(comm);
+            }
+//            printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+//            mat_recv.resize(recv_size);
+#endif
+
+            // communicate data
+            MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
+            MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
+
+//            owner = k%nprocs;
+//            mat_recv_M = B->split[owner + 1] - B->split[owner];
+
+            if(Acsc.nnz != 0 && send_nnz != 0){
+                // =======================================
+                // perform the multiplication
+                // =======================================
+
+                owner         = k%nprocs;
+                mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
+
+//                AB_temp.clear();
+                fast_mm(&Acsc.row[0],   &Acsc.val[0],   &Acsc.col_scan[0],
+                        &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
+                        Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
+                        AB_temp, comm);
+
+                // =======================================
+                // sort and remove duplicates
+                // =======================================
+
+//                std::sort(AB_temp.begin(), AB_temp.end());
+
+//                print_vector(AB_temp, -1, "AB_temp", comm);
+
+//                AB_nnz_start[owner] = AB_temp_no_dup.size();
+
+//                if(!AB_temp.empty()) {
+//                    nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
+//                    for (nnz_t i = 0; i < AB_temp.size(); i++) {
+//                        AB_temp_no_dup.emplace_back(AB_temp[i]);
+//                        while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+//                            AB_temp_no_dup.back().val += AB_temp[++i].val;
+//                        }
+//                    }
+//                }
+
+//                AB_nnz_end[owner] = AB_temp_no_dup.size();
+            }
+
+            MPI_Waitall(2, requests, statuses);
+
+#ifdef __DEBUG1__
+            if (verbose_matmat) {
+                MPI_Barrier(comm);
+                if (rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
+                MPI_Barrier(comm);
+            }
+
+//            auto mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
+//            MPI_Barrier(comm);
+//            if(rank==0){
+//                print_array(mat_recv_cscan, mat_recv_M+1, 0, "mat_recv_cscan", comm);
+//            }
+//            MPI_Barrier(comm);
+
+//            if(rank==1) {
+//                for (nnz_t i = 0; i < mat_recv_M; i++) {
+//                    for (nnz_t j = mat_send_cscan[i]; j < mat_send_cscan[i + 1]; j++) {
+//                        std::cout << j << "\t" << mat_send_r[j] << "\t" << i + Bcsc.split[k % nprocs] << "\t"
+//                                  << mat_send_v[j] << std::endl;
+//                    }
+//                }
+//            }
+#endif
+
+            send_size = recv_size;
+            send_nnz  = recv_nnz;
+
+//            mat_recv.swap(mat_send);
+//            std::swap(mat_send, mat_recv);
+            mat_temp = mat_send;
+            mat_send = mat_recv;
+            mat_recv = mat_temp;
+
+            mat_send_r     = &mat_send[0];
+            mat_send_cscan = &mat_send[send_nnz];
+            mat_send_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + mat_recv_M + 1]);
+
+//            mat_send_rv    = reinterpret_cast<vecEntry*>(&mat_send[0]);
+//            mat_send_cscan = &mat_send[vecbyint * send_nnz];
+//            mat_recv_rv    = reinterpret_cast<vecEntry*>(&mat_recv[0]);
+//            mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
+
+#ifdef __DEBUG1__
+            if (verbose_matmat) {
+                MPI_Barrier(comm);
+                if (rank == verbose_rank) printf("matmat: step 5 - in for loop\n");
+                MPI_Barrier(comm);
+            }
+
+//            MPI_Barrier(comm);
+//            if(rank==1) {
+//                for (nnz_t i = 0; i < mat_recv_M; i++) {
+//                    for (nnz_t j = mat_send_cscan[i]; j < mat_send_cscan[i + 1]; j++) {
+//                        std::cout << j << "\t" << mat_send_r[j] << "\t" << i + Bcsc.split[k % nprocs] << "\t"
+//                                  << mat_send_v[j] << std::endl;
+//                    }
+//                }
+//            }
+
+//            MPI_Barrier(comm);
+//            if(rank==0){
+//                std::cout << "print received matrix: mat_recv_M: " << mat_recv_M << ", col_offset: "
+//                          << B->split[k%nprocs] << std::endl;
+
+//                print_array(mat_send_cscan, mat_recv_M+1, 0, "mat_send_cscan", comm);
+//            }
+//            MPI_Barrier(comm);
+
+//          print_vector(AB_temp, -1, "AB_temp", A->comm);
+//          print_vector(mat_send, -1, "mat_send", A->comm);
+//          print_vector(mat_recv, -1, "mat_recv", A->comm);
+//          prev_owner = owner;
+//          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
+#endif
+
+        }
+
+        delete [] requests;
+        delete [] statuses;
+
+//        AB_temp.clear();
+//        AB_temp.shrink_to_fit();
+
+#ifdef __DEBUG1__
+//        print_vector(AB_temp_no_dup, 0, "AB_temp_no_dup", comm);
+//        print_vector(AB_nnz_start, -1, "AB_nnz_start", comm);
+//        print_vector(AB_nnz_end,   -1, "AB_nnz_end",   comm);
+#endif
+
+//        C.entry.resize(AB_temp_no_dup.size());
+//        nnz_t AB_nnz = 0;
+//        for(index_t p = 0; p < nprocs; p++){
+//            memcpy(&C.entry[AB_nnz], &AB_temp_no_dup[AB_nnz_start[p]], (AB_nnz_end[p] - AB_nnz_start[p]) * sizeof(cooEntry));
+//            AB_nnz += AB_nnz_end[p] - AB_nnz_start[p];
+//        }
+
+#ifdef __DEBUG1__
+        if (verbose_matmat) {
+            MPI_Barrier(comm);
+            if (rank == verbose_rank) printf("matmat: step 6\n");
+            MPI_Barrier(comm);
+        }
+//        print_vector(AB, 0, "AB", comm);
+#endif
+
+    } else { // nprocs == 1 -> serial
+
+        if(Acsc.nnz == 0 || send_nnz == 0){ // skip!
+#ifdef __DEBUG1__
+            if(verbose_fastmm){
+                if(Acsc.nnz == 0){
+                    printf("\nskip: A->entry.size() == 0\n\n");
+                } else {
+                    printf("\nskip: send_nnz == 0\n\n");
+                }
+            }
+#endif
+        } else {
+
+//            index_t mat_recv_M = B->split[rank + 1] - B->split[rank];
+
+//            double t1 = MPI_Wtime();
+
+            fast_mm(&Acsc.row[0], &Acsc.val[0], &Acsc.col_scan[0],
+                    &Bcsc.row[0], &Bcsc.val[0], &Bcsc.col_scan[0],
+                    Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank],
+                    AB_temp, comm);
+
+//            double t2 = MPI_Wtime();
+//            printf("\nfast_mm of AB_temp = %f\n", t2-t1);
+
+#ifdef __DEBUG1__
+            if (verbose_matmat) {
+                if (rank == verbose_rank) printf("matmat: step 2 serial\n");
+            }
+//            print_vector(AB_temp, -1, "AB_temp", comm);
+#endif
+
+            // =======================================
+            // sort and remove duplicates
+            // =======================================
+
+//            if(!AB_temp.empty()) {
+//
+//                std::sort(AB_temp.begin(), AB_temp.end());
+//
+//                nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
+//                for (nnz_t i = 0; i < AB_temp.size(); i++) {
+//                    C.entry.emplace_back(AB_temp[i]);
+//                    while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+//                    std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+//                        C.entry.back().val += AB_temp[++i].val;
+//                    }
+//                }
+//
+//            }
+        }
     }
 
-    delete [] requests;
-    delete [] statuses;
-
-    t2 = MPI_Wtime() - t2;
+#ifdef __DEBUG1__
+//    print_vector(AB_temp, -1, "AB_temp", comm);
+#endif
 
     // =======================================
     // sort and remove duplicates
     // =======================================
-
-    double t3 = MPI_Wtime();
 
     if(!AB_temp.empty()) {
 
@@ -1765,13 +2131,16 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     }
 
-    t3 = MPI_Wtime() - t3;
+#ifdef __DEBUG1__
+//    print_vector(C.entry, -1, "C.entry", comm);
+//    writeMatrixToFile(C.entry, "matrix_folder/result", comm);
 
-//    if (!rank) printf("\nprepare\nfast_mm\ncomm\nsort\n\n");
-//    print_time_ave(t1,          "prepare", comm, true);
-//    print_time_ave(tf_tot,      "fast_mm", comm, true);
-//    print_time_ave(t2 - tf_tot, "comm",    comm, true);
-//    print_time_ave(t3,          "sort",    comm, true);
+    if (verbose_matmat) {
+        MPI_Barrier(comm);
+        if (rank == verbose_rank) printf("end of matmat\n\n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     return 0;
 }
