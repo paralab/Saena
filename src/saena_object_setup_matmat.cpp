@@ -178,8 +178,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     // case1
     // ==============================================================
 
-    if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
-
+//    if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
+    if (true) {
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
             printf("fast_mm: case 0: start \n");
@@ -315,20 +315,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         return;
     }
-
-
-
-
-
-    //todo: delete this
-    MPI_Barrier(comm);
-    if(!rank) std::cout << "case2 is being performed! exit!" << std::endl;
-    MPI_Barrier(comm);
-    exit(EXIT_FAILURE);
-
-
-
-
 
     // ==============================================================
     // Case2
