@@ -293,21 +293,21 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         //Release matrix handle. Not necessary to deallocate arrays for which we don't allocate memory:
         // values_C, columns_C, pointerB_C, and pointerE_C.
         //These arrays will be deallocated together with csrC structure.
-        if( mkl_sparse_destroy( Cmkl ) != SPARSE_STATUS_SUCCESS)
-        { printf(" Error after MKL_SPARSE_DESTROY, csrC \n");fflush(nullptr); }
+//        if( mkl_sparse_destroy( Cmkl ) != SPARSE_STATUS_SUCCESS)
+//        { printf(" Error after MKL_SPARSE_DESTROY, csrC \n");fflush(nullptr); }
 
         //Release matrix handle and deallocate arrays for which we allocate memory ourselves.
-        if( mkl_sparse_destroy( Amkl ) != SPARSE_STATUS_SUCCESS)
-        { printf(" Error after MKL_SPARSE_DESTROY, csrA \n");fflush(nullptr); }
+//        if( mkl_sparse_destroy( Amkl ) != SPARSE_STATUS_SUCCESS)
+//        { printf(" Error after MKL_SPARSE_DESTROY, csrA \n");fflush(nullptr); }
 //        mkl_free(values_A); mkl_free(columns_A); mkl_free(rowIndex_A);
 
-        if( mkl_sparse_destroy( Bmkl ) != SPARSE_STATUS_SUCCESS)
-        { printf(" Error after MKL_SPARSE_DESTROY, csrB \n");fflush(nullptr); }
+//        if( mkl_sparse_destroy( Bmkl ) != SPARSE_STATUS_SUCCESS)
+//        { printf(" Error after MKL_SPARSE_DESTROY, csrB \n");fflush(nullptr); }
 //        mkl_free(values_B); mkl_free(columns_B); mkl_free(rowIndex_B);
 
-//        mkl_sparse_destroy(Amkl);
-//        mkl_sparse_destroy(Bmkl);
-//        mkl_sparse_destroy(Cmkl);
+        mkl_sparse_destroy(Cmkl);
+        mkl_sparse_destroy(Bmkl);
+        mkl_sparse_destroy(Amkl);
 
 //        MPI_Barrier(comm);
 //        if(rank==1) printf("rank %d: DONE\n", rank); fflush(nullptr);
