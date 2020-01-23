@@ -1571,7 +1571,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     std::fill(&Acsc.col_scan[0], &Acsc.col_scan[Acsc.col_sz + 1], 0);
     index_t *Ac_tmp = &Acsc.col_scan[1];
     for(nnz_t i = 0; i < Acsc.nnz; i++){
-        Acsc.row[i] = A->entry[i].row;
+        Acsc.row[i] = A->entry[i].row - A->split[rank]; // make the rows start from 0. when done with multiply, add this to the result.
         Acsc.val[i] = A->entry[i].val;
         Ac_tmp[A->entry[i].col]++;
     }
@@ -1666,7 +1666,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     //                sizeof(row index) + sizeof(value) + sizeof(col_scan) =
     //                nnz * index_t + nnz * value_t + (col_size+1) * index_t
 
-    index_t A_row_size = A->M;
+//    index_t A_row_size = A->M;
 //    index_t B_col_size = B->Mbig; // for original B
 //    index_t B_col_size = B->M;      // for when tranpose of B is used to do the multiplication.
 
