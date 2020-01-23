@@ -69,8 +69,8 @@ public:
     std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
 
     // memory pool used in compute_coarsen
-    value_t *mempool1 = nullptr;
-    index_t *mempool2 = nullptr;
+//    value_t *mempool1 = nullptr;
+//    index_t *mempool2 = nullptr;
     index_t *mempool3 = nullptr;
 //    std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
@@ -167,8 +167,8 @@ public:
     bool verbose_matmat           = false;
     bool verbose_fastmm           = false;
     bool verbose_matmat_recursive = false;
-    bool verbose_matmat_A         = true;
-    bool verbose_matmat_B         = true;
+    bool verbose_matmat_A         = false;
+    bool verbose_matmat_B         = false;
     bool verbose_matmat_assemble  = false;
     bool verbose_solve            = false;
     bool verbose_vcycle           = false;

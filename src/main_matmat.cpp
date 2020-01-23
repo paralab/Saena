@@ -84,7 +84,8 @@ int main(int argc, char* argv[]){
         saena::matrix A(comm);
         A.read_file(Aname);
 //        A.read_file(Aname, "triangle");
-        A.assemble_no_scale();
+        A.assemble();
+//        A.assemble_no_scale();
 
         saena::matrix B(A);
 
@@ -94,9 +95,10 @@ int main(int argc, char* argv[]){
         if (verbose) print_time(t1, t2, "Matrix Assemble:", comm);
     //    print_time(t1, t2, "Matrix Assemble:", comm);
 
-    //    A.print(0);
-    //    A.get_internal_matrix()->print_info(0);
+//        A.print(0);
+//        A.get_internal_matrix()->print_info(2);
     //    A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
+//        print_vector(A.get_internal_matrix()->split, 2, "split", comm);
     //    petsc_viewer(A.get_internal_matrix());
 
 // *************************** checking the correctness of matrix-matrix product ****************************

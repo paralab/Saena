@@ -89,7 +89,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     MPI_Comm_rank(comm, &rank);
 
 //    if(!rank) std::cout << __func__ << std::endl;
-//    if(rank==3) std::cout << std::endl << std::endl << __func__ << std::endl;
+//    if(rank==2) std::cout << std::endl << std::endl << __func__ << std::endl;
 
     nnz_t A_nnz = Ac_scan[A_col_size] - Ac_scan[0];
     nnz_t B_nnz = Bc_scan[B_col_size] - Bc_scan[0];
@@ -106,7 +106,23 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //    index_t B_row_size_half = A_col_size_half;
 //    index_t B_col_size_half = B_col_size/2;
 
-    int verbose_rank = 0;
+
+
+//    if(rank==2){
+//        std::cout << "\nA: nnz = "       << A_nnz
+//                  << ", A_row_size = "   << A_row_size   << ", A_col_size = "   << A_col_size
+//                  << ", A_row_offset = " << A_row_offset << ", A_col_offset = " << A_col_offset << std::endl;
+//
+//        std::cout << "B: nnz = "       << B_nnz;
+//        std::cout << ", B_row_size = "   << B_row_size   << ", B_col_size = "   << B_col_size
+//                  << ", B_row_offset = " << B_row_offset << ", B_col_offset = " << B_col_offset << std::endl
+//                  << std::endl;
+//    }
+
+
+
+
+    int verbose_rank = 2;
 #ifdef __DEBUG1__
 //    if(rank==verbose_rank) std::cout << "\n==========================" << __func__ << "==========================\n";
     if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
@@ -194,7 +210,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_row_size, B_col_size, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
 
 //        MPI_Barrier(comm);
-//        if(rank==3) printf("Perform MKL matmult\n"); fflush(nullptr);
+//        if(rank==2) printf("Perform MKL matmult\n"); fflush(nullptr);
 //        MPI_Barrier(comm);
 
         // Compute C = A * B
@@ -209,7 +225,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                        SPARSE_STAGE_FULL_MULT, &Cmkl);
 
 //        MPI_Barrier(comm);
-//        if(rank==3) printf("Export C\n"); fflush(nullptr);
+//        if(rank==2) printf("Export C\n"); fflush(nullptr);
 //        MPI_Barrier(comm);
 
         double  *values_C = nullptr;
@@ -229,16 +245,17 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 //        MPI_Barrier(comm);
 //        if(rank==3) printf("Extract nonzeros\n"); fflush(nullptr);
-        printf("\nC:\n");
 //        MPI_Barrier(comm);
 
-//        if(rank!=3) {
+        // To extract C when it is in CSC format.
+
+//        if(rank!=2) {
             ii = 0;
             for (j = 0; j < B_col_size; ++j) {
                 for (i = pointerB_C[j]; i < pointerE_C[j]; ++i) {
 //                    if (rank == 3)
 //                    printf("%3d: (%3d , %3d) = %8f\n", ii, rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
-                    printf("(%3d , %3d) = %8f\n", rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
+//                    printf("(%3d , %3d) = %8f\n", rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
                     C.emplace_back(rows_C[ii], j + B_col_offset, values_C[ii]);
                     ++ii;
                 }
@@ -247,21 +264,22 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 /*
         MPI_Barrier(comm);
 
-        if(rank==3) {
-//            printf("START!\n"); fflush(nullptr);
+        if(rank==2) {
+//            printf("\nC:\n");
+            C.emplace_back(0, 0, 1);
             ii = 0;
             for (j = 0; j < B_col_size; ++j) {
 //                printf("col %d: (%3d , %3d)\n", j, pointerB_C[j], pointerE_C[j]); fflush(nullptr);
                 for (i = pointerB_C[j]; i < pointerE_C[j]; ++i) {
 //                    if (rank == 3)
 //                    printf("%3d: (%3d , %3d) = %8f\n", ii, rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
-                    C.emplace_back(rows_C[ii], j + B_col_offset, values_C[ii]);
+//                    C.emplace_back(rows_C[ii], j + B_col_offset, values_C[ii]);
                     ++ii;
                 }
             }
         }
 */
-
+        // To extract C when it is in CSR format.
 //        ii = 0;
 //        for( i = 0; i < A_row_size; i++ ){
 //            for( j = pointerB_C[i]; j < pointerE_C[i]; j++ ){
@@ -279,12 +297,12 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         { printf(" Error after MKL_SPARSE_DESTROY, csrC \n");fflush(nullptr); }
 
         //Release matrix handle and deallocate arrays for which we allocate memory ourselves.
-//        if( mkl_sparse_destroy( Amkl ) != SPARSE_STATUS_SUCCESS)
-//        { printf(" Error after MKL_SPARSE_DESTROY, csrA \n");fflush(nullptr); }
+        if( mkl_sparse_destroy( Amkl ) != SPARSE_STATUS_SUCCESS)
+        { printf(" Error after MKL_SPARSE_DESTROY, csrA \n");fflush(nullptr); }
 //        mkl_free(values_A); mkl_free(columns_A); mkl_free(rowIndex_A);
 
-//        if( mkl_sparse_destroy( Bmkl ) != SPARSE_STATUS_SUCCESS)
-//        { printf(" Error after MKL_SPARSE_DESTROY, csrB \n");fflush(nullptr); }
+        if( mkl_sparse_destroy( Bmkl ) != SPARSE_STATUS_SUCCESS)
+        { printf(" Error after MKL_SPARSE_DESTROY, csrB \n");fflush(nullptr); }
 //        mkl_free(values_B); mkl_free(columns_B); mkl_free(rowIndex_B);
 
 //        mkl_sparse_destroy(Amkl);
@@ -1381,6 +1399,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 #ifdef __DEBUG1__
 //    B->print_entry(0);
 //    printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
+//    printf("rank %d: B: nnz_max: %ld\tM_max: %d\n", rank, B->nnz_max, B->M_max);
 //    print_array(Bc, B->M+1, 0, "Bc", comm);
 //
 //    std::cout << "\nB: nnz: " << B->nnz_l << std::endl ;
@@ -1409,8 +1428,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //    index_t B_col_size = B->Mbig; // for original B
 //    index_t B_col_size = B->M;      // for when tranpose of B is used to do the multiplication.
 
-    mempool1 = new value_t[matmat_size_thre2];
-    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
+//    mempool1 = new value_t[matmat_size_thre2];
+//    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
 
     // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
@@ -1465,8 +1484,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     delete []Bcsc.val;
     delete []Bcsc.col_scan;
 
-    delete[] mempool1;
-    delete[] mempool2;
+//    delete[] mempool1;
+//    delete[] mempool2;
     delete[] mempool3;
 
     return 0;
@@ -1665,8 +1684,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    index_t B_col_size = B->Mbig; // for original B
 //    index_t B_col_size = B->M;      // for when tranpose of B is used to do the multiplication.
 
-    mempool1 = new value_t[matmat_size_thre2];
-    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
+//    mempool1 = new value_t[matmat_size_thre2];
+//    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
 
     // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
@@ -1674,7 +1693,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
-    mempool3              = new index_t[2 * send_size_max];
+          mempool3              = new index_t[2 * send_size_max];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
@@ -1718,8 +1737,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     delete []Bcsc.val;
     delete []Bcsc.col_scan;
 
-    delete[] mempool1;
-    delete[] mempool2;
+//    delete[] mempool1;
+//    delete[] mempool2;
     delete[] mempool3;
 
     return 0;
@@ -1918,7 +1937,6 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                 owner         = k%nprocs;
                 mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
 
-//                AB_temp.clear();
                 fast_mm(&Acsc.row[0],   &Acsc.val[0],   &Acsc.col_scan[0],
                         &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
                         Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
@@ -1947,7 +1965,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 //                AB_nnz_end[owner] = AB_temp_no_dup.size();
             }
 
+//            printf("rank %d: matmat: step 4 - in for loop\n", rank);
+
             MPI_Waitall(2, requests, statuses);
+
+//            MPI_Barrier(comm);
 
 #ifdef __DEBUG1__
             if (verbose_matmat) {

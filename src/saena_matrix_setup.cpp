@@ -277,6 +277,8 @@ int saena_matrix::matrix_setup() {
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 
+//        printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
+
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
@@ -382,8 +384,8 @@ int saena_matrix::matrix_setup_no_scale(){
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 
-#pragma omp parallel
-        if(rank==0 && omp_get_thread_num()==0) printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
+//#pragma omp parallel
+//        if(rank==0 && omp_get_thread_num()==0) printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);

@@ -533,7 +533,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 //                sizeof(row index) + sizeof(value) + sizeof(col_scan) =
 //                nnz * index_t + nnz * value_t + (col_size+1) * index_t
 
-    mempool1 = new value_t[matmat_size_thre2];
+//    mempool1 = new value_t[matmat_size_thre2];
 
     // compute the maximum column size for both RA and (RA)P,
     // allocate mempool2 once and use it for both RA and (RA)P
@@ -541,7 +541,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     index_t max_col_sz  = std::max(A->M_max, R->M_max);
 
     index_t R_row_size = R->M;
-    mempool2 = new index_t[2 * R_row_size + 2 * max_col_sz];
+//    mempool2 = new index_t[2 * R_row_size + 2 * max_col_sz];
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
@@ -790,8 +790,8 @@ int saena_object::triple_mat_mult(Grid *grid){
     delete []Pcsc.val;
     delete []Pcsc.col_scan;
 
-    delete[] mempool1;
-    delete[] mempool2;
+//    delete[] mempool1;
+//    delete[] mempool2;
     delete[] mempool3;
 
 #ifdef __DEBUG1__
