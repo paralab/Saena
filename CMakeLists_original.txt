@@ -42,8 +42,24 @@ endif()
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MPI_LIBRARIES})
+
 # -----------------------------------------------------------------------
 # Dependencies
+# -----------------------------------------------------------------------
+# SuperLU
+
+set(SuperLU_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SuperLU_DIST_5.4.0)
+set(SuperLU_DIST_LIB ${CMAKE_BINARY_DIR}/build_superlu/lib/libsuperlu_dist.a)
+include_directories(
+        ${SuperLU_DIST_DIR}/build/include
+        ${SuperLU_DIST_DIR}/SRC
+)
+
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${SuperLU_DIST_LIB})
+
+# -----------------------------------------------------------------------
+# METIS and PARMETIS
 
 #set(PARMETIS_ROOT_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3)
 #set(METIS_LIBRARY        ${PARMETIS_ROOT_DIR}/metis/build/install_folder/lib/libmetis.a)
@@ -53,10 +69,12 @@ include_directories(${MPI_INCLUDE_PATH})
 #set(METIS_INCLUDE_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/metis/include)
 #set(PARMETIS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/include)
 
+#set(METIS_INCLUDE_DIR    ${CMAKE_BINARY_DIR}/build_metis/include)
+#set(PARMETIS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/build_parmetis/include)
 set(METIS_LIBRARY        ${CMAKE_BINARY_DIR}/build_metis/lib/libmetis.so)
 set(PARMETIS_LIBRARY     ${CMAKE_BINARY_DIR}/build_parmetis/lib/libparmetis.a)
-set(METIS_INCLUDE_DIR    ${CMAKE_BINARY_DIR}/build_metis/include)
-set(PARMETIS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/build_parmetis/include)
+
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY})
 
 # -----------------------------------------------------------------------
 # BOOST
@@ -67,12 +85,16 @@ set(PARMETIS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/build_parmetis/include)
 
 # For Colorado Summit cluster:
 #include_directories("/curc/sw/intel/17.4/mkl/include")
+# For Frontera:
+#include_directories(/opt/apps/intel19/python2_7/boost/1.69/include)
 
 # -----------------------------------------------------------------------
 # BLAS
 
 find_package(BLAS REQUIRED)
 message(STATUS BLAS found: ${BLAS_LIBRARIES})
+
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${BLAS_LIBRARIES})
 
 # -----------------------------------------------------------------------
 # LAPACK
@@ -82,15 +104,28 @@ message( STATUS LAPACK found: ${LAPACK_LIBRARIES} )
 include_directories(${LAPACK_INCLUDE_PATH})
 #set(LAPACK_LIB /usr/lib/openblas-base/liblapack.a)
 
-# -----------------------------------------------------------------------
-# SuperLU
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${LAPACK_LIBRARIES})
 
-set(SuperLU_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SuperLU_DIST_5.4.0)
-set(SuperLU_DIST_LIB ${CMAKE_BINARY_DIR}/build_superlu/lib/libsuperlu_dist.a)
-include_directories(
-        ${SuperLU_DIST_DIR}/build/include
-        ${SuperLU_DIST_DIR}/SRC
-)
+# -----------------------------------------------------------------------
+# MKL
+
+set(MKL_DIR "/opt/intel/compilers_and_libraries_2020.0.166/linux/mkl")
+include_directories(${MKL_DIR}/include)
+
+set(MKL_LIB_DIR    "${MKL_DIR}/lib/intel64_lin")
+
+set(MKL_LIB_CORE   "${MKL_LIB_DIR}/libmkl_core.so")
+set(MKL_LIB_LP64   "${MKL_LIB_DIR}/libmkl_intel_lp64.so")
+
+set(MKL_LIB_THREAD "${MKL_LIB_DIR}/libmkl_gnu_thread.so")
+#set(MKL_LIB_THREAD "${MKL_LIB_DIR}/libmkl_intel_thread.so")
+
+#set(MKL_LIB_BLACS "${MKL_LIB_DIR}/libmkl_blacs_intelmpi_lp64.so")
+#set(MKL_LIB_BLACS "${MKL_LIB_DIR}/libmkl_blacs_openmpi_lp64.so")
+
+set(MKL_OMP "/opt/intel/compilers_and_libraries_2020.0.166/linux/compiler/lib/intel64_lin/libiomp5.so")
+
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MKL_LIB_CORE} ${MKL_LIB_LP64} ${MKL_LIB_THREAD} ${MKL_OMP})
 
 # -----------------------------------------------------------------------
 # IETL: eigensolver
@@ -120,15 +155,17 @@ set(SOURCE_FILES ${SOURCE_FILES}
         )
 
 # -----------------------------------------------------------------------
-# send_zfp: for compressing arrays
+# ZFP: for compressing arrays
 
-set(ZFP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/send_zfp-0.5.3)
+set(ZFP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/zfp-0.5.5)
 set(ZFP_LIB ${CMAKE_CURRENT_BINARY_DIR}/build_zfp/lib/libzfp.so)
 include_directories(
         ${ZFP_DIR}/array
-        ${ZFP_DIR}/array/send_zfp
+        ${ZFP_DIR}/array/zfp
         ${ZFP_DIR}/include
 )
+
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${ZFP_LIB})
 
 # -----------------------------------------------------------------------
 #PETSc
@@ -143,6 +180,8 @@ include_directories(
         ${PETSC_DIR}/${PETSC_ARCH}/include
 )
 
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PETSC_LIB})
+
 # -----------------------------------------------------------------------
 #CombBLAS
 
@@ -150,6 +189,8 @@ include_directories(
 set(COMBBLAS_DIR /home/majidrp/Software/CombBLAS_beta_16_2)
 include_directories("${COMBBLAS_DIR}/install/include")
 set(COMBBLAS_LIB ${COMBBLAS_DIR}/install/lib/libCombBLAS.a)
+
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${COMBBLAS_LIB})
 
 # -----------------------------------------------------------------------
 # dollar (profiler)
@@ -193,7 +234,7 @@ set(HEADER_FILES ${HEADER_FILES}
         include/grid.h
         include/saena_vector.h
         include/petsc_functions.h
-#        include/combblas_functions.h
+        include/combblas_functions.h
         )
 
 set(SOURCE_FILES ${SOURCE_FILES}
@@ -217,17 +258,18 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_object.cpp
         src/saena_object_setup1.cpp
         src/saena_object_setup2.cpp
-#        src/saena_object_setup2_backup.cpp
+        src/saena_object_setup_matmat.cpp
         src/saena_object_solve.cpp
         src/saena_object_lazy.cpp
         src/saena_object_repart_shrink.cpp
         src/saena_object_sparsify.cpp
         src/saena_object_elemental.cpp
         src/saena_object_write2file.cpp
+#        src/saena_object_setup2_backup.cpp
 #        src/saena_object_setup2_test.cpp
 
         src/petsc_functions.cpp
-#        src/combblas_functions.cpp
+        src/combblas_functions.cpp
         )
 
 # -----------------------------------------------------------------------
@@ -235,20 +277,27 @@ set(SOURCE_FILES ${SOURCE_FILES}
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=c++14 -DTHREADED -fopenmp -DNDEBUG -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -Drestrict=__restrict__ -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 
-#add_executable(Saena                   src/main.cpp               ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena_read_file         src/main_read_file.cpp     ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena2_read_file        src/main_read_2file.cpp    ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena_band              src/main_band_matrix.cpp   ${SOURCE_FILES} ${HEADER_FILES})
-add_executable(Saena_matmat            src/main_matmat.cpp        ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena_lazy              src/main_lazy.cpp          ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena            src/main.cpp             ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_read_file  src/main_read_file.cpp   ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena2_read_file src/main_read_2file.cpp  ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_band       src/main_band_matrix.cpp ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_lazy       src/main_lazy.cpp        ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_zfp        src/main_zfp.cpp         ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Saena_matmat     src/main_matmat.cpp      ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena_matmat_read_2file src/main_matmat_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 # -----------------------------------------------------------------------
 
-#target_link_libraries(Saena            ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
-#target_link_libraries(Saena_read_file  ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
-#target_link_libraries(Saena2_read_file ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB})
-#target_link_libraries(Saena_band       ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
-target_link_libraries(Saena_matmat     ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
-#target_link_libraries(Saena_lazy       ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
-#target_link_libraries(Saena_matmat_read_2file ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
+#SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}
+#        ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
+#SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} m)
+#message("SAENA_LIB_DEPENDENCIES: " ${SAENA_LIB_DEPENDENCIES})
+
+#target_link_libraries(Saena                    ${SAENA_LIB_DEPENDENCIES})
+#target_link_libraries(Saena_read_file          ${SAENA_LIB_DEPENDENCIES})
+#target_link_libraries(Saena2_read_file         ${SAENA_LIB_DEPENDENCIES})
+#target_link_libraries(Saena_band               ${SAENA_LIB_DEPENDENCIES})
+#target_link_libraries(Saena_lazy               ${SAENA_LIB_DEPENDENCIES})
+#target_link_libraries(Saena_zfp                ${SAENA_LIB_DEPENDENCIES})
+target_link_libraries(Saena_matmat             ${SAENA_LIB_DEPENDENCIES})
+#target_link_libraries(Saena_matmat_read_2file  ${SAENA_LIB_DEPENDENCIES})
