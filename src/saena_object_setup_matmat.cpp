@@ -31,8 +31,9 @@ double case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0; // for timing ca
 
 void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                            index_t *Br, value_t *Bv, index_t *Bc_scan,
-                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                           index_t B_col_size, index_t B_col_offset,
+                           mat_info *A_info, mat_info *B_info,
+//                           index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+//                           index_t B_col_size, index_t B_col_offset,
                            std::vector<cooEntry> &C, MPI_Comm comm){
 
     // =============================================================
@@ -90,8 +91,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 //    if(!rank) std::cout << __func__ << std::endl;
 
-    nnz_t A_nnz = Ac_scan[A_col_size] - Ac_scan[0];
-    nnz_t B_nnz = Bc_scan[B_col_size] - Bc_scan[0];
+    nnz_t A_nnz = Ac_scan[A_info->col_sz] - Ac_scan[0];
+    nnz_t B_nnz = Bc_scan[B_info->col_sz] - Bc_scan[0];
 
     // check Split Fact 1
 //    index_t A_col_scan_start_tmp = Ac[0];
@@ -99,9 +100,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //    Ac[0] = A_col_scan_start;
 //    Bc[0] = B_col_scan_start;
 
-    index_t B_row_size      = A_col_size;
-    index_t B_row_offset    = A_col_offset;
-    index_t A_col_size_half = A_col_size/2;
+    index_t B_row_size      = A_info->col_sz;
+    index_t B_row_offset    = A_info->col_offset;
+    index_t A_col_size_half = A_info->col_sz/2;
 //    index_t B_row_size_half = A_col_size_half;
 //    index_t B_col_size_half = B_col_size/2;
 
@@ -115,32 +116,32 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         if(verbose_matmat_A){
             std::cout << "\nA: nnz = "       << A_nnz
-                      << ", A_row_size = "   << A_row_size   << ", A_col_size = "   << A_col_size
-                      << ", A_row_offset = " << A_row_offset << ", A_col_offset = " << A_col_offset << std::endl;
+                      << ", A_row_size = "   << A_info->row_sz   << ", A_col_size = "   << A_info->col_sz
+                      << ", A_row_offset = " << A_info->row_offset << ", A_col_offset = " << A_info->col_offset << std::endl;
 
 //            print_array(Ac_scan, A_col_size+1, 1, "Ac_scan", comm);
 
             // print entries of A:
             std::cout << "\nA: nnz = " << A_nnz << std::endl;
-            for(nnz_t i = 0; i < A_col_size; i++){
+            for(nnz_t i = 0; i < A_info->col_sz; i++){
                 for(nnz_t j = Ac_scan[i]; j < Ac_scan[i+1]; j++) {
-                    std::cout << j << "\t" << Ar[j] << "\t" << i + A_col_offset << "\t" << Av[j] << std::endl;
+                    std::cout << j << "\t" << Ar[j] << "\t" << i + A_info->col_offset << "\t" << Av[j] << std::endl;
                 }
             }
         }
 
         if(verbose_matmat_B) {
             std::cout << "\nB: nnz = "       << B_nnz;
-            std::cout << ", B_row_size = "   << B_row_size   << ", B_col_size = "   << B_col_size
-                      << ", B_row_offset = " << B_row_offset << ", B_col_offset = " << B_col_offset << std::endl;
+            std::cout << ", B_row_size = "   << B_row_size   << ", B_col_size = "   << B_info->col_sz
+                      << ", B_row_offset = " << B_row_offset << ", B_col_offset = " << B_info->col_offset << std::endl;
 
 //            print_array(Bc_scan, B_col_size+1, 1, "Bc_scan", comm);
 
             // print entries of B:
             std::cout << "\nB: nnz = " << B_nnz << std::endl;
-            for (nnz_t i = 0; i < B_col_size; i++) {
+            for (nnz_t i = 0; i < B_info->col_sz; i++) {
                 for (nnz_t j = Bc_scan[i]; j < Bc_scan[i+1]; j++) {
-                    std::cout << j << "\t" << Br[j] << "\t" << i + B_col_offset << "\t" << Bv[j] << std::endl;
+                    std::cout << j << "\t" << Br[j] << "\t" << i + B_info->col_offset << "\t" << Bv[j] << std::endl;
                 }
             }
         }
@@ -159,8 +160,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     // case1
     // ==============================================================
 
-//    if (A_row_size * B_col_size < matmat_size_thre1) { //DOLLAR("case0")
-    if (true) {
+    if (A_info->row_sz * B_info->col_sz < matmat_size_thre1) { //DOLLAR("case0")
+//    if (true) {
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
             printf("fast_mm: case 0: start \n");
@@ -180,7 +181,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
         sparse_matrix_t Amkl = nullptr;
-        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A_row_size, A_col_size, (int*)Ac_scan, (int*)(Ac_scan+1), (int*)Ar, Av);
+        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A_info->row_sz, A_info->col_sz, (int*)Ac_scan, (int*)(Ac_scan+1), (int*)Ar, Av);
 
 /*
         double  *values_A = nullptr;
@@ -205,7 +206,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 */
 
         sparse_matrix_t Bmkl = nullptr;
-        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_row_size, B_col_size, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
+        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_row_size, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
 
 //        MPI_Barrier(comm);
 //        if(rank==1) printf("\nPerform MKL matmult\n"); fflush(nullptr);
@@ -254,10 +255,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         // Extract C when it is in CSC format.
 
         ii = 0;
-        for (j = 0; j < B_col_size; ++j) {
+        for (j = 0; j < B_info->col_sz; ++j) {
             for (i = pointerB_C[j]; i < pointerE_C[j]; ++i) {
 //                if (rank == 3) printf("%3d: (%3d , %3d) = %8f\n", ii, rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
-                C.emplace_back(rows_C[ii] + A_row_offset, j + B_col_offset, values_C[ii]);
+                C.emplace_back(rows_C[ii] + A_info->row_offset, j + B_info->col_offset, values_C[ii]);
                 ++ii;
             }
         }
@@ -321,18 +322,16 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
     // ==============================================================
 
     index_t A_col_scan_end, B_col_scan_end;
+    mat_info A1_info, A2_info, B1_info, B2_info;
 
     // if A_col_size_half == 0, it means A_col_size = 1. In this case it goes to case3.
-    if (A_row_size <= A_col_size && A_col_size_half != 0){//DOLLAR("case2")
+    if (A_info->row_sz <= A_info->col_sz && A_col_size_half != 0){//DOLLAR("case2")
 
         double t2 = MPI_Wtime();
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) { printf("fast_mm: case 2: start \n"); }
 #endif
-
-//        index_t B_row_offset = A_col_offset;
-//        index_t A_col_size_half = A_col_size/2;
 
         // =======================================================
         // split based on matrix size
@@ -357,7 +356,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //        index_t A_col_size_half = A_col_size/2;
 
         if (A_nnz > matmat_nnz_thre) { // otherwise A_col_size_half will stay A_col_size/2
-            for (nnz_t i = 0; i < A_col_size; i++) {
+            for (nnz_t i = 0; i < A_info->col_sz; i++) {
                 if( (Ac[i+1] - Ac[0]) >= A_half_nnz){
                     A_col_size_half = i;
                     break;
@@ -366,8 +365,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 
         // if A is not being split at all following "half nnz method", then swtich to "half size method".
-        if (A_col_size_half == A_col_size) {
-            A_col_size_half = A_col_size / 2;
+        if (A_col_size_half == A_info->col_sz) {
+            A_col_size_half = A_info->col_sz / 2;
         }
 
 #endif
@@ -389,19 +388,19 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //        index_t A1_col_scan_start = Ac1[0];
 //        index_t A2_col_scan_start = Ac2[0];
 
-        auto A1_row_size = A_row_size;
-        auto A2_row_size = A_row_size;
+        A1_info.row_sz = A_info->row_sz;
+        A2_info.row_sz = A_info->row_sz;
 
-        auto A1_row_offset = A_row_offset;
-        auto A2_row_offset = A_row_offset;
+        A1_info.row_offset = A_info->row_offset;
+        A2_info.row_offset = A_info->row_offset;
 
-        auto A1_col_size = A_col_size_half;
-        auto A2_col_size = A_col_size - A1_col_size;
+        A1_info.col_sz = A_col_size_half;
+        A2_info.col_sz = A_info->col_sz - A1_info.col_sz;
 
-        auto A1_col_offset = A_col_offset;
-        auto A2_col_offset = A_col_offset + A1_col_size;
+        A1_info.col_offset = A_info->col_offset;
+        A2_info.col_offset = A_info->col_offset + A1_info.col_sz;
 
-        nnz_t A1_nnz = A1c_scan[A1_col_size] - A1c_scan[0];
+        nnz_t A1_nnz = A1c_scan[A1_info.col_sz] - A1c_scan[0];
         nnz_t A2_nnz = A_nnz - A1_nnz;
 
 //        std::cout << "A1_nnz: " << A1_nnz << ", A2_nnz: " << A2_nnz << ", A_col_size: " << A_col_size
@@ -415,29 +414,29 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         index_t B_row_threshold = B_row_size_half + B_row_offset;
 
         auto B1c_scan = Bc_scan; // col_scan
-        auto B2c_scan = new index_t[B_col_size + 1]; // col_scan
+        auto B2c_scan = new index_t[B_info->col_sz + 1]; // col_scan
 
-        reorder_split(Br, Bv, B1c_scan, B2c_scan, B_col_size, B_row_threshold);
+        reorder_split(Br, Bv, B1c_scan, B2c_scan, B_info->col_sz, B_row_threshold);
 
-        nnz_t B1_nnz = B1c_scan[B_col_size] - B1c_scan[0];
-        nnz_t B2_nnz = B2c_scan[B_col_size] - B2c_scan[0];
+        nnz_t B1_nnz = B1c_scan[B_info->col_sz] - B1c_scan[0];
+        nnz_t B2_nnz = B2c_scan[B_info->col_sz] - B2c_scan[0];
 
         auto B1r = &Br[0];
         auto B1v = &Bv[0];
-        auto B2r = &Br[B1c_scan[B_col_size]];
-        auto B2v = &Bv[B1c_scan[B_col_size]];
+        auto B2r = &Br[B1c_scan[B_info->col_sz]];
+        auto B2v = &Bv[B1c_scan[B_info->col_sz]];
 
-        auto B1_row_size = B_row_size_half;
-        auto B2_row_size = A_col_size - B1_row_size;
+        B1_info.row_sz = B_row_size_half;
+        B2_info.row_sz = A_info->col_sz - B1_info.row_sz;
 
-        auto B1_row_offset = B_row_offset;
-        auto B2_row_offset = B_row_offset + B_row_size_half;
+        B1_info.row_offset = B_row_offset;
+        B2_info.row_offset = B_row_offset + B_row_size_half;
 
-        auto B1_col_size = B_col_size;
-        auto B2_col_size = B_col_size;
+        B1_info.col_sz = B_info->col_sz;
+        B2_info.col_sz = B_info->col_sz;
 
-        auto B1_col_offset = B_col_offset;
-        auto B2_col_offset = B_col_offset;
+        B1_info.col_offset = B_info->col_offset;
+        B2_info.col_offset = B_info->col_offset;
 
         t2 = MPI_Wtime() - t2;
 //        print_time_ave(t2, "case2", comm, true);
@@ -510,17 +509,17 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
                 // print entries of A1:
                 std::cout << "\nCase2:\nA1: nnz = " << A1_nnz << std::endl;
-                for (nnz_t i = 0; i < A1_col_size; i++) {
+                for (nnz_t i = 0; i < A1_info.col_sz; i++) {
                     for (nnz_t j = A1c_scan[i]; j < A1c_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << A1r[j] << "\t" << i + A1_col_offset << "\t" << A1v[j] << std::endl;
+                        std::cout << j << "\t" << A1r[j] << "\t" << i + A1_info.col_offset << "\t" << A1v[j] << std::endl;
                     }
                 }
 
                 // print entries of A2:
                 std::cout << "\nA2: nnz = " << A2_nnz << std::endl;
-                for (nnz_t i = 0; i < A2_col_size; i++) {
+                for (nnz_t i = 0; i < A2_info.col_sz; i++) {
                     for (nnz_t j = A2c_scan[i]; j < A2c_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << A2r[j] << "\t" << i + A2_col_offset << "\t" << A2v[j] << std::endl;
+                        std::cout << j << "\t" << A2r[j] << "\t" << i + A2_info.col_offset << "\t" << A2v[j] << std::endl;
                     }
                 }
             }
@@ -536,17 +535,17 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
                 // print entries of B1:
                 std::cout << "\nCase2:\nB1: nnz = " << B1_nnz << std::endl;
-                for (nnz_t i = 0; i < B1_col_size; i++) {
+                for (nnz_t i = 0; i < B1_info.col_sz; i++) {
                     for (nnz_t j = B1c_scan[i]; j < B1c_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << B1r[j] << "\t" << i + B1_col_offset << "\t" << B1v[j] << std::endl;
+                        std::cout << j << "\t" << B1r[j] << "\t" << i + B1_info.col_offset << "\t" << B1v[j] << std::endl;
                     }
                 }
 
                 // print entries of B2:
                 std::cout << "\nB2: nnz = " << B2_nnz << std::endl;
-                for (nnz_t i = 0; i < B2_col_size; i++) {
+                for (nnz_t i = 0; i < B2_info.col_sz; i++) {
                     for (nnz_t j = B2c_scan[i]; j < B2c_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << B2r[j] << "\t" << i + B2_col_offset << "\t" << B2v[j] << std::endl;
+                        std::cout << j << "\t" << B2r[j] << "\t" << i + B2_info.col_offset << "\t" << B2v[j] << std::endl;
                     }
                 }
             }
@@ -565,21 +564,11 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 1 \n");
 #endif
 
-        if (A1_nnz == 0 || B1_nnz == 0) { // skip!
-#ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) {
-                if (A1_nnz == 0) {
-                    printf("skip: A1_nnz == 0\n");
-                } else {
-                    printf("skip: B1_nnz == 0\n");
-                }
-            }
-#endif
-        } else {
+        if (A1_nnz != 0 && B1_nnz != 0) {
 
             // Check Split Fact 1 for this part.
-            A_col_scan_end = A1c_scan[A1_col_size];
-            B_col_scan_end = B1c_scan[B1_col_size];
+            A_col_scan_end = A1c_scan[A1_info.col_sz];
+            B_col_scan_end = B1c_scan[B1_info.col_sz];
 
 //            auto A1r_temp      = new index_t[A1_nnz];
 //            auto A1v_temp      = new value_t[A1_nnz];
@@ -599,12 +588,13 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
-                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
-                    B1_col_size, B1_col_offset,
+                    &A1_info, &B1_info,
+//                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
+//                    B1_col_size, B1_col_offset,
                     C, comm);
 
-            A1c_scan[A1_col_size] = A_col_scan_end;
-            B1c_scan[B1_col_size] = B_col_scan_end;
+            A1c_scan[A1_info.col_sz] = A_col_scan_end;
+            B1c_scan[B1_info.col_sz] = B_col_scan_end;
 
 //            memcpy(A1r,      A1r_temp,      sizeof(index_t) * A1_nnz);
 //            memcpy(A1v,      A1v_temp,      sizeof(value_t) * A1_nnz);
@@ -628,20 +618,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 2 \n");
 #endif
 
-        if (A2_nnz == 0 || B2_nnz == 0) {
-#ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) {
-                if (A2_nnz == 0) {
-                    printf("skip: A2_nnz == 0\n");
-                } else {
-                    printf("skip: B2_nnz == 0\n");
-                }
-            }
-#endif
-        } else {
+        if (A2_nnz != 0 && B2_nnz != 0) {
 
-            A_col_scan_end = A2c_scan[A2_col_size];
-            B_col_scan_end = B2c_scan[B2_col_size];
+            A_col_scan_end = A2c_scan[A2_info.col_sz];
+            B_col_scan_end = B2c_scan[B2_info.col_sz];
 
 //            auto A2r_temp      = new index_t[A2_nnz];
 //            auto A2v_temp      = new value_t[A2_nnz];
@@ -661,12 +641,13 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
-                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
-                    B2_col_size, B2_col_offset,
+                    &A2_info, &B2_info,
+//                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
+//                    B2_col_size, B2_col_offset,
                     C, comm);
 
-            A2c_scan[A2_col_size] = A_col_scan_end;
-            B2c_scan[B2_col_size] = B_col_scan_end;
+            A2c_scan[A2_info.col_sz] = A_col_scan_end;
+            B2c_scan[B2_info.col_sz] = B_col_scan_end;
 
 //            memcpy(A2r,      A2r_temp,      sizeof(index_t) * A2_nnz);
 //            memcpy(A2v,      A2v_temp,      sizeof(value_t) * A2_nnz);
@@ -694,7 +675,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         t2 = MPI_Wtime();
 
         // return B to its original order.
-        reorder_back_split(Br, Bv, B1c_scan, B2c_scan, B_col_size);
+        reorder_back_split(Br, Bv, B1c_scan, B2c_scan, B_info->col_sz);
         delete []B2c_scan;
 
         t2 = MPI_Wtime() - t2;
@@ -736,7 +717,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         // prepare splits of matrix B by column
 
 //        index_t A_col_size_half = A_col_size/2;
-        index_t B_col_size_half = B_col_size/2;
+        index_t B_col_size_half = B_info->col_sz/2;
 
         nnz_t B1_nnz = Bc_scan[B_col_size_half] - Bc_scan[0];
         nnz_t B2_nnz = B_nnz - B1_nnz;
@@ -749,17 +730,17 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         auto B1c_scan = Bc_scan;
         auto B2c_scan = &Bc_scan[B_col_size_half];
 
-        auto B1_row_size = A_col_size;
-        auto B2_row_size = A_col_size;
+        B1_info.row_sz = A_info->col_sz;
+        B2_info.row_sz = A_info->col_sz;
 
-        auto B1_row_offset = B_row_offset;
-        auto B2_row_offset = B_row_offset;
+        B1_info.row_offset = B_row_offset;
+        B2_info.row_offset = B_row_offset;
 
-        auto B1_col_size = B_col_size_half;
-        auto B2_col_size = B_col_size - B1_col_size;
+        B1_info.col_sz = B_col_size_half;
+        B2_info.col_sz = B_info->col_sz - B1_info.col_sz;
 
-        auto B1_col_offset = B_col_offset;
-        auto B2_col_offset = B_col_offset + B_col_size_half;
+        B1_info.col_offset = B_info->col_offset;
+        B2_info.col_offset = B_info->col_offset + B_col_size_half;
 
 //        std::cout << "\ncase2: B_nnz: " << B_nnz << "\tB1_nnz: " << B1_nnz << "\tB2_nnz: " << B2_nnz
 //                  << "\tB_col_size: " << B_col_size << "\tB_col_size_half: " << B_col_size_half << std::endl;
@@ -797,10 +778,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         // prepare splits of matrix B by column
         nnz_t B1_nnz = 0, B2_nnz;
         auto B_half_nnz = (nnz_t) ceil(B_nnz / 2);
-        index_t B_col_size_half = B_col_size / 2;
+        index_t B_col_size_half = B_info->col_sz / 2;
 
         if (B_nnz > matmat_nnz_thre) {
-            for (nnz_t i = 0; i < B_col_size; i++) {
+            for (nnz_t i = 0; i < B_info->col_sz; i++) {
                 B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
 
 #ifdef __DEBUG1__
@@ -811,7 +792,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
                 if (B1_nnz >= B_half_nnz) {
-                    B_col_size_half = B[nnzPerColScan_rightStart[i]].col + 1 - B_col_offset;
+                    B_col_size_half = B[nnzPerColScan_rightStart[i]].col + 1 - B_info->col_offset;
                     break;
                 }
             }
@@ -822,8 +803,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 
         // if B is not being splitted at all following "half nnz method", then swtich to "half col method".
-        if (B_col_size_half == B_col_size) {
-            B_col_size_half = B_col_size / 2;
+        if (B_col_size_half == B_info->col_sz) {
+            B_col_size_half = B_info->col_sz / 2;
             B1_nnz = 0;
             for (nnz_t i = 0; i < B_col_size_half; i++) {
                 B1_nnz += nnzPerColScan_rightEnd[i] - nnzPerColScan_rightStart[i];
@@ -839,33 +820,33 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         // prepare splits of matrix A by row
 
-        index_t A_row_size_half = A_row_size / 2;
-        index_t A_row_threshold = A_row_size_half + A_row_offset;
+        index_t A_row_size_half = A_info->row_sz / 2;
+        index_t A_row_threshold = A_row_size_half + A_info->row_offset;
 
         auto A1c_scan = Ac_scan; // col_scan
-        auto A2c_scan = new index_t[A_col_size + 1]; // col_scan
+        auto A2c_scan = new index_t[A_info->col_sz + 1]; // col_scan
 
-        reorder_split(Ar, Av, A1c_scan, A2c_scan, A_col_size, A_row_threshold);
+        reorder_split(Ar, Av, A1c_scan, A2c_scan, A_info->col_sz, A_row_threshold);
 
-        nnz_t A1_nnz = A1c_scan[A_col_size] - A1c_scan[0];
-        nnz_t A2_nnz = A2c_scan[A_col_size] - A2c_scan[0];
+        nnz_t A1_nnz = A1c_scan[A_info->col_sz] - A1c_scan[0];
+        nnz_t A2_nnz = A2c_scan[A_info->col_sz] - A2c_scan[0];
 
         auto A1r = &Ar[0];
         auto A1v = &Av[0];
-        auto A2r = &Ar[A1c_scan[A_col_size]];
-        auto A2v = &Av[A1c_scan[A_col_size]];
+        auto A2r = &Ar[A1c_scan[A_info->col_sz]];
+        auto A2v = &Av[A1c_scan[A_info->col_sz]];
 
-        auto A1_row_size = A_row_size_half;
-        auto A2_row_size = A_row_size - A1_row_size;
+        A1_info.row_sz = A_row_size_half;
+        A2_info.row_sz = A_info->row_sz - A1_info.row_sz;
 
-        auto A1_row_offset = A_row_offset;
-        auto A2_row_offset = A_row_offset + A1_row_size;
+        A1_info.row_offset = A_info->row_offset;
+        A2_info.row_offset = A_info->row_offset + A1_info.row_sz;
 
-        auto A1_col_size = A_col_size;
-        auto A2_col_size = A_col_size;
+        A1_info.col_sz = A_info->col_sz;
+        A2_info.col_sz = A_info->col_sz;
 
-        auto A1_col_offset = A_col_offset;
-        auto A2_col_offset = A_col_offset;
+        A1_info.col_offset = A_info->col_offset;
+        A2_info.col_offset = A_info->col_offset;
 
 //        std::cout << "\ncase3: A_nnz: " << A_nnz << "\tA1_nnz: " << A1_nnz << "\tA2_nnz: " << A2_nnz
 //                  << "\tA_row_size: " << A_row_size << "\tA_row_size_half: " << A_row_size_half
@@ -917,17 +898,17 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             if (verbose_matmat_A) {
                 // print entries of A1:
                 std::cout << "\nCase3:\nA1: nnz = " << A1_nnz << std::endl;
-                for (nnz_t i = 0; i < A1_col_size; i++) {
+                for (nnz_t i = 0; i < A1_info.col_sz; i++) {
                     for (nnz_t j = A1c_scan[i]; j < A1c_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << A1r[j] << "\t" << i + A1_col_offset << "\t" << A1v[j] << std::endl;
+                        std::cout << j << "\t" << A1r[j] << "\t" << i + A1_info.col_offset << "\t" << A1v[j] << std::endl;
                     }
                 }
 
                 // print entries of A2:
                 std::cout << "\nA2: nnz = " << A2_nnz << std::endl;
-                for (nnz_t i = 0; i < A2_col_size; i++) {
+                for (nnz_t i = 0; i < A2_info.col_sz; i++) {
                     for (nnz_t j = A2c_scan[i]; j < A2c_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << A2r[j] << "\t" << i + A2_col_offset << "\t" << A2v[j] << std::endl;
+                        std::cout << j << "\t" << A2r[j] << "\t" << i + A2_info.col_offset << "\t" << A2v[j] << std::endl;
                     }
                 }
             }
@@ -953,17 +934,17 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
                 // print entries of B1:
                 std::cout << "\nCase3:\nB1: nnz = " << B1_nnz << std::endl;
-                for (nnz_t i = 0; i < B1_col_size; i++) {
+                for (nnz_t i = 0; i < B1_info.col_sz; i++) {
                     for (nnz_t j = B1c_scan[i]; j < B1c_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << B1r[j] << "\t" << i + B1_col_offset << "\t" << B1v[j] << std::endl;
+                        std::cout << j << "\t" << B1r[j] << "\t" << i + B1_info.col_offset << "\t" << B1v[j] << std::endl;
                     }
                 }
 
                 // print entries of B2:
                 std::cout << "\nB2: nnz = " << B2_nnz << std::endl;
-                for (nnz_t i = 0; i < B2_col_size; i++) {
+                for (nnz_t i = 0; i < B2_info.col_sz; i++) {
                     for (nnz_t j = B2c_scan[i]; j < B2c_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << B2r[j] << "\t" << i + B2_col_offset << "\t" << B2v[j] << std::endl;
+                        std::cout << j << "\t" << B2r[j] << "\t" << i + B2_info.col_offset << "\t" << B2v[j] << std::endl;
                     }
                 }
             }
@@ -980,20 +961,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 1 \n");
 #endif
 
-        if (A1_nnz == 0 || B1_nnz == 0) {
-#ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) {
-                if (A1_nnz == 0) {
-                    printf("skip: A1_nnz == 0\n");
-                } else {
-                    printf("skip: B1_nnz == 0\n");
-                }
-            }
-#endif
-        } else {
+        if (A1_nnz != 0 && B1_nnz != 0) {
 
-            A_col_scan_end = A1c_scan[A1_col_size];
-            B_col_scan_end = B1c_scan[B1_col_size];
+            A_col_scan_end = A1c_scan[A1_info.col_sz];
+            B_col_scan_end = B1c_scan[B1_info.col_sz];
 
 //            auto Ar_temp      = new index_t[A_nnz];
 //            auto Av_temp      = new value_t[A_nnz];
@@ -1013,12 +984,13 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
-                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
-                    B1_col_size, B1_col_offset,
+                    &A1_info, &B1_info,
+//                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
+//                    B1_col_size, B1_col_offset,
                     C, comm);
 
-            A1c_scan[A1_col_size] = A_col_scan_end;
-            B1c_scan[B1_col_size] = B_col_scan_end;
+            A1c_scan[A1_info.col_sz] = A_col_scan_end;
+            B1c_scan[B1_info.col_sz] = B_col_scan_end;
 
 //            memcpy(Ar,      Ar_temp,      sizeof(index_t) * A_nnz);
 //            memcpy(Av,      Av_temp,      sizeof(value_t) * A_nnz);
@@ -1046,20 +1018,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 2 \n");
 #endif
 
-        if (A1_nnz == 0 || B2_nnz == 0) {
-#ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) {
-                if (A1_nnz == 0) {
-                    printf("skip: A1_nnz == 0\n");
-                } else {
-                    printf("skip: B2_nnz == 0\n");
-                }
-            }
-#endif
-        } else {
+        if (A1_nnz != 0 && B2_nnz != 0) {
 
-            A_col_scan_end = A1c_scan[A1_col_size];
-            B_col_scan_end = B2c_scan[B2_col_size];
+            A_col_scan_end = A1c_scan[A1_info.col_sz];
+            B_col_scan_end = B2c_scan[B2_info.col_sz];
 
 //            auto Ar_temp      = new index_t[A_nnz];
 //            auto Av_temp      = new value_t[A_nnz];
@@ -1079,8 +1041,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
-                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
-                    B2_col_size, B2_col_offset,
+                    &A1_info, &B2_info,
+//                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
+//                    B2_col_size, B2_col_offset,
                     C, comm);
 
 //            fast_mm(&A1[0], &B2[0], C,
@@ -1088,8 +1051,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                    B2_col_size, B2_col_offset,
 //                    &Ac1[0], &Bc2[0], comm);
 
-            A1c_scan[A1_col_size] = A_col_scan_end;
-            B2c_scan[B2_col_size] = B_col_scan_end;
+            A1c_scan[A1_info.col_sz] = A_col_scan_end;
+            B2c_scan[B2_info.col_sz] = B_col_scan_end;
 
 //            memcpy(Ar,      Ar_temp,      sizeof(index_t) * A_nnz);
 //            memcpy(Av,      Av_temp,      sizeof(value_t) * A_nnz);
@@ -1116,20 +1079,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 3 \n");
 #endif
 
-        if (A2_nnz == 0 || B1_nnz == 0) {
-#ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) {
-                if (A2_nnz == 0) {
-                    printf("skip: A2_nnz == 0\n");
-                } else {
-                    printf("skip: B1_nnz == 0\n");
-                }
-            }
-#endif
-        } else {
+        if (A2_nnz != 0 && B1_nnz != 0) {
 
-            A_col_scan_end = A2c_scan[A2_col_size];
-            B_col_scan_end = B1c_scan[B1_col_size];
+            A_col_scan_end = A2c_scan[A2_info.col_sz];
+            B_col_scan_end = B1c_scan[B1_info.col_sz];
 
 //            auto Ar_temp      = new index_t[A_nnz];
 //            auto Av_temp      = new value_t[A_nnz];
@@ -1149,8 +1102,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
-                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
-                    B1_col_size, B1_col_offset,
+                    &A2_info, &B1_info,
+//                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
+//                    B1_col_size, B1_col_offset,
                     C, comm);
 
 //            fast_mm(&A2[0], &B1[0], C,
@@ -1158,8 +1112,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                    B1_col_size, B1_col_offset,
 //                    &Ac2[0], &Bc1[0], comm);
 
-            A2c_scan[A2_col_size] = A_col_scan_end;
-            B1c_scan[B1_col_size] = B_col_scan_end;
+            A2c_scan[A2_info.col_sz] = A_col_scan_end;
+            B1c_scan[B1_info.col_sz] = B_col_scan_end;
 
 //            memcpy(Ar,      Ar_temp,      sizeof(index_t) * A_nnz);
 //            memcpy(Av,      Av_temp,      sizeof(value_t) * A_nnz);
@@ -1187,20 +1141,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 3: recursive 4 \n");
 #endif
 
-        if (A2_nnz == 0 || B2_nnz == 0) {
-#ifdef __DEBUG1__
-            if (rank == verbose_rank && verbose_matmat_recursive) {
-                if (A2_nnz == 0) {
-                    printf("skip: A2_nnz == 0\n");
-                } else {
-                    printf("skip: B2_nnz == 0\n");
-                }
-            }
-#endif
-        } else {
+        if (A2_nnz != 0 && B2_nnz != 0) {
 
-            A_col_scan_end = A2c_scan[A2_col_size];
-            B_col_scan_end = B2c_scan[B2_col_size];
+            A_col_scan_end = A2c_scan[A2_info.col_sz];
+            B_col_scan_end = B2c_scan[B2_info.col_sz];
 
 //            auto A2r_temp      = new index_t[A2_nnz];
 //            auto A2v_temp      = new value_t[A2_nnz];
@@ -1220,8 +1164,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
-                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
-                    B2_col_size, B2_col_offset,
+                    &A2_info, &B2_info,
+//                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
+//                    B2_col_size, B2_col_offset,
                     C, comm);
 
 //            fast_mm(&A2[0], &B2[0], C,
@@ -1229,8 +1174,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                    B2_col_size, B2_col_offset,
 //                    &Ac2[0], &Bc2[0], comm);
 
-            A2c_scan[A2_col_size] = A_col_scan_end;
-            B2c_scan[B2_col_size] = B_col_scan_end;
+            A2c_scan[A2_info.col_sz] = A_col_scan_end;
+            B2c_scan[B2_info.col_sz] = B_col_scan_end;
 
 //            memcpy(A2r,      A2r_temp,      sizeof(index_t) * A2_nnz);
 //            memcpy(A2v,      A2v_temp,      sizeof(value_t) * A2_nnz);
@@ -1252,7 +1197,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         t3 = MPI_Wtime();
 
         // return A to its original order.
-        reorder_back_split(Ar, Av, A1c_scan, A2c_scan, A_col_size);
+        reorder_back_split(Ar, Av, A1c_scan, A2c_scan, A_info->col_sz);
         delete []A2c_scan;
 
         t3 = MPI_Wtime() - t3;
@@ -1923,9 +1868,13 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                 owner         = k%nprocs;
                 mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
 
+                mat_info A_info(Acsc_M, Acsc.split[rank], Acsc.col_sz, 0);
+                mat_info B_info(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner]);
+
                 fast_mm(&Acsc.row[0],   &Acsc.val[0],   &Acsc.col_scan[0],
                         &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
-                        Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
+                        &A_info, &B_info,
+//                        Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner],
                         AB_temp, comm);
 
                 // =======================================
@@ -2070,9 +2019,13 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
 //            double t1 = MPI_Wtime();
 
+            mat_info A_info(Acsc_M, Acsc.split[rank], Acsc.col_sz, 0);
+            mat_info B_info(Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank]);
+
             fast_mm(&Acsc.row[0], &Acsc.val[0], &Acsc.col_scan[0],
                     &Bcsc.row[0], &Bcsc.val[0], &Bcsc.col_scan[0],
-                    Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank],
+                    &A_info, &B_info,
+//                    Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank],
                     AB_temp, comm);
 
 //            double t2 = MPI_Wtime();

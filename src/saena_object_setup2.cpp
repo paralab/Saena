@@ -807,6 +807,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 
 
 // from here: http://www.algolist.net/Algorithms/Sorting/Quicksort
+/*
 int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, index_t pivot){
     //pivot is a row instead of an entry of arr
 
@@ -842,7 +843,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 
     return 0;
 }
-
+*/
 
 // This version moves entries of A1 to the begining and A2 to the end of the input array.
 int saena_object::reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold){

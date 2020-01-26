@@ -34,6 +34,15 @@ class prolong_matrix;
 class restrict_matrix;
 class Grid;
 
+class mat_info{
+public:
+    index_t row_sz, row_offset, col_sz, col_offset;
+
+    mat_info(): row_sz(0), row_offset(0), col_sz(0), col_offset(0) {}
+    mat_info(index_t row_size, index_t _row_offset, index_t col_size, index_t _col_offset):
+        row_sz(row_size), row_offset(_row_offset), col_sz(col_size), col_offset(_col_offset) {}
+};
+
 class saena_object {
 public:
 
@@ -60,7 +69,7 @@ public:
     // *****************
 
     std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-//    const        index_t matmat_size_thre1 = 20000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
+    const        index_t matmat_size_thre1 = 200000; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split. default 20M.
 //    static const index_t matmat_size_thre2 = 20000000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold       = 50; //default 50
@@ -216,7 +225,7 @@ public:
     // matmat_ave_orig_B: original B is used.
     int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
 //    int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
-    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
+//    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
     int reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
     int reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz);
 
@@ -226,8 +235,9 @@ public:
 
     void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                  index_t *Br, value_t *Bv, index_t *Bc_scan,
-                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                 index_t B_col_size, index_t B_col_offset,
+                 mat_info *A_info, mat_info *B_info,
+//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+//                 index_t B_col_size, index_t B_col_offset,
                  std::vector<cooEntry> &C, MPI_Comm comm);
 
 //    void fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
