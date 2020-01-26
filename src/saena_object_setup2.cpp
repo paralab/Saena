@@ -1093,6 +1093,253 @@ int saena_object::reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, ind
     return 0;
 }
 
+int saena_object::reorder_split_old(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold){
+
+#ifdef __DEBUG1__
+//    std::cout << "\nstart of " << __func__ << std::endl;
+
+//    std::cout << "\n=========================================================================" << std::endl ;
+//    std::cout << "\nA: nnz: " << Ac1[col_sz] - Ac1[0] << ", col_sz: " << col_sz << ", threshold: " << threshold << std::endl ;
+//    print_array(Ac1, col_sz+1, 0, "Ac", MPI_COMM_WORLD);
+
+    // ========================================================
+    // this shows how to go through entries of A before changing order.
+    // NOTE: column is not correct. col_offset should be added to it.
+    // ========================================================
+//    std::cout << "\nA: nnz: " << Ac1[col_sz] - Ac1[0] << "\tcol is not correct." << std::endl ;
+//    for(index_t j = 0; j < col_sz; j++){
+//        for(index_t i = Ac1[j]; i < Ac1[j+1]; i++){
+//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+//        }
+//    }
+
+    // ========================================================
+#endif
+
+//    nnz is Ac1[col_sz] - Ac1[0]
+//    nnz_t nnz = Ac1[col_sz] - Ac1[0];
+
+    // ========================================================
+    // IMPORTANT: An offset should be used to access Ar and Av.
+    // ========================================================
+    nnz_t offset = Ac1[0];
+
+    std::vector<index_t> A1r, A2r;
+    std::vector<value_t> A1v, A2v;
+//    A1r.reserve(nnz);
+//    A1v.reserve(nnz);
+//    A2r.reserve(nnz);
+//    A2v.reserve(nnz);
+
+    std::fill(&Ac2[0], &Ac2[col_sz+1], 0);
+    auto Ac2_p = &Ac2[1]; // to do scan on it at the end.
+
+    for(index_t j = 0; j < col_sz; j++){
+        for(nnz_t i = Ac1[j]; i < Ac1[j+1]; i++){
+            if(Ar[i] < threshold){
+                A1r.emplace_back(Ar[i]);
+                A1v.emplace_back(Av[i]);
+//                std::cout << std::setprecision(4) << arr[i].row << "\t" << j << "\t" << arr[i].val << "\ttop half" << std::endl;
+            }else{
+                A2r.emplace_back(Ar[i]);
+                A2v.emplace_back(Av[i]);
+                Ac2_p[j]++;
+//                std::cout << std::setprecision(4) << arr[i].row << "\t" << j << "\t" << arr[i].val << "\tbottom half" << std::endl;
+            }
+        }
+    }
+
+#ifdef __DEBUG1__
+//    print_array(Ac1, col_sz+1, 0, "Ac1", MPI_COMM_WORLD);
+//    print_array(Ac2, col_sz+1, 0, "Ac2", MPI_COMM_WORLD);
+#endif
+
+    for(index_t i = 1; i <= col_sz; i++){
+        Ac2[i] += Ac2[i-1]; // scan on Ac2
+        Ac1[i] -= Ac2[i];   // subtract Ac2 from Ac1 to have the correct scan for A1
+    }
+
+    // First put A1 at the beginning of A, then put A2 at the end A.
+    memcpy(&Ar[offset],          &A1r[0], A1r.size() * sizeof(index_t));
+    memcpy(&Av[offset],          &A1v[0], A1r.size() * sizeof(value_t));
+
+    memcpy(&Ar[offset + A1r.size()], &A2r[0], A2r.size() * sizeof(index_t));
+    memcpy(&Av[offset + A1r.size()], &A2v[0], A2r.size() * sizeof(value_t));
+
+#if 0
+    // Equivalent to the previous part. Uses for loops instead of memcpy.
+    nnz_t arr_idx = offset;
+    for(nnz_t i = 0; i < A1r.size(); i++){
+        Ar[arr_idx] = A1r[i];
+        Av[arr_idx] = A1v[i];
+        arr_idx++;
+    }
+    for(nnz_t i = 0; i < A2r.size(); i++){
+        Ar[arr_idx] = A2r[i];
+        Av[arr_idx] = A2v[i];
+        arr_idx++;
+    }
+#endif
+
+#ifdef __DEBUG1__
+//    print_array(Ac1, col_sz+1, 0, "Ac1", MPI_COMM_WORLD);
+//    print_array(Ac2, col_sz+1, 0, "Ac2", MPI_COMM_WORLD);
+
+    // ========================================================
+    // this shows how to go through entries of A1 (top half) and A2 (bottom half) after changing order.
+    // NOTE: column is not correct. col_offset should be added to it.
+    // ========================================================
+//    std::cout << "\nA1: nnz: " << Ac1[col_sz] - Ac1[0] << "\tcol is not correct." << std::endl ;
+//    for(index_t j = 0; j < col_sz; j++){
+//        for(index_t i = Ac1[j]; i < Ac1[j+1]; i++){
+//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+//        }
+//    }
+//
+//    std::cout << "\nA2: nnz: " << Ac2[col_sz] - Ac2[0] << "\tcol is not correct." << std::endl ;
+//    for(index_t j = 0; j < col_sz; j++){
+//        for(index_t i = Ac2[j]+Ac1[col_sz]; i < Ac2[j+1]+Ac1[col_sz]; i++){
+//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+//        }
+//    }
+    // ========================================================
+#endif
+
+    return 0;
+}
+
+int saena_object::reorder_back_split_old(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz){
+
+#ifdef __DEBUG1__
+//    std::cout << "\nstart of " << __func__ << std::endl;
+#endif
+
+    // ========================================================
+    // IMPORTANT: An offset should be used to access Ar and Av.
+    // ========================================================
+    nnz_t offset = Ac1[0];
+
+    nnz_t nnz1 = Ac1[col_sz] - Ac1[0];
+    nnz_t nnz2 = Ac2[col_sz] - Ac2[0];
+    nnz_t nnz  = nnz1 + nnz2;
+
+    auto *Ar_temp = new index_t[nnz];
+    auto *Av_temp = new value_t[nnz];
+
+    auto Ar_temp_p = &Ar_temp[0] - offset;
+    auto Av_temp_p = &Av_temp[0] - offset;
+
+    memcpy(&Ar_temp[0], &Ar[offset], sizeof(index_t) * nnz);
+    memcpy(&Av_temp[0], &Av[offset], sizeof(value_t) * nnz);
+
+//    for(index_t i = offset; i < offset + nnz; i++){
+//        Ar_temp_p[i] = Ar[i];
+//        Av_temp_p[i] = Av[i];
+//    }
+
+#ifdef __DEBUG1__
+//    print_array(Ac1, col_sz+1, 0, "Ac1", MPI_COMM_WORLD);
+//    print_array(Ac2, col_sz+1, 0, "Ac2", MPI_COMM_WORLD);
+
+#if 0
+    // ========================================================
+    // this shows how to go through entries of A1 (top half) and A2 (bottom half) after changing order.
+    // NOTE: column is not correct. col_offset should be added to it.
+    // ========================================================
+    std::cout << "\nA1: nnz: " << Ac1[col_sz] - Ac1[0] << "\tcol is not correct." << std::endl ;
+    for(index_t j = 0; j < col_sz; j++){
+        for(index_t i = Ac1[j]; i < Ac1[j+1]; i++){
+            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << "\ttemp: \t" << Ar_temp_p[i] << "\t" << j << "\t" << Av_temp_p[i] << std::endl;
+        }
+    }
+
+    std::cout << "\nA2: nnz: " << Ac2[col_sz] - Ac2[0] << "\tcol is not correct." << std::endl ;
+    for(index_t j = 0; j < col_sz; j++){
+        for(index_t i = Ac2[j]+Ac1[col_sz]; i < Ac2[j+1]+Ac1[col_sz]; i++){
+            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << "\ttemp: \t" << Ar_temp_p[i] << "\t" << j << "\t" << Av_temp_p[i] << std::endl;
+        }
+    }
+#endif
+
+    // ========================================================
+#endif
+
+    index_t *Ac = Ac1; // Will add Ac2 to Ac1 for each column to have Ac.
+
+    nnz_t iter0 = offset, iter1 = 0, iter2 = Ac1[col_sz] - offset;
+    nnz_t nnz_col;
+    for(index_t j = 0; j < col_sz; j++){
+        nnz_col = Ac1[j+1] - Ac1[j];
+        if(nnz_col){
+            memcpy(&Ar[iter0], &Ar_temp[iter1], sizeof(index_t) * nnz_col);
+            memcpy(&Av[iter0], &Av_temp[iter1], sizeof(value_t) * nnz_col);
+            iter1 += nnz_col;
+            iter0 += nnz_col;
+        }
+
+        nnz_col = Ac2[j+1] - Ac2[j];
+        if(nnz_col){
+            memcpy(&Ar[iter0], &Ar_temp[iter2], sizeof(index_t) * nnz_col);
+            memcpy(&Av[iter0], &Av_temp[iter2], sizeof(value_t) * nnz_col);
+            iter2 += nnz_col;
+            iter0 += nnz_col;
+        }
+
+        Ac[j] += Ac2[j];
+    }
+
+    Ac[col_sz] += Ac2[col_sz];
+
+#if 0
+    // Equivalent to the previous part. Uses for loops instead of memcpy.
+    index_t iter = offset;
+    for(index_t j = 0; j < col_sz; j++){
+
+        for(index_t i = Ac1[j]; i < Ac1[j+1]; i++) {
+//            printf("%u \t%u \t%f\n", Ar_temp_p[i], j, Av_temp_p[i]);
+            Ar[iter] = Ar_temp_p[i];
+            Av[iter] = Av_temp_p[i];
+            iter++;
+        }
+
+        for(index_t i = Ac2[j]+Ac1[col_sz]; i < Ac2[j+1]+Ac1[col_sz]; i++){
+//            printf("%u \t%u \t%f\n", Ar_temp_p[i], j, Av_temp_p[i]);
+            Ar[iter] = Ar_temp_p[i];
+            Av[iter] = Av_temp_p[i];
+            iter++;
+        }
+
+        Ac[j] += Ac2[j];
+    }
+
+    Ac[col_sz] += Ac2[col_sz];
+#endif
+
+#ifdef __DEBUG1__
+//    print_array(Ac, col_sz+1, 0, "Ac", MPI_COMM_WORLD);
+
+    // ========================================================
+    // this shows how to go through entries of A before changing order.
+    // NOTE: column is not correct. col_offset should be added to it.
+    // ========================================================
+//    std::cout << "\nA: nnz: " << Ac[col_sz] - Ac[0] << "\tcol is not correct." << std::endl ;
+//    for(index_t j = 0; j < col_sz; j++){
+//        for(index_t i = Ac[j]; i < Ac[j+1]; i++){
+//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+//        }
+//    }
+
+    // ========================================================
+#endif
+
+    delete [] Ar_temp;
+    delete [] Av_temp;
+
+    return 0;
+}
+
 
 int saena_object::transpose_locally(cooEntry *A, nnz_t size){
 

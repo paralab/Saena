@@ -100,8 +100,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //    Ac[0] = A_col_scan_start;
 //    Bc[0] = B_col_scan_start;
 
-    index_t B_row_size      = A_info->col_sz;
-    index_t B_row_offset    = A_info->col_offset;
+//    index_t B_row_size      = A_info->col_sz;
+//    index_t B_row_offset    = A_info->col_offset;
     index_t A_col_size_half = A_info->col_sz/2;
 //    index_t B_row_size_half = A_col_size_half;
 //    index_t B_col_size_half = B_col_size/2;
@@ -132,8 +132,8 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         if(verbose_matmat_B) {
             std::cout << "\nB: nnz = "       << B_nnz;
-            std::cout << ", B_row_size = "   << B_row_size   << ", B_col_size = "   << B_info->col_sz
-                      << ", B_row_offset = " << B_row_offset << ", B_col_offset = " << B_info->col_offset << std::endl;
+            std::cout << ", B_row_size = "   << B_info->row_sz     << ", B_col_size = "   << B_info->col_sz
+                      << ", B_row_offset = " << B_info->row_offset << ", B_col_offset = " << B_info->col_offset << std::endl;
 
 //            print_array(Bc_scan, B_col_size+1, 1, "Bc_scan", comm);
 
@@ -168,7 +168,24 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 #endif
 
-//        double t1 = MPI_Wtime();
+        if (rank == verbose_rank) {
+            printf("fast_mm: case 0: start \n");
+        }
+
+
+
+
+return;
+
+
+
+
+
+
+
+
+
+        //        double t1 = MPI_Wtime();
 
 #ifdef __DEBUG1__
 //        std::cout << "orig_col_idx max: " << A_row_size * 2 + B_col_size + B_nnz_col_sz - 1 << std::endl;
@@ -206,7 +223,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 */
 
         sparse_matrix_t Bmkl = nullptr;
-        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_row_size, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
+        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_info->row_sz, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
 
 //        MPI_Barrier(comm);
 //        if(rank==1) printf("\nPerform MKL matmult\n"); fflush(nullptr);
@@ -332,6 +349,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) { printf("fast_mm: case 2: start \n"); }
 #endif
+        if (rank == verbose_rank) { printf("fast_mm: case 2: start \n"); }
 
         // =======================================================
         // split based on matrix size
@@ -411,7 +429,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         // split B based on how A is split, so use A_col_size_half to split B. A_col_size_half can be different based on
         // choosing the splitting method (nnz or size).
         index_t B_row_size_half = A_col_size_half;
-        index_t B_row_threshold = B_row_size_half + B_row_offset;
+        index_t B_row_threshold = B_row_size_half + B_info->row_offset;
 
         auto B1c_scan = Bc_scan; // col_scan
         auto B2c_scan = new index_t[B_info->col_sz + 1]; // col_scan
@@ -427,10 +445,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         auto B2v = &Bv[B1c_scan[B_info->col_sz]];
 
         B1_info.row_sz = B_row_size_half;
-        B2_info.row_sz = A_info->col_sz - B1_info.row_sz;
+        B2_info.row_sz = B_info->row_sz - B1_info.row_sz;
 
-        B1_info.row_offset = B_row_offset;
-        B2_info.row_offset = B_row_offset + B_row_size_half;
+        B1_info.row_offset = B_info->row_offset;
+        B2_info.row_offset = B_info->row_offset + B_row_size_half;
 
         B1_info.col_sz = B_info->col_sz;
         B2_info.col_sz = B_info->col_sz;
@@ -709,6 +727,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) printf("fast_mm: case 3: start \n");
 #endif
+        if (rank == verbose_rank) printf("fast_mm: case 3: start \n");
 
         // split based on matrix size
         // =======================================================
@@ -730,11 +749,11 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         auto B1c_scan = Bc_scan;
         auto B2c_scan = &Bc_scan[B_col_size_half];
 
-        B1_info.row_sz = A_info->col_sz;
-        B2_info.row_sz = A_info->col_sz;
+        B1_info.row_sz = B_info->row_sz;
+        B2_info.row_sz = B_info->row_sz;
 
-        B1_info.row_offset = B_row_offset;
-        B2_info.row_offset = B_row_offset;
+        B1_info.row_offset = B_info->row_offset;
+        B2_info.row_offset = B_info->row_offset;
 
         B1_info.col_sz = B_col_size_half;
         B2_info.col_sz = B_info->col_sz - B1_info.col_sz;

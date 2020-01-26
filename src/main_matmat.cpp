@@ -121,7 +121,7 @@ int main(int argc, char* argv[]){
         }
 
 // *************************** print info ****************************
-
+/*
         saena::amg solver;
 
         if (!rank) {
@@ -130,9 +130,9 @@ int main(int argc, char* argv[]){
                    B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
 //            printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
         }
-
+*/
 // *************************** matrix-matrix product ****************************
-
+/*
         double matmat_time = 0;
         int matmat_iter_warmup = 3;
         int matmat_iter = 3;
@@ -157,7 +157,7 @@ int main(int argc, char* argv[]){
         // matmat_ave computes the average matmat time on processor 0.
         // so it is fine to just print the time on proc 0.
         if (!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
-
+*/
         // *************************** PETSc ****************************
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
