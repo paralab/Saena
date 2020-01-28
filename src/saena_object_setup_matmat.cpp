@@ -12,6 +12,7 @@
 #include <fstream>
 #include <algorithm>
 #include <mpi.h>
+#include <iomanip>
 
 
 double case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
@@ -106,7 +107,35 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //    index_t B_row_size_half = A_col_size_half;
 //    index_t B_col_size_half = B_col_size/2;
 
-    int verbose_rank = 1;
+/*
+    if(rank==0){
+
+        std::cout << "\nA: nnz = "       << A_nnz
+                  << ", A_row_size = "   << A_info->row_sz     << ", A_col_size = "   << A_info->col_sz
+                  << ", A_row_offset = " << A_info->row_offset << ", A_col_offset = " << A_info->col_offset << std::endl;
+
+        std::cout << "\nA: nnz = " << A_nnz << std::endl;
+        for(nnz_t i = 0; i < A_info->col_sz; i++){
+            for(nnz_t j = Ac_scan[i]; j < Ac_scan[i+1]; j++) {
+                std::cout << j << "\t" << Ar[j] << "\t" << i << "\t" << Av[j] << std::endl;
+            }
+        }
+
+        std::cout << "\nB: nnz = "       << B_nnz;
+        std::cout << ", B_row_size = "   << B_info->row_sz     << ", B_col_size = "   << B_info->col_sz
+                  << ", B_row_offset = " << B_info->row_offset << ", B_col_offset = " << B_info->col_offset << std::endl;
+
+        // print entries of B:
+        std::cout << "\nB: nnz = " << B_nnz << std::endl;
+        for (nnz_t i = 0; i < B_info->col_sz; i++) {
+            for (nnz_t j = Bc_scan[i]; j < Bc_scan[i+1]; j++) {
+                std::cout << j << "\t" << Br[j] << "\t" << i << "\t" << Bv[j] << std::endl;
+            }
+        }
+    }
+*/
+
+    int verbose_rank = 0;
 #ifdef __DEBUG1__
 //    if(rank==verbose_rank) std::cout << "\n==========================" << __func__ << "==========================\n";
     if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
@@ -168,24 +197,11 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         }
 #endif
 
-        if (rank == verbose_rank) {
-            printf("fast_mm: case 0: start \n");
-        }
+//        if (rank == verbose_rank) {
+//            printf("fast_mm: case 0: start \n");
+//        }
 
-
-
-
-return;
-
-
-
-
-
-
-
-
-
-        //        double t1 = MPI_Wtime();
+//        double t1 = MPI_Wtime();
 
 #ifdef __DEBUG1__
 //        std::cout << "orig_col_idx max: " << A_row_size * 2 + B_col_size + B_nnz_col_sz - 1 << std::endl;
@@ -198,6 +214,7 @@ return;
 #endif
 
         sparse_matrix_t Amkl = nullptr;
+//        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A_info->row_sz + A_info->row_offset, A_info->col_sz, (int*)Ac_scan, (int*)(Ac_scan+1), (int*)Ar, Av);
         mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A_info->row_sz, A_info->col_sz, (int*)Ac_scan, (int*)(Ac_scan+1), (int*)Ar, Av);
 
 /*
@@ -223,6 +240,7 @@ return;
 */
 
         sparse_matrix_t Bmkl = nullptr;
+//        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_info->row_sz + B_info->row_offset, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
         mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_info->row_sz, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
 
 //        MPI_Barrier(comm);
@@ -276,6 +294,7 @@ return;
             for (i = pointerB_C[j]; i < pointerE_C[j]; ++i) {
 //                if (rank == 3) printf("%3d: (%3d , %3d) = %8f\n", ii, rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
                 C.emplace_back(rows_C[ii] + A_info->row_offset, j + B_info->col_offset, values_C[ii]);
+//                C.emplace_back(rows_C[ii], j + B_info->col_offset, values_C[ii]);
                 ++ii;
             }
         }
@@ -349,7 +368,7 @@ return;
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) { printf("fast_mm: case 2: start \n"); }
 #endif
-        if (rank == verbose_rank) { printf("fast_mm: case 2: start \n"); }
+//        if (rank == verbose_rank) { printf("fast_mm: case 2: start \n"); }
 
         // =======================================================
         // split based on matrix size
@@ -421,20 +440,21 @@ return;
         nnz_t A1_nnz = A1c_scan[A1_info.col_sz] - A1c_scan[0];
         nnz_t A2_nnz = A_nnz - A1_nnz;
 
-//        std::cout << "A1_nnz: " << A1_nnz << ", A2_nnz: " << A2_nnz << ", A_col_size: " << A_col_size
-//                  << ", A_col_size_half: " << A_col_size_half << std::endl;
+//        std::cout << "\ncase2:\nA_nnz: " << std::setw(3) << A_nnz << ", A1_nnz: " << std::setw(3) << A1_nnz << ", A2_nnz: " << std::setw(3) << A2_nnz << ", A_col_size: "
+//                  << std::setw(3) << A_info->col_sz << ", A_col_size_half: " << std::setw(3) << A_col_size_half << std::endl;
 
         // =======================================================
 
         // split B based on how A is split, so use A_col_size_half to split B. A_col_size_half can be different based on
         // choosing the splitting method (nnz or size).
         index_t B_row_size_half = A_col_size_half;
-        index_t B_row_threshold = B_row_size_half + B_info->row_offset;
+//        index_t B_row_threshold = B_row_size_half + B_info->row_offset;
+        index_t B_row_threshold = B_row_size_half;
 
         auto B1c_scan = Bc_scan; // col_scan
         auto B2c_scan = new index_t[B_info->col_sz + 1]; // col_scan
 
-        reorder_split(Br, Bv, B1c_scan, B2c_scan, B_info->col_sz, B_row_threshold);
+        reorder_split(Br, Bv, B1c_scan, B2c_scan, B_info->col_sz, B_row_threshold, B_row_size_half);
 
         nnz_t B1_nnz = B1c_scan[B_info->col_sz] - B1c_scan[0];
         nnz_t B2_nnz = B2c_scan[B_info->col_sz] - B2c_scan[0];
@@ -464,8 +484,10 @@ return;
 //        index_t B1_col_scan_start = Bc1[0];
 //        index_t B2_col_scan_start = Bc2[0];
 
-//        std::cout << "\ncase2: B_nnz: " << B_nnz << "\tB1_nnz: " << B1_nnz << "\tB2_nnz: " << B2_nnz
-//                  << "\tB_row_size: " << B_row_size << "\tB_row_size_half: " << B_row_size_half << std::endl;
+//        std::cout << "B_nnz: " << std::setw(3) << B_nnz << ", B1_nnz: " << std::setw(3) << B1_nnz
+//                  << ", B2_nnz: " << std::setw(3) << B2_nnz << ", B_row_size: " << std::setw(3) << B_info->row_sz
+//                  << ", B_row_size_half: " << std::setw(3) << B_row_size_half << ", B_row_size/2: " << B_info->row_sz/2
+//                  << ", B_row_threshold: " << std::setw(3) << B_row_threshold << std::endl;
 //
 //        std::cout << "\ncase2_part2: B1_row_size: " << B1_row_size << "\tB2_row_size: " << B2_row_size
 //                  << "\tB1_row_offset: " << B1_row_offset << "\tB2_row_offset: " << B2_row_offset
@@ -473,6 +495,7 @@ return;
 //                  << "\tB1_col_offset: " << B1_col_offset << "\tB2_col_offset: " << B2_col_offset << std::endl;
 
 #ifdef __DEBUG1__
+//        std::cout << "B_row_threshold: " << std::setw(3) << B_row_threshold << std::endl;
 //        print_array(Bc1, B_col_size+1, 0, "Bc1", comm);
 //        print_array(Bc2, B_col_size+1, 0, "Bc2", comm);
 
@@ -604,6 +627,11 @@ return;
 //            memcpy(B1v_temp,      B1v,      sizeof(value_t) * B1_nnz);
 //            memcpy(B1c_scan_temp, B1c_scan, sizeof(index_t) * (B1_col_size + 1));
 
+//            fast_mm(&A1r[0] - A1_info.row_offset, &A1v[0], &A1c_scan[0],
+//                    &B1r[0] - B1_info.row_offset, &B1v[0], &B1c_scan[0],
+//                    &A1_info, &B1_info,
+//                    C, comm);
+
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
                     &A1_info, &B1_info,
@@ -657,6 +685,11 @@ return;
 //            memcpy(B2v_temp,      B2v,      sizeof(value_t) * B2_nnz);
 //            memcpy(B2c_scan_temp, B2c_scan, sizeof(index_t) * (B2_col_size + 1));
 
+//            fast_mm(&A2r[0] - A2_info.row_offset, &A2v[0], &A2c_scan[0],
+//                    &B2r[0] - B2_info.row_offset, &B2v[0], &B2c_scan[0],
+//                    &A2_info, &B2_info,
+//                    C, comm);
+
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
                     &A2_info, &B2_info,
@@ -693,7 +726,7 @@ return;
         t2 = MPI_Wtime();
 
         // return B to its original order.
-        reorder_back_split(Br, Bv, B1c_scan, B2c_scan, B_info->col_sz);
+        reorder_back_split(Br, Bv, B1c_scan, B2c_scan, B_info->col_sz, B_row_size_half);
         delete []B2c_scan;
 
         t2 = MPI_Wtime() - t2;
@@ -727,7 +760,7 @@ return;
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) printf("fast_mm: case 3: start \n");
 #endif
-        if (rank == verbose_rank) printf("fast_mm: case 3: start \n");
+//        if (rank == verbose_rank) printf("fast_mm: case 3: start \n");
 
         // split based on matrix size
         // =======================================================
@@ -761,10 +794,11 @@ return;
         B1_info.col_offset = B_info->col_offset;
         B2_info.col_offset = B_info->col_offset + B_col_size_half;
 
-//        std::cout << "\ncase2: B_nnz: " << B_nnz << "\tB1_nnz: " << B1_nnz << "\tB2_nnz: " << B2_nnz
-//                  << "\tB_col_size: " << B_col_size << "\tB_col_size_half: " << B_col_size_half << std::endl;
-//
-//        std::cout << "\ncase2_part2: B_row_size: " << B_row_size << "\tB_row_offset: " << B_row_offset
+//        std::cout << "\ncase3:\nB_nnz: " << std::setw(3) << B_nnz << ", B1_nnz: " << std::setw(3) << B1_nnz
+//                  << ", B2_nnz: " << std::setw(3) << B2_nnz << ", B_col_size: " << std::setw(3) << B_info->col_sz
+//                  << ", B_col_size_half: " << std::setw(3) << B_col_size_half << std::endl;
+
+//        std::cout << "\ncase3_part1: B_row_size: " << B_row_size << "\tB_row_offset: " << B_row_offset
 //                  << "\tB1_col_size:"  << B1_col_size << "\tB2_col_size: " << B2_col_size
 //                  << "\tB1_col_offset: " << B1_col_offset << "\tB2_col_offset: " << B2_col_offset << std::endl;
 #endif
@@ -840,12 +874,13 @@ return;
         // prepare splits of matrix A by row
 
         index_t A_row_size_half = A_info->row_sz / 2;
-        index_t A_row_threshold = A_row_size_half + A_info->row_offset;
+//        index_t A_row_threshold = A_row_size_half + A_info->row_offset;
+        index_t A_row_threshold = A_row_size_half;
 
         auto A1c_scan = Ac_scan; // col_scan
         auto A2c_scan = new index_t[A_info->col_sz + 1]; // col_scan
 
-        reorder_split(Ar, Av, A1c_scan, A2c_scan, A_info->col_sz, A_row_threshold);
+        reorder_split(Ar, Av, A1c_scan, A2c_scan, A_info->col_sz, A_row_threshold, A_row_size_half);
 
         nnz_t A1_nnz = A1c_scan[A_info->col_sz] - A1c_scan[0];
         nnz_t A2_nnz = A2c_scan[A_info->col_sz] - A2c_scan[0];
@@ -867,10 +902,10 @@ return;
         A1_info.col_offset = A_info->col_offset;
         A2_info.col_offset = A_info->col_offset;
 
-//        std::cout << "\ncase3: A_nnz: " << A_nnz << "\tA1_nnz: " << A1_nnz << "\tA2_nnz: " << A2_nnz
-//                  << "\tA_row_size: " << A_row_size << "\tA_row_size_half: " << A_row_size_half
-//                  << "\tA_row_threshold: " << A_row_threshold << std::endl;
-//
+//        std::cout << "A_nnz: " << std::setw(3) << A_nnz << ", A1_nnz: " << std::setw(3) << A1_nnz << ", A2_nnz: "
+//                  << std::setw(3) << A2_nnz << ", A_row_size: " << std::setw(3) << A_info->row_sz
+//                  << ", A_row_size_half: " << std::setw(3) << A_row_size_half << std::endl;
+
 //        std::cout << "\ncase3_part2: A1_row_size: " << A1_row_size << "\tA2_row_size: " << A2_row_size
 //                  << "\tA1_row_offset: " << A1_row_offset << "\tA2_row_offset: " << A2_row_offset
 //                  << "\tA1_col_size: " << A1_col_size << "\tA2_col_size: " << A2_col_size
@@ -880,6 +915,7 @@ return;
         case3 += t3;
 
 #ifdef __DEBUG1__
+//        std::cout << "A_row_threshold: " << std::setw(3) << A_row_threshold << std::endl;
 //        print_array(Ac1, A_col_size+1, 0, "Ac1", comm);
 //        print_array(Ac2, A_col_size+1, 0, "Ac2", comm);
 
@@ -1001,6 +1037,11 @@ return;
 //            memcpy(Bv_temp,      Bv,      sizeof(value_t) * B_nnz);
 //            memcpy(Bc_scan_temp, Bc_scan, sizeof(index_t) * (B_col_size + 1));
 
+//            fast_mm(&A1r[0] - A1_info.row_offset, &A1v[0], &A1c_scan[0],
+//                    &B1r[0] - B1_info.row_offset, &B1v[0], &B1c_scan[0],
+//                    &A1_info, &B1_info,
+//                    C, comm);
+
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
                     &A1_info, &B1_info,
@@ -1057,6 +1098,11 @@ return;
 //            memcpy(Br_temp,      Br,      sizeof(index_t) * B_nnz);
 //            memcpy(Bv_temp,      Bv,      sizeof(value_t) * B_nnz);
 //            memcpy(Bc_scan_temp, Bc_scan, sizeof(index_t) * (B_col_size + 1));
+
+//            fast_mm(&A1r[0] - A1_info.row_offset, &A1v[0], &A1c_scan[0],
+//                    &B2r[0] - B2_info.row_offset, &B2v[0], &B2c_scan[0],
+//                    &A1_info, &B2_info,
+//                    C, comm);
 
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
@@ -1118,6 +1164,11 @@ return;
 //            memcpy(Br_temp,      Br,      sizeof(index_t) * B_nnz);
 //            memcpy(Bv_temp,      Bv,      sizeof(value_t) * B_nnz);
 //            memcpy(Bc_scan_temp, Bc_scan, sizeof(index_t) * (B_col_size + 1));
+
+//            fast_mm(&A2r[0] - A2_info.row_offset, &A2v[0], &A2c_scan[0],
+//                    &B1r[0] - B1_info.row_offset, &B1v[0], &B1c_scan[0],
+//                    &A2_info, &B1_info,
+//                    C, comm);
 
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
@@ -1181,6 +1232,11 @@ return;
 //            memcpy(B2v_temp,      B2v,      sizeof(value_t) * B2_nnz);
 //            memcpy(B2c_scan_temp, B2c_scan, sizeof(index_t) * (B2_col_size + 1));
 
+//            fast_mm(&A2r[0] - A2_info.row_offset, &A2v[0], &A2c_scan[0],
+//                    &B2r[0] - B2_info.row_offset, &B2v[0], &B2c_scan[0],
+//                    &A2_info, &B2_info,
+//                    C, comm);
+
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
                     &A2_info, &B2_info,
@@ -1216,7 +1272,7 @@ return;
         t3 = MPI_Wtime();
 
         // return A to its original order.
-        reorder_back_split(Ar, Av, A1c_scan, A2c_scan, A_info->col_sz);
+        reorder_back_split(Ar, Av, A1c_scan, A2c_scan, A_info->col_sz, A_row_size_half);
         delete []A2c_scan;
 
         t3 = MPI_Wtime() - t3;
@@ -1279,6 +1335,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     index_t *Ac_tmp = &Acsc.col_scan[1];
     for(nnz_t i = 0; i < Acsc.nnz; i++){
         Acsc.row[i] = A->entry[i].row - A->split[rank]; // make the rows start from 0. when done with multiply, add this to the result.
+//        Acsc.row[i] = A->entry[i].row;
         Acsc.val[i] = A->entry[i].val;
         Ac_tmp[A->entry[i].col]++;
     }
@@ -1395,12 +1452,12 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 #ifdef __DEBUG1__
 //    if(rank==0) std::cout << "vecbyint = " << vecbyint << std::endl;
 
-    if(rank==0){
+//    if(rank==0){
 //        std::cout << "mempool1 size = " << matmat_size_thre2 << std::endl;
 //        std::cout << "mempool2 size = " << 2 * A_row_size + 2 * Bcsc.col_sz << std::endl;
 //        std::cout << "mempool3 size = " << 2 * send_size_max << std::endl;
 //        std::cout << "B->nnz_max = " << B->nnz_max << ", B->M_max = " << B->M_max << ", valbyidx = " << valbyidx << std::endl;
-    }
+//    }
 #endif
 
     // =======================================

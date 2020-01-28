@@ -69,7 +69,7 @@ public:
     // *****************
 
     std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const        index_t matmat_size_thre1 = 100; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split. default 20M.
+    const        index_t matmat_size_thre1 = 10000; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split. default 20M.
 //    static const index_t matmat_size_thre2 = 20000000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold       = 50; //default 50
@@ -226,8 +226,8 @@ public:
     int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
 //    int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
 //    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
-    int reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
-    int reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz);
+    int reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold, index_t partial_offset);
+    int reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t partial_offset);
     int reorder_split_old(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
     int reorder_back_split_old(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz);
 
