@@ -69,7 +69,7 @@ public:
     // *****************
 
     std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const        index_t matmat_size_thre1 = 10000; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split. default 20M.
+    const        index_t matmat_size_thre1 = 100; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split. default 20M.
 //    static const index_t matmat_size_thre2 = 20000000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold       = 50; //default 50
