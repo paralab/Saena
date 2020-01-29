@@ -512,8 +512,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                std::cout << std::setprecision(4) << B[i].row << "\t" << j << "\t" << B[i].val << std::endl;
 //            }
 //        }
-
-
 #endif
 
         // A1: start: nnzPerColScan_leftStart,                  end: nnzPerColScan_leftEnd
@@ -611,22 +609,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             A_col_scan_end = A1c_scan[A1_info.col_sz];
             B_col_scan_end = B1c_scan[B1_info.col_sz];
 
-//            auto A1r_temp      = new index_t[A1_nnz];
-//            auto A1v_temp      = new value_t[A1_nnz];
-//            auto A1c_scan_temp = new index_t[A1_col_size + 1];
-//
-//            memcpy(A1r_temp,      A1r,      sizeof(index_t) * A1_nnz);
-//            memcpy(A1v_temp,      A1v,      sizeof(value_t) * A1_nnz);
-//            memcpy(A1c_scan_temp, A1c_scan, sizeof(index_t) * (A1_col_size + 1));
-//
-//            auto B1r_temp      = new index_t[B1_nnz];
-//            auto B1v_temp      = new value_t[B1_nnz];
-//            auto B1c_scan_temp = new index_t[B1_col_size + 1];
-//
-//            memcpy(B1r_temp,      B1r,      sizeof(index_t) * B1_nnz);
-//            memcpy(B1v_temp,      B1v,      sizeof(value_t) * B1_nnz);
-//            memcpy(B1c_scan_temp, B1c_scan, sizeof(index_t) * (B1_col_size + 1));
-
 //            fast_mm(&A1r[0] - A1_info.row_offset, &A1v[0], &A1c_scan[0],
 //                    &B1r[0] - B1_info.row_offset, &B1v[0], &B1c_scan[0],
 //                    &A1_info, &B1_info,
@@ -635,28 +617,11 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
                     &A1_info, &B1_info,
-//                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
-//                    B1_col_size, B1_col_offset,
                     C, comm);
 
             A1c_scan[A1_info.col_sz] = A_col_scan_end;
             B1c_scan[B1_info.col_sz] = B_col_scan_end;
 
-//            memcpy(A1r,      A1r_temp,      sizeof(index_t) * A1_nnz);
-//            memcpy(A1v,      A1v_temp,      sizeof(value_t) * A1_nnz);
-//            memcpy(A1c_scan, A1c_scan_temp, sizeof(index_t) * (A1_col_size + 1));
-//
-//            delete []A1r_temp;
-//            delete []A1v_temp;
-//            delete []A1c_scan_temp;
-//
-//            memcpy(B1r,      B1r_temp,      sizeof(index_t) * B1_nnz);
-//            memcpy(B1v,      B1v_temp,      sizeof(value_t) * B1_nnz);
-//            memcpy(B1c_scan, B1c_scan_temp, sizeof(index_t) * (B1_col_size + 1));
-//
-//            delete []B1r_temp;
-//            delete []B1v_temp;
-//            delete []B1c_scan_temp;
         }
 
         // C2 = A2 * B2
@@ -669,22 +634,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             A_col_scan_end = A2c_scan[A2_info.col_sz];
             B_col_scan_end = B2c_scan[B2_info.col_sz];
 
-//            auto A2r_temp      = new index_t[A2_nnz];
-//            auto A2v_temp      = new value_t[A2_nnz];
-//            auto A2c_scan_temp = new index_t[A2_col_size + 1];
-//
-//            memcpy(A2r_temp,      A2r,      sizeof(index_t) * A2_nnz);
-//            memcpy(A2v_temp,      A2v,      sizeof(value_t) * A2_nnz);
-//            memcpy(A2c_scan_temp, A2c_scan, sizeof(index_t) * (A2_col_size + 1));
-//
-//            auto B2r_temp      = new index_t[B2_nnz];
-//            auto B2v_temp      = new value_t[B2_nnz];
-//            auto B2c_scan_temp = new index_t[B2_col_size + 1];
-//
-//            memcpy(B2r_temp,      B2r,      sizeof(index_t) * B2_nnz);
-//            memcpy(B2v_temp,      B2v,      sizeof(value_t) * B2_nnz);
-//            memcpy(B2c_scan_temp, B2c_scan, sizeof(index_t) * (B2_col_size + 1));
-
 //            fast_mm(&A2r[0] - A2_info.row_offset, &A2v[0], &A2c_scan[0],
 //                    &B2r[0] - B2_info.row_offset, &B2v[0], &B2c_scan[0],
 //                    &A2_info, &B2_info,
@@ -693,28 +642,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
                     &A2_info, &B2_info,
-//                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
-//                    B2_col_size, B2_col_offset,
                     C, comm);
 
             A2c_scan[A2_info.col_sz] = A_col_scan_end;
             B2c_scan[B2_info.col_sz] = B_col_scan_end;
-
-//            memcpy(A2r,      A2r_temp,      sizeof(index_t) * A2_nnz);
-//            memcpy(A2v,      A2v_temp,      sizeof(value_t) * A2_nnz);
-//            memcpy(A2c_scan, A2c_scan_temp, sizeof(index_t) * (A2_col_size + 1));
-//
-//            delete []A2r_temp;
-//            delete []A2v_temp;
-//            delete []A2c_scan_temp;
-//
-//            memcpy(B2r,      B2r_temp,      sizeof(index_t) * B2_nnz);
-//            memcpy(B2v,      B2v_temp,      sizeof(value_t) * B2_nnz);
-//            memcpy(B2c_scan, B2c_scan_temp, sizeof(index_t) * (B2_col_size + 1));
-//
-//            delete []B2r_temp;
-//            delete []B2v_temp;
-//            delete []B2c_scan_temp;
 
 //        fast_mm(&A[0], &B[0], C, A2_nnz, B2_nnz,
 //                A_row_size, A_row_offset, A_col_size - A_col_size_half, A_col_offset + A_col_size_half,
@@ -1004,7 +935,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
                 }
             }
         }
-//        MPI_Barrier(comm);
 #endif
 
         // =======================================================
@@ -1021,22 +951,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             A_col_scan_end = A1c_scan[A1_info.col_sz];
             B_col_scan_end = B1c_scan[B1_info.col_sz];
 
-//            auto Ar_temp      = new index_t[A_nnz];
-//            auto Av_temp      = new value_t[A_nnz];
-//            auto Ac_scan_temp = new index_t[A_col_size + 1];
-//
-//            memcpy(Ar_temp,      Ar,      sizeof(index_t) * A_nnz);
-//            memcpy(Av_temp,      Av,      sizeof(value_t) * A_nnz);
-//            memcpy(Ac_scan_temp, Ac_scan, sizeof(index_t) * (A_col_size + 1));
-//
-//            auto Br_temp      = new index_t[B_nnz];
-//            auto Bv_temp      = new value_t[B_nnz];
-//            auto Bc_scan_temp = new index_t[B_col_size + 1];
-//
-//            memcpy(Br_temp,      Br,      sizeof(index_t) * B_nnz);
-//            memcpy(Bv_temp,      Bv,      sizeof(value_t) * B_nnz);
-//            memcpy(Bc_scan_temp, Bc_scan, sizeof(index_t) * (B_col_size + 1));
-
 //            fast_mm(&A1r[0] - A1_info.row_offset, &A1v[0], &A1c_scan[0],
 //                    &B1r[0] - B1_info.row_offset, &B1v[0], &B1c_scan[0],
 //                    &A1_info, &B1_info,
@@ -1045,28 +959,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
                     &A1_info, &B1_info,
-//                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
-//                    B1_col_size, B1_col_offset,
                     C, comm);
 
             A1c_scan[A1_info.col_sz] = A_col_scan_end;
             B1c_scan[B1_info.col_sz] = B_col_scan_end;
-
-//            memcpy(Ar,      Ar_temp,      sizeof(index_t) * A_nnz);
-//            memcpy(Av,      Av_temp,      sizeof(value_t) * A_nnz);
-//            memcpy(Ac_scan, Ac_scan_temp, sizeof(index_t) * (A_col_size + 1));
-//
-//            delete []Ar_temp;
-//            delete []Av_temp;
-//            delete []Ac_scan_temp;
-//
-//            memcpy(Br,      Br_temp,      sizeof(index_t) * B_nnz);
-//            memcpy(Bv,      Bv_temp,      sizeof(value_t) * B_nnz);
-//            memcpy(Bc_scan, Bc_scan_temp, sizeof(index_t) * (B_col_size + 1));
-//
-//            delete []Br_temp;
-//            delete []Bv_temp;
-//            delete []Bc_scan_temp;
 
         }
 
@@ -1083,22 +979,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             A_col_scan_end = A1c_scan[A1_info.col_sz];
             B_col_scan_end = B2c_scan[B2_info.col_sz];
 
-//            auto Ar_temp      = new index_t[A_nnz];
-//            auto Av_temp      = new value_t[A_nnz];
-//            auto Ac_scan_temp = new index_t[A_col_size + 1];
-//
-//            memcpy(Ar_temp,      Ar,      sizeof(index_t) * A_nnz);
-//            memcpy(Av_temp,      Av,      sizeof(value_t) * A_nnz);
-//            memcpy(Ac_scan_temp, Ac_scan, sizeof(index_t) * (A_col_size + 1));
-//
-//            auto Br_temp      = new index_t[B_nnz];
-//            auto Bv_temp      = new value_t[B_nnz];
-//            auto Bc_scan_temp = new index_t[B_col_size + 1];
-//
-//            memcpy(Br_temp,      Br,      sizeof(index_t) * B_nnz);
-//            memcpy(Bv_temp,      Bv,      sizeof(value_t) * B_nnz);
-//            memcpy(Bc_scan_temp, Bc_scan, sizeof(index_t) * (B_col_size + 1));
-
 //            fast_mm(&A1r[0] - A1_info.row_offset, &A1v[0], &A1c_scan[0],
 //                    &B2r[0] - B2_info.row_offset, &B2v[0], &B2c_scan[0],
 //                    &A1_info, &B2_info,
@@ -1107,8 +987,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             fast_mm(&A1r[0], &A1v[0], &A1c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
                     &A1_info, &B2_info,
-//                    A1_row_size, A1_row_offset, A1_col_size, A1_col_offset,
-//                    B2_col_size, B2_col_offset,
                     C, comm);
 
 //            fast_mm(&A1[0], &B2[0], C,
@@ -1119,21 +997,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             A1c_scan[A1_info.col_sz] = A_col_scan_end;
             B2c_scan[B2_info.col_sz] = B_col_scan_end;
 
-//            memcpy(Ar,      Ar_temp,      sizeof(index_t) * A_nnz);
-//            memcpy(Av,      Av_temp,      sizeof(value_t) * A_nnz);
-//            memcpy(Ac_scan, Ac_scan_temp, sizeof(index_t) * (A_col_size + 1));
-//
-//            delete []Ar_temp;
-//            delete []Av_temp;
-//            delete []Ac_scan_temp;
-//
-//            memcpy(Br,      Br_temp,      sizeof(index_t) * B_nnz);
-//            memcpy(Bv,      Bv_temp,      sizeof(value_t) * B_nnz);
-//            memcpy(Bc_scan, Bc_scan_temp, sizeof(index_t) * (B_col_size + 1));
-//
-//            delete []Br_temp;
-//            delete []Bv_temp;
-//            delete []Bc_scan_temp;
         }
 
 
@@ -1149,22 +1012,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             A_col_scan_end = A2c_scan[A2_info.col_sz];
             B_col_scan_end = B1c_scan[B1_info.col_sz];
 
-//            auto Ar_temp      = new index_t[A_nnz];
-//            auto Av_temp      = new value_t[A_nnz];
-//            auto Ac_scan_temp = new index_t[A_col_size + 1];
-//
-//            memcpy(Ar_temp,      Ar,      sizeof(index_t) * A_nnz);
-//            memcpy(Av_temp,      Av,      sizeof(value_t) * A_nnz);
-//            memcpy(Ac_scan_temp, Ac_scan, sizeof(index_t) * (A_col_size + 1));
-//
-//            auto Br_temp      = new index_t[B_nnz];
-//            auto Bv_temp      = new value_t[B_nnz];
-//            auto Bc_scan_temp = new index_t[B_col_size + 1];
-//
-//            memcpy(Br_temp,      Br,      sizeof(index_t) * B_nnz);
-//            memcpy(Bv_temp,      Bv,      sizeof(value_t) * B_nnz);
-//            memcpy(Bc_scan_temp, Bc_scan, sizeof(index_t) * (B_col_size + 1));
-
 //            fast_mm(&A2r[0] - A2_info.row_offset, &A2v[0], &A2c_scan[0],
 //                    &B1r[0] - B1_info.row_offset, &B1v[0], &B1c_scan[0],
 //                    &A2_info, &B1_info,
@@ -1173,8 +1020,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B1r[0], &B1v[0], &B1c_scan[0],
                     &A2_info, &B1_info,
-//                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
-//                    B1_col_size, B1_col_offset,
                     C, comm);
 
 //            fast_mm(&A2[0], &B1[0], C,
@@ -1184,22 +1029,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
             A2c_scan[A2_info.col_sz] = A_col_scan_end;
             B1c_scan[B1_info.col_sz] = B_col_scan_end;
-
-//            memcpy(Ar,      Ar_temp,      sizeof(index_t) * A_nnz);
-//            memcpy(Av,      Av_temp,      sizeof(value_t) * A_nnz);
-//            memcpy(Ac_scan, Ac_scan_temp, sizeof(index_t) * (A_col_size + 1));
-//
-//            delete []Ar_temp;
-//            delete []Av_temp;
-//            delete []Ac_scan_temp;
-//
-//            memcpy(Br,      Br_temp,      sizeof(index_t) * B_nnz);
-//            memcpy(Bv,      Bv_temp,      sizeof(value_t) * B_nnz);
-//            memcpy(Bc_scan, Bc_scan_temp, sizeof(index_t) * (B_col_size + 1));
-//
-//            delete []Br_temp;
-//            delete []Bv_temp;
-//            delete []Bc_scan_temp;
 
         }
 
@@ -1216,22 +1045,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             A_col_scan_end = A2c_scan[A2_info.col_sz];
             B_col_scan_end = B2c_scan[B2_info.col_sz];
 
-//            auto A2r_temp      = new index_t[A2_nnz];
-//            auto A2v_temp      = new value_t[A2_nnz];
-//            auto A2c_scan_temp = new index_t[A2_col_size + 1];
-//
-//            memcpy(A2r_temp,      A2r,      sizeof(index_t) * A2_nnz);
-//            memcpy(A2v_temp,      A2v,      sizeof(value_t) * A2_nnz);
-//            memcpy(A2c_scan_temp, A2c_scan, sizeof(index_t) * (A2_col_size + 1));
-//
-//            auto B2r_temp      = new index_t[B2_nnz];
-//            auto B2v_temp      = new value_t[B2_nnz];
-//            auto B2c_scan_temp = new index_t[B2_col_size + 1];
-//
-//            memcpy(B2r_temp,      B2r,      sizeof(index_t) * B2_nnz);
-//            memcpy(B2v_temp,      B2v,      sizeof(value_t) * B2_nnz);
-//            memcpy(B2c_scan_temp, B2c_scan, sizeof(index_t) * (B2_col_size + 1));
-
 //            fast_mm(&A2r[0] - A2_info.row_offset, &A2v[0], &A2c_scan[0],
 //                    &B2r[0] - B2_info.row_offset, &B2v[0], &B2c_scan[0],
 //                    &A2_info, &B2_info,
@@ -1240,8 +1053,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             fast_mm(&A2r[0], &A2v[0], &A2c_scan[0],
                     &B2r[0], &B2v[0], &B2c_scan[0],
                     &A2_info, &B2_info,
-//                    A2_row_size, A2_row_offset, A2_col_size, A2_col_offset,
-//                    B2_col_size, B2_col_offset,
                     C, comm);
 
 //            fast_mm(&A2[0], &B2[0], C,
@@ -1252,21 +1063,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             A2c_scan[A2_info.col_sz] = A_col_scan_end;
             B2c_scan[B2_info.col_sz] = B_col_scan_end;
 
-//            memcpy(A2r,      A2r_temp,      sizeof(index_t) * A2_nnz);
-//            memcpy(A2v,      A2v_temp,      sizeof(value_t) * A2_nnz);
-//            memcpy(A2c_scan, A2c_scan_temp, sizeof(index_t) * (A2_col_size + 1));
-//
-//            delete []A2r_temp;
-//            delete []A2v_temp;
-//            delete []A2c_scan_temp;
-//
-//            memcpy(B2r,      B2r_temp,      sizeof(index_t) * B2_nnz);
-//            memcpy(B2v,      B2v_temp,      sizeof(value_t) * B2_nnz);
-//            memcpy(B2c_scan, B2c_scan_temp, sizeof(index_t) * (B2_col_size + 1));
-//
-//            delete []B2r_temp;
-//            delete []B2v_temp;
-//            delete []B2c_scan_temp;
         }
 
         t3 = MPI_Wtime();
@@ -1294,9 +1090,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
     }
-
-//    Ac[0] = A_col_scan_start_tmp;
-//    Bc[0] = B_col_scan_start_tmp;
 
 //    return;
 }
