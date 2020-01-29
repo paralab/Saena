@@ -81,6 +81,10 @@ public:
 //    value_t *mempool1 = nullptr;
 //    index_t *mempool2 = nullptr;
     index_t *mempool3 = nullptr;
+    index_t *mempool4   = nullptr;
+    value_t *mempool5   = nullptr;
+    nnz_t   loc_nnz_max = 0;
+
 //    std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
 //    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers

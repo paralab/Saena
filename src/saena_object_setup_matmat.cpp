@@ -407,13 +407,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         nnz_t A1_nnz = A1c_scan[A1_info.col_sz] - A1c_scan[0];
         nnz_t A2_nnz = A_nnz - A1_nnz;
 
-        // Split Fact 1:
-        // The last element of A1c_scan is shared with the first element of A2c_scan, and it may gets changed
-        // during the recursive calls from the A1c_scan side. So, save that and use it for the starting
-        // point of A2c_scan inside the recursive calls.
-//        index_t A1_col_scan_start = Ac1[0];
-//        index_t A2_col_scan_start = Ac2[0];
-
         // =======================================================
 
         // split B based on how A is split, so use A_col_size_half to split B. A_col_size_half can be different based on
@@ -450,10 +443,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         t2 = MPI_Wtime() - t2;
 //        print_time_ave(t2, "case2", comm, true);
         case2 += t2;
-
-        // Check Split Fact 1
-//        index_t B1_col_scan_start = Bc1[0];
-//        index_t B2_col_scan_start = Bc2[0];
 
 #ifdef __DEBUG1__
 
@@ -563,6 +552,11 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 1 \n");
 #endif
+
+        // Split Fact 1:
+        // The last element of A1c_scan is shared with the first element of A2c_scan, and it may gets changed
+        // during the recursive calls from the A1c_scan side. So, save that and use it for the starting
+        // point of A2c_scan inside the recursive calls.
 
         if (A1_nnz != 0 && B1_nnz != 0) {
 
@@ -1185,6 +1179,10 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
           mempool3              = new index_t[2 * send_size_max];
 
+    loc_nnz_max = std::max(A->nnz_max, B->nnz_max);
+    mempool4    = new index_t[2 * loc_nnz_max];
+    mempool5    = new value_t[2 * loc_nnz_max];
+
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
 
@@ -1233,6 +1231,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //    delete[] mempool1;
 //    delete[] mempool2;
     delete[] mempool3;
+    delete[] mempool4;
+    delete[] mempool5;
 
     return 0;
 }
