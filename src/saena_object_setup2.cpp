@@ -1095,9 +1095,6 @@ int saena_object::reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, ind
     // ========================================================
 #endif
 
-    delete [] Ar_temp;
-    delete [] Av_temp;
-
     return 0;
 }
 
