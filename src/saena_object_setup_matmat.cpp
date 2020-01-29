@@ -1177,11 +1177,26 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
     nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
-          mempool3              = new index_t[2 * send_size_max];
+
+    try{
+        mempool3 = new index_t[2 * send_size_max];
+    }catch(std::bad_alloc& ba){
+        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
 
     loc_nnz_max = std::max(A->nnz_max, B->nnz_max);
-    mempool4    = new index_t[2 * loc_nnz_max];
-    mempool5    = new value_t[2 * loc_nnz_max];
+
+    try{
+        mempool4 = new index_t[2 * loc_nnz_max];
+    }catch(std::bad_alloc& ba){
+        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
+
+    try{
+        mempool5 = new value_t[2 * loc_nnz_max];
+    }catch(std::bad_alloc& ba){
+        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
