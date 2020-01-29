@@ -848,8 +848,8 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 // This version moves entries of A1 to the begining and A2 to the end of the input array.
 int saena_object::reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold, index_t partial_offset){
 
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//    int rank;
+//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 #ifdef __DEBUG1__
 //    std::cout << "\nstart of " << __func__ << std::endl;
@@ -906,15 +906,15 @@ int saena_object::reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t 
         }
     }
 
-#ifdef __DEBUG1__
-//    print_array(Ac1, col_sz+1, 0, "Ac1", MPI_COMM_WORLD);
-//    print_array(Ac2, col_sz+1, 0, "Ac2", MPI_COMM_WORLD);
-#endif
-
     for(index_t i = 1; i <= col_sz; i++){
         Ac2[i] += Ac2[i-1]; // scan on Ac2
         Ac1[i] -= Ac2[i];   // subtract Ac2 from Ac1 to have the correct scan for A1
     }
+
+#ifdef __DEBUG1__
+//    print_array(Ac1, col_sz+1, 0, "Ac1", MPI_COMM_WORLD);
+//    print_array(Ac2, col_sz+1, 0, "Ac2", MPI_COMM_WORLD);
+#endif
 
     // First put A1 at the beginning of A, then put A2 at the end A.
     memcpy(&Ar[offset],          &A1r[0], A1r.size() * sizeof(index_t));
@@ -968,11 +968,10 @@ int saena_object::reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t 
 int saena_object::reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t partial_offset){
 
 #ifdef __DEBUG1__
-//    std::cout << "\nstart of " << __func__ << std::endl;
+//    int rank;
+//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//    if(rank==0) std::cout << "\nstart of " << __func__ << std::endl;
 #endif
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // ========================================================
     // IMPORTANT: An offset should be used to access Ar and Av.

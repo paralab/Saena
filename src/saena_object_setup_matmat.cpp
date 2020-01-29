@@ -191,19 +191,14 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
     if (A_info->row_sz * B_info->col_sz < matmat_size_thre1) { //DOLLAR("case0")
 //    if (true) {
+
+//        if (rank == verbose_rank) printf("fast_mm: case 0: start \n");
+
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
             printf("fast_mm: case 0: start \n");
         }
-#endif
 
-//        if (rank == verbose_rank) {
-//            printf("fast_mm: case 0: start \n");
-//        }
-
-//        double t1 = MPI_Wtime();
-
-#ifdef __DEBUG1__
 //        std::cout << "orig_col_idx max: " << A_row_size * 2 + B_col_size + B_nnz_col_sz - 1 << std::endl;
 
 //        print_array(orig_col_idx,  B_nnz_col_sz, verbose_rank, "B orig_col_idx", comm);
@@ -213,8 +208,11 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //            rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
+//        double t1 = MPI_Wtime();
+
         sparse_matrix_t Amkl = nullptr;
 //        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A_info->row_sz + A_info->row_offset, A_info->col_sz, (int*)Ac_scan, (int*)(Ac_scan+1), (int*)Ar, Av);
+//        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A_info->row_sz, A_info->col_sz, (int*)Ac_scan, (int*)(Ac_scan+1), (int*)(Ar - A_info->row_offset), Av);
         mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A_info->row_sz, A_info->col_sz, (int*)Ac_scan, (int*)(Ac_scan+1), (int*)Ar, Av);
 
 /*
@@ -241,6 +239,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         sparse_matrix_t Bmkl = nullptr;
 //        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_info->row_sz + B_info->row_offset, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
+//        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_info->row_sz, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)(Br - B_info->row_offset), Bv);
         mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_info->row_sz, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
 
 //        MPI_Barrier(comm);
