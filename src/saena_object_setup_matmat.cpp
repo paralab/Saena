@@ -278,12 +278,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 //        MPI_Barrier(comm);
 //        if(rank==1) std::cout << "Extracted C info: " << indexing << "\t" << "rows = " << rows << "\tcols = " << cols << std::endl;
-//        MPI_Barrier(comm);
-
-        // todo: instead of staring column from 0, start from a better one,
-        //  to avoid going through the first certain zero coulmns.
-
-//        MPI_Barrier(comm);
 //        if(rank==1) printf("Extract nonzeros\n"); fflush(nullptr);
 //        MPI_Barrier(comm);
 
@@ -299,23 +293,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             }
         }
 
-/*
-        MPI_Barrier(comm);
-        if(rank==2) {
-//            printf("\nC:\n");
-            C.emplace_back(0, 0, 1);
-            ii = 0;
-            for (j = 0; j < B_col_size; ++j) {
-//                printf("col %d: (%3d , %3d)\n", j, pointerB_C[j], pointerE_C[j]); fflush(nullptr);
-                for (i = pointerB_C[j]; i < pointerE_C[j]; ++i) {
-//                    if (rank == 3)
-//                    printf("%3d: (%3d , %3d) = %8f\n", ii, rows_C[ii] + 1, j + B_col_offset + 1, values_C[ii]); fflush(nullptr);
-//                    C.emplace_back(rows_C[ii], j + B_col_offset, values_C[ii]);
-                    ++ii;
-                }
-            }
-        }
-*/
         // Extract C when it is in CSR format.
 //        ii = 0;
 //        for( i = 0; i < A_row_size; i++ ){
@@ -408,8 +385,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 #endif
 
-//        print_array(Ac_scan, A_col_size+1, 0, "Ac_scan", comm);
-
         auto A1r = &Ar[0];
         auto A1v = &Av[0];
         auto A2r = &Ar[0];
@@ -417,13 +392,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         auto A1c_scan = Ac_scan;
         auto A2c_scan = &Ac_scan[A_col_size_half];
-
-        // Split Fact 1:
-        // The last element of A1c_scan is shared with the first element of A2c_scan, and it may gets changed
-        // during the recursive calls from the A1c_scan side. So, save that and use it for the starting
-        // point of A2c_scan inside the recursive calls.
-//        index_t A1_col_scan_start = Ac1[0];
-//        index_t A2_col_scan_start = Ac2[0];
 
         A1_info.row_sz = A_info->row_sz;
         A2_info.row_sz = A_info->row_sz;
@@ -440,8 +408,12 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         nnz_t A1_nnz = A1c_scan[A1_info.col_sz] - A1c_scan[0];
         nnz_t A2_nnz = A_nnz - A1_nnz;
 
-//        std::cout << "\ncase2:\nA_nnz: " << std::setw(3) << A_nnz << ", A1_nnz: " << std::setw(3) << A1_nnz << ", A2_nnz: " << std::setw(3) << A2_nnz << ", A_col_size: "
-//                  << std::setw(3) << A_info->col_sz << ", A_col_size_half: " << std::setw(3) << A_col_size_half << std::endl;
+        // Split Fact 1:
+        // The last element of A1c_scan is shared with the first element of A2c_scan, and it may gets changed
+        // during the recursive calls from the A1c_scan side. So, save that and use it for the starting
+        // point of A2c_scan inside the recursive calls.
+//        index_t A1_col_scan_start = Ac1[0];
+//        index_t A2_col_scan_start = Ac2[0];
 
         // =======================================================
 
@@ -484,6 +456,12 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //        index_t B1_col_scan_start = Bc1[0];
 //        index_t B2_col_scan_start = Bc2[0];
 
+#ifdef __DEBUG1__
+
+//        MPI_Barrier(comm);
+//        std::cout << "\ncase2:\nA_nnz: " << std::setw(3) << A_nnz << ", A1_nnz: " << std::setw(3) << A1_nnz << ", A2_nnz: " << std::setw(3) << A2_nnz << ", A_col_size: "
+//                  << std::setw(3) << A_info->col_sz << ", A_col_size_half: " << std::setw(3) << A_col_size_half << std::endl;
+
 //        std::cout << "B_nnz: " << std::setw(3) << B_nnz << ", B1_nnz: " << std::setw(3) << B1_nnz
 //                  << ", B2_nnz: " << std::setw(3) << B2_nnz << ", B_row_size: " << std::setw(3) << B_info->row_sz
 //                  << ", B_row_size_half: " << std::setw(3) << B_row_size_half << ", B_row_size/2: " << B_info->row_sz/2
@@ -494,33 +472,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                  << "\tB1_col_size:"  << B1_col_size << "\tB2_col_size: " << B2_col_size
 //                  << "\tB1_col_offset: " << B1_col_offset << "\tB2_col_offset: " << B2_col_offset << std::endl;
 
-#ifdef __DEBUG1__
 //        std::cout << "B_row_threshold: " << std::setw(3) << B_row_threshold << std::endl;
 //        print_array(Bc1, B_col_size+1, 0, "Bc1", comm);
 //        print_array(Bc2, B_col_size+1, 0, "Bc2", comm);
 
-//        std::cout << "\nB1: nnz: " << B1_nnz << std::endl ;
-//        for(index_t j = 0; j < B_col_size; j++){
-//            for(index_t i = Bc1[j]; i < Bc1[j+1]; i++){
-//                std::cout << std::setprecision(4) << B[i].row << "\t" << j << "\t" << B[i].val << std::endl;
-//            }
-//        }
-//
-//        std::cout << "\nB2: nnz: " << B2_nnz << std::endl ;
-//        for(index_t j = 0; j < B_col_size; j++){
-//            for(index_t i = Bc2[j]+B1_nnz; i < Bc2[j+1]+B1_nnz; i++){
-//                std::cout << std::setprecision(4) << B[i].row << "\t" << j << "\t" << B[i].val << std::endl;
-//            }
-//        }
-#endif
-
-        // A1: start: nnzPerColScan_leftStart,                  end: nnzPerColScan_leftEnd
-        // A2: start: nnzPerColScan_leftStart[A_col_size_half], end: nnzPerColScan_leftEnd[A_col_size_half]
-        // B1: start: nnzPerColScan_rightStart,                 end: nnzPerColScan_middle
-        // B2: start: nnzPerColScan_middle,                     end: nnzPerColScan_rightEnd
-
-#ifdef __DEBUG1__
-//        MPI_Barrier(comm);
         if (rank == verbose_rank) {
 
 //        printf("fast_mm: case 2: \nA_nnz: (%lu, %lu, %lu), B_nnz: (%lu, %lu, %lu)\n"
@@ -597,6 +552,13 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         // Call two recursive functions here. Put the result of the first one in C1, and the second one in C2.
         // merge sort them and add the result to C.
 //        std::vector<cooEntry> C_temp;
+
+        // A1: start: nnzPerColScan_leftStart,                  end: nnzPerColScan_leftEnd
+        // A2: start: nnzPerColScan_leftStart[A_col_size_half], end: nnzPerColScan_leftEnd[A_col_size_half]
+        // B1: start: nnzPerColScan_rightStart,                 end: nnzPerColScan_middle
+        // B2: start: nnzPerColScan_middle,                     end: nnzPerColScan_rightEnd
+
+        // =======================================================
 
         // C1 = A1 * B1
 #ifdef __DEBUG1__
@@ -725,6 +687,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         B1_info.col_offset = B_info->col_offset;
         B2_info.col_offset = B_info->col_offset + B_col_size_half;
 
+#endif
+
+#ifdef __DEBUG1__
 //        std::cout << "\ncase3:\nB_nnz: " << std::setw(3) << B_nnz << ", B1_nnz: " << std::setw(3) << B1_nnz
 //                  << ", B2_nnz: " << std::setw(3) << B2_nnz << ", B_col_size: " << std::setw(3) << B_info->col_sz
 //                  << ", B_col_size_half: " << std::setw(3) << B_col_size_half << std::endl;
@@ -732,9 +697,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //        std::cout << "\ncase3_part1: B_row_size: " << B_row_size << "\tB_row_offset: " << B_row_offset
 //                  << "\tB1_col_size:"  << B1_col_size << "\tB2_col_size: " << B2_col_size
 //                  << "\tB1_col_offset: " << B1_col_offset << "\tB2_col_offset: " << B2_col_offset << std::endl;
-#endif
 
-#ifdef __DEBUG1__
 //        print_array(Bc, B_col_size+1, 0, "Bc", comm);
 //
 //        std::cout << "\nB1: nnz: " << B1_nnz << std::endl ;
@@ -833,6 +796,10 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         A1_info.col_offset = A_info->col_offset;
         A2_info.col_offset = A_info->col_offset;
 
+        t3 = MPI_Wtime() - t3;
+        case3 += t3;
+
+#ifdef __DEBUG1__
 //        std::cout << "A_nnz: " << std::setw(3) << A_nnz << ", A1_nnz: " << std::setw(3) << A1_nnz << ", A2_nnz: "
 //                  << std::setw(3) << A2_nnz << ", A_row_size: " << std::setw(3) << A_info->row_sz
 //                  << ", A_row_size_half: " << std::setw(3) << A_row_size_half << std::endl;
@@ -842,38 +809,13 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //                  << "\tA1_col_size: " << A1_col_size << "\tA2_col_size: " << A2_col_size
 //                  << "\tA1_col_offset: " << A1_col_offset << "\tA2_col_offset: " << A2_col_offset << std::endl;
 
-        t3 = MPI_Wtime() - t3;
-        case3 += t3;
-
-#ifdef __DEBUG1__
 //        std::cout << "A_row_threshold: " << std::setw(3) << A_row_threshold << std::endl;
+
 //        print_array(Ac1, A_col_size+1, 0, "Ac1", comm);
 //        print_array(Ac2, A_col_size+1, 0, "Ac2", comm);
 
-//        std::cout << "\nCase3:\nA1: nnz: " << A1_nnz << std::endl ;
-//        for(index_t j = 0; j < A1_col_size; j++){
-//            for(index_t i = Ac1[j]; i < Ac1[j+1]; i++){
-//                std::cout << std::setprecision(4) << A1[i].row << "\t" << j + A1_col_offset << "\t" << A1[i].val << std::endl;
-//            }
-//        }
-//        std::cout << "\nA2: nnz: " << A2_nnz << std::endl ;
-//        for(index_t j = 0; j < A2_col_size; j++){
-//            for(index_t i = Ac2[j]; i < Ac2[j+1]; i++){
-//                std::cout << std::setprecision(4) << A2[i].row << "\t" << j + A2_col_offset << "\t" << A2[i].val << std::endl;
-//            }
-//        }
-#endif
-
-#ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) printf("fast_mm: case 3: step 2 \n");
-#endif
 
-        // A1: start: nnzPerColScan_leftStart,                   end: nnzPerColScan_middle
-        // A2: start: nnzPerColScan_middle,                      end: nnzPerColScan_leftEnd
-        // B1: start: nnzPerColScan_rightStart,                  end: nnzPerColScan_rightEnd
-        // B2: start: nnzPerColScan_rightStart[B_col_size_half], end: nnzPerColScan_rightEnd[B_col_size_half]
-
-#ifdef __DEBUG1__
 //        MPI_Barrier(comm);
         if (rank == verbose_rank) {
 
@@ -936,6 +878,22 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
             }
         }
 #endif
+
+        // =======================================================
+
+        // A1: start: nnzPerColScan_leftStart,                   end: nnzPerColScan_middle
+        // A2: start: nnzPerColScan_middle,                      end: nnzPerColScan_leftEnd
+        // B1: start: nnzPerColScan_rightStart,                  end: nnzPerColScan_rightEnd
+        // B2: start: nnzPerColScan_rightStart[B_col_size_half], end: nnzPerColScan_rightEnd[B_col_size_half]
+
+        // C1 = A1 * B1:
+//        fast_mm(A1, B1, C_temp, A_row_size_half, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size_half, B_col_offset, comm);
+        // C2 = A2 * B1:
+//        fast_mm(A2, B1, C_temp, A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset, B_row_offset, B_col_size_half, B_col_offset, comm);
+        // C3 = A1 * B2:
+//        fast_mm(A1, B2, C_temp, A_row_size_half, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size-B_col_size_half, B_col_offset+B_col_size_half, comm);
+        // C4 = A2 * B2
+//        fast_mm(A2, B2, C_temp, A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset, B_row_offset, B_col_size-B_col_size_half, B_col_offset+B_col_size_half, comm);
 
         // =======================================================
 
@@ -1073,17 +1031,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
         t3 = MPI_Wtime() - t3;
         case3 += t3;
-
-        // C1 = A1 * B1:
-//        fast_mm(A1, B1, C_temp, A_row_size_half, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size_half, B_col_offset, comm);
-        // C2 = A2 * B1:
-//        fast_mm(A2, B1, C_temp, A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset, B_row_offset, B_col_size_half, B_col_offset, comm);
-        // C3 = A1 * B2:
-//        fast_mm(A1, B2, C_temp, A_row_size_half, A_row_offset, A_col_size, A_col_offset, B_row_offset, B_col_size-B_col_size_half, B_col_offset+B_col_size_half, comm);
-        // C4 = A2 * B2
-//        fast_mm(A2, B2, C_temp, A_row_size-A_row_size_half, A_row_offset+A_row_size_half, A_col_size, A_col_offset, B_row_offset, B_col_size-B_col_size_half, B_col_offset+B_col_size_half, comm);
-
-//        if(rank==0 && verbose_fastmm) printf("fast_mm: case 3: step 4 \n");
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) printf("fast_mm: case 3: end \n");
