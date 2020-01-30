@@ -203,14 +203,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
             printf("fast_mm: case 0: start \n");
         }
-
-//        std::cout << "orig_col_idx max: " << A_row_size * 2 + B_col_size + B_nnz_col_sz - 1 << std::endl;
-
-//        print_array(orig_col_idx,  B_nnz_col_sz, verbose_rank, "B orig_col_idx", comm);
-//        print_array(B_new_col_idx, B_col_size,   verbose_rank, "B_new_col_idx",  comm);
-
-//        printf("rank %d: A_row_size = %u, \tA_nnz_row_sz = %u, \tB_col_size = %u, \tB_nnz_col_sz = %u \n",
-//            rank, A_row_size, A_nnz_row_sz, B_col_size, B_nnz_col_sz);
 #endif
 
 //        double t1 = MPI_Wtime();
@@ -248,13 +240,12 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 //        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_info->row_sz, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)(Br - B_info->row_offset), Bv);
         mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B_info->row_sz, B_info->col_sz, (int*)Bc_scan, (int*)(Bc_scan+1), (int*)Br, Bv);
 
+#ifdef __DEBUG1__
+
 //        MPI_Barrier(comm);
 //        if(rank==1) printf("\nPerform MKL matmult\n"); fflush(nullptr);
 //        MPI_Barrier(comm);
 
-        sparse_matrix_t Cmkl = nullptr;
-
-#ifdef __DEBUG1__
 //        auto mkl_res = mkl_sparse_spmm( SPARSE_OPERATION_NON_TRANSPOSE, Amkl, Bmkl, &Cmkl );
 
 //        if(mkl_res != SPARSE_STATUS_SUCCESS){
@@ -266,6 +257,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 #endif
 
         // Compute C = A * B
+        sparse_matrix_t Cmkl = nullptr;
         mkl_sparse_spmm( SPARSE_OPERATION_NON_TRANSPOSE, Amkl, Bmkl, &Cmkl );
 
 //        struct matrix_descr descr;
@@ -379,7 +371,7 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
 
 #ifdef SPLIT_SIZE
 
-        // this part is common with part for SPLIT_SIZE, so it is moved to after SPLIT_SIZE.
+        // this part is common with the SPLIT_SIZE part, so it is moved to after SPLIT_SIZE.
 
 #endif
 
@@ -388,8 +380,9 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         // =======================================================
 
 #ifdef SPLIT_NNZ
-
         // todo: this part is not updated after changing fast_mm().
+        if(!rank) printf("The  SPLIT_NNZ part is not updated!\n");
+        exit(EXIT_FAILURE);
 
         // prepare splits of matrix A by column
         auto A_half_nnz = (nnz_t) ceil(A_nnz / 2);
@@ -408,7 +401,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         if (A_col_size_half == A_info->col_sz) {
             A_col_size_half = A_info->col_sz / 2;
         }
-
 #endif
 
         auto A1r = &Ar[0];
@@ -468,7 +460,6 @@ void saena_object::fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
         B2_info.col_offset = B_info->col_offset;
 
         t2 = MPI_Wtime() - t2;
-//        print_time_ave(t2, "case2", comm, true);
         case2 += t2;
 
 #ifdef __DEBUG1__

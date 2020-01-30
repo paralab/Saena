@@ -849,27 +849,31 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 int saena_object::reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold, index_t partial_offset){
 
 #ifdef __DEBUG1__
-//    int rank;
-//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int verbose_rank = 1;
 
-//    std::cout << "\nstart of " << __func__ << std::endl;
+    if(rank == verbose_rank){
+//        std::cout << "\nstart of " << __func__ << std::endl;
+//        std::cout << "\n=========================================================================" << std::endl ;
+//        std::cout << "\nA: nnz: " << Ac1[col_sz] - Ac1[0] << ", col_sz: " << col_sz << ", threshold: " << threshold << std::endl ;
+//        print_array(Ac1, col_sz+1, 0, "Ac", MPI_COMM_WORLD);
 
-//    std::cout << "\n=========================================================================" << std::endl ;
-//    std::cout << "\nA: nnz: " << Ac1[col_sz] - Ac1[0] << ", col_sz: " << col_sz << ", threshold: " << threshold << std::endl ;
-//    print_array(Ac1, col_sz+1, 0, "Ac", MPI_COMM_WORLD);
+        // ========================================================
+        // this shows how to go through entries of A before changing order.
+        // NOTE: column is not correct. col_offset should be added to it.
+        // ========================================================
 
-    // ========================================================
-    // this shows how to go through entries of A before changing order.
-    // NOTE: column is not correct. col_offset should be added to it.
-    // ========================================================
-//    std::cout << "\nA: nnz: " << Ac1[col_sz] - Ac1[0] << "\tcol is not correct." << std::endl ;
-//    for(index_t j = 0; j < col_sz; j++){
-//        for(index_t i = Ac1[j]; i < Ac1[j+1]; i++){
-//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
-//        }
-//    }
+        std::cout << "\nA: nnz: " << Ac1[col_sz] - Ac1[0] << "\tcol is not correct." << std::endl ;
+        for(index_t j = 0; j < col_sz; j++){
+            for(index_t i = Ac1[j]; i < Ac1[j+1]; i++){
+                std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+            }
+        }
 
-    // ========================================================
+        // ========================================================
+    }
+
 #endif
 
     // ========================================================
@@ -892,14 +896,14 @@ int saena_object::reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t 
                 A1r[A1_nnz] = Ar[i];
                 A1v[A1_nnz] = Av[i];
                 ++A1_nnz;
-//                if(rank==1) std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << "\ttop half" << std::endl;
+//                if(rank==verbose_rank) std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << "\ttop half" << std::endl;
             }else{
                 A2r[A2_nnz] = Ar[i] - partial_offset;
 //                A2r[A2_nnz] = Ar[i];
                 A2v[A2_nnz] = Av[i];
                 ++A2_nnz;
                 Ac2_p[j]++;
-//                if(rank==1) std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << "\tbottom half" << "\t" << partial_offset << std::endl;
+//                if(rank==verbose_rank) std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << "\tbottom half" << "\t" << partial_offset << std::endl;
             }
         }
     }
@@ -944,19 +948,23 @@ int saena_object::reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t 
     // this shows how to go through entries of A1 (top half) and A2 (bottom half) after changing order.
     // NOTE: column is not correct. col_offset should be added to it.
     // ========================================================
-//    std::cout << "\nA1: nnz: " << Ac1[col_sz] - Ac1[0] << "\tcol is not correct." << std::endl ;
-//    for(index_t j = 0; j < col_sz; j++){
-//        for(index_t i = Ac1[j]; i < Ac1[j+1]; i++){
-//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
-//        }
-//    }
-//
-//    std::cout << "\nA2: nnz: " << Ac2[col_sz] - Ac2[0] << "\tcol is not correct." << std::endl ;
-//    for(index_t j = 0; j < col_sz; j++){
-//        for(index_t i = Ac2[j]+Ac1[col_sz]; i < Ac2[j+1]+Ac1[col_sz]; i++){
-//            std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
-//        }
-//    }
+    if(rank == verbose_rank) {
+
+        std::cout << "\nA1: nnz: " << Ac1[col_sz] - Ac1[0] << "\tcol is not correct." << std::endl;
+        for (index_t j = 0; j < col_sz; j++) {
+            for (index_t i = Ac1[j]; i < Ac1[j + 1]; i++) {
+                std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+            }
+        }
+
+        std::cout << "\nA2: nnz: " << Ac2[col_sz] - Ac2[0] << "\tcol is not correct." << std::endl;
+        for (index_t j = 0; j < col_sz; j++) {
+            for (index_t i = Ac2[j] + Ac1[col_sz]; i < Ac2[j + 1] + Ac1[col_sz]; i++) {
+                std::cout << std::setprecision(4) << Ar[i] + partial_offset << "\t" << j << "\t" << Av[i] << std::endl;
+            }
+        }
+
+    }
     // ========================================================
 #endif
 
