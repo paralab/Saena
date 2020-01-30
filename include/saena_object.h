@@ -34,14 +34,6 @@ class prolong_matrix;
 class restrict_matrix;
 class Grid;
 
-class mat_info{
-public:
-    index_t row_sz, row_offset, col_sz, col_offset;
-
-    mat_info(): row_sz(0), row_offset(0), col_sz(0), col_offset(0) {}
-    mat_info(index_t row_size, index_t _row_offset, index_t col_size, index_t _col_offset):
-        row_sz(row_size), row_offset(_row_offset), col_sz(col_size), col_offset(_col_offset) {}
-};
 
 class saena_object {
 public:
@@ -69,7 +61,7 @@ public:
     // *****************
 
     std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const        index_t matmat_size_thre1 = 100; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split. default 20M.
+    const        index_t matmat_size_thre1 = 600; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split. default 20M.
 //    static const index_t matmat_size_thre2 = 20000000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold       = 50; //default 50
@@ -169,7 +161,7 @@ public:
     std::string sparsifier          = "majid"; // options: 1- TRSL, 2- drineas, majid
 
     // **********************************************
-    // vserbose
+    // verbose
     // **********************************************
     bool verbose                  = false;
     bool verbose_setup            = true;
@@ -239,12 +231,12 @@ public:
 //    int compute_coarsen_test(Grid *grid);
 //    int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
-                 index_t *Br, value_t *Bv, index_t *Bc_scan,
-                 mat_info *A_info, mat_info *B_info,
-//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                 index_t B_col_size, index_t B_col_offset,
-                 std::vector<cooEntry> &C, MPI_Comm comm);
+    void fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C, MPI_Comm comm);
+
+//    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
+//                 index_t *Br, value_t *Bv, index_t *Bc_scan,
+//                 mat_info *A_info, mat_info *B_info,
+//                 std::vector<cooEntry> &C, MPI_Comm comm);
 
 //    void fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
 //                       nnz_t A_nnz, nnz_t B_nnz,

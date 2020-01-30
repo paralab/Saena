@@ -157,9 +157,9 @@ int main(int argc, char* argv[]){
         // matmat_ave computes the average matmat time on processor 0.
         // so it is fine to just print the time on proc 0.
         if (!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
-
-        // *************************** PETSc ****************************
 */
+        // *************************** PETSc ****************************
+
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
 //        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
     }

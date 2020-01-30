@@ -429,6 +429,82 @@ public:
     CSCMat() = default;
 };
 
+//class reorder_info{
+//public:
+//    index_t col_sz, threshold, partial_offset;
+//
+//    reorder_info(): row_sz(0), row_offset(0), col_sz(0), col_offset(0) {}
+//    reorder_info(index_t row_size, index_t _row_offset, index_t col_size, index_t _col_offset):
+//            row_sz(row_size), row_offset(_row_offset), col_sz(col_size), col_offset(_col_offset) {}
+//};
+
+//class mat_info{
+//public:
+//    index_t row_sz, row_offset, col_sz, col_offset;
+//
+//    mat_info(): row_sz(0), row_offset(0), col_sz(0), col_offset(0) {}
+//    mat_info(index_t row_size, index_t _row_offset, index_t col_size, index_t _col_offset):
+//            row_sz(row_size), row_offset(_row_offset), col_sz(col_size), col_offset(_col_offset) {}
+//};
+
+class CSCMat_mm{
+private:
+
+public:
+
+    index_t row_sz, row_offset, col_sz, col_offset;
+    bool free_r = false, free_c = false, free_v = false;
+    nnz_t   nnz     = 0;
+
+    index_t *r      = nullptr;
+    value_t *v      = nullptr;
+    index_t *col_scan = nullptr;
+
+//    index_t col_sz  = 0;
+//    nnz_t   max_nnz = 0;
+//    index_t max_M   = 0;
+//    std::vector<index_t> split;
+//    std::vector<nnz_t>   nnz_list;
+
+    CSCMat_mm(): row_sz(0), row_offset(0), col_sz(0), col_offset(0) {}
+
+    CSCMat_mm(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset):
+        row_sz(_row_sz), row_offset(_row_offset), col_sz(_col_sz), col_offset(_col_offset) {}
+
+    ~CSCMat_mm(){
+        if(free_r){
+            delete []r;
+            free_r = true;
+        }
+        if(free_c){
+            delete []col_scan;
+            free_c = true;
+        }
+        if(free_v){
+            delete []v;
+            free_v = true;
+        }
+    }
+
+    void set_params(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset){
+        row_sz     = _row_sz;
+        row_offset = _row_offset;
+        col_sz     = _col_sz;
+        col_offset = _col_offset;
+    }
+
+    void set_params(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset,
+                    index_t *_r, value_t *_v, index_t *_col_scan){
+        row_sz     = _row_sz;
+        row_offset = _row_offset;
+        col_sz     = _col_sz;
+        col_offset = _col_offset;
+        r          = _r;
+        v          = _v;
+        col_scan   = _col_scan;
+    }
+};
+
 
 class CSRMat{
 private:
