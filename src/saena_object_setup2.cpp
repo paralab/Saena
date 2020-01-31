@@ -851,7 +851,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
 #ifdef __DEBUG1__
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int verbose_rank = 1;
+    int verbose_rank = 0;
 
     if(rank == verbose_rank){
 //        std::cout << "\nstart of " << __func__ << std::endl;
@@ -864,13 +864,14 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
         // NOTE: column is not correct. col_offset should be added to it.
         // ========================================================
 
-//        std::cout << "\nA: nnz: " << A1.col_scan[col_sz] - A1.col_scan[0] << "\tcol is not correct." << std::endl ;
-//        for(index_t j = 0; j < col_sz; j++){
-//            for(index_t i = A1.col_scan[j]; i < A1.col_scan[j+1]; i++){
-//                std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+//        printf("=============================================\n");
+//        std::cout << "\nA: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << "\tcol is not correct."
+//                  << " threshold: " << threshold << std::endl;
+//        for (index_t j = 0; j < A.col_sz; j++) {
+//            for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
+//                std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
 //            }
 //        }
-
         // ========================================================
     }
 
@@ -891,31 +892,31 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
 
     nnz_t A1_nnz = 0, A2_nnz = 0;
     for(index_t j = 0; j < A.col_sz; j++){
-        for(nnz_t i = A1.col_scan[j]; i < A1.col_scan[j+1]; i++){
+        for(nnz_t i = A1.col_scan[j]; i < A1.col_scan[j+1]; ++i){
             if(A.r[i] < threshold){
                 A1r[A1_nnz] = A.r[i];
                 A1v[A1_nnz] = A.v[i];
                 ++A1_nnz;
-//                if(rank==verbose_rank) std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << "\ttop half" << std::endl;
+//                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half" << std::endl;
             }else{
                 A2r[A2_nnz] = A.r[i] - threshold;
 //                A2r[A2_nnz] = Ar[i];
                 A2v[A2_nnz] = A.v[i];
                 ++A2_nnz;
                 Ac2_p[j]++;
-//                if(rank==verbose_rank) std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << "\tbottom half" << "\t" << partial_offset << std::endl;
+//                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half" << std::endl;
             }
         }
-    }
-
-    // if A2 does not have any nonzero, then just return.
-    if(A2.col_scan[A.col_sz] == A2.col_scan[0]){
-        return 0;
     }
 
     for(index_t i = 1; i <= A.col_sz; i++){
         A2.col_scan[i] += A2.col_scan[i-1]; // scan on A2.col_scan
         A1.col_scan[i] -= A2.col_scan[i];   // subtract A2.col_scan from A1.col_scan to have the correct scan for A1
+    }
+
+    // if A2 does not have any nonzero, then just return.
+    if(A2.col_scan[A.col_sz] == A2.col_scan[0]){
+        return 0;
     }
 
 #ifdef __DEBUG1__
@@ -1034,7 +1035,7 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2,
 
     nnz_t i, iter0 = offset, iter1 = 0, iter2 = A1.col_scan[A.col_sz] - offset;
     nnz_t nnz_col;
-    for(index_t j = 0; j < A.col_sz; j++){
+    for(index_t j = 0; j < A.col_sz; ++j){
         nnz_col = A1.col_scan[j+1] - A1.col_scan[j];
         if(nnz_col){
             memcpy(&A.r[iter0], &Ar_temp[iter1], sizeof(index_t) * nnz_col);

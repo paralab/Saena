@@ -92,20 +92,31 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
     index_t A_col_size_half = A.col_sz/2;
 
+    int verbose_rank = 0;
+
+#ifdef __DEBUG1__
+    if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
+
+    // assert A entries
     index_t col_idx;
     for (nnz_t i = 0; i < A.col_sz; i++) {
         col_idx = i + A.col_offset;
         for (nnz_t j = A.col_scan[i]; j < A.col_scan[i + 1]; j++) {
-//            std::cout << j << "\t" << A.r[j] << "\t" << col_idx << "\t" << A.v[j] << "\t" << A.col_offset << "\n";
+//            std::cout << j << "\t" << A.r[j] << "\t" << col_idx << "\t" << A.v[j] << "\n";
             assert( (A.r[j] >= 0) && (A.r[j] < A.row_sz) );
             assert( (col_idx >= A.col_offset) && (col_idx < A.col_offset + A.col_sz) );
         }
     }
 
-    int verbose_rank = 1;
-
-#ifdef __DEBUG1__
-    if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
+    // assert B entries
+    for (nnz_t i = 0; i < B.col_sz; i++) {
+        col_idx = i + B.col_offset;
+        for (nnz_t j = B.col_scan[i]; j < B.col_scan[i + 1]; j++) {
+//            std::cout << j << "\t" << B.r[j] << "\t" << col_idx << "\t" << B.v[j] << "\n";
+            assert( (B.r[j] >= 0) && (B.r[j] < B.row_sz) );
+            assert( (col_idx >= B.col_offset) && (col_idx < B.col_offset + B.col_sz) );
+        }
+    }
 
     if(rank==verbose_rank){
 
@@ -794,10 +805,11 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //                  << std::setw(3) << A2.nnz << ", A_row_size: " << std::setw(3) << A.row_sz
 //                  << ", A_row_size_half: " << std::setw(3) << A_row_size_half << std::endl;
 
-//        std::cout << "\ncase3_part2: A1_row_size: " << A1_row_size << "\tA2_row_size: " << A2_row_size
-//                  << "\tA1_row_offset: " << A1_row_offset << "\tA2_row_offset: " << A2_row_offset
-//                  << "\tA1_col_size: " << A1_col_size << "\tA2_col_size: " << A2_col_size
-//                  << "\tA1_col_offset: " << A1_col_offset << "\tA2_col_offset: " << A2_col_offset << std::endl;
+//        std::cout << "\ncase3_part2: A1_row_size: " << A1.row_sz << ", A2_row_size: " << A2.row_sz
+//                  << ", A1_row_offset: " << A1.row_offset << ", A2_row_offset: " << A2.row_offset
+//                  << ", A1_col_size: "   << A1.col_sz     << ", A2_col_size: "   << A2.col_sz
+//                  << ", A1_col_offset: " << A1.col_offset << ", A2_col_offset: " << A2.col_offset
+//                  << ", A_row_threshold: " << std::setw(3)<< A_row_threshold     << std::endl;
 
 //        std::cout << "A_row_threshold: " << std::setw(3) << A_row_threshold << std::endl;
 
