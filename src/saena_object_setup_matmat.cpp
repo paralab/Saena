@@ -1609,6 +1609,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         if (rank == verbose_rank) printf("\nstart of matmat: nprocs: %d \n", nprocs);
         MPI_Barrier(comm);
     }
+//    assert(Acsc.col_sz == Bcsc.row_sz);
 #endif
 
     // =======================================
