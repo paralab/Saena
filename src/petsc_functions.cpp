@@ -630,7 +630,7 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
 
     double norm_frob;
     MatNorm(C, NORM_FROBENIUS, &norm_frob);
-    if(rank==0) printf("\nnorm_frobenius(AB_PETSc - AB_Saena) = %.16f\n", norm_frob);
+    if(rank==0) printf("norm_frobenius(AB_PETSc - AB_Saena) = %.16f\n", norm_frob);
 
     AB->scale_matrix();
 
