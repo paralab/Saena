@@ -1068,7 +1068,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     for(nnz_t i = 0; i < A->nnz_l; i++){
         assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
         assert( (A->entry[i].col >= 0) && (A->entry[i].col < A->Mbig) );
-        assert( fabs(A->entry[i].val) > 1e-14 );
+//        assert( fabs(A->entry[i].val) > 1e-14 );
     }
 #endif
 
@@ -1129,7 +1129,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     for(nnz_t i = 0; i < B->nnz_l; i++){
         assert( (B->entry[i].row - B->split[rank] >= 0) && (B->entry[i].row - B->split[rank] < B->M) );
         assert( (B->entry[i].col >= 0) && (B->entry[i].col < B->Mbig) );
-        assert( fabs(B->entry[i].val - 0) > 1e-14 );
+//        assert( fabs(B->entry[i].val - 0) > 1e-14 );
     }
 #endif
 
