@@ -935,9 +935,9 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     }
 
     // if A2 does not have any nonzero, then just return.
-    if(A2.col_scan[A.col_sz] == A2.col_scan[0]){
-        return 0;
-    }
+//    if(A2.col_scan[A.col_sz] == A2.col_scan[0]){
+//        return 0;
+//    }
 
 #ifdef __DEBUG1__
 //    print_array(A1.col_scan, A.col_sz+1, 0, "A1.col_scan", MPI_COMM_WORLD);
