@@ -441,8 +441,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         B1.r = &B.r[0];
         B1.v = &B.v[0];
-        B2.r = &B.r[B1.col_scan[B.col_sz]];
-        B2.v = &B.v[B1.col_scan[B.col_sz]];
+        B2.r = &B.r[B1.nnz];
+        B2.v = &B.v[B1.nnz];
+//        B2.r = &B.r[B1.col_scan[B.col_sz]];
+//        B2.v = &B.v[B1.col_scan[B.col_sz]];
 
         B1.row_sz = B_row_size_half;
         B2.row_sz = B.row_sz - B1.row_sz;
