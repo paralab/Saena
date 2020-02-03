@@ -378,6 +378,13 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         }
 #endif
 
+//        CSCMat_mm A1(A.row_sz, A.row_offset, A_col_size_half, A.col_offset, A.col_scan[A_col_size_half] - A.col_scan[0],
+//                      A.r, A.v, A.col_scan);
+
+//        CSCMat_mm A2(A.row_sz, A.row_offset, A.col_sz - A1.col_sz, A.col_offset + A1.col_sz, A_nnz - A1.nnz,
+//                      A.r, A.v, &A.col_scan[A_col_size_half]);
+
+
         CSCMat_mm A1, A2;
 
         A1.r = &A.r[0];
