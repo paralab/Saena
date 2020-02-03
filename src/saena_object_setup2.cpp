@@ -853,6 +853,16 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int verbose_rank = 0;
 
+//        std::cout << "\nA: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << "\tcol is not correct."
+//                  << " threshold: " << threshold << std::endl;
+        for (index_t j = 0; j < A.col_sz; j++) {
+            for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
+                assert( A.r[i] >= 0 );
+                assert( A.r[i] < A.row_sz );
+//                std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
+            }
+        }
+
     if(rank == verbose_rank){
 //        std::cout << "\nstart of " << __func__ << std::endl;
 //        std::cout << "\n=========================================================================" << std::endl ;
@@ -951,6 +961,26 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
 
 #ifdef __DEBUG1__
     {
+        // assert A1
+//        std::cout << "\nA1: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << std::endl;
+        for (index_t j = 0; j < A.col_sz; j++) {
+            for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
+                assert(A.r[i] >= 0);
+                assert(A.r[i] < A1.row_sz);
+//                std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
+            }
+        }
+
+    // assert A2
+//        std::cout << "\nA2: nnz: " << A2.col_scan[A.col_sz] - A2.col_scan[0] << std::endl;
+        for (index_t j = 0; j < A.col_sz; j++) {
+            for (index_t i = A2.col_scan[j] + A1.col_scan[A.col_sz]; i < A2.col_scan[j + 1] + A1.col_scan[A.col_sz]; i++) {
+                assert(A.r[i] >= 0);
+                assert(A.r[i] < A2.row_sz);
+//                std::cout << std::setprecision(4) << A.r[i] + threshold << "\t" << j << "\t" << A.v[i] << std::endl;
+            }
+        }
+
 //        print_array(A1.col_scan, A.col_sz+1, 0, "A1.col_scan", MPI_COMM_WORLD);
 //        print_array(A2.col_scan, A.col_sz+1, 0, "A2.col_scan", MPI_COMM_WORLD);
 
