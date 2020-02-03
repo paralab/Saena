@@ -416,7 +416,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         // choosing the splitting method (nnz or size).
         index_t B_row_size_half = A_col_size_half;
 //        index_t B_row_threshold = B_row_size_half + B.row_offset;
-        index_t B_row_threshold = B_row_size_half;
+//        index_t B_row_threshold = B_row_size_half;
 
 #ifdef __DEBUG1__
         assert(B_row_size_half == B.row_sz / 2);
@@ -440,7 +440,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         B2.col_scan = new index_t[B.col_sz + 1];
         B2.free_c   = true;
 
-        reorder_split(B, B1, B2, B_row_threshold);
+        reorder_split(B, B1, B2);
 //        reorder_split(B.r, B.v, B1.col_scan, B2.col_scan, B.col_sz, B_row_threshold, B_row_size_half);
 
         B1.nnz = B1.col_scan[B.col_sz] - B1.col_scan[0];
@@ -664,7 +664,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         // return B to its original order.
         if(B2.nnz != 0) {
 //            reorder_back_split(B.r, B.v, B1.col_scan, B2.col_scan, B.col_sz, B_row_size_half);
-            reorder_back_split(B, B1, B2, B_row_size_half);
+            reorder_back_split(B, B1, B2);
         }
 
         t2 = MPI_Wtime() - t2;
@@ -812,7 +812,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         index_t A_row_size_half = A.row_sz / 2;
 //        index_t A_row_threshold = A_row_size_half + A.row_offset;
-        index_t A_row_threshold = A_row_size_half;
+//        index_t A_row_threshold = A_row_size_half;
 
         CSCMat_mm A1, A2;
 
@@ -832,7 +832,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         A2.col_scan = new index_t[A.col_sz + 1]; // col_scan
         A2.free_c = true;
 
-        reorder_split(A, A1, A2, A_row_threshold);
+        reorder_split(A, A1, A2);
 //        reorder_split(A.r, A.v, A1.col_scan, A2.col_scan, A.col_sz, A_row_threshold, A_row_size_half);
 
         A1.nnz = A1.col_scan[A.col_sz] - A1.col_scan[0];
@@ -1086,7 +1086,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         // return A to its original order.
         if(A2.nnz != 0){
 //            reorder_back_split(A.r, A.v, A1.col_scan, A2.col_scan, A.col_sz, A_row_size_half);
-            reorder_back_split(A, A1, A2, A_row_size_half);
+            reorder_back_split(A, A1, A2);
         }
 
         t3 = MPI_Wtime() - t3;

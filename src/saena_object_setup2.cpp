@@ -846,7 +846,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 */
 
 // This version moves entries of A1 to the begining and A2 to the end of the input array.
-int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, index_t threshold){
+int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
 #ifdef __DEBUG1__
     int rank;
@@ -906,13 +906,13 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
     A1.nnz = 0, A2.nnz = 0;
     for(index_t j = 0; j < A.col_sz; j++){
         for(nnz_t i = A1.col_scan[j]; i < A1.col_scan[j+1]; ++i){
-            if(A.r[i] < threshold){
+            if(A.r[i] < A1.row_sz){
                 A1r[A1.nnz] = A.r[i];
                 A1v[A1.nnz] = A.v[i];
                 ++A1.nnz;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half" << std::endl;
             }else{
-                A2r[A2.nnz] = A.r[i] - threshold;
+                A2r[A2.nnz] = A.r[i] - A1.row_sz;
 //                A2r[A2.nnz] = Ar[i];
                 A2v[A2.nnz] = A.v[i];
                 ++A2.nnz;
@@ -1009,7 +1009,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
     return 0;
 }
 
-int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, index_t threshold){
+int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
 #ifdef __DEBUG1__
 //    int rank;
@@ -1084,7 +1084,7 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2,
 
             for(i = 0; i < nnz_col; ++i){
 //                Ar[iter0 + i] = Ar_temp[iter2 + i];
-                A.r[iter0 + i] = Ar_temp[iter2 + i] + threshold;
+                A.r[iter0 + i] = Ar_temp[iter2 + i] + A1.row_sz;
 //                if(rank==1) std::cout << Ar_temp[iter2 + i] << "\t" << j << "\t" << Av_temp[iter2 + i] << "\t" << partial_offset << std::endl;
             }
 
