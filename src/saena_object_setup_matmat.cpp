@@ -461,6 +461,44 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
 #ifdef __DEBUG1__
 
+        // assert A1
+//        std::cout << "\nCase2:\nA1: nnz = " << A1.nnz << std::endl;
+        for (nnz_t i = 0; i < A1.col_sz; i++) {
+            for (nnz_t j = A1.col_scan[i]; j < A1.col_scan[i + 1]; j++) {
+                assert( (A1.r[j] >= 0) && (A1.r[j] < A1.row_sz) );
+//                std::cout << j << "\t" << A1.r[j] << "\t" << i + A1.col_offset << "\t" << A1.v[j] << std::endl;
+            }
+        }
+
+        // assert A2
+//        std::cout << "\nA2: nnz = " << A2.nnz << std::endl;
+        for (nnz_t i = 0; i < A2.col_sz; i++) {
+            for (nnz_t j = A2.col_scan[i]; j < A2.col_scan[i + 1]; j++) {
+                assert( (A2.r[j] >= 0) && (A2.r[j] < A2.row_sz) );
+//                std::cout << j << "\t" << A2.r[j] << "\t" << i + A2.col_offset << "\t" << A2.v[j] << std::endl;
+            }
+        }
+
+        // assert B1
+//        std::cout << "\nCase2:\nB1: nnz = " << B1.nnz << std::endl;
+        for (nnz_t i = 0; i < B1.col_sz; i++) {
+            for (nnz_t j = B1.col_scan[i]; j < B1.col_scan[i + 1]; j++) {
+                assert( (B1.r[j] >= 0) && (B1.r[j] < B1.row_sz) );
+//                std::cout << j << "\t" << B1.r[j] << "\t" << i + B1.col_offset << "\t" << B1.v[j] << std::endl;
+            }
+        }
+
+        // assert B2
+//        std::cout << "\nB2: nnz = " << B2.nnz << std::endl;
+        if(B2.nnz != 0){
+            for (nnz_t i = 0; i < B2.col_sz; i++) {
+                for (nnz_t j = B2.col_scan[i]; j < B2.col_scan[i + 1]; j++) {
+                    assert( (B2.r[j] >= 0) && (B2.r[j] < B2.row_sz) );
+//                    std::cout << j << "\t" << B2.r[j] << "\t" << i + B2.col_offset << "\t" << B2.v[j] << "\n";
+                }
+            }
+        }
+
         if (rank == verbose_rank) {
 
 //        MPI_Barrier(comm);
