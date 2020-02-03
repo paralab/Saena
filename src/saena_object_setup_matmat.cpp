@@ -424,6 +424,18 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         CSCMat_mm B1, B2;
 
+        B1.row_sz = B_row_size_half;
+        B2.row_sz = B.row_sz - B1.row_sz;
+
+        B1.row_offset = B.row_offset;
+        B2.row_offset = B.row_offset + B_row_size_half;
+
+        B1.col_sz = B.col_sz;
+        B2.col_sz = B.col_sz;
+
+        B1.col_offset = B.col_offset;
+        B2.col_offset = B.col_offset;
+
         B1.col_scan = B.col_scan;
         B2.col_scan = new index_t[B.col_sz + 1];
         B2.free_c   = true;
@@ -443,18 +455,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         B1.v = &B.v[0];
         B2.r = &B.r[B1.col_scan[B.col_sz]];
         B2.v = &B.v[B1.col_scan[B.col_sz]];
-
-        B1.row_sz = B_row_size_half;
-        B2.row_sz = B.row_sz - B1.row_sz;
-
-        B1.row_offset = B.row_offset;
-        B2.row_offset = B.row_offset + B_row_size_half;
-
-        B1.col_sz = B.col_sz;
-        B2.col_sz = B.col_sz;
-
-        B1.col_offset = B.col_offset;
-        B2.col_offset = B.col_offset;
 
         t2 = MPI_Wtime() - t2;
         case2 += t2;
@@ -707,17 +707,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         CSCMat_mm B1, B2;
 
-        B1.nnz = B.col_scan[B_col_size_half] - B.col_scan[0];
-        B2.nnz = B.nnz - B1.nnz;
-
-        B1.r = &B.r[0];
-        B1.v = &B.v[0];
-        B2.r = &B.r[0];
-        B2.v = &B.v[0];
-
-        B1.col_scan = B.col_scan;
-        B2.col_scan = &B.col_scan[B_col_size_half];
-
         B1.row_sz = B.row_sz;
         B2.row_sz = B.row_sz;
 
@@ -729,6 +718,17 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         B1.col_offset = B.col_offset;
         B2.col_offset = B.col_offset + B_col_size_half;
+
+        B1.nnz = B.col_scan[B_col_size_half] - B.col_scan[0];
+        B2.nnz = B.nnz - B1.nnz;
+
+        B1.r = &B.r[0];
+        B1.v = &B.v[0];
+        B2.r = &B.r[0];
+        B2.v = &B.v[0];
+
+        B1.col_scan = B.col_scan;
+        B2.col_scan = &B.col_scan[B_col_size_half];
 
 #endif
 
@@ -816,6 +816,18 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         CSCMat_mm A1, A2;
 
+        A1.row_sz = A_row_size_half;
+        A2.row_sz = A.row_sz - A1.row_sz;
+
+        A1.row_offset = A.row_offset;
+        A2.row_offset = A.row_offset + A1.row_sz;
+
+        A1.col_sz = A.col_sz;
+        A2.col_sz = A.col_sz;
+
+        A1.col_offset = A.col_offset;
+        A2.col_offset = A.col_offset;
+
         A1.col_scan = A.col_scan; // col_scan
         A2.col_scan = new index_t[A.col_sz + 1]; // col_scan
         A2.free_c = true;
@@ -835,18 +847,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         A1.v = &A.v[0];
         A2.r = &A.r[A1.col_scan[A.col_sz]];
         A2.v = &A.v[A1.col_scan[A.col_sz]];
-
-        A1.row_sz = A_row_size_half;
-        A2.row_sz = A.row_sz - A1.row_sz;
-
-        A1.row_offset = A.row_offset;
-        A2.row_offset = A.row_offset + A1.row_sz;
-
-        A1.col_sz = A.col_sz;
-        A2.col_sz = A.col_sz;
-
-        A1.col_offset = A.col_offset;
-        A2.col_offset = A.col_offset;
 
         t3 = MPI_Wtime() - t3;
         case3 += t3;
