@@ -1653,7 +1653,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     }
 #endif
 
-    CSCMat_mm A(Acsc_M, Acsc.split[rank], Acsc.col_sz, 0);
+    CSCMat_mm A(Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Acsc.nnz);
     A.r = Acsc.row;
     A.v = Acsc.val;
     A.col_scan = Acsc.col_scan;
@@ -1745,11 +1745,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
             // ===============
             owner         = k%nprocs;
             mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
-            index_t ofst  = Bcsc.split[k % nprocs], col_idx;
+//            index_t ofst  = Bcsc.split[owner], col_idx;
             for (nnz_t i = 0; i < mat_current_M; ++i) {
-                col_idx = i + ofst;
+//                col_idx = i + ofst;
                 for (nnz_t j = mat_send_cscan[i]; j < mat_send_cscan[i + 1]; j++) {
-                    assert( (col_idx >= Bcsc.split[owner]) && (col_idx < Bcsc.split[owner+1]) );
+//                    assert( (col_idx >= Bcsc.split[owner]) && (col_idx < Bcsc.split[owner+1]) ); //this is always true
                     assert( (mat_send_r[j] >= 0) && (mat_send_r[j] < Bcsc.split.back() ) );
                 }
             }
@@ -1766,7 +1766,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
                 owner         = k%nprocs;
                 mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
-                S.set_params(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner], mat_send_r, mat_send_v, mat_send_cscan);
+                nnz_t S_nnz = mat_send_cscan[mat_current_M] - mat_send_cscan[0];
+                S.set_params(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner], S_nnz, mat_send_r, mat_send_v, mat_send_cscan);
 
                 fast_mm(A, S, AB_temp, comm);
 
@@ -1893,7 +1894,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
 //            double t1 = MPI_Wtime();
 
-            CSCMat_mm B(Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank]);
+            CSCMat_mm B(Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank], Bcsc.nnz);
             B.r = Bcsc.row;
             B.v = Bcsc.val;
             B.col_scan = Bcsc.col_scan;

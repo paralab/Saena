@@ -890,19 +890,19 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
     std::fill(&A2.col_scan[0], &A2.col_scan[A.col_sz+1], 0);
     auto Ac2_p = &A2.col_scan[1]; // to do scan on it at the end.
 
-    nnz_t A1_nnz = 0, A2_nnz = 0;
+    A1.nnz = 0, A2.nnz = 0;
     for(index_t j = 0; j < A.col_sz; j++){
         for(nnz_t i = A1.col_scan[j]; i < A1.col_scan[j+1]; ++i){
             if(A.r[i] < threshold){
-                A1r[A1_nnz] = A.r[i];
-                A1v[A1_nnz] = A.v[i];
-                ++A1_nnz;
+                A1r[A1.nnz] = A.r[i];
+                A1v[A1.nnz] = A.v[i];
+                ++A1.nnz;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half" << std::endl;
             }else{
-                A2r[A2_nnz] = A.r[i] - threshold;
-//                A2r[A2_nnz] = Ar[i];
-                A2v[A2_nnz] = A.v[i];
-                ++A2_nnz;
+                A2r[A2.nnz] = A.r[i] - threshold;
+//                A2r[A2.nnz] = Ar[i];
+                A2v[A2.nnz] = A.v[i];
+                ++A2.nnz;
                 Ac2_p[j]++;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half" << std::endl;
             }
@@ -925,11 +925,11 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2, inde
 #endif
 
     // First put A1 at the beginning of A, then put A2 at the end A.
-    memcpy(&A.r[offset],          &A1r[0], A1_nnz * sizeof(index_t));
-    memcpy(&A.v[offset],          &A1v[0], A1_nnz * sizeof(value_t));
+    memcpy(&A.r[offset],          &A1r[0], A1.nnz * sizeof(index_t));
+    memcpy(&A.v[offset],          &A1v[0], A1.nnz * sizeof(value_t));
 
-    memcpy(&A.r[offset + A1_nnz], &A2r[0], A2_nnz * sizeof(index_t));
-    memcpy(&A.v[offset + A1_nnz], &A2v[0], A2_nnz * sizeof(value_t));
+    memcpy(&A.r[offset + A1.nnz], &A2r[0], A2.nnz * sizeof(index_t));
+    memcpy(&A.v[offset + A1.nnz], &A2v[0], A2.nnz * sizeof(value_t));
 
 #if 0
     // Equivalent to the previous part. Uses for loops instead of memcpy.
