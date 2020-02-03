@@ -72,7 +72,7 @@ public:
     // memory pool used in compute_coarsen
 //    value_t *mempool1 = nullptr;
 //    index_t *mempool2 = nullptr;
-    index_t *mempool3 = nullptr;
+    index_t *mempool3   = nullptr;
     index_t *mempool4   = nullptr;
     value_t *mempool5   = nullptr;
     nnz_t   loc_nnz_max = 0;

@@ -456,8 +456,8 @@ public:
     nnz_t   nnz;
     bool free_r = false, free_c = false, free_v = false;
 
-    index_t *r      = nullptr;
-    value_t *v      = nullptr;
+    index_t *r        = nullptr;
+    value_t *v        = nullptr;
     index_t *col_scan = nullptr;
 
 //    index_t col_sz  = 0;
