@@ -479,15 +479,15 @@ public:
     ~CSCMat_mm(){
         if(free_r){
             delete []r;
-            free_r = true;
+            free_r = false;
         }
         if(free_c){
             delete []col_scan;
-            free_c = true;
+            free_c = false;
         }
         if(free_v){
             delete []v;
-            free_v = true;
+            free_v = false;
         }
     }
 

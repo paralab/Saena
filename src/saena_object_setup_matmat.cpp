@@ -418,11 +418,15 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //        index_t B_row_threshold = B_row_size_half + B.row_offset;
         index_t B_row_threshold = B_row_size_half;
 
+#ifdef __DEBUG1__
+        assert(B_row_size_half == B.row_sz / 2);
+#endif
+
         CSCMat_mm B1, B2;
 
-        B1.col_scan = B.col_scan; // col_scan
-        B2.col_scan = new index_t[B.col_sz + 1]; // col_scan
-        B2.free_c = true;
+        B1.col_scan = B.col_scan;
+        B2.col_scan = new index_t[B.col_sz + 1];
+        B2.free_c   = true;
 
         reorder_split(B, B1, B2, B_row_threshold);
 //        reorder_split(B.r, B.v, B1.col_scan, B2.col_scan, B.col_sz, B_row_threshold, B_row_size_half);
