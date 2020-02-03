@@ -100,21 +100,23 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     // assert A entries
     index_t col_idx;
     for (nnz_t i = 0; i < A.col_sz; i++) {
-        col_idx = i + A.col_offset;
+//        col_idx = i + A.col_offset;
         for (nnz_t j = A.col_scan[i]; j < A.col_scan[i + 1]; j++) {
 //            std::cout << j << "\t" << A.r[j] << "\t" << col_idx << "\t" << A.v[j] << "\n";
             assert( (A.r[j] >= 0) && (A.r[j] < A.row_sz) );
-            assert( (col_idx >= A.col_offset) && (col_idx < A.col_offset + A.col_sz) );
+            assert( i < A.col_sz );
+//            assert( (col_idx >= A.col_offset) && (col_idx < A.col_offset + A.col_sz) );
         }
     }
 
     // assert B entries
     for (nnz_t i = 0; i < B.col_sz; i++) {
-        col_idx = i + B.col_offset;
+//        col_idx = i + B.col_offset;
         for (nnz_t j = B.col_scan[i]; j < B.col_scan[i + 1]; j++) {
 //            std::cout << j << "\t" << B.r[j] << "\t" << col_idx << "\t" << B.v[j] << "\n";
             assert( (B.r[j] >= 0) && (B.r[j] < B.row_sz) );
-            assert( (col_idx >= B.col_offset) && (col_idx < B.col_offset + B.col_sz) );
+            assert( i < B.col_sz );
+//            assert( (col_idx >= B.col_offset) && (col_idx < B.col_offset + B.col_sz) );
         }
     }
 
