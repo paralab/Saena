@@ -853,6 +853,8 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int verbose_rank = 0;
 
+    ++reorder_counter;
+
 //        std::cout << "\nA: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << "\tcol is not correct."
 //                  << " threshold: " << threshold << std::endl;
         for (index_t j = 0; j < A.col_sz; j++) {
@@ -1027,6 +1029,8 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
 //    int rank;
 //    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 //    if(rank==0) std::cout << "\nstart of " << __func__ << std::endl;
+
+    --reorder_counter;
 
     nnz_t nnz1 = A1.col_scan[A.col_sz] - A1.col_scan[0];
     nnz_t nnz2 = A2.col_scan[A.col_sz] - A2.col_scan[0];

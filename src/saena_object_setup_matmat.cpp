@@ -1838,6 +1838,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                 MPI_Barrier(comm);
             }
 
+            assert(reorder_counter == 0);
+
 //            auto mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
 //            MPI_Barrier(comm);
 //            if(rank==0){

@@ -224,6 +224,7 @@ public:
 //    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
     int reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);
     int reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);
+    int reorder_counter = 0; // use this to make sure the same number of calls to reorder_split() and reorder_back_split()
 
     // for fast_mm experiments
 //    int compute_coarsen_test(Grid *grid);
