@@ -453,11 +453,11 @@ private:
 public:
 
     index_t row_sz, row_offset, col_sz, col_offset;
+    nnz_t   nnz;
     bool free_r = false, free_c = false, free_v = false;
-    nnz_t   nnz     = 0;
 
-    index_t *r      = nullptr;
-    value_t *v      = nullptr;
+    index_t *r        = nullptr;
+    value_t *v        = nullptr;
     index_t *col_scan = nullptr;
 
 //    index_t col_sz  = 0;
@@ -466,39 +466,46 @@ public:
 //    std::vector<index_t> split;
 //    std::vector<nnz_t>   nnz_list;
 
-    CSCMat_mm(): row_sz(0), row_offset(0), col_sz(0), col_offset(0) {}
+    CSCMat_mm(): row_sz(0), row_offset(0), col_sz(0), col_offset(0), nnz(0) {}
 
-    CSCMat_mm(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset):
-        row_sz(_row_sz), row_offset(_row_offset), col_sz(_col_sz), col_offset(_col_offset) {}
+    CSCMat_mm(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset, nnz_t _nnz):
+              row_sz(_row_sz), row_offset(_row_offset), col_sz(_col_sz), col_offset(_col_offset), nnz(_nnz) {}
+
+    CSCMat_mm(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset, nnz_t _nnz,
+              index_t *_r, value_t *_v, index_t *_col_scan):
+              row_sz(_row_sz), row_offset(_row_offset), col_sz(_col_sz), col_offset(_col_offset), nnz(_nnz),
+              r(_r), v(_v), col_scan(_col_scan) {}
 
     ~CSCMat_mm(){
         if(free_r){
             delete []r;
-            free_r = true;
+            free_r = false;
         }
         if(free_c){
             delete []col_scan;
-            free_c = true;
+            free_c = false;
         }
         if(free_v){
             delete []v;
-            free_v = true;
+            free_v = false;
         }
     }
 
-    void set_params(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset){
+    void set_params(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset, nnz_t _nnz){
         row_sz     = _row_sz;
         row_offset = _row_offset;
         col_sz     = _col_sz;
         col_offset = _col_offset;
+        nnz        = _nnz;
     }
 
-    void set_params(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset,
+    void set_params(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset, nnz_t _nnz,
                     index_t *_r, value_t *_v, index_t *_col_scan){
         row_sz     = _row_sz;
         row_offset = _row_offset;
         col_sz     = _col_sz;
         col_offset = _col_offset;
+        nnz        = _nnz;
         r          = _r;
         v          = _v;
         col_scan   = _col_scan;
