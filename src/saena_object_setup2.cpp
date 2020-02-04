@@ -867,7 +867,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 //        std::cout << "\nstart of " << __func__ << std::endl;
 //        std::cout << "\n=========================================================================" << std::endl ;
 //        std::cout << "\nA: nnz: " << A1.col_scan[col_sz] - A1.col_scan[0] << ", col_sz: " << col_sz << ", threshold: " << threshold << std::endl ;
-//        print_array(A1.col_scan, col_sz+1, 0, "Ac", MPI_COMM_WORLD);
+//        print_array(A1.col_scan, A.col_sz+1, 0, "Ac", MPI_COMM_WORLD);
 
         // ========================================================
         // this shows how to go through entries of A before changing order.
@@ -970,11 +970,16 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     {
         // assert A1
 //        std::cout << "\nA1: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << std::endl;
+//        nnz_t iter = 0;
         for (index_t j = 0; j < A.col_sz; j++) {
             for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
                 assert(A.r[i] >= 0);
                 assert(A.r[i] < A1.row_sz);
 //                std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
+//                std::cout << "(rank: " << rank << ", " << i << "): \t(" << A.r[i] << ", " << j << ")\t[(" << A.row_sz
+//                          << ", " << A.row_offset << ")(" << A.col_sz << ", " << A.col_offset << ")], A1r: "
+//                          << A1r[iter] << "\n";
+//                ++iter;
             }
         }
 

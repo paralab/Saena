@@ -483,8 +483,11 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //        std::cout << "\nCase2:\nB1: nnz = " << B1.nnz << std::endl;
         for (nnz_t i = 0; i < B1.col_sz; i++) {
             for (nnz_t j = B1.col_scan[i]; j < B1.col_scan[i + 1]; j++) {
-                assert( (B1.r[j] >= 0) && (B1.r[j] < B1.row_sz) );
+                if(B1.r[j] >= B1.row_sz)
+                    std::cout << "(rank: " << rank << ", " << j << "): \t(" << B1.r[j] << ", " << i << ")\t[(" <<
+                       B1.row_sz << ", " << B1.row_offset << ")(" << B1.col_sz << ", " << B1.col_offset << ")]\n";
 //                std::cout << j << "\t" << B1.r[j] << "\t" << i + B1.col_offset << "\t" << B1.v[j] << std::endl;
+                assert( (B1.r[j] >= 0) && (B1.r[j] < B1.row_sz) );
             }
         }
 
