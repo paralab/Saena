@@ -668,6 +668,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         if(B2.nnz != 0) {
 //            reorder_back_split(B.r, B.v, B1.col_scan, B2.col_scan, B.col_sz, B_row_size_half);
             reorder_back_split(B, B1, B2);
+        }else{
+            --reorder_counter;
         }
 
         t2 = MPI_Wtime() - t2;
@@ -1090,6 +1092,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         if(A2.nnz != 0){
 //            reorder_back_split(A.r, A.v, A1.col_scan, A2.col_scan, A.col_sz, A_row_size_half);
             reorder_back_split(A, A1, A2);
+        }else{
+            --reorder_counter;
         }
 
         t3 = MPI_Wtime() - t3;
