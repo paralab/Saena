@@ -178,7 +178,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     // ==============================================================
 
     if (A.row_sz * B.col_sz < matmat_size_thre1) { //DOLLAR("case0")
-//    if (true) {
+//    if (case2_iter == 1) {
 
 //        if (rank == verbose_rank) printf("fast_mm: case 1: start \n");
 
@@ -341,6 +341,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
     // if A_col_size_half == 0, it means A_col_size = 1. In this case it goes to case3.
     if (A.row_sz <= A.col_sz && A_col_size_half != 0){//DOLLAR("case2")
+//    if (case2_iter == 0){
 
         double t2 = MPI_Wtime();
 
@@ -392,7 +393,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //        CSCMat_mm A2(A.row_sz, A.row_offset, A.col_sz - A1.col_sz, A.col_offset + A1.col_sz, A.nnz - A1.nnz,
 //                      A.r, A.v, &A.col_scan[A_col_size_half]);
 
-
         CSCMat_mm A1, A2;
 
         A1.r = &A.r[0];
@@ -426,8 +426,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //        index_t B_row_threshold = B_row_size_half + B.row_offset;
 //        index_t B_row_threshold = B_row_size_half;
 
+#ifdef SPLIT_SIZE
 #ifdef __DEBUG1__
         assert(B_row_size_half == B.row_sz / 2);
+#endif
 #endif
 
         CSCMat_mm B1, B2;
@@ -497,33 +499,42 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
 #ifdef __DEBUG1__
 
+//        if(A1.nnz == 0 || A2.nnz == 0 || B1.nnz == 0 || B2.nnz == 0)
+//            printf("rank %d: nnzs: %lu\t%lu\t%lu\t%lu\t\n", rank, A1.nnz, A2.nnz, B1.nnz, B2.nnz);
+
         // assert A1
 //        std::cout << "\nCase2:\nA1: nnz = " << A1.nnz << std::endl;
-        for (nnz_t i = 0; i < A1.col_sz; i++) {
-            for (nnz_t j = A1.col_scan[i]; j < A1.col_scan[i + 1]; j++) {
-                assert( (A1.r[j] >= 0) && (A1.r[j] < A1.row_sz) );
+        if(A1.nnz != 0) {
+            for (nnz_t i = 0; i < A1.col_sz; i++) {
+                for (nnz_t j = A1.col_scan[i]; j < A1.col_scan[i + 1]; j++) {
+                    assert((A1.r[j] >= 0) && (A1.r[j] < A1.row_sz));
 //                std::cout << j << "\t" << A1.r[j] << "\t" << i + A1.col_offset << "\t" << A1.v[j] << std::endl;
+                }
             }
         }
 
         // assert A2
 //        std::cout << "\nA2: nnz = " << A2.nnz << std::endl;
-        for (nnz_t i = 0; i < A2.col_sz; i++) {
-            for (nnz_t j = A2.col_scan[i]; j < A2.col_scan[i + 1]; j++) {
-                assert( (A2.r[j] >= 0) && (A2.r[j] < A2.row_sz) );
+        if(A2.nnz != 0) {
+            for (nnz_t i = 0; i < A2.col_sz; i++) {
+                for (nnz_t j = A2.col_scan[i]; j < A2.col_scan[i + 1]; j++) {
+                    assert((A2.r[j] >= 0) && (A2.r[j] < A2.row_sz));
 //                std::cout << j << "\t" << A2.r[j] << "\t" << i + A2.col_offset << "\t" << A2.v[j] << std::endl;
+                }
             }
         }
 
         // assert B1
 //        std::cout << "\nCase2:\nB1: nnz = " << B1.nnz << std::endl;
-        for (nnz_t i = 0; i < B1.col_sz; i++) {
-            for (nnz_t j = B1.col_scan[i]; j < B1.col_scan[i + 1]; j++) {
-                if(B1.r[j] >= B1.row_sz)
-                    std::cout << "(rank: " << rank << ", " << j << "): \t(" << B1.r[j] << ", " << i << ")\t[(" <<
-                       B1.row_sz << ", " << B1.row_offset << ")(" << B1.col_sz << ", " << B1.col_offset << ")]\n";
+        if(B1.nnz != 0) {
+            for (nnz_t i = 0; i < B1.col_sz; i++) {
+                for (nnz_t j = B1.col_scan[i]; j < B1.col_scan[i + 1]; j++) {
+//                if(B1.r[j] >= B1.row_sz)
+//                    std::cout << "(rank: " << rank << ", " << j << "): \t(" << B1.r[j] << ", " << i << ")\t[(" <<
+//                       B1.row_sz << ", " << B1.row_offset << ")(" << B1.col_sz << ", " << B1.col_offset << ")]\n";
 //                std::cout << j << "\t" << B1.r[j] << "\t" << i + B1.col_offset << "\t" << B1.v[j] << std::endl;
-                assert( (B1.r[j] >= 0) && (B1.r[j] < B1.row_sz) );
+                    assert((B1.r[j] >= 0) && (B1.r[j] < B1.row_sz));
+                }
             }
         }
 
@@ -554,10 +565,11 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //                  << ", B_row_size_half: " << std::setw(3) << B_row_size_half << ", B_row_size/2: " << B.row_sz/2
 //                  << ", B_row_threshold: " << std::setw(3) << B_row_threshold << std::endl;
 //
-//        std::cout << "\ncase2_part2: B1_row_size: " << B1_row_size << "\tB2_row_size: " << B2_row_size
-//                  << "\tB1_row_offset: " << B1_row_offset << "\tB2_row_offset: " << B2_row_offset
-//                  << "\tB1_col_size:"  << B1_col_size << "\tB2_col_size: " << B2_col_size
-//                  << "\tB1_col_offset: " << B1_col_offset << "\tB2_col_offset: " << B2_col_offset << std::endl;
+//            std::cout << "\ncase2_part2:\nB_row_size: \t" << B.row_sz      << "\tB1_row_size: \t"   << B1.row_sz     << "\tB2_row_size: \t"   << B2.row_sz
+//                      << "\nB_row_offset: \t"             << B.row_offset  << "\tB1_row_offset: \t" << B1.row_offset << "\tB2_row_offset: \t" << B2.row_offset
+//                      << "\nB_col_size: \t"               << B.col_sz      << "\tB1_col_size: \t"   << B1.col_sz     << "\tB2_col_size: \t"   << B2.col_sz
+//                      << "\nB_col_offset: \t"             << B.col_offset  << "\tB1_col_offset: \t" << B1.col_offset << "\tB2_col_offset: \t" << B2.col_offset
+//                      << "\nB_nnz: \t\t"                  << B.nnz         << "\tB1_nnz: \t\t"      << B1.nnz        << "\tB2_nnz: \t\t"      << B2.nnz << std::endl;
 
 //        printf("fast_mm: case 2: \nA.nnz: (%lu, %lu, %lu), B.nnz: (%lu, %lu, %lu)\n"
 //               "A_size: (%u, %u, %u), B_size: (%u, %u) \n",
@@ -1372,7 +1384,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
 #ifdef __DEBUG1__
     if(rank==0){
-        printf("case1 = %u, case2 = %u, case3 = %u\n", case1_iter, case2_iter, case3_iter);
+        printf("\nrank %d: case1 = %u, case2 = %u, case3 = %u\n", rank, case1_iter, case2_iter, case3_iter);
     }
     case1_iter = 0;
     case2_iter = 0;
