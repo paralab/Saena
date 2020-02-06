@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
     //    petsc_viewer(A.get_internal_matrix());
 
 // *************************** checking the correctness of matrix-matrix product ****************************
-
+/*
         {
             saena::amg solver;
             saena::matrix C(comm);
@@ -120,14 +120,14 @@ int main(int argc, char* argv[]){
             // check the correctness with PETSc
             petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
         }
-
+*/
 // *************************** print info ****************************
 
         saena::amg solver;
 
         if (!rank) {
-            printf("\nA.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n", A.get_internal_matrix()->Mbig,
-                   A.get_internal_matrix()->nnz_g,
+            printf("\nA.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n",
+                   A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g,
                    B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
             printf("threshold1 = %lu\n", solver.get_object()->matmat_size_thre1);
         }
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]){
 
         double matmat_time = 0;
         int matmat_iter_warmup = 0;
-        int matmat_iter = 3;
+        int matmat_iter = 1;
 
 //        saena::amg solver;
 //        saena::matrix C(comm);
