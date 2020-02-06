@@ -446,6 +446,9 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         reorder_split(B, B1, B2);
 
+        t2 = MPI_Wtime() - t2;
+        case2 += t2;
+
 #ifdef __DEBUG1__
 /*
         CSCMat_mm B1, B2;
@@ -697,6 +700,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         // Finalize Case2
         // =======================================================
 
+        t2 = MPI_Wtime();
+
         // return B to its original order.
         if(B2.nnz != 0) {
             reorder_back_split(B, B1, B2);
@@ -867,8 +872,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         reorder_split(A, A1, A2);
 
-//        t3 = MPI_Wtime() - t3;
-//        case3 += t3;
+        t3 = MPI_Wtime() - t3;
+        case3 += t3;
 
 #ifdef __DEBUG1__
 /*
@@ -1064,6 +1069,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         // =======================================================
         // Finalize Case3
         // =======================================================
+
+        t3 = MPI_Wtime();
 
         // return A to its original order.
         if(A2.nnz != 0){
@@ -1530,6 +1537,9 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // Preallocate Memory
     // =======================================
 
+    MPI_Barrier(comm);
+    double t_matmat = MPI_Wtime();
+
     // mempool1: used for the dense buffer
     // mempool2: usages: for A: 1- nnzPerRow_left and 2- orig_row_idx. for B: 3- B_new_col_idx and 4- orig_col_idx
     // mempool2 size: 2 * A_row_size + 2 * B_col_size
@@ -1577,6 +1587,9 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
 
+    t_matmat = MPI_Wtime() - t_matmat;
+    matmat_time += average_time(t_matmat, comm);
+
 #ifdef __DEBUG1__
 //    if(rank==0) std::cout << "vecbyint = " << vecbyint << std::endl;
 
@@ -1593,17 +1606,16 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // =======================================
 
     case1 = 0, case2 = 0, case3 = 0;
-    double t_AP;
     for (int i = 0; i < matmat_iter; ++i) {
         saena_matrix C(A->comm);
 
         MPI_Barrier(comm);
-        t_AP = MPI_Wtime();
+        t_matmat = MPI_Wtime();
 
         matmat(Acsc, Bcsc, C, send_size_max);
 
-        t_AP = MPI_Wtime() - t_AP;
-        matmat_time += average_time(t_AP, comm);
+        t_matmat = MPI_Wtime() - t_matmat;
+        matmat_time += average_time(t_matmat, comm);
     }
 
     if (!rank) printf("\ncase1\ncase2\ncase3\n");
