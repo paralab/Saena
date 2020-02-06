@@ -446,9 +446,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         reorder_split(B, B1, B2);
 
-//        t2 = MPI_Wtime() - t2;
-//        case2 += t2;
-
 #ifdef __DEBUG1__
 /*
         CSCMat_mm B1, B2;
@@ -683,11 +680,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         if (rank == verbose_rank && verbose_matmat_recursive) printf("fast_mm: case 2: recursive 1 \n");
 #endif
 
-        // Split Fact 1:
-        // The last element of A1.col_scan is shared with the first element of A2.col_scan, and it may gets changed
-        // during the recursive calls from the A1.col_scan side. So, save that and use it for the starting
-        // point of A2.col_scan inside the recursive calls.
-
         if (A1.nnz != 0 && B1.nnz != 0) {
             fast_mm(A1, B1, C, comm);
         }
@@ -701,7 +693,9 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             fast_mm(A2, B2, C, comm);
         }
 
-//        t2 = MPI_Wtime();
+        // =======================================================
+        // Finalize Case2
+        // =======================================================
 
         // return B to its original order.
         if(B2.nnz != 0) {
@@ -1067,6 +1061,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             fast_mm(A2, B2, C, comm);
         }
 
+        // =======================================================
+        // Finalize Case3
+        // =======================================================
+
         // return A to its original order.
         if(A2.nnz != 0){
             reorder_back_split(A, A1, A2);
@@ -1299,7 +1297,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
 #ifdef __DEBUG1__
     if(rank==0){
-        printf("rank %d: case1 = %u, case2 = %u, case3 = %u\n", rank, case1_iter, case2_iter, case3_iter);
+        printf("rank %d: case1 = %u, case2 = %u, case3 = %u\n\n", rank, case1_iter, case2_iter, case3_iter);
     }
     case1_iter = 0;
     case2_iter = 0;
