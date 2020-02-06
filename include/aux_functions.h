@@ -129,7 +129,7 @@ double print_time(double t_start, double t_end, std::string function_name, MPI_C
 
 double print_time(double t_diff, std::string function_name, MPI_Comm comm);
 
-double print_time_ave(double t_diff, std::string function_name, MPI_Comm comm, bool print_time = false);
+double print_time_ave(double t_diff, std::string function_name, MPI_Comm comm, bool print_time = false, bool print_name = true);
 
 double print_time_ave_consecutive(double t_diff, MPI_Comm comm);
 

@@ -682,13 +682,12 @@ int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, boo
 }
 
 
-int saena::amg::matmat_ave(saena::matrix *A, saena::matrix *B, double &matmat_time){
+int saena::amg::matmat_ave(saena::matrix *A, saena::matrix *B, double &matmat_time, int &matmat_iter){
 
-    m_pImpl->matmat_ave(A->get_internal_matrix(), B->get_internal_matrix(), matmat_time);
+    m_pImpl->matmat_ave(A->get_internal_matrix(), B->get_internal_matrix(), matmat_time, matmat_iter);
 
     return 0;
 }
-
 
 
 int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local){

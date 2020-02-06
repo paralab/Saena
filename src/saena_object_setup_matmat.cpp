@@ -17,7 +17,7 @@
 
 const double ALMOST_ZERO = 1e-16;
 
-double case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
+double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
 
 // from an MKL example
 /* To avoid constantly repeating the part of code that checks inbound SparseBLAS functions' status,
@@ -191,7 +191,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         ++case1_iter;
 #endif
 
-//        double t1 = MPI_Wtime();
+        double t1 = MPI_Wtime();
 
         sparse_matrix_t Amkl = nullptr;
 //        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A.row_sz + A.row_offset, A.col_sz, (int*)A.col_scan, (int*)(A.col_scan+1), (int*)Ar, Av);
@@ -320,12 +320,18 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         if( mkl_sparse_destroy( Bmkl ) != SPARSE_STATUS_SUCCESS)
         { printf(" Error after MKL_SPARSE_DESTROY, csrB \n");fflush(nullptr); }
 
+        t1 = MPI_Wtime() - t1;
+        case1 += t1;
+
         return;
 #endif
 
         mkl_sparse_destroy(Cmkl);
         mkl_sparse_destroy(Bmkl);
         mkl_sparse_destroy(Amkl);
+
+        t1 = MPI_Wtime() - t1;
+        case1 += t1;
 
 //        MPI_Barrier(comm);
 //        if(rank==1) printf("rank %d: DONE\n", rank); fflush(nullptr);
@@ -440,8 +446,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         reorder_split(B, B1, B2);
 
-        t2 = MPI_Wtime() - t2;
-        case2 += t2;
+//        t2 = MPI_Wtime() - t2;
+//        case2 += t2;
 
 #ifdef __DEBUG1__
 /*
@@ -695,7 +701,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             fast_mm(A2, B2, C, comm);
         }
 
-        t2 = MPI_Wtime();
+//        t2 = MPI_Wtime();
 
         // return B to its original order.
         if(B2.nnz != 0) {
@@ -867,8 +873,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         reorder_split(A, A1, A2);
 
-        t3 = MPI_Wtime() - t3;
-        case3 += t3;
+//        t3 = MPI_Wtime() - t3;
+//        case3 += t3;
 
 #ifdef __DEBUG1__
 /*
@@ -1060,8 +1066,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         if (A2.nnz != 0 && B2.nnz != 0) {
             fast_mm(A2, B2, C, comm);
         }
-
-        t3 = MPI_Wtime();
 
         // return A to its original order.
         if(A2.nnz != 0){
@@ -1295,7 +1299,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
 #ifdef __DEBUG1__
     if(rank==0){
-        printf("\nrank %d: case1 = %u, case2 = %u, case3 = %u\n", rank, case1_iter, case2_iter, case3_iter);
+        printf("rank %d: case1 = %u, case2 = %u, case3 = %u\n", rank, case1_iter, case2_iter, case3_iter);
     }
     case1_iter = 0;
     case2_iter = 0;
@@ -1388,7 +1392,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
     return 0;
 }
 
-int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time){
+int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time, int &matmat_iter){
     // This version only works on symmetric matrices, since local transpose of B is being used.
     // this version is only for experiments.
     // B1 should be symmetric. Because we need its transpose. Use its row indices as column indices and vice versa.
@@ -1590,8 +1594,27 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // perform the multiplication
     // =======================================
 
-    saena_matrix C(A->comm);
-    matmat(Acsc, Bcsc, C, send_size_max, matmat_time);
+    case1 = 0, case2 = 0, case3 = 0;
+    double t_AP;
+    for (int i = 0; i < matmat_iter; ++i) {
+        saena_matrix C(A->comm);
+
+        MPI_Barrier(comm);
+        t_AP = MPI_Wtime();
+
+        matmat(Acsc, Bcsc, C, send_size_max);
+
+        t_AP = MPI_Wtime() - t_AP;
+        matmat_time += average_time(t_AP, comm);
+    }
+
+    if (!rank) printf("\ncase1\ncase2\ncase3\n");
+    print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
+    print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
+    print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
+
+//    saena_matrix C(A->comm);
+//    matmat(Acsc, Bcsc, C, send_size_max, matmat_time);
 
 #ifdef __DEBUG1__
 //    if(rank==0){
@@ -1632,6 +1655,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     return 0;
 }
 
+//int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time)
+/*
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time){
 
     MPI_Comm comm = C.comm;
@@ -1641,7 +1666,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    case0 = 0, case11 = 0, case12 = 0, case2 = 0, case3 = 0;
+    case1 = 0, case2 = 0, case3 = 0;
 
     MPI_Barrier(comm);
     double t_AP = MPI_Wtime();
@@ -1651,24 +1676,14 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     t_AP = MPI_Wtime() - t_AP;
     matmat_time += average_time(t_AP, comm);
 
-//    if (!rank) printf("\n");
-//    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
-//    print_time_ave(case0,  "case0", comm, true);
-//    print_time_ave(case11, "case11", comm, true);
-//    print_time_ave(case12, "case12", comm, true);
-//    print_time_ave(case2,  "case2", comm, true);
-//    print_time_ave(case3,  "case3", comm, true);
-
-//    print_time(case12, "case12", comm);
-
-//    if(rank == 1){
-//        printf("\ncase0  = %f\n", case0);
-//        printf("case11 = %f\n", case11);
-//        printf("case12 = %f\n", case12);
-//    }
+    if (!rank) printf("\ncase1\ncase2\ncase3\n\n");
+    print_time_ave(case1, "case1", comm, true, false);
+    print_time_ave(case2, "case2", comm, true, false);
+    print_time_ave(case3, "case3", comm, true, false);
 
     return 0;
 }
+*/
 
 int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max){
 

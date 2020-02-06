@@ -142,18 +142,10 @@ int main(int argc, char* argv[]){
 //        saena::matrix C(comm);
 
         // warm-up
-        for (int i = 0; i < matmat_iter_warmup; i++) {
-            solver.matmat_ave(&A, &B, matmat_time);
-        }
-
-//        MPI_Barrier(comm);
-//        if (!rank) printf("\n\n");
-        MPI_Barrier(comm);
+        solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
 
         matmat_time = 0;
-        for (int i = 0; i < matmat_iter; i++) {
-            solver.matmat_ave(&A, &B, matmat_time);
-        }
+        solver.matmat_ave(&A, &B, matmat_time, matmat_iter);
 
         // matmat_ave computes the average matmat time on processor 0.
         // so it is fine to just print the time on proc 0.
