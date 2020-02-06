@@ -1617,6 +1617,9 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
     case1 = 0, case2 = 0, case3 = 0;
     for (int i = 0; i < matmat_iter; ++i) {
+        case1_iter = 0;
+        case2_iter = 0;
+        case3_iter = 0;
         saena_matrix C(A->comm);
 
         MPI_Barrier(comm);
@@ -1632,6 +1635,14 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
     print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
     print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
+
+    case1_iter_ave = average_iter(case1_iter, comm);
+    case2_iter_ave = average_iter(case2_iter, comm);
+    case3_iter_ave = average_iter(case3_iter, comm);
+
+    if(rank==0){
+        printf("\naverage: case1 = %.2f, case2 = %.2f, case3 = %.2f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+    }
 
 //    saena_matrix C(A->comm);
 //    matmat(Acsc, Bcsc, C, send_size_max, matmat_time);
