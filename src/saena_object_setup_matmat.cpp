@@ -562,20 +562,14 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //               "A_size: (%u, %u, %u), B_size: (%u, %u) \n",
 //               A.nnz, A1.nnz, A2.nnz, B.nnz, B1.nnz, B2.nnz, A_row_size, A_col_size, A_col_size_half, A_col_size, B_col_size);
 
-            std::cout << "\nCase2:\n"
-                      << "A.row_sz: \t"       << A.row_sz      << "\tA1.row_sz: \t"     << A1.row_sz     << "\tA2.row_sz: \t"     << A2.row_sz
-                      << "\nA.row_offset: \t" << A.row_offset  << "\tA1.row_offset: \t" << A1.row_offset << "\tA2.row_offset: \t" << A2.row_offset
-                      << "\nA.col_sz: \t"     << A.col_sz      << "\tA1.col_sz: \t"     << A1.col_sz     << "\tA2.col_sz: \t"     << A2.col_sz
-                      << "\nA.col_offset: \t" << A.col_offset  << "\tA1.col_offset: \t" << A1.col_offset << "\tA2.col_offset: \t" << A2.col_offset
-                      << "\nA.nnz: \t\t"      << A.nnz         << "\tA1.nnz: \t"        << A1.nnz        << "\tA2.nnz: \t"        << A2.nnz << std::endl;
-
-            std::cout << "\nB.row_sz: \t"     << B.row_sz      << "\tB1.row_sz: \t"     << B1.row_sz     << "\tB2.row_sz: \t"     << B2.row_sz
-                      << "\nB.row_offset: \t" << B.row_offset  << "\tB1.row_offset: \t" << B1.row_offset << "\tB2.row_offset: \t" << B2.row_offset
-                      << "\nB.col_sz: \t"     << B.col_sz      << "\tB1.col_sz: \t"     << B1.col_sz     << "\tB2.col_sz: \t"     << B2.col_sz
-                      << "\nB.col_offset: \t" << B.col_offset  << "\tB1.col_offset: \t" << B1.col_offset << "\tB2.col_offset: \t" << B2.col_offset
-                      << "\nB.nnz: \t\t"      << B.nnz         << "\tB1.nnz: \t"        << B1.nnz        << "\tB2.nnz: \t"        << B2.nnz << std::endl;
-
             if (verbose_matmat_A) {
+//                std::cout << "\nCase2:\n"
+//                << "A.row_sz: \t"       << A.row_sz      << "\tA1.row_sz: \t"     << A1.row_sz     << "\tA2.row_sz: \t"     << A2.row_sz
+//                << "\nA.row_offset: \t" << A.row_offset  << "\tA1.row_offset: \t" << A1.row_offset << "\tA2.row_offset: \t" << A2.row_offset
+//                << "\nA.col_sz: \t"     << A.col_sz      << "\tA1.col_sz: \t"     << A1.col_sz     << "\tA2.col_sz: \t"     << A2.col_sz
+//                << "\nA.col_offset: \t" << A.col_offset  << "\tA1.col_offset: \t" << A1.col_offset << "\tA2.col_offset: \t" << A2.col_offset
+//                << "\nA.nnz: \t\t"      << A.nnz         << "\tA1.nnz: \t"        << A1.nnz        << "\tA2.nnz: \t"        << A2.nnz << std::endl;
+
 //                std::cout << "\nranges of A:" << std::endl;
 //                for (nnz_t i = 0; i < A_col_size; i++) {
 //                    std::cout << i << "\t" << Ac[i] << "\t" << Ac[i + 1] << std::endl;
@@ -613,6 +607,12 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             }
 
             if (verbose_matmat_B) {
+//                std::cout << "\nB.row_sz: \t"     << B.row_sz      << "\tB1.row_sz: \t"     << B1.row_sz     << "\tB2.row_sz: \t"     << B2.row_sz
+//                          << "\nB.row_offset: \t" << B.row_offset  << "\tB1.row_offset: \t" << B1.row_offset << "\tB2.row_offset: \t" << B2.row_offset
+//                          << "\nB.col_sz: \t"     << B.col_sz      << "\tB1.col_sz: \t"     << B1.col_sz     << "\tB2.col_sz: \t"     << B2.col_sz
+//                          << "\nB.col_offset: \t" << B.col_offset  << "\tB1.col_offset: \t" << B1.col_offset << "\tB2.col_offset: \t" << B2.col_offset
+//                          << "\nB.nnz: \t\t"      << B.nnz         << "\tB1.nnz: \t"        << B1.nnz        << "\tB2.nnz: \t"        << B2.nnz << std::endl;
+
 //                std::cout << "\nranges of B, B1, B2::" << std::endl;
 //                for (nnz_t i = 0; i < B_col_size; i++) {
 //                    std::cout << i << "\t" << Bc[i] << "\t" << Bc[i + 1]
