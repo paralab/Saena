@@ -1783,6 +1783,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         auto *statuses = new MPI_Status[2];
 
         CSCMat_mm S;
+        nnz_t S_nnz;
 
         // todo: the last communication means each proc receives a copy of its already owned B, which is redundant,
         //   so the communication should be avoided but the multiplication should be done. consider this:
@@ -1839,14 +1840,10 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
                 owner         = k%nprocs;
                 mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner];
-                nnz_t S_nnz = mat_send_cscan[mat_current_M] - mat_send_cscan[0];
+                S_nnz = mat_send_cscan[mat_current_M] - mat_send_cscan[0];
                 S.set_params(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner], S_nnz, mat_send_r, mat_send_v, mat_send_cscan);
 
                 fast_mm(A, S, AB_temp, comm);
-
-//                fast_mm(&Acsc.row[0],   &Acsc.val[0],   &Acsc.col_scan[0],
-//                        &mat_send_r[0], &mat_send_v[0], &mat_send_cscan[0],
-//                        &A_info, &B_info, AB_temp, comm);
 
             }
 
