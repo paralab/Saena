@@ -87,15 +87,9 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if(!rank) std::cout << __func__ << std::endl;
-
-//    nnz_t A_nnz = A.col_scan[A.col_sz] - A.col_scan[0];
-//    nnz_t B.nnz = B.col_scan[B.col_sz] - B.col_scan[0];
-
-    index_t A_col_size_half = A.col_sz/2;
-
 #ifdef __DEBUG1__
     int verbose_rank = 1;
+//    if(rank==verbose_rank) std::cout << __func__ << std::endl;
     if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
     {
         // assert A entries
@@ -345,6 +339,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     // ==============================================================
     // Case2
     // ==============================================================
+
+    index_t A_col_size_half = A.col_sz/2;
 
     // if A_col_size_half == 0, it means A_col_size = 1. In this case it goes to case3.
     if (A.row_sz <= A.col_sz && A_col_size_half != 0){//DOLLAR("case2")
