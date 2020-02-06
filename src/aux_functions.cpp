@@ -160,10 +160,19 @@ double print_time_ave_consecutive(double t_dif, MPI_Comm comm){
     MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
     average /= nprocs;
 
-//    if (rank==0)
-//        std::cout << average << "+";
+    if (rank==0)
+        std::cout << average << "+";
 
     return average;
+}
+
+double average_time(double t_dif, MPI_Comm comm){
+    int nprocs;
+    MPI_Comm_size(comm, &nprocs);
+
+    double average;
+    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    return average/nprocs;
 }
 
 

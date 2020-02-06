@@ -133,6 +133,8 @@ double print_time_ave(double t_diff, std::string function_name, MPI_Comm comm, b
 
 double print_time_ave_consecutive(double t_diff, MPI_Comm comm);
 
+double average_time(double t_diff, MPI_Comm comm);
+
 template<class T>
 int print_vector(const std::vector<T> &v, const int ran, const std::string &name, MPI_Comm comm){
     // if ran >= 0 print the vector elements on proc with rank = ran

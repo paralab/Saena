@@ -1402,6 +1402,14 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // Convert A to CSC
     // =======================================
 
+#ifdef __DEBUG1__
+    for(nnz_t i = 0; i < A->nnz_l; i++){
+        assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
+        assert( (A->entry[i].col >= 0) && (A->entry[i].col < A->Mbig) );
+//        assert( fabs(A->entry[i].val) > 1e-14 );
+    }
+#endif
+
 //    auto Arv = new vecEntry[A->nnz_l]; // row and val
 //    auto Ac  = new index_t[A->Mbig+1]; // col_idx
 
@@ -1422,6 +1430,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     index_t *Ac_tmp = &Acsc.col_scan[1];
     for(nnz_t i = 0; i < Acsc.nnz; i++){
         Acsc.row[i] = A->entry[i].row - A->split[rank]; // make the rows start from 0. when done with multiply, add this to the result.
+//        Acsc.row[i] = A->entry[i].row;
         Acsc.val[i] = A->entry[i].val;
         Ac_tmp[A->entry[i].col]++;
     }
@@ -1434,6 +1443,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     Acsc.nnz_list = A->nnz_list;
 
 #ifdef __DEBUG1__
+    assert(Acsc.col_scan[Acsc.col_sz] == Acsc.nnz);
+
 //    A->print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
 //    print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
@@ -1451,6 +1462,14 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // =======================================
     // Convert the local transpose of B to CSC
     // =======================================
+
+#ifdef __DEBUG1__
+    for(nnz_t i = 0; i < B->nnz_l; i++){
+        assert( (B->entry[i].row - B->split[rank] >= 0) && (B->entry[i].row - B->split[rank] < B->M) );
+        assert( (B->entry[i].col >= 0) && (B->entry[i].col < B->Mbig) );
+//        assert( fabs(B->entry[i].val - 0) > ALMOST_ZERO );
+    }
+#endif
 
     // make a copy of entries of B, then change their order to row-major
     std::vector<cooEntry> B_ent(B->entry);
@@ -1490,8 +1509,11 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     Bcsc.nnz_list = B->nnz_list;
 
 #ifdef __DEBUG1__
+    assert(Bcsc.col_scan[Bcsc.col_sz] == Bcsc.nnz);
+
 //    B->print_entry(0);
 //    printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
+//    printf("rank %d: B: nnz_max: %ld\tM_max: %d\n", rank, B->nnz_max, B->M_max);
 //    print_array(Bc, B->M+1, 0, "Bc", comm);
 //
 //    std::cout << "\nB: nnz: " << B->nnz_l << std::endl ;
@@ -1560,7 +1582,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //        std::cout << "mempool1 size = " << matmat_size_thre2 << std::endl;
 //        std::cout << "mempool2 size = " << 2 * A_row_size + 2 * Bcsc.col_sz << std::endl;
 //        std::cout << "mempool3 size = " << 2 * send_size_max << std::endl;
-//        std::cout << "B->nnz_max = " << B->nnz_max << "\t, B->M_max = " << B->M_max << std::endl;
+//        std::cout << "B->nnz_max = " << B->nnz_max << ", B->M_max = " << B->M_max << ", valbyidx = " << valbyidx << std::endl;
 //    }
 #endif
 
@@ -1570,6 +1592,15 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
     saena_matrix C(A->comm);
     matmat(Acsc, Bcsc, C, send_size_max, matmat_time);
+
+#ifdef __DEBUG1__
+//    if(rank==0){
+//        printf("\nrank %d: case1 = %u, case2 = %u, case3 = %u\n", rank, case1_iter, case2_iter, case3_iter);
+//    }
+//    case1_iter = 0;
+//    case2_iter = 0;
+//    case3_iter = 0;
+#endif
 
     // =======================================
     // finalize
@@ -1618,7 +1649,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     matmat(Acsc, Bcsc, C, send_size_max);
 
     t_AP = MPI_Wtime() - t_AP;
-    matmat_time += print_time_ave_consecutive(t_AP, comm);
+    matmat_time += average_time(t_AP, comm);
 
 //    if (!rank) printf("\n");
 //    if (!rank) printf("case0\ncase11\ncase12\ncase2\ncase3\n\n");
