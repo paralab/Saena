@@ -77,7 +77,8 @@ public:
     value_t *mempool5   = nullptr;
     nnz_t   loc_nnz_max = 0;
 
-    index_t case1_iter = 0, case2_iter = 0, case3_iter = 0;
+    index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
+    double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
 
 //    std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;

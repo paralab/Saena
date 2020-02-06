@@ -188,10 +188,11 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
             printf("fast_mm: case 1: start \n");
         }
-        ++case1_iter;
+//        ++case1_iter;
 #endif
 
         double t1 = MPI_Wtime();
+        ++case1_iter;
 
         sparse_matrix_t Amkl = nullptr;
 //        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A.row_sz + A.row_offset, A.col_sz, (int*)A.col_scan, (int*)(A.col_scan+1), (int*)Ar, Av);
@@ -348,13 +349,14 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     if (A.row_sz <= A.col_sz && A_col_size_half != 0){//DOLLAR("case2")
 //    if (case2_iter == 0){
 
-        double t2 = MPI_Wtime();
-
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) { printf("fast_mm: case 2: start \n"); }
-        ++case2_iter;
+//        ++case2_iter;
 #endif
 //        if (rank == verbose_rank) { printf("fast_mm: case 2: start \n"); }
+
+        double t2 = MPI_Wtime();
+        ++case2_iter;
 
         // =======================================================
         // split based on matrix size
@@ -732,13 +734,14 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
     { //DOLLAR("case3") // (A_row_size > A_col_size)
 
-        double t3 = MPI_Wtime();
-
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) printf("fast_mm: case 3: start \n");
-        ++case3_iter;
+//        ++case3_iter;
 #endif
 //        if (rank == verbose_rank) printf("fast_mm: case 3: start \n");
+
+        double t3 = MPI_Wtime();
+        ++case3_iter;
 
         // split based on matrix size
         // =======================================================
@@ -1302,13 +1305,21 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         matmat_assemble(A, B, C);
     }
 
-#ifdef __DEBUG1__
+    case1_iter_ave = average_iter(case1_iter, comm);
+    case2_iter_ave = average_iter(case2_iter, comm);
+    case3_iter_ave = average_iter(case3_iter, comm);
+
     if(rank==0){
-        printf("rank %d: case1 = %u, case2 = %u, case3 = %u\n\n", rank, case1_iter, case2_iter, case3_iter);
+        printf("average: case1 = %.2f, case2 = %.2f, case3 = %.2f\n\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
     }
-    case1_iter = 0;
-    case2_iter = 0;
-    case3_iter = 0;
+
+#ifdef __DEBUG1__
+//    if(rank==0){
+//        printf("rank %d: case1 = %u, case2 = %u, case3 = %u\n\n", rank, case1_iter, case2_iter, case3_iter);
+//    }
+//    case1_iter = 0;
+//    case2_iter = 0;
+//    case3_iter = 0;
 #endif
 
     // =======================================

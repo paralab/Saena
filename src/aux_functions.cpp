@@ -178,6 +178,16 @@ double average_time(double t_dif, MPI_Comm comm){
 }
 
 
+double average_iter(index_t iter, MPI_Comm comm){
+    int nprocs;
+    MPI_Comm_size(comm, &nprocs);
+
+    index_t average;
+    MPI_Reduce(&iter, &average, 1, MPI_UNSIGNED, MPI_SUM, 0, comm);
+    return static_cast<double>(average)/nprocs;
+}
+
+
 //template <class T>
 int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {
 
