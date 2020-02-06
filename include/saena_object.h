@@ -61,17 +61,17 @@ public:
     // *****************
 
     std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const        index_t matmat_size_thre1 = 10000; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split.
-//    static const index_t matmat_size_thre2 = 20000000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
+    const        index_t matmat_size_thre1 = 100000; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split.
+    static const index_t matmat_size_thre2 = 100000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold       = 50; //default 50
     const index_t        matmat_nnz_thre   = 200; //default 200
 
-//    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
+    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
 
     // memory pool used in compute_coarsen
-//    value_t *mempool1 = nullptr;
-//    index_t *mempool2 = nullptr;
+    value_t *mempool1   = nullptr;
+    index_t *mempool2   = nullptr;
     index_t *mempool3   = nullptr;
     index_t *mempool4   = nullptr;
     value_t *mempool5   = nullptr;
