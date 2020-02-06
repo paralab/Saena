@@ -893,8 +893,8 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     // ========================================================
     nnz_t offset = A1.col_scan[0];
 
-    index_t *A1r = &A.r[0];
-    value_t *A1v = &A.v[0];
+    index_t *A1r = &A.r[offset];
+    value_t *A1v = &A.v[offset];
 //    index_t *A1r = &mempool4[0];
 //    value_t *A1v = &mempool5[0];
     index_t *A2r = &mempool4[loc_nnz_max];
