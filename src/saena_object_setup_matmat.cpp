@@ -345,7 +345,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     index_t A_col_size_half = A.col_sz/2;
 
     // if A_col_size_half == 0, it means A_col_size = 1. In this case it goes to case3.
-    if ( (16 *A.row_sz <= A.col_sz) && (A_col_size_half != 0) ){//DOLLAR("case2")
+    if ( (8 *A.row_sz <= A.col_sz) && (A_col_size_half != 0) ){//DOLLAR("case2")
 //    if (case2_iter == 0){
 
 #ifdef __DEBUG1__
