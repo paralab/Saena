@@ -129,20 +129,20 @@ int main(int argc, char* argv[]){
             printf("\nA.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n", A.get_internal_matrix()->Mbig,
                    A.get_internal_matrix()->nnz_g,
                    B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
-            printf("threshold1 = %u\n", solver.get_object()->matmat_size_thre1);
+            printf("threshold1 = %lu\n", solver.get_object()->matmat_size_thre1);
         }
 
 // *************************** matrix-matrix product ****************************
 
         double matmat_time = 0;
-        int matmat_iter_warmup = 3;
+        int matmat_iter_warmup = 0;
         int matmat_iter = 3;
 
 //        saena::amg solver;
 //        saena::matrix C(comm);
 
         // warm-up
-        solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
+//        solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
 
         matmat_time = 0;
         solver.matmat_ave(&A, &B, matmat_time, matmat_iter);

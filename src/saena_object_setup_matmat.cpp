@@ -88,9 +88,11 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     MPI_Comm_rank(comm, &rank);
 
 #ifdef __DEBUG1__
-    int verbose_rank = 1;
+    int verbose_rank = 0;
 //    if(rank==verbose_rank) std::cout << __func__ << std::endl;
     if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
+
+    // assert and debug
     {
         // assert A entries
         index_t col_idx;
