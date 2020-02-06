@@ -920,7 +920,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
                 ++A1.nnz;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half" << std::endl;
             }else{
-                A2r.emplace_back(A.r[i]);
+                A2r.emplace_back(A.r[i] - A1.row_sz);
                 A2v.emplace_back(A.v[i]);
 //                A2r[A2.nnz] = A.r[i] - A1.row_sz;
 //                A2r[A2.nnz] = Ar[i];
