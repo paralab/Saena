@@ -893,9 +893,11 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     // ========================================================
     nnz_t offset = A1.col_scan[0];
 
-    index_t *A1r = &mempool4[0];
+    index_t *A1r = &A.r[0];
+    value_t *A1v = &A.v[0];
+//    index_t *A1r = &mempool4[0];
+//    value_t *A1v = &mempool5[0];
     index_t *A2r = &mempool4[loc_nnz_max];
-    value_t *A1v = &mempool5[0];
     value_t *A2v = &mempool5[loc_nnz_max];
 
     // ========================================================
@@ -969,8 +971,8 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     }
 
     // First put A1 at the beginning of A, then put A2 at the end A.
-    memcpy(&A.r[offset],          &A1r[0], A1.nnz * sizeof(index_t));
-    memcpy(&A.v[offset],          &A1v[0], A1.nnz * sizeof(value_t));
+//    memcpy(&A.r[offset],          &A1r[0], A1.nnz * sizeof(index_t));
+//    memcpy(&A.v[offset],          &A1v[0], A1.nnz * sizeof(value_t));
 
     memcpy(&A.r[offset + A1.nnz], &A2r[0], A2.nnz * sizeof(index_t));
     memcpy(&A.v[offset + A1.nnz], &A2v[0], A2.nnz * sizeof(value_t));
