@@ -894,13 +894,13 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     // ========================================================
     nnz_t offset = A1.col_scan[0];
 
-    std::vector<index_t> A1r, A2r;
-    std::vector<value_t> A1v, A2v;
+//    std::vector<index_t> A1r, A2r;
+//    std::vector<value_t> A1v, A2v;
 
-//    index_t *A1r = &mempool4[0];
-//    index_t *A2r = &mempool4[loc_nnz_max];
-//    value_t *A1v = &mempool5[0];
-//    value_t *A2v = &mempool5[loc_nnz_max];
+    index_t *A1r = &mempool4[0];
+    index_t *A2r = &mempool4[loc_nnz_max];
+    value_t *A1v = &mempool5[0];
+    value_t *A2v = &mempool5[loc_nnz_max];
 
     std::fill(&A2.col_scan[0], &A2.col_scan[A.col_sz+1], 0);
     auto Ac2_p = &A2.col_scan[1]; // to do scan on it at the end.
@@ -913,18 +913,18 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
         for(nnz_t i = A.col_scan[j]; i < A.col_scan[j+1]; ++i){
             if(A.r[i] < A1.row_sz){
 //            if(A.r[i] < A1.row_sz + A1.row_offset){
-                A1r.emplace_back(A.r[i]);
-                A1v.emplace_back(A.v[i]);
-//                A1r[A1.nnz] = A.r[i];
-//                A1v[A1.nnz] = A.v[i];
+//                A1r.emplace_back(A.r[i]);
+//                A1v.emplace_back(A.v[i]);
+                A1r[A1.nnz] = A.r[i];
+                A1v[A1.nnz] = A.v[i];
                 ++A1.nnz;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half" << std::endl;
             }else{
-                A2r.emplace_back(A.r[i] - A1.row_sz);
-                A2v.emplace_back(A.v[i]);
-//                A2r[A2.nnz] = A.r[i] - A1.row_sz;
+//                A2r.emplace_back(A.r[i] - A1.row_sz);
+//                A2v.emplace_back(A.v[i]);
+                A2r[A2.nnz] = A.r[i] - A1.row_sz;
 //                A2r[A2.nnz] = Ar[i];
-//                A2v[A2.nnz] = A.v[i];
+                A2v[A2.nnz] = A.v[i];
                 ++A2.nnz;
                 Ac2_p[j]++;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half" << std::endl;
@@ -938,18 +938,18 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     }
 
     // if A2 does not have any nonzero, then just return.
-//    if(A2.col_scan[A.col_sz] == A2.col_scan[0]){
-//        return 0;
-//    }
+    if(A2.col_scan[A.col_sz] == A2.col_scan[0]){
+        return 0;
+    }
 
     // First put A1 at the beginning of A, then put A2 at the end A.
-//    memcpy(&A.r[offset],          &A1r[0], A1.nnz * sizeof(index_t));
-//    memcpy(&A.v[offset],          &A1v[0], A1.nnz * sizeof(value_t));
+    memcpy(&A.r[offset],          &A1r[0], A1.nnz * sizeof(index_t));
+    memcpy(&A.v[offset],          &A1v[0], A1.nnz * sizeof(value_t));
 //
-//    memcpy(&A.r[offset + A1.nnz], &A2r[0], A2.nnz * sizeof(index_t));
-//    memcpy(&A.v[offset + A1.nnz], &A2v[0], A2.nnz * sizeof(value_t));
+    memcpy(&A.r[offset + A1.nnz], &A2r[0], A2.nnz * sizeof(index_t));
+    memcpy(&A.v[offset + A1.nnz], &A2v[0], A2.nnz * sizeof(value_t));
 
-//#if 0
+#if 0
     // Equivalent to the previous part. Uses for loops instead of memcpy.
     nnz_t arr_idx = offset;
     for(nnz_t i = 0; i < A1r.size(); i++){
@@ -962,7 +962,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
         A.v[arr_idx] = A2v[i];
         arr_idx++;
     }
-//#endif
+#endif
 
 #ifdef __DEBUG1__
     {
@@ -981,7 +981,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
             }
         }
 
-    // assert A2
+        // assert A2
 //        std::cout << "\nA2: nnz: " << A2.col_scan[A.col_sz] - A2.col_scan[0] << std::endl;
         for (index_t j = 0; j < A.col_sz; j++) {
             for (index_t i = A2.col_scan[j] + A1.col_scan[A.col_sz]; i < A2.col_scan[j + 1] + A1.col_scan[A.col_sz]; i++) {
@@ -1038,21 +1038,21 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
     // ========================================================
     nnz_t offset = A1.col_scan[0];
 
-//    auto *Ar_temp = &mempool4[0];
-//    auto *Av_temp = &mempool5[0];
+    auto *Ar_temp = &mempool4[0];
+    auto *Av_temp = &mempool5[0];
 
-    auto *Ar_temp = new index_t[A.nnz];
-    auto *Av_temp = new value_t[A.nnz];
+//    auto *Ar_temp = new index_t[A.nnz];
+//    auto *Av_temp = new value_t[A.nnz];
 
     memcpy(&Ar_temp[0], &A.r[offset], sizeof(index_t) * A.nnz);
     memcpy(&Av_temp[0], &A.v[offset], sizeof(value_t) * A.nnz);
 
+#ifdef __DEBUG1__
 //    for(index_t i = offset; i < offset + nnz; i++){
 //        Ar_temp_p[i] = Ar[i];
 //        Av_temp_p[i] = Av[i];
 //    }
 
-#ifdef __DEBUG1__
 //    print_array(A1.col_scan, A.col_sz+1, 0, "A1.col_scan", MPI_COMM_WORLD);
 //    print_array(A2.col_scan, A.col_sz+1, 0, "A2.col_scan", MPI_COMM_WORLD);
 
@@ -1157,9 +1157,6 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
 
     // ========================================================
 #endif
-
-    delete [] Ar_temp;
-    delete [] Av_temp;
 
     return 0;
 }
