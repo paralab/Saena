@@ -855,15 +855,14 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
     ++reorder_counter;
 
-//        std::cout << "\nA: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << "\tcol is not correct."
-//                  << " threshold: " << threshold << std::endl;
-        for (index_t j = 0; j < A.col_sz; j++) {
-            for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
-                assert( A.r[i] >= 0 );
-                assert( A.r[i] < A.row_sz );
-//                std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
-            }
+//    std::cout << "\nA: nnz: " << A.col_scan[A.col_sz] - A.col_scan[0] << std::endl;
+    for (index_t j = 0; j < A.col_sz; ++j) {
+        for (index_t i = A.col_scan[j]; i < A.col_scan[j + 1]; ++i) {
+            assert( A.r[i] >= 0 );
+            assert( A.r[i] < A.row_sz );
+//            std::cout << std::setprecision(4) << A.r[i] << "\t" << j+A.col_offset << "\t" << A.v[i] << std::endl;
         }
+    }
 
     if(rank == verbose_rank){
 //        std::cout << "\nstart of " << __func__ << std::endl;
@@ -894,42 +893,74 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     // ========================================================
     nnz_t offset = A1.col_scan[0];
 
-//    std::vector<index_t> A1r, A2r;
-//    std::vector<value_t> A1v, A2v;
-
     index_t *A1r = &mempool4[0];
     index_t *A2r = &mempool4[loc_nnz_max];
     value_t *A1v = &mempool5[0];
     value_t *A2v = &mempool5[loc_nnz_max];
 
-    std::fill(&A2.col_scan[0], &A2.col_scan[A.col_sz+1], 0);
+    // ========================================================
+    // allocate memory and initialize the second half's col_scan
+    // ========================================================
+
+    A2.col_scan = new index_t[A2.col_sz + 1];
+    A2.free_c   = true;
+    std::fill(&A2.col_scan[0], &A2.col_scan[A2.col_sz+1], 0);
     auto Ac2_p = &A2.col_scan[1]; // to do scan on it at the end.
+
+    // ========================================================
+    // form A1 and A2
+    // ========================================================
 
     //todo: in each column, entries are sorted row-wise. So, find the first entry such that A.r[i] >= threshold.
     // then add all the entries before i in that column in A1 and the rest in A2. Use memcpy.
 
     A1.nnz = 0, A2.nnz = 0;
-    for(index_t j = 0; j < A.col_sz; j++){
+    for(index_t j = 0; j < A.col_sz; ++j){
         for(nnz_t i = A.col_scan[j]; i < A.col_scan[j+1]; ++i){
             if(A.r[i] < A1.row_sz){
-//            if(A.r[i] < A1.row_sz + A1.row_offset){
-//                A1r.emplace_back(A.r[i]);
-//                A1v.emplace_back(A.v[i]);
                 A1r[A1.nnz] = A.r[i];
                 A1v[A1.nnz] = A.v[i];
                 ++A1.nnz;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half" << std::endl;
             }else{
-//                A2r.emplace_back(A.r[i] - A1.row_sz);
-//                A2v.emplace_back(A.v[i]);
                 A2r[A2.nnz] = A.r[i] - A1.row_sz;
-//                A2r[A2.nnz] = Ar[i];
                 A2v[A2.nnz] = A.v[i];
                 ++A2.nnz;
+                ++Ac2_p[j];
+//                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half" << std::endl;
+            }
+        }
+    }
+
+#ifdef __DEBUG1__
+#if 0
+    std::vector<index_t> A1r, A2r;
+    std::vector<value_t> A1v, A2v;
+
+    A1.nnz = 0, A2.nnz = 0;
+    for(index_t j = 0; j < A.col_sz; j++){
+        for(nnz_t i = A.col_scan[j]; i < A.col_scan[j+1]; ++i){
+            if(A.r[i] < A1.row_sz + A1.row_offset){
+                A1r.emplace_back(A.r[i]);
+                A1v.emplace_back(A.v[i]);
+//                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half" << std::endl;
+            }else{
+                A2r.emplace_back(A.r[i] - A1.row_sz);
+                A2v.emplace_back(A.v[i]);
                 Ac2_p[j]++;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half" << std::endl;
             }
         }
+    }
+#endif
+#endif
+
+    // if A2 does not have any nonzero, then free its memory and return.
+    if(A2.nnz == 0){
+        delete []A2.col_scan;
+        A2.free_c = false;
+//        A2.col_scan = nullptr;
+        return 0;
     }
 
     for(index_t i = 1; i <= A.col_sz; ++i){
@@ -937,17 +968,16 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
         A1.col_scan[i] -= A2.col_scan[i];   // subtract A2.col_scan from A1.col_scan to have the correct scan for A1
     }
 
-    // if A2 does not have any nonzero, then just return.
-    if(A2.col_scan[A.col_sz] == A2.col_scan[0]){
-        return 0;
-    }
-
     // First put A1 at the beginning of A, then put A2 at the end A.
     memcpy(&A.r[offset],          &A1r[0], A1.nnz * sizeof(index_t));
     memcpy(&A.v[offset],          &A1v[0], A1.nnz * sizeof(value_t));
-//
+
     memcpy(&A.r[offset + A1.nnz], &A2r[0], A2.nnz * sizeof(index_t));
     memcpy(&A.v[offset + A1.nnz], &A2v[0], A2.nnz * sizeof(value_t));
+
+    // set r and v for A2
+    A2.r = &A.r[A1.col_scan[A.col_sz]];
+    A2.v = &A.v[A1.col_scan[A.col_sz]];
 
 #if 0
     // Equivalent to the previous part. Uses for loops instead of memcpy.
@@ -1102,10 +1132,9 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
                 A.r[iter0 + i] = Ar_temp[iter2 + i] + A1.row_sz;
                 A.v[iter0 + i] = Av_temp[iter2 + i];
 //                if(rank==1) std::cout << Ar_temp[iter2 + i] << "\t" << j << "\t" << Av_temp[iter2 + i] << "\t" << partial_offset << std::endl;
-//                ++iter2;
             }
 
-//            memcpy(&Ar[iter0], &Ar_temp[iter2], sizeof(index_t) * nnz_col);
+//            memcpy(&Ar[iter0],  &Ar_temp[iter2], sizeof(index_t) * nnz_col);
 //            memcpy(&A.v[iter0], &Av_temp[iter2], sizeof(value_t) * nnz_col);
             iter2 += nnz_col;
             iter0 += nnz_col;
