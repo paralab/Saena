@@ -860,7 +860,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
         for (index_t j = 0; j < A.col_sz; j++) {
             for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
                 assert( A.r[i] >= 0 );
-//                assert( A.r[i] < A.row_sz );
+                assert( A.r[i] < A.row_sz );
 //                std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
             }
         }
@@ -911,8 +911,8 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     A1.nnz = 0, A2.nnz = 0;
     for(index_t j = 0; j < A.col_sz; j++){
         for(nnz_t i = A.col_scan[j]; i < A.col_scan[j+1]; ++i){
-//            if(A.r[i] < A1.row_sz){
-            if(A.r[i] < A1.row_sz + A1.row_offset){
+            if(A.r[i] < A1.row_sz){
+//            if(A.r[i] < A1.row_sz + A1.row_offset){
                 A1r.emplace_back(A.r[i]);
                 A1v.emplace_back(A.v[i]);
 //                A1r[A1.nnz] = A.r[i];
@@ -972,7 +972,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
         for (index_t j = 0; j < A.col_sz; j++) {
             for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
                 assert(A.r[i] >= 0);
-//                assert(A.r[i] < A1.row_sz);
+                assert(A.r[i] < A1.row_sz);
 //                std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
 //                std::cout << "(rank: " << rank << ", " << i << "): \t(" << A.r[i] << ", " << j << ")\t[(" << A.row_sz
 //                          << ", " << A.row_offset << ")(" << A.col_sz << ", " << A.col_offset << ")], A1r: "
@@ -986,7 +986,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
         for (index_t j = 0; j < A.col_sz; j++) {
             for (index_t i = A2.col_scan[j] + A1.col_scan[A.col_sz]; i < A2.col_scan[j + 1] + A1.col_scan[A.col_sz]; i++) {
                 assert(A.r[i] >= 0);
-//                assert(A.r[i] < A2.row_sz);
+                assert(A.r[i] < A2.row_sz);
 //                std::cout << std::setprecision(4) << A.r[i] + threshold << "\t" << j << "\t" << A.v[i] << std::endl;
             }
         }
@@ -1098,8 +1098,8 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
         if(nnz_col != 0){
 
             for(i = 0; i < nnz_col; ++i){
-                A.r[iter0 + i] = Ar_temp[iter2 + i];
-//                A.r[iter0 + i] = Ar_temp[iter2 + i] + A1.row_sz;
+//                A.r[iter0 + i] = Ar_temp[iter2 + i];
+                A.r[iter0 + i] = Ar_temp[iter2 + i] + A1.row_sz;
                 A.v[iter0 + i] = Av_temp[iter2 + i];
 //                if(rank==1) std::cout << Ar_temp[iter2 + i] << "\t" << j << "\t" << Av_temp[iter2 + i] << "\t" << partial_offset << std::endl;
 //                ++iter2;
