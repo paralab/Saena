@@ -1236,6 +1236,67 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     // Preallocate Memory
     // =======================================
 
+    nnz_t send_size_max;
+    matmat_memory(A, B, send_size_max);
+
+    // =======================================
+    // perform the multiplication
+    // =======================================
+
+    matmat(Acsc, Bcsc, *C, send_size_max);
+
+    if(assemble){
+        matmat_assemble(A, B, C);
+    }
+
+    case1_iter_ave = average_iter(case1_iter, comm);
+    case2_iter_ave = average_iter(case2_iter, comm);
+    case3_iter_ave = average_iter(case3_iter, comm);
+
+//    if(rank==0){
+//        printf("average: case1 = %.2f, case2 = %.2f, case3 = %.2f\n\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+//    }
+
+#ifdef __DEBUG1__
+//    if(rank==0){
+//        printf("rank %d: case1 = %u, case2 = %u, case3 = %u\n\n", rank, case1_iter, case2_iter, case3_iter);
+//    }
+//    case1_iter = 0;
+//    case2_iter = 0;
+//    case3_iter = 0;
+#endif
+
+    // =======================================
+    // finalize
+    // =======================================
+
+//    mat_send.clear();
+//    mat_send.shrink_to_fit();
+//    AB_temp.clear();
+//    AB_temp.shrink_to_fit();
+
+    delete []Acsc.row;
+    delete []Acsc.val;
+    delete []Acsc.col_scan;
+    delete []Bcsc.row;
+    delete []Bcsc.val;
+    delete []Bcsc.col_scan;
+
+//    delete []mempool1;
+//    delete []mempool2;
+    delete []mempool3;
+    delete []mempool4;
+    delete []mempool5;
+
+    return 0;
+}
+
+int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &send_size_max){
+
+    // =======================================
+    // Preallocate Memory
+    // =======================================
+
     // mempool1: used for the dense buffer
     // mempool2: usages: for A: 1- nnzPerRow_left and 2- orig_row_idx. for B: 3- B_new_col_idx and 4- orig_col_idx
     // mempool2 size: 2 * A_row_size + 2 * B_col_size
@@ -1258,7 +1319,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     int   valbyidx              = sizeof(value_t) / sizeof(index_t);
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
-    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
+          send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
     try{
         mempool3 = new index_t[2 * send_size_max];
@@ -1293,55 +1354,6 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //        std::cout << "B->nnz_max = " << B->nnz_max << ", B->M_max = " << B->M_max << ", valbyidx = " << valbyidx << std::endl;
 //    }
 #endif
-
-    // =======================================
-    // perform the multiplication
-    // =======================================
-
-    matmat(Acsc, Bcsc, *C, send_size_max);
-
-    if(assemble){
-        matmat_assemble(A, B, C);
-    }
-
-    case1_iter_ave = average_iter(case1_iter, comm);
-    case2_iter_ave = average_iter(case2_iter, comm);
-    case3_iter_ave = average_iter(case3_iter, comm);
-
-    if(rank==0){
-        printf("average: case1 = %.2f, case2 = %.2f, case3 = %.2f\n\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
-    }
-
-#ifdef __DEBUG1__
-//    if(rank==0){
-//        printf("rank %d: case1 = %u, case2 = %u, case3 = %u\n\n", rank, case1_iter, case2_iter, case3_iter);
-//    }
-//    case1_iter = 0;
-//    case2_iter = 0;
-//    case3_iter = 0;
-#endif
-
-    // =======================================
-    // finalize
-    // =======================================
-
-//    mat_send.clear();
-//    mat_send.shrink_to_fit();
-//    AB_temp.clear();
-//    AB_temp.shrink_to_fit();
-
-    delete []Acsc.row;
-    delete []Acsc.val;
-    delete []Acsc.col_scan;
-    delete []Bcsc.row;
-    delete []Bcsc.val;
-    delete []Bcsc.col_scan;
-
-//    delete []mempool1;
-//    delete []mempool2;
-    delete []mempool3;
-    delete []mempool4;
-    delete []mempool5;
 
     return 0;
 }
