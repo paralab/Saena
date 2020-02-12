@@ -27,12 +27,12 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 3){
+    if(argc != 2){
         if(!rank){
 //            std::cout << "This is how you can generate a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
 //            std::cout << "This is how you can generate a banded matrix: ./Saena <local size> <bandwidth>" << std::endl;
-            std::cout << "This is how you can generate a random symmetric matrix: ./Saena <local size> <density>" << std::endl;
-//            std::cout << "This is how you can read a matrix from a file: ./Saena <MatrixA>" << std::endl;
+//            std::cout << "This is how you can generate a random symmetric matrix: ./Saena <local size> <density>" << std::endl;
+            std::cout << "This is how you can read a matrix from a file: ./Saena <MatrixA>" << std::endl;
         }
         MPI_Finalize();
         return -1;
@@ -56,9 +56,11 @@ int main(int argc, char* argv[]){
 
 //    A.print(-1, "A");
 //    A.get_internal_matrix()->print_info(-1, "A");
+
+    saena::matrix B(A);
 */
     // *************************** option 2: random symmetric ****************************
-
+/*
     int M(std::stoi(argv[1]));
     float dens(std::stof(argv[2]));
 
@@ -75,13 +77,13 @@ int main(int argc, char* argv[]){
 
 //    B.print(-1, "B");
 //    B.get_internal_matrix()->print_info(-1, "B");
-
+*/
     // *************************** option 3: read from file ****************************
 
     char *Aname(argv[1]);
 
     {
-/*
+
         saena::matrix A(comm);
 //        A.read_file(Aname);
         A.read_file(Aname, "triangle");
@@ -89,7 +91,7 @@ int main(int argc, char* argv[]){
 //        A.assemble_no_scale();
 
         saena::matrix B(A);
-*/
+
         // ********** print matrix and time **********
 
         double t2 = MPI_Wtime();
@@ -116,7 +118,7 @@ int main(int argc, char* argv[]){
 // *************************** checking the correctness of matrix-matrix product ****************************
 
         {
-            saena::amg solver;
+//            saena::amg solver;
             saena::matrix C(comm);
             solver.matmat(&A, &B, &C, true);
 
