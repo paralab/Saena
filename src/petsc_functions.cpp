@@ -1,4 +1,5 @@
 #include <petsc_functions.h>
+#include <assert.h>
 
 
 PetscErrorCode ComputeMatrix(KSP ksp, Mat J, Mat jac, void *ctx)
@@ -613,6 +614,8 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
     petsc_saena_matrix(B, B2);
     petsc_saena_matrix(AB, AB2);
 
+//    MatView(A2,PETSC_VIEWER_STDOUT_WORLD);
+
 //    MPI_Barrier(comm);
 //    double t1 = MPI_Wtime();
     MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &C);
@@ -623,6 +626,12 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
 //    petsc_viewer(C);
 
     // ====================================
+    // print the difference between the two result matrices
+    // ====================================
+
+    petsc_mat_diff(C, AB2, AB);
+
+    // ====================================
     // compute the norm of the difference
     // ====================================
 
@@ -630,7 +639,7 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
 
     double norm_frob;
     MatNorm(C, NORM_FROBENIUS, &norm_frob);
-    if(rank==0) printf("norm_frobenius(AB_PETSc - AB_Saena) = %.16f\n", norm_frob);
+    if(rank==0) printf("norm_frobenius(AB_PETSc - AB_Saena) = %.16f\n\n", norm_frob);
 
     AB->scale_matrix();
 
@@ -639,5 +648,119 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
     MatDestroy(&AB2);
     MatDestroy(&C);
     PetscFinalize();
+    return 0;
+}
+
+
+int petsc_mat_diff(Mat &A, Mat &B, saena_matrix *B_saena){
+//    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+
+    MPI_Comm comm = B_saena->comm;
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    PetscErrorCode ierr;
+    PetscInt       i,j,nrsub,ncsub,*rsub,*csub,mystart,myend;
+    PetscScalar    *vals;
+
+//    MatView(A2,PETSC_VIEWER_STDOUT_WORLD);
+//    petsc_viewer(AB2);
+//    petsc_viewer(C);
+
+//    ierr = MatView(A,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+
+    // ====================================
+    // Setup the matrix computed with PETSc
+    // ====================================
+
+    ierr  = MatGetOwnershipRange(A,&mystart,&myend);CHKERRQ(ierr);
+    nrsub = myend - mystart;
+    ncsub = B_saena->Mbig;         //todo : fix ncsub
+//    if(rank == 1) printf("myend = %d, mystart = %d, nrsub = %d, ncsub = %d\n", mystart, myend, nrsub, ncsub);
+
+    ierr  = PetscMalloc1(nrsub*ncsub,&vals);CHKERRQ(ierr);
+    ierr  = PetscMalloc1(nrsub,&rsub);CHKERRQ(ierr);
+    ierr  = PetscMalloc1(ncsub,&csub);CHKERRQ(ierr);
+
+    for (i = 0; i < nrsub; ++i){
+        rsub[i] = i + mystart;
+    }
+
+    for (i = 0; i < ncsub; ++i){
+        csub[i] = i;
+    }
+
+    ierr = MatGetValues(A,nrsub,rsub,ncsub,csub,vals);CHKERRQ(ierr);
+
+//    ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"processor number %d: mystart=%D, myend=%D\n",rank,mystart,myend);CHKERRQ(ierr);
+//    for (i=0; i<nrsub; i++) {
+//        for (j=0; j<ncsub; j++) {
+//            if (PetscImaginaryPart(vals[i*ncsub+j]) != 0.0) {
+//                ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  C[%D, %D] = %g + %g i\n",rsub[i],csub[j],(double)PetscRealPart(vals[i*ncsub+j]),(double)PetscImaginaryPart(vals[i*ncsub+j]));CHKERRQ(ierr);
+//            } else {
+//                ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  C[%D, %D] = %g\n",rsub[i],csub[j],(double)PetscRealPart(vals[i*ncsub+j]));CHKERRQ(ierr);
+//            }
+//        }
+//    }
+
+    // ====================================
+    // Setup the matrix computed with Saena
+    // ====================================
+
+    PetscInt    nrsub2,ncsub2,*rsub2,*csub2;
+    PetscScalar *vals2;
+
+    ierr  = MatGetOwnershipRange(A,&mystart,&myend);CHKERRQ(ierr);
+    nrsub2 = myend - mystart;
+    ncsub2 = B_saena->Mbig;
+//    if(rank == 1) printf("myend = %d, mystart = %d, nrsub = %d, ncsub = %d\n", mystart, myend, nrsub, ncsub);
+
+    assert( (nrsub == nrsub2) && (ncsub == ncsub2));
+
+    ierr  = PetscMalloc1(nrsub2*ncsub2,&vals2);CHKERRQ(ierr);
+    ierr  = PetscMalloc1(nrsub2,&rsub2);CHKERRQ(ierr);
+    ierr  = PetscMalloc1(ncsub2,&csub2);CHKERRQ(ierr);
+
+    for (i = 0; i < nrsub2; ++i){
+        rsub2[i] = i + mystart;
+    }
+
+    for (i = 0; i < ncsub2; ++i){
+        csub2[i] = i;
+    }
+
+    ierr = MatGetValues(A,nrsub2,rsub2,ncsub2,csub2,vals2);CHKERRQ(ierr);
+
+//    ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"processor number %d: mystart=%D, myend=%D\n",rank,mystart,myend);CHKERRQ(ierr);
+//    for (i=0; i<nrsub2; i++) {
+//        for (j=0; j<ncsub2; j++) {
+//            if (PetscImaginaryPart(vals[i*ncsub2+j]) != 0.0) {
+//                ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  C[%D, %D] = %g + %g i\n",rsub2[i],csub2[j],(double)PetscRealPart(vals2[i*ncsub2+j]),(double)PetscImaginaryPart(vals2[i*ncsub2+j]));CHKERRQ(ierr);
+//            } else {
+//                ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  C[%D, %D] = %g\n",rsub2[i],csub2[j],(double)PetscRealPart(vals2[i*ncsub2+j]));CHKERRQ(ierr);
+//            }
+//        }
+//    }
+
+//    for (i=0; i<nrsub2; i++) {
+//        for (j=0; j<ncsub2; j++) {
+//            if((double) PetscRealPart(vals[i * ncsub + j]) - (double) PetscRealPart(vals2[i * ncsub2 + j]) < 1e-15) {
+//                PetscSynchronizedPrintf(PETSC_COMM_WORLD, "  C[%D, %D] = (%g, %g)\n",
+//                        rsub[i], csub[j], (double) PetscRealPart(vals[i * ncsub + j]),
+//                        rsub2[i], csub2[j], (double) PetscRealPart(vals2[i * ncsub2 + j]));
+//            }
+//        }
+//    }
+
+    ierr = PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);CHKERRQ(ierr);
+    ierr = PetscFree(rsub);CHKERRQ(ierr);
+    ierr = PetscFree(csub);CHKERRQ(ierr);
+    ierr = PetscFree(vals);CHKERRQ(ierr);
+
+    ierr = PetscFree(rsub2);CHKERRQ(ierr);
+    ierr = PetscFree(csub2);CHKERRQ(ierr);
+    ierr = PetscFree(vals2);CHKERRQ(ierr);
+
+//    PetscFinalize();
     return 0;
 }
