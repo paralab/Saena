@@ -28,11 +28,27 @@ typedef double        value_t;
 
 #define ITER_LAZY 20        // number of update steps for lazy-update
 
+const double ALMOST_ZERO = 1e-16;
+
 class strength_matrix;
 class saena_matrix;
 class prolong_matrix;
 class restrict_matrix;
 class Grid;
+
+
+#ifndef NDEBUG
+#   define ASSERT(condition, message) \
+    do { \
+        if (! (condition)) { \
+            std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
+                      << " line " << __LINE__ << ": " << message << std::endl; \
+            std::terminate(); \
+        } \
+    } while (false)
+#else
+#   define ASSERT(condition, message) do { } while (false)
+#endif
 
 
 class saena_object {
@@ -61,7 +77,7 @@ public:
     // *****************
 
     std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const unsigned long matmat_size_thre1  = 2000000000; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split.
+    const unsigned long matmat_size_thre1  = 100000000; // if(A_row * B_col < matmat_size_thre1) perform multiplication, otherwise split.
 //    static const index_t matmat_size_thre2 = 100000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
 //    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
 //    const index_t min_size_threshold       = 50; //default 50
