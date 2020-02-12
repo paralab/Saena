@@ -1450,7 +1450,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     for(nnz_t i = 0; i < A->nnz_l; i++){
         assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
         assert( (A->entry[i].col >= 0) && (A->entry[i].col < A->Mbig) );
-//        assert( fabs(A->entry[i].val) > 1e-14 );
+        assert( fabs(A->entry[i].val) > ALMOST_ZERO );
     }
 #endif
 
@@ -1487,7 +1487,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     Acsc.nnz_list = A->nnz_list;
 
 #ifdef __DEBUG1__
-    assert(Acsc.col_scan[Acsc.col_sz] == Acsc.nnz);
+    assert(Acsc.nnz == (Acsc.col_scan[Acsc.col_sz] - Acsc.col_scan[0]));
 
 //    A->print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
@@ -1498,6 +1498,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    std::cout << "\nA: nnz: " << Acsc.nnz << std::endl ;
 //    for(index_t j = 0; j < Acsc.col_sz; j++){
 //        for(index_t i = Acsc.col_scan[j]; i < Acsc.col_scan[j+1]; i++){
+//            ASSERT(fabs(Acsc.val[i]) > ALMOST_ZERO, "rank: " << rank << ", Acsc.val[i]: " << Acsc.val[i]);
 //            std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
 //        }
 //    }
@@ -1511,7 +1512,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     for(nnz_t i = 0; i < B->nnz_l; i++){
         assert( (B->entry[i].row - B->split[rank] >= 0) && (B->entry[i].row - B->split[rank] < B->M) );
         assert( (B->entry[i].col >= 0) && (B->entry[i].col < B->Mbig) );
-//        assert( fabs(B->entry[i].val - 0) > ALMOST_ZERO );
+        assert( fabs(B->entry[i].val) > ALMOST_ZERO );
     }
 #endif
 
@@ -1553,7 +1554,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     Bcsc.nnz_list = B->nnz_list;
 
 #ifdef __DEBUG1__
-    assert(Bcsc.col_scan[Bcsc.col_sz] == Bcsc.nnz);
+    assert(Bcsc.nnz == (Bcsc.col_scan[Bcsc.col_sz] - Bcsc.col_scan[0]));
 
 //    B->print_entry(0);
 //    printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
@@ -1561,9 +1562,10 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    print_array(Bc, B->M+1, 0, "Bc", comm);
 //
 //    std::cout << "\nB: nnz: " << B->nnz_l << std::endl ;
-//    for(index_t j = 0; j < B->M; j++){
-//        for(index_t i = Bcsc.col_scan[j]; i < Bcsc.col_scan[j+1]; i++){
+//    for(index_t j = 0; j < B->M; ++j){
+//        for(index_t i = Bcsc.col_scan[j]; i < Bcsc.col_scan[j+1]; ++i){
 //            std::cout << std::setprecision(4) << Bcsc.row[i] << "\t" << j << "\t" << Bcsc.val[i] << std::endl;
+//            assert( fabs(Bcsc.val[i]) > ALMOST_ZERO );
 //        }
 //    }
 #endif
@@ -1575,66 +1577,11 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     MPI_Barrier(comm);
     double t_matmat = MPI_Wtime();
 
-    // mempool1: used for the dense buffer
-    // mempool2: usages: for A: 1- nnzPerRow_left and 2- orig_row_idx. for B: 3- B_new_col_idx and 4- orig_col_idx
-    // mempool2 size: 2 * A_row_size + 2 * B_col_size
-    // important: it depends if B or transpose of B is being used for the multiplciation. if originl B is used then
-    // B_col_size is B->Mbig, but for the transpos it is B->M, which is scalable.
-    // mempool3: is used to store the the received part of B.
-    // mempool3 size: it should store remote B, so we allocate the max size of B on all the procs.
-    //                sizeof(row index) + sizeof(value) + sizeof(col_scan) =
-    //                nnz * index_t + nnz * value_t + (col_size+1) * index_t
-
-//    index_t A_row_size = A->M;
-//    index_t B_col_size = B->Mbig; // for original B
-//    index_t B_col_size = B->M;      // for when tranpose of B is used to do the multiplication.
-
-//    mempool1 = new value_t[matmat_size_thre2];
-//    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
-
-    // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
-    // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
-    int   valbyidx              = sizeof(value_t) / sizeof(index_t);
-    nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
-    nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
-    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
-
-    try{
-        mempool3 = new index_t[2 * send_size_max];
-    }catch(std::bad_alloc& ba){
-        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-    }
-
-    loc_nnz_max = std::max(A->nnz_max, B->nnz_max);
-
-    try{
-        mempool4 = new index_t[2 * loc_nnz_max];
-    }catch(std::bad_alloc& ba){
-        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-    }
-
-    try{
-        mempool5 = new value_t[2 * loc_nnz_max];
-    }catch(std::bad_alloc& ba){
-        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-    }
-
-//    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
-//    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
+    nnz_t send_size_max;
+    matmat_memory(A, B, send_size_max);
 
     t_matmat = MPI_Wtime() - t_matmat;
     matmat_time += average_time(t_matmat, comm);
-
-#ifdef __DEBUG1__
-//    if(rank==0) std::cout << "vecbyint = " << vecbyint << std::endl;
-
-//    if(rank==0){
-//        std::cout << "mempool1 size = " << matmat_size_thre2 << std::endl;
-//        std::cout << "mempool2 size = " << 2 * A_row_size + 2 * Bcsc.col_sz << std::endl;
-//        std::cout << "mempool3 size = " << 2 * send_size_max << std::endl;
-//        std::cout << "B->nnz_max = " << B->nnz_max << ", B->M_max = " << B->M_max << ", valbyidx = " << valbyidx << std::endl;
-//    }
-#endif
 
     // =======================================
     // perform the multiplication
@@ -1690,11 +1637,6 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    AB_temp.clear();
 //    AB_temp.shrink_to_fit();
 
-//    delete []Arv;
-//    delete []Ac;
-//    delete []Brv;
-//    delete []Bc;
-
     delete []Acsc.row;
     delete []Acsc.val;
     delete []Acsc.col_scan;
@@ -1702,8 +1644,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     delete []Bcsc.val;
     delete []Bcsc.col_scan;
 
-//    delete[] mempool1;
-//    delete[] mempool2;
+//    delete []mempool1;
+//    delete []mempool2;
     delete []mempool3;
     delete []mempool4;
     delete []mempool5;
