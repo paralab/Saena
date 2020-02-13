@@ -846,7 +846,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 */
 
 // This version moves entries of A1 to the begining and A2 to the end of the input array.
-int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
+    int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
 #ifdef __DEBUG1__
     int rank;
@@ -859,7 +859,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     ASSERT(A.nnz == (A.col_scan[A.col_sz] - A.col_scan[0]), "A.nnz: " << A.nnz << ", A.col_scan[0]: " << A.col_scan[0]
            << ", A.col_scan[A.col_sz]: " << A.col_scan[A.col_sz]);
 
-//    std::cout << "\nA: nnz: " << A.col_scan[A.col_sz] - A.col_scan[0] << std::endl;
+//    std::cout << "\nA: nnz: " << A.nnz << std::endl;
     for (index_t j = 0; j < A.col_sz; ++j) {
         for (index_t i = A.col_scan[j]; i < A.col_scan[j + 1]; ++i) {
             assert( A.r[i] >= 0 );
@@ -898,7 +898,9 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     // ========================================================
     // IMPORTANT: An offset should be used to access Ar and Av.
     // ========================================================
-    nnz_t offset = A1.col_scan[0];
+    nnz_t offset = A.col_scan[0];
+
+    index_t i, j;
 
     index_t *A1r = &A.r[offset];
     value_t *A1v = &A.v[offset];
@@ -920,9 +922,91 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     // form A1 and A2
     // ========================================================
 
-    //todo: in each column, entries are sorted row-wise. So, find the first entry such that A.r[i] >= threshold.
-    // then add all the entries before i in that column in A1 and the rest in A2. Use memcpy.
+#ifdef __DEBUG1__
+    // print A in top and bottom split
+/*    for(index_t j = 0; j < A.col_sz; ++j) {
+        if(rank==verbose_rank) std::cout << std::endl;
+        for(nnz_t i = A.col_scan[j]; i < A.col_scan[j+1]; ++i) {
+            if (A.r[i] < A1.row_sz) {
+                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half" << std::endl;
+            } else {
+                if (rank == verbose_rank)  std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half" << std::endl;
+            }
+        }
+    }*/
+#endif
 
+    long mid;
+    nnz_t iter0 = offset, col_nnz;
+    A1.nnz = 0, A2.nnz = 0;
+    for(j = 0; j < A.col_sz; ++j){
+#if 0
+        it1 = 0, it2 = 0;
+        if(rank==verbose_rank) std::cout << std::endl;
+        for(nnz_t i = A.col_scan[j]; i < A.col_scan[j+1]; ++i){
+            if(A.r[i] < A1.row_sz){
+//                A1r[A1.nnz] = A.r[i];
+//                A1v[A1.nnz] = A.v[i];
+//                ++A1.nnz;
+                ++it1;
+                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half: " << it1 << std::endl;
+            }else{
+//                A2r[A2.nnz] = A.r[i] - A1.row_sz;
+//                A2r[A2.nnz] = A.r[i];
+//                A2v[A2.nnz] = A.v[i];
+//                ++A2.nnz;
+//                ++Ac2_p[j];
+                ++it2;
+                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half: " << it2 << std::endl;
+            }
+        }
+#endif
+        col_nnz = A.col_scan[j+1] - A.col_scan[j];
+        if(col_nnz != 0){
+
+            if(A.r[A.col_scan[j+1] - 1] < A1.row_sz){
+                memcpy(&A1r[A1.nnz], &A.r[iter0], col_nnz * sizeof(index_t));
+                memcpy(&A1v[A1.nnz], &A.v[iter0], col_nnz * sizeof(value_t));
+                iter0    += col_nnz;
+                A1.nnz   += col_nnz;
+            }else if(A.r[A.col_scan[j]] >= A1.row_sz){
+                memcpy(&A2r[A2.nnz], &A.r[iter0], col_nnz * sizeof(index_t));
+                memcpy(&A2v[A2.nnz], &A.v[iter0], col_nnz * sizeof(value_t));
+                iter0    += col_nnz;
+                A2.nnz   += col_nnz;
+                Ac2_p[j] += col_nnz;
+            }else{
+
+                mid = std::distance(&A.r[A.col_scan[j]], std::lower_bound(&A.r[A.col_scan[j]], &A.r[A.col_scan[j + 1]], A1.row_sz));
+
+//                if(rank == verbose_rank) std::cout << "\nrow_sz:" << A.row_sz << ", row half: " << A1.row_sz
+//                               << ", mid distance: " << mid << ", mid val: " << A.r[A.col_scan[j] + mid] << "\n";
+
+                memcpy(&A1r[A1.nnz], &A.r[iter0], mid * sizeof(index_t));
+                memcpy(&A1v[A1.nnz], &A.v[iter0], mid * sizeof(value_t));
+                iter0  += mid;
+                A1.nnz += mid;
+
+                memcpy(&A2r[A2.nnz], &A.r[iter0], (col_nnz - mid) * sizeof(index_t));
+                memcpy(&A2v[A2.nnz], &A.v[iter0], (col_nnz - mid) * sizeof(value_t));
+                iter0    += col_nnz - mid;
+                A2.nnz   += col_nnz - mid;
+                Ac2_p[j] += col_nnz - mid;
+            }
+
+        } //if(col_nnz != 0){
+
+//        if(rank==verbose_rank) std::cout << "A1.nnz: " << A1.nnz << ", A2.nnz: " << A2.nnz << "\n\n";
+    }
+
+#ifdef __DEBUG1__
+
+    ASSERT(A1.nnz <= loc_nnz_max, "A1.nnz: " << A1.nnz << ", loc_nnz_max: " << loc_nnz_max);
+    ASSERT(A2.nnz <= loc_nnz_max, "A2.nnz: " << A2.nnz << ", loc_nnz_max: " << loc_nnz_max);
+    ASSERT(A1.nnz + A2.nnz == A.nnz, "A.nnz: " << A.nnz << ", A1.nnz: " << A1.nnz << ", A2.nnz: " << A2.nnz);
+
+    // older versions
+#if 0
     A1.nnz = 0, A2.nnz = 0;
     for(index_t j = 0; j < A.col_sz; ++j){
         for(nnz_t i = A.col_scan[j]; i < A.col_scan[j+1]; ++i){
@@ -937,22 +1021,13 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
                 ++A2.nnz;
                 ++Ac2_p[j];
 
-#ifdef __DEBUG1__
-                assert(A.r[i] >= A1.row_sz);
-                assert(j < A2.col_sz);
+//                assert(A.r[i] >= A1.row_sz);
+//                assert(j < A2.col_sz);
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half" << std::endl;
-#endif
-
             }
         }
     }
 
-#ifdef __DEBUG1__
-    ASSERT(A1.nnz <= loc_nnz_max, "A1.nnz: " << A1.nnz << ", loc_nnz_max: " << loc_nnz_max);
-    ASSERT(A2.nnz <= loc_nnz_max, "A2.nnz: " << A2.nnz << ", loc_nnz_max: " << loc_nnz_max);
-    ASSERT(A1.nnz + A2.nnz == A.nnz, "A.nnz: " << A.nnz << ", A1.nnz: " << A1.nnz << ", A2.nnz: " << A2.nnz);
-
-#if 0
     std::vector<index_t> A1r, A2r;
     std::vector<value_t> A1v, A2v;
 
@@ -981,7 +1056,7 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
         return 0;
     }
 
-    for(index_t i = 1; i <= A.col_sz; ++i){
+    for(i = 1; i <= A.col_sz; ++i){
         A2.col_scan[i] += A2.col_scan[i-1]; // scan on A2.col_scan
         A1.col_scan[i] -= A2.col_scan[i];   // subtract A2.col_scan from A1.col_scan to have the correct scan for A1
     }
@@ -996,6 +1071,16 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     // set r and v for A2
     A2.r = &A.r[A1.col_scan[A.col_sz]];
     A2.v = &A.v[A1.col_scan[A.col_sz]];
+
+//    std::cout << "\nA2: nnz: " << A2.nnz << std::endl ;
+    for(j = 0; j < A2.col_sz; ++j){
+        for(i = A2.col_scan[j]; i < A2.col_scan[j+1]; ++i){
+//            if(rank==verbose_rank) std::cout << std::setprecision(4) << A2.r[i] << "\t" << j+A2.col_offset << "\t" << A2.v[i] << std::endl;
+            A2.r[i] -= A1.row_sz;
+        }
+    }
+
+//    std::transform(&A2.r[0], &A2.r[A2.nnz], &A2.r[0], decrement(A1.row_sz));
 
 #if 0
     // Equivalent to the previous part. Uses for loops instead of memcpy.
@@ -1015,15 +1100,15 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 #ifdef __DEBUG1__
     {
         // assert A1
-//        std::cout << "\nA1: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << std::endl;
+//        std::cout << "\nA1: nnz: " << A1.nnz << std::endl;
 //        nnz_t iter = 0;
         if(A1.nnz != 0) {
-            for (index_t j = 0; j < A1.col_sz; ++j) {
-                for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; ++i) {
+            for (j = 0; j < A1.col_sz; ++j) {
+                for (i = A1.col_scan[j]; i < A1.col_scan[j + 1]; ++i) {
+//                    if(rank == verbose_rank) std::cout << std::setprecision(4) << A1.r[i] << "\t" << j << "\t" << A1.v[i] << std::endl;
                     assert(A1.r[i] >= 0);
                     assert(A.r[i] < A1.row_sz);
 
-//                    std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
 //                    std::cout << "(rank: " << rank << ", " << i << "): \t(" << A.r[i] << ", " << j << ")\t[("
 //                              << A.row_sz << ", " << A.row_offset << ")(" << A.col_sz << ", " << A.col_offset
 //                              << ")], A1r: " << A1r[iter] << "\n";
@@ -1031,23 +1116,23 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
                 }
             }
         }else{ // if A1.nnz = 0, then col_scan should be same for the whole array.
-            for (index_t j = 0; j < A1.col_sz; ++j) {
-                for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; ++i) {
+            for (j = 0; j < A1.col_sz; ++j) {
+                for (i = A1.col_scan[j]; i < A1.col_scan[j + 1]; ++i) {
                     assert(A1.col_scan[j] == A1.col_scan[j + 1]);
                 }
             }
         }
 
         // assert A2
-//        std::cout << "\nA2: nnz: " << A2.col_scan[A.col_sz] - A2.col_scan[0] << std::endl;
+//        std::cout << "\nA2: nnz: " << A2.nnz << std::endl;
         if(A2.nnz != 0){
-            for (index_t j = 0; j < A2.col_sz; ++j) {
-                for (index_t i = A2.col_scan[j]; i < A2.col_scan[j + 1]; ++i) {
-                    assert(A2.r[i] >= 0);
-                    assert(A2.r[i] < A2.row_sz);
+            for (j = 0; j < A2.col_sz; ++j) {
+                for (i = A2.col_scan[j]; i < A2.col_scan[j + 1]; ++i) {
+//                    if(rank == verbose_rank) std::cout << std::setprecision(4) << A2.r[i] << "\t" << j << "\t" << A2.v[i] << std::endl;
+                    ASSERT(A2.r[i] >= 0, "rank: " << rank << ", A2.r[i]: " << A2.r[i]);
+                    ASSERT(A2.r[i] < A2.row_sz, "rank: " << rank << ", A2.r[i]: " << A2.r[i] << ", A2.row_sz: " << A2.row_sz);
 //                    assert(A.r[i + A1.col_scan[A.col_sz]] >= 0);
 //                    assert(A.r[i + A1.col_scan[A.col_sz]] < A2.row_sz);
-//                    std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
                 }
             }
         }
@@ -1060,16 +1145,16 @@ int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 //            print_array(A1.col_scan, A.col_sz+1, verbose_rank, "A1.col_scan", MPI_COMM_WORLD);
 //            print_array(A2.col_scan, A.col_sz+1, verbose_rank, "A2.col_scan", MPI_COMM_WORLD);
 
-//            std::cout << "\nA1: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << "\tcol is not correct." << std::endl;
-//            for (index_t j = 0; j < A.col_sz; j++) {
+//            std::cout << "\nA1: nnz: " << A1.nnz << std::endl;
+//            for (index_t j = 0; j < A1.col_sz; j++) {
 //                for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
-//                    std::cout << std::setprecision(4) << Ar[i] << "\t" << j << "\t" << Av[i] << std::endl;
+//                    std::cout << std::setprecision(4) << A1.r[i] << "\t" << j+A1.col_offset << "\t" << A1.v[i] << std::endl;
 //                }
 //            }
-//            std::cout << "\nA2: nnz: " << A2.col_scan[A.col_sz] - A2.col_scan[0] << "\tcol is not correct." << std::endl;
-//            for (index_t j = 0; j < A.col_sz; j++) {
-//                for (index_t i = A2.col_scan[j] + A1.col_scan[A.col_sz]; i < A2.col_scan[j + 1] + A1.col_scan[A.col_sz]; i++) {
-//                    std::cout << std::setprecision(4) << Ar[i] + partial_offset << "\t" << j << "\t" << Av[i] << std::endl;
+//            std::cout << "\nA2: nnz: " << A2.nnz << std::endl;
+//            for (index_t j = 0; j < A2.col_sz; j++) {
+//                for (index_t i = A2.col_scan[j]; i < A2.col_scan[j + 1]; i++) {
+//                    std::cout << std::setprecision(4) << A2.r[i] << "\t" << j+A2.col_offset << "\t" << A2.v[i] << std::endl;
 //                }
 //            }
         }
