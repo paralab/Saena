@@ -137,14 +137,14 @@ int main(int argc, char* argv[]){
 // *************************** matrix-matrix product ****************************
 
         double matmat_time = 0;
-        int matmat_iter_warmup = 3;
+        int matmat_iter_warmup = 0;
         int matmat_iter = 1;
 
 //        saena::amg solver;
 //        saena::matrix C(comm);
 
         // warm-up
-        solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
+//        solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
 
         matmat_time = 0;
         solver.matmat_ave(&A, &B, matmat_time, matmat_iter);
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]){
         // *************************** PETSc ****************************
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
-        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
+//        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
     }
 
     // *************************** CombBLAS ****************************
