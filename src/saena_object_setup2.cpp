@@ -940,27 +940,28 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     nnz_t iter0 = offset, col_nnz;
     A1.nnz = 0, A2.nnz = 0;
     for(j = 0; j < A.col_sz; ++j){
-#if 0
-        it1 = 0, it2 = 0;
-        if(rank==verbose_rank) std::cout << std::endl;
-        for(nnz_t i = A.col_scan[j]; i < A.col_scan[j+1]; ++i){
+//#if 0
+//        it1 = 0, it2 = 0;
+//        if(rank==verbose_rank) std::cout << std::endl;
+        for(i = A.col_scan[j]; i < A.col_scan[j+1]; ++i){
             if(A.r[i] < A1.row_sz){
-//                A1r[A1.nnz] = A.r[i];
-//                A1v[A1.nnz] = A.v[i];
-//                ++A1.nnz;
-                ++it1;
-                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half: " << it1 << std::endl;
+                A1r[A1.nnz] = A.r[i];
+                A1v[A1.nnz] = A.v[i];
+                ++A1.nnz;
+//                ++it1;
+//                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\ttop half: " << it1 << std::endl;
             }else{
-//                A2r[A2.nnz] = A.r[i] - A1.row_sz;
+                A2r[A2.nnz] = A.r[i] - A1.row_sz;
 //                A2r[A2.nnz] = A.r[i];
-//                A2v[A2.nnz] = A.v[i];
-//                ++A2.nnz;
-//                ++Ac2_p[j];
-                ++it2;
-                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half: " << it2 << std::endl;
+                A2v[A2.nnz] = A.v[i];
+                ++A2.nnz;
+                ++Ac2_p[j];
+//                ++it2;
+//                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << "\tbottom half: " << it2 << std::endl;
             }
         }
-#endif
+//#endif
+/*
         col_nnz = A.col_scan[j+1] - A.col_scan[j];
         if(col_nnz != 0){
 
@@ -1006,7 +1007,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
             }
 
         } //if(col_nnz != 0){
-
+*/
 //        if(rank==verbose_rank) std::cout << "A1.nnz: " << A1.nnz << ", A2.nnz: " << A2.nnz << "\n\n";
     }
 
