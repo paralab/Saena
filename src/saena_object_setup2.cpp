@@ -970,11 +970,16 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
                 iter0    += col_nnz;
                 A1.nnz   += col_nnz;
             }else if(A.r[A.col_scan[j]] >= A1.row_sz){
-                memcpy(&A2r[A2.nnz], &A.r[iter0], col_nnz * sizeof(index_t));
+//                memcpy(&A2r[A2.nnz], &A.r[iter0], col_nnz * sizeof(index_t));
                 memcpy(&A2v[A2.nnz], &A.v[iter0], col_nnz * sizeof(value_t));
-                iter0    += col_nnz;
-                A2.nnz   += col_nnz;
+//                iter0    += col_nnz;
+//                A2.nnz   += col_nnz;
                 Ac2_p[j] += col_nnz;
+
+                for(; iter0 < A.col_scan[j+1]; ++iter0, ++A2.nnz){
+                    A2r[A2.nnz] = A.r[iter0] - A1.row_sz;
+                }
+
             }else{
 
                 mid = std::distance(&A.r[A.col_scan[j]], std::lower_bound(&A.r[A.col_scan[j]], &A.r[A.col_scan[j + 1]], A1.row_sz));
@@ -982,16 +987,22 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 //                if(rank == verbose_rank) std::cout << "\nrow_sz:" << A.row_sz << ", row half: " << A1.row_sz
 //                               << ", mid distance: " << mid << ", mid val: " << A.r[A.col_scan[j] + mid] << "\n";
 
+                // copy to A1
                 memcpy(&A1r[A1.nnz], &A.r[iter0], mid * sizeof(index_t));
                 memcpy(&A1v[A1.nnz], &A.v[iter0], mid * sizeof(value_t));
                 iter0  += mid;
                 A1.nnz += mid;
 
-                memcpy(&A2r[A2.nnz], &A.r[iter0], (col_nnz - mid) * sizeof(index_t));
+                // copy to A2
+//                memcpy(&A2r[A2.nnz], &A.r[iter0], (col_nnz - mid) * sizeof(index_t));
                 memcpy(&A2v[A2.nnz], &A.v[iter0], (col_nnz - mid) * sizeof(value_t));
-                iter0    += col_nnz - mid;
-                A2.nnz   += col_nnz - mid;
+//                iter0    += col_nnz - mid;
+//                A2.nnz   += col_nnz - mid;
                 Ac2_p[j] += col_nnz - mid;
+
+                for(; iter0 < A.col_scan[j+1]; ++iter0, ++A2.nnz){
+                    A2r[A2.nnz] = A.r[iter0] - A1.row_sz;
+                }
             }
 
         } //if(col_nnz != 0){
@@ -1073,12 +1084,12 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     A2.v = &A.v[A1.col_scan[A.col_sz]];
 
 //    std::cout << "\nA2: nnz: " << A2.nnz << std::endl ;
-    for(j = 0; j < A2.col_sz; ++j){
-        for(i = A2.col_scan[j]; i < A2.col_scan[j+1]; ++i){
+//    for(j = 0; j < A2.col_sz; ++j){
+//        for(i = A2.col_scan[j]; i < A2.col_scan[j+1]; ++i){
 //            if(rank==verbose_rank) std::cout << std::setprecision(4) << A2.r[i] << "\t" << j+A2.col_offset << "\t" << A2.v[i] << std::endl;
-            A2.r[i] -= A1.row_sz;
-        }
-    }
+//            A2.r[i] -= A1.row_sz;
+//        }
+//    }
 
 //    std::transform(&A2.r[0], &A2.r[A2.nnz], &A2.r[0], decrement(A1.row_sz));
 
