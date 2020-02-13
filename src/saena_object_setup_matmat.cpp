@@ -1340,13 +1340,13 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &send_si
     loc_nnz_max = std::max(A->nnz_max, B->nnz_max);
 
     try{
-        mempool4 = new index_t[2 * loc_nnz_max];
+        mempool4 = new index_t[loc_nnz_max];
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
 
     try{
-        mempool5 = new value_t[2 * loc_nnz_max];
+        mempool5 = new value_t[loc_nnz_max];
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
