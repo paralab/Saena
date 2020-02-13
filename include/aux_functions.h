@@ -97,7 +97,7 @@ long upper_bound2(T *left, T *right, T val){
     T* first = left;
     while (left < right) {
         T *middle = right - (right - left) / 2;
-        std::cout << "left = " << *left << ", middle = " << *middle << ", right = " << *right << ", val = " << val << std::endl;
+//        std::cout << "left = " << *left << ", middle = " << *middle << ", right = " << *right << ", val = " << val << std::endl;
         if (*middle <= val)
             left = middle;
         else
@@ -261,5 +261,33 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
 
 int generate_rhs_old(std::vector<value_t>& rhs);
 
+
+class decrement
+{
+private:
+    index_t num;
+public:
+    decrement(index_t n) : num(n) {  }
+
+    // This operator overloading enables calling
+    // operator function () on objects of decrement
+    index_t operator () (index_t arr_num) const {
+        return num - arr_num;
+    }
+};
+
+class increment
+{
+private:
+    index_t num;
+public:
+    increment(index_t n) : num(n) {  }
+
+    // This operator overloading enables calling
+    // operator function () on objects of increment
+    index_t operator () (index_t arr_num) const {
+        return num + arr_num;
+    }
+};
 
 #endif //SAENA_AUXFUNCTIONS_H
