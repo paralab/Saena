@@ -5,15 +5,11 @@
 
 #include "combblas_functions.h"
 #include "petsc_functions.h"
-//#include <petsc_functions.h>
 
 #include <iostream>
-#include <algorithm>
-#include <fstream>
-#include <sys/stat.h>
 #include <vector>
-#include <omp.h>
 #include <dollar.hpp>
+#include <omp.h>
 #include "mpi.h"
 
 
@@ -144,7 +140,7 @@ int main(int argc, char* argv[]){
 //        saena::matrix C(comm);
 
         // warm-up
-//        solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
+        solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
 
         matmat_time = 0;
         solver.matmat_ave(&A, &B, matmat_time, matmat_iter);
@@ -156,7 +152,7 @@ int main(int argc, char* argv[]){
         // *************************** PETSc ****************************
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
-//        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
+        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
     }
 
     // *************************** CombBLAS ****************************
