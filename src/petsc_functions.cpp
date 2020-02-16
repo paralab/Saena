@@ -547,11 +547,21 @@ int petsc_matmat(saena_matrix *A, saena_matrix *B){
     petsc_saena_matrix(A, A2);
     petsc_saena_matrix(B, B2);
 
+    // Turn on logging of objects and events.
+    PetscLogDefaultBegin();
+//    float oldthresh;
+//    PetscLogSetThreshold(0.1, &oldthresh);
+
     MPI_Barrier(comm);
     double t1 = MPI_Wtime();
     MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &AB);
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc MatMatMult", comm, true);
+
+    PetscViewer viewer;
+    PetscViewerASCIIOpen(PETSC_COMM_WORLD, "petsclog.xml", &viewer);
+    PetscLogView(viewer);
+    PetscViewerDestroy(&viewer);
 
 //    petsc_viewer(AB);
 
@@ -629,7 +639,7 @@ int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
     // print the difference between the two result matrices
     // ====================================
 
-    petsc_mat_diff(C, AB2, AB);
+//    petsc_mat_diff(C, AB2, AB);
 
     // ====================================
     // compute the norm of the difference
