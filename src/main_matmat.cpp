@@ -140,10 +140,14 @@ int main(int argc, char* argv[]){
 //        saena::matrix C(comm);
 
         // warm-up
-        solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
+        if(matmat_iter_warmup){
+            solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
+        }
 
         matmat_time = 0;
-        solver.matmat_ave(&A, &B, matmat_time, matmat_iter);
+        if(matmat_iter){
+            solver.matmat_ave(&A, &B, matmat_time, matmat_iter);
+        }
 
         // matmat_ave computes the average matmat time on processor 0.
         // so it is fine to just print the time on proc 0.
