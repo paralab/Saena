@@ -558,8 +558,12 @@ int petsc_matmat(saena_matrix *A, saena_matrix *B){
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc MatMatMult", comm, true);
 
+    int nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    std::string filename = "petsclog_" + std::to_string(nprocs) + ".xml";
+
     PetscViewer viewer;
-    PetscViewerASCIIOpen(PETSC_COMM_WORLD, "petsclog.xml", &viewer);
+    PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename.c_str(), &viewer);
     PetscLogView(viewer);
     PetscViewerDestroy(&viewer);
 
