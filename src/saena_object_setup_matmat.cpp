@@ -1258,7 +1258,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     case3_iter_ave = average_iter(case3_iter, comm);
 
     if(rank==0){
-        printf("average: case1 = %.2f, case2 = %.2f, case3 = %.2f\n\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+        printf("\ncase1 = %.0f, case2 = %.0f, case3 = %.0f (average)\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
     }
 
 #ifdef __DEBUG1__
@@ -1603,7 +1603,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         matmat_time += average_time(t_matmat, comm);
     }
 
-    if (!rank) printf("\ncase1\ncase2\ncase3\n");
+    if (!rank) printf("case1\ncase2\ncase3\n");
     print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
     print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
     print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
@@ -1613,7 +1613,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     case3_iter_ave = average_iter(case3_iter, comm);
 
     if(rank==0){
-        printf("\naverage: case1 = %.2f, case2 = %.2f, case3 = %.2f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+        printf("\ncase1 = %.0f, case2 = %.0f, case3 = %.0f (average)\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
     }
 
 //    saena_matrix C(A->comm);
@@ -1700,6 +1700,10 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 //    assert(Acsc.col_sz == Bcsc.row_sz);
 #endif
 
+    double t_prep, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort, t_temp;
+
+    t_prep = MPI_Wtime();
+
     // =======================================
     // perform the multiplication - serial implementation
     // =======================================
@@ -1740,10 +1744,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     }
 #endif
 
-    CSCMat_mm A(Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Acsc.nnz);
-    A.r = Acsc.row;
-    A.v = Acsc.val;
-    A.col_scan = Acsc.col_scan;
+    CSCMat_mm A(Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Acsc.nnz, Acsc.row, Acsc.val, Acsc.col_scan);
 
     std::vector<cooEntry> AB_temp;
 
@@ -1754,7 +1755,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         // 1- row:    type: index_t, size: send_nnz
         // 2- c_scan: type: index_t, size: Bcsc.col_sz + 1
         // 3- val:    type: value_t, size: send_nnz
-        auto mat_send       = &mempool3[0];
+        auto mat_send          = &mempool3[0];
         auto mat_current_r     = &mat_send[0];
         auto mat_current_cscan = &mat_send[send_nnz];
         auto mat_current_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + Bcsc.col_sz + 1]);
@@ -1801,6 +1802,9 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
         CSCMat_mm S;
 
+        t_prep = MPI_Wtime() - t_prep;
+        t_mat = MPI_Wtime();
+
         // todo: the last communication means each proc receives a copy of its already owned B, which is redundant,
         //   so the communication should be avoided but the multiplication should be done. consider this:
         //   change to k < rank+nprocs-1. Then, copy fast_mm after the end of the for loop to perform the last multiplication
@@ -1833,13 +1837,15 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 #endif
 
             // communicate data
-            MPI_Irecv(&mat_recv[0], recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
-            MPI_Isend(&mat_send[0], send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
+            MPI_Irecv(mat_recv, recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
+            MPI_Isend(mat_send, send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
 
             // =======================================
             // perform the multiplication
             // =======================================
             if(Acsc.nnz != 0 && send_nnz != 0){
+
+                t_temp = MPI_Wtime();
 
                 owner         = k%nprocs;
                 mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner]; //this is col_sz
@@ -1854,31 +1860,38 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                 S.set_params(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner], Bcsc.nnz_list[owner],
                              mat_current_r, mat_current_v, mat_current_cscan);
 
+                t_temp = MPI_Wtime() - t_temp;
+                t_prep_iter += t_temp;
+
 #ifdef __DEBUG1__
                 // ===============
                 // assert mat_send
                 // ===============
-
-                ASSERT(Bcsc.nnz_list[owner] == (mat_current_cscan[mat_current_M] - mat_current_cscan[0]),
-                       "rank: " << rank << ", owner: " << owner << ", mat_current_M: " << mat_current_M
-                                << ", Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner]
-                                << ", mat_current_cscan[0]: " << mat_current_cscan[0]
-                                << ", mat_current_cscan[mat_current_M]: " << mat_current_cscan[mat_current_M]);
+                {
+                    ASSERT(Bcsc.nnz_list[owner] == (mat_current_cscan[mat_current_M] - mat_current_cscan[0]),
+                           "rank: " << rank << ", owner: " << owner << ", mat_current_M: " << mat_current_M
+                                    << ", Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner]
+                                    << ", mat_current_cscan[0]: " << mat_current_cscan[0]
+                                    << ", mat_current_cscan[mat_current_M]: " << mat_current_cscan[mat_current_M]);
 
 //                index_t ofst  = Bcsc.split[owner], col_idx;
-                for (nnz_t i = 0; i < mat_current_M; ++i) {
+                    for (nnz_t i = 0; i < mat_current_M; ++i) {
 //                    col_idx = i + ofst;
-                    for (nnz_t j = mat_current_cscan[i]; j < mat_current_cscan[i + 1]; j++) {
+                        for (nnz_t j = mat_current_cscan[i]; j < mat_current_cscan[i + 1]; j++) {
 //                        assert( (col_idx >= Bcsc.split[owner]) && (col_idx < Bcsc.split[owner+1]) ); //this is always true
-                        assert( (mat_current_r[j] >= 0) && (mat_current_r[j] < Bcsc.split.back()) );
+                            assert( (mat_current_r[j] >= 0) && (mat_current_r[j] < Bcsc.split.back()) );
+                        }
                     }
+                    assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));
                 }
-
-                assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));
 #endif
+
+                t_temp = MPI_Wtime();
 
                 fast_mm(A, S, AB_temp, comm);
 
+                t_temp = MPI_Wtime() - t_temp;
+                t_fast_mm += t_temp;
 #ifdef __DEBUG1__
                 assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));
 #endif
@@ -1887,13 +1900,14 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
             MPI_Waitall(2, requests, statuses);
 
 #ifdef __DEBUG1__
-            if (verbose_matmat) {
-                MPI_Barrier(comm);
-                if (rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
-                MPI_Barrier(comm);
-            }
+            {
+                if (verbose_matmat) {
+                    MPI_Barrier(comm);
+                    if (rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
+                    MPI_Barrier(comm);
+                }
 
-            assert(reorder_counter == 0);
+                assert(reorder_counter == 0);
 
 //            auto mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
 //            MPI_Barrier(comm);
@@ -1901,7 +1915,10 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 //                print_array(mat_recv_cscan, mat_recv_M+1, 0, "mat_recv_cscan", comm);
 //            }
 //            MPI_Barrier(comm);
+            }
 #endif
+
+            t_temp = MPI_Wtime();
 
             send_size = recv_size;
             send_nnz  = recv_nnz;
@@ -1912,6 +1929,9 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
             mat_temp = mat_send;
             mat_send = mat_recv;
             mat_recv = mat_temp;
+
+            t_temp = MPI_Wtime() - t_temp;
+            t_prep_iter += t_temp;
 
 //            mat_send_r     = &mat_send[0];
 //            mat_send_cscan = &mat_send[send_nnz];
@@ -1966,8 +1986,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         delete [] requests;
         delete [] statuses;
 
-//        AB_temp.clear();
-//        AB_temp.shrink_to_fit();
+        t_mat = MPI_Wtime() - t_mat;
 
 #ifdef __DEBUG1__
 //        print_vector(AB_temp_no_dup, 0, "AB_temp_no_dup", comm);
@@ -2000,23 +2019,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 #endif
 
         if(Acsc.nnz != 0 && send_nnz != 0){
-
-//            double t1 = MPI_Wtime();
-
-            CSCMat_mm B(Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank], Bcsc.nnz);
-            B.r = Bcsc.row;
-            B.v = Bcsc.val;
-            B.col_scan = Bcsc.col_scan;
-
+            CSCMat_mm B(Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank], Bcsc.nnz, Bcsc.row, Bcsc.val, Bcsc.col_scan);
             fast_mm(A, B, AB_temp, comm);
-
-//            double t2 = MPI_Wtime();
-//            printf("\nfast_mm of AB_temp = %f\n", t2-t1);
-
-#ifdef __DEBUG1__
-//            print_vector(AB_temp, -1, "AB_temp", comm);
-#endif
-
         }
     }
 
@@ -2027,6 +2031,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     // =======================================
     // sort and remove duplicates
     // =======================================
+
+    t_sort = MPI_Wtime();
 
     if(!AB_temp.empty()) {
 
@@ -2043,14 +2049,31 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     }
 
-#ifdef __DEBUG1__
-//    print_vector(C.entry, -1, "C.entry", comm);
-//    writeMatrixToFile(C.entry, "matrix_folder/result", comm);
+    t_sort = MPI_Wtime() - t_sort;
 
-    if (verbose_matmat) {
-        MPI_Barrier(comm);
-        if (rank == verbose_rank) printf("end of matmat\n\n");
-        MPI_Barrier(comm);
+    //===============
+    // print timings
+    //===============
+    // time parameters: t_prep, t_mat, t_prep_iter, t_fast_mm, t_sort
+
+    if (!rank) printf("init prep\ncomm\nprep_iter\nfastmm\nsort\n");
+    print_time_ave(t_prep, "t_prep", comm, true, false);
+    print_time_ave(t_mat - t_prep_iter - t_fast_mm, "comm", comm, true, false);
+    print_time_ave(t_prep_iter, "t_prep_iter", comm, true, false);
+    print_time_ave(t_fast_mm, "t_fast_mm", comm, true, false);
+    print_time_ave(t_sort, "t_sort", comm, true, false);
+    if (!rank) printf("\n");
+
+#ifdef __DEBUG1__
+    {
+//        print_vector(C.entry, -1, "C.entry", comm);
+//        writeMatrixToFile(C.entry, "matrix_folder/result", comm);
+
+        if (verbose_matmat) {
+            MPI_Barrier(comm);
+            if (rank == verbose_rank) printf("end of matmat\n\n");
+            MPI_Barrier(comm);
+        }
     }
 #endif
 
