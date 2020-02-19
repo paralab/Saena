@@ -1445,6 +1445,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // Convert A to CSC
     // =======================================
 
+    if (!rank) printf("====================================\n");
+
 #ifdef __DEBUG1__
     for(nnz_t i = 0; i < A->nnz_l; i++){
         assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
@@ -1612,7 +1614,8 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     case3_iter_ave = average_iter(case3_iter, comm);
 
     if(rank==0){
-        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+        printf("case iters:\n%.0f\n%.0f\n%.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+//        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
     }
 
 //    saena_matrix C(A->comm);
