@@ -2058,12 +2058,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     //===============
     // time parameters: t_prep, t_mat, t_prep_iter, t_fast_mm, t_sort
 
-    if (!rank) printf("init prep\ncomm\nprep_iter\nfastmm\nsort\n");
+    if (!rank) printf("init prep\ncomm\nfastmm\nsort\nprep_iter\n");
     print_time_ave(t_prep, "t_prep", comm, true, false);
     print_time_ave(t_mat - t_prep_iter - t_fast_mm, "comm", comm, true, false);
-    print_time_ave(t_prep_iter, "t_prep_iter", comm, true, false);
     print_time_ave(t_fast_mm, "t_fast_mm", comm, true, false);
     print_time_ave(t_sort, "t_sort", comm, true, false);
+    print_time_ave(t_prep_iter, "t_prep_iter", comm, true, false);
     if (!rank) printf("\n");
 
 #ifdef __DEBUG1__
