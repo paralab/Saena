@@ -87,8 +87,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
 #ifdef __DEBUG1__
     int verbose_rank = 0;
-//    if(rank==verbose_rank) std::cout << __func__ << std::endl;
-    if(rank==verbose_rank && verbose_fastmm) printf("\nfast_mm: start \n");
+    if(rank==verbose_rank && verbose_fastmm){
+        printf("\nfast_mm: start \n");
+        std::cout << "case iters: " << case1_iter << "," << case2_iter << "," << case3_iter << std::endl;
+    }
 
     // assert and debug
     {
@@ -133,12 +135,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
                 // print entries of A:
                 std::cout << "\nA: nnz = " << A.nnz << std::endl;
-//            index_t col_idx;
                 for (nnz_t i = 0; i < A.col_sz; i++) {
                     col_idx = i + A.col_offset;
                     for (nnz_t j = A.col_scan[i]; j < A.col_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << A.r[j] + A.row_offset << "\t" << col_idx << "\t" << A.v[j]
-                                  << std::endl;
+                        std::cout << j << "\t" << A.r[j] + A.row_offset << "\t" << col_idx << "\t" << A.v[j] << "\n";
                     }
                 }
             }
@@ -155,8 +155,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
                 for (nnz_t i = 0; i < B.col_sz; i++) {
                     col_idx = i + B.col_offset;
                     for (nnz_t j = B.col_scan[i]; j < B.col_scan[i + 1]; j++) {
-                        std::cout << j << "\t" << B.r[j] + B.row_offset << "\t" << col_idx << "\t" << B.v[j]
-                                  << std::endl;
+                        std::cout << j << "\t" << B.r[j] + B.row_offset << "\t" << col_idx << "\t" << B.v[j] << "\n";
                     }
                 }
             }
@@ -178,7 +177,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
     // A.row_sz * A.col_sz < matmat_size_thre1
     if (A.row_sz < (matmat_size_thre1 / A.col_sz) ) { //DOLLAR("case1")
-//    if (case2_iter == 1) {
+//    if (case2_iter + case3_iter == 10) {
 
 //        if (rank == verbose_rank) printf("fast_mm: case 1: start \n");
 
@@ -1258,7 +1257,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     case3_iter_ave = average_iter(case3_iter, comm);
 
     if(rank==0){
-        printf("\ncase1 = %.0f, case2 = %.0f, case3 = %.0f (average)\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
     }
 
 #ifdef __DEBUG1__
@@ -1613,7 +1612,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     case3_iter_ave = average_iter(case3_iter, comm);
 
     if(rank==0){
-        printf("\ncase1 = %.0f, case2 = %.0f, case3 = %.0f (average)\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
     }
 
 //    saena_matrix C(A->comm);
