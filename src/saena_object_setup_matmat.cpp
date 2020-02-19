@@ -1897,6 +1897,25 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 #ifdef __DEBUG1__
                 assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));
 #endif
+
+                // =======================================
+                // sort and remove duplicates
+                // =======================================
+                if(!AB_temp.empty()) {
+
+                    std::sort(AB_temp.begin(), AB_temp.end());
+
+                    nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
+                    for (nnz_t i = 0; i < AB_temp.size(); i++) {
+                        C.entry.emplace_back(AB_temp[i]);
+                        while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+//                            std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+                            C.entry.back().val += AB_temp[++i].val;
+                        }
+                    }
+                    AB_temp.clear();
+
+                }
             }
 
             MPI_Waitall(2, requests, statuses);
@@ -2035,7 +2054,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     // =======================================
 
     t_sort = MPI_Wtime();
-
+#if 0
     if(!AB_temp.empty()) {
 
         std::sort(AB_temp.begin(), AB_temp.end());
@@ -2050,7 +2069,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         }
 
     }
-
+#endif
+    std::sort(C.entry.begin(), C.entry.end());
     t_sort = MPI_Wtime() - t_sort;
 
     //===============
