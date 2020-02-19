@@ -139,14 +139,9 @@ int main(int argc, char* argv[]){
 //        saena::amg solver;
 //        saena::matrix C(comm);
 
-        // warm-up
-        if(matmat_iter_warmup){
-            solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup);
-        }
-
         matmat_time = 0;
         if(matmat_iter){
-            solver.matmat_ave(&A, &B, matmat_time, matmat_iter);
+            solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup, matmat_iter);
         }
 
         // matmat_ave computes the average matmat time on processor 0.

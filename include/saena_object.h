@@ -239,7 +239,7 @@ public:
 
     // matmat_ave:        transpose of B is used.
     // matmat_ave_orig_B: original B is used.
-    int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time, int &matmat_iter); // this version is only for experiments.
+    int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time, int &matmat_iter_warmup, int &matmat_iter); // this version is only for experiments.
 //    int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
 //    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
     int reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);

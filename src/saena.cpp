@@ -682,9 +682,9 @@ int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, boo
 }
 
 
-int saena::amg::matmat_ave(saena::matrix *A, saena::matrix *B, double &matmat_time, int &matmat_iter){
+int saena::amg::matmat_ave(saena::matrix *A, saena::matrix *B, double &matmat_time, int &matmat_iter_warmup, int &matmat_iter){
 
-    m_pImpl->matmat_ave(A->get_internal_matrix(), B->get_internal_matrix(), matmat_time, matmat_iter);
+    m_pImpl->matmat_ave(A->get_internal_matrix(), B->get_internal_matrix(), matmat_time, matmat_iter_warmup, matmat_iter);
 
     return 0;
 }

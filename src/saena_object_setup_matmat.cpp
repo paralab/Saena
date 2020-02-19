@@ -16,6 +16,7 @@
 
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
+double t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort_dup = 0, t_sort = 0, t_wait = 0;
 
 // from an MKL example
 /* To avoid constantly repeating the part of code that checks inbound SparseBLAS functions' status,
@@ -1431,7 +1432,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
     return 0;
 }
 
-int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time, int &matmat_iter){
+int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time, int &matmat_iter_warmup, int &matmat_iter){
     // This version only works on symmetric matrices, since local transpose of B is being used.
     // this version is only for experiments.
     // B1 should be symmetric. Because we need its transpose. Use its row indices as column indices and vice versa.
@@ -1588,7 +1589,19 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // perform the multiplication
     // =======================================
 
+    // warmup
     case1 = 0, case2 = 0, case3 = 0;
+    t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort_dup = 0, t_sort = 0, t_wait = 0;
+    for (int i = 0; i < matmat_iter_warmup; ++i) {
+        case1_iter = 0;
+        case2_iter = 0;
+        case3_iter = 0;
+        saena_matrix C(A->comm);
+        matmat(Acsc, Bcsc, C, send_size_max);
+    }
+
+    case1 = 0, case2 = 0, case3 = 0;
+    t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort_dup = 0, t_sort = 0, t_wait = 0;
     for (int i = 0; i < matmat_iter; ++i) {
         case1_iter = 0;
         case2_iter = 0;
@@ -1603,6 +1616,20 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         t_matmat = MPI_Wtime() - t_matmat;
         matmat_time += average_time(t_matmat, comm);
     }
+
+    //===============
+    // print timings
+    //===============
+
+    if (!rank) printf("init prep\ncomm\nfastmm\nsort_dup\nsort\nprep_iter\nwait\n");
+    print_time_ave(t_init_prep / matmat_iter,                                    "t_init_prep", comm, true, false);
+    print_time_ave((t_mat - t_prep_iter - t_fast_mm - t_sort_dup) / matmat_iter, "comm", comm, true, false);
+    print_time_ave(t_fast_mm / matmat_iter,                                      "t_fast_mm", comm, true, false);
+    print_time_ave(t_sort_dup / matmat_iter,                                     "t_sort_dup", comm, true, false);
+    print_time_ave(t_sort / matmat_iter,                                         "t_sort", comm, true, false);
+    print_time_ave(t_prep_iter / matmat_iter,                                    "t_prep_iter", comm, true, false);
+    print_time_ave(t_wait / matmat_iter,                                         "t_wait", comm, true, false);
+    if (!rank) printf("\n");
 
     if (!rank) printf("case1\ncase2\ncase3\n");
     print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
@@ -1692,6 +1719,10 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(nprocs == 1){
+        printf("the serial version is commented out! check if(true).\n");
+    }
+
     int verbose_rank = 0;
 #ifdef __DEBUG1__
     if (verbose_matmat) {
@@ -1702,9 +1733,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 //    assert(Acsc.col_sz == Bcsc.row_sz);
 #endif
 
-    double t_prep, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort_dup = 0, t_sort = 0, t_temp;
-
-    t_prep = MPI_Wtime();
+    double t_temp, t_temp2;
+    t_temp = MPI_Wtime();
 
     // =======================================
     // perform the multiplication - serial implementation
@@ -1750,8 +1780,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     std::vector<cooEntry> AB_temp;
 
-    if(nprocs > 1){
-//    if(false){
+//    if(nprocs > 1){
+    if(true){
         // set the mat_send data
         // structure of mat_send:
         // 1- row:    type: index_t, size: send_nnz
@@ -1804,8 +1834,9 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
         CSCMat_mm S;
 
-        t_prep = MPI_Wtime() - t_prep;
-        t_mat = MPI_Wtime();
+        t_temp = MPI_Wtime() - t_temp;
+        t_init_prep += t_temp;
+        t_temp2 = MPI_Wtime();
 
         // todo: the last communication means each proc receives a copy of its already owned B, which is redundant,
         //   so the communication should be avoided but the multiplication should be done. consider this:
@@ -1818,10 +1849,15 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
             // receive R_tranpose from the right_neighbor. And so on.
             // --------------------------------------------------------------------
 
+            t_temp = MPI_Wtime();
+
             next_owner = (k+1)%nprocs;
             mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
             recv_nnz   = Bcsc.nnz_list[next_owner];
             recv_size  = (valbyidx + 1) * recv_nnz + mat_recv_M + 1;
+
+            t_temp = MPI_Wtime() - t_temp;
+            t_prep_iter += t_temp;
 
 #ifdef __DEBUG1__
             assert(recv_size <= send_size_max);
@@ -1923,7 +1959,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                 }
             }
 
+            t_temp = MPI_Wtime();
+
             MPI_Waitall(2, requests, statuses);
+
+            t_temp = MPI_Wtime() - t_temp;
+            t_wait += t_temp;
 
 #ifdef __DEBUG1__
             {
@@ -2012,7 +2053,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         delete [] requests;
         delete [] statuses;
 
-        t_mat = MPI_Wtime() - t_mat;
+        t_temp2 = MPI_Wtime() - t_temp2;
+        t_mat += t_temp2;
 
 #ifdef __DEBUG1__
 //        print_vector(AB_temp_no_dup, 0, "AB_temp_no_dup", comm);
@@ -2078,20 +2120,6 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     std::sort(C.entry.begin(), C.entry.end());
     t_temp = MPI_Wtime() - t_temp;
     t_sort += t_temp;
-
-    //===============
-    // print timings
-    //===============
-    // time parameters: t_prep, t_mat, t_prep_iter, t_fast_mm, t_sort
-
-    if (!rank) printf("init prep\ncomm\nfastmm\nt_sort_dup\nsort\nprep_iter\n");
-    print_time_ave(t_prep, "t_prep", comm, true, false);
-    print_time_ave(t_mat - t_prep_iter - t_fast_mm - t_sort_dup, "comm", comm, true, false);
-    print_time_ave(t_fast_mm, "t_fast_mm", comm, true, false);
-    print_time_ave(t_sort_dup, "t_sort_dup", comm, true, false);
-    print_time_ave(t_sort, "t_sort", comm, true, false);
-    print_time_ave(t_prep_iter, "t_prep_iter", comm, true, false);
-    if (!rank) printf("\n");
 
 #ifdef __DEBUG1__
     {
