@@ -883,11 +883,10 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
         // ========================================================
 
 //        printf("=============================================\n");
-//        std::cout << "\nA: nnz: " << A1.col_scan[A.col_sz] - A1.col_scan[0] << "\tcol is not correct."
-//                  << " threshold: " << threshold << std::endl;
+//        std::cout << "\nA: nnz: " << A.nnz << std::endl;
 //        for (index_t j = 0; j < A.col_sz; j++) {
 //            for (index_t i = A1.col_scan[j]; i < A1.col_scan[j + 1]; i++) {
-//                std::cout << std::setprecision(4) << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
+//                std::cout << std::setprecision(4) << A.r[i] << "\t" << j+A.col_offset << "\t" << A.v[i] << std::endl;
 //            }
 //        }
         // ========================================================
@@ -904,8 +903,6 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 
     index_t *A1r = &A.r[offset];
     value_t *A1v = &A.v[offset];
-//    index_t *A1r = &mempool4[0];
-//    value_t *A1v = &mempool5[0];
     index_t *A2r = &mempool4[0];
     value_t *A2v = &mempool5[0];
 
@@ -936,8 +933,8 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     }*/
 #endif
 
-    long mid;
-    nnz_t iter0 = offset, col_nnz;
+//    long mid;
+//    nnz_t iter0 = offset, col_nnz;
     A1.nnz = 0, A2.nnz = 0;
     for(j = 0; j < A.col_sz; ++j){
 //#if 0
@@ -1061,11 +1058,28 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 #endif
 #endif
 
+    // if A1 does not have any nonzero, then free A2's memory and make A2.col_scan point to A.col_scan and return.
+    if(A1.nnz == 0){
+        delete []A2.col_scan;
+        A2.free_c = false;
+        A2.col_scan = A1.col_scan;
+        A2.r = &A.r[0];
+        A2.v = &A.v[0];
+
+        for (j = 0; j < A2.col_sz; ++j) {
+            for (i = A2.col_scan[j]; i < A2.col_scan[j + 1]; ++i) {
+                A2.r[i] -= A1.row_sz;
+            }
+        }
+
+        goto reorder_split_end;
+    }
+
     // if A2 does not have any nonzero, then free its memory and return.
     if(A2.nnz == 0){
         delete []A2.col_scan;
         A2.free_c = false;
-        return 0;
+        goto reorder_split_end;
     }
 
     for(i = 1; i <= A.col_sz; ++i){
@@ -1074,6 +1088,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     }
 
     // First put A1 at the beginning of A, then put A2 at the end A.
+    // A1 points to A, so no need to copy A1 into A.
 //    memcpy(&A.r[offset],          &A1r[0], A1.nnz * sizeof(index_t));
 //    memcpy(&A.v[offset],          &A1v[0], A1.nnz * sizeof(value_t));
 
@@ -1109,6 +1124,8 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     }
 #endif
 
+    reorder_split_end:
+
 #ifdef __DEBUG1__
     {
         // assert A1
@@ -1125,12 +1142,6 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 //                              << A.row_sz << ", " << A.row_offset << ")(" << A.col_sz << ", " << A.col_offset
 //                              << ")], A1r: " << A1r[iter] << "\n";
 //                    ++iter;
-                }
-            }
-        }else{ // if A1.nnz = 0, then col_scan should be same for the whole array.
-            for (j = 0; j < A1.col_sz; ++j) {
-                for (i = A1.col_scan[j]; i < A1.col_scan[j + 1]; ++i) {
-                    assert(A1.col_scan[j] == A1.col_scan[j + 1]);
                 }
             }
         }
@@ -1186,10 +1197,21 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
 
     --reorder_counter;
 
-    nnz_t nnz1 = A1.col_scan[A.col_sz] - A1.col_scan[0];
-    nnz_t nnz2 = A2.col_scan[A.col_sz] - A2.col_scan[0];
-    assert(A.nnz == (nnz1 + nnz2));
+//    nnz_t nnz1 = A1.col_scan[A.col_sz] - A1.col_scan[0];
+//    nnz_t nnz2 = A2.col_scan[A.col_sz] - A2.col_scan[0];
+//    assert(A.nnz == (nnz1 + nnz2));
+    assert(A.nnz == (A1.nnz + A2.nnz));
 #endif
+
+    // if A1.nnz it means A2 was the whole A, so we only need to return row indices to their original values.
+    if(A1.nnz == 0) {
+        for (index_t j = 0; j < A2.col_sz; ++j) {
+            for (index_t i = A2.col_scan[j]; i < A2.col_scan[j + 1]; ++i) {
+                A2.r[i] += A1.row_sz;
+            }
+        }
+        return 0;
+    }
 
     // ========================================================
     // IMPORTANT: An offset should be used to access Ar and Av.
