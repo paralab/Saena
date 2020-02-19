@@ -176,8 +176,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     // ==============================================================
 
     // A.row_sz * A.col_sz < matmat_size_thre1
-    if (A.row_sz < (matmat_size_thre1 / A.col_sz) ) { //DOLLAR("case1")
-//    if (case2_iter + case3_iter == 10) {
+//    if ( A.row_sz < (matmat_size_thre1 / A.col_sz) ) { //DOLLAR("case1")
+    if ( case2_iter + case3_iter == matmat_size_thre2 || (A.row_sz < (matmat_size_thre1 / A.col_sz)) ) {
 
 //        if (rank == verbose_rank) printf("fast_mm: case 1: start \n");
 
