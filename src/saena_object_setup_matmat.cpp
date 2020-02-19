@@ -1702,7 +1702,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 //    assert(Acsc.col_sz == Bcsc.row_sz);
 #endif
 
-    double t_prep, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort, t_temp;
+    double t_prep, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort_dup = 0, t_sort = 0, t_temp;
 
     t_prep = MPI_Wtime();
 
@@ -1903,6 +1903,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                 // =======================================
                 if(!AB_temp.empty()) {
 
+                    t_temp = MPI_Wtime();
+
                     std::sort(AB_temp.begin(), AB_temp.end());
 
                     nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
@@ -1913,7 +1915,10 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                             C.entry.back().val += AB_temp[++i].val;
                         }
                     }
+
                     AB_temp.clear();
+                    t_temp = MPI_Wtime() - t_temp;
+                    t_sort_dup += t_temp;
 
                 }
             }
@@ -2053,7 +2058,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     // sort and remove duplicates
     // =======================================
 
-    t_sort = MPI_Wtime();
+    t_temp = MPI_Wtime();
 #if 0
     if(!AB_temp.empty()) {
 
@@ -2071,17 +2076,19 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
     }
 #endif
     std::sort(C.entry.begin(), C.entry.end());
-    t_sort = MPI_Wtime() - t_sort;
+    t_temp = MPI_Wtime() - t_temp;
+    t_sort += t_temp;
 
     //===============
     // print timings
     //===============
     // time parameters: t_prep, t_mat, t_prep_iter, t_fast_mm, t_sort
 
-    if (!rank) printf("init prep\ncomm\nfastmm\nsort\nprep_iter\n");
+    if (!rank) printf("init prep\ncomm\nfastmm\nt_sort_dup\nsort\nprep_iter\n");
     print_time_ave(t_prep, "t_prep", comm, true, false);
-    print_time_ave(t_mat - t_prep_iter - t_fast_mm, "comm", comm, true, false);
+    print_time_ave(t_mat - t_prep_iter - t_fast_mm - t_sort_dup, "comm", comm, true, false);
     print_time_ave(t_fast_mm, "t_fast_mm", comm, true, false);
+    print_time_ave(t_sort_dup, "t_sort_dup", comm, true, false);
     print_time_ave(t_sort, "t_sort", comm, true, false);
     print_time_ave(t_prep_iter, "t_prep_iter", comm, true, false);
     if (!rank) printf("\n");
