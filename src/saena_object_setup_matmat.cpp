@@ -193,8 +193,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         ++case1_iter;
 
         sparse_matrix_t Amkl = nullptr;
-//        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A.row_sz + A.row_offset, A.col_sz, (int*)A.col_scan, (int*)(A.col_scan+1), (int*)Ar, Av);
-//        mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A.row_sz, A.col_sz, (int*)A.col_scan, (int*)(A.col_scan+1), (int*)(Ar - A.row_offset), Av);
         mkl_sparse_d_create_csc(&Amkl, SPARSE_INDEX_BASE_ZERO, A.row_sz, A.col_sz, (int*)A.col_scan, (int*)(A.col_scan+1), (int*)A.r, A.v);
 
         // export and print A from the MKL data structure
@@ -221,13 +219,11 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 */
 
         sparse_matrix_t Bmkl = nullptr;
-//        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B.row_sz + B.row_offset, B.col_sz, (int*)B.col_scan, (int*)(B.col_scan+1), (int*)Br, Bv);
-//        mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B.row_sz, B.col_sz, (int*)B.col_scan, (int*)(B.col_scan+1), (int*)(Br - B.row_offset), Bv);
         mkl_sparse_d_create_csc(&Bmkl, SPARSE_INDEX_BASE_ZERO, B.row_sz, B.col_sz, (int*)B.col_scan, (int*)(B.col_scan+1), (int*)B.r, B.v);
 
 #ifdef __DEBUG1__
-
-//        MPI_Barrier(comm);
+        {
+            //        MPI_Barrier(comm);
 //        if(rank==1) printf("\nPerform MKL matmult\n"); fflush(nullptr);
 //        MPI_Barrier(comm);
 
@@ -239,6 +235,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
 //        goto export_c;
 
+        }
 #endif
 
         // Compute C = A * B
@@ -260,13 +257,13 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         sparse_index_base_t indexing;
 
 #ifdef __DEBUG1__
-
-//        MPI_Barrier(comm);
+        {
+            //        MPI_Barrier(comm);
 //        if(rank==1) printf("Export C\n"); fflush(nullptr);
 //        MPI_Barrier(comm);
 
-        CALL_AND_CHECK_STATUS(mkl_sparse_d_export_csc( Cmkl, &indexing, &rows, &cols, &pointerB_C, &pointerE_C, &rows_C, &values_C ),
-                              "Error after MKL_SPARSE_D_EXPORT_CSC  \n");
+            CALL_AND_CHECK_STATUS(mkl_sparse_d_export_csc( Cmkl, &indexing, &rows, &cols, &pointerB_C, &pointerE_C, &rows_C, &values_C ),
+                                  "Error after MKL_SPARSE_D_EXPORT_CSC  \n");
 
 //        CALL_AND_CHECK_STATUS(mkl_sparse_d_export_csr( Cmkl, &indexing, &rows, &cols, &pointerB_C, &pointerE_C, &columns_C, &values_C ),
 //                              "Error after MKL_SPARSE_D_EXPORT_CSR  \n");
@@ -276,7 +273,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //        if(rank==1) printf("Extract nonzeros\n"); fflush(nullptr);
 //        MPI_Barrier(comm);
 
-        goto extract_c;
+            goto extract_c;
+        }
 #endif
 
         mkl_sparse_d_export_csc( Cmkl, &indexing, &rows, &cols, &pointerB_C, &pointerE_C, &rows_C, &values_C );
