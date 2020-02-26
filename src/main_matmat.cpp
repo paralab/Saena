@@ -98,7 +98,8 @@ int main(int argc, char* argv[]){
 //        A.get_internal_matrix()->print_info(2);
 //        A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
 //        print_vector(A.get_internal_matrix()->split, 1, "split", comm);
-    //    petsc_viewer(A.get_internal_matrix());
+//        print_vector(A.get_internal_matrix()->row_local, 0, "rows", comm);
+//        petsc_viewer(A.get_internal_matrix());
 
         // *************************** print info ****************************
 
@@ -112,7 +113,7 @@ int main(int argc, char* argv[]){
         }
 
 // *************************** checking the correctness of matrix-matrix product ****************************
-
+/*
         {
 //            saena::amg solver;
             saena::matrix C(comm);
@@ -129,9 +130,9 @@ int main(int argc, char* argv[]){
             // check the correctness with PETSc
             petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
         }
-
+*/
 // *************************** matrix-matrix product ****************************
-
+/*
         double matmat_time = 0;
         int matmat_iter_warmup = 2;
         int matmat_iter = 3;
@@ -152,6 +153,7 @@ int main(int argc, char* argv[]){
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
         petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
+*/
     }
 
     // *************************** CombBLAS ****************************
