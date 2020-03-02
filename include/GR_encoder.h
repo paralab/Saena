@@ -15,6 +15,9 @@ private:
     int     buf_iter = 0;
     index_t filled   = 0;
 
+    bool verbose_comp   = false;
+    bool verbose_decomp = true;
+
 public:
     void    put_bit(uchar *buf, uchar b);
     index_t get_bit(uchar *buf);
