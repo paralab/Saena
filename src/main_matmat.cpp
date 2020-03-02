@@ -113,7 +113,7 @@ int main(int argc, char* argv[]){
         }
 
 // *************************** checking the correctness of matrix-matrix product ****************************
-/*
+
         {
 //            saena::amg solver;
             saena::matrix C(comm);
@@ -130,7 +130,7 @@ int main(int argc, char* argv[]){
             // check the correctness with PETSc
             petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
         }
-*/
+
 // *************************** matrix-matrix product ****************************
 /*
         double matmat_time = 0;

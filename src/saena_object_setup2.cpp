@@ -601,7 +601,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     // =======================================
 
     saena_matrix RA(comm);
-    matmat(Rcsc, Acsc, RA, send_size_max);
+    matmat(Rcsc, Acsc, RA);
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
@@ -762,7 +762,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 //    saena_matrix RAP;
     MPI_Comm comm_temp = Ac->comm;
     Ac->comm           = A->comm;
-    matmat(RAcsc, Pcsc, *Ac, send_size_max);
+    matmat(RAcsc, Pcsc, *Ac);
     Ac->comm           = comm_temp;
 
 #ifdef __DEBUG1__

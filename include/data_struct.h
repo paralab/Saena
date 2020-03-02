@@ -4,10 +4,17 @@
 #include <iostream>
 #include <vector>
 #include "mpi.h"
+#include <cmath>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
+
+
+index_t rem_sz(index_t sz, int k);
+
+index_t tot_sz(index_t sz, int k, short q);
+
 
 // the order of this class is "column-major order"
 class cooEntry{
@@ -406,10 +413,27 @@ std::ostream & operator<<(std::ostream & stream, const vecCol & item);
 bool vecCol_col_major (const vecCol& node1, const vecCol& node2);
 
 
+class GR_sz {
+public:
+    int  k   = 0; // Golomb-Rice parameter (M = 2^k)
+    int  r   = 0; // remainder size in bytes
+    int  q   = 0; // quotient size, if(use_short == true) then they are "short", otherwise "int".
+    int  tot = 0; // total size in bytes
+
+    unsigned long max_tot = 0; // in bytes (char)
+
+    std::vector<int> ks;
+    std::vector<int> qs;
+
+    GR_sz() = default;
+};
+
 class CSCMat{
 private:
 
 public:
+
+    MPI_Comm comm = MPI_COMM_WORLD;
 
     index_t *row      = nullptr;
     value_t *val      = nullptr;
@@ -419,33 +443,25 @@ public:
     nnz_t   nnz     = 0;
     nnz_t   max_nnz = 0;
     index_t max_M   = 0;
-//    index_t M    = 0;
-//    index_t Mbig;
-//    nnz_t   nnz_g;
-//    bool free_memory = false;
+
     std::vector<index_t> split;
     std::vector<nnz_t>   nnz_list;
 
+    // compresseion parameters
+    // =======================
+
+    unsigned long max_comp_sz = 0; // in bytes (char)
+
+    GR_sz comp_row;
+    GR_sz comp_col;
+
+    // =======================
+
     CSCMat() = default;
+    int compress_prep_compute(index_t *v, index_t v_sz, GR_sz &comp_sz);
+    int compress_prep();
 };
 
-//class reorder_info{
-//public:
-//    index_t col_sz, threshold, partial_offset;
-//
-//    reorder_info(): row_sz(0), row_offset(0), col_sz(0), col_offset(0) {}
-//    reorder_info(index_t row_size, index_t _row_offset, index_t col_size, index_t _col_offset):
-//            row_sz(row_size), row_offset(_row_offset), col_sz(col_size), col_offset(_col_offset) {}
-//};
-
-//class mat_info{
-//public:
-//    index_t row_sz, row_offset, col_sz, col_offset;
-//
-//    mat_info(): row_sz(0), row_offset(0), col_sz(0), col_offset(0) {}
-//    mat_info(index_t row_size, index_t _row_offset, index_t col_size, index_t _col_offset):
-//            row_sz(row_size), row_offset(_row_offset), col_sz(col_size), col_offset(_col_offset) {}
-//};
 
 class CSCMat_mm{
 private:
@@ -459,12 +475,6 @@ public:
     value_t *v;
 
     bool free_r = false, free_c = false, free_v = false;
-
-//    index_t col_sz  = 0;
-//    nnz_t   max_nnz = 0;
-//    index_t max_M   = 0;
-//    std::vector<index_t> split;
-//    std::vector<nnz_t>   nnz_list;
 
     CSCMat_mm(): row_sz(0), row_offset(0), col_sz(0), col_offset(0), nnz(0), r(nullptr), v(nullptr), col_scan(nullptr) {}
 
@@ -531,5 +541,6 @@ public:
 
     CSRMat() = default;
 };
+
 
 #endif //SAENA_DATA_STRUCT_H

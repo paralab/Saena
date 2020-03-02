@@ -25,6 +25,7 @@
 typedef unsigned int  index_t;
 typedef unsigned long nnz_t;
 typedef double        value_t;
+typedef unsigned char uchar;
 
 #define ITER_LAZY 20        // number of update steps for lazy-update
 
@@ -88,9 +89,10 @@ public:
     // memory pool used in compute_coarsen
 //    value_t *mempool1   = nullptr;
 //    index_t *mempool2   = nullptr;
-    index_t *mempool3   = nullptr;
-    index_t *mempool4   = nullptr;
-    value_t *mempool5   = nullptr;
+    index_t *mempool3 = nullptr;
+    index_t *mempool4 = nullptr;
+    value_t *mempool5 = nullptr;
+    uchar   *mempool6 = nullptr;
     nnz_t   loc_nnz_max = 0;
 
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
@@ -101,6 +103,7 @@ public:
 //    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
 //    std::unique_ptr<index_t[]> mempool2;
 //    std::unique_ptr<value_t[]> mempool3;
+
 
     // *****************
     // shrink
@@ -229,11 +232,11 @@ public:
 //    int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 //    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 //    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
+    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
 //    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
     int matmat(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble=true);
-    int matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &send_size_max);
+    int matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_tot_sz);
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 //    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 

@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 project(Saena)
 
-#set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD 14) #CombBLAS requires 14
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -9,23 +8,24 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # -----------------------------------------------------------------------
 # Build Type
 
-#IF(NOT CMAKE_BUILD_TYPE)
-#        SET(CMAKE_BUILD_TYPE Release)
-#ENDIF()
+IF(NOT CMAKE_BUILD_TYPE)
+#    SET(CMAKE_BUILD_TYPE Debug)
+    SET(CMAKE_BUILD_TYPE Release)
+ENDIF()
 
-set(CMAKE_BUILD_TYPE Debug)
-#set(CMAKE_BUILD_TYPE Release)
-
-#message(--\ Saena:\ CMAKE_BUILD_TYPE:\ ${CMAKE_BUILD_TYPE})
-
-#IF(CMAKE_BUILD_TYPE STREQUAL Release)
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-#ENDIF()
+#SET(CMAKE_BUILD_TYPE Debug)
+#SET(CMAKE_BUILD_TYPE Release)
 
 IF(CMAKE_BUILD_TYPE STREQUAL Debug)
     add_definitions(-D__DEBUG1__)
 ENDIF()
+
+IF(CMAKE_BUILD_TYPE STREQUAL Release)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+ENDIF()
+
+message(--\ Saena:\ CMAKE_BUILD_TYPE:\ ${CMAKE_BUILD_TYPE})
 
 # -----------------------------------------------------------------------
 # OpenMP
@@ -60,14 +60,6 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${SuperLU_DIST_LIB})
 
 # -----------------------------------------------------------------------
 # METIS and PARMETIS
-
-#set(PARMETIS_ROOT_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3)
-#set(METIS_LIBRARY        ${PARMETIS_ROOT_DIR}/metis/build/install_folder/lib/libmetis.a)
-#set(PARMETIS_LIBRARY     ${PARMETIS_ROOT_DIR}/build/install_folder/lib/libparmetis.a)
-#set(METIS_INCLUDE_DIR    ${PARMETIS_ROOT_DIR}/metis/build/install_folder/include)
-#set(PARMETIS_INCLUDE_DIR ${PARMETIS_ROOT_DIR}/build/install_folder/include)
-#set(METIS_INCLUDE_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/metis/include)
-#set(PARMETIS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/parmetis-4.0.3/include)
 
 #set(METIS_INCLUDE_DIR    ${CMAKE_BINARY_DIR}/build_metis/include)
 #set(PARMETIS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/build_parmetis/include)
@@ -170,9 +162,10 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${ZFP_LIB})
 # -----------------------------------------------------------------------
 #PETSc
 
-set(PETSC_DIR "~/Software/petsc-3.8.4")
 #set(PETSC_DIR "~/softwares/petsc-3.8.0")
 #set(PETSC_ARCH "arch-linux2-c-debug")
+
+set(PETSC_DIR "~/Software/petsc-3.8.4")
 set(PETSC_ARCH "arch-linux2-c-opt")
 set(PETSC_LIB ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so)
 include_directories(
@@ -211,10 +204,10 @@ include_directories(
 # -----------------------------------------------------------------------
 # sparsepp: alternative for unordered_map and unordered_set
 
-set(SPARSEPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/sparsepp)
-include_directories(
-        ${SPARSEPP_DIR}
-)
+#set(SPARSEPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/sparsepp)
+#include_directories(
+#        ${SPARSEPP_DIR}
+#)
 
 # -----------------------------------------------------------------------
 # Main Files
@@ -235,6 +228,7 @@ set(HEADER_FILES ${HEADER_FILES}
         include/saena_vector.h
         include/petsc_functions.h
         include/combblas_functions.h
+        include/GR_encoder.h
         )
 
 set(SOURCE_FILES ${SOURCE_FILES}
@@ -267,6 +261,8 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_object_write2file.cpp
 #        src/saena_object_setup2_backup.cpp
 #        src/saena_object_setup2_test.cpp
+
+        src/GR_encoder.cpp
 
         src/petsc_functions.cpp
         src/combblas_functions.cpp

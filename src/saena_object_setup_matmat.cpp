@@ -2,6 +2,7 @@
 #include "saena_matrix.h"
 #include "strength_matrix.h"
 #include "grid.h"
+#include "GR_encoder.h"
 #include "aux_functions.h"
 #include "parUtils.h"
 #include "dollar.hpp"
@@ -116,12 +117,12 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         // assert B entries
         for (nnz_t i = 0; i < B.col_sz; i++) {
-//        col_idx = i + B.col_offset;
+        col_idx = i + B.col_offset;
             for (nnz_t j = B.col_scan[i]; j < B.col_scan[i + 1]; j++) {
 //                std::cout << j << "\t" << B.r[j] << "\t" << col_idx << "\t" << B.v[j] << "\n";
                 assert((B.r[j] >= 0) && (B.r[j] < B.row_sz));
                 assert(i < B.col_sz);
-                ASSERT(fabs(B.v[j]) > ALMOST_ZERO, "rank: " << rank << ", B.v[j]: " << B.v[j]);
+                ASSERT(fabs(B.v[j]) > ALMOST_ZERO, "rank " << rank << ": B(" << B.r[j] << ", " << col_idx << ") = " << B.v[j]);
             }
         }
 
@@ -1126,6 +1127,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //    auto Ac  = std::make_unique<index_t[]>(A->Mbig+1); // col_idx
 
     CSCMat Acsc;
+    Acsc.comm     = A->comm;
     Acsc.nnz      = A->nnz_l;
     Acsc.col_sz   = A->Mbig;
     Acsc.max_nnz  = A->nnz_max;
@@ -1192,6 +1194,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //    auto Bc  = new index_t[B->M+1];    // col_idx
 
     CSCMat Bcsc;
+    Bcsc.comm     = B->comm;
     Bcsc.nnz      = B->nnz_l;
     Bcsc.col_sz   = B->M;
     Bcsc.max_nnz  = B->nnz_max;
@@ -1219,33 +1222,44 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
 #ifdef __DEBUG1__
     assert(Bcsc.nnz == (Bcsc.col_scan[Bcsc.col_sz] - Bcsc.col_scan[0]));
+    // print B info
+    {
+//        B->print_entry(0);
+//        printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
+//        printf("rank %d: B: nnz_max: %ld\tM_max: %d\n", rank, B->nnz_max, B->M_max);
+//        print_array(Bcsc.row, Bcsc.nnz, 0, "Bcsc.row", comm);
+//        print_array(Bcsc.col_scan, Bcsc.col_sz+1, 0, "Bcsc.col_scan", comm);
+//        print_array(Bcsc.val, Bcsc.nnz, 0, "Bcsc.val", comm);
 
-//    B->print_entry(0);
-//    printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
-//    printf("rank %d: B: nnz_max: %ld\tM_max: %d\n", rank, B->nnz_max, B->M_max);
-//    print_array(Bc, B->M+1, 0, "Bc", comm);
-//
-//    std::cout << "\nB: nnz: " << B->nnz_l << std::endl ;
-//    for(index_t j = 0; j < B->M; ++j){
-//        for(index_t i = Bcsc.col_scan[j]; i < Bcsc.col_scan[j+1]; ++i){
-//            std::cout << std::setprecision(4) << Bcsc.row[i] << "\t" << j << "\t" << Bcsc.val[i] << std::endl;
-//            assert( fabs(Bcsc.val[i]) > ALMOST_ZERO );
+//        if(rank == 0){
+//            std::cout << "\nB: nnz: " << B->nnz_l << std::endl ;
+//            for(index_t j = 0; j < B->M; ++j){
+//                for(index_t i = Bcsc.col_scan[j]; i < Bcsc.col_scan[j+1]; ++i){
+//                    std::cout << std::setprecision(4) << Bcsc.row[i] << "\t" << j << "\t" << Bcsc.val[i] << std::endl;
+//                    assert( fabs(Bcsc.val[i]) > ALMOST_ZERO );
+//                }
+//            }
 //        }
-//    }
+    }
 #endif
+
+    // =======================================
+    // prepare B for compression
+    // =======================================
+
+    Bcsc.compress_prep();
 
     // =======================================
     // Preallocate Memory
     // =======================================
 
-    nnz_t send_size_max;
-    matmat_memory(A, B, send_size_max);
+    matmat_memory(A, B, Bcsc.max_comp_sz);
 
     // =======================================
     // perform the multiplication
     // =======================================
 
-    matmat(Acsc, Bcsc, *C, send_size_max);
+    matmat(Acsc, Bcsc, *C);
 
     if(assemble){
         matmat_assemble(A, B, C);
@@ -1254,7 +1268,6 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     case1_iter_ave = average_iter(case1_iter, comm);
     case2_iter_ave = average_iter(case2_iter, comm);
     case3_iter_ave = average_iter(case3_iter, comm);
-
     if(rank==0){
         printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
     }
@@ -1289,11 +1302,12 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     delete []mempool3;
     delete []mempool4;
     delete []mempool5;
+    delete []mempool6;
 
     return 0;
 }
 
-int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &send_size_max){
+int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_tot_sz){
 
 #ifdef __DEBUG1__
 //    int rank;
@@ -1327,10 +1341,10 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &send_si
     int   valbyidx              = sizeof(value_t) / sizeof(index_t);
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
-          send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
+    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
     try{
-        mempool3 = new index_t[3 * send_size_max];
+        mempool3 = new index_t[send_size_max]; // used to store mat_current in matmat()
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
@@ -1338,13 +1352,23 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &send_si
     loc_nnz_max = std::max(A->nnz_max, B->nnz_max);
 
     try{
-        mempool4 = new index_t[loc_nnz_max];
+        mempool4 = new index_t[loc_nnz_max]; //used in reorder_split and reorder_back_split
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
 
     try{
-        mempool5 = new value_t[loc_nnz_max];
+        mempool5 = new value_t[loc_nnz_max]; //used in reorder_split and reorder_back_split
+    }catch(std::bad_alloc& ba){
+        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
+
+    assert(comp_max_tot_sz != 0);
+
+    try{
+        unsigned long mempool6_sz = 2 * (comp_max_tot_sz + B->nnz_max * sizeof(value_t));
+        mempool6 = new uchar[mempool6_sz]; // one for mat_send, one for mat_recv. both are compressed.
+        std::fill(mempool6, &mempool6[mempool6_sz], 0);
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
@@ -1578,7 +1602,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     double t_matmat = MPI_Wtime();
 
     nnz_t send_size_max;
-    matmat_memory(A, B, send_size_max);
+    matmat_memory(A, B, Bcsc.max_comp_sz);
 
     t_matmat = MPI_Wtime() - t_matmat;
     matmat_time += average_time(t_matmat, comm);
@@ -1595,7 +1619,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         case2_iter = 0;
         case3_iter = 0;
         saena_matrix C(A->comm);
-        matmat(Acsc, Bcsc, C, send_size_max);
+        matmat(Acsc, Bcsc, C);
     }
 
     case1 = 0, case2 = 0, case3 = 0;
@@ -1609,7 +1633,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
         MPI_Barrier(comm);
         t_matmat = MPI_Wtime();
 
-        matmat(Acsc, Bcsc, C, send_size_max);
+        matmat(Acsc, Bcsc, C);
 
         t_matmat = MPI_Wtime() - t_matmat;
         matmat_time += average_time(t_matmat, comm);
@@ -1676,6 +1700,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     delete []mempool3;
     delete []mempool4;
     delete []mempool5;
+    delete []mempool6;
 
     return 0;
 }
@@ -1710,16 +1735,13 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 }
 */
 
-int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max){
+
+int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
     MPI_Comm comm = C.comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
-    if(nprocs == 1){
-        printf("the serial version is commented out! check if(true).\n");
-    }
 
     int verbose_rank = 0;
 #ifdef __DEBUG1__
@@ -1757,13 +1779,15 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 //    nnz_t r_cscan_buffer_sz_max = Bcsc.max_nnz + Bcsc.max_M + 1;
 //    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
-    nnz_t send_nnz  = Bcsc.nnz;
-    nnz_t send_size = (valbyidx + 1) * send_nnz + Bcsc.col_sz + 1; // valbyidx for val, 1 for row, Bcsc.col_sz + 1 for c_scan
+    nnz_t send_nnz   = Bcsc.nnz;
+    nnz_t row_buf_sz = Bcsc.comp_row.q*sizeof(short) + ( send_nnz          * (Bcsc.comp_row.k + 2));
+    nnz_t col_buf_sz = Bcsc.comp_col.q *sizeof(short)+ ( (Bcsc.col_sz + 1) * (Bcsc.comp_col.k + 2));
+    nnz_t send_size  = row_buf_sz + col_buf_sz + send_nnz * sizeof(value_t); // in bytes
 
     index_t Acsc_M = Acsc.split[rank+1] - Acsc.split[rank];
 
 #ifdef __DEBUG1__
-    ASSERT(send_size <= send_size_max, "send_size: " << send_size << ", send_size_max: " << send_size_max);
+//    ASSERT(send_size <= send_size_max, "send_size: " << send_size << ", send_size_max: " << send_size_max);
     if (verbose_matmat) {
         MPI_Barrier(comm);
         if (rank == verbose_rank) printf("matmat: step 1\n");
@@ -1771,6 +1795,8 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 //        if (rank == verbose_rank) std::cout << "send_nnz: " << send_nnz      << ",\tsend_size: " << send_size
 //                                    << ",\tsend_size_max: " << send_size_max << ",\tAcsc_M: "    << Acsc_M << std::endl;
 //        MPI_Barrier(comm);
+//        printf("row: r: %d, \tq: %d, \ttot: %d\n", Bcsc.comp_row.r, Bcsc.comp_row.q, Bcsc.comp_row.tot);
+//        printf("col: r: %d, \tq: %d, \ttot: %d\n", Bcsc.comp_col.r, Bcsc.comp_col.q, Bcsc.comp_col.tot);
     }
 #endif
 
@@ -1778,14 +1804,34 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     std::vector<cooEntry> AB_temp;
 
-//    if(nprocs > 1){
-    if(true){
+    if(nprocs > 1){
         // set the mat_send data
         // structure of mat_send:
         // 1- row:    type: index_t, size: send_nnz
         // 2- c_scan: type: index_t, size: Bcsc.col_sz + 1
         // 3- val:    type: value_t, size: send_nnz
-        auto mat_send          = &mempool3[0];
+        auto mat_send = &mempool6[0];
+
+        // compress row and col_scan of B, communicate it, decompress it and use it
+        GR_encoder encoder;
+        encoder.compress(Bcsc.row, Bcsc.nnz, Bcsc.comp_row.k, mat_send);
+        encoder.compress(Bcsc.col_scan, Bcsc.col_sz+1, Bcsc.comp_col.k, &mat_send[Bcsc.comp_row.tot]);
+
+        // copy B.val at the end of the compressed array
+        auto mat_send_v = reinterpret_cast<value_t*>(&mat_send[Bcsc.comp_row.tot + Bcsc.comp_col.tot]);
+        memcpy(mat_send_v, Bcsc.val, Bcsc.nnz * sizeof(value_t));
+
+#ifdef __DEBUG1__
+        {
+//            if(rank==verbose_rank){
+//                for(int i = 0; i < Bcsc.nnz; ++i){
+//                    std::cout << i << "\t" << mat_send_v[i] << std::endl;
+//                }
+//            }
+        }
+#endif
+
+#if 0
         auto mat_current_r     = &mat_send[0];
         auto mat_current_cscan = &mat_send[send_nnz];
         auto mat_current_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + Bcsc.col_sz + 1]);
@@ -1807,6 +1853,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 //        MPI_Barrier(comm);
         assert(send_nnz == (mat_current_cscan[Bcsc.col_sz] - mat_current_cscan[0]));
 #endif
+#endif
 
         int right_neighbor = (rank + 1)%nprocs;
         int left_neighbor  = rank - 1;
@@ -1817,13 +1864,13 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         // set the mat_recv data
         nnz_t recv_nnz;
         nnz_t recv_size;
+        index_t row_comp_sz, col_comp_sz, current_comp_sz;
         index_t mat_recv_M = 0, mat_current_M = 0;
-        auto mat_recv = &mempool3[send_size_max];
-//        auto mat_recv_rv    = reinterpret_cast<vecEntry*>(&mat_recv[0]);
-//        auto mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
-//        auto mat_recv_cscan = reinterpret_cast<index_t*>(&mat_recv[rv_buffer_sz_max]);
+        auto mat_recv = &mempool6[Bcsc.max_comp_sz];
 
-        auto mat_current = &mempool3[2 * send_size_max];
+        auto mat_current = &mempool3[0];
+        index_t *mat_current_r, *mat_current_cscan;
+        value_t *mat_current_v;
 
         auto mat_temp = mat_send;
         int  owner, next_owner;
@@ -1852,29 +1899,31 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
             next_owner = (k+1)%nprocs;
             mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
             recv_nnz   = Bcsc.nnz_list[next_owner];
-            recv_size  = (valbyidx + 1) * recv_nnz + mat_recv_M + 1;
+
+            row_buf_sz = Bcsc.comp_row.qs[next_owner] * sizeof(short) + (recv_nnz * (Bcsc.comp_row.ks[next_owner] + 2));
+            col_buf_sz = Bcsc.comp_col.qs[next_owner] * sizeof(short) + ((mat_recv_M + 1) * (Bcsc.comp_col.ks[next_owner] + 2));
+
+            recv_size = row_buf_sz + col_buf_sz + recv_nnz * sizeof(value_t); // in bytes
 
             t_temp = MPI_Wtime() - t_temp;
             t_prep_iter += t_temp;
 
 #ifdef __DEBUG1__
-            assert(recv_size <= send_size_max);
+            ASSERT(row_buf_sz + col_buf_sz <= Bcsc.max_comp_sz, "rank " << rank << ": row_buf:" << row_buf_sz
+                               << "\tcol_buf: " << col_buf_sz << ",\tBcsc.max_comp_sz: " << Bcsc.max_comp_sz);
             if (verbose_matmat) {
                 MPI_Barrier(comm);
                 if (rank == verbose_rank) printf("matmat: step 3 - in for loop\n");
                 MPI_Barrier(comm);
-                printf("rank %d: next_owner: %d, recv_nnz: %lu, recv_size: %lu, send_nnz = %lu, send_size: %lu, mat_recv_M: %u\n",
+                printf("rank %d: next_owner: %4d, recv_nnz: %4lu, recv_size: %4lu, send_nnz = %4lu, send_size: %4lu, mat_recv_M: %4u\n",
                        rank, next_owner, recv_nnz, recv_size, send_nnz, send_size, mat_recv_M);
                 MPI_Barrier(comm);
             }
-
-//            printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
-//            mat_recv.resize(recv_size);
 #endif
 
             // communicate data
-            MPI_Irecv(mat_recv, recv_size, MPI_UNSIGNED, right_neighbor, right_neighbor, comm, requests);
-            MPI_Isend(mat_send, send_size, MPI_UNSIGNED, left_neighbor,  rank,           comm, requests+1);
+            MPI_Irecv(mat_recv, recv_size, MPI_CHAR, right_neighbor, right_neighbor, comm, requests);
+            MPI_Isend(mat_send, send_size, MPI_CHAR, left_neighbor,  rank,           comm, requests+1);
 
             // =======================================
             // perform the multiplication
@@ -1886,12 +1935,46 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                 owner         = k%nprocs;
                 mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner]; //this is col_sz
 
-                // there are 2 copies of the received matrix, because the one that is being used for multiplication,
-                // gets changed during the opration and sending that same matrix would cause problem.
-                memcpy(mat_current, mat_send, send_size * sizeof(index_t));
+                // decompress mat_send into mat_current
+                row_comp_sz     = tot_sz(send_nnz, Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner]);
+                col_comp_sz     = tot_sz(mat_current_M + 1, Bcsc.comp_col.ks[owner], Bcsc.comp_col.qs[owner]);
+                current_comp_sz = row_comp_sz + col_comp_sz;
+
                 mat_current_r     = &mat_current[0];
                 mat_current_cscan = &mat_current[send_nnz];
                 mat_current_v     = reinterpret_cast<value_t*>(&mat_current[send_nnz + mat_current_M + 1]);
+
+                encoder.decompress(mat_current_r, send_nnz, Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner], mat_send);
+                encoder.decompress(mat_current_cscan, mat_current_M + 1, Bcsc.comp_col.ks[owner], Bcsc.comp_col.qs[owner], &mat_send[row_comp_sz]);
+                memcpy(mat_current_v, &mat_send[current_comp_sz], Bcsc.nnz_list[owner] * sizeof(value_t));
+
+#ifdef __DEBUG1__
+                {
+//                if(rank==verbose_rank) printf("row_comp_sz: %d, col_comp_sz: %d, current_comp_sz: %d\n", row_comp_sz, col_comp_sz, current_comp_sz);
+//                MPI_Barrier(comm);
+//                auto mat_send_vv = reinterpret_cast<value_t*>(&mat_send[current_comp_sz]);
+//                if(rank==verbose_rank){
+//                    std::cout << "Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner] << std::endl;
+//                    for(int i = 0; i < Bcsc.nnz_list[owner]; ++i){
+//                        std::cout << i << "\t" << mat_current_r[i] << "\t" << mat_current_v[i] << "\t" << mat_send_vv[i] << std::endl;
+//                    }
+//                    std::cout << std::endl;
+//                }
+
+//                MPI_Barrier(comm);
+//                if(rank==verbose_rank) {
+//                    index_t ofst = Bcsc.split[owner], col_idx;
+//                    std::cout << "\nmat that is received. original owner: " << owner << ", mat_current_M: " << mat_current_M << "\n";
+//                    for (nnz_t i = 0; i < mat_current_M; i++) {
+//                        col_idx = i + ofst;
+//                        for (nnz_t j = mat_current_cscan[i]; j < mat_current_cscan[i + 1]; j++) {
+//                            std::cout << j << "\t" << mat_current_r[j] << "\t" << col_idx << "\t" << mat_current_v[j] << std::endl;
+//                        }
+//                    }
+//                }
+//                MPI_Barrier(comm);
+                }
+#endif
 
                 S.set_params(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner], Bcsc.nnz_list[owner],
                              mat_current_r, mat_current_v, mat_current_cscan);
@@ -1974,13 +2057,6 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
                 }
 
                 assert(reorder_counter == 0);
-
-//            auto mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
-//            MPI_Barrier(comm);
-//            if(rank==0){
-//                print_array(mat_recv_cscan, mat_recv_M+1, 0, "mat_recv_cscan", comm);
-//            }
-//            MPI_Barrier(comm);
             }
 #endif
 
@@ -1998,15 +2074,6 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
             t_temp = MPI_Wtime() - t_temp;
             t_prep_iter += t_temp;
-
-//            mat_send_r     = &mat_send[0];
-//            mat_send_cscan = &mat_send[send_nnz];
-//            mat_send_v     = reinterpret_cast<value_t*>(&mat_send[send_nnz + mat_recv_M + 1]);
-
-//            mat_send_rv    = reinterpret_cast<vecEntry*>(&mat_send[0]);
-//            mat_send_cscan = &mat_send[vecbyint * send_nnz];
-//            mat_recv_rv    = reinterpret_cast<vecEntry*>(&mat_recv[0]);
-//            mat_recv_cscan = &mat_recv[rv_buffer_sz_max];
 
 #ifdef __DEBUG1__
             if (verbose_matmat) {
@@ -2056,25 +2123,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
         t_mat += t_temp2;
 
 #ifdef __DEBUG1__
-//        print_vector(AB_temp_no_dup, 0, "AB_temp_no_dup", comm);
-//        print_vector(AB_nnz_start, -1, "AB_nnz_start", comm);
-//        print_vector(AB_nnz_end,   -1, "AB_nnz_end",   comm);
-#endif
-
-//        C.entry.resize(AB_temp_no_dup.size());
-//        nnz_t AB_nnz = 0;
-//        for(index_t p = 0; p < nprocs; p++){
-//            memcpy(&C.entry[AB_nnz], &AB_temp_no_dup[AB_nnz_start[p]], (AB_nnz_end[p] - AB_nnz_start[p]) * sizeof(cooEntry));
-//            AB_nnz += AB_nnz_end[p] - AB_nnz_start[p];
-//        }
-
-#ifdef __DEBUG1__
         if (verbose_matmat) {
             MPI_Barrier(comm);
             if (rank == verbose_rank) printf("matmat: step 6\n");
             MPI_Barrier(comm);
         }
-//        print_vector(AB, 0, "AB", comm);
 #endif
 
     } else { // nprocs == 1 -> serial
@@ -2135,6 +2188,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send
 
     return 0;
 }
+
 
 int saena_object::matmat(Grid *grid){
 /*
