@@ -17,7 +17,7 @@
 
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
-double t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort_dup = 0, t_sort = 0, t_wait = 0;
+double t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
 
 // from an MKL example
 /* To avoid constantly repeating the part of code that checks inbound SparseBLAS functions' status,
@@ -1595,13 +1595,18 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 #endif
 
     // =======================================
+    // prepare B for compression
+    // =======================================
+
+    Bcsc.compress_prep();
+
+    // =======================================
     // Preallocate Memory
     // =======================================
 
     MPI_Barrier(comm);
     double t_matmat = MPI_Wtime();
 
-    nnz_t send_size_max;
     matmat_memory(A, B, Bcsc.max_comp_sz);
 
     t_matmat = MPI_Wtime() - t_matmat;
@@ -1613,7 +1618,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
     // warmup
     case1 = 0, case2 = 0, case3 = 0;
-    t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort_dup = 0, t_sort = 0, t_wait = 0;
+    t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
     for (int i = 0; i < matmat_iter_warmup; ++i) {
         case1_iter = 0;
         case2_iter = 0;
@@ -1623,7 +1628,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     }
 
     case1 = 0, case2 = 0, case3 = 0;
-    t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort_dup = 0, t_sort = 0, t_wait = 0;
+    t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
     for (int i = 0; i < matmat_iter; ++i) {
         case1_iter = 0;
         case2_iter = 0;
@@ -1643,14 +1648,13 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // print timings
     //===============
 
-    if (!rank) printf("init prep\ncomm\nfastmm\nsort_dup\nsort\nprep_iter\nwait\n");
-    print_time_ave(t_init_prep / matmat_iter,                                    "t_init_prep", comm, true, false);
-    print_time_ave((t_mat - t_prep_iter - t_fast_mm - t_sort_dup) / matmat_iter, "comm", comm, true, false);
-    print_time_ave(t_fast_mm / matmat_iter,                                      "t_fast_mm", comm, true, false);
-    print_time_ave(t_sort_dup / matmat_iter,                                     "t_sort_dup", comm, true, false);
-    print_time_ave(t_sort / matmat_iter,                                         "t_sort", comm, true, false);
-    print_time_ave(t_prep_iter / matmat_iter,                                    "t_prep_iter", comm, true, false);
-    print_time_ave(t_wait / matmat_iter,                                         "t_wait", comm, true, false);
+    if (!rank) printf("init prep\ncomm\nfastmm\nsort\nprep_iter\nwait\n");
+    print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);
+    print_time_ave((t_mat - t_prep_iter - t_fast_mm) / matmat_iter, "comm", comm, true, false);
+    print_time_ave(t_fast_mm / matmat_iter,                         "t_fast_mm", comm, true, false);
+    print_time_ave(t_sort / matmat_iter,                            "t_sort", comm, true, false);
+    print_time_ave(t_prep_iter / matmat_iter,                       "t_prep_iter", comm, true, false);
+    print_time_ave(t_wait / matmat_iter,                            "t_wait", comm, true, false);
     if (!rank) printf("\n");
 
     if (!rank) printf("case1\ncase2\ncase3\n");
@@ -1774,14 +1778,14 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
     // communication and multiplication - parallel implementation
     // =======================================
 
-    int   valbyidx              = sizeof(value_t) / sizeof(index_t);
+//    int   valbyidx              = sizeof(value_t) / sizeof(index_t);
 //    nnz_t v_buffer_sz_max       = valbyidx * Bcsc.max_nnz;
 //    nnz_t r_cscan_buffer_sz_max = Bcsc.max_nnz + Bcsc.max_M + 1;
 //    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
     nnz_t send_nnz   = Bcsc.nnz;
     nnz_t row_buf_sz = Bcsc.comp_row.q*sizeof(short) + ( send_nnz          * (Bcsc.comp_row.k + 2));
-    nnz_t col_buf_sz = Bcsc.comp_col.q *sizeof(short)+ ( (Bcsc.col_sz + 1) * (Bcsc.comp_col.k + 2));
+    nnz_t col_buf_sz = Bcsc.comp_col.q*sizeof(short)+ ( (Bcsc.col_sz + 1) * (Bcsc.comp_col.k + 2));
     nnz_t send_size  = row_buf_sz + col_buf_sz + send_nnz * sizeof(value_t); // in bytes
 
     index_t Acsc_M = Acsc.split[rank+1] - Acsc.split[rank];
