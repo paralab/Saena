@@ -94,28 +94,17 @@ int CSCMat::compress_prep_compute(index_t *v, index_t v_sz, GR_sz &comp_sz){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-
-
-
-
-
-
-    int k_start = 2, k_end = 3;
-
-
-
-
-
+    int k_start = 4, k_end = 14;
 
     int q_sz = 0, r_sz;
-    unsigned int M;
+//    unsigned int M;
 
     comp_sz.tot = INT32_MAX;
 
-    int rank_ver = 0;
+//    int rank_ver = 0;
     for(int k = k_start; k < k_end; k+=2) {
 
-        M = 1U << k;
+//        M = 1U << k;
         r_sz = rem_sz(v_sz, k);
 
         // first element
