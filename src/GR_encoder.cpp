@@ -19,15 +19,14 @@
 
 using namespace std;
 
-int rank_ver = 10;
+//int rank_ver = 10;
 
-void GR_encoder::put_bit(uchar *buf, uchar b){
+inline void GR_encoder::put_bit(uchar *buf, uchar b){
 
-    // TODO: comment out these lines.
-    MPI_Comm comm = MPI_COMM_WORLD;
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+//    MPI_Comm comm = MPI_COMM_WORLD;
+//    int rank, nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_rank(comm, &rank);
 //    int rank_ver = 1;
 
     buf[buf_iter] = buf[buf_iter] | ((b & 1) << filled);
@@ -51,16 +50,12 @@ void GR_encoder::put_bit(uchar *buf, uchar b){
 }
 
 
-// TODO: comment out this.
-int wordcode_sz = 6;
+inline index_t GR_encoder::get_bit(uchar *buf){
 
-index_t GR_encoder::get_bit(uchar *buf){
-
-    // TODO: comment out these lines.
-    MPI_Comm comm = MPI_COMM_WORLD;
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+//    MPI_Comm comm = MPI_COMM_WORLD;
+//    int rank, nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_rank(comm, &rank);
 //    int rank_ver = 0;
 
     uchar tmp = (buf[buf_iter] >> filled) & 1U;
@@ -90,16 +85,15 @@ index_t GR_encoder::get_bit(uchar *buf){
 
 int GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uchar *buf){
 
-    // TODO: comment out these lines.
-    MPI_Comm comm = MPI_COMM_WORLD;
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+//    MPI_Comm comm = MPI_COMM_WORLD;
+//    int rank, nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_rank(comm, &rank);
 //    int rank_ver = 0;
 
 //    print_array(v, v_sz, rank_ver, "v compress", comm);
 
-    unsigned int M = 1U << k;
+//    unsigned int M = 1U << k;
 
     filled    = 7;
     buf_iter  = 0;
@@ -126,7 +120,7 @@ int GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uchar *buf){
 //        put_bit(buf, 0);
 //    }
 
-    q = diff / M;
+    q = diff >> k;
 //    if(rank==rank_ver) std::cout << "\nv[0]: " << diff << "\nq = " << q << "\t(iter: " << iter << "), r = " << diff - q*M << std::endl;
 
     if(q){
@@ -168,7 +162,7 @@ int GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uchar *buf){
             put_bit(buf, 0);
         }
 
-        q = diff / M;
+        q = diff >> k;
 
 //        if(rank==rank_ver){
 //            std::cout << i << "\tdiff: " << diff << ", v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", q: " << q << std::endl;
@@ -200,14 +194,13 @@ int GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uchar *buf){
 
 int GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uchar *buf) {
 
-    // TODO: comment out these lines.
-    MPI_Comm comm = MPI_COMM_WORLD;
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+//    MPI_Comm comm = MPI_COMM_WORLD;
+//    int rank, nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_rank(comm, &rank);
 //    int rank_ver = 0;
 
-    unsigned int M = 1U << k;
+//    unsigned int M = 1U << k;
 
     auto r_sz = rem_sz(v_sz, k);
     auto qs   = reinterpret_cast<short*>(&buf[r_sz]);
@@ -215,29 +208,28 @@ int GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uchar 
 
 //    print_array(qs, q_sz, 0, "qs after", MPI_COMM_WORLD);
 
-    int qiter = 0, viter = 0;
-    index_t x;
+    index_t qiter = 0, viter = 0, x;
     short q;
 
     // decode the first element
     filled   = 7;
     buf_iter = 0;
-//    iter = 0;
     bool neg = false; // flag for negavtive
 
     // if(get_bit == 1) -> negative
     if(get_bit(buf)) {
-        printf("rank %d: decompress: error: the first entry is a row index not difference, so it cannot be negative.\n", rank);
+        printf("decompress: error: the first entry is a row index not difference, so it cannot be negative.\n");
+//        printf("rank %d: decompress: error: the first entry is a row index not difference, so it cannot be negative.\n", rank);
         exit(EXIT_FAILURE);
     }
 
     q = 0;
-    if(get_bit(buf)) {
+    if(get_bit(buf)){
 //        if(rank==rank_ver) std::cout << "q nonzero" << std::endl;
         q = qs[qiter++];
     }
 
-    x = q * M;
+    x = q << k;
 //    if(rank==rank_ver) std::cout << "init x = " << x << std::endl;
 
 //    for (index_t j = 0; j < k; ++j) {
@@ -267,7 +259,7 @@ int GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uchar 
             q = qs[qiter++];
         }
 
-        x = q * M;
+        x = q << k;
 //        if(rank==rank_ver) std::cout << "q: " << q << ", x = q * M = " << x << std::endl;
 
         for (int j = k-1; j >= 0; --j) {
@@ -288,8 +280,7 @@ int GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uchar 
         ++viter;
     }
 
-    ASSERT(viter == v_sz, "rank " << rank << ": viter: " << viter << ", v_sz: " << v_sz);
-
+//    ASSERT(viter == v_sz, "rank " << rank << ": viter: " << viter << ", v_sz: " << v_sz);
 //    print_array(v, v_sz, rank_ver, "v decompressed", comm);
 
     return 0;
