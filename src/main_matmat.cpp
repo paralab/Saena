@@ -113,24 +113,24 @@ int main(int argc, char* argv[]){
         }
 
 // *************************** checking the correctness of matrix-matrix product ****************************
-/*
+
         {
 //            saena::amg solver;
             saena::matrix C(comm);
             solver.matmat(&A, &B, &C, true);
 
-//        C.get_internal_matrix()->print_info(0);
-//        C.print(-1);
-
-            // view A, B and C
-//        petsc_viewer(A.get_internal_matrix());
-//        petsc_viewer(B.get_internal_matrix());
-//        petsc_viewer(C.get_internal_matrix());
-
             // check the correctness with PETSc
             petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
+
+//            C.get_internal_matrix()->print_info(0);
+//            C.print(-1);
+
+            // view A, B and C
+//            petsc_viewer(A.get_internal_matrix());
+//            petsc_viewer(B.get_internal_matrix());
+//            petsc_viewer(C.get_internal_matrix());
         }
-*/
+
 // *************************** matrix-matrix product ****************************
 
         double matmat_time = 0;
