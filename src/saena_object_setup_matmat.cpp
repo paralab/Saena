@@ -1098,7 +1098,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 }
 
 
-int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, const bool assemble){
+int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, const bool assemble/* = true*/, const bool print_timing/* = false*/){
     // This version only works when B is symmetric, since local transpose of B is used.
     // Use B's row indices as column indices and vice versa.
 
@@ -1106,6 +1106,15 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    // =======================================
+    // Timing Parameters
+    // =======================================
+
+    // use this parameter to time matmat, and print it if (print_timing = true)
+    double t_temp = 0, t_matmat_prep = 0, t_matmat = 0, t_matmat_tot = 0;
+    // perform matmat multiple times and take the average of them.
+    int matmat_iter_warmup = 2, matmat_iter = 3;
 
     // =======================================
     // Convert A to CSC
@@ -1247,6 +1256,11 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     // prepare B for compression
     // =======================================
 
+    if(print_timing){
+        MPI_Barrier(comm);
+        t_temp = MPI_Wtime();
+    }
+
     Bcsc.compress_prep();
 
     // =======================================
@@ -1255,31 +1269,81 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
     matmat_memory(A, B, Bcsc.max_comp_sz);
 
+    if(print_timing){
+        t_temp = MPI_Wtime() - t_temp;
+        t_matmat_prep = t_temp;
+    }
+
     // =======================================
     // perform the multiplication
     // =======================================
 
-    matmat(Acsc, Bcsc, *C);
+    if(!print_timing){
+        matmat_CSC(Acsc, Bcsc, *C);
+        if(assemble){
+            matmat_assemble(A, B, C);
+        }
+    }else{
+        // warmup
+        case1 = 0, case2 = 0, case3 = 0;
+        t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
+        for (int i = 0; i < matmat_iter_warmup; ++i) {
+            case1_iter = 0;
+            case2_iter = 0;
+            case3_iter = 0;
+            saena_matrix C_tmp(A->comm);
+            matmat_CSC(Acsc, Bcsc, C_tmp);
+        }
 
-    if(assemble){
-        matmat_assemble(A, B, C);
+        case1 = 0, case2 = 0, case3 = 0;
+        t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
+        for (int i = 0; i < matmat_iter; ++i) {
+            case1_iter = 0;
+            case2_iter = 0;
+            case3_iter = 0;
+            saena_matrix C_tmp(A->comm);
+
+            MPI_Barrier(comm);
+            t_temp = MPI_Wtime();
+
+            matmat_CSC(Acsc, Bcsc, C_tmp);
+
+            t_temp = MPI_Wtime() - t_temp;
+            t_matmat += t_temp;
+        }
+
+        t_matmat_tot = t_matmat_prep + (t_matmat / matmat_iter);
+
+        //===============
+        // print timings
+        //===============
+
+        print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
+
+        if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
+        print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);
+        print_time_ave((t_mat - t_prep_iter - t_fast_mm) / matmat_iter, "comm", comm, true, false);
+        print_time_ave(t_fast_mm / matmat_iter,                         "t_fast_mm", comm, true, false);
+        print_time_ave(t_sort / matmat_iter,                            "t_sort", comm, true, false);
+        print_time_ave(t_prep_iter / matmat_iter,                       "t_prep_iter", comm, true, false);
+        print_time_ave(t_wait / matmat_iter,                            "t_wait", comm, true, false);
+        print_time_ave(t_comp / matmat_iter,                            "t_comp", comm, true, false);
+        print_time_ave(t_decomp / matmat_iter,                          "t_decomp", comm, true, false);
+        if (!rank) printf("\n");
+
+        if (!rank) printf("case1\ncase2\ncase3\n");
+        print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
+        print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
+        print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
     }
 
     case1_iter_ave = average_iter(case1_iter, comm);
     case2_iter_ave = average_iter(case2_iter, comm);
     case3_iter_ave = average_iter(case3_iter, comm);
     if(rank==0){
-        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+        printf("case iters:\n%.0f\n%.0f\n%.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+//        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
     }
-
-#ifdef __DEBUG1__
-//    if(rank==0){
-//        printf("rank %d: case1 = %u, case2 = %u, case3 = %u\n\n", rank, case1_iter, case2_iter, case3_iter);
-//    }
-//    case1_iter = 0;
-//    case2_iter = 0;
-//    case3_iter = 0;
-#endif
 
     // =======================================
     // finalize
@@ -1306,6 +1370,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
     return 0;
 }
+
 
 int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_tot_sz){
 
@@ -1393,6 +1458,7 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_ma
     return 0;
 }
 
+
 int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 
     MPI_Comm comm = A->comm;
@@ -1454,296 +1520,8 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
     return 0;
 }
 
-int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time, int &matmat_iter_warmup, int &matmat_iter){
-    // This version only works on symmetric matrices, since local transpose of B is being used.
-    // this version is only for experiments.
-    // B1 should be symmetric. Because we need its transpose. Use its row indices as column indices and vice versa.
 
-    MPI_Comm comm = A->comm;
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    // =======================================
-    // Convert A to CSC
-    // =======================================
-
-    if (!rank) printf("====================================\n");
-
-#ifdef __DEBUG1__
-    for(nnz_t i = 0; i < A->nnz_l; i++){
-        assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
-        assert( (A->entry[i].col >= 0) && (A->entry[i].col < A->Mbig) );
-        assert( fabs(A->entry[i].val) > ALMOST_ZERO );
-    }
-#endif
-
-//    auto Arv = new vecEntry[A->nnz_l]; // row and val
-//    auto Ac  = new index_t[A->Mbig+1]; // col_idx
-
-    // todo: change to smart pointers
-//    auto Arv = std::make_unique<vecEntry[]>(A->nnz_l); // row and val
-//    auto Ac  = std::make_unique<index_t[]>(A->Mbig+1); // col_idx
-
-    CSCMat Acsc;
-    Acsc.comm     = A->comm;
-    Acsc.nnz      = A->nnz_l;
-    Acsc.col_sz   = A->Mbig;
-    Acsc.max_nnz  = A->nnz_max;
-    Acsc.max_M    = A->M_max;
-    Acsc.row      = new index_t[Acsc.nnz];
-    Acsc.val      = new value_t[Acsc.nnz];
-    Acsc.col_scan = new index_t[Acsc.col_sz + 1];
-
-    std::fill(&Acsc.col_scan[0], &Acsc.col_scan[Acsc.col_sz + 1], 0);
-    index_t *Ac_tmp = &Acsc.col_scan[1];
-    for(nnz_t i = 0; i < Acsc.nnz; i++){
-        Acsc.row[i] = A->entry[i].row - A->split[rank]; // make the rows start from 0. when done with multiply, add this to the result.
-//        Acsc.row[i] = A->entry[i].row;
-        Acsc.val[i] = A->entry[i].val;
-        Ac_tmp[A->entry[i].col]++;
-    }
-
-    for(nnz_t i = 0; i < Acsc.col_sz; i++){
-        Acsc.col_scan[i+1] += Acsc.col_scan[i];
-    }
-
-    Acsc.split    = A->split;
-    Acsc.nnz_list = A->nnz_list;
-
-#ifdef __DEBUG1__
-    assert(Acsc.nnz == (Acsc.col_scan[Acsc.col_sz] - Acsc.col_scan[0]));
-
-//    A->print_entry(0);
-//    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
-//    print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
-//    print_array(Acsc.val, Acsc.nnz, 0, "Acsc.val", comm);
-//    print_array(Acsc.col_scan, Acsc.col_sz + 1, 0, "Acsc.col_scan", comm);
-
-//    std::cout << "\nA: nnz: " << Acsc.nnz << std::endl ;
-//    for(index_t j = 0; j < Acsc.col_sz; j++){
-//        for(index_t i = Acsc.col_scan[j]; i < Acsc.col_scan[j+1]; i++){
-//            ASSERT(fabs(Acsc.val[i]) > ALMOST_ZERO, "rank: " << rank << ", Acsc.val[i]: " << Acsc.val[i]);
-//            std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
-//        }
-//    }
-#endif
-
-    // =======================================
-    // Convert the local transpose of B to CSC
-    // =======================================
-
-#ifdef __DEBUG1__
-    for(nnz_t i = 0; i < B->nnz_l; i++){
-        assert( (B->entry[i].row - B->split[rank] >= 0) && (B->entry[i].row - B->split[rank] < B->M) );
-        assert( (B->entry[i].col >= 0) && (B->entry[i].col < B->Mbig) );
-        assert( fabs(B->entry[i].val) > ALMOST_ZERO );
-    }
-#endif
-
-    // make a copy of entries of B, then change their order to row-major
-    std::vector<cooEntry> B_ent(B->entry);
-    std::sort(B_ent.begin(), B_ent.end(), row_major);
-
-    // todo: change to smart pointers
-//    auto Brv = std::make_unique<vecEntry[]>(B->nnz_l); // row (actually col to have the transpose) and val
-//    auto Bc  = std::make_unique<index_t[]>(B->M+1); // col_idx
-
-//    auto Brv = new vecEntry[B->nnz_l]; // row and val
-//    auto Bc  = new index_t[B->M+1];    // col_idx
-
-    CSCMat Bcsc;
-    Bcsc.nnz      = B->nnz_l;
-    Bcsc.col_sz   = B->M;
-    Bcsc.max_nnz  = B->nnz_max;
-    Bcsc.max_M    = B->M_max;
-    Bcsc.row      = new index_t[Bcsc.nnz];
-    Bcsc.val      = new value_t[Bcsc.nnz];
-    Bcsc.col_scan = new index_t[Bcsc.col_sz + 1];
-
-    std::fill(&Bcsc.col_scan[0], &Bcsc.col_scan[Bcsc.col_sz + 1], 0);
-    index_t *Bc_tmp   = &Bcsc.col_scan[1];
-    index_t *Bc_tmp_p = &Bc_tmp[0] - B->split[rank]; // use this to avoid subtracting a fixed number,
-
-    for(nnz_t i = 0; i < Bcsc.nnz; i++){
-        Bcsc.row[i] = B_ent[i].col;
-        Bcsc.val[i] = B_ent[i].val;
-        Bc_tmp_p[B_ent[i].row]++;
-    }
-
-    for(nnz_t i = 0; i < Bcsc.col_sz; i++){
-        Bcsc.col_scan[i+1] += Bcsc.col_scan[i];
-    }
-
-    Bcsc.split    = B->split;
-    Bcsc.nnz_list = B->nnz_list;
-
-#ifdef __DEBUG1__
-    assert(Bcsc.nnz == (Bcsc.col_scan[Bcsc.col_sz] - Bcsc.col_scan[0]));
-
-//    B->print_entry(0);
-//    printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
-//    printf("rank %d: B: nnz_max: %ld\tM_max: %d\n", rank, B->nnz_max, B->M_max);
-//    print_array(Bc, B->M+1, 0, "Bc", comm);
-//
-//    std::cout << "\nB: nnz: " << B->nnz_l << std::endl ;
-//    for(index_t j = 0; j < B->M; ++j){
-//        for(index_t i = Bcsc.col_scan[j]; i < Bcsc.col_scan[j+1]; ++i){
-//            std::cout << std::setprecision(4) << Bcsc.row[i] << "\t" << j << "\t" << Bcsc.val[i] << std::endl;
-//            assert( fabs(Bcsc.val[i]) > ALMOST_ZERO );
-//        }
-//    }
-#endif
-
-    // =======================================
-    // prepare B for compression
-    // =======================================
-
-    Bcsc.compress_prep();
-
-    // =======================================
-    // Preallocate Memory
-    // =======================================
-
-    MPI_Barrier(comm);
-    double t_matmat = MPI_Wtime();
-
-    matmat_memory(A, B, Bcsc.max_comp_sz);
-
-    t_matmat = MPI_Wtime() - t_matmat;
-    matmat_time += average_time(t_matmat, comm);
-
-    // =======================================
-    // perform the multiplication
-    // =======================================
-
-    // warmup
-    case1 = 0, case2 = 0, case3 = 0;
-    t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
-    for (int i = 0; i < matmat_iter_warmup; ++i) {
-        case1_iter = 0;
-        case2_iter = 0;
-        case3_iter = 0;
-        saena_matrix C(A->comm);
-        matmat(Acsc, Bcsc, C);
-    }
-
-    case1 = 0, case2 = 0, case3 = 0;
-    t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
-    for (int i = 0; i < matmat_iter; ++i) {
-        case1_iter = 0;
-        case2_iter = 0;
-        case3_iter = 0;
-        saena_matrix C(A->comm);
-
-        MPI_Barrier(comm);
-        t_matmat = MPI_Wtime();
-
-        matmat(Acsc, Bcsc, C);
-
-        t_matmat = MPI_Wtime() - t_matmat;
-        matmat_time += average_time(t_matmat, comm);
-    }
-
-    //===============
-    // print timings
-    //===============
-
-    if (!rank) printf("init prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
-    print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);
-    print_time_ave((t_mat - t_prep_iter - t_fast_mm) / matmat_iter, "comm", comm, true, false);
-    print_time_ave(t_fast_mm / matmat_iter,                         "t_fast_mm", comm, true, false);
-    print_time_ave(t_sort / matmat_iter,                            "t_sort", comm, true, false);
-    print_time_ave(t_prep_iter / matmat_iter,                       "t_prep_iter", comm, true, false);
-    print_time_ave(t_wait / matmat_iter,                            "t_wait", comm, true, false);
-    print_time_ave(t_comp / matmat_iter,                            "t_comp", comm, true, false);
-    print_time_ave(t_decomp / matmat_iter,                          "t_decomp", comm, true, false);
-    if (!rank) printf("\n");
-
-    if (!rank) printf("case1\ncase2\ncase3\n");
-    print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
-    print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
-    print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
-
-    case1_iter_ave = average_iter(case1_iter, comm);
-    case2_iter_ave = average_iter(case2_iter, comm);
-    case3_iter_ave = average_iter(case3_iter, comm);
-
-    if(rank==0){
-        printf("case iters:\n%.0f\n%.0f\n%.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
-//        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
-    }
-
-//    saena_matrix C(A->comm);
-//    matmat(Acsc, Bcsc, C, send_size_max, matmat_time);
-
-#ifdef __DEBUG1__
-//    if(rank==0){
-//        printf("\nrank %d: case1 = %u, case2 = %u, case3 = %u\n", rank, case1_iter, case2_iter, case3_iter);
-//    }
-//    case1_iter = 0;
-//    case2_iter = 0;
-//    case3_iter = 0;
-#endif
-
-    // =======================================
-    // finalize
-    // =======================================
-
-//    mat_send.clear();
-//    mat_send.shrink_to_fit();
-//    AB_temp.clear();
-//    AB_temp.shrink_to_fit();
-
-    delete []Acsc.row;
-    delete []Acsc.val;
-    delete []Acsc.col_scan;
-    delete []Bcsc.row;
-    delete []Bcsc.val;
-    delete []Bcsc.col_scan;
-
-//    delete []mempool1;
-//    delete []mempool2;
-    delete []mempool3;
-    delete []mempool4;
-    delete []mempool5;
-    delete []mempool6;
-
-    return 0;
-}
-
-//int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time)
-/*
-int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time){
-
-    MPI_Comm comm = C.comm;
-
-    //todo: comment out these 3 lines.
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    case1 = 0, case2 = 0, case3 = 0;
-
-    MPI_Barrier(comm);
-    double t_AP = MPI_Wtime();
-
-    matmat(Acsc, Bcsc, C, send_size_max);
-
-    t_AP = MPI_Wtime() - t_AP;
-    matmat_time += average_time(t_AP, comm);
-
-    if (!rank) printf("\ncase1\ncase2\ncase3\n\n");
-    print_time_ave(case1, "case1", comm, true, false);
-    print_time_ave(case2, "case2", comm, true, false);
-    print_time_ave(case3, "case3", comm, true, false);
-
-    return 0;
-}
-*/
-
-
-int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
+int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
     MPI_Comm comm = C.comm;
     int nprocs, rank;
@@ -2221,7 +1999,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 }
 
 
-int saena_object::matmat(Grid *grid){
+int saena_object::matmat_grid(Grid *grid){
 /*
     saena_matrix *A    = grid->A;
     prolong_matrix *P  = &grid->P;

@@ -673,18 +673,13 @@ int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
 }
 
 
-int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble = true){
-    // Note: the matrix-matrix multiplication only works on symmetric matrices.
+int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble /*=true*/, const bool print_timing /*=false*/){
 
-    m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix(), assemble);
-
-    return 0;
-}
-
-
-int saena::amg::matmat_ave(saena::matrix *A, saena::matrix *B, double &matmat_time, int &matmat_iter_warmup, int &matmat_iter){
-
-    m_pImpl->matmat_ave(A->get_internal_matrix(), B->get_internal_matrix(), matmat_time, matmat_iter_warmup, matmat_iter);
+    if(C != nullptr){
+        m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix(), assemble, print_timing);
+    }else{
+        m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), nullptr, assemble, print_timing);
+    }
 
     return 0;
 }

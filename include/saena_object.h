@@ -232,18 +232,15 @@ public:
 //    int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 //    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 //    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
+
+    int matmat_grid(Grid *grid);
+    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false);
+    int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
 //    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
-    int matmat(Grid *grid);
-    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble=true);
     int matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_tot_sz);
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 //    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 
-    // matmat_ave:        transpose of B is used.
-    // matmat_ave_orig_B: original B is used.
-    int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time, int &matmat_iter_warmup, int &matmat_iter); // this version is only for experiments.
-//    int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
 //    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
     int reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);
     int reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);

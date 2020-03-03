@@ -112,12 +112,12 @@ int main(int argc, char* argv[]){
             printf("threshold1 = %lu, threshold2 = %u\n\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
         }
 
-// *************************** checking the correctness of matrix-matrix product ****************************
+        // *************************** checking the correctness of matrix-matrix product ****************************
 
         {
 //            saena::amg solver;
             saena::matrix C(comm);
-            solver.matmat(&A, &B, &C, true);
+            solver.matmat(&A, &B, &C);
 
             // check the correctness with PETSc
             petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
@@ -131,25 +131,11 @@ int main(int argc, char* argv[]){
 //            petsc_viewer(C.get_internal_matrix());
         }
 
-// *************************** matrix-matrix product ****************************
+        // *************************** Saena matmat experiment ****************************
 
-        double matmat_time = 0;
-        int matmat_iter_warmup = 2;
-        int matmat_iter = 3;
+        solver.matmat(&A, &B, nullptr, false, true);
 
-//        saena::amg solver;
-//        saena::matrix C(comm);
-
-        matmat_time = 0;
-        if(matmat_iter){
-            solver.matmat_ave(&A, &B, matmat_time, matmat_iter_warmup, matmat_iter);
-        }
-
-        // matmat_ave computes the average matmat time on processor 0.
-        // so it is fine to just print the time on proc 0.
-        if (!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
-
-        // *************************** PETSc ****************************
+        // *************************** PETSc matmat experiment ****************************
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
 //        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
