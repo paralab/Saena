@@ -11,9 +11,15 @@ typedef unsigned long nnz_t;
 typedef double value_t;
 
 
-index_t rem_sz(index_t sz, int k);
+inline index_t rem_sz(index_t sz, int k){
+    return static_cast<index_t>( ceil(sz * (k+2) / (double)8) );
+}
 
-index_t tot_sz(index_t sz, int k, short q);
+inline index_t tot_sz(index_t sz, int k, short q){
+//    printf("r_sz: %u, \tq: %d, \tsizeof(q): %ld, tot: %ld\n", static_cast<index_t>( ceil(sz * (k+2) / (double)8) ), q,
+//            sizeof(q), static_cast<index_t>( ceil(sz * (k+2) / (double)8) ) + q * sizeof(q));
+    return static_cast<index_t>( ceil(sz * (k+2) / (double)8) ) + q * sizeof(q);
+}
 
 
 // the order of this class is "column-major order"

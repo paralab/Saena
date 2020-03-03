@@ -72,10 +72,12 @@ int CSCMat::compress_prep(){
 
     max_comp_sz = 0;
     for(int i = 0; i < nprocs; ++i){
-        row_buf_sz = comp_row.qs[i] * sizeof(short) + (nnz_list[i] * (comp_row.ks[i] + 2));
+//        row_buf_sz = comp_row.qs[i] * sizeof(short) + (nnz_list[i] * (comp_row.ks[i] + 2));
+        row_buf_sz = tot_sz(nnz_list[i], comp_row.ks[i], comp_row.qs[i]);
 
         proc_col_sz = split[i + 1] - split[i];
-        col_buf_sz = comp_col.qs[i] * sizeof(short) + (proc_col_sz + 1) * (comp_col.ks[i] + 2);
+//        col_buf_sz = comp_col.qs[i] * sizeof(short) + (proc_col_sz + 1) * (comp_col.ks[i] + 2);
+        col_buf_sz = tot_sz(proc_col_sz + 1, comp_col.ks[i], comp_col.qs[i]);
 
         if(row_buf_sz + col_buf_sz > max_comp_sz){
             comp_row.max_tot = row_buf_sz;
@@ -135,7 +137,8 @@ int CSCMat::compress_prep_compute(index_t *v, index_t v_sz, GR_sz &comp_sz){
             comp_sz.k   = k;
             comp_sz.r   = r_sz; // in bytes
             comp_sz.q   = q_sz; // short or int
-            comp_sz.tot = r_sz + q_sz * sizeof(short) ; // in bytes
+//            comp_sz.tot = r_sz + q_sz * sizeof(short) ; // in bytes
+            comp_sz.tot = tot_sz(v_sz, k, q_sz) ; // in bytes
         }
 
     }
@@ -162,15 +165,4 @@ int CSCMat::compress_prep_compute(index_t *v, index_t v_sz, GR_sz &comp_sz){
 #endif
 
     return 0;
-}
-
-
-index_t rem_sz(index_t sz, int k){
-    return static_cast<index_t>( ceil(sz * (k+2) / (double)8) );
-}
-
-index_t tot_sz(index_t sz, int k, short q){
-//    printf("r_sz: %u, \tq: %d, \tsizeof(q): %ld, tot: %ld\n", static_cast<index_t>( ceil(sz * (k+2) / (double)8) ), q,
-//            sizeof(q), static_cast<index_t>( ceil(sz * (k+2) / (double)8) ) + q * sizeof(q));
-    return static_cast<index_t>( ceil(sz * (k+2) / (double)8) ) + q * sizeof(q);
 }
