@@ -17,7 +17,7 @@
 
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
-double t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
+double t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
 
 // from an MKL example
 /* To avoid constantly repeating the part of code that checks inbound SparseBLAS functions' status,
@@ -1486,6 +1486,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 //    auto Ac  = std::make_unique<index_t[]>(A->Mbig+1); // col_idx
 
     CSCMat Acsc;
+    Acsc.comm     = A->comm;
     Acsc.nnz      = A->nnz_l;
     Acsc.col_sz   = A->Mbig;
     Acsc.max_nnz  = A->nnz_max;
@@ -1618,7 +1619,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
 
     // warmup
     case1 = 0, case2 = 0, case3 = 0;
-    t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
+    t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
     for (int i = 0; i < matmat_iter_warmup; ++i) {
         case1_iter = 0;
         case2_iter = 0;
@@ -1628,7 +1629,7 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     }
 
     case1 = 0, case2 = 0, case3 = 0;
-    t_init_prep = 0, t_mat = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
+    t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
     for (int i = 0; i < matmat_iter; ++i) {
         case1_iter = 0;
         case2_iter = 0;
@@ -1648,13 +1649,15 @@ int saena_object::matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_ti
     // print timings
     //===============
 
-    if (!rank) printf("init prep\ncomm\nfastmm\nsort\nprep_iter\nwait\n");
+    if (!rank) printf("init prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
     print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);
     print_time_ave((t_mat - t_prep_iter - t_fast_mm) / matmat_iter, "comm", comm, true, false);
     print_time_ave(t_fast_mm / matmat_iter,                         "t_fast_mm", comm, true, false);
     print_time_ave(t_sort / matmat_iter,                            "t_sort", comm, true, false);
     print_time_ave(t_prep_iter / matmat_iter,                       "t_prep_iter", comm, true, false);
     print_time_ave(t_wait / matmat_iter,                            "t_wait", comm, true, false);
+    print_time_ave(t_comp / matmat_iter,                            "t_comp", comm, true, false);
+    print_time_ave(t_decomp / matmat_iter,                          "t_decomp", comm, true, false);
     if (!rank) printf("\n");
 
     if (!rank) printf("case1\ncase2\ncase3\n");
@@ -1757,7 +1760,7 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 //    assert(Acsc.col_sz == Bcsc.row_sz);
 #endif
 
-    double t_temp, t_temp2;
+    double t_temp, t_temp2, t_temp3;
     t_temp = MPI_Wtime();
 
     // =======================================
@@ -1784,8 +1787,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 //    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
     nnz_t send_nnz   = Bcsc.nnz;
-    nnz_t row_buf_sz = Bcsc.comp_row.q*sizeof(short) + ( send_nnz          * (Bcsc.comp_row.k + 2));
-    nnz_t col_buf_sz = Bcsc.comp_col.q*sizeof(short)+ ( (Bcsc.col_sz + 1) * (Bcsc.comp_col.k + 2));
+
+    nnz_t row_buf_sz = tot_sz(send_nnz,        Bcsc.comp_row.k, Bcsc.comp_row.q);
+    nnz_t col_buf_sz = tot_sz(Bcsc.col_sz + 1, Bcsc.comp_col.k, Bcsc.comp_col.q);
+
+//    nnz_t row_buf_sz = Bcsc.comp_row.q * sizeof(short) + ( send_nnz          * (Bcsc.comp_row.k + 2));
+//    nnz_t col_buf_sz = Bcsc.comp_col.q * sizeof(short) + ( (Bcsc.col_sz + 1) * (Bcsc.comp_col.k + 2));
     nnz_t send_size  = row_buf_sz + col_buf_sz + send_nnz * sizeof(value_t); // in bytes
 
     index_t Acsc_M = Acsc.split[rank+1] - Acsc.split[rank];
@@ -1816,10 +1823,15 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         // 3- val:    type: value_t, size: send_nnz
         auto mat_send = &mempool6[0];
 
+        t_temp3 = MPI_Wtime();
+
         // compress row and col_scan of B, communicate it, decompress it and use it
         GR_encoder encoder;
         encoder.compress(Bcsc.row, Bcsc.nnz, Bcsc.comp_row.k, mat_send);
         encoder.compress(Bcsc.col_scan, Bcsc.col_sz+1, Bcsc.comp_col.k, &mat_send[Bcsc.comp_row.tot]);
+
+        t_temp3 = MPI_Wtime() - t_temp3;
+        t_comp += t_temp3;
 
         // copy B.val at the end of the compressed array
         auto mat_send_v = reinterpret_cast<value_t*>(&mat_send[Bcsc.comp_row.tot + Bcsc.comp_col.tot]);
@@ -1827,6 +1839,12 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
 #ifdef __DEBUG1__
         {
+            if (verbose_matmat) {
+                MPI_Barrier(comm);
+                if (rank == verbose_rank) printf("matmat: step 2\n");
+                MPI_Barrier(comm);
+            }
+
 //            if(rank==verbose_rank){
 //                for(int i = 0; i < Bcsc.nnz; ++i){
 //                    std::cout << i << "\t" << mat_send_v[i] << std::endl;
@@ -1904,8 +1922,11 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
             mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
             recv_nnz   = Bcsc.nnz_list[next_owner];
 
-            row_buf_sz = Bcsc.comp_row.qs[next_owner] * sizeof(short) + (recv_nnz * (Bcsc.comp_row.ks[next_owner] + 2));
-            col_buf_sz = Bcsc.comp_col.qs[next_owner] * sizeof(short) + ((mat_recv_M + 1) * (Bcsc.comp_col.ks[next_owner] + 2));
+            row_buf_sz = tot_sz(recv_nnz,       Bcsc.comp_row.ks[next_owner], Bcsc.comp_row.qs[next_owner]);
+            col_buf_sz = tot_sz(mat_recv_M + 1, Bcsc.comp_col.ks[next_owner], Bcsc.comp_col.qs[next_owner]);
+
+//            row_buf_sz = Bcsc.comp_row.qs[next_owner] * sizeof(short) + (recv_nnz * (Bcsc.comp_row.ks[next_owner] + 2));
+//            col_buf_sz = Bcsc.comp_col.qs[next_owner] * sizeof(short) + ((mat_recv_M + 1) * (Bcsc.comp_col.ks[next_owner] + 2));
 
             recv_size = row_buf_sz + col_buf_sz + recv_nnz * sizeof(value_t); // in bytes
 
@@ -1948,8 +1969,14 @@ int saena_object::matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 mat_current_cscan = &mat_current[send_nnz];
                 mat_current_v     = reinterpret_cast<value_t*>(&mat_current[send_nnz + mat_current_M + 1]);
 
+                t_temp3 = MPI_Wtime();
+
                 encoder.decompress(mat_current_r, send_nnz, Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner], mat_send);
                 encoder.decompress(mat_current_cscan, mat_current_M + 1, Bcsc.comp_col.ks[owner], Bcsc.comp_col.qs[owner], &mat_send[row_comp_sz]);
+
+                t_temp3 = MPI_Wtime() - t_temp3;
+                t_decomp += t_temp3;
+
                 memcpy(mat_current_v, &mat_send[current_comp_sz], Bcsc.nnz_list[owner] * sizeof(value_t));
 
 #ifdef __DEBUG1__
