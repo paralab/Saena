@@ -68,7 +68,7 @@ int CSCMat::compress_prep(){
     float comp_rate;
 
     MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
-    if(!rank) std::cout << "orig_sz = " << orig_sz << ", comp_sz = " << comp_sz << ", compression rate = " << comp_rate/nprocs << std::endl;
+    if(!rank) std::cout << "orig_sz (rank0) = " << orig_sz << ", comp_sz (rank0) = " << comp_sz << ", compression rate (average) = " << comp_rate/nprocs << std::endl;
 
 #ifdef __DEBUG1__
     if(rank==rank_ver && verbose_prep){
@@ -93,13 +93,13 @@ int CSCMat::compress_prep(){
 //    print_vector(comp_row.qs, rank_ver, "qs", comm);
 #endif
 
-    // compute max compress buffer size on all procs: q_size * sizeof(short) + #compressed values * (k+2)
-    // do this for both rows and col_scan, then add them together
+    // compute max compress buffer size on all procs.
+    // do this for both rows and col_scan, then add them together.
+    nnz_t proc_col_sz, row_buf_sz, col_buf_sz;
     comp_row.max_tot = 0;
     comp_col.max_tot = 0;
-    nnz_t proc_col_sz, row_buf_sz, col_buf_sz;
+    max_comp_sz      = 0;
 
-    max_comp_sz = 0;
     for(int i = 0; i < nprocs; ++i){
         row_buf_sz = tot_sz(nnz_list[i], comp_row.ks[i], comp_row.qs[i]);
         proc_col_sz = split[i + 1] - split[i];
@@ -201,6 +201,7 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
     comp_sz.ks.resize(nprocs);
     comp_sz.qs.resize(nprocs);
 
+    // TODO: combine these together.
     // TODO: check if MPI_SHORT works as the datatype for the following commands.
     MPI_Allgather(&comp_sz.k, 1, MPI_INT, &comp_sz.ks[0], 1, MPI_INT, comm);
     MPI_Allgather(&comp_sz.q, 1, MPI_INT, &comp_sz.qs[0], 1, MPI_INT, comm);
