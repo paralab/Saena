@@ -12,8 +12,8 @@ typedef unsigned char uchar;
 // Golomb-Rice encoder
 class GR_encoder {
 private:
-    index_t buf_iter = 0;
-    index_t filled   = 0;
+    index_t buf_iter = 0; // to go over the compression buffer
+    index_t filled   = 0; // to go over 8 bites of each byte.
 
     bool verbose_comp   = false;
     bool verbose_decomp = false;
