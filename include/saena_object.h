@@ -93,7 +93,9 @@ public:
     index_t *mempool4 = nullptr;
     value_t *mempool5 = nullptr;
     uchar   *mempool6 = nullptr;
-    nnz_t   loc_nnz_max = 0;
+    nnz_t    mempool3_sz     = 0;
+    nnz_t    mempool4and5_sz = 0;
+    nnz_t    mempool6_sz     = 0;
 
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
     double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
@@ -237,7 +239,7 @@ public:
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false);
     int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
 //    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
-    int matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_tot_sz);
+    int matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz);
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 //    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 
