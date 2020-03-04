@@ -1216,13 +1216,13 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     index_t *Bc_tmp   = &Bcsc.col_scan[1];
     index_t *Bc_tmp_p = &Bc_tmp[0] - B->split[rank]; // use this to avoid subtracting a fixed number,
 
-    for(nnz_t i = 0; i < Bcsc.nnz; i++){
+    for(nnz_t i = 0; i < Bcsc.nnz; ++i){
         Bcsc.row[i] = B_ent[i].col;
         Bcsc.val[i] = B_ent[i].val;
-        Bc_tmp_p[B_ent[i].row]++;
+        ++Bc_tmp_p[B_ent[i].row];
     }
 
-    for(nnz_t i = 0; i < Bcsc.col_sz; i++){
+    for(nnz_t i = 0; i < Bcsc.col_sz; ++i){
         Bcsc.col_scan[i+1] += Bcsc.col_scan[i];
     }
 
@@ -1374,7 +1374,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 }
 
 
-int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_tot_sz){
+int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz){
 
 #ifdef __DEBUG1__
 //    int rank;
@@ -1403,39 +1403,39 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_ma
 //    mempool1 = new value_t[matmat_size_thre2];
 //    mempool2 = new index_t[2 * A_row_size + 2 * Bcsc.max_M];
 
-    // 2 for both send and receive buffer, valbyidx for value, (B->M_max + 1) for col_scan
+    // used to store mat_current in matmat()
+    // valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
     int   valbyidx              = sizeof(value_t) / sizeof(index_t);
     nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
     nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
-    nnz_t send_size_max         = v_buffer_sz_max + r_cscan_buffer_sz_max;
+          mempool3_sz           = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
     try{
-        mempool3 = new index_t[send_size_max]; // used to store mat_current in matmat()
+        mempool3 = new index_t[mempool3_sz]; // used to store mat_current in matmat()
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
 
-    loc_nnz_max = std::max(A->nnz_max, B->nnz_max);
+    mempool4and5_sz = std::max(A->nnz_max, B->nnz_max);
 
     try{
-        mempool4 = new index_t[loc_nnz_max]; //used in reorder_split and reorder_back_split
+        mempool4 = new index_t[mempool4and5_sz]; //used in reorder_split and reorder_back_split
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
 
     try{
-        mempool5 = new value_t[loc_nnz_max]; //used in reorder_split and reorder_back_split
+        mempool5 = new value_t[mempool4and5_sz]; //used in reorder_split and reorder_back_split
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
 
-    assert(comp_max_tot_sz != 0);
+    assert(comp_max_sz != 0);
+    mempool6_sz = 2 * (comp_max_sz + B->nnz_max * sizeof(value_t));
 
     try{
-        unsigned long mempool6_sz = 2 * (comp_max_tot_sz + B->nnz_max * sizeof(value_t));
         mempool6 = new uchar[mempool6_sz]; // one for mat_send, one for mat_recv. both are compressed.
-        std::fill(mempool6, &mempool6[mempool6_sz], 0);
     }catch(std::bad_alloc& ba){
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
@@ -1603,6 +1603,9 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         // 3- val:    type: value_t, size: send_nnz
         auto mat_send = &mempool6[0];
 
+        assert(mempool6_sz != 0);
+        std::fill(mempool6, &mempool6[mempool6_sz], 0);
+
         t_temp3 = MPI_Wtime();
 
         // compress row and col_scan of B, communicate it, decompress it and use it
@@ -1741,7 +1744,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner]; //this is col_sz
 
                 // decompress mat_send into mat_current
-                row_comp_sz     = tot_sz(send_nnz, Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner]);
+                row_comp_sz     = tot_sz(send_nnz,          Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner]);
                 col_comp_sz     = tot_sz(mat_current_M + 1, Bcsc.comp_col.ks[owner], Bcsc.comp_col.qs[owner]);
                 current_comp_sz = row_comp_sz + col_comp_sz;
 
