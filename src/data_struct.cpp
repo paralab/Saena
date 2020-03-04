@@ -1,5 +1,6 @@
 #include <cmath>
 #include <aux_functions.h>
+#include <iomanip>
 #include "data_struct.h"
 
 
@@ -61,8 +62,36 @@ int CSCMat::compress_prep(){
     compress_prep_compute(row, nnz, comp_row);
     compress_prep_compute(col_scan, col_sz+1, comp_col);
 
+    unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);
+    unsigned long comp_sz = comp_row.tot + comp_col.tot;
+    float comp_rate_loc = 1.0f - (static_cast<float>(comp_sz) / orig_sz);
+    float comp_rate;
+
+    MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
+    if(!rank) std::cout << "orig_sz = " << orig_sz << ", comp_sz = " << comp_sz << ", compression rate = " << comp_rate/nprocs << std::endl;
+
+#ifdef __DEBUG1__
+    if(rank==rank_ver && verbose_prep){
+        std::cout << "row:\nk: " << std::setw(2) << comp_row.k   << ", M: " << std::setw(5) << (1U << comp_row.k)
+                  << ", v_sz: "  << std::setw(5) << nnz          << " ("    << std::setw(5) << nnz*sizeof(index_t) << ")"
+                  << ", r_sz: "  << std::setw(5) << comp_row.r
+                  << ", q_sz: "  << std::setw(5) << comp_row.q   << " ("    << std::setw(5) << comp_row.q*sizeof(short) << ")"
+                  << ", tot: "   << std::setw(5) << comp_row.tot << "\n";
+
+        std::cout << "cols:\nk: " << std::setw(2) << comp_col.k   << ", M: " << std::setw(5) << (1U << comp_col.k)
+                  << ", v_sz: "   << std::setw(5) << col_sz+1     << " ("    << std::setw(5) << nnz*sizeof(index_t) << ")"
+                  << ", r_sz: "   << std::setw(5) << comp_col.r
+                  << ", q_sz: "   << std::setw(5) << comp_col.q   << " ("    << std::setw(5) << comp_col.q*sizeof(short) << ")"
+                  << ", tot: "    << std::setw(5) << comp_col.tot << "\n";
+
+//        unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);
+//        unsigned long comp_sz = comp_row.tot + comp_col.tot;
+//        std::cout << "orig_sz = " << orig_sz << ", comp_sz = " << comp_sz << ", compression rate:" << 1 - (comp_sz / static_cast<double>(orig_sz)) << std::endl;
+    }
+
 //    print_vector(comp_row.ks, rank_ver, "ks", comm);
 //    print_vector(comp_row.qs, rank_ver, "qs", comm);
+#endif
 
     // compute max compress buffer size on all procs: q_size * sizeof(short) + #compressed values * (k+2)
     // do this for both rows and col_scan, then add them together
@@ -72,76 +101,102 @@ int CSCMat::compress_prep(){
 
     max_comp_sz = 0;
     for(int i = 0; i < nprocs; ++i){
-//        row_buf_sz = comp_row.qs[i] * sizeof(short) + (nnz_list[i] * (comp_row.ks[i] + 2));
         row_buf_sz = tot_sz(nnz_list[i], comp_row.ks[i], comp_row.qs[i]);
-
         proc_col_sz = split[i + 1] - split[i];
-//        col_buf_sz = comp_col.qs[i] * sizeof(short) + (proc_col_sz + 1) * (comp_col.ks[i] + 2);
         col_buf_sz = tot_sz(proc_col_sz + 1, comp_col.ks[i], comp_col.qs[i]);
 
         if(row_buf_sz + col_buf_sz > max_comp_sz){
             comp_row.max_tot = row_buf_sz;
             comp_col.max_tot = col_buf_sz;
-            max_comp_sz = row_buf_sz + col_buf_sz;
+            max_comp_sz      = row_buf_sz + col_buf_sz;
         }
     }
+
+#ifdef __DEBUG1__
+//    if(rank==rank_ver) printf("comp_row.max_tot = %lu, comp_col.max_tot = %lu, max_comp_sz = %lu, \n",
+//                               comp_row.max_tot, comp_col.max_tot, max_comp_sz);
+#endif
 
     return 0;
 }
 
 
-int CSCMat::compress_prep_compute(index_t *v, index_t v_sz, GR_sz &comp_sz){
+int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz){
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    int k_start = 4, k_end = 14;
-
-    int q_sz = 0, r_sz;
+#ifdef __DEBUG1__
+    int rank_ver = 0;
 //    unsigned int M;
+#endif
 
+    int k_start = 4, k_end = 11;
+    int q_sz = 0, r_sz, tot;
     comp_sz.tot = INT32_MAX;
 
-//    int rank_ver = 0;
-    for(int k = k_start; k < k_end; k+=2) {
+    for(unsigned int k = k_start; k < k_end; k++) {
 
 //        M = 1U << k;
         r_sz = rem_sz(v_sz, k);
 
         // first element
         q_sz = 0;
-        if(v[0] >> k != 0){
+        if( (v[0] >> k) != 0){
             ++q_sz;
         }
 
         // the rest of v
         for (int i = 1; i < v_sz; ++i) {
-//            int q = abs(v[i] - v[i - 1]) >> k;
+//            int diff = static_cast<int>(v[i] - v[i - 1]);
 //            int q = diff >> k;
-            if(abs(v[i] - v[i - 1]) >> k != 0){
-//                if(rank==rank_ver) std::cout << "v[i] - v[i - 1]: " << (float)v[i] - v[i - 1] << ", M: " << M << ", q: " << q << std::endl;
+//            if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: " << diff << ", M: " << (1U << k) << ", q: " << q << std::endl;
+
+            if( (static_cast<int>(v[i] - v[i - 1]) >> k) != 0){
+//            if(q != 0){
+//                if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: " << (int)(v[i] - v[i - 1]) << ", M: " << (1U << k) << ", q: " << q << std::endl;
                 ++q_sz;
             }
+
+#ifdef __DEBUG1__
+            if(static_cast<int>(v[i] - v[i - 1]) > INT16_MAX){
+                printf("Datatype short is enough to store the difference for compression!\n");
+                exit(EXIT_FAILURE);
+            }
+#endif
+
+        }
+
+        tot = tot_sz(v_sz, k, q_sz);
+        if(tot < comp_sz.tot){
+            comp_sz.k   = k;
+            comp_sz.r   = r_sz; // in bytes
+            comp_sz.q   = q_sz; // number of short numbers
+            comp_sz.tot = tot;  // in bytes
         }
 
 #ifdef __DEBUG1__
-        {
-//            if(rank==rank_ver) std::cout << "k: " << k << ", M: " << M << std::endl;
-//            if(rank==rank_ver) std::cout << "r_sz: " << r_sz << std::endl;
-//            if(rank==rank_ver) std::cout << "q_sz: " << q_sz << std::endl;
+        if(verbose_prep_compute && rank==rank_ver){
+            std::cout << "k: "      << std::setw(2) << k    << ", M: " << std::setw(5) << (1U << k)
+                      << ", v_sz: " << std::setw(5) << v_sz << " ("    << std::setw(5) << v_sz*sizeof(index_t) << ")"
+                      << ", r_sz: " << std::setw(5) << r_sz
+                      << ", q_sz: " << std::setw(5) << q_sz << " ("    << std::setw(5) << q_sz*sizeof(short) << ")"
+                      << ", tot: "  << std::setw(5) << tot << std::endl;
         }
 #endif
 
-        if(r_sz + q_sz < comp_sz.tot){
-            comp_sz.k   = k;
-            comp_sz.r   = r_sz; // in bytes
-            comp_sz.q   = q_sz; // short or int
-//            comp_sz.tot = r_sz + q_sz * sizeof(short) ; // in bytes
-            comp_sz.tot = tot_sz(v_sz, k, q_sz) ; // in bytes
-        }
-
     }
+
+#ifdef __DEBUG1__
+    if(verbose_prep_compute && rank==rank_ver){
+        std::cout << "k: "      << std::setw(2) << comp_sz.k    << ", M: " << std::setw(5) << (1U << comp_sz.k)
+                  << ", v_sz: " << std::setw(5) << v_sz << " (" << std::setw(5) << v_sz*sizeof(index_t) << ")"
+                  << ", r_sz: " << std::setw(5) << comp_sz.r
+                  << ", q_sz: " << std::setw(5) << comp_sz.q    << " (" << std::setw(5) << q_sz*sizeof(short) << ")"
+                  << ", tot: "  << std::setw(5) << comp_sz.tot  << "\n";
+    }
+#endif
 
     comp_sz.ks.resize(nprocs);
     comp_sz.qs.resize(nprocs);

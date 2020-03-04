@@ -11,14 +11,14 @@ typedef unsigned long nnz_t;
 typedef double value_t;
 
 
-inline index_t rem_sz(index_t sz, int k){
-    return static_cast<index_t>( ceil(sz * (k+2) / (double)8) );
+inline index_t rem_sz(index_t sz, unsigned int k){
+    return static_cast<index_t>( ceil(sz * ((k+1) / 8.0) ) );
 }
 
-inline index_t tot_sz(index_t sz, int k, short q){
+inline index_t tot_sz(index_t sz, unsigned int k, short q){
 //    printf("r_sz: %u, \tq: %d, \tsizeof(q): %ld, tot: %ld\n", static_cast<index_t>( ceil(sz * (k+2) / (double)8) ), q,
 //            sizeof(q), static_cast<index_t>( ceil(sz * (k+2) / (double)8) ) + q * sizeof(q));
-    return static_cast<index_t>( ceil(sz * (k+2) / (double)8) ) + q * sizeof(q);
+    return static_cast<index_t>( ceil(sz * ((k+1) / 8.0)) ) + q * sizeof(q);
 }
 
 
@@ -421,10 +421,10 @@ bool vecCol_col_major (const vecCol& node1, const vecCol& node2);
 
 class GR_sz {
 public:
-    int  k   = 0; // Golomb-Rice parameter (M = 2^k)
-    int  r   = 0; // remainder size in bytes
-    int  q   = 0; // quotient size, if(use_short == true) then they are "short", otherwise "int".
-    int  tot = 0; // total size in bytes
+    unsigned int k   = 0; // Golomb-Rice parameter (M = 2^k)
+    unsigned int r   = 0; // remainder size in bytes
+    int          q   = 0; // quotient size in number of short numbers
+    unsigned int tot = 0; // total size in bytes
 
     unsigned long max_tot = 0; // in bytes (char)
 
@@ -456,6 +456,8 @@ public:
     // compresseion parameters
     // =======================
 
+    bool verbose_prep_compute = false;
+    bool verbose_prep         = false;
     unsigned long max_comp_sz = 0; // in bytes (char)
 
     GR_sz comp_row;
@@ -464,7 +466,7 @@ public:
     // =======================
 
     CSCMat() = default;
-    int compress_prep_compute(index_t *v, index_t v_sz, GR_sz &comp_sz);
+    int compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz);
     int compress_prep();
 };
 

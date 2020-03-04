@@ -1318,6 +1318,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         // print timings
         //===============
 
+        if (!rank) printf("\n");
         print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
 
         if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
@@ -1335,6 +1336,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
         print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
         print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
+
     }
 
     case1_iter_ave = average_iter(case1_iter, comm);
