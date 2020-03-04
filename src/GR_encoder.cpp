@@ -294,6 +294,7 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
         ++viter;
 
 #ifdef __DEBUG1__
+        assert(buf_iter < buf_sz);
         assert(x != INT32_MAX);
         if(verbose_decomp && rank==rank_ver){
 //            std::cout << viter << ": v[viter] = " << v[viter-1] << ", diff = " << x << ", q = " << q << " (buf_iter: " << buf_iter << ")\n";

@@ -12,13 +12,18 @@ typedef unsigned char uchar;
 // Golomb-Rice encoder
 class GR_encoder {
 private:
-    index_t buf_iter = 0; // to go over the compression buffer
+    nnz_t   buf_sz   = 0; // size of the allocated buffer
     index_t filled   = 0; // to go over 8 bites of each byte.
+    nnz_t   buf_iter = 0; // to go over the compression buffer
 
     bool verbose_comp   = false;
     bool verbose_decomp = false;
 
 public:
+    //constructors
+    GR_encoder() :  buf_sz(0), filled(0), buf_iter(0) {}
+    explicit GR_encoder(nnz_t _buf_sz) :  buf_sz(_buf_sz), filled(0), buf_iter(0) {}
+
     void    put_bit(uint8_t *buf, uint8_t b);
     index_t get_bit(const uint8_t *buf);
     void    compress(index_t *v, index_t v_sz, index_t k, uint8_t *buf);

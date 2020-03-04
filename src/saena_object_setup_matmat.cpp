@@ -1603,13 +1603,13 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         // 3- val:    type: value_t, size: send_nnz
         auto mat_send = &mempool6[0];
 
+        t_temp3 = MPI_Wtime();
+
         assert(mempool6_sz != 0);
         std::fill(mempool6, &mempool6[mempool6_sz], 0);
 
-        t_temp3 = MPI_Wtime();
-
         // compress row and col_scan of B, communicate it, decompress it and use it
-        GR_encoder encoder;
+        GR_encoder encoder(mempool6_sz / 2);
         encoder.compress(Bcsc.row, Bcsc.nnz, Bcsc.comp_row.k, mat_send);
         encoder.compress(Bcsc.col_scan, Bcsc.col_sz+1, Bcsc.comp_col.k, &mat_send[Bcsc.comp_row.tot]);
 
@@ -1671,7 +1671,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         nnz_t recv_size;
         index_t row_comp_sz, col_comp_sz, current_comp_sz;
         index_t mat_recv_M = 0, mat_current_M = 0;
-        auto mat_recv = &mempool6[Bcsc.max_comp_sz];
+        auto mat_recv = &mempool6[mempool6_sz / 2];
 
         auto mat_current = &mempool3[0];
         index_t *mat_current_r, *mat_current_cscan;
