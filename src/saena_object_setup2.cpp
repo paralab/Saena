@@ -1010,8 +1010,8 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 
 #ifdef __DEBUG1__
 
-    ASSERT(A1.nnz <= loc_nnz_max, "A1.nnz: " << A1.nnz << ", loc_nnz_max: " << loc_nnz_max);
-    ASSERT(A2.nnz <= loc_nnz_max, "A2.nnz: " << A2.nnz << ", loc_nnz_max: " << loc_nnz_max);
+    ASSERT(A1.nnz <= mempool3_sz, "A1.nnz: " << A1.nnz << ", loc_nnz_max: " << mempool3_sz);
+    ASSERT(A2.nnz <= mempool3_sz, "A2.nnz: " << A2.nnz << ", loc_nnz_max: " << mempool3_sz);
     ASSERT(A1.nnz + A2.nnz == A.nnz, "A.nnz: " << A.nnz << ", A1.nnz: " << A1.nnz << ", A2.nnz: " << A2.nnz);
 
     // older versions
