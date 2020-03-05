@@ -132,7 +132,7 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
 //    unsigned int M;
 #endif
 
-    int k_start = 4, k_end = 11;
+    int k_start = 4, k_end = 8;
     int q_sz = 0, r_sz, tot;
     comp_sz.tot = INT32_MAX;
 
