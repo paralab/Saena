@@ -1969,7 +1969,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
             auto mat_send_v = reinterpret_cast<value_t*>(&mat_send[Bcsc.comp_row.tot + Bcsc.comp_col.tot]);
             memcpy(mat_send_v, Bcsc.val, Bcsc.nnz * sizeof(value_t));
 
-            index_t row_r_sz, col_r_sz, row_comp_sz, col_comp_sz, current_comp_sz;
+            index_t row_comp_sz, col_comp_sz, current_comp_sz;
             index_t mat_current_M = 0;
 
             auto mat_current = &mempool3[0];
@@ -1981,13 +1981,11 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
             mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner]; //this is col_sz
 
             // decompress mat_send into mat_current
-//        row_r_sz = encoder.rem_sz(send_nnz,          Bcsc.comp_row.ks[owner]);
-//        col_r_sz = encoder.rem_sz(mat_current_M + 1, Bcsc.comp_col.ks[owner]);
             row_comp_sz     = tot_sz(send_nnz, Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner]);
             col_comp_sz     = tot_sz(mat_current_M + 1, Bcsc.comp_col.ks[owner], Bcsc.comp_col.qs[owner]);
             current_comp_sz = row_comp_sz + col_comp_sz;
 
-//        if(rank==verbose_rank) printf("row_comp_sz: %d, col_comp_sz: %d, current_comp_sz: %d\n", row_comp_sz, col_comp_sz, current_comp_sz);
+//            if(rank==verbose_rank) printf("row_comp_sz: %d, col_comp_sz: %d, current_comp_sz: %d\n", row_comp_sz, col_comp_sz, current_comp_sz);
 
             mat_current_r     = &mat_current[0];
             mat_current_cscan = &mat_current[send_nnz];
@@ -1997,15 +1995,15 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
             encoder.decompress(mat_current_cscan, mat_current_M + 1, Bcsc.comp_col.ks[owner], Bcsc.comp_col.qs[owner], &mat_send[row_comp_sz]);
             memcpy(mat_current_v, &mat_send[current_comp_sz], Bcsc.nnz_list[owner] * sizeof(value_t));
 
-//        MPI_Barrier(comm);
-//        auto mat_send_vv = reinterpret_cast<value_t*>(&mat_send[current_comp_sz]);
-//        if(rank==verbose_rank){
-//            std::cout << "Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner] << std::endl;
-//            for(int i = 0; i < Bcsc.nnz_list[owner]; ++i){
-//                std::cout << i << "\t" << mat_current_r[i] << "\t" << mat_current_v[i] << "\t" << mat_send_vv[i] << std::endl;
+//            MPI_Barrier(comm);
+//            auto mat_send_vv = reinterpret_cast<value_t*>(&mat_send[current_comp_sz]);
+//            if(rank==verbose_rank){
+//                std::cout << "Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner] << std::endl;
+//                for(int i = 0; i < Bcsc.nnz_list[owner]; ++i){
+//                    std::cout << i << "\t" << mat_current_r[i] << "\t" << mat_current_v[i] << "\t" << mat_send_vv[i] << std::endl;
+//                }
+//                std::cout << std::endl;
 //            }
-//            std::cout << std::endl;
-//        }
 
             CSCMat_mm S;
             S.set_params(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner], Bcsc.nnz_list[owner],
