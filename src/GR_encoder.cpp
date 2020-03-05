@@ -231,10 +231,9 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
     index_t kp1_1s = (1u << kp1) - 1;
     index_t ofst   = 16 - kp1;
 
-//    int j;
     int x;
-    index_t qiter = 0, viter = 0;
     short q;
+    index_t qiter = 0, viter = 0;
 
     // 1- decode v[0]
     // ======================================
@@ -248,13 +247,11 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
 //    cout << "tmp: " << std::bitset<16>(tmp) << ", (tmp & k_1s): " << (tmp & k_1s) << endl;
 
     q = 0;
-    x = 0;
     if(tmp >> k){
         q = qs[qiter++];
-        x = q << k;
     }
 
-    x = x | (tmp & k_1s);
+    x = (q << k) | (tmp & k_1s);
 
     filled += kp1;
     if (filled >= 8){
@@ -291,35 +288,27 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
     // ======================================
 
     while(viter < v_sz){
-//    while(buf_iter < r_sz){
 
-//        if(!rank) ASSERT(filled%(k+2) == 0, "filled: " << filled << ", k+2: " << k+2);
-//        if(!rank) cout << "filled: " << filled << ", k+2: " << k+2 << endl;
+//        tmp2 = (buf[buf_iter] << 8u) | (buf[buf_iter+1]);
+//        tmp  = (tmp2 >> (ofst - filled)) & kp1_1s;
 
-        tmp2 = (buf[buf_iter] << 8u) | (buf[buf_iter+1]);
-        tmp  = (tmp2 >> (ofst - filled)) & kp1_1s;
-
-#ifdef __DEBUG1__
-//        cout << "buf[buf_iter]: " << std::bitset<8>(buf[buf_iter]) << ", buf[buf_iter+1]: " << std::bitset<8>(buf[buf_iter+1])
-//                << ", tmp2: " << std::bitset<16>(tmp2) << ", tmp: " << std::bitset<16>(tmp)
-//                << ", (tmp & k_1s): " << (tmp & k_1s) << ", filled: " << filled << ", ofst: " << ofst
-//                << ", tmp >> k: " << (tmp >> k) << endl;
-#endif
+        tmp = ( ((buf[buf_iter] << 8u) | (buf[buf_iter+1])) >> (ofst - filled)) & kp1_1s;
 
         q = 0;
-        x = 0;
         if(tmp >> k){
             q = qs[qiter++];
-            x = q << k;
         }
 
-        x = x | (tmp & k_1s);
+        x = (q << k) | (tmp & k_1s);
 
         filled += kp1;
         if (filled >= 8){
             ++buf_iter;
             filled -= 8;
         }
+
+        v[viter] = v[viter-1] + x;
+        ++viter;
 
 #if 0
         q = 0;
@@ -337,10 +326,12 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
         }
 #endif
 
-        v[viter] = v[viter-1] + x;
-        ++viter;
-
 #ifdef __DEBUG1__
+//        cout << "buf[buf_iter]: " << std::bitset<8>(buf[buf_iter]) << ", buf[buf_iter+1]: " << std::bitset<8>(buf[buf_iter+1])
+//                << ", tmp2: " << std::bitset<16>(tmp2) << ", tmp: " << std::bitset<16>(tmp)
+//                << ", (tmp & k_1s): " << (tmp & k_1s) << ", filled: " << filled << ", ofst: " << ofst
+//                << ", tmp >> k: " << (tmp >> k) << endl;
+
         assert(buf_iter < buf_sz);
         assert(x != INT32_MAX);
         if(verbose_decomp && rank==rank_ver){
