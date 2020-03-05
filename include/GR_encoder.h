@@ -28,6 +28,7 @@ public:
     index_t get_bit(const uint8_t *buf);
     void    compress(index_t *v, index_t v_sz, index_t k, uint8_t *buf);
     void    decompress(index_t *v, index_t buf_sz, index_t k, int q_sz, uint8_t *buf);
+    void    decompress2(index_t *v, index_t buf_sz, index_t k, int q_sz, uint8_t *buf);
 };
 
 

@@ -211,6 +211,123 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+    int rank_ver = 1;
+
+//    unsigned int M = 1U << k;
+#endif
+
+    auto r_sz = rem_sz(v_sz, k);
+    auto qs   = reinterpret_cast<short*>(&buf[r_sz]);
+
+#ifdef __DEBUG1__
+//    print_array(qs, q_sz, 0, "qs after", comm);
+    if(verbose_decomp && rank==rank_ver){
+        std::cout << "\nrank " << rank << ": decompress: k: " << k << ", M: " << (1U << k) << ", r_sz: " << r_sz << ", q_sz: " << q_sz << std::endl;
+    }
+#endif
+
+    int x;
+    short q;
+    index_t qiter = 0, viter = 0;
+    index_t k_1s = (1u << k) - 1;
+
+    // 1- decode v[0]
+    // ======================================
+
+    buf_iter = 0;
+
+    q = 0;
+    if(buf[buf_iter] >> k){
+        q = qs[qiter++];
+    }
+
+    x = (q << k) | (buf[buf_iter] & k_1s);
+    ++buf_iter;
+
+#if 0
+    q = 0;
+    if(get_bit(buf)){
+        q = qs[qiter++];
+    }
+
+//    x = q * M;
+    x = q << k;
+
+    for (j = k-1; j >= 0; --j) {
+//        std::cout << "\niter: " << iter << "\t" << std::bitset<1>(buf[iter]) << "\t" << (buf[iter] << j) << std::endl;
+        x = x | (get_bit(buf) << j);
+//        if(rank==rank_ver) std::cout << "x = " << x << std::endl;
+    }
+#endif
+
+    v[viter++] = x;
+
+#ifdef __DEBUG1__
+    if(verbose_decomp && rank==rank_ver){
+        std::cout << 0 << ": v[viter] = " << v[viter-1] << ", diff = " << x << ", q = " << q << " (buf_iter: " << buf_iter << ")\n";
+//        print_array(qs, q_sz, 0, "qs after", comm);
+    }
+#endif
+
+    // 2- decode the rest of v
+    // ======================================
+
+    while(viter < v_sz){
+
+        q = 0;
+        if(buf[buf_iter] >> k){
+            q = qs[qiter++];
+        }
+
+        x = (q << k) | (buf[buf_iter] & k_1s);
+        ++buf_iter;
+        v[viter] = v[viter-1] + x;
+        ++viter;
+
+#if 0
+        q = 0;
+        if(get_bit(buf)){
+            q = qs[qiter++];
+        }
+
+//        x = q * M;
+        x = q << k;
+
+        for (j = k-1; j >= 0; --j) {
+//            std::cout << "iter: " << iter << "\t" << std::bitset<1>(buf[iter]) << std::endl;
+            x = x | (get_bit(buf) << j);
+//            if(rank==rank_ver) std::cout << "x = " << x << std::endl;
+        }
+#endif
+
+#ifdef __DEBUG1__
+//        cout << "buf[buf_iter]: " << std::bitset<8>(buf[buf_iter]) << ", buf[buf_iter+1]: " << std::bitset<8>(buf[buf_iter+1])
+//                << ", tmp2: " << std::bitset<16>(tmp2) << ", tmp: " << std::bitset<16>(tmp)
+//                << ", (tmp & k_1s): " << (tmp & k_1s) << ", filled: " << filled << ", ofst: " << ofst
+//                << ", tmp >> k: " << (tmp >> k) << endl;
+
+        assert(buf_iter < buf_sz);
+        assert(x != INT32_MAX);
+        if(verbose_decomp && rank==rank_ver){
+            std::cout << viter-1 << ": v[viter] = " << v[viter-1] << ", diff = " << x << ", q = " << q << " (buf_iter: " << buf_iter << ")\n";
+        }
+#endif
+    }
+
+#ifdef __DEBUG1__
+//    ASSERT(viter == v_sz, "rank " << rank << ": viter: " << viter << ", v_sz: " << v_sz);
+//    print_array(v, v_sz, rank_ver, "v decompressed", comm);
+#endif
+}
+
+
+void GR_encoder::decompress2(index_t *v, index_t v_sz, index_t k, int q_sz, uint8_t *buf) {
+
+#ifdef __DEBUG1__
+    MPI_Comm comm = MPI_COMM_WORLD;
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
     int rank_ver = 0;
 
 //    unsigned int M = 1U << k;

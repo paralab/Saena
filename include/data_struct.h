@@ -467,6 +467,7 @@ public:
 
     CSCMat() = default;
     int compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz);
+    int compress_prep_compute2(const index_t *v, index_t v_sz, GR_sz &comp_sz);
     int compress_prep();
 };
 
