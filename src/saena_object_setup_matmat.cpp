@@ -1688,9 +1688,6 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         t_init_prep += t_temp;
         t_temp2 = MPI_Wtime();
 
-        // todo: the last communication means each proc receives a copy of its already owned B, which is redundant,
-        //   so the communication should be avoided but the multiplication should be done. consider this:
-        //   change to k < rank+nprocs-1. Then, copy fast_mm after the end of the for loop to perform the last multiplication
         for(int k = rank; k < rank+nprocs; ++k){
             // This is overlapped. Both local and remote loops are done here.
             // The first iteration is the local loop. The rest are remote.
@@ -1701,37 +1698,37 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
             t_temp = MPI_Wtime();
 
-            next_owner = (k+1)%nprocs;
-            mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
-            recv_nnz   = Bcsc.nnz_list[next_owner];
+            if(k != rank+nprocs-1) { // do not perform the communication for the last one, because it's just each processor's data.
+                next_owner = (k + 1) % nprocs;
+                mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
+                recv_nnz = Bcsc.nnz_list[next_owner];
 
-            row_buf_sz = tot_sz(recv_nnz,       Bcsc.comp_row.ks[next_owner], Bcsc.comp_row.qs[next_owner]);
-            col_buf_sz = tot_sz(mat_recv_M + 1, Bcsc.comp_col.ks[next_owner], Bcsc.comp_col.qs[next_owner]);
+                row_buf_sz = tot_sz(recv_nnz, Bcsc.comp_row.ks[next_owner], Bcsc.comp_row.qs[next_owner]);
+                col_buf_sz = tot_sz(mat_recv_M + 1, Bcsc.comp_col.ks[next_owner], Bcsc.comp_col.qs[next_owner]);
+                recv_size = row_buf_sz + col_buf_sz + recv_nnz * sizeof(value_t); // in bytes
 
-//            row_buf_sz = Bcsc.comp_row.qs[next_owner] * sizeof(short) + (recv_nnz * (Bcsc.comp_row.ks[next_owner] + 2));
-//            col_buf_sz = Bcsc.comp_col.qs[next_owner] * sizeof(short) + ((mat_recv_M + 1) * (Bcsc.comp_col.ks[next_owner] + 2));
-
-            recv_size = row_buf_sz + col_buf_sz + recv_nnz * sizeof(value_t); // in bytes
-
-            t_temp = MPI_Wtime() - t_temp;
-            t_prep_iter += t_temp;
+                t_temp = MPI_Wtime() - t_temp;
+                t_prep_iter += t_temp;
 
 #ifdef __DEBUG1__
-            ASSERT(row_buf_sz + col_buf_sz <= Bcsc.max_comp_sz, "rank " << rank << ": row_buf:" << row_buf_sz
-                               << "\tcol_buf: " << col_buf_sz << ",\tBcsc.max_comp_sz: " << Bcsc.max_comp_sz);
-            if (verbose_matmat) {
-                MPI_Barrier(comm);
-                if (rank == verbose_rank) printf("matmat: step 3 - in for loop\n");
-                MPI_Barrier(comm);
-                printf("rank %d: next_owner: %4d, recv_nnz: %4lu, recv_size: %4lu, send_nnz = %4lu, send_size: %4lu, mat_recv_M: %4u\n",
-                       rank, next_owner, recv_nnz, recv_size, send_nnz, send_size, mat_recv_M);
-                MPI_Barrier(comm);
-            }
+                ASSERT(row_buf_sz + col_buf_sz <= Bcsc.max_comp_sz, "rank " << rank << ": row_buf:" << row_buf_sz
+                                                                            << "\tcol_buf: " << col_buf_sz
+                                                                            << ",\tBcsc.max_comp_sz: "
+                                                                            << Bcsc.max_comp_sz);
+                if (verbose_matmat) {
+                    MPI_Barrier(comm);
+                    if (rank == verbose_rank) printf("matmat: step 3 - in for loop\n");
+                    MPI_Barrier(comm);
+                    printf("rank %d: next_owner: %4d, recv_nnz: %4lu, recv_size: %4lu, send_nnz = %4lu, send_size: %4lu, mat_recv_M: %4u\n",
+                           rank, next_owner, recv_nnz, recv_size, send_nnz, send_size, mat_recv_M);
+                    MPI_Barrier(comm);
+                }
 #endif
 
-            // communicate data
-            MPI_Irecv(mat_recv, recv_size, MPI_CHAR, right_neighbor, right_neighbor, comm, requests);
-            MPI_Isend(mat_send, send_size, MPI_CHAR, left_neighbor,  rank,           comm, requests+1);
+                // communicate data
+                MPI_Irecv(mat_recv, recv_size, MPI_CHAR, right_neighbor, right_neighbor, comm, requests);
+                MPI_Isend(mat_send, send_size, MPI_CHAR, left_neighbor, rank, comm, requests + 1);
+            }
 
             // =======================================
             // perform the multiplication
@@ -1855,49 +1852,50 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 #endif
             }
 
-            t_temp = MPI_Wtime();
+            if(k != rank+nprocs-1) {
+                t_temp = MPI_Wtime();
 
-            MPI_Waitall(2, requests, statuses);
+                MPI_Waitall(2, requests, statuses);
 
-            t_temp = MPI_Wtime() - t_temp;
-            t_wait += t_temp;
+                t_temp = MPI_Wtime() - t_temp;
+                t_wait += t_temp;
 
 #ifdef __DEBUG1__
-            {
+                {
+                    if (verbose_matmat) {
+                        MPI_Barrier(comm);
+                        if (rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
+                        MPI_Barrier(comm);
+                    }
+
+                    assert(reorder_counter == 0);
+                }
+#endif
+
+                t_temp = MPI_Wtime();
+
+                send_size = recv_size;
+                send_nnz = recv_nnz;
+
+                // swap mat_send and mat_recv
+//            mat_recv.swap(mat_send);
+//            std::swap(mat_send, mat_recv);
+                mat_temp = mat_send;
+                mat_send = mat_recv;
+                mat_recv = mat_temp;
+
+                t_temp = MPI_Wtime() - t_temp;
+                t_prep_iter += t_temp;
+
+#ifdef __DEBUG1__
                 if (verbose_matmat) {
                     MPI_Barrier(comm);
-                    if (rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
+                    if (rank == verbose_rank) printf("matmat: step 5 - in for loop\n");
                     MPI_Barrier(comm);
                 }
 
-                assert(reorder_counter == 0);
-            }
-#endif
-
-            t_temp = MPI_Wtime();
-
-            send_size = recv_size;
-            send_nnz  = recv_nnz;
-
-            // swap mat_send and mat_recv
-//            mat_recv.swap(mat_send);
-//            std::swap(mat_send, mat_recv);
-            mat_temp = mat_send;
-            mat_send = mat_recv;
-            mat_recv = mat_temp;
-
-            t_temp = MPI_Wtime() - t_temp;
-            t_prep_iter += t_temp;
-
-#ifdef __DEBUG1__
-            if (verbose_matmat) {
-                MPI_Barrier(comm);
-                if (rank == verbose_rank) printf("matmat: step 5 - in for loop\n");
-                MPI_Barrier(comm);
-            }
-
-            // info about mat_recv and mat_send
-            {
+                // info about mat_recv and mat_send
+                {
 //                MPI_Barrier(comm);
 //                if(rank==verbose_rank) {
 //                    owner = (k+1)%nprocs;
@@ -1925,9 +1923,9 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 //                print_vector(mat_recv, -1, "mat_recv", A->comm);
 //                prev_owner = owner;
 //                printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
-            }
+                }
 #endif
-
+            }
         }
 
         delete [] requests;
