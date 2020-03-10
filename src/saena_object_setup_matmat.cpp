@@ -1728,6 +1728,10 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 // communicate data
                 MPI_Irecv(mat_recv, recv_size, MPI_CHAR, right_neighbor, right_neighbor, comm, requests);
                 MPI_Isend(mat_send, send_size, MPI_CHAR, left_neighbor, rank, comm, requests + 1);
+
+                int flag;
+                MPI_Test(requests, &flag, statuses);
+                MPI_Test(requests+1, &flag, statuses+1);
             }
 
             // =======================================
