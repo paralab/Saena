@@ -68,7 +68,8 @@ int CSCMat::compress_prep(){
     float comp_rate;
 
     MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
-    if(!rank) std::cout << "orig_sz (rank0) = " << orig_sz << ", comp_sz (rank0) = " << comp_sz << ", compression rate (average) = " << comp_rate/nprocs << std::endl;
+    if(!rank) std::cout << "rank " << rank << ": orig sz = " << orig_sz << ",  GR comp sz = " << comp_sz
+                        << ", saving " << comp_rate/nprocs << " (on average)" << std::endl;
 
 #ifdef __DEBUG1__
     if(rank==rank_ver && verbose_prep){
