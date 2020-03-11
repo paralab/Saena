@@ -93,9 +93,11 @@ public:
     index_t *mempool4 = nullptr;
     value_t *mempool5 = nullptr;
     uchar   *mempool6 = nullptr;
+    uchar   *mempool7 = nullptr;
     nnz_t    mempool3_sz     = 0;
     nnz_t    mempool4and5_sz = 0;
     nnz_t    mempool6_sz     = 0;
+    nnz_t    mempool7_sz     = 0;
 
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
     double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
