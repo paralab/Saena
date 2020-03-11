@@ -17,8 +17,8 @@ cd ..
 
 #send_zfp
 mkdir build_zfp && cd build_zfp
-cmake ../../external/zfp-0.5.3
-make -j28
+cmake ../../external/zfp-0.5.5
+cmake --build . --config Release
 cd ..
 
 # SuperLU
