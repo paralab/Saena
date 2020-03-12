@@ -89,7 +89,8 @@ public:
     long   zfp_orig_sz = 0l;   // the original size of array that was compressed with zfp
     long   zfp_comp_sz = 0l;   // the size of the compressed array as the output of zfp
     double zfp_rate    = 0.0;  // = zfp_comp_sz / zfp_orig_sz
-    double zfp_thrshld = 0.98; // if (zfp_rate < zfp_thrshld) zfp_perform = true;
+    double zfp_thrshld = 0.0; // if (zfp_rate < zfp_thrshld) zfp_perform = true;
+                            // set zfp_thrshld = 0 to disable zfp compression
     bool   zfp_perform = true;
 
     // memory pool used in compute_coarsen
@@ -247,7 +248,8 @@ public:
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false);
     int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
 //    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
-    int matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz);
+    int matmat_memory_alloc(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz);
+    int matmat_memory_free();
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 //    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 

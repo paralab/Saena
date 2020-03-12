@@ -1269,7 +1269,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     // Preallocate Memory
     // =======================================
 
-    matmat_memory(A, B, Bcsc.max_comp_sz);
+    matmat_memory_alloc(A, B, Bcsc.max_comp_sz);
 
     if(print_timing){
         t_temp = MPI_Wtime() - t_temp;
@@ -1382,23 +1382,17 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     delete []Bcsc.val;
     delete []Bcsc.col_scan;
 
-//    delete []mempool1;
-//    delete []mempool2;
-    delete []mempool3;
-    delete []mempool4;
-    delete []mempool5;
-    delete []mempool6;
-    delete []mempool7;
+    matmat_memory_free();
 
     return 0;
 }
 
 
-int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz){
+int saena_object::matmat_memory_alloc(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz){
 
     int nprocs;
     MPI_Comm_size(A->comm, &nprocs);
-    
+
 #ifdef __DEBUG1__
 //    int rank;
 //    MPI_Comm_rank(A->comm, &rank);
@@ -1466,13 +1460,15 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_ma
             std::cerr << "bad_alloc caught: " << ba.what() << '\n';
         }
 
-        // the buffer size is sometimes bigger than the original array, so choosing 2 to be safe.
-        mempool7_sz = 2 * B->nnz_max * sizeof(value_t);
+        if(zfp_thrshld > 1e-8) {
+            // the buffer size is sometimes bigger than the original array, so choosing 2 to be safe.
+            mempool7_sz = 2 * B->nnz_max * sizeof(value_t);
 
-        try {
-            mempool7 = new uchar[mempool7_sz]; // used as the zfp compressor and decompressor buffer
-        } catch (std::bad_alloc &ba) {
-            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+            try {
+                mempool7 = new uchar[mempool7_sz]; // used as the zfp compressor and decompressor buffer
+            } catch (std::bad_alloc &ba) {
+                std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+            }
         }
     }
 
@@ -1496,6 +1492,22 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_ma
     return 0;
 }
 
+
+int saena_object::matmat_memory_free(){
+
+//    delete []mempool1;
+//    delete []mempool2;
+    delete []mempool3;
+    delete []mempool4;
+    delete []mempool5;
+    delete []mempool6;
+
+    if(zfp_thrshld > 1e-8) {
+        delete[]mempool7;
+    }
+
+    return 0;
+}
 
 int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 
@@ -1642,57 +1654,72 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         t_temp3 = MPI_Wtime() - t_temp3;
         t_comp_GR += t_temp3;
 
-        t_temp3 = MPI_Wtime();
+        // zfp parameters
+        zfp_field  *field      = nullptr;
+        zfp_field  *field2     = nullptr;
+        zfp_stream *zfp        = nullptr;
+        bitstream  *stream     = nullptr;
+        void       *zfp_buffer = nullptr;
+        size_t     bufsize, zfpsize = 0;
+        std::vector<long> zfp_comp_szs;
 
-        // zfp: compress values
-        zfp_field*  field = zfp_field_1d(&Bcsc.val[0], zfp_type_double, Bcsc.nnz);
-        zfp_stream* zfp   = zfp_stream_open(nullptr);
-        zfp_stream_set_reversible(zfp);
+        if(zfp_thrshld > 1e-8){
+            t_temp3 = MPI_Wtime();
 
-        size_t bufsize   = zfp_stream_maximum_size(zfp, field);
-        void* zfp_buffer = mempool7;
-//        void* zfp_buffer = malloc(bufsize);
+            // zfp: compress values
+            field = zfp_field_1d(&Bcsc.val[0], zfp_type_double, Bcsc.nnz);
+            zfp   = zfp_stream_open(nullptr);
+            zfp_stream_set_reversible(zfp);
 
-        bitstream* stream = stream_open(zfp_buffer, bufsize);
-        zfp_stream_set_bit_stream(zfp, stream);
-        zfp_stream_rewind(zfp);
+            bufsize = zfp_stream_maximum_size(zfp, field);
+            zfp_buffer = mempool7;
+//            zfp_buffer = malloc(bufsize);
 
-        size_t zfpsize = zfp_compress(zfp, field); // The number of bytes of compressed storage that is returned.
-        if (!zfpsize) {
-            fprintf(stderr, "rank %d: compression failed\n", rank);
+            stream = stream_open(zfp_buffer, bufsize);
+            zfp_stream_set_bit_stream(zfp, stream);
+            zfp_stream_rewind(zfp);
+
+            zfpsize = zfp_compress(zfp, field); // The number of bytes of compressed storage that is returned.
+            if (!zfpsize) {
+                fprintf(stderr, "rank %d: compression failed\n", rank);
+            }
+
+            zfp_orig_sz = sizeof(value_t) * Bcsc.nnz;
+            zfp_comp_sz = zfpsize;
+
+            zfp_comp_szs.resize(nprocs);
+            MPI_Allgather(&zfpsize, 1, MPI_LONG, &zfp_comp_szs[0], 1, MPI_LONG, comm);
+
+            // compute zfp compression rate
+            zfp_rate = 0;
+            for(int i = 0; i < nprocs; ++i){
+                zfp_rate += static_cast<double>(zfp_comp_szs[i]) / (Bcsc.nnz_list[i] * sizeof(value_t));
+            }
+            zfp_rate /= static_cast<double>(nprocs);
+
+            // decide whether to perfom zfp compresion on values
+            zfp_perform = zfp_rate < zfp_thrshld;
+
+            if(!zfp_perform) {
+                zfp_field_free(field);
+                zfp_stream_close(zfp);
+                stream_close(stream);
+            }
+
+            t_temp3 = MPI_Wtime() - t_temp3;
+            t_comp_zfp += t_temp3;
+        }else{
+            zfp_perform = false;
         }
-
-        // use this for decompression
-        zfp_field* field2 = nullptr;
-
-        zfp_orig_sz = sizeof(value_t) * Bcsc.nnz;
-        zfp_comp_sz = zfpsize;
-
-        std::vector<long> zfp_comp_szs(nprocs);
-        MPI_Allgather(&zfpsize, 1, MPI_LONG, &zfp_comp_szs[0], 1, MPI_LONG, comm);
-
-        // compute zfp compression rate
-        zfp_rate = 0;
-        for(int i = 0; i < nprocs; ++i){
-            zfp_rate += static_cast<double>(zfp_comp_szs[i]) / (Bcsc.nnz_list[i] * sizeof(value_t));
-        }
-        zfp_rate /= static_cast<double>(nprocs);
-
-        // decide whether to perfom zfp compresion on values
-        zfp_perform = zfp_rate < zfp_thrshld;
-
-        if(!zfp_perform) {
-            zfp_field_free(field);
-            zfp_stream_close(zfp);
-            stream_close(stream);
-//            free(zfp_buffer);
-        }
-
-        t_temp3 = MPI_Wtime() - t_temp3;
-        t_comp_zfp += t_temp3;
 
 #ifdef __DEBUG1__
         {
+            if (verbose_matmat) {
+                MPI_Barrier(comm);
+                if (rank == verbose_rank) printf("matmat: step 2\n");
+                MPI_Barrier(comm);
+            }
+
 //        if(rank == verbose_rank){
 //            auto orig_sz = sizeof(value_t) * Bcsc.nnz;
 //            if(!rank) std::cout << "rank " << rank << ": orig sz = " << orig_sz << ", zfp comp sz = " << zfpsize
@@ -1725,7 +1752,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         {
             if (verbose_matmat) {
                 MPI_Barrier(comm);
-                if (rank == verbose_rank) printf("matmat: step 2\n");
+                if (rank == verbose_rank) printf("matmat: step 3\n");
                 MPI_Barrier(comm);
             }
 
@@ -1768,7 +1795,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         }
 
         // set the mat_recv data
-        nnz_t recv_nnz, value_nnz;
+        nnz_t recv_nnz;
         nnz_t recv_size;
         index_t row_comp_sz, col_comp_sz, current_comp_sz;
         index_t mat_recv_M = 0, mat_current_M = 0;
@@ -1803,15 +1830,14 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
                 next_owner = (k + 1) % nprocs;
                 mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
-                recv_nnz = Bcsc.nnz_list[next_owner];
-                value_nnz = zfp_comp_szs[next_owner]; // in bytes
+                recv_nnz   = Bcsc.nnz_list[next_owner];
 
                 row_buf_sz = tot_sz(recv_nnz, Bcsc.comp_row.ks[next_owner], Bcsc.comp_row.qs[next_owner]);
                 col_buf_sz = tot_sz(mat_recv_M + 1, Bcsc.comp_col.ks[next_owner], Bcsc.comp_col.qs[next_owner]);
                 recv_size  = row_buf_sz + col_buf_sz; // in bytes
 
                 if(zfp_perform){
-                    recv_size += value_nnz;
+                    recv_size += zfp_comp_szs[next_owner];
                 }else{
                     recv_size += recv_nnz * sizeof(value_t);
                 }
@@ -1825,7 +1851,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
                 if (verbose_matmat) {
                     MPI_Barrier(comm);
-                    if (rank == verbose_rank) printf("matmat: step 3 - in for loop\n");
+                    if (rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
                     MPI_Barrier(comm);
                     printf("rank %d: next_owner: %4d, recv_nnz: %4lu, recv_size: %4lu, send_nnz = %4lu, send_size: %4lu, mat_recv_M: %4u\n",
                            rank, next_owner, recv_nnz, recv_size, send_nnz, send_size, mat_recv_M);
@@ -1989,7 +2015,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 {
                     if (verbose_matmat) {
                         MPI_Barrier(comm);
-                        if (rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
+                        if (rank == verbose_rank) printf("matmat: step 5 - in for loop\n");
                         MPI_Barrier(comm);
                     }
 
@@ -2015,7 +2041,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 #ifdef __DEBUG1__
                 if (verbose_matmat) {
                     MPI_Barrier(comm);
-                    if (rank == verbose_rank) printf("matmat: step 5 - in for loop\n");
+                    if (rank == verbose_rank) printf("matmat: step 6 - in for loop\n");
                     MPI_Barrier(comm);
                 }
 
@@ -2062,7 +2088,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 #ifdef __DEBUG1__
         if (verbose_matmat) {
             MPI_Barrier(comm);
-            if (rank == verbose_rank) printf("matmat: step 6\n");
+            if (rank == verbose_rank) printf("matmat: step 7\n");
             MPI_Barrier(comm);
         }
 #endif
