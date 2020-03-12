@@ -13,6 +13,7 @@
 #include <fstream>
 #include <algorithm>
 #include <mpi.h>
+#include <iomanip>
 
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
@@ -1317,14 +1318,16 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         // print timings
         //===============
 
+        float zfp_save_loc = 1.0f - ( (float)zfp_comp_sz / (float)zfp_orig_sz );
+        float zfp_save;
+        MPI_Reduce(&zfp_save_loc, &zfp_save, 1, MPI_FLOAT, MPI_SUM, 0, comm);
+
+        if(!rank) std::cout << "zfp: orig sz (rank0) = " << zfp_orig_sz << ", comp sz (rank0) = " << zfp_comp_sz
+                            << ", saving %" << std::setprecision(2) << 100 * zfp_save / nprocs << " (average)";
+//        print_time_ave(zfp_save_loc, "zfp_saving", comm, true, false);
+
         if (!rank) printf("\n");
         print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
-
-        if(!rank){
-            auto orig_sz = sizeof(value_t) * Bcsc.nnz;
-            if(!rank) std::cout << "\nrank " << rank << ": orig sz = " << zfp_orig_sz << ", zfp comp sz = " << zfp_comp_sz
-                                << ", saving " << ( 1.0f - ( (float)zfp_comp_sz / (float)orig_sz ) ) << std::endl;
-        }
 
         if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
         print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);

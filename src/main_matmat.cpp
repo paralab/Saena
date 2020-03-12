@@ -129,6 +129,8 @@ int main(int argc, char* argv[]){
 //            petsc_viewer(A.get_internal_matrix());
 //            petsc_viewer(B.get_internal_matrix());
 //            petsc_viewer(C.get_internal_matrix());
+
+            if(!rank) printf("=====================\n\n");
         }
 
         // *************************** Saena matmat experiment ****************************
@@ -138,7 +140,7 @@ int main(int argc, char* argv[]){
         // *************************** PETSc matmat experiment ****************************
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
-//        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
+        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
 
     }
 
