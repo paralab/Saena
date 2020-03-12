@@ -1396,9 +1396,10 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
 int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz){
 
-#ifdef __DEBUG1__
     int nprocs;
     MPI_Comm_size(A->comm, &nprocs);
+    
+#ifdef __DEBUG1__
 //    int rank;
 //    MPI_Comm_rank(A->comm, &rank);
 //    int verbose_rank = 0;
