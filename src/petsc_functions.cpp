@@ -556,7 +556,7 @@ int petsc_matmat(saena_matrix *A, saena_matrix *B){
     double t1 = MPI_Wtime();
     MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &AB);
     t1 = MPI_Wtime() - t1;
-    print_time_ave(t1, "PETSc MatMatMult", comm, true);
+    print_time_ave(t1, "\nPETSc MatMatMult", comm, true);
 
     // wrtie the log to file
 //    int nprocs;
