@@ -1614,7 +1614,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         t_temp3 = MPI_Wtime();
 
         assert(mempool6_sz != 0);
-        std::fill(mempool6, &mempool6[mempool6_sz], 0);
+//        std::fill(mempool6, &mempool6[mempool6_sz], 0);
 
         // compress row and col_scan of B, communicate it, decompress it and use it
         GR_encoder encoder(mempool6_sz / 2);

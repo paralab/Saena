@@ -110,6 +110,121 @@ void GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uchar *buf){
     }
 
     int i, j;
+//    filled    = 7;
+    buf_iter  = 0;
+    int qiter = 0, diff;
+    short q;
+
+    uint8_t x;
+    index_t k_1s = (1u << k) - 1;
+
+    auto r_sz = rem_sz(v_sz, k);
+    auto qs   = reinterpret_cast<short*>(&buf[r_sz]);
+
+#ifdef __DEBUG1__
+    if(verbose_comp && rank==rank_ver){
+        std::cout << "\nrank " << rank << ": compress:   k: " << k << ", M: " << (1U << k) << ", r_sz: " << r_sz << ", v_sz: " << v_sz << std::endl;
+    }
+#endif
+
+    // ======================================
+    // encode rows
+    // ======================================
+
+    // 1- encode v[0]
+    // ======================================
+    // Since we want to encode the difference of the values (v[i] - v[i-1]), we first perform the encoding on the
+    // first element here.
+
+    assert(v[0] >= 0);
+
+    diff = v[0];
+//    put_bit(buf, 0); // the first entry is a positive number, not a difference, so it cannot be negative.
+
+//    q = diff / M;
+    q = diff >> k;
+
+    x = 0;
+    if(q != 0){
+        qs[qiter++] = q;
+        x = (1u << k);
+    }
+
+    buf[buf_iter++] = x | (diff & k_1s);
+
+
+
+#ifdef __DEBUG1__
+    if(verbose_comp && rank==rank_ver){
+        // print the binary representation
+        // cout << std::bitset<32>(diff) << "\t" << std::bitset<8>(x) << endl;
+        std::cout << 0 << "\tdiff: " << diff << ", v[i]: " << v[0] << ", q: " << q << std::endl;
+    }
+#endif
+
+    // 2- encode the rest of v
+    // ======================================
+
+    for(i = 1; i < v_sz; ++i){
+
+        diff = static_cast<int>(v[i] - v[i-1]);
+
+//        q = diff / M;
+        q = diff >> k;
+
+        x = 0;
+        if(q != 0){
+            qs[qiter++] = q;
+            x = (1u << k);
+        }
+
+        buf[buf_iter++] = x | (diff & k_1s);
+
+#ifdef __DEBUG1__
+        assert(buf_iter <= r_sz);
+        if(verbose_comp && rank==rank_ver){
+            // print the binary representation
+//            std::cout << std::bitset<32>(diff) << "\t" << std::bitset<8>(x) << std::endl;
+//            std::cout << i << "\t" << v[i] << "\t" << diff << std::endl;
+//            std::cout << i << "\tdiff: " << diff << ", v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", q: " << q << "\n";
+        }
+#endif
+    }
+
+#ifdef __DEBUG1__
+    {
+//        print_array(qs, qiter, 0, "qs before", MPI_COMM_WORLD);
+//        for(int i = 0; i < qiter; ++i){
+//            qs[i] = static_cast<short>(i);
+//            if(rank==0) std::cout << i << "\t" << qs[i] << std::endl;
+//        }
+    }
+#endif
+}
+
+
+// compress bit by bit
+void GR_encoder::compress2(index_t *v, index_t v_sz, index_t k, uchar *buf){
+
+#ifdef __DEBUG1__
+    MPI_Comm comm = MPI_COMM_WORLD;
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    int rank_ver = 0;
+
+//    print_array(v, v_sz, rank_ver, "v compress", comm);
+//    unsigned int M = 1U << k;
+#endif
+
+    printf("the compress buffer should be initialized to 0 before using compress2()\n");
+    exit(EXIT_FAILURE);
+
+    if(v_sz == 0){
+        return;
+    }
+
+    int i, j;
     filled    = 7;
     buf_iter  = 0;
     int qiter = 0, diff;
@@ -273,7 +388,6 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
     // ======================================
 
     while(viter < v_sz){
-
         q = 0;
         if(buf[buf_iter] >> k){
             q = qs[qiter++];
