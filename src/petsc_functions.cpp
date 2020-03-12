@@ -548,7 +548,7 @@ int petsc_matmat(saena_matrix *A, saena_matrix *B){
     petsc_saena_matrix(B, B2);
 
     // Turn on logging of objects and events.
-    PetscLogDefaultBegin();
+//    PetscLogDefaultBegin();
 //    float oldthresh;
 //    PetscLogSetThreshold(0.1, &oldthresh);
 
@@ -558,14 +558,14 @@ int petsc_matmat(saena_matrix *A, saena_matrix *B){
     t1 = MPI_Wtime() - t1;
     print_time_ave(t1, "PETSc MatMatMult", comm, true);
 
-    int nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    std::string filename = "petsclog_" + std::to_string(nprocs) + ".xml";
-
-    PetscViewer viewer;
-    PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename.c_str(), &viewer);
-    PetscLogView(viewer);
-    PetscViewerDestroy(&viewer);
+    // wrtie the log to file
+//    int nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+//    std::string filename = "petsclog_" + std::to_string(nprocs) + ".xml";
+//    PetscViewer viewer;
+//    PetscViewerASCIIOpen(PETSC_COMM_WORLD, filename.c_str(), &viewer);
+//    PetscLogView(viewer);
+//    PetscViewerDestroy(&viewer);
 
 //    petsc_viewer(AB);
 
