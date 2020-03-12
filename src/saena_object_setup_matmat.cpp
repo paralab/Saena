@@ -1320,17 +1320,17 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         // print timings
         //===============
 
-        if(nprocs > 1) {
-            float zfp_save_loc = 1.0f - ((float) zfp_comp_sz / (float) zfp_orig_sz);
-            float zfp_save;
-            MPI_Reduce(&zfp_save_loc, &zfp_save, 1, MPI_FLOAT, MPI_SUM, 0, comm);
-
-            if (!rank) std::cout << "zfp: orig sz (rank0) = " << zfp_orig_sz << ", comp sz (rank0) = " << zfp_comp_sz
-                       << ", saving %" << std::setprecision(2) << 100 * zfp_save / nprocs << " (average)\n";
+        if(nprocs > 1 && !rank) {
+            if(zfp_perform) {
+                std::cout << "zfp: orig sz (rank0) = " << zfp_orig_sz << ", comp sz (rank0) = " << zfp_comp_sz
+                          << ", saving %" << std::setprecision(2) << 100 * (1 - zfp_rate) << " (average)\n";
+            }else{
+                std::cout << "zfp: not performed! rate: " << zfp_rate << std::endl;
+            }
 //            print_time_ave(zfp_save_loc, "zfp_saving", comm, true, false);
         }
 
-//        if (!rank) printf("\n");
+        if (!rank) printf("\n");
         print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
 
         if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
@@ -1649,8 +1649,31 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
             fprintf(stderr, "rank %d: compression failed\n", rank);
         }
 
-        zfp_orig_sz = static_cast<long>(sizeof(value_t)) * Bcsc.nnz;
+        // use this for decompression
+        zfp_field* field2 = nullptr;
+
+        zfp_orig_sz = sizeof(value_t) * Bcsc.nnz;
         zfp_comp_sz = zfpsize;
+
+        std::vector<long> zfp_comp_szs(nprocs);
+        MPI_Allgather(&zfpsize, 1, MPI_LONG, &zfp_comp_szs[0], 1, MPI_LONG, comm);
+
+        // compute zfp compression rate
+        zfp_rate = 0;
+        for(int i = 0; i < nprocs; ++i){
+            zfp_rate += static_cast<double>(zfp_comp_szs[i]) / (Bcsc.nnz_list[i] * sizeof(value_t));
+        }
+        zfp_rate /= static_cast<double>(nprocs);
+
+        // decide whether to perfom zfp compresion on values
+        zfp_perform = zfp_rate < zfp_thrshld;
+
+        if(!zfp_perform) {
+            zfp_field_free(field);
+            zfp_stream_close(zfp);
+            stream_close(stream);
+//            free(zfp_buffer);
+        }
 
 #ifdef __DEBUG1__
         if(rank == verbose_rank){
@@ -1660,26 +1683,28 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         }
 #endif
 
-//        zfp_field_free(field);
-//        zfp_stream_close(zfp);
-//        stream_close(stream);
-//        free(zfp_buffer);
-
         t_temp3 = MPI_Wtime() - t_temp3;
         t_comp += t_temp3;
 
         // copy B.val at the end of the compressed array
         auto mat_send_v = reinterpret_cast<value_t*>(&mat_send[Bcsc.comp_row.tot + Bcsc.comp_col.tot]);
-//        memcpy(mat_send_v, Bcsc.val, Bcsc.nnz * sizeof(value_t));
-        memcpy(mat_send_v, zfp_buffer, zfpsize);
-
-        std::vector<long> zfp_comp_szs(nprocs);
-        MPI_Allgather(&zfpsize, 1, MPI_LONG, &zfp_comp_szs[0], 1, MPI_LONG, comm);
+        if(zfp_perform){
+            memcpy(mat_send_v, zfp_buffer, zfpsize);
+        }else{
+            memcpy(mat_send_v, Bcsc.val, Bcsc.nnz * sizeof(value_t));
+        }
 
         nnz_t send_nnz   = Bcsc.nnz;
         nnz_t row_buf_sz = tot_sz(send_nnz,        Bcsc.comp_row.k, Bcsc.comp_row.q);
         nnz_t col_buf_sz = tot_sz(Bcsc.col_sz + 1, Bcsc.comp_col.k, Bcsc.comp_col.q);
-        nnz_t send_size  = row_buf_sz + col_buf_sz + zfpsize; // in bytes
+        nnz_t send_size  = row_buf_sz + col_buf_sz; // in bytes
+
+        // add size of values
+        if(zfp_perform){
+            send_size += zfpsize;
+        }else{
+            send_size += send_nnz * sizeof(value_t);
+        }
 
 #ifdef __DEBUG1__
         {
@@ -1764,11 +1789,17 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 next_owner = (k + 1) % nprocs;
                 mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
                 recv_nnz = Bcsc.nnz_list[next_owner];
-                value_nnz = zfp_comp_szs[next_owner];
+                value_nnz = zfp_comp_szs[next_owner]; // in bytes
 
                 row_buf_sz = tot_sz(recv_nnz, Bcsc.comp_row.ks[next_owner], Bcsc.comp_row.qs[next_owner]);
                 col_buf_sz = tot_sz(mat_recv_M + 1, Bcsc.comp_col.ks[next_owner], Bcsc.comp_col.qs[next_owner]);
-                recv_size  = row_buf_sz + col_buf_sz + value_nnz; // in bytes
+                recv_size  = row_buf_sz + col_buf_sz; // in bytes
+
+                if(zfp_perform){
+                    recv_size += value_nnz;
+                }else{
+                    recv_size += recv_nnz * sizeof(value_t);
+                }
 
                 t_temp = MPI_Wtime() - t_temp;
                 t_prep_iter += t_temp;
@@ -1820,16 +1851,18 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 encoder.decompress(mat_current_r,     send_nnz,          Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner], mat_send);
                 encoder.decompress(mat_current_cscan, mat_current_M + 1, Bcsc.comp_col.ks[owner], Bcsc.comp_col.qs[owner], &mat_send[row_comp_sz]);
 
-                zfp_field* field2 = zfp_field_1d(mat_current_v, zfp_type_double, Bcsc.nnz_list[owner]);
-                stream = stream_open(&mat_send[current_comp_sz], zfp_comp_szs[owner]);
-                zfp_stream_set_bit_stream(zfp, stream);
-                zfp_stream_rewind(zfp);
-                zfp_decompress(zfp, field2);
+                if(zfp_perform){
+                    field2 = zfp_field_1d(mat_current_v, zfp_type_double, Bcsc.nnz_list[owner]);
+                    stream = stream_open(&mat_send[current_comp_sz], zfp_comp_szs[owner]);
+                    zfp_stream_set_bit_stream(zfp, stream);
+                    zfp_stream_rewind(zfp);
+                    zfp_decompress(zfp, field2);
+                }else{
+                    memcpy(mat_current_v, &mat_send[current_comp_sz], Bcsc.nnz_list[owner] * sizeof(value_t));
+                }
 
                 t_temp3 = MPI_Wtime() - t_temp3;
                 t_decomp += t_temp3;
-
-//                memcpy(mat_current_v, &mat_send[current_comp_sz], Bcsc.nnz_list[owner] * sizeof(value_t));
 
 #ifdef __DEBUG1__
                 {
@@ -2014,11 +2047,13 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         }
 #endif
 
-        zfp_field_free(field);
-//        zfp_field_free(field2);
-        zfp_stream_close(zfp);
-        stream_close(stream);
-//        free(zfp_buffer);
+        if(zfp_perform) {
+            zfp_field_free(field);
+            zfp_field_free(field2);
+            zfp_stream_close(zfp);
+            stream_close(stream);
+//            free(zfp_buffer);
+        }
 
     } else { // nprocs == 1 -> serial
 
