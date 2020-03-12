@@ -1261,7 +1261,9 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         t_temp = MPI_Wtime();
     }
 
-    Bcsc.compress_prep();
+    if(nprocs > 1) {
+        Bcsc.compress_prep();
+    }
 
     // =======================================
     // Preallocate Memory
@@ -1318,15 +1320,17 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         // print timings
         //===============
 
-        float zfp_save_loc = 1.0f - ( (float)zfp_comp_sz / (float)zfp_orig_sz );
-        float zfp_save;
-        MPI_Reduce(&zfp_save_loc, &zfp_save, 1, MPI_FLOAT, MPI_SUM, 0, comm);
+        if(nprocs > 1) {
+            float zfp_save_loc = 1.0f - ((float) zfp_comp_sz / (float) zfp_orig_sz);
+            float zfp_save;
+            MPI_Reduce(&zfp_save_loc, &zfp_save, 1, MPI_FLOAT, MPI_SUM, 0, comm);
 
-        if(!rank) std::cout << "zfp: orig sz (rank0) = " << zfp_orig_sz << ", comp sz (rank0) = " << zfp_comp_sz
-                            << ", saving %" << std::setprecision(2) << 100 * zfp_save / nprocs << " (average)";
-//        print_time_ave(zfp_save_loc, "zfp_saving", comm, true, false);
+            if (!rank) std::cout << "zfp: orig sz (rank0) = " << zfp_orig_sz << ", comp sz (rank0) = " << zfp_comp_sz
+                       << ", saving %" << std::setprecision(2) << 100 * zfp_save / nprocs << " (average)\n";
+//            print_time_ave(zfp_save_loc, "zfp_saving", comm, true, false);
+        }
 
-        if (!rank) printf("\n");
+//        if (!rank) printf("\n");
         print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
 
         if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
@@ -1386,6 +1390,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz){
 
 #ifdef __DEBUG1__
+    int nprocs;
+    MPI_Comm_size(A->comm, &nprocs);
 //    int rank;
 //    MPI_Comm_rank(A->comm, &rank);
 //    int verbose_rank = 0;
@@ -1415,15 +1421,17 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_ma
     // used to store mat_current in matmat()
     // valbyidx for value, (B->M_max + 1) for col_scan
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
-    int   valbyidx              = sizeof(value_t) / sizeof(index_t);
-    nnz_t v_buffer_sz_max       = valbyidx * B->nnz_max;
-    nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
-          mempool3_sz           = v_buffer_sz_max + r_cscan_buffer_sz_max;
+    if(nprocs > 1) {
+        int valbyidx = sizeof(value_t) / sizeof(index_t);
+        nnz_t v_buffer_sz_max = valbyidx * B->nnz_max;
+        nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
+        mempool3_sz = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
-    try{
-        mempool3 = new index_t[mempool3_sz]; // used to store mat_current in matmat()
-    }catch(std::bad_alloc& ba){
-        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        try {
+            mempool3 = new index_t[mempool3_sz]; // used to store mat_current in matmat()
+        } catch (std::bad_alloc &ba) {
+            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        }
     }
 
     mempool4and5_sz = std::max(A->nnz_max, B->nnz_max);
@@ -1440,22 +1448,24 @@ int saena_object::matmat_memory(saena_matrix *A, saena_matrix *B, nnz_t &comp_ma
         std::cerr << "bad_alloc caught: " << ba.what() << '\n';
     }
 
-    assert(comp_max_sz != 0);
-    mempool6_sz = 2 * (comp_max_sz + B->nnz_max * sizeof(value_t));
+    if(nprocs > 1) {
+        assert(comp_max_sz != 0);
+        mempool6_sz = 2 * (comp_max_sz + B->nnz_max * sizeof(value_t));
 
-    try{
-        mempool6 = new uchar[mempool6_sz]; // one for mat_send, one for mat_recv. both are compressed.
-    }catch(std::bad_alloc& ba){
-        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-    }
+        try {
+            mempool6 = new uchar[mempool6_sz]; // one for mat_send, one for mat_recv. both are compressed.
+        } catch (std::bad_alloc &ba) {
+            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        }
 
-    // the buffer size is sometimes bigger than the original array, so choosing 2 to be safe.
-    mempool7_sz = 2 * B->nnz_max * sizeof(value_t);
+        // the buffer size is sometimes bigger than the original array, so choosing 2 to be safe.
+        mempool7_sz = 2 * B->nnz_max * sizeof(value_t);
 
-    try{
-        mempool7 = new uchar[mempool7_sz]; // used as the zfp compressor and decompressor buffer
-    }catch(std::bad_alloc& ba){
-        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        try {
+            mempool7 = new uchar[mempool7_sz]; // used as the zfp compressor and decompressor buffer
+        } catch (std::bad_alloc &ba) {
+            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        }
     }
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
