@@ -86,6 +86,9 @@ public:
 
 //    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
 
+    long zfp_orig_sz = 0; // the original size of array that was compressed with zfp
+    long zfp_comp_sz = 0; // the size of the compressed array as the output of zfp
+
     // memory pool used in compute_coarsen
 //    value_t *mempool1   = nullptr;
 //    index_t *mempool2   = nullptr;

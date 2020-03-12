@@ -1321,6 +1321,12 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         if (!rank) printf("\n");
         print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
 
+        if(!rank){
+            auto orig_sz = sizeof(value_t) * Bcsc.nnz;
+            if(!rank) std::cout << "\nrank " << rank << ": orig sz = " << zfp_orig_sz << ", zfp comp sz = " << zfp_comp_sz
+                                << ", saving " << ( 1.0f - ( (float)zfp_comp_sz / (float)orig_sz ) ) << std::endl;
+        }
+
         if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
         print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);
         print_time_ave((t_mat - t_prep_iter - t_fast_mm) / matmat_iter, "comm", comm, true, false);
@@ -1631,13 +1637,16 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
             fprintf(stderr, "rank %d: compression failed\n", rank);
         }
 
-//#ifdef __DEBUG1__
+        zfp_orig_sz = static_cast<long>(sizeof(value_t)) * Bcsc.nnz;
+        zfp_comp_sz = zfpsize;
+
+#ifdef __DEBUG1__
         if(rank == verbose_rank){
-            auto orig_sz = sizeof(value_t) * Bcsc.nnz;
-            if(!rank) std::cout << "rank " << rank << ": orig sz = " << orig_sz << ", zfp comp sz = " << zfpsize
-                                << ", saving " << ( 1.0f - ( (float)zfpsize / (float)orig_sz ) ) << std::endl;
+//            auto orig_sz = sizeof(value_t) * Bcsc.nnz;
+//            if(!rank) std::cout << "rank " << rank << ": orig sz = " << orig_sz << ", zfp comp sz = " << zfpsize
+//                                << ", saving " << ( 1.0f - ( (float)zfpsize / (float)orig_sz ) ) << std::endl;
         }
-//#endif
+#endif
 
 //        zfp_field_free(field);
 //        zfp_stream_close(zfp);
