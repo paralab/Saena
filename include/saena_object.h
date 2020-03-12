@@ -89,7 +89,7 @@ public:
     long   zfp_orig_sz = 0l;   // the original size of array that was compressed with zfp
     long   zfp_comp_sz = 0l;   // the size of the compressed array as the output of zfp
     double zfp_rate    = 0.0;  // = zfp_comp_sz / zfp_orig_sz
-    double zfp_thrshld = 0.0; // if (zfp_rate < zfp_thrshld) zfp_perform = true;
+    double zfp_thrshld = 0.95; // if (zfp_rate < zfp_thrshld) zfp_perform = true;
                             // set zfp_thrshld = 0 to disable zfp compression
     bool   zfp_perform = true;
 
