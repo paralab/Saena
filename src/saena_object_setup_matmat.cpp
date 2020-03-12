@@ -13,7 +13,6 @@
 #include <fstream>
 #include <algorithm>
 #include <mpi.h>
-#include <iomanip>
 
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
@@ -224,7 +223,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
 #ifdef __DEBUG1__
         {
-            //        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
 //        if(rank==1) printf("\nPerform MKL matmult\n"); fflush(nullptr);
 //        MPI_Barrier(comm);
 
@@ -252,7 +251,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //        export_c:
 
         double  *values_C = nullptr;
-        MKL_INT *rows_C = nullptr, *columns_C = nullptr;
+        MKL_INT *rows_C = nullptr;
         MKL_INT *pointerB_C = nullptr, *pointerE_C = nullptr;
         MKL_INT  rows, cols, i, j, ii, status;
         sparse_index_base_t indexing;
@@ -1745,9 +1744,10 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
             // receive R_tranpose from the right_neighbor. And so on.
             // --------------------------------------------------------------------
 
-            t_temp = MPI_Wtime();
-
             if(k != rank+nprocs-1) { // do not perform the communication for the last one, because it's just each processor's data.
+
+                t_temp = MPI_Wtime();
+
                 next_owner = (k + 1) % nprocs;
                 mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
                 recv_nnz = Bcsc.nnz_list[next_owner];
@@ -1762,9 +1762,8 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
 #ifdef __DEBUG1__
                 ASSERT(row_buf_sz + col_buf_sz <= Bcsc.max_comp_sz, "rank " << rank << ": row_buf:" << row_buf_sz
-                                                                            << "\tcol_buf: " << col_buf_sz
-                                                                            << ",\tBcsc.max_comp_sz: "
-                                                                            << Bcsc.max_comp_sz);
+                        << "\tcol_buf: " << col_buf_sz << ",\tBcsc.max_comp_sz: " << Bcsc.max_comp_sz);
+
                 if (verbose_matmat) {
                     MPI_Barrier(comm);
                     if (rank == verbose_rank) printf("matmat: step 3 - in for loop\n");
@@ -1938,8 +1937,8 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 send_nnz  = recv_nnz;
 
                 // swap mat_send and mat_recv
-//            mat_recv.swap(mat_send);
-//            std::swap(mat_send, mat_recv);
+//                mat_recv.swap(mat_send);
+//                std::swap(mat_send, mat_recv);
                 mat_temp = mat_send;
                 mat_send = mat_recv;
                 mat_recv = mat_temp;
