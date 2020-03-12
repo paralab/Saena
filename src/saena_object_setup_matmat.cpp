@@ -17,7 +17,7 @@
 
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
-double t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
+double t_init_prep = 0, t_mat = 0, t_comp_GR = 0, t_comp_zfp = 0, t_decomp_GR = 0, t_decomp_zfp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
 
 // from an MKL example
 /* To avoid constantly repeating the part of code that checks inbound SparseBLAS functions' status,
@@ -1288,7 +1288,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     }else{
         // warmup
         case1 = 0, case2 = 0, case3 = 0;
-        t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
+        t_init_prep = 0, t_mat = 0, t_comp_GR = 0, t_comp_zfp = 0, t_decomp_GR = 0, t_decomp_zfp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
         for (int i = 0; i < matmat_iter_warmup; ++i) {
             case1_iter = 0;
             case2_iter = 0;
@@ -1298,7 +1298,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         }
 
         case1 = 0, case2 = 0, case3 = 0;
-        t_init_prep = 0, t_mat = 0, t_comp = 0, t_decomp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
+        t_init_prep = 0, t_mat = 0, t_comp_GR = 0, t_comp_zfp = 0, t_decomp_GR = 0, t_decomp_zfp = 0, t_prep_iter = 0, t_fast_mm = 0, t_sort = 0, t_wait = 0;
         for (int i = 0; i < matmat_iter; ++i) {
             case1_iter = 0;
             case2_iter = 0;
@@ -1333,15 +1333,22 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         if (!rank) printf("\n");
         print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
 
-        if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\nwait\nt_comp\nt_decomp\n");
+        if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\n"
+                          "\nwait\nt_comp_GR\nt_comp_zfp\nt_comp\nt_decomp_GR\nt_decomp_zfp\nt_decomp\n\n");
         print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);
         print_time_ave((t_mat - t_prep_iter - t_fast_mm) / matmat_iter, "comm", comm, true, false);
         print_time_ave(t_fast_mm / matmat_iter,                         "t_fast_mm", comm, true, false);
         print_time_ave(t_sort / matmat_iter,                            "t_sort", comm, true, false);
         print_time_ave(t_prep_iter / matmat_iter,                       "t_prep_iter", comm, true, false);
+
+        if (!rank) printf("\n");
         print_time_ave(t_wait / matmat_iter,                            "t_wait", comm, true, false);
-        print_time_ave(t_comp / matmat_iter,                            "t_comp", comm, true, false);
-        print_time_ave(t_decomp / matmat_iter,                          "t_decomp", comm, true, false);
+        print_time_ave(t_comp_GR / matmat_iter,                         "t_comp_GR", comm, true, false);
+        print_time_ave(t_comp_zfp / matmat_iter,                        "t_comp_zfp", comm, true, false);
+        print_time_ave((t_comp_GR + t_comp_zfp) / matmat_iter,          "t_comp", comm, true, false);
+        print_time_ave(t_decomp_GR / matmat_iter,                       "t_decomp_GR", comm, true, false);
+        print_time_ave(t_decomp_zfp / matmat_iter,                      "t_decomp_zfp", comm, true, false);
+        print_time_ave((t_decomp_GR + t_decomp_zfp) / matmat_iter,      "t_decomp", comm, true, false);
         if (!rank) printf("\n");
 
         if (!rank) printf("case1\ncase2\ncase3\n");
@@ -1631,6 +1638,11 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         encoder.compress(Bcsc.row, Bcsc.nnz, Bcsc.comp_row.k, mat_send);
         encoder.compress(Bcsc.col_scan, Bcsc.col_sz+1, Bcsc.comp_col.k, &mat_send[Bcsc.comp_row.tot]);
 
+        t_temp3 = MPI_Wtime() - t_temp3;
+        t_comp_GR += t_temp3;
+
+        t_temp3 = MPI_Wtime();
+
         // zfp: compress values
         zfp_field*  field = zfp_field_1d(&Bcsc.val[0], zfp_type_double, Bcsc.nnz);
         zfp_stream* zfp   = zfp_stream_open(nullptr);
@@ -1675,16 +1687,18 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 //            free(zfp_buffer);
         }
 
+        t_temp3 = MPI_Wtime() - t_temp3;
+        t_comp_zfp += t_temp3;
+
 #ifdef __DEBUG1__
-        if(rank == verbose_rank){
+        {
+//        if(rank == verbose_rank){
 //            auto orig_sz = sizeof(value_t) * Bcsc.nnz;
 //            if(!rank) std::cout << "rank " << rank << ": orig sz = " << orig_sz << ", zfp comp sz = " << zfpsize
 //                                << ", saving " << ( 1.0f - ( (float)zfpsize / (float)orig_sz ) ) << std::endl;
+//        }
         }
 #endif
-
-        t_temp3 = MPI_Wtime() - t_temp3;
-        t_comp += t_temp3;
 
         // copy B.val at the end of the compressed array
         auto mat_send_v = reinterpret_cast<value_t*>(&mat_send[Bcsc.comp_row.tot + Bcsc.comp_col.tot]);
@@ -1851,18 +1865,23 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 encoder.decompress(mat_current_r,     send_nnz,          Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner], mat_send);
                 encoder.decompress(mat_current_cscan, mat_current_M + 1, Bcsc.comp_col.ks[owner], Bcsc.comp_col.qs[owner], &mat_send[row_comp_sz]);
 
+                t_temp3 = MPI_Wtime() - t_temp3;
+                t_decomp_GR += t_temp3;
+
                 if(zfp_perform){
+                    t_temp3 = MPI_Wtime();
+
                     field2 = zfp_field_1d(mat_current_v, zfp_type_double, Bcsc.nnz_list[owner]);
                     stream = stream_open(&mat_send[current_comp_sz], zfp_comp_szs[owner]);
                     zfp_stream_set_bit_stream(zfp, stream);
                     zfp_stream_rewind(zfp);
                     zfp_decompress(zfp, field2);
+
+                    t_temp3 = MPI_Wtime() - t_temp3;
+                    t_decomp_zfp += t_temp3;
                 }else{
                     memcpy(mat_current_v, &mat_send[current_comp_sz], Bcsc.nnz_list[owner] * sizeof(value_t));
                 }
-
-                t_temp3 = MPI_Wtime() - t_temp3;
-                t_decomp += t_temp3;
 
 #ifdef __DEBUG1__
                 {
