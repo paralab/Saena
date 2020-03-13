@@ -90,7 +90,7 @@ public:
     long   zfp_comp_sz = 0l;   // the size of the compressed array as the output of zfp
     double zfp_rate    = 0.0;  // = zfp_comp_sz / zfp_orig_sz
     double zfp_thrshld = 0.95; // if (zfp_rate < zfp_thrshld) zfp_perform = true;
-                            // set zfp_thrshld = 0 to disable zfp compression
+                               // set zfp_thrshld = 0 to disable zfp compression
     bool   zfp_perform = true;
 
     // memory pool used in compute_coarsen

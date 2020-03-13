@@ -1795,8 +1795,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         }
 
         // set the mat_recv data
-        nnz_t recv_nnz;
-        nnz_t recv_size;
+        nnz_t recv_nnz  = 0, recv_size = 0;
         index_t row_comp_sz, col_comp_sz, current_comp_sz;
         index_t mat_recv_M = 0, mat_current_M = 0;
         auto mat_recv = &mempool6[mempool6_sz / 2];
@@ -1955,11 +1954,11 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                                     << ", mat_current_cscan[0]: " << mat_current_cscan[0]
                                     << ", mat_current_cscan[mat_current_M]: " << mat_current_cscan[mat_current_M]);
 
-//                index_t ofst  = Bcsc.split[owner], col_idx;
+//                    index_t ofst  = Bcsc.split[owner], col_idx;
                     for (nnz_t i = 0; i < mat_current_M; ++i) {
-//                    col_idx = i + ofst;
+//                        col_idx = i + ofst;
                         for (nnz_t j = mat_current_cscan[i]; j < mat_current_cscan[i + 1]; j++) {
-//                        assert( (col_idx >= Bcsc.split[owner]) && (col_idx < Bcsc.split[owner+1]) ); //this is always true
+//                            assert( (col_idx >= Bcsc.split[owner]) && (col_idx < Bcsc.split[owner+1]) ); //this is always true
                             assert( (mat_current_r[j] >= 0) && (mat_current_r[j] < Bcsc.split.back()) );
                         }
                     }
