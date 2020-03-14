@@ -68,8 +68,8 @@ int CSCMat::compress_prep(){
     float comp_rate;
 
     MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
-    if(rank==rank_ver) printf("GR:  orig sz (rank%d) = %lu, comp sz (rank%d) = %lu, saving %.2f (average)\n",
-                               rank, orig_sz, rank, comp_sz, 100 * comp_rate / nprocs);
+    if(rank==rank_ver) printf("GR:  orig sz (rank%d) = %lu, comp sz (rank%d) = %lu, saving %.2f (average), row's k = %d, col's k = %d\n",
+                               rank, orig_sz, rank, comp_sz, 100 * comp_rate / nprocs, comp_row.k, comp_col.k);
 
 #ifdef __DEBUG1__
     if(rank==rank_ver && verbose_prep){
