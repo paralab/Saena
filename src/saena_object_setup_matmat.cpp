@@ -1648,8 +1648,9 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
         // compress row and col_scan of B, communicate it, decompress it and use it
         GR_encoder encoder(mempool6_sz / 2);
-        encoder.compress(Bcsc.row, Bcsc.nnz, Bcsc.comp_row.k, mat_send);
+        encoder.compress(Bcsc.row,      Bcsc.nnz,      Bcsc.comp_row.k, mat_send);
         encoder.compress(Bcsc.col_scan, Bcsc.col_sz+1, Bcsc.comp_col.k, &mat_send[Bcsc.comp_row.tot]);
+
 
         t_temp3 = MPI_Wtime() - t_temp3;
         t_comp_GR += t_temp3;
@@ -1721,6 +1722,8 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
             }
 
 //        if(rank == verbose_rank){
+//            std::cout << "Bcsc.comp_row.tot: " << Bcsc.comp_row.tot << ", Bcsc.comp_col.tot: " << Bcsc.comp_col.tot << std::endl;
+
 //            auto orig_sz = sizeof(value_t) * Bcsc.nnz;
 //            if(!rank) std::cout << "rank " << rank << ": orig sz = " << orig_sz << ", zfp comp sz = " << zfpsize
 //                                << ", saving " << ( 1.0f - ( (float)zfpsize / (float)orig_sz ) ) << std::endl;
@@ -1831,7 +1834,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
                 recv_nnz   = Bcsc.nnz_list[next_owner];
 
-                row_buf_sz = tot_sz(recv_nnz, Bcsc.comp_row.ks[next_owner], Bcsc.comp_row.qs[next_owner]);
+                row_buf_sz = tot_sz(recv_nnz,       Bcsc.comp_row.ks[next_owner], Bcsc.comp_row.qs[next_owner]);
                 col_buf_sz = tot_sz(mat_recv_M + 1, Bcsc.comp_col.ks[next_owner], Bcsc.comp_col.qs[next_owner]);
                 recv_size  = row_buf_sz + col_buf_sz; // in bytes
 
