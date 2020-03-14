@@ -1959,7 +1959,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 //                        col_idx = i + ofst;
                         for (nnz_t j = mat_current_cscan[i]; j < mat_current_cscan[i + 1]; j++) {
 //                            assert( (col_idx >= Bcsc.split[owner]) && (col_idx < Bcsc.split[owner+1]) ); //this is always true
-                            assert( (mat_current_r[j] >= 0) && (mat_current_r[j] < Bcsc.split.back()) );
+                            ASSERT( (mat_current_r[j] >= 0) && (mat_current_r[j] < Bcsc.split.back()), "rank " << rank << ": mat_current_r[j]: " << mat_current_r[j]);
                         }
                     }
                     assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));

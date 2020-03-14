@@ -191,11 +191,11 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
 
 #ifdef __DEBUG1__
     if(verbose_prep_compute && rank==rank_ver){
-        std::cout << "k: "      << std::setw(2) << comp_sz.k    << ", M: " << std::setw(5) << (1U << comp_sz.k)
-                  << ", v_sz: " << std::setw(5) << v_sz << " (" << std::setw(5) << v_sz*sizeof(index_t) << ")"
+        std::cout << "k: "      << std::setw(2) << comp_sz.k   << ", M: " << std::setw(5) << (1U << comp_sz.k)
+                  << ", v_sz: " << std::setw(5) << v_sz        << " (" << std::setw(5) << v_sz*sizeof(index_t) << ")"
                   << ", r_sz: " << std::setw(5) << comp_sz.r
-                  << ", q_sz: " << std::setw(5) << comp_sz.q    << " (" << std::setw(5) << q_sz*sizeof(short) << ")"
-                  << ", tot: "  << std::setw(5) << comp_sz.tot  << "\n";
+                  << ", q_sz: " << std::setw(5) << comp_sz.q   << " (" << std::setw(5) << q_sz*sizeof(short) << ")"
+                  << ", tot: "  << std::setw(5) << comp_sz.tot << "\n";
     }
 #endif
 

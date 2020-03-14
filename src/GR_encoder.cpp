@@ -153,12 +153,11 @@ void GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uchar *buf){
     buf[buf_iter++] = x | (diff & k_1s);
 
 
-
 #ifdef __DEBUG1__
     if(verbose_comp && rank==rank_ver){
         // print the binary representation
         // cout << std::bitset<32>(diff) << "\t" << std::bitset<8>(x) << endl;
-        std::cout << 0 << "\tdiff: " << diff << ", v[i]: " << v[0] << ", q: " << q << std::endl;
+        std::cout << "\n" << 0 << "\tdiff: " << diff << ",\tv[i]: " << v[0] << ",\tq: " << q << std::endl;
     }
 #endif
 
@@ -185,14 +184,14 @@ void GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uchar *buf){
         if(verbose_comp && rank==rank_ver){
             // print the binary representation
 //            std::cout << std::bitset<32>(diff) << "\t" << std::bitset<8>(x) << std::endl;
-//            std::cout << i << "\t" << v[i] << "\t" << diff << std::endl;
-//            std::cout << i << "\tdiff: " << diff << ", v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", q: " << q << "\n";
+            std::cout << i << "\tdiff: " << diff << ",\tv[i]: " << v[i] << ",\tv[i-1]: " << v[i-1] << ",\tq: " << q << "\n";
         }
 #endif
     }
 
 #ifdef __DEBUG1__
     {
+//        if(!rank) std::cout << "buf_iter = " << buf_iter << ", qiter = " << qiter << ", tot = " << buf_iter + (qiter * sizeof(short)) << std::endl;
 //        print_array(qs, qiter, 0, "qs before", MPI_COMM_WORLD);
 //        for(int i = 0; i < qiter; ++i){
 //            qs[i] = static_cast<short>(i);
@@ -326,7 +325,7 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-    int rank_ver = 1;
+    int rank_ver = 0;
 
 //    unsigned int M = 1U << k;
 #endif
@@ -379,7 +378,7 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
 
 #ifdef __DEBUG1__
     if(verbose_decomp && rank==rank_ver){
-        std::cout << 0 << ": v[viter] = " << v[viter-1] << ", diff = " << x << ", q = " << q << " (buf_iter: " << buf_iter << ")\n";
+        std::cout << "\n" << 0 << ":\tv[viter] = " << v[viter-1] << ",\tdiff = " << x << ",\tq = " << q << "\t(buf_iter: " << buf_iter << ")\n";
 //        print_array(qs, q_sz, 0, "qs after", comm);
     }
 #endif
@@ -423,7 +422,7 @@ void GR_encoder::decompress(index_t *v, index_t v_sz, index_t k, int q_sz, uint8
         assert(buf_iter < buf_sz);
         assert(x != INT32_MAX);
         if(verbose_decomp && rank==rank_ver){
-            std::cout << viter-1 << ": v[viter] = " << v[viter-1] << ", diff = " << x << ", q = " << q << " (buf_iter: " << buf_iter << ")\n";
+            std::cout << viter-1 << ":\tv[viter] = " << v[viter-1] << ",\tdiff = " << x << ",\tq = " << q << "\t(buf_iter: " << buf_iter << ")\n";
         }
 #endif
     }
