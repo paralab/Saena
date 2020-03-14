@@ -59,7 +59,7 @@ int CSCMat::compress_prep(){
     MPI_Comm_rank(comm, &rank);
     int rank_ver = 0;
 
-    compress_prep_compute(row, nnz, comp_row);
+    compress_prep_compute(row,      nnz,      comp_row);
     compress_prep_compute(col_scan, col_sz+1, comp_col);
 
     unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);
@@ -68,8 +68,8 @@ int CSCMat::compress_prep(){
     float comp_rate;
 
     MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
-    if(!rank) std::cout << "GR:  orig sz (rank0) = " << orig_sz << ", comp sz (rank0) = " << comp_sz
-                        << ", saving %" << std::setprecision(2) << 100 * comp_rate / nprocs << " (average)" << std::endl;
+    if(rank==rank_ver) printf("GR:  orig sz (rank%d) = %lu, comp sz (rank%d) = %lu, saving %.2f (average)\n",
+                               rank, orig_sz, rank, comp_sz, 100 * comp_rate / nprocs);
 
 #ifdef __DEBUG1__
     if(rank==rank_ver && verbose_prep){
@@ -114,8 +114,10 @@ int CSCMat::compress_prep(){
     }
 
 #ifdef __DEBUG1__
-//    if(rank==rank_ver) printf("comp_row.max_tot = %lu, comp_col.max_tot = %lu, max_comp_sz = %lu, \n",
-//                               comp_row.max_tot, comp_col.max_tot, max_comp_sz);
+    if(rank==rank_ver && verbose_prep){
+        printf("comp_row.max_tot = %lu, comp_col.max_tot = %lu, max_comp_sz = %lu, \n",
+                comp_row.max_tot, comp_col.max_tot, max_comp_sz);
+    }
 #endif
 
     return 0;
@@ -133,11 +135,11 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
 //    unsigned int M;
 #endif
 
-    int k_start = 7, k_end = 8;
+    int k_start = 7, k_end = 16;
     int q_sz = 0, r_sz, tot;
     comp_sz.tot = INT32_MAX;
 
-    for(unsigned int k = k_start; k < k_end; k++) {
+    for(unsigned int k = k_start; k < k_end; k+=8) {
 
 //        M = 1U << k;
         r_sz = rem_sz(v_sz, k);
@@ -195,18 +197,18 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
                   << ", v_sz: " << std::setw(5) << v_sz        << " (" << std::setw(5) << v_sz*sizeof(index_t) << ")"
                   << ", r_sz: " << std::setw(5) << comp_sz.r
                   << ", q_sz: " << std::setw(5) << comp_sz.q   << " (" << std::setw(5) << q_sz*sizeof(short) << ")"
-                  << ", tot: "  << std::setw(5) << comp_sz.tot << "\n";
+                  << ", tot: "  << std::setw(5) << comp_sz.tot << " (final)\n\n";
     }
 #endif
 
     comp_sz.ks.resize(nprocs);
     comp_sz.qs.resize(nprocs);
 
-    fill(comp_sz.ks.begin(), comp_sz.ks.end(), comp_sz.k);
+//    fill(comp_sz.ks.begin(), comp_sz.ks.end(), comp_sz.k);
 
     // TODO: combine these together.
     // TODO: check if MPI_SHORT works as the datatype for the following commands.
-//    MPI_Allgather(&comp_sz.k, 1, MPI_INT, &comp_sz.ks[0], 1, MPI_INT, comm);
+    MPI_Allgather(&comp_sz.k, 1, MPI_INT, &comp_sz.ks[0], 1, MPI_INT, comm);
     MPI_Allgather(&comp_sz.q, 1, MPI_INT, &comp_sz.qs[0], 1, MPI_INT, comm);
 
 #ifdef __DEBUG1__
