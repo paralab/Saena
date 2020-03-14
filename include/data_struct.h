@@ -12,13 +12,12 @@ typedef double value_t;
 
 
 inline index_t rem_sz(index_t sz, unsigned int k){
-    return static_cast<index_t>( ceil(sz * ((k+1) / 8.0) ) );
+    return static_cast<index_t>( sz * ((k+1) / 8.0) );
 }
 
 inline index_t tot_sz(index_t sz, unsigned int k, int q){
-//    printf("r_sz: %u, \tq: %d, \tsizeof(q): %ld, tot: %ld\n", rem_sz(sz, k), q,
-//            sizeof(q), static_cast<index_t>( ceil(sz * (k+1) / (double)8) ) + q * sizeof(q));
-    return static_cast<index_t>( ceil(sz * ((k+1) / 8.0)) ) + q * sizeof(q);
+//    printf("r_sz: %u, \tq: %d, \tsizeof(short): %ld, tot: %ld\n", rem_sz(sz, k), q, sizeof(short), rem_sz(sz, k) + q * sizeof(short));
+    return rem_sz(sz, k) + q * sizeof(short);
 }
 
 
