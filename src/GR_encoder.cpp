@@ -370,35 +370,20 @@ void GR_encoder::decompress_1byte(index_t *v, index_t v_sz, index_t k, int q_sz,
 
     int x;
     short q;
-    nnz_t qiter = 0;
-    nnz_t iter  = 0;
-    index_t k_1s  = (1u << k) - 1;
+    nnz_t qiter  = 0;
+    nnz_t iter   = 0;
+    index_t k_1s = (1u << k) - 1;
 
     // 1- decode v[0]
     // ======================================
 
-    q = 0;
-    if(buf[iter] >> k){
-        q = qs[qiter++];
-    }
+//    q = 0;
+//    if(buf[iter] >> k){
+//        q = qs[qiter++];
+//    }
+//    x = (q << k) | (buf[iter] & k_1s);
 
-    x = (q << k) | (buf[iter] & k_1s);
-
-#if 0
-    q = 0;
-    if(get_bit(buf)){
-        q = qs[qiter++];
-    }
-
-//    x = q * M;
-    x = q << k;
-
-    for (j = k-1; j >= 0; --j) {
-//        std::cout << "\niter: " << iter << "\t" << std::bitset<1>(buf[iter]) << "\t" << (buf[iter] << j) << std::endl;
-        x = x | (get_bit(buf) << j);
-//        if(rank==rank_ver) std::cout << "x = " << x << std::endl;
-    }
-#endif
+    (buf[iter] >> k) ? ( x = (qs[qiter++] << k) | (buf[iter] & k_1s) ) : (x = buf[iter]);
 
     v[iter++] = x;
 
@@ -413,30 +398,16 @@ void GR_encoder::decompress_1byte(index_t *v, index_t v_sz, index_t k, int q_sz,
     // ======================================
 
     while(iter < v_sz){
-        q = 0;
-        if(buf[iter] >> k){
-            q = qs[qiter++];
-        }
+//        q = 0;
+//        if(buf[iter] >> k){
+//            q = qs[qiter++];
+//        }
+//        x = (q << k) | (buf[iter] & k_1s);
 
-        x = (q << k) | (buf[iter] & k_1s);
+        (buf[iter] >> k) ? ( x = (qs[qiter++] << k) | (buf[iter] & k_1s) ) : (x = buf[iter]);
+
         v[iter] = v[iter-1] + x;
         ++iter;
-
-#if 0
-        q = 0;
-        if(get_bit(buf)){
-            q = qs[qiter++];
-        }
-
-//        x = q * M;
-        x = q << k;
-
-        for (j = k-1; j >= 0; --j) {
-//            std::cout << "iter: " << iter << "\t" << std::bitset<1>(buf[iter]) << std::endl;
-            x = x | (get_bit(buf) << j);
-//            if(rank==rank_ver) std::cout << "x = " << x << std::endl;
-        }
-#endif
 
 #ifdef __DEBUG1__
 //        cout << "buf[buf_iter]: " << std::bitset<8>(buf[buf_iter]) << ", buf[buf_iter+1]: " << std::bitset<8>(buf[buf_iter+1])
@@ -483,35 +454,20 @@ void GR_encoder::decompress_2bytes(index_t *v, index_t v_sz, index_t k, int q_sz
 
     int x;
     short q;
-    nnz_t qiter = 0;
-    nnz_t iter  = 0;
-    index_t k_1s  = (1u << k) - 1;
+    nnz_t qiter  = 0;
+    nnz_t iter   = 0;
+    index_t k_1s = (1u << k) - 1;
 
     // 1- decode v[0]
     // ======================================
 
-    q = 0;
-    if(buf[iter] >> k){
-        q = qs[qiter++];
-    }
+//    q = 0;
+//    if(buf[iter] >> k){
+//        q = qs[qiter++];
+//    }
+//    x = (q << k) | (buf[iter] & k_1s);
 
-    x = (q << k) | (buf[iter] & k_1s);
-
-#if 0
-    q = 0;
-    if(get_bit(buf)){
-        q = qs[qiter++];
-    }
-
-//    x = q * M;
-    x = q << k;
-
-    for (j = k-1; j >= 0; --j) {
-//        std::cout << "\niter: " << iter << "\t" << std::bitset<1>(buf[iter]) << "\t" << (buf[iter] << j) << std::endl;
-        x = x | (get_bit(buf) << j);
-//        if(rank==rank_ver) std::cout << "x = " << x << std::endl;
-    }
-#endif
+    (buf[iter] >> k) ? ( x = (qs[qiter++] << k) | (buf[iter] & k_1s) ) : (x = buf[iter]);
 
     v[iter++] = x;
 
@@ -527,12 +483,14 @@ void GR_encoder::decompress_2bytes(index_t *v, index_t v_sz, index_t k, int q_sz
     // ======================================
 
     while(iter < v_sz){
-        q = 0;
-        if(buf[iter] >> k){
-            q = qs[qiter++];
-        }
+//        q = 0;
+//        if(buf[iter] >> k){
+//            q = qs[qiter++];
+//        }
+//        x = (q << k) | (buf[iter] & k_1s);
 
-        x = (q << k) | (buf[iter] & k_1s);
+        (buf[iter] >> k) ? ( x = (qs[qiter++] << k) | (buf[iter] & k_1s) ) : (x = buf[iter]);
+
         v[iter] = v[iter-1] + x;
         ++iter;
 
