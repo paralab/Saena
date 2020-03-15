@@ -100,6 +100,11 @@ The following assumptions and restrictions apply:
    caught.
 */
 
+#if defined(WITH_IPP)
+/*
+ * This source code file was modified with Intel(R) Integrated Performance Primitives library content
+ */
+#endif
 #include <limits.h>
 #include <stdlib.h>
 
@@ -454,4 +459,11 @@ stream_clone(const bitstream* s)
   return c;
 }
 
-#undef unused_
+#if defined(WITH_IPP)
+inline_
+void stream_set_eos(bitstream* s, size_t byte_len)
+{
+    if (s)
+        s->ptr = s->begin + byte_len / sizeof(word);
+}
+#endif

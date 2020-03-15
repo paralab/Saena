@@ -4,6 +4,20 @@ else()
   cmake_minimum_required(VERSION 3.1)
 endif()
 
+if(WITH_IPP)
+# This file is modified with Intel(R) Integrated Performance Primitives content
+    if(NOT DEFINED ENV{IPPROOT})
+        message(FATAL_ERROR "IPPROOT environment variable should be set for Intel(R) IPP build")
+    endif()
+    message("Using Intel(R) IPP")
+    add_definitions(-DWITH_IPP)
+    set(IPPROOT $ENV{IPPROOT})
+    include_directories(${IPPROOT}/include)
+    if(ARCH STREQUAL "ia32" AND UNIX)
+        set(CMAKE_C_FLAGS -m32)
+        set(CMAKE_CXX_FLAGS -m32)
+    endif()
+endif()
 # Fail immediately if not using an out-of-source build
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
   message(FATAL_ERROR
@@ -151,8 +165,10 @@ endif()
 # instead need to treat the OpenMP C flags as both compile and link flags
 # i.e. -fopenmp for compiling and -lgomp for linking, use -fomp for both
 # compiling and linking
+if (NOT MSVC)
 if(ZFP_WITH_OPENMP AND NOT OpenMP_C_LIBRARIES)
   set(OpenMP_C_LIBRARIES ${OpenMP_C_FLAGS})
+  endif()
 endif()
 
 if(ZFP_WITH_CUDA)

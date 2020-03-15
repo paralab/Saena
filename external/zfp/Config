@@ -100,4 +100,24 @@ endif
 
 CFLAGS = $(CSTD) $(FLAGS) $(DEFS)
 CXXFLAGS = $(CXXSTD) $(FLAGS) $(DEFS)
-FFLAGS = $(FSTD) $(FLAGS) $(DEFS)
+
+UNAME=$(shell uname -s)
+ifeq ($(WITH_IPP), yes)
+    CFLAGS += -DWITH_IPP -I$(IPPROOT)/include
+    CXXFLAGS += -DWITH_IPP -I$(IPPROOT)/include
+    ifeq ($(ARCH), ia32)
+        CFLAGS += -m32
+        CXXFLAGS += -m32
+        ifeq ($(UNAME), Darwin)
+            IPPLIBS = $(IPPROOT)/lib/libippdc.a $(IPPROOT)/lib/libipps.a $(IPPROOT)/lib/libippcore.a
+        else
+            IPPLIBS = $(IPPROOT)/lib/ia32/libippdc.a $(IPPROOT)/lib/ia32/libipps.a $(IPPROOT)/lib/ia32/libippcore.a
+        endif
+    else
+        ifeq ($(UNAME), Darwin)
+            IPPLIBS = $(IPPROOT)/lib/libippdc.a $(IPPROOT)/lib/libipps.a $(IPPROOT)/lib/libippcore.a
+        else
+            IPPLIBS = $(IPPROOT)/lib/intel64/libippdc.a $(IPPROOT)/lib/intel64/libipps.a $(IPPROOT)/lib/intel64/libippcore.a
+        endif
+    endif
+endif

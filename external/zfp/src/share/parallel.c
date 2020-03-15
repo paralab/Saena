@@ -1,5 +1,10 @@
 #ifdef _OPENMP
 
+#if defined(WITH_IPP)
+#include <ipps.h>
+#define BYTE_MASK  7
+#define BYTES_IN_BIT_STREAM(x) ((x) >> 3)
+#endif
 /* block index at which chunk begins */
 static uint
 chunk_offset(uint blocks, uint chunks, uint chunk)
@@ -96,5 +101,43 @@ compress_finish_par(zfp_stream* stream, bitstream** src, uint chunks)
   if (!copy)
     stream_wseek(dst, offset);
 }
+#if defined (WITH_IPP)
+static void
+compress_finish_par_opt(zfp_stream* stream, bitstream** src, uint chunks, Ipp64u* chunk_lengths)
+{
+    bitstream* dst_bitstream = zfp_stream_bit_stream(stream);
+    Ipp8u* dst_start = (Ipp8u*)stream_data(dst_bitstream);
+    size_t total_offset = stream_wtell(dst_bitstream);
+    int first_byte_offset = 0;
+    Ipp8u* chunk_data;
+    int copy = (dst_start != stream_data(*src));
+    for (uint chunk = 0; chunk < chunks; chunk++) {
+		Ipp8u* dst = NULL;
+        size_t bits = chunk_lengths[chunk];
+		chunk_data = (Ipp8u*)stream_data(src[chunk]);
+		if (!copy){
+			total_offset += bits;
+			stream_close(src[chunk]);
+			first_byte_offset = total_offset & BYTE_MASK;
+			continue;
+		}
 
+		while (bits > IPP_MAX_32S){
+			dst = dst_start + BYTES_IN_BIT_STREAM(IPP_MAX_32S);
+			ippsCopyBE_1u(chunk_data, 0, dst, first_byte_offset, IPP_MAX_32S);
+			total_offset += bits;
+			first_byte_offset = total_offset & BYTE_MASK;
+			bits -= IPP_MAX_32S;
+		}
+		dst = dst_start + BYTES_IN_BIT_STREAM(total_offset);
+        ippsCopyBE_1u(chunk_data, 0, dst, first_byte_offset, (int)bits);
+		total_offset += bits;
+        first_byte_offset = total_offset & BYTE_MASK;
+		free(stream_data(src[chunk]));
+        stream_close(src[chunk]);
+    }
+    free(src);
+    stream_wseek(dst_bitstream, total_offset);
+}
+#endif
 #endif
