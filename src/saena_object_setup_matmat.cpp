@@ -1098,7 +1098,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 }
 
 
-int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, const bool assemble/* = true*/, const bool print_timing/* = false*/){
+int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, const bool assemble/* = true*/, const bool print_timing/* = false*/, const bool B_trans/* = false*/){
     // This version only works when B is symmetric, since local transpose of B is used.
     // Use B's row indices as column indices and vice versa.
 
@@ -1164,6 +1164,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 #ifdef __DEBUG1__
     assert(Acsc.nnz == (Acsc.col_scan[Acsc.col_sz] - Acsc.col_scan[0]));
 
+    // print A info
+    {
 //    A->print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
 //    print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
@@ -1177,6 +1179,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //            std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
 //        }
 //    }
+    }
 #endif
 
     // =======================================
@@ -1185,27 +1188,23 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
 #ifdef __DEBUG1__
     for(nnz_t i = 0; i < B->nnz_l; i++){
+//        if(rank == 1) std::cout << B->entry[i].row - B->split[rank] << "\t" << B->entry[i].col << "\t" << B->entry[i].val << std::endl;
         assert( (B->entry[i].row - B->split[rank] >= 0) && (B->entry[i].row - B->split[rank] < B->M) );
         assert( (B->entry[i].col >= 0) && (B->entry[i].col < B->Mbig) );
         assert( fabs(B->entry[i].val) > ALMOST_ZERO );
     }
 #endif
 
-    // make a copy of entries of B, then change their order to row-major
-    std::vector<cooEntry> B_ent(B->entry);
-    std::sort(B_ent.begin(), B_ent.end(), row_major);
-
-    // todo: change to smart pointers
-//    auto Brv = std::make_unique<vecEntry[]>(B->nnz_l); // row (actually col to have the transpose) and val
-//    auto Bc  = std::make_unique<index_t[]>(B->M+1); // col_idx
-
-//    auto Brv = new vecEntry[B->nnz_l]; // row and val
-//    auto Bc  = new index_t[B->M+1];    // col_idx
-
     CSCMat Bcsc;
+
+    if(!B_trans){
+        Bcsc.col_sz = B->Mbig;
+    }else{
+        Bcsc.col_sz = B->M;
+    }
+
     Bcsc.comm     = B->comm;
     Bcsc.nnz      = B->nnz_l;
-    Bcsc.col_sz   = B->M;
     Bcsc.max_nnz  = B->nnz_max;
     Bcsc.max_M    = B->M_max;
     Bcsc.row      = new index_t[Bcsc.nnz];
@@ -1213,13 +1212,27 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     Bcsc.col_scan = new index_t[Bcsc.col_sz + 1];
 
     std::fill(&Bcsc.col_scan[0], &Bcsc.col_scan[Bcsc.col_sz + 1], 0);
-    index_t *Bc_tmp   = &Bcsc.col_scan[1];
-    index_t *Bc_tmp_p = &Bc_tmp[0] - B->split[rank]; // use this to avoid subtracting a fixed number,
+    index_t *Bc_tmp = &Bcsc.col_scan[1];
 
-    for(nnz_t i = 0; i < Bcsc.nnz; ++i){
-        Bcsc.row[i] = B_ent[i].col;
-        Bcsc.val[i] = B_ent[i].val;
-        ++Bc_tmp_p[B_ent[i].row];
+    if(!B_trans){
+        for(nnz_t i = 0; i < Bcsc.nnz; ++i){
+            Bcsc.row[i] = B->entry[i].row - B->split[rank];
+            Bcsc.val[i] = B->entry[i].val;
+            ++Bc_tmp[B->entry[i].col];
+        }
+    }else{
+        Bcsc.use_trans = B_trans;
+
+        // make a copy of entries of B, then change their order to row-major
+        std::vector<cooEntry> B_ent(B->entry);
+        std::sort(B_ent.begin(), B_ent.end(), row_major);
+
+        index_t *Bc_tmp_p = &Bc_tmp[0] - B->split[rank]; // use this to avoid subtracting a fixed number,
+        for(nnz_t i = 0; i < Bcsc.nnz; ++i){
+            Bcsc.row[i] = B_ent[i].col;
+            Bcsc.val[i] = B_ent[i].val;
+            ++Bc_tmp_p[B_ent[i].row];
+        }
     }
 
     for(nnz_t i = 0; i < Bcsc.col_sz; ++i){
@@ -1230,7 +1243,6 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     Bcsc.nnz_list = B->nnz_list;
 
 #ifdef __DEBUG1__
-    assert(Bcsc.nnz == (Bcsc.col_scan[Bcsc.col_sz] - Bcsc.col_scan[0]));
     // print B info
     {
 //        B->print_entry(0);
@@ -1240,7 +1252,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //        print_array(Bcsc.col_scan, Bcsc.col_sz+1, 0, "Bcsc.col_scan", comm);
 //        print_array(Bcsc.val, Bcsc.nnz, 0, "Bcsc.val", comm);
 
-//        if(rank == 0){
+//        if(rank == 1){
 //            std::cout << "\nB: nnz: " << B->nnz_l << std::endl ;
 //            for(index_t j = 0; j < B->M; ++j){
 //                for(index_t i = Bcsc.col_scan[j]; i < Bcsc.col_scan[j+1]; ++i){
@@ -1250,6 +1262,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //            }
 //        }
     }
+
+    assert(Bcsc.nnz == (Bcsc.col_scan[Bcsc.col_sz] - Bcsc.col_scan[0]));
 #endif
 
     // =======================================
@@ -1269,7 +1283,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     // Preallocate Memory
     // =======================================
 
-    matmat_memory_alloc(A, B, Bcsc.max_comp_sz);
+    matmat_memory_alloc(Acsc, Bcsc);
 
     if(print_timing){
         t_temp = MPI_Wtime() - t_temp;
@@ -1384,10 +1398,10 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 }
 
 
-int saena_object::matmat_memory_alloc(saena_matrix *A, saena_matrix *B, nnz_t &comp_max_sz){
+int saena_object::matmat_memory_alloc(CSCMat &A, CSCMat &B){
 
     int nprocs;
-    MPI_Comm_size(A->comm, &nprocs);
+    MPI_Comm_size(A.comm, &nprocs);
 
 #ifdef __DEBUG1__
 //    int rank;
@@ -1421,8 +1435,15 @@ int saena_object::matmat_memory_alloc(saena_matrix *A, saena_matrix *B, nnz_t &c
     // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
     if(nprocs > 1) {
         int valbyidx = sizeof(value_t) / sizeof(index_t);
-        nnz_t v_buffer_sz_max = valbyidx * B->nnz_max;
-        nnz_t r_cscan_buffer_sz_max = B->nnz_max + B->M_max + 1;
+        nnz_t v_buffer_sz_max = valbyidx * B.max_nnz;
+        nnz_t r_cscan_buffer_sz_max = B.max_nnz; // for row
+
+        if(B.use_trans){
+            r_cscan_buffer_sz_max += B.max_M + 1; // for col_scan
+        }else{
+            r_cscan_buffer_sz_max += B.col_sz + 1; // for col_scan
+        }
+
         mempool3_sz = v_buffer_sz_max + r_cscan_buffer_sz_max;
 
         try {
@@ -1432,7 +1453,7 @@ int saena_object::matmat_memory_alloc(saena_matrix *A, saena_matrix *B, nnz_t &c
         }
     }
 
-    mempool4and5_sz = std::max(A->nnz_max, B->nnz_max);
+    mempool4and5_sz = std::max(A.max_nnz, B.max_nnz);
 
     try{
         mempool4 = new index_t[mempool4and5_sz]; //used in reorder_split and reorder_back_split
@@ -1447,8 +1468,8 @@ int saena_object::matmat_memory_alloc(saena_matrix *A, saena_matrix *B, nnz_t &c
     }
 
     if(nprocs > 1) {
-        assert(comp_max_sz != 0);
-        mempool6_sz = 2 * (comp_max_sz + B->nnz_max * sizeof(value_t));
+        assert(B.max_comp_sz != 0);
+        mempool6_sz = 2 * (B.max_comp_sz + B.max_nnz * sizeof(value_t));
 
         try {
             mempool6 = new uchar[mempool6_sz]; // one for mat_send, one for mat_recv. both are compressed.
@@ -1458,7 +1479,7 @@ int saena_object::matmat_memory_alloc(saena_matrix *A, saena_matrix *B, nnz_t &c
 
         if(zfp_thrshld > 1e-8) {
             // the buffer size is sometimes bigger than the original array, so choosing 2 to be safe.
-            mempool7_sz = 2 * B->nnz_max * sizeof(value_t);
+            mempool7_sz = 2 * B.max_nnz * sizeof(value_t);
 
             try {
                 mempool7 = new uchar[mempool7_sz]; // used as the zfp compressor and decompressor buffer
@@ -1647,7 +1668,6 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
         encoder.compress(Bcsc.row,      Bcsc.nnz,      Bcsc.comp_row.k, mat_send);
         encoder.compress(Bcsc.col_scan, Bcsc.col_sz+1, Bcsc.comp_col.k, &mat_send[Bcsc.comp_row.tot]);
 
-
         t_temp3 = MPI_Wtime() - t_temp3;
         t_comp_GR += t_temp3;
 
@@ -1810,6 +1830,11 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
         CSCMat_mm S;
 
+        if(!Bcsc.use_trans) {
+            mat_recv_M    = Bcsc.col_sz; // if (!Bcsc.use_trans) => mat_recv_M and mat_current_M are fixed: Bcsc.col_sz
+            mat_current_M = Bcsc.col_sz;
+        }
+
         t_temp = MPI_Wtime() - t_temp;
         t_init_prep += t_temp;
         t_temp2 = MPI_Wtime();
@@ -1827,8 +1852,11 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 t_temp = MPI_Wtime();
 
                 next_owner = (k + 1) % nprocs;
-                mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
                 recv_nnz   = Bcsc.nnz_list[next_owner];
+
+                if(Bcsc.use_trans){
+                    mat_recv_M = Bcsc.split[next_owner + 1] - Bcsc.split[next_owner];
+                }
 
                 row_buf_sz = tot_sz(recv_nnz,       Bcsc.comp_row.ks[next_owner], Bcsc.comp_row.qs[next_owner]);
                 col_buf_sz = tot_sz(mat_recv_M + 1, Bcsc.comp_col.ks[next_owner], Bcsc.comp_col.qs[next_owner]);
@@ -1873,8 +1901,10 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
                 t_temp = MPI_Wtime();
 
-                owner         = k%nprocs;
-                mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner]; //this is col_sz
+                owner = k%nprocs;
+                if(Bcsc.use_trans) {
+                    mat_current_M = Bcsc.split[owner + 1] - Bcsc.split[owner]; //this is col_sz
+                }
 
                 // decompress mat_send into mat_current
                 row_comp_sz     = tot_sz(send_nnz,          Bcsc.comp_row.ks[owner], Bcsc.comp_row.qs[owner]);
@@ -1936,8 +1966,13 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 }
 #endif
 
-                S.set_params(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner], Bcsc.nnz_list[owner],
-                             mat_current_r, mat_current_v, mat_current_cscan);
+                if(Bcsc.use_trans) {
+                    S.set_params(Acsc.col_sz, 0, mat_current_M, Bcsc.split[owner], Bcsc.nnz_list[owner],
+                                 mat_current_r, mat_current_v, mat_current_cscan);
+                }else{
+                    S.set_params(Bcsc.split[owner + 1] - Bcsc.split[owner], Bcsc.split[owner], Bcsc.col_sz, 0, Bcsc.nnz_list[owner],
+                                 mat_current_r, mat_current_v, mat_current_cscan);
+                }
 
                 t_temp = MPI_Wtime() - t_temp;
                 t_prep_iter += t_temp;

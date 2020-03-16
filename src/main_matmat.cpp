@@ -135,7 +135,7 @@ int main(int argc, char* argv[]){
 
         // *************************** Saena matmat experiment ****************************
 
-        solver.matmat(&A, &B, nullptr, false, true);
+//        solver.matmat(&A, &B, nullptr, false, true);
 
         // *************************** PETSc matmat experiment ****************************
 
