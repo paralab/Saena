@@ -106,6 +106,12 @@ public:
     nnz_t    mempool6_sz     = 0;
     nnz_t    mempool7_sz     = 0;
 
+    index_t *Cmkl_r      = nullptr;
+    index_t *Cmkl_c_scan = nullptr;
+    value_t *Cmkl_v      = nullptr;
+    int     Cmkl_nnz_max = 0;
+    bool    use_dcsrmultcsr = true;
+
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
     double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
 
