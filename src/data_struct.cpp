@@ -101,9 +101,12 @@ int CSCMat::compress_prep(){
     comp_col.max_tot = 0;
     max_comp_sz      = 0;
 
+    proc_col_sz = col_sz; // if(!use_trans) then proc_col_sz is fixed.
     for(int i = 0; i < nprocs; ++i){
         row_buf_sz = tot_sz(nnz_list[i], comp_row.ks[i], comp_row.qs[i]);
-        proc_col_sz = split[i + 1] - split[i];
+        if(use_trans){
+            proc_col_sz = split[i + 1] - split[i];
+        }
         col_buf_sz = tot_sz(proc_col_sz + 1, comp_col.ks[i], comp_col.qs[i]);
 
         if(row_buf_sz + col_buf_sz > max_comp_sz){

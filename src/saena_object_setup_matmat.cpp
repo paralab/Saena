@@ -97,6 +97,9 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     // assert and debug
     {
 
+        // NOTE: this should be checked if using MKL for case1
+        assert(A.col_sz == B.row_sz);
+
         ASSERT(A.nnz == (A.col_scan[A.col_sz] - A.col_scan[0]), "rank: " << rank << ", A.nnz: " << A.nnz
                << ", A.col_scan[0]: " << A.col_scan[0] << ", A.col_scan[A.col_sz]: " << A.col_scan[A.col_sz]);
 
@@ -918,7 +921,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
 #ifdef __DEBUG1__
         {
-            index_t A_row_size_half = A.row_sz / 2;
+//            index_t A_row_size_half = A.row_sz / 2;
 
 //        std::cout << "A.nnz: " << std::setw(3) << A.nnz << ", A1.nnz: " << std::setw(3) << A1.nnz << ", A2.nnz: "
 //                  << std::setw(3) << A2.nnz << ", A_row_size: " << std::setw(3) << A.row_sz
@@ -1187,6 +1190,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     // =======================================
 
 #ifdef __DEBUG1__
+    ASSERT(B_trans, "B_trans is false in matmat(). It means the original B will be used, instead of its transpose, which is not supported yet.");
     for(nnz_t i = 0; i < B->nnz_l; i++){
 //        if(rank == 1) std::cout << B->entry[i].row - B->split[rank] << "\t" << B->entry[i].col << "\t" << B->entry[i].val << std::endl;
         assert( (B->entry[i].row - B->split[rank] >= 0) && (B->entry[i].row - B->split[rank] < B->M) );
