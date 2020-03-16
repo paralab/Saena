@@ -237,6 +237,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         if(use_dcsrmultcsr) {
             // C_mk = A_mn * B_nk = (BT_kn * AT_nm) = CT_km = C_mk
 
+            t1 = MPI_Wtime();
+
             MKL_INT m = B.col_sz;
             MKL_INT n = B.row_sz;
             MKL_INT k = A.row_sz;
@@ -267,6 +269,9 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
                     ++ii;
                 }
             }
+
+            t1 = MPI_Wtime() - t1;
+            case1 += t1;
 
         }else {
 
@@ -1455,18 +1460,18 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //        if (!rank) printf("case1\ncase2\ncase3\n");
         if (!rank) printf("case1\n");
         print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
-//        print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
-//        print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
+        print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
+        print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
 
     }
 
-//    case1_iter_ave = average_iter(case1_iter, comm);
-//    case2_iter_ave = average_iter(case2_iter, comm);
-//    case3_iter_ave = average_iter(case3_iter, comm);
-//    if(rank==0){
-//        printf("case iters:\n%.0f\n%.0f\n%.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+    case1_iter_ave = average_iter(case1_iter, comm);
+    case2_iter_ave = average_iter(case2_iter, comm);
+    case3_iter_ave = average_iter(case3_iter, comm);
+    if(rank==0){
+        printf("case iters:\n%.0f\n%.0f\n%.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
 //        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
-//    }
+    }
 
     // =======================================
     // finalize
