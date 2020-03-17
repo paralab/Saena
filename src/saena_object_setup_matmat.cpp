@@ -87,43 +87,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-
-
-
-
-
-
-#if 0
-    std::cout << "\nA: nnz = " << A.nnz
-              << ", A_row_size = " << A.row_sz << ", A_col_size = " << A.col_sz
-              << ", A_row_offset = " << A.row_offset << ", A_col_offset = " << A.col_offset << std::endl;
-
-    index_t col_idx;
-    // print entries of A:
-    std::cout << "\nA: nnz = " << A.nnz << std::endl;
-    for (nnz_t i = 0; i < A.col_sz; i++) {
-        col_idx = i + A.col_offset;
-        for (nnz_t j = A.col_scan[i]; j < A.col_scan[i + 1]; j++) {
-            std::cout << j << "\t" << A.r[j] + A.row_offset << "\t" << col_idx+1 << "\t" << A.v[j] << "\n";
-        }
-    }
-
-    std::cout << "\nB: nnz = " << B.nnz;
-    std::cout << ", B_row_size = " << B.row_sz << ", B_col_size = " << B.col_sz
-              << ", B_row_offset = " << B.row_offset << ", B_col_offset = " << B.col_offset << std::endl;
-
-    // print entries of B:
-    std::cout << "\nB: nnz = " << B.nnz << std::endl;
-    for (nnz_t i = 0; i < B.col_sz; i++) {
-        col_idx = i + B.col_offset;
-        for (nnz_t j = B.col_scan[i]; j < B.col_scan[i + 1]; j++) {
-            std::cout << j << "\t" << B.r[j] + B.row_offset << "\t" << col_idx+1 << "\t" << B.v[j] << "\n";
-        }
-    }
-#endif
-
-
-
 #ifdef __DEBUG1__
     int verbose_rank = 0;
     if(rank==verbose_rank && verbose_fastmm){
@@ -147,22 +110,22 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         index_t col_idx;
         for (nnz_t i = 0; i < A.col_sz; i++) {
 //            col_idx = i + A.col_offset;
-            for (nnz_t j = A.col_scan[i]; j < A.col_scan[i + 1]; j++) {
+            for (nnz_t j = A.col_scan[i] - 1; j < A.col_scan[i + 1] - 1; j++) {
 //                std::cout << j << "\t" << A.r[j] << "\t" << col_idx << "\t" << A.v[j] << "\n";
-                assert((A.r[j] >= 0) && (A.r[j] < A.row_sz+1));
+                assert((A.r[j] >= 0) && (A.r[j] <= A.row_sz));
                 assert(i < A.col_sz);
-//                ASSERT(fabs(A.v[j]) > ALMOST_ZERO, "rank: " << rank << ", A.v[j]: " << A.v[j]);
+                ASSERT(fabs(A.v[j]) > ALMOST_ZERO, "rank: " << rank << ", A.v[j]: " << A.v[j]);
             }
         }
 
         // assert B entries
         for (nnz_t i = 0; i < B.col_sz; i++) {
         col_idx = i + B.col_offset;
-            for (nnz_t j = B.col_scan[i]; j < B.col_scan[i + 1]; j++) {
+            for (nnz_t j = B.col_scan[i] - 1; j < B.col_scan[i + 1] - 1; j++) {
 //                std::cout << j << "\t" << B.r[j] << "\t" << col_idx << "\t" << B.v[j] << "\n";
-                assert((B.r[j] >= 0) && (B.r[j] < B.row_sz+1));
+                assert((B.r[j] >= 0) && (B.r[j] <= B.row_sz));
                 assert(i < B.col_sz);
-//                ASSERT(fabs(B.v[j]) > ALMOST_ZERO, "rank " << rank << ": B(" << B.r[j] << ", " << col_idx << ") = " << B.v[j]);
+                ASSERT(fabs(B.v[j]) > ALMOST_ZERO, "rank " << rank << ": B(" << B.r[j] << ", " << col_idx << ") = " << B.v[j]);
             }
         }
 
@@ -439,7 +402,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
     // if A_col_size_half == 0, it means A_col_size = 1. In this case it goes to case3.
     if ( (A.row_sz <= A.col_sz) && (A_col_size_half != 0) ){//DOLLAR("case2")
-//    if (case2_iter == 0){
+//    if (case2_iter != 10){
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && verbose_fastmm) { printf("fast_mm: case 2: start \n"); }
@@ -615,10 +578,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             // assert A1
 //        std::cout << "\nCase2:\nA1: nnz = " << A1.nnz << std::endl;
             if (A1.nnz != 0) {
-                for (nnz_t i = 0; i < A1.col_sz; i++) {
-                    for (nnz_t j = A1.col_scan[i]; j < A1.col_scan[i + 1]; j++) {
-                        assert((A1.r[j] >= 0) && (A1.r[j] < A1.row_sz));
-//                std::cout << j << "\t" << A1.r[j] << "\t" << i + A1.col_offset << "\t" << A1.v[j] << std::endl;
+                for (nnz_t i = 0; i < A1.col_sz; ++i) {
+                    for (nnz_t j = A1.col_scan[i] - 1; j < A1.col_scan[i + 1] - 1; ++j) {
+                        assert((A1.r[j] > 0) && (A1.r[j] <= A1.row_sz));
+//                        std::cout << j << "\t" << A1.r[j] << "\t" << i + A1.col_offset << "\t" << A1.v[j] << std::endl;
                     }
                 }
             }
@@ -626,10 +589,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             // assert A2
 //        std::cout << "\nA2: nnz = " << A2.nnz << std::endl;
             if (A2.nnz != 0) {
-                for (nnz_t i = 0; i < A2.col_sz; i++) {
-                    for (nnz_t j = A2.col_scan[i]; j < A2.col_scan[i + 1]; j++) {
-                        assert((A2.r[j] >= 0) && (A2.r[j] < A2.row_sz));
-//                std::cout << j << "\t" << A2.r[j] << "\t" << i + A2.col_offset << "\t" << A2.v[j] << std::endl;
+                for (nnz_t i = 0; i < A2.col_sz; ++i) {
+                    for (nnz_t j = A2.col_scan[i] - 1; j < A2.col_scan[i + 1] - 1; ++j) {
+                        assert((A2.r[j] > 0) && (A2.r[j] <= A2.row_sz));
+//                        std::cout << j << "\t" << A2.r[j] << "\t" << i + A2.col_offset << "\t" << A2.v[j] << std::endl;
                     }
                 }
             }
@@ -637,13 +600,13 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             // assert B1
 //        std::cout << "\nCase2:\nB1: nnz = " << B1.nnz << std::endl;
             if (B1.nnz != 0) {
-                for (nnz_t i = 0; i < B1.col_sz; i++) {
-                    for (nnz_t j = B1.col_scan[i]; j < B1.col_scan[i + 1]; j++) {
-//                if(B1.r[j] >= B1.row_sz)
-//                    std::cout << "(rank: " << rank << ", " << j << "): \t(" << B1.r[j] << ", " << i << ")\t[(" <<
-//                       B1.row_sz << ", " << B1.row_offset << ")(" << B1.col_sz << ", " << B1.col_offset << ")]\n";
-//                std::cout << j << "\t" << B1.r[j] << "\t" << i + B1.col_offset << "\t" << B1.v[j] << std::endl;
-                        assert((B1.r[j] >= 0) && (B1.r[j] < B1.row_sz));
+                for (nnz_t i = 0; i < B1.col_sz; ++i) {
+                    for (nnz_t j = B1.col_scan[i] - 1; j < B1.col_scan[i + 1] - 1; ++j) {
+//                        if(B1.r[j] >= B1.row_sz)
+//                            std::cout << "(rank: " << rank << ", " << j << "): \t(" << B1.r[j] << ", " << i << ")\t[(" <<
+//                               B1.row_sz << ", " << B1.row_offset << ")(" << B1.col_sz << ", " << B1.col_offset << ")]\n";
+//                        std::cout << j << "\t" << B1.r[j] << "\t" << i + B1.col_offset << "\t" << B1.v[j] << std::endl;
+                        assert((B1.r[j] > 0) && (B1.r[j] <= B1.row_sz));
                     }
                 }
             }
@@ -651,10 +614,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             // assert B2
 //        std::cout << "\nB2: nnz = " << B2.nnz << std::endl;
             if (B2.nnz != 0) {
-                for (nnz_t i = 0; i < B2.col_sz; i++) {
-                    for (nnz_t j = B2.col_scan[i]; j < B2.col_scan[i + 1]; j++) {
-                        assert((B2.r[j] >= 0) && (B2.r[j] < B2.row_sz));
-//                    std::cout << j << "\t" << B2.r[j] << "\t" << i + B2.col_offset << "\t" << B2.v[j] << "\n";
+                for (nnz_t i = 0; i < B2.col_sz; ++i) {
+                    for (nnz_t j = B2.col_scan[i] - 1; j < B2.col_scan[i + 1] - 1; ++j) {
+                        assert((B2.r[j] > 0) && (B2.r[j] <= B2.row_sz));
+//                        std::cout << j << "\t" << B2.r[j] << "\t" << i + B2.col_offset << "\t" << B2.v[j] << "\n";
                     }
                 }
             }
@@ -667,13 +630,9 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //                print_array(Bc2, B_col_size+1, 0, "Bc2", comm);
 //                print_vector(nnzPerColScan_middle, -1, "nnzPerColScan_middle", comm);
 
-//                std::cout << "\ncase2:\nA.nnz: " << std::setw(3) << A.nnz << ", A1.nnz: " << std::setw(3) << A1.nnz
-//                          << ", A2.nnz: " << std::setw(3) << A2.nnz << ", A_col_size: "   << std::setw(3) << A.col_sz
-//                          << ", A_col_size_half: " << std::setw(3) << A_col_size_half << std::endl;
-
-//                printf("fast_mm: case 2: \nA.nnz: (%lu, %lu, %lu), B.nnz: (%lu, %lu, %lu)\n"
+//                printf("\nfast_mm: case 2: \nA.nnz: (%lu, %lu, %lu), B.nnz: (%lu, %lu, %lu)\n"
 //                       "A_size: (%u, %u, %u), B_size: (%u, %u) \n",
-//                       A.nnz, A1.nnz, A2.nnz, B.nnz, B1.nnz, B2.nnz, A_row_size, A_col_size, A_col_size_half, A_col_size, B_col_size);
+//                       A.nnz, A1.nnz, A2.nnz, B.nnz, B1.nnz, B2.nnz, A.row_sz, A.col_sz, A_col_size_half, A.col_sz, B.col_sz);
 
                 if (verbose_matmat_A) {
 //                std::cout << "\nCase2:\n"
@@ -1011,31 +970,18 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
 #ifdef __DEBUG1__
         {
-//            index_t A_row_size_half = A.row_sz / 2;
-
-//        std::cout << "A.nnz: " << std::setw(3) << A.nnz << ", A1.nnz: " << std::setw(3) << A1.nnz << ", A2.nnz: "
-//                  << std::setw(3) << A2.nnz << ", A_row_size: " << std::setw(3) << A.row_sz
-//                  << ", A_row_size_half: " << std::setw(3) << A_row_size_half << std::endl;
-
-//        std::cout << "\ncase3_part2: A1_row_size: " << A1.row_sz << ", A2_row_size: " << A2.row_sz
-//                  << ", A1_row_offset: " << A1.row_offset << ", A2_row_offset: " << A2.row_offset
-//                  << ", A1_col_size: "   << A1.col_sz     << ", A2_col_size: "   << A2.col_sz
-//                  << ", A1_col_offset: " << A1.col_offset << ", A2_col_offset: " << A2.col_offset
-//                  << ", A_row_threshold: " << std::setw(3)<< A_row_threshold     << std::endl;
-
-//        std::cout << "A_row_threshold: " << std::setw(3) << A_row_threshold << std::endl;
 
 //        print_array(Ac1, A_col_size+1, 0, "Ac1", comm);
 //        print_array(Ac2, A_col_size+1, 0, "Ac2", comm);
 
             if (rank == verbose_rank && verbose_fastmm) printf("fast_mm: case 3: step 2 \n");
 
-//        MPI_Barrier(comm);
+//            MPI_Barrier(comm);
             if (rank == verbose_rank) {
 
-//            printf("fast_mm: case 3: \nA.nnz: (%lu, %lu, %lu), B.nnz: (%lu, %lu, %lu)\n"
+//            printf("\nfast_mm: case 3: \nA.nnz: (%lu, %lu, %lu), B.nnz: (%lu, %lu, %lu)\n"
 //                   "A_size: (%u, %u), B_size: (%u, %u, %u) \n",
-//                   A.nnz, A1.nnz, A2.nnz, B.nnz, B1.nnz, B2.nnz, A_row_size, A_col_size, A_col_size, B_col_size, B_col_size_half);
+//                   A.nnz, A1.nnz, A2.nnz, B.nnz, B1.nnz, B2.nnz, A.row_sz, A.col_sz, A.col_sz, B.col_sz, B_col_size_half);
 
                 if (verbose_matmat_A) {
                     // print entries of A1:
@@ -1217,7 +1163,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     for(nnz_t i = 0; i < A->nnz_l; i++){
         assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
         assert( (A->entry[i].col >= 0) && (A->entry[i].col < A->Mbig) );
-//        assert( fabs(A->entry[i].val) > ALMOST_ZERO );
+        assert( fabs(A->entry[i].val) > ALMOST_ZERO );
     }
 #endif
 
@@ -1263,9 +1209,9 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     {
 //    A->print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
-    print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
+//    print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
 //    print_array(Acsc.val, Acsc.nnz, 0, "Acsc.val", comm);
-    print_array(Acsc.col_scan, Acsc.col_sz + 1, 0, "Acsc.col_scan", comm);
+//    print_array(Acsc.col_scan, Acsc.col_sz + 1, 0, "Acsc.col_scan", comm);
 
 //    std::cout << "\nA: nnz: " << Acsc.nnz << std::endl ;
 //    for(index_t j = 0; j < Acsc.col_sz; j++){
@@ -1287,7 +1233,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //        if(rank == 1) std::cout << B->entry[i].row - B->split[rank] << "\t" << B->entry[i].col << "\t" << B->entry[i].val << std::endl;
         assert( (B->entry[i].row - B->split[rank] >= 0) && (B->entry[i].row - B->split[rank] < B->M) );
         assert( (B->entry[i].col >= 0) && (B->entry[i].col < B->Mbig) );
-//        assert( fabs(B->entry[i].val) > ALMOST_ZERO );
+        assert( fabs(B->entry[i].val) > ALMOST_ZERO );
     }
 #endif
 
@@ -1345,8 +1291,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 //        B->print_entry(0);
 //        printf("B: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", B->nnz_l, B->nnz_g, B->M, B->Mbig);
 //        printf("rank %d: B: nnz_max: %ld\tM_max: %d\n", rank, B->nnz_max, B->M_max);
-        print_array(Bcsc.row, Bcsc.nnz, 0, "Bcsc.row", comm);
-        print_array(Bcsc.col_scan, Bcsc.col_sz+1, 0, "Bcsc.col_scan", comm);
+//        print_array(Bcsc.row, Bcsc.nnz, 0, "Bcsc.row", comm);
+//        print_array(Bcsc.col_scan, Bcsc.col_sz+1, 0, "Bcsc.col_scan", comm);
 //        print_array(Bcsc.val, Bcsc.nnz, 0, "Bcsc.val", comm);
 
 //        if(rank == 1){
@@ -1458,7 +1404,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         if (!rank) printf("\n");
 
 //        if (!rank) printf("case1\ncase2\ncase3\n");
-        if (!rank) printf("case1\n");
+        if (!rank) printf("case1\ncase2\ncase3\n");
         print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
         print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
         print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
@@ -2101,7 +2047,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 //                        col_idx = i + ofst;
                         for (nnz_t j = mat_current_cscan[i]; j < mat_current_cscan[i + 1]; j++) {
 //                            assert( (col_idx >= Bcsc.split[owner]) && (col_idx < Bcsc.split[owner+1]) ); //this is always true
-                            ASSERT( (mat_current_r[j] >= 0) && (mat_current_r[j] < Bcsc.split.back()), "rank " << rank << ": mat_current_r[j]: " << mat_current_r[j]);
+                            ASSERT( (mat_current_r[j] > 0) && (mat_current_r[j] <= Bcsc.split.back()), "rank " << rank << ": mat_current_r[j]: " << mat_current_r[j]);
                         }
                     }
                     assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));
