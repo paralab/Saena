@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
             solver.matmat(&A, &B, &C);
 
             // check the correctness with PETSc
-            petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
+//            petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
 
 //            C.get_internal_matrix()->print_info(0);
 //            C.print(-1);
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]){
         // *************************** PETSc matmat experiment ****************************
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
-//        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
+        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
 
     }
 
