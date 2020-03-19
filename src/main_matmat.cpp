@@ -109,7 +109,7 @@ int main(int argc, char* argv[]){
             printf("\nA.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n",
                    A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g,
                    B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
-            printf("threshold1 = %lu, threshold2 = %u\n\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
+            printf("threshold1 = %lu, threshold2 = %u\n\n", solver.get_object()->matmat_thre1, solver.get_object()->matmat_thre2);
         }
 
         // *************************** checking the correctness of matrix-matrix product ****************************
