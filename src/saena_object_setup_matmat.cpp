@@ -181,10 +181,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
     // ==============================================================
 
     // A.row_sz * A.col_sz < matmat_size_thre1
-    if ( A.row_sz < (matmat_thre1 / B.col_sz) ) { //DOLLAR("case1")
-//    if ( case2_iter + case3_iter == matmat_size_thre2 && (A.row_sz < (matmat_size_thre1 / B.col_sz)) ) {
-
-//        if (rank == verbose_rank) printf("fast_mm: case 1: start \n");
+    if ( (A.row_sz < (matmat_thre1 / B.col_sz)) && (B.col_sz < matmat_thre2) ) { //DOLLAR("case1")
+//    if ( case2_iter + case3_iter == matmat_thre3 && (A.row_sz < (matmat_thre1 / B.col_sz)) ) {
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
@@ -214,7 +212,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
                             B.v, (int *) B.r, (int *) B.col_scan,
                             A.v, (int *) A.r, (int *) A.col_scan,
                             Cmkl_v, (int *) Cmkl_r, (int *) Cmkl_c_scan,
-                            &Cmkl_nnz_max, &info);
+                            &matmat_thre1, &info);
 
 #ifdef __DEBUG1__
 //            printf("mkl_dcsrmultcsr result: %d\n", info);
@@ -1534,10 +1532,10 @@ int saena_object::matmat_memory_alloc(CSCMat &A, CSCMat &B){
         }
     }
 
-    Cmkl_nnz_max = (A.split[rank+1] - A.split[rank]) * B.max_M;
-    Cmkl_r        = new index_t[Cmkl_nnz_max];
-    Cmkl_v        = new value_t[Cmkl_nnz_max];
-    Cmkl_c_scan   = new index_t[B.max_M + 1]; // C column size is the same as B.
+    matmat_thre2 = ceil(sqrt(matmat_thre1));
+    Cmkl_r        = new index_t[matmat_thre1];
+    Cmkl_v        = new value_t[matmat_thre1];
+    Cmkl_c_scan   = new index_t[matmat_thre2 + 1];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);

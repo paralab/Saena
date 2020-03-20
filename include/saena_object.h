@@ -77,12 +77,11 @@ public:
     // matmat
     // *****************
 
-    std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const unsigned long  matmat_thre1 = 1000000; // split until (A_row * B_col < matmat_thre1)
-    static const index_t matmat_thre2 = 10; // split until (case2_iter + case3_iter == matmat_thre2)
-//    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
-//    const index_t min_size_threshold       = 50; //default 50
-    const index_t        matmat_nnz_thre = 200; //default 200
+    std::string          coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
+    const int            matmat_thre1 = 1000000;    // split until (A_row * B_col < matmat_thre1)
+    index_t              matmat_thre2 = 0;          // split until (B.col_sz < matmat_thre2). It will be set as ceil(sqrt(matmat_thre1))
+    static const index_t matmat_thre3 = 40;         // split until (case2_iter + case3_iter == matmat_thre3)
+    const index_t        matmat_nnz_thre = 200;     //default 200
 
 //    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
 
@@ -110,7 +109,6 @@ public:
     index_t *Cmkl_r      = nullptr;
     index_t *Cmkl_c_scan = nullptr;
     value_t *Cmkl_v      = nullptr;
-    int     Cmkl_nnz_max = 0;
     bool    use_dcsrmultcsr = true;
 
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
