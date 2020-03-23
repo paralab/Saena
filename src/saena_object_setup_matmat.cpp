@@ -218,15 +218,19 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //            printf("mkl_dcsrmultcsr result: %d\n", info);
 #endif
 
-            MKL_INT i, j, ii;
-            ii = 0;
-            for (j = 0; j < B.col_sz; ++j) {
+            MKL_INT i, j;
+            MKL_INT ii = 0;
+//            index_t *Cmkl_r_p = &Cmkl_r[0] - 1;
+//            value_t *Cmkl_v_p = &Cmkl_v[0] - 1;
+            int B_c_sz = B.col_sz;
+
+            for (j = 0; j < B_c_sz; ++j) {
 //                if(rank == 0) printf("col %3d: (%3d , %3d)\n", j, Cmkl_c_scan[j], Cmkl_c_scan[j+1]); fflush(nullptr);
                 for (i = Cmkl_c_scan[j]; i < Cmkl_c_scan[j+1]; ++i) {
+//                    C.emplace_back(Cmkl_r_p[i] + A.row_offset - 1, j + B.col_offset, Cmkl_v_p[i]);
                     C.emplace_back(Cmkl_r[ii] + A.row_offset - 1, j + B.col_offset, Cmkl_v[ii]);
+//                    if(rank == 0) printf("\n%3d: (%3d , %3d) = %8f\n", i, Cmkl_r[i] + 1, j + B.col_offset, Cmkl_v[i]); fflush(nullptr);
 //                    if(rank == 0) printf("%3d: (%3d , %3d) = %8f\n", ii, Cmkl_r[ii] + 1, j + B.col_offset, Cmkl_v[ii+1]); fflush(nullptr);
-//                    C.emplace_back(Cmkl_r[i] + A.row_offset - 1, j + B.col_offset, Cmkl_v[i]);
-//                    C.emplace_back(rows_C[ii], j + B.col_offset, values_C[ii]);
                     ++ii;
                 }
             }
