@@ -28,9 +28,9 @@ public:
     void    compress_1byte(index_t *v,  index_t v_sz, index_t k, uint8_t *buf);
     void    compress_2bytes(index_t *v, index_t v_sz, index_t k, uint16_t *buf);
 
-    void    decompress(index_t *v,        index_t buf_sz, index_t k, int q_sz, uint8_t *buf);
-    void    decompress_1byte(index_t *v,  index_t buf_sz, index_t k, int q_sz, uint8_t *buf);
-    void    decompress_2bytes(index_t *v, index_t buf_sz, index_t k, int q_sz, uint16_t *buf);
+    void    decompress(index_t *v,        int buf_sz, index_t k, int q_sz, uint8_t *buf);
+    void    decompress_1byte(index_t *v,  int buf_sz, index_t k, int q_sz, uint8_t *buf);
+    void    decompress_2bytes(index_t *v, int buf_sz, index_t k, int q_sz, uint16_t *buf);
 
     void    put_bit(uint8_t *buf, uint8_t b);
     index_t get_bit(const uint8_t *buf);

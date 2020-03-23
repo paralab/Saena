@@ -861,7 +861,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
            << ", A.col_scan[A.col_sz]: " << A.col_scan[A.col_sz]);
 
 //    std::cout << "\nA: nnz: " << A.nnz << std::endl;
-    for (index_t j = 0; j < A.col_sz; ++j) {
+    for (int j = 0; j < A.col_sz; ++j) {
         for (index_t i = A.col_scan[j] - 1; i < A.col_scan[j + 1] - 1; ++i) {
             assert( A.r[i] > 0 );
             assert( A.r[i] <= A.row_sz );
@@ -900,7 +900,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     // ========================================================
     nnz_t offset = A.col_scan[0] - 1;
 
-    index_t i, j;
+    int i, j;
 
     index_t *A1r = &A.r[offset];
     value_t *A1v = &A.v[offset];
@@ -1215,8 +1215,8 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
 
     // if A1.nnz==0 it means A2 was the whole A, so we only need to return row indices to their original values.
     if(A1.nnz == 0) {
-        for (index_t j = 0; j < A2.col_sz; ++j) {
-            for (index_t i = A2.col_scan[j] - 1; i < A2.col_scan[j + 1] - 1; ++i) {
+        for (int j = 0; j < A2.col_sz; ++j) {
+            for (int i = A2.col_scan[j] - 1; i < A2.col_scan[j + 1] - 1; ++i) {
                 A2.r[i] += A1.row_sz;
             }
         }
@@ -1273,9 +1273,10 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
 
     index_t *Ac = A1.col_scan; // Will add A2.col_scan to A1.col_scan for each column to have Ac.
 
-    nnz_t i, iter0 = offset, iter1 = 0, iter2 = A1.col_scan[A.col_sz] - offset - 1;
+    int i;
+    nnz_t iter0 = offset, iter1 = 0, iter2 = A1.col_scan[A.col_sz] - offset - 1;
     nnz_t nnz_col;
-    for(index_t j = 0; j < A.col_sz; ++j){
+    for(int j = 0; j < A.col_sz; ++j){
         nnz_col = A1.col_scan[j+1] - A1.col_scan[j];
         if(nnz_col != 0){
             memcpy(&A.r[iter0], &Ar_temp[iter1], sizeof(index_t) * nnz_col);
