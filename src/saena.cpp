@@ -1,17 +1,17 @@
 #include "saena.hpp"
 #include "saena_matrix.h"
-#include "saena_matrix_dense.h"
+//#include "saena_matrix_dense.h"
 #include "saena_vector.h"
 #include "saena_object.h"
-#include "pugixml.hpp"
+//#include "pugixml.hpp"
 #include "dollar.hpp"
 
 #include <vector>
 #include <string>
-#include <cstring>
+//#include <cstring>
 #include <mpi.h>
 #include <random>
-#include <math.h>
+#include <cmath>
 #include <grid.h>
 
 # define PETSC_PI 3.14159265358979323846
@@ -363,6 +363,10 @@ saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, in
 }
 
 saena::options::options(char* name){
+    printf("Enable pugi to be able to use function options(char* name)!");
+    exit(EXIT_FAILURE);
+    
+/*
     pugi::xml_document doc;
     if (!doc.load_file(name))
         std::cout << "Could not find the xml file!" << std::endl;
@@ -389,7 +393,7 @@ saena::options::options(char* name){
 
 //    std::cout << "solver_max_iter = " << solver_max_iter << ", solver_tol = " << solver_tol
 //              << ", smoother = " << smoother << ", preSmooth = " << preSmooth << ", postSmooth = " << postSmooth << std::endl;
-
+*/
 }
 
 saena::options::~options() = default;
