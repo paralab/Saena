@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
             solver.matmat(&A, &B, &C);
 
             // check the correctness with PETSc
-//            petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
+            petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
 
 //            C.get_internal_matrix()->print_info(0);
 //            C.print(-1);
@@ -130,17 +130,17 @@ int main(int argc, char* argv[]){
 //            petsc_viewer(B.get_internal_matrix());
 //            petsc_viewer(C.get_internal_matrix());
 
-            if(!rank) printf("=====================\n\n");
+//            if(!rank) printf("=====================\n\n");
         }
 
         // *************************** Saena matmat experiment ****************************
 
-        solver.matmat(&A, &B, nullptr, false, true);
+//        solver.matmat(&A, &B, nullptr, false, true);
 
         // *************************** PETSc matmat experiment ****************************
 
 //        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
-        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
+//        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
 
     }
 

@@ -1413,13 +1413,13 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
     }
 
-    case1_iter_ave = average_iter(case1_iter, comm);
-    case2_iter_ave = average_iter(case2_iter, comm);
-    case3_iter_ave = average_iter(case3_iter, comm);
-    if(rank==0){
-        printf("case iters:\n%.0f\n%.0f\n%.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
+//    case1_iter_ave = average_iter(case1_iter, comm);
+//    case2_iter_ave = average_iter(case2_iter, comm);
+//    case3_iter_ave = average_iter(case3_iter, comm);
+//    if(rank==0){
+//        printf("case iters:\n%.0f\n%.0f\n%.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
 //        printf("\ncase1 = %.0f\ncase2 = %.0f\ncase3 = %.0f\n", case1_iter_ave, case2_iter_ave, case3_iter_ave);
-    }
+//    }
 
     // =======================================
     // finalize

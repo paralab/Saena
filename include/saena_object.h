@@ -78,7 +78,7 @@ public:
     // *****************
 
     std::string          coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const int            matmat_thre1 = 1000000;    // split until (A_row * B_col < matmat_thre1)
+    const int            matmat_thre1 = 100000000;  // split until (A_row * B_col < matmat_thre1)
     index_t              matmat_thre2 = 0;          // split until (B.col_sz < matmat_thre2). It will be set as ceil(sqrt(matmat_thre1))
     static const index_t matmat_thre3 = 40;         // split until (case2_iter + case3_iter == matmat_thre3)
     const index_t        matmat_nnz_thre = 200;     //default 200
