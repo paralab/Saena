@@ -135,11 +135,11 @@ set(SOURCE_FILES ${SOURCE_FILES}
 # -----------------------------------------------------------------------
 # pugixml: to read xml files for options
 
-include_directories(external/pugixml/include)
+#include_directories(external/pugixml/include)
 
-set(SOURCE_FILES ${SOURCE_FILES}
-        external/pugixml/src/pugixml.cpp
-        )
+#set(SOURCE_FILES ${SOURCE_FILES}
+#        external/pugixml/src/pugixml.cpp
+#        )
 
 # -----------------------------------------------------------------------
 # ZFP: for compressing arrays
