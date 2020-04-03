@@ -45,7 +45,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 #ifdef __DEBUG1__
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
-//    print_vector(R->entry, -1, "R->entry", comm);
+//    print_vector(R->entry, 0, "R->entry", comm);
 
 //    Ac->active_old_comm = true;
 
@@ -300,7 +300,6 @@ int saena_object::compute_coarsen(Grid *grid) {
 #endif
 
         // decide to partition based on number of rows or nonzeros.
-//        if(switch_repartition && Ac->density >= repartition_threshold)
         if (switch_repartition && Ac->density >= repartition_threshold) {
             if (rank == 0)
                 printf("equi-ROW partition for the next level: density = %f, repartition_threshold = %f \n",
@@ -359,11 +358,11 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
     if(verbose_compute_coarsen){MPI_Barrier(comm); printf("end of compute_coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
-#endif
 
     // view matrix Ac
     // --------------
 //    petsc_viewer(Ac);
+#endif
 
     return 0;
 } // compute_coarsen()
@@ -372,7 +371,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 int saena_object::triple_mat_mult(Grid *grid){
 
     saena_matrix    *A  = grid->A;
-//    prolong_matrix  *P  = &grid->P;
+    prolong_matrix  *P  = &grid->P;
     restrict_matrix *R  = &grid->R;
     saena_matrix    *Ac = &grid->Ac;
 
@@ -384,20 +383,20 @@ int saena_object::triple_mat_mult(Grid *grid){
 #ifdef __DEBUG1__
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
-//    print_vector(R->entry, -1, "R->entry", comm);
+//    print_vector(R->entry, 0, "R->entry", comm);
 
     if (verbose_triple_mat_mult) {
         MPI_Barrier(comm);
         if (rank == 0) printf("\nstart of triple_mat_mult: nprocs: %d \n", nprocs);
         MPI_Barrier(comm);
-        printf("rank %d: A: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", rank, A->Mbig, A->M, A->nnz_g,
-               A->nnz_l);
+        printf("rank %d: A: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n",
+                rank, A->Mbig, A->M, A->nnz_g, A->nnz_l);
 //        MPI_Barrier(comm);
-//        printf("rank %d: P: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", rank, P->Mbig, P->M, P->nnz_g,
-//               P->nnz_l);
+//        printf("rank %d: P: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n",
+//                rank, P->Mbig, P->M, P->nnz_g, P->nnz_l);
         MPI_Barrier(comm);
-        printf("rank %d: R: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", rank, R->Mbig, R->M, R->nnz_g,
-               R->nnz_l);
+        printf("rank %d: R: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u \n",
+                rank, R->Mbig, R->M, R->nnz_g, R->nnz_l, R->Nbig);
         MPI_Barrier(comm);
 //        print_vector(A->split,    1, "A->split",    comm);
 //        print_vector(R->splitNew, 1, "R->splitNew", comm);
@@ -410,22 +409,30 @@ int saena_object::triple_mat_mult(Grid *grid){
     // Convert R to CSC
     // =======================================
 
+#ifdef __DEBUG1__
+    for(nnz_t i = 0; i < R->nnz_l; i++){
+        assert( (R->entry[i].row >= 0) && (R->entry[i].row < R->M) );
+        assert( (R->entry[i].col >= 0) && (R->entry[i].col < R->Nbig) );
+        assert( fabs(R->entry[i].val) > ALMOST_ZERO );
+    }
+#endif
+
     CSCMat Rcsc;
+    Rcsc.comm     = R->comm;
     Rcsc.nnz      = R->nnz_l;
-    Rcsc.col_sz   = R->Nbig;
+    Rcsc.col_sz   = R->Nbig;        //TODO: check if this is correct or Mbig should be used.
     Rcsc.max_nnz  = R->nnz_max;
-//    Rcsc.max_M    = R->M_max; // we only need this for the right-hand side matrix in matmat.
+    Rcsc.max_M    = R->M_max;
     Rcsc.row      = new index_t[Rcsc.nnz];
     Rcsc.val      = new value_t[Rcsc.nnz];
     Rcsc.col_scan = new index_t[Rcsc.col_sz + 1];
 
-    Rcsc.split = R->splitNew;
-//    Rcsc.nnz_list = R->nnz_list;
-
     std::fill(&Rcsc.col_scan[0], &Rcsc.col_scan[Rcsc.col_sz + 1], 0);
+    Rcsc.col_scan[0] = 1;
+
     index_t *Rc_tmp = &Rcsc.col_scan[1];
     for(nnz_t i = 0; i < Rcsc.nnz; i++){
-        Rcsc.row[i] = R->entry[i].row + Rcsc.split[rank];
+        Rcsc.row[i] = R->entry[i].row + 1; // make the rows start from 1. when done with multiply, add this to the result.
         Rcsc.val[i] = R->entry[i].val;
         Rc_tmp[R->entry[i].col]++;
     }
@@ -436,21 +443,25 @@ int saena_object::triple_mat_mult(Grid *grid){
         }
     }
 
+    Rcsc.split    = R->splitNew;        //TODO: check if this is correct or "split" should be used.
+    Rcsc.nnz_list = R->nnz_list;
+
 #ifdef __DEBUG1__
-    if (verbose_triple_mat_mult) {
-        MPI_Barrier(comm);
-        if (rank == 0) printf("triple_mat_mult: step 1\n");
-        MPI_Barrier(comm);
+    {
+        if (verbose_triple_mat_mult) {
+            MPI_Barrier(comm);
+            if (rank == 0) printf("triple_mat_mult: step 1\n");
+            MPI_Barrier(comm);
 //        printf("R: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: %u\n",
 //               rank, Rcsc.nnz, Rcsc.max_nnz, Rcsc.col_sz, Rcsc.max_M);
 //        MPI_Barrier(comm);
-    }
+        }
 
 //    R->print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\tN_big: %d\n", R->nnz_l, R->nnz_g, R->M, R->Mbig, R->Nbig);
-//    print_array(Rcsc.row, Rcsc.nnz, 0, "Rcsc.row", comm);
-//    print_array(Rcsc.val, Rcsc.nnz, 0, "Rcsc.val", comm);
-//    print_array(Rcsc.col_scan, Rcsc.col_sz + 1, 0, "Rcsc.col_scan", comm);
+//    print_array(Rcsc.row, Rcsc.nnz, 1, "Rcsc.row", comm);
+//    print_array(Rcsc.val, Rcsc.nnz, 1, "Rcsc.val", comm);
+//    print_array(Rcsc.col_scan, Rcsc.col_sz + 1, 1, "Rcsc.col_scan", comm);
 
 //    std::cout << "\nR: nnz: " << Rcsc.nnz << std::endl ;
 //    for(index_t j = 0; j < Rcsc.col_sz; j++){
@@ -458,17 +469,27 @@ int saena_object::triple_mat_mult(Grid *grid){
 //            std::cout << std::setprecision(4) << Rcsc.row[i] << "\t" << j << "\t" << Rcsc.val[i] << std::endl;
 //        }
 //    }
+    }
 #endif
 
     // =======================================
     // Convert the local transpose of A to CSC
     // =======================================
 
+#ifdef __DEBUG1__
+    for(nnz_t i = 0; i < A->nnz_l; i++){
+        assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
+        assert( (A->entry[i].col >= 0) && (A->entry[i].col < A->Mbig) );
+        assert( fabs(A->entry[i].val) > ALMOST_ZERO );
+    }
+#endif
+
     // make a copy of A entries, then change their order to row-major
     std::vector<cooEntry> A_ent(A->entry);
     std::sort(A_ent.begin(), A_ent.end(), row_major);
 
     CSCMat Acsc;
+    Acsc.comm     = A->comm;
     Acsc.nnz      = A->nnz_l;
     Acsc.col_sz   = A->M;
     Acsc.max_nnz  = A->nnz_max;
@@ -478,31 +499,36 @@ int saena_object::triple_mat_mult(Grid *grid){
     Acsc.col_scan = new index_t[Acsc.col_sz + 1];
 
     std::fill(&Acsc.col_scan[0], &Acsc.col_scan[Acsc.col_sz + 1], 0);
+    Acsc.col_scan[0] = 1;
+
 //    index_t *Ac_tmp   = &Acsc.col_scan[1];
     index_t *Ac_tmp_p = &Acsc.col_scan[1] - A->split[rank]; // use this to avoid subtracting a fixed number
 
-    for(nnz_t i = 0; i < Acsc.nnz; i++){
-        Acsc.row[i] = A_ent[i].col;
+    for(nnz_t i = 0; i < Acsc.nnz; ++i){
+        Acsc.row[i] = A_ent[i].col + 1;
         Acsc.val[i] = A_ent[i].val;
         Ac_tmp_p[A_ent[i].row]++;
     }
 
-    for(nnz_t i = 0; i < Acsc.col_sz; i++){
+    for(nnz_t i = 0; i < Acsc.col_sz; ++i){
         Acsc.col_scan[i+1] += Acsc.col_scan[i];
     }
 
     Acsc.split    = A->split;
     Acsc.nnz_list = A->nnz_list;
 
+    Acsc.use_trans = true;
+
 #ifdef __DEBUG1__
-    if (verbose_triple_mat_mult) {
-        MPI_Barrier(comm);
-        if (rank == 0) printf("triple_mat_mult: step 2\n");
-        MPI_Barrier(comm);
+    {
+        if (verbose_triple_mat_mult) {
+            MPI_Barrier(comm);
+            if (rank == 0) printf("triple_mat_mult: step 2\n");
+            MPI_Barrier(comm);
 //        printf("A: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: %u\n",
 //               rank, Acsc.nnz, Acsc.max_nnz, Acsc.col_sz, Acsc.max_M);
 //        MPI_Barrier(comm);
-    }
+        }
 
 //    A->print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
@@ -516,84 +542,37 @@ int saena_object::triple_mat_mult(Grid *grid){
 //            std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
 //        }
 //    }
+    }
 #endif
 
     // =======================================
-    // Preallocate Memory
+    // prepare A for compression
     // =======================================
 
-// note: this guide is written as when the left matrix is called "A" and the right one as "B":
-// mempool1: used for the dense buffer
-// mempool2: usages: for A: 1- nnzPerRow_left and 2- orig_row_idx. for B: 3- B_new_col_idx and 4- orig_col_idx
-// mempool2 size: 2 * A_row_size + 2 * B_col_size
-// important: it depends if B or transpose of B is being used for the multiplciation. if originl B is used then
-// B_col_size is B->Mbig, but for the transpos it is B->M, which is scalable.
-// mempool3: is used to store the the received part of B.
-// mempool3 size: it should store remote B, so we allocate the max size of B on all the procs.
-//                sizeof(row index) + sizeof(value) + sizeof(col_scan) =
-//                nnz * index_t + nnz * value_t + (col_size+1) * index_t
-
-//    mempool1 = new value_t[matmat_size_thre2];
-
-    // compute the maximum column size for both RA and (RA)P,
-    // allocate mempool2 once and use it for both RA and (RA)P
-    // ---------------------------------------------------
-    index_t max_col_sz  = std::max(A->M_max, R->M_max);
-
-    index_t R_row_size = R->M;
-//    mempool2 = new index_t[2 * R_row_size + 2 * max_col_sz];
+    if(nprocs > 1) {
+        Acsc.compress_prep();
+    }
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
         MPI_Barrier(comm);
         if (rank == 0) printf("triple_mat_mult: step 3\n");
         MPI_Barrier(comm);
-//        if (rank == 0) std::cout << "R_row_size: "      << R_row_size  << ", A->M_max: "   << A->M_max
-//                                 << ", R->M_max: "      << R->M_max    << ", max_col_sz: " << max_col_sz
-//                                 << ", mempool2 size: " << 2 * R_row_size + 2 * max_col_sz << std::endl;
-//        MPI_Barrier(comm);
     }
 #endif
 
-    // 2 for both send and receive buffer, valbyidx for value, (B->max_M + 1) for col_scan
-    // r_cscan_buffer_sz_max is for both row and col_scan which have the same type.
-    int valbyidx = sizeof(value_t) / sizeof(index_t);
+    // =======================================
+    // Preallocate Memory
+    // =======================================
 
-    // compute send_size_max for A
-    nnz_t v_buffer_sz_max_RA       = valbyidx * A->nnz_max;
-    nnz_t r_cscan_buffer_sz_max_RA = A->nnz_max + A->M_max + 1;
-    nnz_t send_size_max_RA         = v_buffer_sz_max_RA + r_cscan_buffer_sz_max_RA;
-
-    // compute send_size_max for P (which is actually R)
-    nnz_t v_buffer_sz_max_RAP       = valbyidx * R->nnz_max;
-    nnz_t r_cscan_buffer_sz_max_RAP = R->nnz_max + R->M_max + 1;
-    nnz_t send_size_max_RAP         = v_buffer_sz_max_RAP + r_cscan_buffer_sz_max_RAP;
-
-    nnz_t send_size_max = std::max(send_size_max_RA, send_size_max_RAP);
-    mempool3            = new index_t[2 * send_size_max];
-
-//    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
-//    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
-
-//    index_t B_col_size = B->Mbig; // for original B
-//    index_t B_col_size = B->M;    // for when tranpose of B is used to do the multiplication.
+    matmat_memory_alloc(Rcsc, Acsc);
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
         MPI_Barrier(comm);
         if (rank == 0) printf("triple_mat_mult: step 4\n");
         MPI_Barrier(comm);
-//        if (rank == 0) std::cout << "send_size_max_RA: "     << send_size_max_RA
-//                                 << ",\tsend_size_max_RAP: " << send_size_max_RAP
-//                                 << ",\tsend_size_max: "     << send_size_max << ",\tvalbyidx:" << valbyidx << std::endl;
-//        if(rank==0){
-//            std::cout << "mempool1 size = " << matmat_size_thre2 << std::endl;
-//            std::cout << "mempool2 size = " << 2 * R_row_size + 2 * max_col_sz << std::endl;
-//            std::cout << "mempool3 size = " << 2 * send_size_max << std::endl;
-//        }
-//        MPI_Barrier(comm);
     }
-//    if(rank==0) std::cout << "valbyidx = " << valbyidx << std::endl;
 #endif
 
     // =======================================
@@ -626,6 +605,8 @@ int saena_object::triple_mat_mult(Grid *grid){
     delete []Acsc.val;
     delete []Acsc.col_scan;
 
+    matmat_memory_free();
+
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
         MPI_Barrier(comm);
@@ -639,9 +620,10 @@ int saena_object::triple_mat_mult(Grid *grid){
     // =======================================
 
     CSCMat RAcsc;
+    RAcsc.comm     = R->comm;
     RAcsc.nnz      = RA.entry.size();
     RAcsc.col_sz   = A->Mbig;
-//    RAcsc.max_M    = R->M_max; // we only need this for the right-hand side matrix in matmat.
+//    RAcsc.max_M    = R->M_max;    // we only need this for the right-hand side matrix in matmat.
     RAcsc.row      = new index_t[RAcsc.nnz];
     RAcsc.val      = new value_t[RAcsc.nnz];
     RAcsc.col_scan = new index_t[RAcsc.col_sz + 1];
@@ -650,24 +632,26 @@ int saena_object::triple_mat_mult(Grid *grid){
     MPI_Allreduce(&RAcsc.nnz, &RAcsc.max_nnz, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
 
     std::fill(&RAcsc.col_scan[0], &RAcsc.col_scan[RAcsc.col_sz + 1], 0);
+    RAcsc.col_scan[0] = 1;
+
     index_t *RAc_tmp = &RAcsc.col_scan[1];
     for(nnz_t i = 0; i < RAcsc.nnz; i++){
-        RAcsc.row[i] = RA.entry[i].row;
+        RAcsc.row[i] = RA.entry[i].row - R->splitNew[rank] + 1; // make the rows start from 1. when done with multiply, add this to the result.
         RAcsc.val[i] = RA.entry[i].val;
         RAc_tmp[RA.entry[i].col]++;
     }
 
-    for(nnz_t i = 0; i < RAcsc.col_sz; i++){
-        RAcsc.col_scan[i+1] += RAcsc.col_scan[i];
+    if(RAcsc.nnz != 0) {
+        for (nnz_t i = 0; i < RAcsc.col_sz; i++) {
+            RAcsc.col_scan[i + 1] += RAcsc.col_scan[i];
+        }
     }
 
-    RAcsc.split = R->splitNew;
-//    Rcsc.nnz_list = R->nnz_list;
+    RAcsc.split = R->splitNew;        //TODO: check if this is correct or "split" should be used.
 
     // compute nnz_list
-//    nnz_list.resize(nprocs);
-//    MPI_Allgather(&nnz_l, 1, MPI_UNSIGNED_LONG, &nnz_list[0], 1, MPI_UNSIGNED_LONG, comm);
-//        print_vector(nnz_list, 1, "nnz_list", comm);
+    RAcsc.nnz_list.resize(nprocs);
+    MPI_Allgather(&RAcsc.nnz, 1, MPI_UNSIGNED_LONG, &RAcsc.nnz_list[0], 1, MPI_UNSIGNED_LONG, comm);
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
@@ -679,17 +663,19 @@ int saena_object::triple_mat_mult(Grid *grid){
 //        MPI_Barrier(comm);
     }
 
-//    R->print_entry(0);
-//    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", R->nnz_l, R->nnz_g, R->M, R->Mbig);
-//    print_array(Rcsc.row, Rcsc.nnz, 0, "Rcsc.row", comm);
-//    print_array(Rcsc.val, Rcsc.nnz, 0, "Rcsc.val", comm);
-//    print_array(Rcsc.col_scan, Rcsc.col_sz + 1, 0, "Rcsc.col_scan", comm);
+//    RA.print_entry(0);
+//    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", RA->nnz_l, RA.nnz_g, RA.M, RA.Mbig);
+//    print_array(RAcsc.row, RAcsc.nnz, 1, "RAcsc.row", comm);
+//    print_array(RAcsc.val, RAcsc.nnz, 1, "RAcsc.val", comm);
+//    print_array(RAcsc.col_scan, RAcsc.col_sz + 1, 1, "RAcsc.col_scan", comm);
+
+//    print_vector(RAcsc.nnz_list, 1, "RAcsc.nnz_list", comm);
 
 //    if(rank==1){
 //        std::cout << "\nRA: nnz: " << RAcsc.nnz << std::endl ;
 //        for(index_t j = 0; j < RAcsc.col_sz; j++){
-//            for(index_t i = RAcsc.col_scan[j]; i < RAcsc.col_scan[j+1]; i++){
-//                std::cout << std::setprecision(4) << RAcsc.row[i] << "\t" << j << "\t" << RAcsc.val[i] << std::endl;
+//            for(index_t i = RAcsc.col_scan[j] - 1; i < RAcsc.col_scan[j+1] - 1; i++){
+//                std::cout << std::setprecision(4) << RAcsc.row[i] << "\t" << j + 1 << "\t" << RAcsc.val[i] << std::endl;
 //            }
 //        }
 //    }
@@ -703,9 +689,11 @@ int saena_object::triple_mat_mult(Grid *grid){
 
     // make a copy of R entries, then change their order to row-major
     std::vector<cooEntry> P_ent(R->entry);
+//    print_vector(P_ent, 1, "P_ent", comm);
     std::sort(P_ent.begin(), P_ent.end(), row_major);
 
     CSCMat Pcsc;
+    Pcsc.comm     = R->comm;
     Pcsc.nnz      = R->nnz_l;
     Pcsc.col_sz   = R->M;
     Pcsc.max_nnz  = R->nnz_max;
@@ -714,22 +702,28 @@ int saena_object::triple_mat_mult(Grid *grid){
     Pcsc.val      = new value_t[Pcsc.nnz];
     Pcsc.col_scan = new index_t[Pcsc.col_sz + 1];
 
-    Pcsc.split    = R->splitNew;
-    Pcsc.nnz_list = R->nnz_list;
-
     std::fill(&Pcsc.col_scan[0], &Pcsc.col_scan[Pcsc.col_sz + 1], 0);
-    index_t *Pc_tmp   = &Pcsc.col_scan[1];
+    Pcsc.col_scan[0] = 1;
+
+    Pcsc.split = R->splitNew;           //TODO: check if this is correct or "split" should be used.
+
+    index_t *Pc_tmp = &Pcsc.col_scan[1];
 //    index_t *Pc_tmp_p = &Pc_tmp[0] - Pcsc.split[rank]; // use this to avoid subtracting a fixed number
 
-    for(nnz_t i = 0; i < Pcsc.nnz; i++){
-        Pcsc.row[i] = P_ent[i].col;
+    for(nnz_t i = 0; i < Pcsc.nnz; ++i){
+        Pcsc.row[i] = P_ent[i].col + 1;
         Pcsc.val[i] = P_ent[i].val;
         Pc_tmp[P_ent[i].row]++;
+//        if(rank==1) std::cout << Pcsc.row[i] << "\t" << P_ent[i].row << std::endl;
     }
 
-    for(nnz_t i = 0; i < Pcsc.col_sz; i++){
+    for(nnz_t i = 0; i < Pcsc.col_sz; ++i){
         Pcsc.col_scan[i+1] += Pcsc.col_scan[i];
     }
+
+    Pcsc.nnz_list = R->nnz_list;
+
+    Pcsc.use_trans = true;
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
@@ -756,23 +750,12 @@ int saena_object::triple_mat_mult(Grid *grid){
 #endif
 
     // =======================================
-    // perform the multiplication RA * P
+    // prepare A for compression
     // =======================================
 
-//    saena_matrix RAP;
-    MPI_Comm comm_temp = Ac->comm;
-    Ac->comm           = A->comm;
-    matmat_CSC(RAcsc, Pcsc, *Ac);
-    Ac->comm           = comm_temp;
-
-#ifdef __DEBUG1__
-//    print_vector(Ac->entry, -1, "Ac->entry", comm);
-//    printf("triple_mat_mult: step 7777\n");
-#endif
-
-    // =======================================
-    // finalize
-    // =======================================
+    if(nprocs > 1) {
+        Pcsc.compress_prep();
+    }
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
@@ -782,6 +765,43 @@ int saena_object::triple_mat_mult(Grid *grid){
     }
 #endif
 
+    // =======================================
+    // Preallocate Memory
+    // =======================================
+
+    matmat_memory_alloc(RAcsc, Pcsc);
+
+#ifdef __DEBUG1__
+    if (verbose_triple_mat_mult) {
+        MPI_Barrier(comm);
+        if (rank == 0) printf("triple_mat_mult: step 10\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // =======================================
+    // perform the multiplication RA * P
+    // =======================================
+
+//    saena_matrix RAP;
+    MPI_Comm comm_temp = Ac->comm;
+    Ac->comm = A->comm;
+    matmat_CSC(RAcsc, Pcsc, *Ac);
+    Ac->comm = comm_temp;
+
+#ifdef __DEBUG1__
+//    print_vector(Ac->entry, -1, "Ac->entry", comm);
+    if (verbose_triple_mat_mult) {
+        MPI_Barrier(comm);
+        if (rank == 0) printf("triple_mat_mult: step 11\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // =======================================
+    // finalize
+    // =======================================
+
     delete []RAcsc.row;
     delete []RAcsc.val;
     delete []RAcsc.col_scan;
@@ -790,9 +810,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     delete []Pcsc.val;
     delete []Pcsc.col_scan;
 
-//    delete[] mempool1;
-//    delete[] mempool2;
-    delete[] mempool3;
+    matmat_memory_free();
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {

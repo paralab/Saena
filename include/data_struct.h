@@ -449,7 +449,7 @@ public:
     nnz_t   max_nnz = 0;
     index_t max_M   = 0;
 
-    bool use_trans = false;
+    bool use_trans = true;
 
     std::vector<index_t> split;
     std::vector<nnz_t>   nnz_list;
