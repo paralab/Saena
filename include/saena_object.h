@@ -236,6 +236,7 @@ public:
 
     int setup(saena_matrix* A);
     int coarsen(Grid *grid);
+    int pcoarsen(Grid *grid);
     int compute_coarsen(Grid *grid);
 //    int compute_coarsen_old(Grid *grid);
 //    int compute_coarsen_old2(Grid *grid);
