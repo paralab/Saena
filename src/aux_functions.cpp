@@ -6,6 +6,7 @@
 #include <fstream>
 #include <cmath>
 #include <sys/stat.h>
+#include <iomanip>
 
 class saena_matrix;
 
@@ -129,7 +130,7 @@ double print_time(double t_dif, std::string function_name, MPI_Comm comm){
 }
 
 
-double print_time_ave(double t_dif, std::string function_name, MPI_Comm comm){
+double print_time_ave(double t_dif, std::string function_name, MPI_Comm comm, bool print_time /*= false*/, bool print_name /*= true*/){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -139,8 +140,13 @@ double print_time_ave(double t_dif, std::string function_name, MPI_Comm comm){
     MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
     average /= nprocs;
 
-    if (rank==0)
-        std::cout << function_name << "\n" << average << std::endl;
+    if (print_time && rank==0){
+        if(print_name){
+            std::cout << function_name << "\n" << std::setprecision(8) << average << std::endl;
+        }else{
+            std::cout << std::setprecision(8) << average << std::endl;
+        }
+    }
 
     return average;
 }
@@ -156,10 +162,29 @@ double print_time_ave_consecutive(double t_dif, MPI_Comm comm){
     MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
     average /= nprocs;
 
-//    if (rank==0)
-//        std::cout << average << "+";
+    if (rank==0)
+        std::cout << average << "+";
 
     return average;
+}
+
+double average_time(double t_dif, MPI_Comm comm){
+    int nprocs;
+    MPI_Comm_size(comm, &nprocs);
+
+    double average;
+    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    return average/nprocs;
+}
+
+
+double average_iter(index_t iter, MPI_Comm comm){
+    int nprocs;
+    MPI_Comm_size(comm, &nprocs);
+
+    index_t average;
+    MPI_Reduce(&iter, &average, 1, MPI_UNSIGNED, MPI_SUM, 0, comm);
+    return static_cast<double>(average)/nprocs;
 }
 
 
@@ -215,10 +240,10 @@ int write_agg(std::vector<unsigned long>& v, std::string name, int level, MPI_Co
 
     if (rank == 0)
 //        outFileTxt << vSize << std::endl;
-    for (long i = 0; i < v.size(); i++) {
+        for (long i = 0; i < v.size(); i++) {
 //        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
-        outFileTxt << v[i] << std::endl;
-    }
+            outFileTxt << v[i] << std::endl;
+        }
 
     outFileTxt.clear();
     outFileTxt.close();
@@ -274,10 +299,10 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
                 node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
                 if(rank==0) printf("node = %u\n", node);
                 val = 12 * PETSC_PI * PETSC_PI
-                                 * cos(2*PETSC_PI*(((double)i+0.5)*Hx))
-                                 * cos(2*PETSC_PI*(((double)j+0.5)*Hy))
-                                 * cos(2*PETSC_PI*(((double)k+0.5)*Hz))
-                                 * Hx * Hy * Hz;
+                      * cos(2*PETSC_PI*(((double)i+0.5)*Hx))
+                      * cos(2*PETSC_PI*(((double)j+0.5)*Hy))
+                      * cos(2*PETSC_PI*(((double)k+0.5)*Hz))
+                      * Hx * Hy * Hz;
                 rhs.emplace_back(val);
             }
         }

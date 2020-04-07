@@ -12,3 +12,6 @@ install(TARGETS parmetis
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib
   ARCHIVE DESTINATION lib)
+
+# Majid added this. It is equivalent to -fPIC.
+set_property(TARGET parmetis PROPERTY POSITION_INDEPENDENT_CODE ON)

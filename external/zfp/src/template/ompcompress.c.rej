@@ -1,0 +1,45 @@
+--- src/template/ompcompress.c	2019-05-06 03:11:11.000000000 +0300
++++ src/template/ompcompress.c	2019-05-30 18:26:10.478240000 +0300
+@@ -198,12 +223,40 @@
+ 
+   /* allocate per-thread streams */
+   bitstream** bs = compress_init_par(stream, field, chunks, blocks);
+-  if (!bs)
+-    return;
+ 
++#if defined (IPP_OPTIMIZATION_ENABLED)
++
++    IppEncodeZfpState_32f* pStates = NULL;
++    Ipp64u* chunk_bit_lengths = (Ipp64u*)malloc(sizeof(Ipp64u)* chunks);
++    int srcBlockLineStep = nx * sizeof(Ipp32f);
++    int srcBlockPlaneStep = ny * srcBlockLineStep;
++    uint min_bits, max_bits, max_prec;
++    int min_exp;
++    int sizeState = 0;
++    if (!(REVERSIBLE(stream)))
++    {
++      zfp_stream_params(stream, &min_bits, &max_bits, &max_prec, &min_exp);
++      ippsEncodeZfpGetStateSize_32f(&sizeState);
++      pStates = (IppEncodeZfpState_32f*)ippsMalloc_8u(sizeState * threads);
++    }
++#endif
+   /* compress chunks of blocks in parallel */
+   int chunk;
++#if !defined (IPP_OPTIMIZATION_ENABLED)
+   #pragma omp parallel for num_threads(threads)
++#else
++#pragma omp parallel \
++    num_threads(threads)
++    {
++      bitstream *pBitStream = NULL;
++      IppEncodeZfpState_32f* pState = NULL;
++      Ipp32f pTmpBlock[64];
++      if (!(REVERSIBLE(stream)))
++      {
++        pState = (IppEncodeZfpState_32f*)((Ipp8u*)pStates + omp_get_thread_num() * sizeState);
++      }
++#pragma omp for
++#endif
+   for (chunk = 0; chunk < (int)chunks; chunk++) {
+     /* determine range of block indices assigned to this thread */
+     uint bmin = chunk_offset(blocks, chunks, chunk + 0);

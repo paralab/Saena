@@ -277,9 +277,10 @@ int saena_matrix::matrix_setup() {
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 
-        if(verbose_matrix_setup) {
+        if (verbose_matrix_setup) {
             MPI_Barrier(comm);
-            printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g, nnz_l);
+            printf("matrix_setup: rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n", rank, Mbig, M, nnz_g,
+                   nnz_l);
             MPI_Barrier(comm);
         }
 
@@ -341,7 +342,7 @@ int saena_matrix::matrix_setup() {
         // *************************** print_entry info ****************************
 
 #ifdef __DEBUG1__
-/*
+#if 0
         nnz_t total_nnz_l_local;
         nnz_t total_nnz_l_remote;
         MPI_Allreduce(&nnz_l_local,  &total_nnz_l_local,  1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
@@ -358,7 +359,7 @@ int saena_matrix::matrix_setup() {
         MPI_Allreduce(&col_remote_size, &col_remote_size_max, 1, MPI_UNSIGNED, MPI_MAX, comm);
         if(rank==0) printf("\nremote_min = %u, remote_ave = %u, remote_max = %u \n",
                            col_remote_size_min, (col_remote_size_ave/nprocs), col_remote_size_max);
-*/
+#endif
 #endif
 
         if(verbose_matrix_setup) {
@@ -368,6 +369,7 @@ int saena_matrix::matrix_setup() {
         }
 
     } // if(active)
+
     return 0;
 }
 
@@ -382,8 +384,8 @@ int saena_matrix::matrix_setup_no_scale(){
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 
-#pragma omp parallel
-        if(rank==0 && omp_get_thread_num()==0) printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
+//#pragma omp parallel
+//        if(rank==0 && omp_get_thread_num()==0) printf("\nnumber of processes = %d, number of threads = %d\n\n", nprocs, omp_get_num_threads());
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);

@@ -10,7 +10,7 @@
 // send_zfp functions:
 
 int saena_matrix::allocate_zfp(){
-
+/*
     free_zfp_buff = true;
 
     zfp_send_buff_sz = zfp_rate / 2 * (unsigned)ceil(vIndexSize/4.0); // rate/8 * 4 * ceil(size/4). This is in bytes.
@@ -43,12 +43,12 @@ int saena_matrix::allocate_zfp(){
     recv_stream = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
     recv_zfp = zfp_stream_open(recv_stream);
     zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
-
+*/
     return 0;
 }
 
 int saena_matrix::deallocate_zfp(){
-
+/*
     if(free_zfp_buff){
 
         zfp_field_free(send_field);
@@ -64,7 +64,7 @@ int saena_matrix::deallocate_zfp(){
         free_zfp_buff = false;
 
     }
-
+*/
     return 0;
 }
 

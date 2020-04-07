@@ -25,8 +25,11 @@
 typedef unsigned int  index_t;
 typedef unsigned long nnz_t;
 typedef double        value_t;
+typedef unsigned char uchar;
 
 #define ITER_LAZY 20        // number of update steps for lazy-update
+
+const double ALMOST_ZERO = 1e-16;
 
 class strength_matrix;
 class saena_matrix;
@@ -34,13 +37,28 @@ class prolong_matrix;
 class restrict_matrix;
 class Grid;
 
+
+#ifndef NDEBUG
+#   define ASSERT(condition, message) \
+    do { \
+        if (! (condition)) { \
+            std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
+                      << " line " << __LINE__ << ": " << message << std::endl; \
+            std::terminate(); \
+        } \
+    } while (false)
+#else
+#   define ASSERT(condition, message) do { } while (false)
+#endif
+
+
 class saena_object {
 public:
 
     // setup
     // **********************************************
 
-    int          max_level                  = 1; // fine grid is level 0.
+    int          max_level                  = 10; // fine grid is level 0.
     // coarsening will stop if the number of rows on one processor goes below this parameter.
     unsigned int least_row_threshold        = 20;
     // coarsening will stop if the number of rows of last level divided by previous level is higher than this parameter,
@@ -59,24 +77,49 @@ public:
     // matmat
     // *****************
 
-    std::string          coarsen_method    = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const        index_t matmat_size_thre1 = 20000000; // if(row * col < matmat_size_thre1) decide to do case1 or not. default 20M, last 50M
-    static const index_t matmat_size_thre2 = 1000000;  // if(nnz_row * nnz_col < matmat_size_thre2) do case1. default 1M
-//    const index_t matmat_size_thre3        = 100;    // if(nnz_row * nnz_col < matmat_size_thre3) do dense, otherwise map. default 1M
-//    const index_t min_size_threshold       = 50; //default 50
-    const index_t        matmat_nnz_thre   = 200; //default 200
+    std::string          coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
+    const int            matmat_thre1 = 100000000;  // split until (A_row * B_col < matmat_thre1)
+    index_t              matmat_thre2 = 0;          // split until (B.col_sz < matmat_thre2). It will be set as ceil(sqrt(matmat_thre1))
+    static const index_t matmat_thre3 = 40;         // split until (case2_iter + case3_iter == matmat_thre3)
+    const index_t        matmat_nnz_thre = 200;     //default 200
 
-    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
+//    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
+
+    long   zfp_orig_sz = 0l;   // the original size of array that was compressed with zfp
+    long   zfp_comp_sz = 0l;   // the size of the compressed array as the output of zfp
+    double zfp_rate    = 0.0;  // = zfp_comp_sz / zfp_orig_sz
+    double zfp_thrshld = 0.0; // if (zfp_rate < zfp_thrshld) zfp_perform = true;
+                               // set zfp_thrshld = 0 to disable zfp compression
+    bool   zfp_perform = true;
 
     // memory pool used in compute_coarsen
-    value_t *mempool1 = nullptr;
-    index_t *mempool2 = nullptr;
+//    value_t *mempool1   = nullptr;
+//    index_t *mempool2   = nullptr;
     index_t *mempool3 = nullptr;
+    index_t *mempool4 = nullptr;
+    value_t *mempool5 = nullptr;
+    uchar   *mempool6 = nullptr;
+    uchar   *mempool7 = nullptr;
+
+    nnz_t    mempool3_sz     = 0;
+    nnz_t    mempool4and5_sz = 0;
+    nnz_t    mempool6_sz     = 0;
+    nnz_t    mempool7_sz     = 0;
+
+    index_t *Cmkl_r      = nullptr;
+    index_t *Cmkl_c_scan = nullptr;
+    value_t *Cmkl_v      = nullptr;
+    bool    use_dcsrmultcsr = true;
+
+    index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
+    double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
+
 //    std::unordered_map<index_t, value_t> map_matmat;
 //    spp::sparse_hash_map<index_t, value_t> map_matmat;
 //    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
 //    std::unique_ptr<index_t[]> mempool2;
 //    std::unique_ptr<value_t[]> mempool3;
+
 
     // *****************
     // shrink
@@ -156,7 +199,7 @@ public:
     std::string sparsifier          = "majid"; // options: 1- TRSL, 2- drineas, majid
 
     // **********************************************
-    // vserbose
+    // verbose
     // **********************************************
     bool verbose                  = false;
     bool verbose_setup            = true;
@@ -205,63 +248,39 @@ public:
 //    int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 //    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 //    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max);
-    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
-    int matmat(Grid *grid);
-    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble=true);
+
+    int matmat_grid(Grid *grid);
+    int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false, bool B_trans = true);
+    int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
+//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
+    int matmat_memory_alloc(CSCMat &Acsc, CSCMat &Bcsc);
+    int matmat_memory_free();
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 //    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 
-    // matmat_ave:        transpose of B is used.
-    // matmat_ave_orig_B: original B is used.
-    int matmat_ave(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
-//    int matmat_ave_orig_B(saena_matrix *A, saena_matrix *B, double &matmat_time); // this version is only for experiments.
-    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
-    int reorder_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz, index_t threshold);
-    int reorder_back_split(index_t *Ar, value_t *Av, index_t *Ac1, index_t *Ac2, index_t col_sz);
+//    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
+    int reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);
+    int reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);
+    int reorder_counter = 0; // use this to make sure the same number of calls to reorder_split() and reorder_back_split()
 
     // for fast_mm experiments
 //    int compute_coarsen_test(Grid *grid);
 //    int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
-                 index_t *Br, value_t *Bv, index_t *Bc_scan,
-                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                 index_t B_col_size, index_t B_col_offset,
-                 std::vector<cooEntry> &C, MPI_Comm comm);
+    void fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C, MPI_Comm comm);
 
-//    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                 nnz_t A_nnz, nnz_t B_nnz,
-//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                 index_t B_col_size, index_t B_col_offset,
-//                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-//                 MPI_Comm comm);
-
-//    void fast_mm(vecEntry *A, vecEntry *B, std::vector<cooEntry> &C,
-//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                 index_t B_col_size, index_t B_col_offset,
-//                 index_t *Ac, index_t *Bc, MPI_Comm comm);
-
-//    void fast_mm(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                 nnz_t A_nnz, nnz_t B_nnz,
-//                 index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                 index_t B_col_size, index_t B_col_offset,
-//                 const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                 const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-//                 std::unordered_map<index_t, value_t> &map_matmat, MPI_Comm comm);
-
-    void fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-                       nnz_t A_nnz, nnz_t B_nnz,
-                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-                       index_t B_col_size, index_t B_col_offset,
-                       const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-                       const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-                       MPI_Comm comm);
+//    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
+//                 index_t *Br, value_t *Bv, index_t *Bc_scan,
+//                 mat_info *A_info, mat_info *B_info,
+//                 std::vector<cooEntry> &C, MPI_Comm comm);
 
 //    void fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                 nnz_t A_nnz, nnz_t B_nnz, index_t A_row_size, index_t A_col_size, index_t B_col_size,
-//                 const index_t *nnzPerRowScan_left, const index_t *nnzPerColScan_right, MPI_Comm comm);
+//                       nnz_t A_nnz, nnz_t B_nnz,
+//                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
+//                       index_t B_col_size, index_t B_col_offset,
+//                       const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
+//                       const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
+//                       MPI_Comm comm);
 
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);

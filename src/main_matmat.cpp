@@ -5,15 +5,11 @@
 
 #include "combblas_functions.h"
 #include "petsc_functions.h"
-//#include <petsc_functions.h>
 
 #include <iostream>
-#include <algorithm>
-#include <fstream>
-#include <sys/stat.h>
 #include <vector>
-#include <omp.h>
 #include <dollar.hpp>
+#include <omp.h>
 #include "mpi.h"
 
 
@@ -56,6 +52,8 @@ int main(int argc, char* argv[]){
 
 //    A.print(-1, "A");
 //    A.get_internal_matrix()->print_info(-1, "A");
+
+    saena::matrix B(A);
 */
     // *************************** option 2: random symmetric ****************************
 /*
@@ -68,8 +66,10 @@ int main(int argc, char* argv[]){
 //    A.print(-1, "A");
 //    A.get_internal_matrix()->print_info(-1, "A");
 
-    saena::matrix B(comm);
-    saena::random_symm_matrix(B, M, dens);
+    saena::matrix B(A);
+
+//    saena::matrix B(comm);
+//    saena::random_symm_matrix(B, M, dens);
 
 //    B.print(-1, "B");
 //    B.get_internal_matrix()->print_info(-1, "B");
@@ -79,10 +79,12 @@ int main(int argc, char* argv[]){
     char *Aname(argv[1]);
 
     {
+
         saena::matrix A(comm);
 //        A.read_file(Aname);
         A.read_file(Aname, "triangle");
         A.assemble();
+//        A.assemble_no_scale();
 
         saena::matrix B(A);
 
@@ -92,78 +94,65 @@ int main(int argc, char* argv[]){
         if (verbose) print_time(t1, t2, "Matrix Assemble:", comm);
     //    print_time(t1, t2, "Matrix Assemble:", comm);
 
-    //    A.print(0);
-    //    A.get_internal_matrix()->print_info(0);
-    //    A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
-    //    petsc_viewer(A.get_internal_matrix());
-
-// *************************** checking the correctness of matrix-matrix product ****************************
-/*
-        saena::amg solver;
-        saena::matrix C(comm);
-        solver.matmat(&A, &B, &C, true);
-*/
-//        C.get_internal_matrix()->print_info(0);
-//        C.print(-1);
-
-        // view A, B and C
+//        A.print(0);
+//        A.get_internal_matrix()->print_info(2);
+//        A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
+//        print_vector(A.get_internal_matrix()->split, 1, "split", comm);
+//        print_vector(A.get_internal_matrix()->row_local, 0, "rows", comm);
 //        petsc_viewer(A.get_internal_matrix());
-//        petsc_viewer(B.get_internal_matrix());
-//        petsc_viewer(C.get_internal_matrix());
 
-        // check the correctness with PETSc
-    //    petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
+        // *************************** print info ****************************
 
-// *************************** print info ****************************
-
-    //    saena::amg solver;
+        saena::amg solver;
 
         if (!rank) {
-            printf("A.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n", A.get_internal_matrix()->Mbig,
-                   A.get_internal_matrix()->nnz_g,
+            printf("\nA.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n",
+                   A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g,
                    B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
-//            printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
+            printf("threshold1 = %u, threshold2 = %u\n\n", solver.get_object()->matmat_thre1, solver.get_object()->matmat_thre2);
         }
 
-// *************************** matrix-matrix product ****************************
+        // *************************** checking the correctness of matrix-matrix product ****************************
 
-        double matmat_time = 0;
-        int matmat_iter_warmup = 5;
-        int matmat_iter = 5;
+        {
+//            saena::amg solver;
+            saena::matrix C(comm);
+            solver.matmat(&A, &B, &C);
 
-        saena::amg solver;
-//        saena::matrix C(comm);
+            // check the correctness with PETSc
+            petsc_check_matmat(A.get_internal_matrix(), B.get_internal_matrix(), C.get_internal_matrix());
 
-        // warm-up
-        for (int i = 0; i < matmat_iter_warmup; i++) {
-            solver.matmat_ave(&A, &B, matmat_time);
+//            C.get_internal_matrix()->print_info(0);
+//            C.print(-1);
+
+            // view A, B and C
+//            petsc_viewer(A.get_internal_matrix());
+//            petsc_viewer(B.get_internal_matrix());
+//            petsc_viewer(C.get_internal_matrix());
+
+//            if(!rank) printf("=====================\n\n");
         }
 
-        MPI_Barrier(comm);
-        matmat_time = 0;
-        for (int i = 0; i < matmat_iter; i++) {
-            solver.matmat_ave(&A, &B, matmat_time);
-        }
+        // *************************** Saena matmat experiment ****************************
 
-        // matmat_ave computes the average matmat time on processor 0.
-        // so it is fine to just print the time on proc 0.
-        if (!rank) printf("\nSaena matmat:\n%f\n", matmat_time / matmat_iter);
+//        solver.matmat(&A, &B, nullptr, false, true);
 
-        // *************************** PETSc ****************************
+        // *************************** PETSc matmat experiment ****************************
 
-        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
+//        petsc_matmat_ave(A.get_internal_matrix(), B.get_internal_matrix(), matmat_iter);
 //        petsc_matmat(A.get_internal_matrix(), B.get_internal_matrix());
+
     }
 
     // *************************** CombBLAS ****************************
-
+/*
     {
 //        combblas_matmult_DoubleBuff(Aname, Aname);
 //        combblas_matmult_Synch(Aname, Aname);
         combblas_matmult_experiment(Aname, Aname, comm);
 //        combblas_GalerkinNew();
     }
-
+*/
     // *************************** finalize ****************************
 
 //    if(rank==0) dollar::text(std::cout);
