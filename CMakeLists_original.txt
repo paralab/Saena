@@ -173,6 +173,9 @@ if(ENABLE_PETSC)
 
     SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PETSC_LIB})
 
+    set(HEADER_FILES ${HEADER_FILES} include/petsc_functions.h)
+    set(SOURCE_FILES ${SOURCE_FILES} src/petsc_functions.cpp)
+
     add_definitions(-D_USE_PETSC_)
 
 endif(ENABLE_PETSC)
@@ -190,6 +193,9 @@ if(ENABLE_COMBBLAS)
     set(COMBBLAS_LIB ${COMBBLAS_DIR}/install/lib/libCombBLAS.a)
 
     SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${COMBBLAS_LIB})
+
+    set(HEADER_FILES ${HEADER_FILES} include/combblas_functions.h)
+    set(SOURCE_FILES ${SOURCE_FILES} src/combblas_functions.cpp)
 
     add_definitions(-D_USE_COMBBLAS_)
 
@@ -236,8 +242,6 @@ set(HEADER_FILES ${HEADER_FILES}
         include/restrict_matrix.h
         include/grid.h
         include/saena_vector.h
-        include/petsc_functions.h
-        include/combblas_functions.h
         include/GR_encoder.h
         )
 
@@ -251,6 +255,7 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/restrict_matrix.cpp
         src/saena_matrix_dense.cpp
         src/saena_vector.cpp
+        src/GR_encoder.cpp
 
         src/saena_matrix.cpp
         src/saena_matrix_repart.cpp
@@ -262,6 +267,7 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_object.cpp
         src/saena_object_setup1.cpp
         src/saena_object_setup2.cpp
+        src/saena_object_setup3.cpp
         src/saena_object_setup_matmat.cpp
         src/saena_object_solve.cpp
         src/saena_object_lazy.cpp
@@ -269,13 +275,6 @@ set(SOURCE_FILES ${SOURCE_FILES}
         src/saena_object_sparsify.cpp
         src/saena_object_elemental.cpp
         src/saena_object_write2file.cpp
-#        src/saena_object_setup2_backup.cpp
-#        src/saena_object_setup2_test.cpp
-
-        src/GR_encoder.cpp
-
-        src/petsc_functions.cpp
-        src/combblas_functions.cpp
         )
 
 # -----------------------------------------------------------------------
