@@ -273,9 +273,14 @@ set(SOURCE_FILES ${SOURCE_FILES}
 # -xAVX             for Ivy Bridge and Sandy Bridge
 
 # Enable Intel Optimization flags
+#IF(CMAKE_BUILD_TYPE STREQUAL Release)
+#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2")
+#ENDIF()
+
 IF(CMAKE_BUILD_TYPE STREQUAL Release)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 ENDIF()
 
 # -----------------------------------------------------------------------
@@ -286,8 +291,8 @@ ENDIF()
 # -qopt-report-phase  =loop, vec, par, cg, openmp, ipo, pgo, offload, all
 # -qopt-report-routine=fn1[,fn2,…]
 
-set(REPORT_ARG1 "-qopt-report=5 -qopt-report-file=stdout -qopt-report-phase=loop,vec,par,cg")
-set(REPORT_ROUTINE "-qopt-report-routine=reorder_split")
+#set(REPORT_ARG1 "-qopt-report=5 -qopt-report-file=stdout -qopt-report-phase=loop,vec,par,cg")
+#set(REPORT_ROUTINE "-qopt-report-routine=reorder_split")
 #set(REPORT_FILES "src/saena_object_setup_matmat.cpp")
 #set(REPORT_FILE "-qopt-report-filter=${REPORT_FILES}")
 
@@ -299,13 +304,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${REPORT_ARG1} ${REPORT_ROUTINE}")
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=c++14 -DTHREADED -fopenmp -DNDEBUG -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -Drestrict=__restrict__ -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 
-#add_executable(Saena            src/main.cpp             ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Saena            src/main.cpp             ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena_read_file  src/main_read_file.cpp   ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena2_read_file src/main_read_2file.cpp  ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena_band       src/main_band_matrix.cpp ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena_lazy       src/main_lazy.cpp        ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena_zfp        src/main_zfp.cpp         ${SOURCE_FILES} ${HEADER_FILES})
-add_executable(Saena_matmat     src/main_matmat.cpp      ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena_matmat     src/main_matmat.cpp      ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena_matmat_read_2file src/main_matmat_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 # -----------------------------------------------------------------------
