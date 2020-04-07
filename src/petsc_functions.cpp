@@ -1,3 +1,5 @@
+#ifdef _USE_PETSC_
+
 #include <petsc_functions.h>
 #include <assert.h>
 
@@ -778,3 +780,6 @@ int petsc_mat_diff(Mat &A, Mat &B, saena_matrix *B_saena){
 //    PetscFinalize();
     return 0;
 }
+
+
+#endif //_USE_PETSC_

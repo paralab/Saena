@@ -1,3 +1,5 @@
+#ifdef _USE_COMBBLAS_
+
 #ifndef SAENA_COMBBLAS_FUNCTIONS_H
 #define SAENA_COMBBLAS_FUNCTIONS_H
 
@@ -12,3 +14,5 @@ int combblas_matmult_experiment(const string &Aname, const string &Bname, MPI_Co
 int combblas_GalerkinNew();
 
 #endif //SAENA_COMBBLAS_FUNCTIONS_H
+
+#endif //_USE_COMBBLAS_

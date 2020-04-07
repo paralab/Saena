@@ -1,3 +1,5 @@
+#ifdef _USE_COMBBLAS_
+
 #include "combblas_functions.h"
 #include "aux_functions.h"
 
@@ -318,3 +320,6 @@ int combblas_GalerkinNew(){
 
     return 0;
 }
+
+
+#endif //_USE_COMBBLAS_

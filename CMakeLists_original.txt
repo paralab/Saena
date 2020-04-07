@@ -157,28 +157,43 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${ZFP_LIB})
 # -----------------------------------------------------------------------
 #PETSc
 
-#set(PETSC_DIR "~/softwares/petsc-3.8.0")
-#set(PETSC_ARCH "arch-linux2-c-debug")
+option(ENABLE_PETSC OFF)
 
-set(PETSC_DIR "~/Software/petsc-3.8.4")
-set(PETSC_ARCH "arch-linux2-c-opt")
-set(PETSC_LIB ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so)
-include_directories(
-        ${PETSC_DIR}/include
-        ${PETSC_DIR}/${PETSC_ARCH}/include
-)
+if(ENABLE_PETSC)
+    set(PETSC_DIR "~/Software/petsc-3.8.4")
+    set(PETSC_ARCH "arch-linux2-c-opt")
+    message(--\ PETSC_DIR:\ ${PETSC_DIR})
+    message(--\ PETSC_ARCH:\ ${PETSC_ARCH})
 
-SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PETSC_LIB})
+    set(PETSC_LIB ${PETSC_DIR}/${PETSC_ARCH}/lib/libpetsc.so)
+    include_directories(
+            ${PETSC_DIR}/include
+            ${PETSC_DIR}/${PETSC_ARCH}/include
+    )
+
+    SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PETSC_LIB})
+
+    add_definitions(-D_USE_PETSC_)
+
+endif(ENABLE_PETSC)
 
 # -----------------------------------------------------------------------
 #CombBLAS
 
-#set(COMBBLAS_DIR /home/boss/Software/CombBLAS_beta_16_2)
-set(COMBBLAS_DIR /home/majidrp/Software/CombBLAS_beta_16_2)
-include_directories("${COMBBLAS_DIR}/install/include")
-set(COMBBLAS_LIB ${COMBBLAS_DIR}/install/lib/libCombBLAS.a)
+option(ENABLE_COMBBLAS ON)
 
-SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${COMBBLAS_LIB})
+if(ENABLE_COMBBLAS)
+    set(COMBBLAS_DIR "~/Software/CombBLAS_beta_16_2")
+    message(--\ COMBBLAS_DIR:\ ${COMBBLAS_DIR})
+
+    include_directories("${COMBBLAS_DIR}/install/include")
+    set(COMBBLAS_LIB ${COMBBLAS_DIR}/install/lib/libCombBLAS.a)
+
+    SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${COMBBLAS_LIB})
+
+    add_definitions(-D_USE_COMBBLAS_)
+
+endif(ENABLE_COMBBLAS)
 
 # -----------------------------------------------------------------------
 # dollar (profiler)
@@ -296,8 +311,8 @@ ENDIF()
 #set(REPORT_FILES "src/saena_object_setup_matmat.cpp")
 #set(REPORT_FILE "-qopt-report-filter=${REPORT_FILES}")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${REPORT_ARG1} ${REPORT_ROUTINE}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${REPORT_ARG1} ${REPORT_ROUTINE}")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${REPORT_ARG1} ${REPORT_ROUTINE}")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${REPORT_ARG1} ${REPORT_ROUTINE}")
 
 # -----------------------------------------------------------------------
 
