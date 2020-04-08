@@ -6,10 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # -----------------------------------------------------------------------
-# Build Type
+# Build Type: Debug or Release
 
 IF(NOT CMAKE_BUILD_TYPE)
-#    SET(CMAKE_BUILD_TYPE Debug)
     SET(CMAKE_BUILD_TYPE Release)
 ENDIF()
 
@@ -94,10 +93,10 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${LAPACK_LIBRARIES})
 # -----------------------------------------------------------------------
 # MKL
 
-set(MKL_DIR "/opt/intel/compilers_and_libraries_2020.0.166/linux/mkl")
-include_directories(${MKL_DIR}/include)
+set(MKLROOT $ENV{MKLROOT})
+include_directories(${MKLROOT}/include)
 
-set(MKL_LIB_DIR    "${MKL_DIR}/lib/intel64_lin")
+set(MKL_LIB_DIR    "${MKLROOT}/lib/intel64_lin")
 
 set(MKL_LIB_CORE   "${MKL_LIB_DIR}/libmkl_core.so")
 set(MKL_LIB_LP64   "${MKL_LIB_DIR}/libmkl_intel_lp64.so")
@@ -108,9 +107,9 @@ set(MKL_LIB_THREAD "${MKL_LIB_DIR}/libmkl_gnu_thread.so")
 #set(MKL_LIB_BLACS "${MKL_LIB_DIR}/libmkl_blacs_intelmpi_lp64.so")
 #set(MKL_LIB_BLACS "${MKL_LIB_DIR}/libmkl_blacs_openmpi_lp64.so")
 
-set(MKL_OMP "/opt/intel/compilers_and_libraries_2020.0.166/linux/compiler/lib/intel64_lin/libiomp5.so")
+#set(MKL_OMP "/opt/intel/compilers_and_libraries_2020.0.166/linux/compiler/lib/intel64_lin/libiomp5.so")
 
-SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MKL_LIB_CORE} ${MKL_LIB_LP64} ${MKL_LIB_THREAD} ${MKL_OMP})
+SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MKL_LIB_CORE} ${MKL_LIB_LP64} ${MKL_LIB_THREAD})
 
 # -----------------------------------------------------------------------
 # IETL: eigensolver
@@ -134,13 +133,12 @@ set(SOURCE_FILES ${SOURCE_FILES}
 # pugixml: to read xml files for options
 
 #include_directories(external/pugixml/include)
-
 #set(SOURCE_FILES ${SOURCE_FILES}
 #        external/pugixml/src/pugixml.cpp
 #        )
 
 # -----------------------------------------------------------------------
-# ZFP: for compression
+# ZFP: for compressing arrays
 
 set(ZFP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/zfp)
 set(ZFP_LIB ${CMAKE_CURRENT_BINARY_DIR}/build_zfp/lib/libzfp.so)
@@ -158,8 +156,16 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${ZFP_LIB})
 option(ENABLE_PETSC OFF)
 
 if(ENABLE_PETSC)
-    set(PETSC_DIR "~/Software/petsc-3.8.4")
-    set(PETSC_ARCH "arch-linux2-c-opt")
+    if(NOT DEFINED ENV{PETSC_DIR})
+        message( FATAL_ERROR "PETSC_DIR is not set! CMake will exit." )
+    endif(NOT DEFINED ENV{PETSC_DIR})
+
+    if(NOT DEFINED ENV{PETSC_ARCH})
+        message( FATAL_ERROR "PETSC_ARCH is not set! CMake will exit." )
+    endif(NOT DEFINED ENV{PETSC_ARCH})
+
+    set(PETSC_DIR $ENV{PETSC_DIR})
+    set(PETSC_ARCH $ENV{PETSC_ARCH})
     message(--\ PETSC_DIR:\ ${PETSC_DIR})
     message(--\ PETSC_ARCH:\ ${PETSC_ARCH})
 
@@ -184,7 +190,11 @@ endif(ENABLE_PETSC)
 option(ENABLE_COMBBLAS OFF)
 
 if(ENABLE_COMBBLAS)
-    set(COMBBLAS_DIR "~/Software/CombBLAS_beta_16_2")
+    if(NOT DEFINED ENV{COMBBLAS_DIR})
+        message( FATAL_ERROR "COMBBLAS_DIR is not set! CMake will exit." )
+    endif(NOT DEFINED ENV{COMBBLAS_DIR})
+
+    set(COMBBLAS_DIR $ENV{COMBBLAS_DIR})
     message(--\ COMBBLAS_DIR:\ ${COMBBLAS_DIR})
 
     include_directories("${COMBBLAS_DIR}/install/include")
@@ -200,7 +210,8 @@ if(ENABLE_COMBBLAS)
 endif(ENABLE_COMBBLAS)
 
 # -----------------------------------------------------------------------
-# dollar (profiler)
+# dollar: for profiling
+# https://github.com/r-lyeh-archived/dollar
 
 set(DOLLAR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/dollar")
 include_directories(
@@ -213,14 +224,6 @@ include_directories(
 #set(TRSL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/trsl-0.2.2)
 #include_directories(
 #        ${TRSL_DIR}
-#)
-
-# -----------------------------------------------------------------------
-# sparsepp: alternative for unordered_map and unordered_set
-
-#set(SPARSEPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/sparsepp)
-#include_directories(
-#        ${SPARSEPP_DIR}
 #)
 
 # -----------------------------------------------------------------------
