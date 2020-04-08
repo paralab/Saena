@@ -29,6 +29,7 @@ find_package(OpenMP)
 if(OPENMP_FOUND)
     set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    add_definitions(-D_USE_OPENMP_)
 endif()
 
 # -----------------------------------------------------------------------
@@ -183,7 +184,7 @@ endif(ENABLE_PETSC)
 # -----------------------------------------------------------------------
 #CombBLAS
 
-option(ENABLE_COMBBLAS ON)
+option(ENABLE_COMBBLAS OFF)
 
 if(ENABLE_COMBBLAS)
     set(COMBBLAS_DIR "~/Software/CombBLAS_beta_16_2")
@@ -315,6 +316,7 @@ ENDIF()
 
 # -----------------------------------------------------------------------
 
+#Compile
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=c++14 -DTHREADED -fopenmp -DNDEBUG -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -Drestrict=__restrict__ -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 
@@ -329,10 +331,6 @@ add_executable(Saena src/main_read_file.cpp   ${SOURCE_FILES} ${HEADER_FILES})
 
 # -----------------------------------------------------------------------
 
-#SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MPI_LIBRARIES} ${SuperLU_DIST_LIB} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}
-#        ${PARMETIS_LIBRARY} ${METIS_LIBRARY} m ${ZFP_LIB} ${PETSC_LIB} ${COMBBLAS_LIB})
-#SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} m)
-#message("SAENA_LIB_DEPENDENCIES: " ${SAENA_LIB_DEPENDENCIES})
-
+#Link
+#message("SAENA_LIB_DEPENDENCIES:\ " ${SAENA_LIB_DEPENDENCIES})
 target_link_libraries(Saena ${SAENA_LIB_DEPENDENCIES})
-#target_link_libraries(Saena_matmat_read_2file  ${SAENA_LIB_DEPENDENCIES})
