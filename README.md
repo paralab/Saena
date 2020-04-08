@@ -3,6 +3,7 @@
 Saena is the name of falcon, the fastest animal, in Avesta (an old Persian book), and this library is supposed to be the falcon in multigrid solvers.
 
 ### Dependencies
+There are some dependencies which are installed automatically by running the `install.sh` file. Some of those dependencies are `ZFP` and `SuperLU`, which depends on `ParMETIS`. The other ones that may need to be installed before compiling Saena are the following.
 
 #### Boost:
 For `Linux` this may help:
@@ -17,5 +18,3 @@ If you don't already have `Intel MKL` on your machine, it can be installed in a 
 The easiest way may be installing the standalone version:
 
 `https://software.seek.intel.com/performance-libraries`
-
-There are other dependencies which are installed automatically by running the `install.sh` file. Some of those dependencies are `ZFP` and also `SuperLU`, which depends on `ParMETIS`.
