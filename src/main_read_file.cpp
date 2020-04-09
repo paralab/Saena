@@ -31,7 +31,7 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    // *************************** Ssetup timing parameters ****************************
+    // *************************** Setup timing parameters ****************************
 
     std::vector<double> setup_time_loc, solve_time_loc;
 
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]){
 //    for(index_t i = 0; i < A.get_num_local_rows(); i++)
 //        rhs_std[i] = i + 1 + A.get_internal_matrix()->split[rank];
 
-    // ********** 3 - set rhs_std: read from file **********
+    // ********** 3 - set rhs: read from file **********
 
     char* Vname(argv[2]);
 //    saena::read_vector_file(rhs_std, A, Vname, comm);
