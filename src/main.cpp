@@ -1,20 +1,18 @@
-#include "grid.h"
-#include "saena_object.h"
-#include "saena_matrix.h"
-#include "saena.hpp"
-
-#include "petsc_functions.h"
-//#include "combblas_functions.h"
+// to run this code on two generated examples from homg matrices and random righ-hand sides:
+// ./Saena ../data/81s4x8o1mu1.bin ../data/vectors/v81.bin
+// ./Saena ../data/289s8x16o1mu1.bin ../data/vectors/v289.bin
 
 #include <iostream>
-#include <algorithm>
-#include <fstream>
-#include <sys/stat.h>
-#include <vector>
-#include <omp.h>
-#include <dollar.hpp>
 #include "mpi.h"
 
+#include "grid.h"
+#include "saena.hpp"
+
+typedef unsigned int index_t;
+typedef unsigned long nnz_t;
+typedef double value_t;
+
+using namespace std;
 
 int main(int argc, char* argv[]){
 
@@ -24,444 +22,116 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    bool verbose = false;
-
-    if(argc != 2){
-        if(rank == 0){
-//            std::cout << "This is how to make a 3DLaplacian: ./Saena <x grid size> <y grid size> <z grid size>" << std::endl;
-            std::cout << "This is how to make a 3DLaplacian: ./Saena <grid size>" << std::endl;
+    if(argc != 3)
+    {
+        if(rank == 0)
+        {
+            cout << "Usage: ./Saena <MatrixA> <rhs>" << endl;
+            cout << "Matrix file should be in COO format with column-major order." << endl;
         }
         MPI_Finalize();
         return -1;
     }
 
-    // *************************** initialize the matrix: Laplacian ****************************
+    // *************************** initialize the matrix ****************************
 
-    double t1 = MPI_Wtime();
+    // there are two ways to create a matrix:
 
-    int mx(std::stoi(argv[1]));
-//    int my(std::stoi(argv[2]));
-//    int mz(std::stoi(argv[3]));
-    int my = mx;
-    int mz = mx;
+    // 1- read from file: pass as an argument in the command line
+    // example: ./Saena ../data/81s4x8o1mu1.bin
+    char* file_name(argv[1]);
+    saena::matrix A (comm);
+    A.read_file(file_name);
 
-    if(verbose){
-        MPI_Barrier(comm);
-        if(rank==0) printf("3D Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
-        MPI_Barrier(comm);
-    }
+    // 2- use the set functions
+//    saena::matrix A(comm); // comm: MPI_Communicator
+//    A.add_duplicates(true); // in case of duplicates add the values.
 
-    saena::matrix A(comm);
-    saena::laplacian3D(&A, mx, my, mz);
-//    saena::laplacian2D_old(&A, mx);
-//    saena::laplacian3D_old(&A, mx);
+    // 2-I) pass the entries one by one
+//    A.set(0, 0, 0.1);
+//    A.set(0, 1, 0.2);
+//    A.set(1, 0, 0.3);
+//    A.set(1, 1, 0.4);
 
-    // ********** print matrix and time **********
+    // 2-II) three vectors (or arrays) can be passed to the set functions
+    // I: row values of type unsinged
+    // J: column values of type unsinged
+    // V: entry values of type double
+//    std::vector<unsigned> I, J;
+//    std::vector<double> V;
+//    I = {0,0,1,1}; J = {0,1,0,1}; V = {0.1, 0.2, 0.3, 0.4};
+//    A.set(&I[0], &J[0], &V[0], I.size());
 
-    double t2 = MPI_Wtime();
-    if(verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-//    print_time(t1, t2, "Matrix Assemble:", comm);
+    // after setting the matrix entries, the assemble function should be called.
+    A.assemble();
 
+    // the print function can be used to print the matrix entries on a specific processor (pass the
+    // processor rank to the print function), or on all the processors (pass -1).
 //    A.print(0);
-//    A.get_internal_matrix()->print_info(0);
-//    A.get_internal_matrix()->writeMatrixToFile("writeMatrix");
 
-//    petsc_viewer(A.get_internal_matrix());
-//    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
+    // *************************** set rhs: read from file ****************************
 
-    // *************************** set rhs: Laplacian ****************************
+    // vector should have the following format:
+    // first line shows the value in row 0, second line shows the value in row 1, ...
+    // entries should be in double.
 
+    // set the size of rhs as the local number of rows on each process
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
-    saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
 
-    // ********** put rhs in saena::vector **********
+    char* Vname(argv[2]);
+//    saena::read_vector_file(rhs_std, A, Vname, comm);
+    read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
+
+    // set rhs_std
+//    A.get_internal_matrix()->matvec(v, rhs_std);
+//    rhs_std = v;
 
     index_t my_split;
     saena::find_split((index_t)rhs_std.size(), my_split, comm);
 
     saena::vector rhs(comm);
-    for(index_t i = 0; i < rhs_std.size(); i++){
-//        if(rank==0) printf("%u \t%d \t%u \t%e\n", i, split_vec[rank], i + split_vec[rank], rhs[i]);
-        rhs.set(i + my_split, rhs_std[i]);
-    }
+    rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-
-    // ********** print rhs **********
-
-//    rhs.print_entry(0);
-//    std::vector<double> rrr;
-//    rhs.get_vec(rrr);
-//    print_vector(rhs, -1, "rhs", comm);
 
     // *************************** set u0 ****************************
 
-    std::vector<double> u(num_local_row, 0);
+    // u is the initial guess. at the end, it will be the solution.
+    std::vector<double> u(num_local_row, 0); // initial guess = 0
 
     // *************************** AMG - Setup ****************************
+    // There are 3 ways to set options:
 
-    t1 = MPI_Wtime();
+    // 1- set them manually
+//    int vcycle_num            = 300;
+//    double relative_tolerance = 1e-8;
+//    std::string smoother      = "jacobi";
+//    int preSmooth             = 2;
+//    int postSmooth            = 2;
+//    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 
-//    int max_level             = 2; // this is moved to saena_object.
-    int vcycle_num            = 400;
-    double relative_tolerance = 1e-8;
-    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
-    int preSmooth             = 3;
-    int postSmooth            = 3;
-
-    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+    // 2- read the options from an xml file
 //    saena::options opts((char*)"options001.xml");
-//    saena::options opts;
+
+    // 3- use the default options
+    saena::options opts;
     saena::amg solver;
-    solver.set_verbose(verbose); // set verbose at the beginning of the main function.
-//    solver.set_multigrid_max_level(0); // 0 means only use direct solver, so no multigrid will be used.
-
-//    if(rank==0) printf("usage: ./Saena x_size y_size z_size sparse_epsilon \n");
-//    double sp_epsilon(std::atof(argv[4]));
-//    if(rank==0) printf("\nsp_epsilon = %f \n", sp_epsilon);
-//    solver.get_object()->sparse_epsilon = sp_epsilon;
-
-    // receive sparsifivation factor from input and set it.
-//    double sm_sz_prct(std::stof(argv[4]));
-//    if(rank==0) printf("sm_sz_prct = %f \n", sm_sz_prct);
-//    solver.set_sample_sz_percent(sm_sz_prct);
-
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
-    t2 = MPI_Wtime();
-    if(solver.verbose) print_time(t1, t2, "Setup:", comm);
-//    print_time(t1, t2, "Setup:", comm);
-
-//    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
-//    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
-
     // *************************** AMG - Solve ****************************
+    // solve the system Au = rhs
 
-    t1 = MPI_Wtime();
-
+    // solve the system using AMG as the solver
 //    solver.solve(u, &opts);
+
+    // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
     solver.solve_pcg(u, &opts);
-//    solver.solve_pGMRES(u, &opts);
 
-    t2 = MPI_Wtime();
-    if(solver.verbose) print_time(t1, t2, "Solve:", comm);
-    print_time(t1, t2, "Solve:", comm);
+    // *************************** Destroy ****************************
 
-//    print_vector(u, -1, "u", comm);
-
-    // *************************** matrix-matrix product ****************************
-/*
-    saena::amg solver;
-//    saena_object *obj1 = solver.get_object();
-    saena::matrix C(comm);
-    solver.matmat(&A, &A, &C);
-*/
-
-    // *************************** test for saena_vector ****************************
-/*
-    saena::vector v1(comm);
-    if(rank == 0){
-        v1.set(0, 0.2);
-        v1.set(1, 0.4);
-        v1.set(5, 0.7);
-        v1.set(6, 0.7);
-    }
-    if(rank == 1){
-        v1.set(2, 0.6);
-        v1.set(3, 0.1);
-        v1.set(4, 0.7);
-        v1.set(5, 0.7);
-        v1.set(6, 0.7);
-    }
-
-    v1.assemble();
-*/
-
-//    std::vector<double> v2;
-//    v1.get_vec(v2);
-//    print_vector(v2, -1, "v2", comm);
-
-//    std::vector<double> v3;
-//    rhs.return_vec(u, v3);
-//    print_vector(v3, -1, "v3", comm);
-
-    // *************************** experiment for compute_coarsen ****************************
-/*
-    {
-        saena_object *obj1 = solver.get_object();
-        Grid *g1 = &obj1->grids[0];
-
-        index_t row_thres;
-//        row_thres = g1->A->Mbig;
-//        row_thres = g1->P.Nbig;
-
-        obj1->mempool1 = new value_t[obj1->matmat_size_thre2];
-        obj1->mempool2 = new index_t[g1->A->Mbig * 4];
-
-        Grid g2;
-        g2.P = g1->P;
-        g2.R = g1->R;
-        saena_matrix B(comm);
-        g2.A = &B;
-
-        B.Mbig = g1->A->Mbig;
-        B.M = g1->A->M;
-        B.split = g1->A->split;
-        B.comm = g1->A->comm;
-
-        printf("row\tAP\tR(AP)\t\ttotal");
-        for(index_t j = 1; j < 20; j*=2){
-            row_thres = g1->A->Mbig / j;
-//            printf("\n=======================================\n\nrow_thres = %u \n", row_thres);
-            printf("\n%u\t", row_thres);
-
-            B.entry.clear();
-            for (int i = 0; i < g1->A->entry.size(); i++) {
-                if (g1->A->entry[i].row < row_thres) {
-                    B.entry.emplace_back(g1->A->entry[i]);
-                }
-            }
-            obj1->compute_coarsen_test(&g2);
-
-        }
-        printf("\n");
-
-        delete []obj1->mempool1;
-        delete []obj1->mempool2;
-
-    }
-*/
-
-/*
-    {
-        saena_object *obj1 = solver.get_object();
-        Grid *g1 = &obj1->grids[0];
-
-        index_t row_thres;
-//        row_thres = g1->A->Mbig;
-//        row_thres = g1->P.Nbig;
-
-        obj1->mempool1 = new value_t[obj1->matmat_size_thre2];
-        obj1->mempool2 = new index_t[g1->A->Mbig * 4];
-
-//        Grid g2;
-//        g2.P = g1->P;
-//        g2.R = g1->R;
-//        saena_matrix B(comm);
-//        g2.A = &B;
-//
-//        B.Mbig = g1->A->Mbig;
-//        B.M = g1->A->M;
-//        B.split = g1->A->split;
-//        B.comm = g1->A->comm;
-
-        std::vector<cooEntry_row> RAP_row_sorted;
-
-        int matmat_times = 1;
-        MPI_Barrier(comm);
-        double t11 = MPI_Wtime();
-
-        for(index_t j = 0; j < matmat_times; j++){
-//            obj1->compute_coarsen_test(g1);
-            obj1->triple_mat_mult_basic(g1, RAP_row_sorted);
-        }
-
-        double t22 = MPI_Wtime();
-//        print_time_ave(t22-t11, "triple_mat_mult_test: ", grid->A->comm);
-        printf("\naverage coarsen time for %d times: \n%f \n\n", matmat_times, (t22 - t11) / matmat_times);
-
-        delete []obj1->mempool1;
-        delete []obj1->mempool2;
-
-    }
-*/
-    // *************************** CombBLAS ****************************
-
-//    combblas_matmult_DoubleBuff();
-//    int combblas_matmult_Synch();
-//    int combblas_GalerkinNew();
-
-    // *************************** check correctness of the solution ****************************
-
-    // A is scaled. read it from the file and don't scale.
-/*
-    saena::matrix AA (file_name, comm);
-    AA.assemble_no_scale();
-    saena_matrix *AAA = AA.get_internal_matrix();
-    std::vector<double> Au(num_local_row, 0);
-    std::vector<double> sol = u;
-    AAA->matvec(sol, Au);
-
-    bool bool_correct = true;
-    if(rank==0){
-        printf("\nChecking the correctness of the Saena solution by Saena itself:\n");
-        printf("Au \t\trhs \t\tAu-rhs \n");
-        for(index_t i = 0; i < num_local_row; i++){
-            if(fabs(Au[i] - rhs[i]) > 1e-10){
-                bool_correct = false;
-                printf("%.10f \t%.10f \t%.10f \n", Au[i], rhs[i], Au[i] - rhs[i]);
-            }
-        }
-        if(bool_correct)
-            printf("\n******* The solution was correct! *******\n\n");
-        else
-            printf("\n******* The solution was NOT correct! *******\n\n");
-    }
-*/
-
-    // *************************** matvec on different coarse levels of a matrix ****************************
-/*
-    int matvec_iter = 300;
-    int time_num = 4;
-    std::vector<double> time_e1(time_num, 0); // array for timing matvec
-    std::vector<std::vector<double>> time_total; // array for keeping all levels timings
-//    double average1, average2, average3;
-
-    saena_object* amg = solver.get_object();
-    saena_matrix *B;
-    int levels = amg->max_level;
-
-    // warm-up
-    // -------
-    B = amg->grids[0].A;
-    num_local_row = B->M;
-    rhs.resize(num_local_row);
-    u.resize(num_local_row);
-    time_e1.assign(time_e1.size(), 0);
-    for (int i = 0; i < 50; i++) {
-        B->matvec_timing1(rhs, u, time_e1);
-        rhs.swap(u);
-    }
-
-//    if (rank == 0) std::cout << "\nlocal loop, remote loop and communication (including <<set vSend>>) times of matvec"
-//                                " are being printed for different levels of the multigrid hierarchy:" << std::endl;
-
-    if (rank == 0) printf("\n#####################################\n\n");
-    for(int l = 0; l < levels+1; l++) {
-        if (rank == 0) printf("start level %d of %d \n", l, levels);
-
-        if (amg->grids[l].active) {
-            B = amg->grids[l].A;
-            num_local_row = B->M;
-//            printf("level = %d, num_local_row = %d \n", l, num_local_row);
-            rhs.resize(num_local_row);
-            u.resize(num_local_row);
-//            if (rank == 0) printf("level %d of %d step1! \n", l, levels);
-
-            // *************************** matvec1 ****************************
-
-            generate_rhs_old(rhs);
-            u.assign(num_local_row, 0);
-            time_e1.assign(time_e1.size(), 0);
-//            printf("rank %d: level %d of %d step3! \n", rank, l, levels);
-
-            MPI_Barrier(B->comm);
-//            t1 = omp_get_wtime();
-            for (int i = 0; i < matvec_iter; i++) {
-                B->matvec_timing1(rhs, u, time_e1);
-                rhs.swap(u);
-            }
-//            t2 = omp_get_wtime();
-
-//        average1 = print_time(t1/double(matvec_iter), t2/double(matvec_iter), "matvec1:", comm);
-//        if (rank==0) printf("_________________________________\n\n");
-//        if (rank==0) printf("local matvec level %d of %d \n", l, levels);
-//        if (rank==0) std::cout << time_e1[1]/(matvec_iter) << std::endl;
-
-//            if (rank == 0) {
-//              std::cout << "\n1- Saena matvec total time:\n" << (time_e1[0]+time_e1[3])/(matvec_iter) << std::endl;
-//              std::cout << std::endl << "matvec1:" << std::endl;
-//                std::cout << time_e1[1] / matvec_iter << std::endl; // local loop
-//                std::cout << time_e1[2] / matvec_iter << std::endl; // remote loop
-//                std::cout << ( time_e1[0] + time_e1[3] - time_e1[1] - time_e1[2]) / matvec_iter << std::endl; // communication including "set vSend"
-//            }
-
-        }
-        time_total.push_back(time_e1);
-    }
-
-    // *************************** print time results ****************************
-
-    // print on output
-    if(rank==0){
-        std::cout << "\ntime results:\n" << std::endl;
-        std::cout << "level \tlocal \t\tremote \t\tcomm \t\ttotal" << std::endl;
-        for(int i = 0; i < time_total.size(); i++)
-            std::cout << i << "\t"
-                      << time_total[i][1]/matvec_iter << "\t"
-                      << time_total[i][2]/matvec_iter << "\t"
-                      << (time_total[i][0] + time_total[i][3] - time_total[i][1] - time_total[i][2])/matvec_iter << "\t"
-                      << (time_total[i][0] + time_total[i][3])/matvec_iter << std::endl;
-    }
-*/
-/*
-    // wrtie to file
-    if(rank==0){
-
-        if(rank==0) {
-            std::string input_filename_ext = argv[1];
-            size_t extIndex = input_filename_ext.find_last_of(".");
-            std::string file_name = "./shrink_";
-            file_name += input_filename_ext.substr(0, extIndex);
-            file_name += ".txt";
-            std::ofstream outFile(file_name);
-
-            outFile << "average time for " << matvec_iter << " matvec iterations" << std::endl;
-            outFile << "matrix name   = " << argv[1] << "\nprocessors    = " << nprocs << std::endl;
-#pragma omp parallel
-            if (rank == 0 && omp_get_thread_num() == 0)
-                outFile << "OpenMP thread = " << omp_get_num_threads() << std::endl;
-
-            outFile << "\ntime results:\n" << std::endl;
-            outFile << "level \tlocal \tremote \tcomm" << std::endl;
-            for (int i = 0; i < time_total.size(); i++)
-                outFile << i << "\t"
-                          << time_total[i][1] / matvec_iter << "\t"
-                          << time_total[i][2] / matvec_iter << "\t"
-                          << (time_total[i][0] + time_total[i][3] - time_total[i][1] - time_total[i][2]) / matvec_iter
-                          << std::endl;
-
-            outFile.close();
-        }
-    }
-*/
-
-    // *************************** test for lazy update functions ****************************
-/*
-    saena_matrix* A_saena = A.get_internal_matrix();
-    std::vector<index_t> rown(A.get_local_nnz());
-    std::vector<index_t> coln(A.get_local_nnz());
-    std::vector<value_t> valn(A.get_local_nnz());
-    for(nnz_t i = 0; i < A.get_local_nnz(); i++){
-        rown[i] = A_saena->entry[i].row;
-        coln[i] = A_saena->entry[i].col;
-        valn[i] = 2 * A_saena->entry[i].val;
-//        valn[i] = 0.33;
-//        if(i<50 && rank==1) printf("%f \t%f \n", A_saena->entry[i].val, valn[i]);
-    }
-
-    saena::matrix A_new(comm);
-    A_new.set(&rown[0], &coln[0], &valn[0], rown.size());
-    A_new.assemble();
-//    A_new.assemble_no_scale();
-//    solver.update1(&A_new);
-
-//    solver.get_object()->matrix_diff(*solver.get_object()->grids[0].A, *A_new.get_internal_matrix());
-
-    if(rank==0){
-        for(nnz_t i = 0; i < 50; i++){
-//            std::cout << A.get_internal_matrix()->entry[i] << "\t" << A_new.get_internal_matrix()->entry[i] << std::endl;
-            std::cout << A_saena->entry[i] << "\t" << A_new.get_internal_matrix()->entry[i] << std::endl;
-        }
-    }
-*/
-    // *************************** finalize ****************************
-
-//    if(rank==0) dollar::text(std::cout);
-
-//    A.destroy();
-//    solver.destroy();
+    A.destroy();
+    solver.destroy();
     MPI_Finalize();
     return 0;
 }
