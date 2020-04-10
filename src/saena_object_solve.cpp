@@ -1974,7 +1974,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 #endif
 
-    int     m        = A->Mbig; // todo: decide when to restart.
+    int     m        = 100; // todo: decide when to restart. default: A->Mbig
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
@@ -2019,9 +2019,6 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // *************************
 
-    //    Vector *v = new Vector[m+1];
-    std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
-
 //    double normb = norm(M.solve(rhs));
     double normb = pnorm(grids[0].rhs, comm); // todo: this is different from the above line
 
@@ -2050,9 +2047,15 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // initialize the Hessenberg matrix H
     // **********************************
-    saena_matrix_dense H(m, m, comm); // todo: passed Mbig instead of Nbig.
+
+    // TODO: From the following paper:
+    // A Flexible Inner-Outer Preconditoned GMRES Algorithm:
+    // Algorithm 2.1: initialize H(m+1, m) to 0.
+    // but here H was of size m x m. Changed row size to m+1.
+
+    saena_matrix_dense H(m + 1, m, comm); // todo: passed Mbig instead of Nbig.
 //    #pragma omp parallel for // todo: set default
-    for(i = 0; i < m; i++){
+    for(i = 0; i < m + 1; i++){
         std::fill(&H.entry[i][0], &H.entry[i][m], 0);
 //        for(j = 0; j < A->Mbig; j++) {
 //            H.set(i, j, 0);
@@ -2060,6 +2063,9 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 
     // **********************************
+
+//    Vector *v = new Vector[m+1];
+    std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
 
     double tmp_scalar1 = 0, tmp_scalar2 = 0;
     std::vector<double> s(m + 1), cs(m + 1), sn(m + 1), w(size), temp(size);
@@ -2083,7 +2089,7 @@ int saena_object::pGMRES(std::vector<double> &u){
 
         // this for loop is used to restart after m steps
         // **********************************************
-        for (i = 0; i < m && j <= max_iter; i++, j++) {
+        for (i = 0; i < m && j <= max_iter; ++i, ++j) {
 
 #ifdef __DEBUG1__
             if (verbose_solve) {
@@ -2106,7 +2112,7 @@ int saena_object::pGMRES(std::vector<double> &u){
             }
 #endif
 
-            for (k = 0; k <= i; k++) {
+            for (k = 0; k <= i; ++k) {
                 // compute H(k, i) = dot(w, v[k]);
                 dotProduct(w, v[k], &H.entry[k][i], comm);
 
@@ -2146,7 +2152,7 @@ int saena_object::pGMRES(std::vector<double> &u){
             }
 #endif
 
-            for (k = 0; k < i; k++) {
+            for (k = 0; k < i; ++k) {
                 ApplyPlaneRotation(H.entry[k][i], H.entry[k + 1][i], cs[k], sn[k]);
             }
 
