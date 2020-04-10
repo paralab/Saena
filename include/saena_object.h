@@ -456,7 +456,6 @@ public:
 	inline bool ismember(int a, std::vector<int> arr);
 	inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
 	inline std::vector< std::vector<double> > eighth_order(int order);
-	inline int get_nnz(std::vector< std::vector<double> > P);
 };
 
 #endif //SAENA_SAENA_OBJECT_H
