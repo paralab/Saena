@@ -121,6 +121,10 @@ int saena::matrix::set(index_t i, index_t j, unsigned int* di, unsigned int* dj,
 }
 
 
+void saena::matrix::set_p_order(int _p_order){
+    m_pImpl->set_p_order(_p_order);
+}
+
 int saena::matrix::assemble() {
     m_pImpl->assemble();
     return 0;

@@ -238,30 +238,8 @@ int saena_object::coarsen(Grid *grid){
 //    }
 
 //    grid->A->print_info(-1);
+    double t1, t2;
 #endif
-
-    // **************************** find_aggregation ****************************
-
-#ifdef __DEBUG1__
-    double t1 = omp_get_wtime();
-#endif
-
-    std::vector<unsigned long> aggregate(grid->A->M);
-    find_aggregation(grid->A, aggregate, grid->P.splitNew);
-
-#ifdef __DEBUG1__
-    double t2 = omp_get_wtime();
-    if(verbose_level_setup) print_time(t1, t2, "Aggregation: level "+std::to_string(grid->currentLevel), grid->A->comm);
-
-//    MPI_Barrier(grid->A->comm); printf("rank %d: here after find_aggregation!!! \n", rank); MPI_Barrier(grid->A->comm);
-//    print_vector(aggregate, -1, "aggregate", grid->A->comm);
-//    write_agg(aggregate, "agg1", grid->currentLevel, grid->A->comm);
-#endif
-
-    // **************************** changeAggregation ****************************
-
-    // use this to read aggregation from file and replace the aggregation_2_dist computed here.
-//    changeAggregation(grid->A, aggregate, grid->P.splitNew, grid->A->comm);
 
     // **************************** create_prolongation ****************************
 
@@ -269,7 +247,7 @@ int saena_object::coarsen(Grid *grid){
     t1 = omp_get_wtime();
 #endif
 
-    create_prolongation(grid->A, aggregate, &grid->P);
+    create_prolongation(grid);
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
@@ -310,7 +288,6 @@ int saena_object::coarsen(Grid *grid){
 #endif
 
     compute_coarsen(grid);
-//    compute_coarsen_old(grid);
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
@@ -343,6 +320,18 @@ int saena_object::coarsen(Grid *grid){
 //    petsc_check_matmatmat(&grid->R, grid->A, &grid->P, &grid->Ac);
 
 //    map_matmat.clear();
+
+    return 0;
+}
+
+
+int saena_object::create_prolongation(Grid *grid) {
+
+    if(grid->A->p_order == 1){
+        SA(grid);
+    }else{
+        pcoarsen(grid);
+    }
 
     return 0;
 }

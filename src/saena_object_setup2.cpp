@@ -9,7 +9,6 @@
 #include "dollar.hpp"
 #include "superlu_ddefs.h"
 
-//#include <spp.h> //sparsepp
 //#include "petsc_functions.h"
 
 #include <cstdio>

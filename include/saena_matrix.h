@@ -63,6 +63,8 @@ public:
     nnz_t   nnz_max = 0; // biggest nnz on all the processors
     index_t M_max   = 0; // biggest M on all the processors
 
+    int p_order = 1;
+
     std::set<cooEntry_row> data_coo;
     std::vector<cooEntry>  entry;
     std::vector<cooEntry>  entry_temp; // is used for updating the matrix
@@ -225,6 +227,8 @@ public:
     int set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);
 //    int set3(unsigned int row, unsigned int col, double val);
 //    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
+
+    void set_p_order(int _p_order);
 
     int assemble();
     int assemble_no_scale();

@@ -2,15 +2,12 @@
 #include "saena_matrix.h"
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
-#include "restrict_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
 #include "parUtils.h"
+#include "superlu_defs.h"
 #include "dollar.hpp"
-#include "superlu_ddefs.h"
-#include <superlu_defs.h>
 
-#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -20,7 +17,7 @@
 #include <mpi.h>
 
 
-int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){
+int saena_object::SA(Grid *grid){
     // formula for the prolongation matrix from Irad Yavneh's paper:
     // P = (I - 4/(3*rhoDA) * DA) * P_t
 
@@ -32,12 +29,42 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     // todo: think about smoothing preconditioners other than damped jacobi. check the following paper:
     // todo: Eran Treister and Irad Yavneh, Non-Galerkin Multigrid based on Sparsified Smoothed Aggregation. page22.
 
+    saena_matrix   *A = grid->A;
+    prolong_matrix *P = &grid->P;
+
 //    MPI_Comm_dup(A->comm, &P->comm);
     P->comm = A->comm;
     MPI_Comm comm = A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    // **************************** find_aggregation ****************************
+
+#ifdef __DEBUG1__
+    double t1, t2;
+    t1 = omp_get_wtime();
+#endif
+
+    std::vector<unsigned long> aggregate(grid->A->M);
+    find_aggregation(grid->A, aggregate, grid->P.splitNew);
+
+#ifdef __DEBUG1__
+    t2 = omp_get_wtime();
+    if(verbose_level_setup) print_time(t1, t2, "Aggregation: level "+std::to_string(grid->currentLevel), grid->A->comm);
+
+//    MPI_Barrier(grid->A->comm); printf("rank %d: here after find_aggregation!!! \n", rank); MPI_Barrier(grid->A->comm);
+//    print_vector(aggregate, -1, "aggregate", grid->A->comm);
+//    write_agg(aggregate, "agg1", grid->currentLevel, grid->A->comm);
+#endif
+
+    // **************************** changeAggregation ****************************
+
+    // use this to read aggregation from file and replace the aggregation_2_dist computed here.
+//    changeAggregation(grid->A, aggregate, grid->P.splitNew, grid->A->comm);
+
+    // **************************** compute P ****************************
+
 //    unsigned int i, j;
     float omega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
 

@@ -1,15 +1,17 @@
-#include <saena_object.h>
+#include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
-#include "restrict_matrix.h"
+//#include "restrict_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
+
 #include <vector>
 #include <cmath>
 #include <stdio.h>
 
 using namespace std;
+
 // Assume the mesh info is the connectivity
 // using a 2d vector for now
 int saena_object::pcoarsen(Grid *grid){
@@ -18,6 +20,7 @@ int saena_object::pcoarsen(Grid *grid){
     prolong_matrix  *P  = &grid->P;
     //restrict_matrix *R  = &grid->R;
     //saena_matrix    *Ac = &grid->Ac;
+
     // A parameters:
     // A.entry[i]: to access entry i of A, which is local to this processor.
     //             each entry is in COO format: i, j, val
@@ -34,14 +37,14 @@ int saena_object::pcoarsen(Grid *grid){
 	// P.Nbig: the colume size of P
 	// P->entry[i] = cooEntry(i, j, val);
 
-    //MPI_Comm comm = A->comm;
-    //int nprocs, rank;
-    //MPI_Comm_size(comm, &nprocs);
-    //MPI_Comm_rank(comm, &rank);
+//    MPI_Comm comm = A->comm;
+//    int nprocs, rank;
+//    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_rank(comm, &rank);
 
-	int order = 2;
+	int order    = A->p_order;
 	int a_elemno = 4;
-	int prodim = 2;
+	int prodim   = 2;
 	vector< vector<int> > map = connect(order, a_elemno, prodim);
 
 	/*int row = map.size();
@@ -59,11 +62,12 @@ int saena_object::pcoarsen(Grid *grid){
 	set_PR_from_p(order, a_elemno, map, prodim, Pp);//, Rp);
 
 	P->split = A->split;
-	P->comm = A->comm;
-	P->Mbig = Pp.size();
-	P->M = P->Mbig;	
-	P->Nbig = Pp[0].size();
+	P->comm  = A->comm;
+	P->Mbig  = Pp.size();
+	P->M     = P->Mbig;
+	P->Nbig  = Pp[0].size();
 	int iter = 0;
+
 	P->entry.clear();
     for(int i=0;i<Pp.size();i++)
 	{
@@ -76,8 +80,10 @@ int saena_object::pcoarsen(Grid *grid){
 			}
     	}
 	}
-	P->nnz_g = iter;
+
 	P->nnz_l = iter;
+    P->nnz_g = iter;
+
 	/*int row = Pp.size();
 	int col = Pp[0].size();
 	cout << "row: " << row << ", and col: " << col << "\n";
@@ -95,7 +101,6 @@ int saena_object::pcoarsen(Grid *grid){
 	}
 	fclose(filename);*/
 
-	
     return 0;
 }
 

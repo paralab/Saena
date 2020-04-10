@@ -35,6 +35,8 @@ namespace saena {
         int set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, value_t* val); // set contiguous block
         int set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local); // set generic block
 
+        void set_p_order(int _p_order);
+
         bool add_dup = true; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
 
