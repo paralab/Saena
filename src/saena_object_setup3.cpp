@@ -12,10 +12,10 @@
 using namespace std;
 // Assume the mesh info is the connectivity
 // using a 2d vector for now
-int saena_object::pcoarsen(/*Grid *grid*/){
+int saena_object::pcoarsen(Grid *grid){
 
-    //saena_matrix    *A  = grid->A;
-    //prolong_matrix  *P  = &grid->P;
+    saena_matrix    *A  = grid->A;
+    prolong_matrix  *P  = &grid->P;
     //restrict_matrix *R  = &grid->R;
     //saena_matrix    *Ac = &grid->Ac;
     // A parameters:
@@ -31,13 +31,15 @@ int saena_object::pcoarsen(/*Grid *grid*/){
     // A.Mbig: the row size of the whole matrix.
     // A.print_info: print information of A, which are nnz_l, nnz_g, M, Mbig.
     // A.print_entry: print entries of A.
+	// P.Nbig: the colume size of P
+	// P->entry[i] = cooEntry(i, j, val);
 
     //MPI_Comm comm = A->comm;
     //int nprocs, rank;
     //MPI_Comm_size(comm, &nprocs);
     //MPI_Comm_rank(comm, &rank);
 
-	int order = 8;
+	int order = 2;
 	int a_elemno = 4;
 	int prodim = 2;
 	vector< vector<int> > map = connect(order, a_elemno, prodim);
@@ -53,10 +55,30 @@ int saena_object::pcoarsen(/*Grid *grid*/){
 		cout << "\n";
 	}*/
 
-	vector< vector<double> > Pp, Rp;
-	set_PR_from_p(order, a_elemno, map, prodim, Pp, Rp);
-	
-	int row = Pp.size();
+	vector< vector<double> > Pp;//, Rp;
+	set_PR_from_p(order, a_elemno, map, prodim, Pp);//, Rp);
+
+	P->split = A->split;
+	P->comm = A->comm;
+	P->Mbig = Pp.size();
+	P->M = P->Mbig;	
+	P->Nbig = Pp[0].size();
+	int iter = 0;
+	P->entry.clear();
+    for(int i=0;i<Pp.size();i++)
+	{
+    	for(int j=0;j<Pp[0].size();j++)
+		{
+			if (fabs(Pp[i][j]) > 1e-12)
+			{
+        		P->entry.push_back(cooEntry(i, j, Pp[i][j]));
+        		iter++;
+			}
+    	}
+	}
+	P->nnz_g = iter;
+	P->nnz_l = iter;
+	/*int row = Pp.size();
 	int col = Pp[0].size();
 	cout << "row: " << row << ", and col: " << col << "\n";
 	FILE *filename;
@@ -71,7 +93,9 @@ int saena_object::pcoarsen(/*Grid *grid*/){
 		//cout << "\n";
 		fprintf(filename, "\n");
 	}
-	fclose(filename);
+	fclose(filename);*/
+
+	
     return 0;
 }
 
@@ -91,7 +115,7 @@ vector<int> saena_object::next_p_level(vector<int> ind_fine, int order)
     return indices;
 }
 
-void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > map, int prodim, vector< vector<double> > &Pp, vector< vector<double> > &Rp)
+void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > map, int prodim, vector< vector<double> > &Pp)//, vector< vector<double> > &Rp)
 {
     int nodeno_fine = pow(a_elemno*order+1, prodim);
     int nodeno_coarse = pow(a_elemno*(order/2)+1, prodim);

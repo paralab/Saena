@@ -236,8 +236,8 @@ public:
 
     int setup(saena_matrix* A);
     int coarsen(Grid *grid);
-    //int pcoarsen(Grid *grid);
-    int pcoarsen();
+    int pcoarsen(Grid *grid);
+    //int pcoarsen();
     int compute_coarsen(Grid *grid);
 //    int compute_coarsen_old(Grid *grid);
 //    int compute_coarsen_old2(Grid *grid);
@@ -448,7 +448,7 @@ public:
     }
 
     std::vector<int> next_p_level(std::vector<int> ind_fine, int order);
-    void set_PR_from_p(int order, int a_elemno, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp, std::vector< std::vector<double> > &Rp);
+    void set_PR_from_p(int order, int a_elemno, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp);//, std::vector< std::vector<double> > &Rp);
     std::vector<double> get_interpolation(int ind, int order, int prodim);
     std::vector<int> coarse_p_node_arr(std::vector< std::vector<int> > map, int order);
     inline int findloc(std::vector<int> arr, int a);
@@ -456,6 +456,7 @@ public:
 	inline bool ismember(int a, std::vector<int> arr);
 	inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
 	inline std::vector< std::vector<double> > eighth_order(int order);
+	inline int get_nnz(std::vector< std::vector<double> > P);
 };
 
 #endif //SAENA_SAENA_OBJECT_H

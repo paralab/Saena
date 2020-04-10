@@ -23,9 +23,10 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-   	saena_object so;
+   	/*saena_object so;
 	so.pcoarsen();
-	exit(0); 
+	exit(0); */
+
     if(argc != 3){
         if(rank == 0) {
             std::cout << "Usage: ./Saena <MatrixA> <rhs>" << std::endl;
