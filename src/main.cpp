@@ -41,7 +41,8 @@ int main(int argc, char* argv[]){
     // example: ./Saena ../data/81s4x8o1mu1.bin
     char* file_name(argv[1]);
     saena::matrix A (comm);
-    A.read_file(file_name);
+//    A.read_file(file_name);
+    A.read_file(file_name, "triangle");
 
     // 2- use the set functions
 //    saena::matrix A(comm); // comm: MPI_Communicator
@@ -127,6 +128,10 @@ int main(int argc, char* argv[]){
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
     solver.solve_pcg(u, &opts);
+
+    // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
+//    fill(u.begin(), u.end(), 0);
+//    solver.solve_pGMRES(u, &opts);
 
     // *************************** Destroy ****************************
 
