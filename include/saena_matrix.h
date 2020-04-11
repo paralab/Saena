@@ -99,8 +99,7 @@ public:
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
-    std::vector<unsigned long> vSendULong;
-    std::vector<unsigned long> vecValuesULong;
+
 //    send_zfp::array1<double> vSend_zfp;
 //    send_zfp::array1<double> vecValues_zfp;
 

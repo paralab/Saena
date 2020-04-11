@@ -16,10 +16,9 @@ using namespace std;
 // using a 2d vector for now
 int saena_object::pcoarsen(Grid *grid){
 
-    saena_matrix    *A  = grid->A;
-    prolong_matrix  *P  = &grid->P;
-    //restrict_matrix *R  = &grid->R;
-    saena_matrix    *Ac = &grid->Ac;
+    saena_matrix   *A  = grid->A;
+    prolong_matrix *P  = &grid->P;
+    saena_matrix   *Ac = &grid->Ac;
     Ac->set_p_order(A->p_order / 2);
 
     // A parameters:
@@ -38,10 +37,10 @@ int saena_object::pcoarsen(Grid *grid){
 	// P.Nbig: the colume size of P
 	// P->entry[i] = cooEntry(i, j, val);
 
-//    MPI_Comm comm = A->comm;
-//    int nprocs, rank;
-//    MPI_Comm_size(comm, &nprocs);
-//    MPI_Comm_rank(comm, &rank);
+    MPI_Comm comm = A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
 	int order    = A->p_order;
 	int a_elemno = 4;
@@ -62,28 +61,35 @@ int saena_object::pcoarsen(Grid *grid){
 	vector< vector<double> > Pp;//, Rp;
 	set_PR_from_p(order, a_elemno, map, prodim, Pp);//, Rp);
 
-	P->split = A->split;
-	P->comm  = A->comm;
+    P->comm  = A->comm;
+    P->split = A->split;
 	P->Mbig  = Pp.size();
 	P->M     = P->Mbig;
 	P->Nbig  = Pp[0].size();
 	int iter = 0;
 
-	P->entry.clear();
+	//TODO: change for parallel
+    P->splitNew.resize(nprocs+1);
+    P->splitNew[0] = 0;
+    P->splitNew[nprocs] = P->Mbig;
+
+    P->entry.clear();
     for(int i=0;i<Pp.size();i++)
 	{
     	for(int j=0;j<Pp[0].size();j++)
 		{
 			if (fabs(Pp[i][j]) > 1e-12)
 			{
-        		P->entry.push_back(cooEntry(i, j, Pp[i][j]));
+        		P->entry.emplace_back(cooEntry(i, j, Pp[i][j]));
         		iter++;
 			}
     	}
 	}
 
 	P->nnz_l = iter;
-    P->nnz_g = iter;
+    MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, P->comm);
+
+    P->findLocalRemote();
 
 	/*int row = Pp.size();
 	int col = Pp[0].size();

@@ -871,9 +871,6 @@ int saena_matrix::set_off_on_diagonal(){
             vSend.resize(vIndexSize);
             vecValues.resize(recvSize);
 
-            vSendULong.resize(vIndexSize);
-            vecValuesULong.resize(recvSize);
-
 //            printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
 //               rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);
 

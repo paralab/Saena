@@ -19,18 +19,7 @@ prolong_matrix::prolong_matrix(MPI_Comm com){
 }
 
 
-prolong_matrix::~prolong_matrix(){
-//    if(arrays_defined){
-//        free(vIndex);
-//        free(vSend);
-//        free(vecValues);
-//        free(indicesP_local);
-//        free(indicesP_remote);
-//        free(vSend_t);
-//        free(vecValues_t);
-//       free(recvIndex_t); // recvIndex_t is equivalent of vIndex.
-//    }
-}
+prolong_matrix::~prolong_matrix() = default;
 
 
 int prolong_matrix::findLocalRemote(){
@@ -38,10 +27,8 @@ int prolong_matrix::findLocalRemote(){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-    arrays_defined = true;
 
 //    printf("rank=%d \t P.nnz_l=%lu \t P.nnz_g=%lu \n", rank, nnz_l, nnz_g);
-
 //    print_vector(entry, -1, "entry", comm);
 
     long procNum;
@@ -66,10 +53,8 @@ int prolong_matrix::findLocalRemote(){
 
     std::vector<int> vIndexCount_t(nprocs, 0);
 
-    //todo: here: change emplace_back
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
-    // local
-    if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) {
+    if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) { // local
         nnzPerRow_local[entry[0].row]++;
         nnz_l_local++;
         entry_local.emplace_back(entry[0]);
@@ -78,9 +63,7 @@ int prolong_matrix::findLocalRemote(){
 //        values_local.emplace_back(entry[0].val);
         //vElement_local.emplace_back(col[0]);
         vElementRep_local.emplace_back(1);
-
-    // remote
-    } else{
+    } else { // remote
         nnz_l_remote++;
         entry_remote.emplace_back(entry[0]);
 //        row_remote.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
