@@ -266,7 +266,32 @@ int saena_object::coarsen(Grid *grid){
     t1 = omp_get_wtime();
 #endif
 
-    grid->R.transposeP(&grid->P);
+//    grid->R.transposeP(&grid->P);
+
+    grid->R.entry.clear();
+    for (int i=0; i<grid->P.entry.size(); i++){
+        grid->R.entry.emplace_back(grid->P.entry[i].col, grid->P.entry[i].row, grid->P.entry[i].val);
+    }
+
+    grid->R.comm     = grid->P.comm;
+    grid->R.Mbig     = grid->P.Nbig;
+    grid->R.Nbig     = grid->P.Mbig;
+    grid->R.split    = grid->P.split;
+    grid->R.splitNew = grid->P.splitNew;
+
+    grid->R.nnz_l = grid->R.entry.size();
+    grid->R.nnz_g = grid->R.nnz_l;
+
+    // set the number of rows for each process
+    grid->R.M = grid->R.splitNew[rank+1] - grid->R.splitNew[rank];
+
+    // this is used in triple_mat_mult
+    grid->R.M_max = 0;
+    for(index_t i = 0; i < nprocs; i++){
+        if(grid->R.splitNew[i+1] - grid->R.splitNew[i] > grid->R.M_max){
+            grid->R.M_max = grid->R.splitNew[i+1] - grid->R.splitNew[i];
+        }
+    }
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();

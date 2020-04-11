@@ -19,7 +19,8 @@ int saena_object::pcoarsen(Grid *grid){
     saena_matrix    *A  = grid->A;
     prolong_matrix  *P  = &grid->P;
     //restrict_matrix *R  = &grid->R;
-    //saena_matrix    *Ac = &grid->Ac;
+    saena_matrix    *Ac = &grid->Ac;
+    Ac->set_p_order(A->p_order / 2);
 
     // A parameters:
     // A.entry[i]: to access entry i of A, which is local to this processor.
