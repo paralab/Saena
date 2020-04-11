@@ -256,8 +256,8 @@ int saena_object::coarsen(Grid *grid){
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after create_prolongation!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->P.split, 0, "grid->P.split", grid->A->comm);
 //    print_vector(grid->P.splitNew, 0, "grid->P.splitNew", grid->A->comm);
-//    grid->P.print_info(-1);
-//    grid->P.print_entry(-1);
+    grid->P.print_info(-1);
+    grid->P.print_entry(-1);
 #endif
 
     // **************************** restriction ****************************
@@ -275,8 +275,8 @@ int saena_object::coarsen(Grid *grid){
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after transposeP!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->R.entry_local, -1, "grid->R.entry_local", grid->A->comm);
 //    print_vector(grid->R.entry_remote, -1, "grid->R.entry_remote", grid->A->comm);
-//    grid->R.print_info(-1);
-//    grid->R.print_entry(-1);
+    grid->R.print_info(-1);
+    grid->R.print_entry(-1);
 #endif
 
     // **************************** compute_coarsen ****************************
