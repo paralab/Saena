@@ -68,9 +68,9 @@ int saena_object::SA(Grid *grid){
 //    unsigned int i, j;
     float omega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
 
+    P->M    = A->M;
     P->Mbig = A->Mbig;
     P->Nbig = P->splitNew[nprocs]; // This is the number of aggregates, which is the number of columns of P.
-    P->M = A->M;
 
     // store remote elements from aggregate in vSend to be sent to other processes.
     // todo: is it ok to use vSend instead of vSendULong? vSend is double and vSendULong is unsigned long.
