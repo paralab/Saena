@@ -44,7 +44,7 @@ int main(int argc, char* argv[]){
     A.read_file(file_name);
 
     // set the p_order of the input matrix A.
-    int p_order = 1;
+    int p_order = 2;
     A.set_p_order(p_order);
 
     // 2- use the set functions
