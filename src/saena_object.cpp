@@ -275,8 +275,8 @@ int saena_object::coarsen(Grid *grid){
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after transposeP!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->R.entry_local, -1, "grid->R.entry_local", grid->A->comm);
 //    print_vector(grid->R.entry_remote, -1, "grid->R.entry_remote", grid->A->comm);
-    grid->R.print_info(-1);
-    grid->R.print_entry(-1);
+//    grid->R.print_info(-1);
+//    grid->R.print_entry(-1);
 #endif
 
     // **************************** compute_coarsen ****************************
@@ -304,8 +304,8 @@ int saena_object::coarsen(Grid *grid){
 
 //    int rank1;
 //    MPI_Comm_rank(grid->A->comm, &rank1);
-    printf("Mbig = %u, M = %u, nnz_l = %lu, nnz_g = %lu \n", grid->Ac.Mbig, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
-    print_vector(grid->Ac.entry, 0, "grid->Ac.entry", grid->Ac.comm);
+//    printf("Mbig = %u, M = %u, nnz_l = %lu, nnz_g = %lu \n", grid->Ac.Mbig, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
+//    print_vector(grid->Ac.entry, 0, "grid->Ac.entry", grid->Ac.comm);
 #endif
 
     // **************************** compute_coarsen in PETSc ****************************

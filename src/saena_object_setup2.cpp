@@ -410,7 +410,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 
 #ifdef __DEBUG1__
     for(nnz_t i = 0; i < R->nnz_l; i++){
-        std::cout << i << "\t" << R->entry[i] << std::endl;
+//        std::cout << i << "\t" << R->entry[i] << std::endl;
         assert( (R->entry[i].row >= 0) && (R->entry[i].row < R->M) );
         assert( (R->entry[i].col >= 0) && (R->entry[i].col < R->Nbig) );
         ASSERT( fabs(R->entry[i].val) > ALMOST_ZERO, i << R->entry[i] );
@@ -480,7 +480,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     for(nnz_t i = 0; i < A->nnz_l; i++){
         assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
         assert( (A->entry[i].col >= 0) && (A->entry[i].col < A->Mbig) );
-        assert( fabs(A->entry[i].val) > ALMOST_ZERO );
+//        ASSERT( fabs(A->entry[i].val) > ALMOST_ZERO, i << A->entry[i] );
     }
 #endif
 
