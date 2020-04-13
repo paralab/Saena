@@ -235,30 +235,21 @@ public:
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
 
     int setup(saena_matrix* A);
-    int SA(Grid *grid);
     int coarsen(Grid *grid);
+    int SA(Grid *grid);
     int pcoarsen(Grid *grid);
-    //int pcoarsen();
     int compute_coarsen(Grid *grid);
-//    int compute_coarsen_old(Grid *grid);
-//    int compute_coarsen_old2(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
-//    int triple_mat_mult(Grid *grid);
-//    int triple_mat_mult_old2(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int compute_coarsen_update_Ac_old(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid);
-//    int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-//    int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-//    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-//    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    int matmat_grid(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false, bool B_trans = true);
     int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
-//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
     int matmat_memory_alloc(CSCMat &Acsc, CSCMat &Bcsc);
     int matmat_memory_free();
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+
+    int matmat_grid(Grid *grid);
+//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
 //    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 
 //    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
@@ -271,19 +262,6 @@ public:
 //    int triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
     void fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C, MPI_Comm comm);
-
-//    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
-//                 index_t *Br, value_t *Bv, index_t *Bc_scan,
-//                 mat_info *A_info, mat_info *B_info,
-//                 std::vector<cooEntry> &C, MPI_Comm comm);
-
-//    void fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                       nnz_t A_nnz, nnz_t B_nnz,
-//                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                       index_t B_col_size, index_t B_col_offset,
-//                       const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                       const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-//                       MPI_Comm comm);
 
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
