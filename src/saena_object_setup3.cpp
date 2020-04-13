@@ -43,7 +43,7 @@ int saena_object::pcoarsen(Grid *grid){
     MPI_Comm_rank(comm, &rank);
 
 	int order    = A->p_order;
-	int a_elemno = 4;
+	int a_elemno = 16;
 	int prodim   = 2;
 	vector< vector<int> > map = connect(order, a_elemno, prodim);
 
@@ -61,6 +61,23 @@ int saena_object::pcoarsen(Grid *grid){
 	vector< vector<double> > Pp;//, Rp;
 	set_PR_from_p(order, a_elemno, map, prodim, Pp);//, Rp);
 
+/*	int row = Pp.size();
+	int col = Pp[0].size();
+	cout << "row: " << row << ", and col: " << col << "\n";
+	FILE *filename;
+	filename = fopen("P.txt", "w");
+	for (int i=0; i<row; i++)
+	{
+		for (int j=0; j<col; j++)
+		{
+			//cout << Pp[i][j] << " ";
+			fprintf(filename, "%.12f ", Pp[i][j]);
+		}
+		//cout << "\n";
+		fprintf(filename, "\n");
+	}
+	fclose(filename);
+*/
     P->comm  = A->comm;
     P->split = A->split;
 	P->Mbig  = Pp.size();
@@ -91,22 +108,6 @@ int saena_object::pcoarsen(Grid *grid){
 
     P->findLocalRemote();
 
-	/*int row = Pp.size();
-	int col = Pp[0].size();
-	cout << "row: " << row << ", and col: " << col << "\n";
-	FILE *filename;
-	filename = fopen("P.txt", "w");
-	for (int i=0; i<row; i++)
-	{
-		for (int j=0; j<col; j++)
-		{
-			//cout << Pp[i][j] << " ";
-			fprintf(filename, "%.12f ", Pp[i][j]);
-		}
-		//cout << "\n";
-		fprintf(filename, "\n");
-	}
-	fclose(filename);*/
 
     return 0;
 }

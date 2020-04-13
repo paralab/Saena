@@ -87,6 +87,15 @@ int main(int argc, char* argv[]){
 //    saena::read_vector_file(rhs_std, A, Vname, comm);
     read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
 
+	FILE *filename1;
+	filename1 = fopen("rhs_std.txt", "w");
+	for (int i=0; i<rhs_std.size(); i++)
+	{
+		
+		fprintf(filename1, "%.12f\n", rhs_std[i]);
+	}
+	
+	fclose(filename1);
     // set rhs_std
 //    A.get_internal_matrix()->matvec(v, rhs_std);
 //    rhs_std = v;
@@ -127,11 +136,22 @@ int main(int argc, char* argv[]){
     // solve the system Au = rhs
 
     // solve the system using AMG as the solver
-//    solver.solve(u, &opts);
+    //solver.solve(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-    solver.solve_pcg(u, &opts);
+    //solver.solve_pcg(u, &opts);
+    solver.solve_pGMRES(u, &opts);
 
+	// print u for visualization
+	FILE *filename;
+	filename = fopen("u.txt", "w");
+	for (int i=0; i<u.size(); i++)
+	{
+		
+		fprintf(filename, "%.12f\n", u[i]);
+	}
+	
+	fclose(filename);
     // *************************** Destroy ****************************
 
     A.destroy();
