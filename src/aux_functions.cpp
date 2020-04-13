@@ -377,7 +377,7 @@ int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_C
     double* vp = &(*(v.begin()));
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A->split[rank] * 8; // value(double=8)
+    offset = A->split[rank] * sizeof(double);
     MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
 
 //    int count;
