@@ -608,16 +608,6 @@ int saena::amg::solve_pcg_update3(std::vector<value_t>& u, saena::options* opts)
 */
 
 
-void saena::amg::save_to_file(char* name, unsigned long* agg){
-
-}
-
-
-unsigned long* saena::amg::load_from_file(char* name){
-    return nullptr;
-}
-
-
 void saena::amg::destroy(){
     // will add later.
 }

@@ -183,9 +183,6 @@ namespace saena {
 //        int solve_pcg_update2(std::vector<value_t>& u, saena::options* opts);
 //        int solve_pcg_update3(std::vector<value_t>& u, saena::options* opts);
 
-        void save_to_file(char* name, unsigned long* agg); // to save aggregates to a file.
-        unsigned long* load_from_file(char* name); // to load aggregates from a file.
-
         void destroy();
 
         bool verbose = false;
