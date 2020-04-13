@@ -1,10 +1,7 @@
 #ifndef SAENA_SAENA_OBJECT_H
 #define SAENA_SAENA_OBJECT_H
 
-//#include <spp.h> //sparsepp
 #include "superlu_ddefs.h"
-//#include "superlu_defs.h"
-
 #include "aux_functions.h"
 #include "saena_vector.h"
 #include "saena_matrix_dense.h"
@@ -77,10 +74,10 @@ public:
     // matmat
     // *****************
 
-    std::string          coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const int            matmat_thre1 = 100000000;  // split until (A_row * B_col < matmat_thre1)
-    index_t              matmat_thre2 = 0;          // split until (B.col_sz < matmat_thre2). It will be set as ceil(sqrt(matmat_thre1))
-    static const index_t matmat_thre3 = 40;         // split until (case2_iter + case3_iter == matmat_thre3)
+    std::string          coarsen_method  = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
+    const int            matmat_thre1    = 100000000;  // split until (A_row * B_col < matmat_thre1)
+    index_t              matmat_thre2    = 0;          // split until (B.col_sz < matmat_thre2). It will be set as ceil(sqrt(matmat_thre1))
+    static const index_t matmat_thre3    = 40;         // split until (case2_iter + case3_iter == matmat_thre3)
     const index_t        matmat_nnz_thre = 200;     //default 200
 
 //    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
@@ -113,13 +110,6 @@ public:
 
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
     double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
-
-//    std::unordered_map<index_t, value_t> map_matmat;
-//    spp::sparse_hash_map<index_t, value_t> map_matmat;
-//    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
-//    std::unique_ptr<index_t[]> mempool2;
-//    std::unique_ptr<value_t[]> mempool3;
-
 
     // *****************
     // shrink
