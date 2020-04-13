@@ -78,6 +78,7 @@ int saena_object::pcoarsen(Grid *grid){
 	}
 	fclose(filename);
 */
+
     P->comm  = A->comm;
     P->split = A->split;
 	P->Mbig  = Pp.size();
@@ -87,7 +88,7 @@ int saena_object::pcoarsen(Grid *grid){
 
 	//TODO: change for parallel
     P->splitNew.resize(nprocs+1);
-    P->splitNew[0] = 0;
+    P->splitNew[0]      = 0;
     P->splitNew[nprocs] = P->Mbig;
 
     P->entry.clear();
@@ -103,11 +104,12 @@ int saena_object::pcoarsen(Grid *grid){
     	}
 	}
 
+    std::sort(P->entry.begin(), P->entry.end());
+
 	P->nnz_l = iter;
     MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, P->comm);
 
     P->findLocalRemote();
-
 
     return 0;
 }
