@@ -8,6 +8,7 @@
 #include <vector>
 #include <cmath>
 #include <mpi.h>
+#include <fstream>
 
 
 class strength_matrix;
@@ -250,10 +251,6 @@ int print_array(const T &v, const nnz_t sz, const int ran, const std::string &na
 }
 
 
-int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm);
-
-int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm);
-
 int write_agg(std::vector<unsigned long>& v, std::string name, int level, MPI_Comm comm);
 
 
@@ -289,5 +286,42 @@ public:
         return num + arr_num;
     }
 };
+
+
+int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm);
+
+template <class T>
+int write_to_file_vec(std::vector<T>& v, const std::string &name, MPI_Comm comm) {
+
+    // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
+    // Then, concatenate them in terminal: cat name0.txt name1.txt > output.txt
+    // The file will be saved in the same folder as the executive file.
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    std::string outFileNameTxt = "./";
+    outFileNameTxt += name;
+    outFileNameTxt += std::to_string(rank);
+    outFileNameTxt += ".txt";
+
+    std::ofstream outFileTxt(outFileNameTxt);
+
+    // write the size
+    if (!rank){
+        outFileTxt << v.size() << std::endl;
+    }
+
+    // write the vector values
+    for (auto i:v) {
+        outFileTxt << i << std::endl;
+    }
+
+    outFileTxt.clear();
+    outFileTxt.close();
+
+    return 0;
+}
+
 
 #endif //SAENA_AUXFUNCTIONS_H

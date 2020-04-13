@@ -1,9 +1,8 @@
-#include <aux_functions.h>
+#include "aux_functions.h"
 #include "saena_matrix.h"
 
 #include <iostream>
 #include <random>
-#include <fstream>
 #include <cmath>
 #include <sys/stat.h>
 #include <iomanip>
@@ -188,35 +187,7 @@ double average_iter(index_t iter, MPI_Comm comm){
 }
 
 
-//template <class T>
-int write_vector_file_d(std::vector<value_t>& v, index_t vSize, std::string name, MPI_Comm comm) {
 
-    // Create txt files with name name0.txt for processor 0, name1.txt for processor 1, etc.
-    // Then, concatenate them in terminal: cat name0.txt name1.txt > V.txt
-
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    std::ofstream outFileTxt;
-    std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
-    outFileNameTxt += name;
-    outFileNameTxt += std::to_string(rank);
-    outFileNameTxt += ".txt";
-    outFileTxt.open(outFileNameTxt);
-
-    if (rank == 0)
-        outFileTxt << vSize << std::endl;
-    for (long i = 0; i < v.size(); i++) {
-//        std::cout       << R->entry[i].row + 1 + R->splitNew[rank] << "\t" << R->entry[i].col + 1 << "\t" << R->entry[i].val << std::endl;
-        outFileTxt << v[i] << std::endl;
-    }
-
-    outFileTxt.clear();
-    outFileTxt.close();
-
-    return 0;
-}
 
 int write_agg(std::vector<unsigned long>& v, std::string name, int level, MPI_Comm comm) {
 
@@ -338,7 +309,7 @@ int generate_rhs_old(std::vector<value_t>& rhs){
 }
 
 
-int read_vector_file(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
+int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
