@@ -27,7 +27,7 @@ int main(int argc, char* argv[]){
         if(rank == 0)
         {
             cout << "Usage: ./Saena <MatrixA> <rhs>" << endl;
-            cout << "Matrix file should be in COO format with column-major order." << endl;
+            cout << "Matrix file should be in COO format in column-major order." << endl;
         }
         MPI_Finalize();
         return -1;
@@ -137,17 +137,6 @@ int main(int argc, char* argv[]){
     solver.solve_pGMRES(u, &opts);
 
     write_to_file_vec(u, "solution", comm);
-
-	// print u for visualization
-/*
-	FILE *filename;
-	filename = fopen("u.txt", "w");
-	for (int i=0; i<u.size(); i++)
-	{
-		fprintf(filename, "%.12f\n", u[i]);
-	}
-	fclose(filename);
-*/
 
     // *************************** Destroy ****************************
 
