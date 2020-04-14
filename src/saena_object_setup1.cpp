@@ -84,18 +84,22 @@ int saena_object::SA(Grid *grid){
     auto requests = new MPI_Request[A->numSendProc+A->numRecvProc];
     auto statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
 
-    for(index_t i = 0; i < A->numRecvProc; ++i)
-        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &(requests[i]));
+    int flag;
+    for(index_t i = 0; i < A->numRecvProc; ++i){
+        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &flag, &statuses[i]);
+    }
 
-    for(index_t i = 0; i < A->numSendProc; ++i)
-        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
+    for(index_t i = 0; i < A->numSendProc; ++i){
+        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &requests[A->numRecvProc+i]);
+        MPI_Test(&requests[A->numRecvProc+i], &flag, &statuses[A->numRecvProc+i]);
+    }
 
     std::vector<cooEntry> PEntryTemp;
 
     // P = (I - 4/(3*rhoDA) * DA) * P_t
     // aggreagte is used as P_t in the following "for" loop.
     // local
-    // -----
     long iter = 0;
     for (index_t i = 0; i < A->M; ++i) {
         for (index_t j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
@@ -133,11 +137,15 @@ int saena_object::SA(Grid *grid){
 #endif
 
     // remove duplicates.
+    cooEntry tmp(0, 0, 0);
     for(index_t i = 0; i < PEntryTemp.size(); ++i){
-        P->entry.emplace_back(PEntryTemp[i]);
+        tmp = PEntryTemp[i];
         while(i<PEntryTemp.size()-1 && PEntryTemp[i] == PEntryTemp[i+1]){ // values of entries with the same row and col should be added.
-            P->entry.back().val += PEntryTemp[i+1].val;
-            ++i;
+            tmp.val += PEntryTemp[i++].val;
+        }
+
+        if(tmp.val > ALMOST_ZERO){
+            P->entry.emplace_back(tmp);
         }
     }
 
