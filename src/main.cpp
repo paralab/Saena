@@ -86,7 +86,7 @@ int main(int argc, char* argv[]){
     char* Vname(argv[2]);
     read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
 
-    write_to_file_vec(rhs_std, "rhs_std", comm);
+//    write_to_file_vec(rhs_std, "rhs_std", comm);
 
     // set rhs_std
 //    A.get_internal_matrix()->matvec(v, rhs_std);
@@ -128,15 +128,47 @@ int main(int argc, char* argv[]){
     // solve the system Au = rhs
 
     // solve the system using AMG as the solver
-    //solver.solve(u, &opts);
+//    solver.solve(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-    //solver.solve_pcg(u, &opts);
+    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
     solver.solve_pGMRES(u, &opts);
 
-    write_to_file_vec(u, "solution", comm);
+    // *************************** print or write the solution ****************************
+
+//    print_vector(u, -1, "solution", comm);
+//    write_to_file_vec(u, "solution", comm);
+
+    // *************************** check correctness of the solution ****************************
+
+    // A is scaled. read it from the file and don't scale.
+
+    saena::matrix AA (comm);
+    AA.read_file(file_name);
+    AA.assemble_no_scale();
+
+    saena_matrix *AAA = AA.get_internal_matrix();
+    std::vector<double> Au(num_local_row, 0);
+    std::vector<double> sol = u;
+    AAA->matvec(sol, Au);
+
+    bool bool_correct = true;
+    if(rank==0){
+        printf("\nChecking the correctness of the Saena solution by Saena itself:\n");
+        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
+        for(index_t i = 0; i < num_local_row; i++){
+            if(fabs(Au[i] - rhs_std[i]) > 1e-12){
+                bool_correct = false;
+//                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
+            }
+        }
+        if(bool_correct)
+            printf("\n******* The solution was correct! *******\n\n");
+        else
+            printf("\n******* The solution was NOT correct! *******\n\n");
+    }
 
     // *************************** Destroy ****************************
 
