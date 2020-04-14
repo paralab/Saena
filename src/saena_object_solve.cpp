@@ -1912,7 +1912,7 @@ void saena_object::GMRES_update(std::vector<double> &x, index_t k, saena_matrix_
     // x_i = x_0 + y_1 * v_1 + ... + y_i * v_i
     // ******************
 
-    //    std::cout << __func__ << std::endl;
+//    std::cout << __func__ << std::endl;
 
     // todo: optimize y. it is being created and allocated each time this function is being called.
     std::vector<double> y = s;
@@ -1970,7 +1970,6 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     saena_matrix *A = grids[0].A; // todo: double-check
 
-//    MPI_Comm comm = MPI_COMM_WORLD; //todo
     MPI_Comm comm = A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1984,7 +1983,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 #endif
 
-    int     m        = A->Mbig; // todo: decide when to restart.
+    int     m        = 100;
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
@@ -2027,7 +2026,7 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // *************************
 
-    //    Vector *v = new Vector[m+1];
+//    Vector *v = new Vector[m+1];
     std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
 
 //    double normb = norm(M.solve(rhs));
