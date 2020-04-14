@@ -1990,8 +1990,8 @@ int saena_object::pGMRES(std::vector<double> &u){
     int     max_iter = solver_max_iter;
 //    double  *rhs     = &grids[0].rhs[0];
 
-    double  resid, beta;
-    long i, j, k;
+    double resid, beta;
+    long   i, j, k;
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2003,8 +2003,6 @@ int saena_object::pGMRES(std::vector<double> &u){
 #endif
 
     // ************** setup SuperLU **************
-
-    saena_matrix *A_coarsest = &grids.back().Ac;
 
     if(A_coarsest->active) {
         setup_SuperLU();
