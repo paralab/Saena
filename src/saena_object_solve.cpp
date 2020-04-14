@@ -1440,6 +1440,14 @@ int saena_object::solve(std::vector<value_t>& u){
 
     u.assign(grids[0].A->M, 0);
 
+    // ************** setup SuperLU **************
+
+//    saena_matrix *A_coarsest = &grids.back().Ac;
+
+    if(A_coarsest->active) {
+        setup_SuperLU();
+    }
+
     // ************** solve **************
 
 //    double temp;
@@ -1454,13 +1462,9 @@ int saena_object::solve(std::vector<value_t>& u){
     if(rank==0) printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
 
     // if max_level==0, it means only direct solver is being used.
-    if(max_level == 0)
+    if(max_level == 0 && rank==0){
         printf("\nonly using the direct solver! \n");
-
-//    if(rank==0){
-//        printf("Vcycle #: \tabsolute residual\n");
-//        printf("-----------------------------\n");
-//    }
+    }
 
     int i;
     for(i=0; i < solver_max_iter; i++){
@@ -1487,6 +1491,12 @@ int saena_object::solve(std::vector<value_t>& u){
     }
 
 //    print_vector(u, -1, "u", comm);
+
+    // ************** destroy data from SuperLU **************
+
+    if(A_coarsest->active) {
+        destroy_SuperLU();
+    }
 
     // ************** scale u **************
 
