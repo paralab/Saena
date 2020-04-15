@@ -123,6 +123,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
+    solver.set_multigrid_max_level(0);
     solver.set_matrix(&A, &opts);
 
 //    solver.set_rhs(rhs);
@@ -133,14 +134,12 @@ int main(int argc, char* argv[]){
 
     // solve the system using AMG as the solver
     std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
-    solver.set_multigrid_max_level(0);
     solver.solve(u_direct, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
-    solver.set_multigrid_max_level(1);
     solver.solve_pGMRES(u, &opts);
 
     // *************************** print or write the solution ****************************
