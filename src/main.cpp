@@ -47,7 +47,7 @@ int main(int argc, char* argv[]){
     A.read_file(file_name);
 
     // set the p_order of the input matrix A.
-    int p_order = 2;
+    int p_order = 1;
     A.set_p_order(p_order);
 
     // 2- use the set functions
@@ -126,22 +126,23 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(2);
+    solver.set_multigrid_max_level(1);
+    solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
-    solver.set_rhs(rhs, scale);
+    solver.set_rhs(rhs);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
     // solve the system using AMG as the solver
 //    std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
-//    solver.solve(u_direct, &opts, scale);
+//    solver.solve(u_direct, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-//    solver.solve_pcg(u, &opts, scale);
+//    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
-    solver.solve_pGMRES(u, &opts, scale);
+    solver.solve_pGMRES(u, &opts);
 
     // *************************** print or write the solution ****************************
 

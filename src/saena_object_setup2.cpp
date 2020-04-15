@@ -333,7 +333,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 #endif
 
         if (Ac->active) {
-            Ac->matrix_setup();
+            Ac->matrix_setup(scale);
 //            Ac->matrix_setup_no_scale();
 
             if (Ac->shrinked && Ac->enable_dummy_matvec)

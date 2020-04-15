@@ -1417,7 +1417,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 }
 
 
-int saena_object::solve(std::vector<value_t>& u, bool scale /*= true*/){
+int saena_object::solve(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
@@ -1519,7 +1519,7 @@ int saena_object::solve(std::vector<value_t>& u, bool scale /*= true*/){
 }
 
 
-int saena_object::solve_pcg(std::vector<value_t>& u, bool scale /*= true*/){
+int saena_object::solve_pcg(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
     int nprocs, rank;
@@ -1977,7 +1977,7 @@ void saena_object::ApplyPlaneRotation(double &dx, double &dy, const double &cs, 
 //template < class Operator, class Preconditioner, class Matrix>
 //int GMRES(std::vector<double> &u, std::vector<double> &rhs,
 //                        const Preconditioner &M, Matrix &H, int &m, int &max_iter, double &tol){
-int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
+int saena_object::pGMRES(std::vector<double> &u){
     // GMRES proconditioned with AMG
     // M is the preconditioner.
 

@@ -156,16 +156,6 @@ int saena::matrix::assemble_writeToFile(const char *folder_name){
 
 int saena::matrix::assemble_band_matrix(){
     m_pImpl->matrix_setup();
-
-//    if(!m_pImpl->assembled){
-//        m_pImpl->repartition();
-//        m_pImpl->matrix_setup();
-//    }else{
-//        m_pImpl->setup_initial_data2();
-//        m_pImpl->repartition2();
-//        m_pImpl->matrix_setup2();
-//    }
-
     return 0;
 }
 
@@ -470,8 +460,8 @@ int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
 //    return 0;
 //}
 
-int saena::amg::set_rhs(saena::vector &rhs, bool scale /*= true*/){
-    m_pImpl->set_repartition_rhs(rhs.get_internal_vector(), scale);
+int saena::amg::set_rhs(saena::vector &rhs){
+    m_pImpl->set_repartition_rhs(rhs.get_internal_vector());
     return 0;
 }
 
@@ -526,20 +516,20 @@ MPI_Comm saena::amg::get_orig_comm(){
 }
 
 
-int saena::amg::solve(std::vector<value_t>& u, saena::options* opts, bool scale /*= true*/){
+int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
-    m_pImpl->solve(u, scale);
+    m_pImpl->solve(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
     return 0;
 }
 
 
-int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts, bool scale /*= true*/){
+int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
-    m_pImpl->solve_pcg(u, scale);
+    m_pImpl->solve_pcg(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
 //    print_vector(u, -1, "u", g->rhs_orig->comm);
@@ -547,10 +537,10 @@ int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts, bool sc
 }
 
 
-int saena::amg::solve_pGMRES(std::vector<value_t>& u, saena::options* opts, bool scale /*= true*/){
+int saena::amg::solve_pGMRES(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
-    m_pImpl->pGMRES(u, scale);
+    m_pImpl->pGMRES(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
 //    print_vector(u, -1, "u", g->rhs_orig->comm);
@@ -617,6 +607,12 @@ int saena::amg::set_verbose(bool verb) {
 
 int saena::amg::set_multigrid_max_level(int max){
     m_pImpl->max_level = max;
+    return 0;
+}
+
+
+int saena::amg::set_scale(bool sc){
+    m_pImpl->scale = sc;
     return 0;
 }
 

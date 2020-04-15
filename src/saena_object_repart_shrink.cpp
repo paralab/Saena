@@ -160,7 +160,7 @@ int saena_object::set_repartition_rhs(std::vector<value_t> rhs0){
 }
 */
 
-int saena_object::set_repartition_rhs(saena_vector *rhs1, bool scale /*= true*/){
+int saena_object::set_repartition_rhs(saena_vector *rhs1){
 
     MPI_Comm comm = grids[0].A->comm;
     int rank, nprocs;

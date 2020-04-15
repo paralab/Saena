@@ -1633,7 +1633,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
     }
 #endif
 
-    C->matrix_setup();
+    C->matrix_setup(scale);
 
 #ifdef __DEBUG1__
     if(verbose_matmat_assemble){

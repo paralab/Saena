@@ -68,6 +68,8 @@ public:
     bool adaptive_coarsening = false;
 //    bool shrink_cpu          = true;
 
+    bool scale = true;
+
     saena_matrix *A_coarsest = nullptr;
 
     // *****************
@@ -260,7 +262,7 @@ public:
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(Grid *gird);
 
-    int set_repartition_rhs(saena_vector *rhs, bool scale = true);
+    int set_repartition_rhs(saena_vector *rhs);
 
     // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
     // then, repartition_back_u() at the end of the solve function to convert the solution to the initial partition.
@@ -303,8 +305,8 @@ public:
     // solve functions
     // **********************************************
 
-    int solve(std::vector<value_t>& u, bool scale = true);
-    int solve_pcg(std::vector<value_t>& u, bool scale = true);
+    int solve(std::vector<value_t>& u);
+    int solve_pcg(std::vector<value_t>& u);
     int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
 
@@ -312,7 +314,7 @@ public:
     // GMRES functions
     // *****************
 
-    int  pGMRES(std::vector<double> &u, bool scale = true);
+    int  pGMRES(std::vector<double> &u);
     void GMRES_update(std::vector<double> &x, index_t k, saena_matrix_dense &h, std::vector<double> &s, std::vector<std::vector<double>> &v);
     void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
     void ApplyPlaneRotation(double &dx, double &dy, const double &cs, const double &sn);

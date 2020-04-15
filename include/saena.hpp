@@ -152,7 +152,7 @@ namespace saena {
         ~amg();
         int set_matrix(saena::matrix* A, saena::options* opts);
 //        int set_rhs(std::vector<value_t> rhs); // note: this function copies the rhs.
-        int set_rhs(saena::vector &rhs, bool scale = true); // note: this function copies the rhs.
+        int set_rhs(saena::vector &rhs); // note: this function copies the rhs.
 
         saena_object* get_object();
         int set_shrink_levels(std::vector<bool> sh_lev_vec);
@@ -166,14 +166,14 @@ namespace saena {
 
         // before calling solve function, vector "u" is the initial guess.
         // After calling solve, it will be the solution.
-        int solve(std::vector<value_t>& u, saena::options* opts, bool scale = true);
-        int solve_pcg(std::vector<value_t>& u, saena::options* opts, bool scale = true);
+        int solve(std::vector<value_t>& u, saena::options* opts);
+        int solve_pcg(std::vector<value_t>& u, saena::options* opts);
         // if solver is made based of a matrix, let's call it A, and there is an updated version of A, let's call it B,
         // and one wants to solve B*x = rhs instead of A*x = rhs, then solve_pcg_update can be used and B can be passed as the third argument.
 //        int solve_pcg_update(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update, but updates the LHS with A_new.
 
-        int solve_pGMRES(std::vector<value_t>& u, saena::options* opts, bool scale = true);
+        int solve_pGMRES(std::vector<value_t>& u, saena::options* opts);
 
         int update1(saena::matrix* A_ne); // only update the finest level A, which is the input matrix.
         int update2(saena::matrix* A_ne); // updates grids[i].A for all levels, using the previously made grids[i].P and R.
@@ -190,6 +190,8 @@ namespace saena {
         int matrix_diff(saena::matrix &A, saena::matrix &B);
 
         int set_multigrid_max_level(int max); // 0 means only use direct solver, so no multigrid will be used.
+
+        int set_scale(bool sc); // 0 means only use direct solver, so no multigrid will be used.
 
         int set_sample_sz_percent(double s_sz_prcnt);
 

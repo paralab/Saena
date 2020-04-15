@@ -135,6 +135,8 @@ public:
     bool active = false;
     bool active_old_comm = false; // this is used for prolong and post-smooth
 
+    bool scale = true;
+
     bool enable_shrink = false;  // default = true
     bool do_shrink     = false; // default = false
     bool shrinked      = false; // default = false. if shrinking happens for the matrix, set this to true.
