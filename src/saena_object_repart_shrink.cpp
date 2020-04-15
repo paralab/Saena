@@ -160,7 +160,7 @@ int saena_object::set_repartition_rhs(std::vector<value_t> rhs0){
 }
 */
 
-int saena_object::set_repartition_rhs(saena_vector *rhs1){
+int saena_object::set_repartition_rhs(saena_vector *rhs1, bool scale /*= true*/){
 
     MPI_Comm comm = grids[0].A->comm;
     int rank, nprocs;
@@ -301,154 +301,9 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 
     // scale rhs
     // ---------
-    scale_vector(grids[0].rhs, grids[0].A->inv_sq_diag);
-
-    return 0;
-}
-
-
-int saena_object::set_repartition_rhs_no_scale(saena_vector *rhs1){
-
-    MPI_Comm comm = grids[0].A->comm;
-    int rank, nprocs;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &nprocs);
-
-    // ************** set variables **************
-
-    grids[0].rhs_orig = rhs1; // use this for returning solution to the original order, based on the input rhs.
-//    rhs1->split = &grids[0].A->split[0];
-    rhs1->split = grids[0].A->split;
-    std::vector<double> rhs0;
-    rhs1->get_vec(rhs0);
-
-//    print_vector(grids[0].A->split, 0, "split", comm);
-//    print_vector(rhs0, -1, "rhs0", comm);
-
-    // ************** check rhs size **************
-
-    index_t rhs_size_local = (index_t)rhs0.size(), rhs_size_total;
-    MPI_Allreduce(&rhs_size_local, &rhs_size_total, 1, MPI_UNSIGNED, MPI_SUM, comm);
-    if(grids[0].A->Mbig != rhs_size_total){
-        if(rank==0) printf("Error: size of LHS (=%u) and RHS (=%u) are not equal!\n", grids[0].A->Mbig,rhs_size_total);
-        MPI_Finalize();
-        return -1;
+    if(scale){
+        scale_vector(grids[0].rhs, grids[0].A->inv_sq_diag);
     }
-
-    // ************** repartition rhs, based on A.split **************
-
-    std::vector<index_t> rhs_init_partition(nprocs);
-    rhs_init_partition[rank] = (index_t)rhs0.size();
-    auto temp = (index_t)rhs0.size();
-
-    MPI_Allgather(&temp, 1, MPI_UNSIGNED, &*rhs_init_partition.begin(), 1, MPI_UNSIGNED, comm);
-//    MPI_Alltoall(&*grids[0].rhs_init_partition.begin(), 1, MPI_INT, &*grids[0].rhs_init_partition.begin(), 1, MPI_INT, grids[0].comm);
-
-//    print_vector(rhs_init_partition, 1, "rhs_init_partition", comm);
-
-    std::vector<index_t> init_partition_scan(nprocs+1);
-    init_partition_scan[0] = 0;
-    for(int i = 1; i < nprocs+1; i++)
-        init_partition_scan[i] = init_partition_scan[i-1] + rhs_init_partition[i-1];
-
-//    print_vector(init_partition_scan, 1, "init_partition_scan", comm);
-
-    index_t start, end, start_proc, end_proc;
-    start = grids[0].A->split[rank];
-    end   = grids[0].A->split[rank+1];
-    start_proc = lower_bound2(&*init_partition_scan.begin(), &*init_partition_scan.end(), start);
-    end_proc   = lower_bound2(&*init_partition_scan.begin(), &*init_partition_scan.end(), end);
-    if(init_partition_scan[rank+1] == grids[0].A->split[rank+1])
-        end_proc--;
-//    if(rank == 1) printf("\nstart_proc = %u, end_proc = %u \n", start_proc, end_proc);
-
-    grids[0].rcount.assign(nprocs, 0);
-    if(start_proc < end_proc){
-//        if(rank==1) printf("start_proc = %u, end_proc = %u\n", start_proc, end_proc);
-//        if(rank==1) printf("init_partition_scan[start_proc+1] = %u, grids[0].A->split[rank] = %u\n", init_partition_scan[start_proc+1], grids[0].A->split[rank]);
-        grids[0].rcount[start_proc] = init_partition_scan[start_proc+1] - grids[0].A->split[rank];
-        grids[0].rcount[end_proc] = grids[0].A->split[rank+1] - init_partition_scan[end_proc];
-
-        for(int i = start_proc+1; i < end_proc; i++){
-//            if(rank==ran) printf("init_partition_scan[i+1] = %lu, init_partition_scan[i] = %lu\n", init_partition_scan[i+1], init_partition_scan[i]);
-            grids[0].rcount[i] = init_partition_scan[i+1] - init_partition_scan[i];
-        }
-    }else if(start_proc == end_proc){
-//        grids[0].rcount[start_proc] = grids[0].A->split[start_proc + 1] - grids[0].A->split[start_proc];
-        grids[0].rcount[start_proc] = grids[0].A->split[rank + 1] - grids[0].A->split[rank];
-    }else{
-        printf("error in set_repartition_rhs function: start_proc > end_proc\n");
-        MPI_Finalize();
-        return -1;
-    }
-
-//    print_vector(grids[0].rcount, -1, "grids[0].rcount", comm);
-
-    start = init_partition_scan[rank];
-    end   = init_partition_scan[rank+1];
-    start_proc = lower_bound2(&*grids[0].A->split.begin(), &*grids[0].A->split.end(), start);
-    end_proc   = lower_bound2(&*grids[0].A->split.begin(), &*grids[0].A->split.end(), end);
-    if(init_partition_scan[rank+1] == grids[0].A->split[rank+1])
-        end_proc--;
-//    if(rank == ran) printf("\nstart_proc = %lu, end_proc = %lu \n", start_proc, end_proc);
-
-    grids[0].scount.assign(nprocs, 0);
-    if(end_proc > start_proc){
-//        if(rank==1) printf("start_proc = %u, end_proc = %u\n", start_proc, end_proc);
-//        if(rank==1) printf("init_partition_scan[rank+1] = %u, grids[0].A->split[end_proc] = %u\n", init_partition_scan[rank+1], grids[0].A->split[end_proc]);
-        grids[0].scount[start_proc] = grids[0].A->split[start_proc+1] - init_partition_scan[rank];
-        grids[0].scount[end_proc] = init_partition_scan[rank+1] - grids[0].A->split[end_proc];
-
-        for(int i = start_proc+1; i < end_proc; i++){
-            grids[0].scount[i] = grids[0].A->split[i+1] - grids[0].A->split[i];
-        }
-    } else if(start_proc == end_proc)
-        grids[0].scount[start_proc] = init_partition_scan[rank+1] - init_partition_scan[rank];
-    else{
-        printf("error in set_repartition_rhs function: start_proc > end_proc\n");
-        MPI_Finalize();
-        return -1;
-    }
-
-//    print_vector(grids[0].scount, -1, "grids[0].scount", comm);
-
-//    std::vector<int> rdispls(nprocs);
-    grids[0].rdispls.resize(nprocs);
-    grids[0].rdispls[0] = 0;
-    for(int i = 1; i < nprocs; i++)
-        grids[0].rdispls[i] = grids[0].rcount[i-1] + grids[0].rdispls[i-1];
-
-//    print_vector(grids[0].rdispls, -1, "grids[0].rdispls", comm);
-
-//    std::vector<int> sdispls(nprocs);
-    grids[0].sdispls.resize(nprocs);
-    grids[0].sdispls[0] = 0;
-    for(int i = 1; i < nprocs; i++)
-        grids[0].sdispls[i] = grids[0].sdispls[i-1] + grids[0].scount[i-1];
-
-//    print_vector(grids[0].sdispls, -1, "grids[0].sdispls", comm);
-
-    // check if repartition is required. it is not required if the number of rows on all processors does not change.
-    bool repartition_local = true;
-    if(start_proc == end_proc)
-        repartition_local = false;
-    MPI_Allreduce(&repartition_local, &repartition, 1, MPI_CXX_BOOL, MPI_LOR, comm);
-//    printf("rank = %d, repartition_local = %d, repartition = %d \n", rank, repartition_local, repartition);
-
-    // todo: replace Alltoall with a for loop of send and recv.
-    if(repartition){
-        grids[0].rhs.resize(grids[0].A->split[rank+1] - grids[0].A->split[rank]);
-        MPI_Alltoallv(&rhs0[0],         &grids[0].scount[0], &grids[0].sdispls[0], MPI_DOUBLE,
-                      &grids[0].rhs[0], &grids[0].rcount[0], &grids[0].rdispls[0], MPI_DOUBLE, comm);
-    } else{
-        grids[0].rhs = rhs0;
-    }
-
-//    print_vector(grids[0].rhs, -1, "rhs after repartition", comm);
-
-    // scale rhs
-    // ---------
-//    scale_vector(grids[0].rhs, grids[0].A->inv_sq_diag);
 
     return 0;
 }

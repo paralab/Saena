@@ -40,8 +40,7 @@ namespace saena {
         bool add_dup = true; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
 
-        int assemble();
-        int assemble_no_scale();
+        int assemble(bool scale = true);
         int assemble_writeToFile();
         int assemble_writeToFile(const char *folder_name);
         int assemble_band_matrix();
@@ -153,8 +152,7 @@ namespace saena {
         ~amg();
         int set_matrix(saena::matrix* A, saena::options* opts);
 //        int set_rhs(std::vector<value_t> rhs); // note: this function copies the rhs.
-        int set_rhs(saena::vector &rhs); // note: this function copies the rhs.
-        int set_rhs_no_scale(saena::vector &rhs); // note: this function copies the rhs.
+        int set_rhs(saena::vector &rhs, bool scale = true); // note: this function copies the rhs.
 
         saena_object* get_object();
         int set_shrink_levels(std::vector<bool> sh_lev_vec);
@@ -168,14 +166,14 @@ namespace saena {
 
         // before calling solve function, vector "u" is the initial guess.
         // After calling solve, it will be the solution.
-        int solve(std::vector<value_t>& u, saena::options* opts);
-        int solve_pcg(std::vector<value_t>& u, saena::options* opts);
+        int solve(std::vector<value_t>& u, saena::options* opts, bool scale = true);
+        int solve_pcg(std::vector<value_t>& u, saena::options* opts, bool scale = true);
         // if solver is made based of a matrix, let's call it A, and there is an updated version of A, let's call it B,
         // and one wants to solve B*x = rhs instead of A*x = rhs, then solve_pcg_update can be used and B can be passed as the third argument.
 //        int solve_pcg_update(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update, but updates the LHS with A_new.
 
-        int solve_pGMRES(std::vector<value_t>& u, saena::options* opts);
+        int solve_pGMRES(std::vector<value_t>& u, saena::options* opts, bool scale = true);
 
         int update1(saena::matrix* A_ne); // only update the finest level A, which is the input matrix.
         int update2(saena::matrix* A_ne); // updates grids[i].A for all levels, using the previously made grids[i].P and R.

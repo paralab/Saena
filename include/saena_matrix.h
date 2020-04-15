@@ -229,19 +229,16 @@ public:
 
     void set_p_order(int _p_order);
 
-    int assemble();
-    int assemble_no_scale();
+    int assemble(bool scale = true);
     int setup_initial_data();
     int remove_duplicates();
     int repartition_nnz_initial(); // based on nnz.
-    int matrix_setup();
-    int matrix_setup_no_scale();
+    int matrix_setup(bool scale = true);
 
     // these versions are used after matrix is assembled and needs to be updated again.
     int setup_initial_data2();
     int repartition_nnz_update(); // based on nnz.
-    int matrix_setup_update();
-    int matrix_setup_update_no_scale();
+    int matrix_setup_update(bool scale = true);
 
     int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
     int repartition_row(); // based on M.   use this for repartitioning A's after they are created.

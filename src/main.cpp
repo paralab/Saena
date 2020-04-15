@@ -33,8 +33,11 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
-    // *************************** initialize the matrix ****************************
+    // *************************** set the scaling factor ****************************
 
+    bool scale = false;
+
+    // *************************** initialize the matrix ****************************
     // there are two ways to create a matrix:
 
     // 1- read from file: pass as an argument in the command line
@@ -67,8 +70,8 @@ int main(int argc, char* argv[]){
 //    A.set(&I[0], &J[0], &V[0], I.size());
 
     // after setting the matrix entries, the assemble function should be called.
-//    A.assemble();
-    A.assemble_no_scale();
+    // pass false to not scale the matrix. default is true.
+    A.assemble(scale);
 
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
@@ -126,61 +129,66 @@ int main(int argc, char* argv[]){
     solver.set_multigrid_max_level(0);
     solver.set_matrix(&A, &opts);
 
-//    solver.set_rhs(rhs);
-    solver.set_rhs_no_scale(rhs);
+    solver.set_rhs(rhs, scale);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
     // solve the system using AMG as the solver
     std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
-    solver.solve(u_direct, &opts);
+    solver.solve(u_direct, &opts, scale);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-//    solver.solve_pcg(u, &opts);
+//    solver.solve_pcg(u, &opts, scale);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
-    solver.solve_pGMRES(u, &opts);
+    solver.solve_pGMRES(u, &opts, scale);
 
     // *************************** print or write the solution ****************************
 
 //    print_vector(u, -1, "solution", comm);
+//    print_vector(u_direct, -1, "solution", comm);
 //    write_to_file_vec(u, "solution", comm);
 
     // *************************** check correctness of the solution ****************************
 
     bool bool_correct = true;
     if(rank==0){
-        printf("\nChecking the correctness of the Saena solution:\n");
+        printf("\nChecking the correctness of GMRES with SuperLU:\n");
         printf("Correct u \t\tGMRES u\n");
         for(index_t i = 0; i < num_local_row; i++){
             if(fabs(u_direct[i] - u[i]) > 1e-12){
                 bool_correct = false;
-                printf("%.16f \t%.16f\n", u_direct[i], u[i]);
+//                printf("%.16f \t%.16f\n", u_direct[i], u[i]);
             }
         }
-        if(bool_correct)
-            printf("\n******* The solution was correct! *******\n\n");
-        else
-            printf("\n******* The solution was NOT correct! *******\n\n");
+        if(bool_correct){
+            printf("\n******* GMRES matches SuperLU! *******\n");
+            printf("**************************************\n\n");
+        }
+        else{
+            printf("\n******* GMRES does not match SuperLU! *******\n");
+            printf("**************************************\n\n");
+        }
     }
 
     // *************************** check correctness of the solution 2 ****************************
 
     // A is scaled. read it from the file and don't scale.
-/*
+
     saena::matrix AA (comm);
     AA.read_file(file_name);
-    AA.assemble_no_scale();
+    AA.assemble(false);
 
     saena_matrix *AAA = AA.get_internal_matrix();
     std::vector<double> Au(num_local_row, 0);
-    std::vector<double> sol = u;
+//    std::vector<double> sol = u;
+    std::vector<double> sol = u_direct; // the SuperLU solution
     AAA->matvec(sol, Au);
 
-    bool bool_correct = true;
+    bool_correct = true;
     if(rank==0){
-        printf("\nChecking the correctness of the Saena solution by Saena itself:\n");
+        printf("Checking the correctness of the Saena solution by Saena itself:\n");
         printf("Au \t\trhs_std \t\tAu - rhs_std \n");
         for(index_t i = 0; i < num_local_row; i++){
             if(fabs(Au[i] - rhs_std[i]) > 1e-12){
@@ -188,12 +196,16 @@ int main(int argc, char* argv[]){
 //                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
             }
         }
-        if(bool_correct)
-            printf("\n******* The solution was correct! *******\n\n");
-        else
-            printf("\n******* The solution was NOT correct! *******\n\n");
+        if(bool_correct){
+            printf("\n******* The SuperLU solution is correct! *******\n");
+            printf("**************************************\n\n");
+        }
+        else{
+            printf("\n******* The SuperLU solution is NOT correct! *******\n");
+            printf("**************************************\n\n");
+        }
     }
-*/
+
     // *************************** Destroy ****************************
 
     A.destroy();
