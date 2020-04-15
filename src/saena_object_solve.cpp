@@ -2103,7 +2103,7 @@ int saena_object::pGMRES(std::vector<double> &u){
 #ifdef __DEBUG1__
             if (verbose_solve) {
                 MPI_Barrier(comm);
-                if (rank == 0) printf("pGMRES: j = %ld: for i = %ld: AMG \n", j, i);
+                if (rank == 0) printf("\npGMRES: j = %ld: for i = %ld: AMG \n", j, i);
                 MPI_Barrier(comm);
             }
 #endif
