@@ -67,7 +67,8 @@ int main(int argc, char* argv[]){
 //    A.set(&I[0], &J[0], &V[0], I.size());
 
     // after setting the matrix entries, the assemble function should be called.
-    A.assemble();
+//    A.assemble();
+    A.assemble_no_scale();
 
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
@@ -108,21 +109,24 @@ int main(int argc, char* argv[]){
     // There are 3 ways to set options:
 
     // 1- set them manually
-//    int vcycle_num            = 300;
-//    double relative_tolerance = 1e-8;
-//    std::string smoother      = "jacobi";
-//    int preSmooth             = 2;
-//    int postSmooth            = 2;
-//    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+    int vcycle_num            = 100;
+    double relative_tolerance = 1e-12;
+    std::string smoother      = "chebyshev";
+    int preSmooth             = 3;
+    int postSmooth            = 3;
+    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 
     // 2- read the options from an xml file
 //    saena::options opts((char*)"options001.xml");
 
     // 3- use the default options
-    saena::options opts;
+//    saena::options opts;
+
     saena::amg solver;
     solver.set_matrix(&A, &opts);
-    solver.set_rhs(rhs);
+
+//    solver.set_rhs(rhs);
+    solver.set_rhs_no_scale(rhs);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
@@ -131,7 +135,7 @@ int main(int argc, char* argv[]){
 //    solver.solve(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-    solver.solve_pcg(u, &opts);
+//    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
     solver.solve_pGMRES(u, &opts);

@@ -154,6 +154,7 @@ namespace saena {
         int set_matrix(saena::matrix* A, saena::options* opts);
 //        int set_rhs(std::vector<value_t> rhs); // note: this function copies the rhs.
         int set_rhs(saena::vector &rhs); // note: this function copies the rhs.
+        int set_rhs_no_scale(saena::vector &rhs); // note: this function copies the rhs.
 
         saena_object* get_object();
         int set_shrink_levels(std::vector<bool> sh_lev_vec);

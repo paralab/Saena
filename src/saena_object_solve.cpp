@@ -1907,14 +1907,14 @@ int saena_object::solve_pcg_update(std::vector<value_t>& u, saena_matrix* A_new)
 // ************************************************
 
 void saena_object::GMRES_update(std::vector<double> &x, index_t k, saena_matrix_dense &h, std::vector<double> &s, std::vector<std::vector<double>> &v){
-    // ******************
+    // ***************************************
     // GMRES_update(u, i or i-1, H, s, v)
     // x_i = x_0 + y_1 * v_1 + ... + y_i * v_i
-    // ******************
+    // ***************************************
 
 //    std::cout << __func__ << std::endl;
 
-    // todo: optimize y. it is being created and allocated each time this function is being called.
+    // todo: pre-allocate y. it is being created and allocated each time this function is being called.
     std::vector<double> y = s;
 
     // Backsolve:
@@ -1928,14 +1928,17 @@ void saena_object::GMRES_update(std::vector<double> &x, index_t k, saena_matrix_
     }
 
     for (long j = 0; j <= k; j++){
-        // scale each vector v[j] by scalar y[j]
         // x += v[j] * y[j];
+        // scale each vector v[j] by scalar y[j]
+        // x and v[j] are vectors. y[j] is a scalar.
         scale_vector_scalar(v[j], y[j], x, true);
     }
 }
 
 
 void saena_object::GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn){
+    // set cs and sn
+
     if (dy == 0.0) {
         cs = 1.0;
         sn = 0.0;
@@ -1952,6 +1955,7 @@ void saena_object::GeneratePlaneRotation(double &dx, double &dy, double &cs, dou
 
 
 void saena_object::ApplyPlaneRotation(double &dx, double &dy, const double &cs, const double &sn){
+    // set dx and dy
 
 //    std::cout << "dx: " << dx << ", \tdy: " << dy << ", \tcs: " << cs << ", \tsn: " << sn << std::endl;
 
@@ -1983,7 +1987,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 #endif
 
-    int     m        = 100;
+    int     m        = A->Mbig; // the restart parameter
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
@@ -2003,9 +2007,9 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // ************** setup SuperLU **************
 
-    if(A_coarsest->active) {
-        setup_SuperLU();
-    }
+//    if(A_coarsest->active) {
+//        setup_SuperLU();
+//    }
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2022,7 +2026,8 @@ int saena_object::pGMRES(std::vector<double> &u){
     std::vector<double> res(size), r(size);
     u.assign(size, 0); // initial guess // todo: decide where to do this.
     A->residual_negative(u, grids[0].rhs, res);
-    vcycle(&grids[0], r, res); //todo: M should be used here.
+//    vcycle(&grids[0], r, res); //todo: M should be used here.
+    r = res;
 
     // *************************
 
@@ -2030,7 +2035,10 @@ int saena_object::pGMRES(std::vector<double> &u){
     std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
 
 //    double normb = norm(M.solve(rhs));
-    double normb = pnorm(grids[0].rhs, comm); // todo: this is different from the above line
+    double normb = pnorm(grids[0].rhs, comm); // todo: this is different from the above line. try the following vcycle.
+
+//    vcycle(&grids[0], res, grids[0].rhs); //todo: M should be used here.
+//    double normb = pnorm(res, comm);
 
     if (normb == 0.0){
         normb = 1;
@@ -2069,7 +2077,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     // **********************************
 
     double tmp_scalar1 = 0, tmp_scalar2 = 0;
-    std::vector<double> s(m + 1), cs(m + 1), sn(m + 1), w(size), temp(size);
+    std::vector<double> s(m + 1), cs(m + 1), sn(m + 1), w(size), temp(size), temp2(size);
     j = 1;
     while (j <= max_iter) {
 
@@ -2103,7 +2111,8 @@ int saena_object::pGMRES(std::vector<double> &u){
             // w = M.solve(A * v[i]);
             A->matvec(v[i], temp);
             std::fill(w.begin(), w.end(), 0); // todo
-            vcycle(&grids[0], w, temp); //todo: M should be used here.
+//            vcycle(&grids[0], w, temp); //todo: M should be used here.
+            w = temp;
 
 #ifdef __DEBUG1__
             if (verbose_solve) {
@@ -2154,16 +2163,37 @@ int saena_object::pGMRES(std::vector<double> &u){
 #endif
 
             for (k = 0; k < i; k++) {
+                // set H.entry[k][i] and H.entry[k + 1][i], for k = 0,1,...,i-1
                 ApplyPlaneRotation(H.entry[k][i], H.entry[k + 1][i], cs[k], sn[k]);
             }
 
+            // set cs[i], sn[i]
             GeneratePlaneRotation(H.entry[i][i], H.entry[i + 1][i], cs[i], sn[i]);
+
+            // set H.entry[i][i] and H.entry[i + 1][i]
             ApplyPlaneRotation(H.entry[i][i], H.entry[i + 1][i], cs[i], sn[i]);
+
+            // set s[i] and s[i + 1]
             ApplyPlaneRotation(s[i], s[i + 1], cs[i], sn[i]);
 
-            resid = fabs(s[i + 1]) / normb;
+            if (!rank) printf("s[i + 1] = %e\n", s[i + 1]);
 
-            if (rank == 0) printf("%e\n", resid);
+//            resid = fabs(s[i + 1]) / normb;
+
+
+
+
+            GMRES_update(u, i, H, s, v);
+            A->matvec(u, temp);
+            for(index_t l = 0; l < u.size(); ++l){
+                temp2[l] = temp[l] - grids[0].rhs[l];
+            }
+            resid = pnorm(temp2, comm) / normb;
+
+
+
+
+//            if (rank == 0) printf("resid = %e\n", resid);
 #ifdef __DEBUG1__
             if (verbose_solve) {
                 MPI_Barrier(comm);
@@ -2174,6 +2204,7 @@ int saena_object::pGMRES(std::vector<double> &u){
 
             if (resid < tol) {
                 GMRES_update(u, i, H, s, v);
+//                print_vector(u, -1, "u", comm);
                 goto gmres_out;
             }
         }
@@ -2198,7 +2229,8 @@ int saena_object::pGMRES(std::vector<double> &u){
 
         // r = M.solve(rhs - A * u);
         A->residual_negative(u, grids[0].rhs, res);
-        vcycle(&grids[0], r, res); //todo: M should be used here.
+//        vcycle(&grids[0], r, res); //todo: M should be used here.
+        r = res;
 
         beta  = pnorm(r, comm);
         resid = beta / normb;
@@ -2213,13 +2245,13 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // ************** destroy matrix from SuperLU **************
 
-    if(A_coarsest->active) {
-        destroy_SuperLU();
-    }
+//    if(A_coarsest->active) {
+//        destroy_SuperLU();
+//    }
 
     // ************** scale u **************
 
-    scale_vector(u, grids[0].A->inv_sq_diag);
+//    scale_vector(u, grids[0].A->inv_sq_diag);
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2237,6 +2269,13 @@ int saena_object::pGMRES(std::vector<double> &u){
 //        printf("final absolute residual = %e", beta);
         printf("\n******************************************************\n");
     }
+
+
+
+    A->matvec(u, temp);
+    std::cout << "norm(Au) = " << pnorm(temp, comm) << ", norm(rhs) = " << pnorm(grids[0].rhs, comm) << std::endl;
+
+
 
 //    max_iter = j;
 //    tol = resid;

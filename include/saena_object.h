@@ -203,7 +203,7 @@ public:
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
     bool verbose_matmat_assemble  = false;
-    bool verbose_solve            = false;
+    bool verbose_solve            = true;
     bool verbose_vcycle           = false;
     bool verbose_vcycle_residuals = false;
     bool verbose_solve_coarse     = false;
@@ -262,6 +262,7 @@ public:
 
     //    int set_repartition_rhs(std::vector<value_t> rhs);
     int set_repartition_rhs(saena_vector *rhs);
+    int set_repartition_rhs_no_scale(saena_vector *rhs);
 
     // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
     // then, repartition_back_u() at the end of the solve function to convert the solution to the initial partition.

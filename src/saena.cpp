@@ -481,6 +481,10 @@ int saena::amg::set_rhs(saena::vector &rhs){
     return 0;
 }
 
+int saena::amg::set_rhs_no_scale(saena::vector &rhs){
+    m_pImpl->set_repartition_rhs_no_scale(rhs.get_internal_vector());
+    return 0;
+}
 
 saena_object* saena::amg::get_object() {
     return m_pImpl;
