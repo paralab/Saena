@@ -722,10 +722,14 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){
     // For a similar code, using the same matrix for mutiple rhs's, read SuperLU_DIST_5.4.0/EXAMPLE/pddrive1.c
 
+#ifdef __DEBUG1__
+//    std::cout << __func__ << std::endl;
 //    MPI_Barrier(A->comm);
 //    printf("A->print_entry\n");
+//    A->print_info(-1);
 //    A->print_entry(-1);
 //    MPI_Barrier(A->comm);
+#endif
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
@@ -1912,8 +1916,9 @@ int saena_object::solve_pcg_update(std::vector<value_t>& u, saena_matrix* A_new)
 
 void saena_object::GMRES_update(std::vector<double> &x, index_t k, saena_matrix_dense &h, std::vector<double> &s, std::vector<std::vector<double>> &v){
     // ***************************************
-    // GMRES_update(u, i or i-1, H, s, v)
+    // GMRES_update(u, i, H, s, v)
     // x_i = x_0 + y_1 * v_1 + ... + y_i * v_i
+    // x_0 = x_i
     // ***************************************
 
 //    std::cout << __func__ << std::endl;
@@ -1974,7 +1979,7 @@ void saena_object::ApplyPlaneRotation(double &dx, double &dy, const double &cs, 
 //                        const Preconditioner &M, Matrix &H, int &m, int &max_iter, double &tol){
 int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
     // GMRES proconditioned with AMG
-//    Preconditioner &M, Matrix &H;
+    // M is the preconditioner.
 
     saena_matrix *A = grids[0].A; // todo: double-check
 
@@ -2011,9 +2016,9 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
 
     // ************** setup SuperLU **************
 
-//    if(A_coarsest->active) {
-//        setup_SuperLU();
-//    }
+    if(A_coarsest->active) {
+        setup_SuperLU();
+    }
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2023,16 +2028,6 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
     }
 #endif
 
-    // use AMG as preconditioner
-    // *************************
-//    std::vector<double> r = M.solve(rhs - A * u);
-
-    std::vector<double> res(size), r(size);
-    u.assign(size, 0); // initial guess // todo: decide where to do this.
-    A->residual_negative(u, grids[0].rhs, res);
-//    vcycle(&grids[0], r, res); //todo: M should be used here.
-    r = res;
-
     // *************************
 
 //    Vector *v = new Vector[m+1];
@@ -2041,12 +2036,23 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
 //    double normb = norm(M.solve(rhs));
     double normb = pnorm(grids[0].rhs, comm); // todo: this is different from the above line. try the following vcycle.
 
-//    vcycle(&grids[0], res, grids[0].rhs); //todo: M should be used here.
-//    double normb = pnorm(res, comm);
+    std::vector<double> temp(size, 0);
+//    vcycle(&grids[0], temp, grids[0].rhs); //todo: M should be used here.
+//    double normb = pnorm(temp, comm);
 
     if (normb == 0.0){
-        normb = 1;
+        normb = 1.0;
     }
+
+    // use AMG as preconditioner
+    // *************************
+//    std::vector<double> r = M.solve(rhs - A * u);
+
+    std::vector<double> res(size), r(size, 0);
+    u.assign(size, 0); // initial guess // todo: decide where to do this.
+//    A->residual_negative(u, grids[0].rhs, res); // when the initial guess u is 0, this is equal to rhs
+    vcycle(&grids[0], r, grids[0].rhs); //todo: M should be used here.
+//    r = res;
 
 //    if(rank==0) printf("******************************************************");
     if(rank==0) printf("\ninitial residual = %e \n", normb);
@@ -2069,19 +2075,19 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
 
     // initialize the Hessenberg matrix H
     // **********************************
-    saena_matrix_dense H(m, m, comm); // todo: passed Mbig instead of Nbig.
+    saena_matrix_dense H(m + 1, m, comm);
 //    #pragma omp parallel for // todo: set default
     for(i = 0; i < m; i++){
-        std::fill(&H.entry[i][0], &H.entry[i][m], 0);
-//        for(j = 0; j < A->Mbig; j++) {
-//            H.set(i, j, 0);
-//        }
+//        std::fill(&H.entry[i][0], &H.entry[i][m], 0);
+        for(j = 0; j < m; j++) {
+            H.set(i, j, 0);
+        }
     }
 
     // **********************************
 
     double tmp_scalar1 = 0, tmp_scalar2 = 0;
-    std::vector<double> s(m + 1), cs(m + 1), sn(m + 1), w(size), temp(size), temp2(size);
+    std::vector<double> s(m + 1), cs(m + 1), sn(m + 1), w(size);
     j = 1;
     while (j <= max_iter) {
 
@@ -2115,8 +2121,8 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
             // w = M.solve(A * v[i]);
             A->matvec(v[i], temp);
             std::fill(w.begin(), w.end(), 0); // todo
-//            vcycle(&grids[0], w, temp); //todo: M should be used here.
-            w = temp;
+            vcycle(&grids[0], w, temp); //todo: M should be used here.
+//            w = temp;
 
 #ifdef __DEBUG1__
             if (verbose_solve) {
@@ -2150,10 +2156,10 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
             // compute H(i+1, i) = ||w||
             H.set(i + 1, i, pnorm(w, comm));
 
-            if(fabs(H.get(i + 1, i)) < 1e-15){
-                printf("EXIT_FAILURE: Division by zero inside pGMRES: H[%ld, %ld] = %e \n", i+1, i, H.get(i + 1, i));
-                exit(EXIT_FAILURE);
-            }
+//            if(fabs(H.get(i + 1, i)) < 1e-15){
+//                printf("EXIT_FAILURE: Division by zero inside pGMRES: H[%ld, %ld] = %e \n", i+1, i, H.get(i + 1, i));
+//                exit(EXIT_FAILURE);
+//            }
 
             // v[i+1] = w / H(i+1, i)
             scale_vector_scalar(w, 1.0 / H.get(i + 1, i), v[i + 1]);
@@ -2180,28 +2186,19 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
             // set s[i] and s[i + 1]
             ApplyPlaneRotation(s[i], s[i + 1], cs[i], sn[i]);
 
-            if (!rank) printf("s[i + 1] = %e\n", s[i + 1]);
+            // compute relative residual
+            resid = fabs(s[i + 1]) / normb;
 
-//            resid = fabs(s[i + 1]) / normb;
-
-
-
-
-            GMRES_update(u, i, H, s, v);
-            A->matvec(u, temp);
-            for(index_t l = 0; l < u.size(); ++l){
-                temp2[l] = temp[l] - grids[0].rhs[l];
-            }
-            resid = pnorm(temp2, comm) / normb;
-
-
-
+//            GMRES_update(u, i, H, s, v);
+//            A->residual_negative(u, grids[0].rhs, temp);
+//            resid = pnorm(temp, comm) / normb;
 
 //            if (rank == 0) printf("resid = %e\n", resid);
 #ifdef __DEBUG1__
+//            if (!rank) printf("s[i+1] = %e\n", s[i + 1]);
             if (verbose_solve) {
                 MPI_Barrier(comm);
-                if (rank == 0) printf("resid: %e \t1st resid\n", resid);
+                if (rank == 0) printf("resid = %e \t1st resid\n", resid);
                 MPI_Barrier(comm);
             }
 #endif
@@ -2233,8 +2230,8 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
 
         // r = M.solve(rhs - A * u);
         A->residual_negative(u, grids[0].rhs, res);
-//        vcycle(&grids[0], r, res); //todo: M should be used here.
-        r = res;
+        vcycle(&grids[0], r, res); //todo: M should be used here.
+//        r = res;
 
         beta  = pnorm(r, comm);
         resid = beta / normb;
@@ -2249,9 +2246,9 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
 
     // ************** destroy matrix from SuperLU **************
 
-//    if(A_coarsest->active) {
-//        destroy_SuperLU();
-//    }
+    if(A_coarsest->active) {
+        destroy_SuperLU();
+    }
 
     // ************** scale u **************
 
@@ -2275,13 +2272,6 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
 //        printf("final absolute residual = %e", beta);
         printf("\n******************************************************\n");
     }
-
-
-
-    A->matvec(u, temp);
-    std::cout << "norm(Au) = " << pnorm(temp, comm) << ", norm(rhs) = " << pnorm(grids[0].rhs, comm) << std::endl;
-
-
 
 //    max_iter = j;
 //    tol = resid;

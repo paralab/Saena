@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
 
     // *************************** set the scaling factor ****************************
 
-    bool scale = false;
+    bool scale = true;
 
     // *************************** initialize the matrix ****************************
     // there are two ways to create a matrix:
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(0);
+    solver.set_multigrid_max_level(1);
     solver.set_matrix(&A, &opts);
 
     solver.set_rhs(rhs, scale);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]){
 
     // solve the system using AMG as the solver
     std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
-    solver.solve(u_direct, &opts, scale);
+//    solver.solve(u_direct, &opts, scale);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    solver.solve_pcg(u, &opts, scale);
@@ -150,28 +150,6 @@ int main(int argc, char* argv[]){
 //    print_vector(u_direct, -1, "solution", comm);
 //    write_to_file_vec(u, "solution", comm);
 
-    // *************************** check correctness of the solution ****************************
-
-    bool bool_correct = true;
-    if(rank==0){
-        printf("\nChecking the correctness of GMRES with SuperLU:\n");
-        printf("Correct u \t\tGMRES u\n");
-        for(index_t i = 0; i < num_local_row; i++){
-            if(fabs(u_direct[i] - u[i]) > 1e-12){
-                bool_correct = false;
-//                printf("%.16f \t%.16f\n", u_direct[i], u[i]);
-            }
-        }
-        if(bool_correct){
-            printf("\n******* GMRES matches SuperLU! *******\n");
-            printf("**************************************\n\n");
-        }
-        else{
-            printf("\n******* GMRES does not match SuperLU! *******\n");
-            printf("**************************************\n\n");
-        }
-    }
-
     // *************************** check correctness of the solution 2 ****************************
 
     // A is scaled. read it from the file and don't scale.
@@ -182,14 +160,15 @@ int main(int argc, char* argv[]){
 
     saena_matrix *AAA = AA.get_internal_matrix();
     std::vector<double> Au(num_local_row, 0);
-//    std::vector<double> sol = u;
-    std::vector<double> sol = u_direct; // the SuperLU solution
+    std::vector<double> sol = u;
+//    std::vector<double> sol = u_direct; // the SuperLU solution
     AAA->matvec(sol, Au);
 
-    bool_correct = true;
+    bool bool_correct = true;
     if(rank==0){
-        printf("Checking the correctness of the Saena solution by Saena itself:\n");
-        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
+        printf("\n******************************************************\n");
+        printf("Checking the correctness of the solution:\n");
+//        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
         for(index_t i = 0; i < num_local_row; i++){
             if(fabs(Au[i] - rhs_std[i]) > 1e-12){
                 bool_correct = false;
@@ -197,15 +176,38 @@ int main(int argc, char* argv[]){
             }
         }
         if(bool_correct){
-            printf("\n******* The SuperLU solution is correct! *******\n");
-            printf("**************************************\n\n");
+            printf("\nThe solution is correct!\n");
+            printf("\n******************************************************\n");
         }
         else{
-            printf("\n******* The SuperLU solution is NOT correct! *******\n");
-            printf("**************************************\n\n");
+            printf("\nThe solution is NOT correct!\n");
+            printf("\n******************************************************\n");
         }
     }
 
+    // *************************** check correctness of the solution ****************************
+/*
+    bool_correct = true;
+    if(rank==0){
+        printf("Checking the correctness of GMRES with SuperLU:\n");
+//        printf("Correct u \t\tGMRES u\n");
+//        for(index_t i = 0; i < num_local_row; i++){
+        for(index_t i = 30; i < 40; i++){ //TODO fix the range
+//            if(fabs(u_direct[i] - u[i]) > 1e-12){
+                bool_correct = false;
+                printf("%.6f \t%.6f \t%.6f\n", u_direct[i], u[i], u_direct[i] - u[i]);
+//            }
+        }
+        if(bool_correct){
+            printf("\nGMRES matches SuperLU!\n");
+            printf("\n******************************************************\n");
+        }
+        else{
+            printf("\nGMRES does NOT match SuperLU!\n");
+            printf("\n******************************************************\n");
+        }
+    }
+*/
     // *************************** Destroy ****************************
 
     A.destroy();
