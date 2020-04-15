@@ -112,11 +112,11 @@ int main(int argc, char* argv[]){
     // There are 3 ways to set options:
 
     // 1- set them manually
-    int vcycle_num            = 100;
+    int    solver_max_iter    = 1000;
     double relative_tolerance = 1e-12;
     std::string smoother      = "chebyshev";
-    int preSmooth             = 3;
-    int postSmooth            = 3;
+    int    preSmooth          = 3;
+    int    postSmooth         = 3;
     saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
 
     // 2- read the options from an xml file

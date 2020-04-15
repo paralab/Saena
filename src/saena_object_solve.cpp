@@ -1996,7 +1996,7 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
     }
 #endif
 
-    int     m        = 1000; // the restart parameter
+    int     m        = 100; // the restart parameter
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
