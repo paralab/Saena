@@ -146,7 +146,7 @@ int main(int argc, char* argv[]){
 
     // *************************** print or write the solution ****************************
 
-//    print_vector(u, -1, "solution", comm);
+    print_vector(u, -1, "solution", comm);
 //    print_vector(u_direct, -1, "solution", comm);
 //    write_to_file_vec(u, "solution", comm);
 

@@ -1153,7 +1153,7 @@ int saena_matrix::residual_negative(std::vector<value_t>& u, std::vector<value_t
     MPI_Allreduce(&zero_vector_local, &zero_vector, 1, MPI_CXX_BOOL, MPI_LOR, comm);
 
     if(zero_vector){
-        memcpy(&res[0], &rhs[0], M); // todo: check memcpy. size is not right.
+        memcpy(&res[0], &rhs[0], M * sizeof(value_t));
     } else {
 
         matvec(u, res);
