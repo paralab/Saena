@@ -38,68 +38,44 @@ int saena_object::SA(Grid *grid){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
-    // **************************** find_aggregation ****************************
-
-#ifdef __DEBUG1__
-    double t1, t2;
-    t1 = omp_get_wtime();
-#endif
+//    unsigned int i, j;
+    float omega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
 
     std::vector<unsigned long> aggregate(grid->A->M);
     find_aggregation(grid->A, aggregate, grid->P.splitNew);
 
-#ifdef __DEBUG1__
-    t2 = omp_get_wtime();
-    if(verbose_level_setup) print_time(t1, t2, "Aggregation: level "+std::to_string(grid->currentLevel), grid->A->comm);
-
-//    MPI_Barrier(grid->A->comm); printf("rank %d: here after find_aggregation!!! \n", rank); MPI_Barrier(grid->A->comm);
-//    print_vector(aggregate, -1, "aggregate", grid->A->comm);
-//    write_agg(aggregate, "agg1", grid->currentLevel, grid->A->comm);
-#endif
-
-    // **************************** changeAggregation ****************************
-
-    // use this to read aggregation from file and replace the aggregation_2_dist computed here.
-//    changeAggregation(grid->A, aggregate, grid->P.splitNew, grid->A->comm);
-
-    // **************************** compute P ****************************
-
-    float omega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
-
-    P->M     = A->M;
-    P->Mbig  = A->Mbig;
-    P->Nbig  = P->splitNew[nprocs]; // This is the number of aggregates, which is the number of columns of P.
-    P->split = A->split;
-
     std::vector<unsigned long> vSendULong(A->vIndexSize);
     std::vector<unsigned long> vecValuesULong(A->recvSize);
 
+    P->Mbig = A->Mbig;
+    P->Nbig = P->splitNew[nprocs]; // This is the number of aggregates, which is the number of columns of P.
+    P->M = A->M;
+
     // store remote elements from aggregate in vSend to be sent to other processes.
-    for(index_t i = 0; i < A->vIndexSize; ++i){
+    // todo: is it ok to use vSend instead of vSendULong? vSend is double and vSendULong is unsigned long.
+    // todo: the same question for vecValues and Isend and Ireceive.
+    for(index_t i = 0; i < A->vIndexSize; i++){
         vSendULong[i] = aggregate[( A->vIndex[i] )];
 //        std::cout <<  A->vIndex[i] << "\t" << A->vSendULong[i] << std::endl;
     }
 
-    auto requests = new MPI_Request[A->numSendProc+A->numRecvProc];
-    auto statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
+    MPI_Request* requests = new MPI_Request[A->numSendProc+A->numRecvProc];
+    MPI_Status*  statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
 
-    int flag;
-    for(index_t i = 0; i < A->numRecvProc; ++i){
-        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &requests[i]);
-        MPI_Test(&requests[i], &flag, &statuses[i]);
-    }
+    // todo: are vSendULong and vecValuesULong required to be a member of the class.
 
-    for(index_t i = 0; i < A->numSendProc; ++i){
-        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &requests[A->numRecvProc+i]);
-        MPI_Test(&requests[A->numRecvProc+i], &flag, &statuses[A->numRecvProc+i]);
-    }
+    for(index_t i = 0; i < A->numRecvProc; i++)
+        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &(requests[i]));
+
+    for(index_t i = 0; i < A->numSendProc; i++)
+        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
 
     std::vector<cooEntry> PEntryTemp;
 
     // P = (I - 4/(3*rhoDA) * DA) * P_t
     // aggreagte is used as P_t in the following "for" loop.
     // local
+    // -----
     long iter = 0;
     for (index_t i = 0; i < A->M; ++i) {
         for (index_t j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
@@ -125,6 +101,7 @@ int saena_object::SA(Grid *grid){
             PEntryTemp.emplace_back(cooEntry(A->row_remote[iter],
                                              vecValuesULong[A->col_remote[iter]],
                                              -omega * A->values_remote[iter] * A->inv_diag[A->row_remote[iter]]));
+//            P->values.emplace_back(A->values_remote[iter]);
 //            std::cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t"
 //                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << std::endl;
         }
@@ -132,31 +109,24 @@ int saena_object::SA(Grid *grid){
 
     std::sort(PEntryTemp.begin(), PEntryTemp.end());
 
-#ifdef __DEBUG1__
 //    print_vector(PEntryTemp, 0, "PEntryTemp", comm);
-#endif
 
+    // todo: here
+//    P->entry.resize(PEntryTemp.size());
     // remove duplicates.
-    cooEntry tmp(0, 0, 0);
-    for(index_t i = 0; i < PEntryTemp.size(); ++i){
-        tmp = PEntryTemp[i];
+    for(index_t i=0; i<PEntryTemp.size(); i++){
+        P->entry.emplace_back(PEntryTemp[i]);
         while(i<PEntryTemp.size()-1 && PEntryTemp[i] == PEntryTemp[i+1]){ // values of entries with the same row and col should be added.
-            tmp.val += PEntryTemp[i++].val;
-        }
-
-        if(tmp.val > ALMOST_ZERO){
-            P->entry.emplace_back(tmp);
+            P->entry.back().val += PEntryTemp[i+1].val;
+            i++;
         }
     }
 
-#ifdef __DEBUG1__
 //    print_vector(P->entry, 0, "P->entry", comm);
-#endif
 
-    // compute P->nnz_l and P->nnz_g
     P->nnz_l = P->entry.size();
     MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
-
+    P->split = A->split;
     P->findLocalRemote();
 
     MPI_Waitall(A->numSendProc, A->numRecvProc+requests, A->numRecvProc+statuses);
@@ -164,7 +134,7 @@ int saena_object::SA(Grid *grid){
     delete [] statuses;
 
     return 0;
-}// end of saena_object::create_prolongation
+}
 
 
 int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew){
