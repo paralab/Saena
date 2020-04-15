@@ -132,12 +132,15 @@ int main(int argc, char* argv[]){
     // solve the system Au = rhs
 
     // solve the system using AMG as the solver
-//    solver.solve(u, &opts);
+    std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
+    solver.set_multigrid_max_level(0);
+    solver.solve(u_direct, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
+    solver.set_multigrid_max_level(1);
     solver.solve_pGMRES(u, &opts);
 
     // *************************** print or write the solution ****************************
@@ -147,8 +150,26 @@ int main(int argc, char* argv[]){
 
     // *************************** check correctness of the solution ****************************
 
-    // A is scaled. read it from the file and don't scale.
+    bool bool_correct = true;
+    if(rank==0){
+        printf("\nChecking the correctness of the Saena solution:\n");
+        printf("Correct u \t\tGMRES u\n");
+        for(index_t i = 0; i < num_local_row; i++){
+            if(fabs(u_direct[i] - u[i]) > 1e-12){
+                bool_correct = false;
+                printf("%.16f \t%.16f\n", u_direct[i], u[i]);
+            }
+        }
+        if(bool_correct)
+            printf("\n******* The solution was correct! *******\n\n");
+        else
+            printf("\n******* The solution was NOT correct! *******\n\n");
+    }
 
+    // *************************** check correctness of the solution 2 ****************************
+
+    // A is scaled. read it from the file and don't scale.
+/*
     saena::matrix AA (comm);
     AA.read_file(file_name);
     AA.assemble_no_scale();
@@ -173,7 +194,7 @@ int main(int argc, char* argv[]){
         else
             printf("\n******* The solution was NOT correct! *******\n\n");
     }
-
+*/
     // *************************** Destroy ****************************
 
     A.destroy();
