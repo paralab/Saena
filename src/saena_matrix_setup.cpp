@@ -360,7 +360,6 @@ int saena_matrix::matrix_setup(bool scale /*= true*/) {
 }
 
 
-
 int saena_matrix::matrix_setup_update(bool scale /*= true*/) {
     // update values_local, values_remote and inv_diag.
 

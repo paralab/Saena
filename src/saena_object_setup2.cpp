@@ -80,6 +80,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     // set some of Ac parameters
     // -------------------------
     Ac->Mbig  = P->Nbig;
+    Ac->Nbig  = P->Nbig;
     Ac->split = P->splitNew;
     Ac->M     = Ac->split[rank+1] - Ac->split[rank];
     Ac->M_old = Ac->M;
@@ -334,7 +335,6 @@ int saena_object::compute_coarsen(Grid *grid) {
 
         if (Ac->active) {
             Ac->matrix_setup(scale);
-//            Ac->matrix_setup_no_scale();
 
             if (Ac->shrinked && Ac->enable_dummy_matvec)
                 Ac->compute_matvec_dummy_time();
