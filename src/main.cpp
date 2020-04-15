@@ -126,16 +126,15 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(1);
+    solver.set_multigrid_max_level(2);
     solver.set_matrix(&A, &opts);
-
     solver.set_rhs(rhs, scale);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
     // solve the system using AMG as the solver
-    std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
+//    std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
 //    solver.solve(u_direct, &opts, scale);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
@@ -150,7 +149,7 @@ int main(int argc, char* argv[]){
 //    print_vector(u_direct, -1, "solution", comm);
 //    write_to_file_vec(u, "solution", comm);
 
-    // *************************** check correctness of the solution 2 ****************************
+    // *************************** check correctness of the solution ****************************
 
     // A is scaled. read it from the file and don't scale.
 
@@ -185,7 +184,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    // *************************** check correctness of the solution ****************************
+    // *************************** check correctness of the solution 2 ****************************
 /*
     bool_correct = true;
     if(rank==0){
