@@ -117,7 +117,7 @@ int main(int argc, char* argv[]){
     std::string smoother      = "chebyshev";
     int    preSmooth          = 3;
     int    postSmooth         = 3;
-    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+    saena::options opts(solver_max_iter, relative_tolerance, smoother, preSmooth, postSmooth);
 
     // 2- read the options from an xml file
 //    saena::options opts((char*)"options001.xml");

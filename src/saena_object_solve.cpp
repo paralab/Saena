@@ -2231,7 +2231,7 @@ int saena_object::pGMRES(std::vector<double> &u, bool scale /*= true*/){
         // r = M.solve(rhs - A * u);
         A->residual_negative(u, grids[0].rhs, res);
         vcycle(&grids[0], r, res); //todo: M should be used here.
-        r = res;
+//        r = res;
 
         beta  = pnorm(r, comm);
         resid = beta / normb;
