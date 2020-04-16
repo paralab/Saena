@@ -111,9 +111,10 @@ int saena_object::setup(saena_matrix* A) {
                     if (rank_new == 0) {
 //                    MPI_Comm_size(grids[i].Ac.comm, &nprocs);
                         printf("_____________________________\n\n");
-                        printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
+                        printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu"
+                               "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
                                grids[i + 1].currentLevel, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
-                               grids[i + 1].A->density);
+                               grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
                     }
                 }
             }
