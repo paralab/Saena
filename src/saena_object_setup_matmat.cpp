@@ -2291,9 +2291,9 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
                 tmp.val += AB_temp[++i].val;
             }
 
-//            if(tmp.val > ALMOST_ZERO){
+            if(fabs(tmp.val) > ALMOST_ZERO){
                 C.entry.emplace_back(tmp);
-//            }
+            }
         }
 
     }
