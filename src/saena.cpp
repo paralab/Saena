@@ -343,7 +343,7 @@ int saena::vector::print_entry(int rank_){
 saena::options::options() = default;
 
 saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
-    vcycle_num         = vcycle_n;
+    solver_max_iter         = vcycle_n;
     relative_tolerance = relT;
     smoother           = sm;
     preSmooth          = preSm;
@@ -362,7 +362,7 @@ saena::options::options(char* name){
     pugi::xml_node opts = doc.child("SAENA").first_child();
 
     pugi::xml_attribute attr = opts.first_attribute();
-    vcycle_num = std::stoi(attr.value());
+    solver_max_iter = std::stoi(attr.value());
 
     attr = attr.next_attribute();
     relative_tolerance = std::stod(attr.value());
@@ -386,8 +386,8 @@ saena::options::options(char* name){
 
 saena::options::~options() = default;
 
-void saena::options::set(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
-    vcycle_num         = vcycle_n;
+void saena::options::set(int max_it, double relT, std::string sm, int preSm, int postSm){
+    solver_max_iter    = max_it;
     relative_tolerance = relT;
     smoother           = sm;
     preSmooth          = preSm;
@@ -395,8 +395,8 @@ void saena::options::set(int vcycle_n, double relT, std::string sm, int preSm, i
 }
 
 
-void saena::options::set_vcycle_num(int v){
-    vcycle_num = v;
+void saena::options::set_max_iter(int v){
+    solver_max_iter = v;
 }
 
 void saena::options::set_relative_tolerance(double r){
@@ -416,8 +416,8 @@ void saena::options::set_postSmooth(int po){
 }
 
 
-int saena::options::get_vcycle_num(){
-    return vcycle_num;
+int saena::options::get_max_iter(){
+    return solver_max_iter;
 }
 
 double saena::options::get_relative_tolerance(){
@@ -448,7 +448,7 @@ saena::amg::~amg(){
 }
 
 int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->setup(A->get_internal_matrix());
     return 0;
@@ -517,7 +517,7 @@ MPI_Comm saena::amg::get_orig_comm(){
 
 
 int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->solve(u);
     Grid *g = &m_pImpl->grids[0];
@@ -527,7 +527,7 @@ int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
 
 
 int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->solve_pcg(u);
     Grid *g = &m_pImpl->grids[0];
@@ -538,7 +538,7 @@ int saena::amg::solve_pcg(std::vector<value_t>& u, saena::options* opts){
 
 
 int saena::amg::solve_pGMRES(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->pGMRES(u);
     Grid *g = &m_pImpl->grids[0];
@@ -568,7 +568,7 @@ int saena::amg::update3(saena::matrix* A_ne){
 //int saena::amg::solve_pcg_update1 & 2 & 3
 /*
 int saena::amg::solve_pcg_update1(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->solve_pcg_update1(u);
     return 0;
@@ -576,7 +576,7 @@ int saena::amg::solve_pcg_update1(std::vector<value_t>& u, saena::options* opts)
 
 
 int saena::amg::solve_pcg_update2(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->solve_pcg_update2(u);
     return 0;
@@ -584,7 +584,7 @@ int saena::amg::solve_pcg_update2(std::vector<value_t>& u, saena::options* opts)
 
 
 int saena::amg::solve_pcg_update3(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_vcycle_num(), opts->get_relative_tolerance(),
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->solve_pcg_update3(u);
     return 0;

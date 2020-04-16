@@ -120,26 +120,26 @@ namespace saena {
 
     class options {
     private:
-        int vcycle_num            = 500;
+        int    solver_max_iter    = 500;
         double relative_tolerance = 1e-12;
         std::string smoother      = "chebyshev";
-        int preSmooth             = 3;
-        int postSmooth            = 3;
+        int    preSmooth          = 3;
+        int    postSmooth         = 3;
 
     public:
         options();
-        options(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
+        options(int max_iter, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
         explicit options(char* name); // to set parameters from an xml file
         ~options();
 
-        void set(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
-        void set_vcycle_num(int vcycle_num);
+        void set(int max_iter, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
+        void set_max_iter(int max_iter);
         void set_relative_tolerance(double relative_tolerance);
         void set_smoother(std::string smoother);
         void set_preSmooth(int preSmooth);
         void set_postSmooth(int postSmooth);
 
-        int         get_vcycle_num();
+        int         get_max_iter();
         double      get_relative_tolerance();
         std::string get_smoother();
         int         get_preSmooth();
