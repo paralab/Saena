@@ -107,22 +107,24 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
                << ", B.col_scan[0]: " << B.col_scan[0] << ", B.col_scan[B.col_sz]: " << B.col_scan[B.col_sz]);
 
         // assert A entries
-        index_t col_idx;
+        index_t col_idx = 0;
         for (nnz_t i = 0; i < A.col_sz; i++) {
+//            col_idx = i + A.col_offset;
             for (nnz_t j = A.col_scan[i] - 1; j < A.col_scan[i + 1] - 1; j++) {
-//                std::cout << j << "\t" << A.r[j] << "\t" << i + A.col_offset << "\t" << A.v[j] << "\n";
+//                std::cout << j << "\t" << A.r[j] << "\t" << col_idx << "\t" << A.v[j] << "\n";
                 ASSERT((A.r[j] >= 0) && (A.r[j] <= A.row_sz), "rank: " << rank << ", A.r[j]: " << A.r[j] << ", A.row_sz: " << A.row_sz);
                 assert(i < A.col_sz);
-                ASSERT(fabs(A.v[j]) > ALMOST_ZERO, "rank: " << rank << ", A.v[j]: " << A.v[j]);
+//                ASSERT(fabs(A.v[j]) > ALMOST_ZERO, "rank: " << rank << ", A.v[j]: " << A.v[j]);
             }
         }
 
         // assert B entries
         for (nnz_t i = 0; i < B.col_sz; i++) {
+//        col_idx = i + B.col_offset;
 //            if(rank==0) std::cout << "B.col_scan[i] - 1: " << B.col_scan[i]-1 << ", B.col_scan[i+1] - 1: " << B.col_scan[i+1]-1 << "\n";
             for (nnz_t j = B.col_scan[i] - 1; j < B.col_scan[i + 1] - 1; j++) {
-//                if(rank==0) std::cout << j << "\t" << B.r[j] << "\t" << i + B.col_offset << "\t" << B.v[j] << "\n";
-                ASSERT((B.r[j] >= 0) && (B.r[j] <= B.row_sz), j << "\t" << B.r[j] << "\t" << i << "\t" << B.v[j] << "\tB.row_sz: " << B.row_sz);
+//                if(rank==0) std::cout << j << "\t" << B.r[j] << "\t" << col_idx << "\t" << B.v[j] << "\n";
+                assert((B.r[j] >= 0) && (B.r[j] <= B.row_sz));
                 assert(i < B.col_sz);
 //                ASSERT(fabs(B.v[j]) > ALMOST_ZERO, "rank " << rank << ": B(" << B.r[j] << ", " << col_idx << ") = " << B.v[j]);
             }
@@ -226,9 +228,8 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             for (j = 0; j < B_c_sz; ++j) {
 //                if(rank == 0) printf("col %3d: (%3d , %3d)\n", j, Cmkl_c_scan[j], Cmkl_c_scan[j+1]); fflush(nullptr);
                 for (i = Cmkl_c_scan[j]; i < Cmkl_c_scan[j+1]; ++i) {
-                    if(Cmkl_v[ii] > ALMOST_ZERO){
-                        C.emplace_back(Cmkl_r[ii] + A.row_offset - 1, j + B.col_offset, Cmkl_v[ii]);
-                    }
+//                    C.emplace_back(Cmkl_r_p[i] + A.row_offset - 1, j + B.col_offset, Cmkl_v_p[i]);
+                    C.emplace_back(Cmkl_r[ii] + A.row_offset - 1, j + B.col_offset, Cmkl_v[ii]);
 //                    if(rank == 0) printf("\n%3d: (%3d , %3d) = %8f\n", i, Cmkl_r[i] + 1, j + B.col_offset, Cmkl_v[i]); fflush(nullptr);
 //                    if(rank == 0) printf("%3d: (%3d , %3d) = %8f\n", ii, Cmkl_r[ii] + 1, j + B.col_offset, Cmkl_v[ii+1]); fflush(nullptr);
                     ++ii;
@@ -452,10 +453,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 #endif
 
         CSCMat_mm A1(A.row_sz, A.row_offset, A_col_size_half, A.col_offset, A.col_scan[A_col_size_half] - A.col_scan[0],
-                      A.r, A.v, A.col_scan);
+                     A.r, A.v, A.col_scan);
 
         CSCMat_mm A2(A.row_sz, A.row_offset, A.col_sz - A1.col_sz, A.col_offset + A1.col_sz, A.nnz - A1.nnz,
-                      A.r, A.v, &A.col_scan[A_col_size_half]);
+                     A.r, A.v, &A.col_scan[A_col_size_half]);
 
 #ifdef __DEBUG1__
 /*
@@ -923,7 +924,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         // prepare splits of matrix A by row
 
         CSCMat_mm A1(A.row_sz / 2, A.row_offset, A.col_sz, A.col_offset, 0,
-                    A.r, A.v, A.col_scan);
+                     A.r, A.v, A.col_scan);
 
         CSCMat_mm A2(A.row_sz - A1.row_sz, A.row_offset + A1.row_sz, A.col_sz, A.col_offset, 0);
 
@@ -2281,13 +2282,18 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
 
         std::sort(AB_temp.begin(), AB_temp.end());
 
+        auto tmp = cooEntry(0, 0, 0.0);
         nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
-        for (long i = 0; i < AB_temp.size(); i++) {
-            C.entry.emplace_back(AB_temp[i]);
+        for (long i = 0; i < AB_temp.size(); ++i) {
+            tmp = AB_temp[i];
             while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
 //                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-                C.entry.back().val += AB_temp[++i].val;
+                tmp.val += AB_temp[++i].val;
             }
+
+//            if(tmp.val > ALMOST_ZERO){
+                C.entry.emplace_back(tmp);
+//            }
         }
 
     }

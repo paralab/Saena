@@ -2235,7 +2235,15 @@ int saena_object::pGMRES(std::vector<double> &u){
 
         beta  = pnorm(r, comm);
         resid = beta / normb;
-        if(rank == 0) printf("resid: %e \t2nd resid\n", resid);
+
+#ifdef __DEBUG1__
+        if(verbose_solve){
+            MPI_Barrier(comm);
+            if(rank == 0) printf("resid: %e \t2nd resid\n", resid);
+            MPI_Barrier(comm);
+        }
+#endif
+
         if (resid < tol) {
             goto gmres_out;
         }
