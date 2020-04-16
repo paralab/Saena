@@ -114,11 +114,15 @@ int saena_object::SA(Grid *grid){
     // todo: here
 //    P->entry.resize(PEntryTemp.size());
     // remove duplicates.
+    cooEntry tmp(0, 0, 0.0);
     for(index_t i=0; i<PEntryTemp.size(); i++){
-        P->entry.emplace_back(PEntryTemp[i]);
+        tmp = PEntryTemp[i];
         while(i<PEntryTemp.size()-1 && PEntryTemp[i] == PEntryTemp[i+1]){ // values of entries with the same row and col should be added.
-            P->entry.back().val += PEntryTemp[i+1].val;
-            i++;
+            tmp.val += PEntryTemp[++i].val;
+        }
+
+        if(fabs(tmp.val) > ALMOST_ZERO){
+            P->entry.emplace_back(tmp);
         }
     }
 
