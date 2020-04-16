@@ -786,7 +786,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 //    saena_matrix RAP;
     MPI_Comm comm_temp = Ac->comm;
     Ac->comm = A->comm;
-    matmat_CSC(RAcsc, Pcsc, *Ac);
+    matmat_CSC(RAcsc, Pcsc, *Ac, true);
     Ac->comm = comm_temp;
 
 #ifdef __DEBUG1__

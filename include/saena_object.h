@@ -235,7 +235,7 @@ public:
     int triple_mat_mult(Grid *grid);
 
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false, bool B_trans = true);
-    int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
+    int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans = false);
     int matmat_memory_alloc(CSCMat &Acsc, CSCMat &Bcsc);
     int matmat_memory_free();
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);

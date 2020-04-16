@@ -1645,7 +1645,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
 }
 
 
-int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
+int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans /*= false*/){
 
     MPI_Comm comm = C.comm;
     int nprocs, rank;
@@ -2279,20 +2279,36 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
     t_temp = MPI_Wtime();
 //#if 0
     if(!AB_temp.empty()) {
-
-        std::sort(AB_temp.begin(), AB_temp.end());
-
         auto tmp = cooEntry(0, 0, 0.0);
         nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
-        for (long i = 0; i < AB_temp.size(); ++i) {
-            tmp = AB_temp[i];
-            while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
-//                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-                tmp.val += AB_temp[++i].val;
-            }
 
-            if(fabs(tmp.val) > ALMOST_ZERO){
-                C.entry.emplace_back(tmp);
+        if(trans){
+            std::sort(AB_temp.begin(), AB_temp.end(), row_major);
+
+            for (long i = 0; i < AB_temp.size(); ++i) {
+                tmp = cooEntry(AB_temp[i].col, AB_temp[i].row, AB_temp[i].val);
+                while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+//                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+                    tmp.val += AB_temp[++i].val;
+                }
+
+                if(fabs(tmp.val) > ALMOST_ZERO){
+                    C.entry.emplace_back(tmp);
+                }
+            }
+        }else{
+            std::sort(AB_temp.begin(), AB_temp.end());
+
+            for (long i = 0; i < AB_temp.size(); ++i) {
+                tmp = AB_temp[i];
+                while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+//                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+                    tmp.val += AB_temp[++i].val;
+                }
+
+                if(fabs(tmp.val) > ALMOST_ZERO){
+                    C.entry.emplace_back(tmp);
+                }
             }
         }
 
