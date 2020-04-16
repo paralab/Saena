@@ -191,8 +191,7 @@ int main(int argc, char* argv[]){
     if(rank==0){
         printf("Checking the correctness of GMRES with SuperLU:\n");
 //        printf("Correct u \t\tGMRES u\n");
-//        for(index_t i = 0; i < num_local_row; i++){
-        for(index_t i = 30; i < 40; i++){ //TODO fix the range
+        for(index_t i = 0; i < num_local_row; i++){
 //            if(fabs(u_direct[i] - u[i]) > 1e-12){
                 bool_correct = false;
                 printf("%.6f \t%.6f \t%.6f\n", u_direct[i], u[i], u_direct[i] - u[i]);

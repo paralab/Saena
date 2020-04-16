@@ -855,7 +855,6 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 //        options.PrintStat = YES;
     }else{
         options.Fact = FACTORED;
-
     }
 
 #if 0
