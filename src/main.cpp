@@ -47,7 +47,7 @@ int main(int argc, char* argv[]){
     A.read_file(file_name);
 
     // set the p_order of the input matrix A.
-    int p_order = 2;
+    int p_order = 4;
     A.set_p_order(p_order);
 
     // 2- use the set functions
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(2);
+    solver.set_multigrid_max_level(0);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -184,7 +184,12 @@ int main(int argc, char* argv[]){
             printf("\n******************************************************\n");
         }
     }
-
+		std::vector<double> u_diff(num_local_row,0);
+        for(index_t i = 0; i < num_local_row; i++){
+            u_diff[i] = Au[i] - rhs_std[i];
+//                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
+            }
+        std::cout << "norm(Au-b) = " << pnorm(u_diff, comm) << "\n";
     // *************************** check correctness of the solution 2 ****************************
 /*
     bool_correct = true;

@@ -43,7 +43,7 @@ int saena_object::pcoarsen(Grid *grid){
     MPI_Comm_rank(comm, &rank);
 
 	int order    = A->p_order;
-	int a_elemno = 16;
+	int a_elemno = 32;
 	int prodim   = 2;
 	vector< vector<int> > map = connect(order, a_elemno, prodim);
 
