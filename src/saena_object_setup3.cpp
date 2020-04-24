@@ -322,7 +322,7 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
         }
     }
 
-	map_all.push_back(vector< vector<int> >());
+	/*map_all.push_back(vector< vector<int> >());
 	for (int i=0; i<map.size(); i++)
 	{
 		map_all[map_all.size()-1].push_back(vector<int>());
@@ -330,9 +330,9 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
 		{
 			map_all[map_all.size()-1][i].push_back(map[i][j]);
 		}
-	}
+	}*/
 
-	std::cout << map_all.size() << " " << map_all[map_all.size()-1].size() << " " << map_all[map_all.size()-1][0].size() << std::endl;
+	//std::cout << map_all.size() << " " << map_all[map_all.size()-1].size() << " " << map_all[map_all.size()-1][0].size() << std::endl;
     return map;
 }
 

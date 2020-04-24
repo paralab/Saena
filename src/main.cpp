@@ -127,7 +127,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(2);
+    solver.set_multigrid_max_level(1);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
