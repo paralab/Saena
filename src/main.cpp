@@ -7,6 +7,7 @@
 
 #include "grid.h"
 #include "saena.hpp"
+#include <sstream>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -113,7 +114,7 @@ int main(int argc, char* argv[]){
 
     // 1- set them manually
     int    solver_max_iter    = 1000;
-    double relative_tolerance = 1e-12;
+    double relative_tolerance = 1e-15;
     std::string smoother      = "chebyshev";
     int    preSmooth          = 3;
     int    postSmooth         = 3;
@@ -126,7 +127,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(0);
+    solver.set_multigrid_max_level(2);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -135,14 +136,14 @@ int main(int argc, char* argv[]){
     // solve the system Au = rhs
 
     // solve the system using AMG as the solver
-//    std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
-//    solver.solve(u_direct, &opts);
+	std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
+    solver.solve(u_direct, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
-    solver.solve_pGMRES(u, &opts);
+//    solver.solve_pGMRES(u, &opts);
 
     // *************************** print or write the solution ****************************
 
@@ -160,8 +161,8 @@ int main(int argc, char* argv[]){
 
     saena_matrix *AAA = AA.get_internal_matrix();
     std::vector<double> Au(num_local_row, 0);
-    std::vector<double> sol = u;
-//    std::vector<double> sol = u_direct; // the SuperLU solution
+    //std::vector<double> sol = u;
+	std::vector<double> sol = u_direct; // the SuperLU solution
     AAA->matvec(sol, Au);
 
     bool bool_correct = true;
@@ -184,12 +185,12 @@ int main(int argc, char* argv[]){
             printf("\n******************************************************\n");
         }
     }
-		std::vector<double> u_diff(num_local_row,0);
+		std::vector<double> res(num_local_row,0);
         for(index_t i = 0; i < num_local_row; i++){
-            u_diff[i] = Au[i] - rhs_std[i];
+            res[i] = Au[i] - rhs_std[i];
 //                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
             }
-        std::cout << "norm(Au-b) = " << pnorm(u_diff, comm) << "\n";
+        std::cout << "norm(Au-b) = " << pnorm(res, comm) << "\n";
     // *************************** check correctness of the solution 2 ****************************
 /*
     bool_correct = true;
@@ -207,12 +208,41 @@ int main(int argc, char* argv[]){
             printf("\n******************************************************\n");
         }
         else{
-            printf("\nGMRES does NOT match SuperLU!\n");
+             printf("\nGMRES does NOT match SuperLU!\n");
             printf("\n******************************************************\n");
         }
     }
 */
     // *************************** Destroy ****************************
+
+    vector<double> sol_load;
+    ifstream ifs;
+	ifs.open("/home/songzhex/Desktop/Saena/data/nektar/sol_4matlab.txt");
+	istringstream iss;
+	for (int i=0; i<num_local_row; i++)
+	{
+		string aLine;
+		getline(ifs, aLine);
+		iss.str(aLine);
+	
+		int v,a;
+		double l;
+		iss >> v >> a >> l;
+		sol_load.push_back(l);
+		
+		iss.clear();
+	}
+   	ifs.close();
+	iss.clear();
+	ifs.clear();
+
+	std::vector<double> u_diff(num_local_row,0);
+    for(index_t i = 0; i < num_local_row; i++)
+	{
+        u_diff[i] = u_direct[i] - sol_load[i];
+//            printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
+    }
+    std::cout << "norm(u-u_load) = " << pnorm(u_diff, comm) << "\n";
 
     A.destroy();
     solver.destroy();

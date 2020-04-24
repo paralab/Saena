@@ -227,9 +227,9 @@ public:
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
 
     int setup(saena_matrix* A);
-    int coarsen(Grid *grid);
+    int coarsen(Grid *grid,std::vector< std::vector< std::vector<int> > > &map_all);
     int SA(Grid *grid);
-    int pcoarsen(Grid *grid);
+    int pcoarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all);
     int compute_coarsen(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid);
@@ -260,7 +260,7 @@ public:
     int aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
-    int create_prolongation(Grid *gird);
+    int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all);
 
     int set_repartition_rhs(saena_vector *rhs);
 
@@ -426,6 +426,7 @@ public:
 	inline bool ismember(int a, std::vector<int> arr);
 	inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
 	inline std::vector< std::vector<double> > eighth_order(int order);
+	inline std::vector< std::vector<int> > mesh_info(int order, int elemno, std::string filename, std::vector< std::vector< std::vector<int> > > &map_all);
 };
 
 #endif //SAENA_SAENA_OBJECT_H

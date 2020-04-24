@@ -2036,8 +2036,8 @@ int saena_object::pGMRES(std::vector<double> &u){
 //    double normb = pnorm(grids[0].rhs, comm); // todo: this is different from the above line. try the following vcycle.
 
     std::vector<double> temp(size, 0);
-    //vcycle(&grids[0], temp, grids[0].rhs); //todo: M should be used here.
-    temp = grids[0].rhs; //todo: M should be used here.
+    vcycle(&grids[0], temp, grids[0].rhs); //todo: M should be used here.
+    //temp = grids[0].rhs; //todo: M should be used here.
     double normb = pnorm(temp, comm);
 
     if (normb == 0.0){
@@ -2051,8 +2051,8 @@ int saena_object::pGMRES(std::vector<double> &u){
     std::vector<double> res(size), r(size, 0);
     u.assign(size, 0); // initial guess // todo: decide where to do this.
 //    A->residual_negative(u, grids[0].rhs, res); // when the initial guess u is 0, this is equal to rhs
-//    vcycle(&grids[0], r, grids[0].rhs); //todo: M should be used here.
-    r = grids[0].rhs;
+    vcycle(&grids[0], r, grids[0].rhs); //todo: M should be used here.
+    //r = grids[0].rhs;
 
 //    if(rank==0) printf("******************************************************");
     if(rank==0) printf("\ninitial residual = %e \n", normb);
@@ -2121,8 +2121,8 @@ int saena_object::pGMRES(std::vector<double> &u){
             // w = M.solve(A * v[i]);
             A->matvec(v[i], temp);
             std::fill(w.begin(), w.end(), 0); // todo
-            //vcycle(&grids[0], w, temp); //todo: M should be used here.
-            w = temp;
+            vcycle(&grids[0], w, temp); //todo: M should be used here.
+            //w = temp;
 
 #ifdef __DEBUG1__
             if (verbose_solve) {
@@ -2230,8 +2230,8 @@ int saena_object::pGMRES(std::vector<double> &u){
 
         // r = M.solve(rhs - A * u);
         A->residual_negative(u, grids[0].rhs, res);
-        //vcycle(&grids[0], r, res); //todo: M should be used here.
-        r = res;
+        vcycle(&grids[0], r, res); //todo: M should be used here.
+        //r = res;
 
         beta  = pnorm(r, comm);
         resid = beta / normb;
