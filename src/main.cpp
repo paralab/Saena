@@ -217,7 +217,7 @@ int main(int argc, char* argv[]){
 
     vector<double> sol_load;
     ifstream ifs;
-	ifs.open("/home/songzhex/Desktop/Saena/data/nektar/sol_4matlab.txt");
+	ifs.open("../data/nektar/sol_4matlab.txt");
 	istringstream iss;
 	for (int i=0; i<num_local_row; i++)
 	{

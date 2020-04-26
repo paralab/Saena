@@ -48,7 +48,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
 	int a_elemno = 10;
 	int elemno = 100;
 	int prodim   = 2;
-	string filename = "/home/songzhex/Desktop/Saena/data/nektar/nek_map_cont_4.txt";
+	string filename = "../data/nektar/nek_map_cont_4.txt";
 	//vector< vector<int> > map = connect(order, a_elemno, prodim);
 	vector< vector<int> > map = mesh_info(order, elemno, filename, map_all);
 	
