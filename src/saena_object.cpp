@@ -255,7 +255,7 @@ int saena_object::coarsen(Grid *grid){
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after find_aggregation!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(aggregate, -1, "aggregate", grid->A->comm);
-    write_agg(aggregate, "agg1", grid->currentLevel, grid->A->comm);
+//    write_agg(aggregate, "agg1", grid->currentLevel, grid->A->comm);
 #endif
 
     // **************************** changeAggregation ****************************

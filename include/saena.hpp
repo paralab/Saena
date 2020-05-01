@@ -197,8 +197,7 @@ namespace saena {
 
         int lazy_update_counter = 0; // note: for lazy update project. delete it when done.
 
-        int matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble);
-        int matmat_ave(saena::matrix *A, saena::matrix *B, double &matmat_time); // this version is only for experiments.
+        int matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble = true, bool print_timing = false);
 
     protected:
         saena_object* m_pImpl;

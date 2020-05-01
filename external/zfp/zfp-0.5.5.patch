@@ -1,0 +1,665 @@
+diff -ruN zfp-0.5.5/CMakeLists.txt zfp-0.5.5_opt/CMakeLists.txt
+--- zfp-0.5.5/CMakeLists.txt	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/CMakeLists.txt	2019-05-30 18:26:10.107237000 +0300
+@@ -4,6 +4,20 @@
+   cmake_minimum_required(VERSION 3.1)
+ endif()
+ 
++if(WITH_IPP)
++# This file is modified with Intel(R) Integrated Performance Primitives content
++    if(NOT DEFINED ENV{IPPROOT})
++        message(FATAL_ERROR "IPPROOT environment variable should be set for Intel(R) IPP build")
++    endif()
++    message("Using Intel(R) IPP")
++    add_definitions(-DWITH_IPP)
++    set(IPPROOT $ENV{IPPROOT})
++    include_directories(${IPPROOT}/include)
++    if(ARCH STREQUAL "ia32" AND UNIX)
++        set(CMAKE_C_FLAGS -m32)
++        set(CMAKE_CXX_FLAGS -m32)
++    endif()
++endif()
+ # Fail immediately if not using an out-of-source build
+ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+   message(FATAL_ERROR
+@@ -151,8 +165,10 @@
+ # instead need to treat the OpenMP C flags as both compile and link flags
+ # i.e. -fopenmp for compiling and -lgomp for linking, use -fomp for both
+ # compiling and linking
++if (NOT MSVC)
+ if(ZFP_WITH_OPENMP AND NOT OpenMP_C_LIBRARIES)
+   set(OpenMP_C_LIBRARIES ${OpenMP_C_FLAGS})
++  endif()
+ endif()
+ 
+ if(ZFP_WITH_CUDA)
+diff -ruN zfp-0.5.5/Config zfp-0.5.5_opt/Config
+--- zfp-0.5.5/Config	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/Config	2019-05-30 18:26:10.127199000 +0300
+@@ -100,4 +100,24 @@
+ 
+ CFLAGS = $(CSTD) $(FLAGS) $(DEFS)
+ CXXFLAGS = $(CXXSTD) $(FLAGS) $(DEFS)
+-FFLAGS = $(FSTD) $(FLAGS) $(DEFS)
++
++UNAME=$(shell uname -s)
++ifeq ($(WITH_IPP), yes)
++    CFLAGS += -DWITH_IPP -I$(IPPROOT)/include
++    CXXFLAGS += -DWITH_IPP -I$(IPPROOT)/include
++    ifeq ($(ARCH), ia32)
++        CFLAGS += -m32
++        CXXFLAGS += -m32
++        ifeq ($(UNAME), Darwin)
++            IPPLIBS = $(IPPROOT)/lib/libippdc.a $(IPPROOT)/lib/libipps.a $(IPPROOT)/lib/libippcore.a
++        else
++            IPPLIBS = $(IPPROOT)/lib/ia32/libippdc.a $(IPPROOT)/lib/ia32/libipps.a $(IPPROOT)/lib/ia32/libippcore.a
++        endif
++    else
++        ifeq ($(UNAME), Darwin)
++            IPPLIBS = $(IPPROOT)/lib/libippdc.a $(IPPROOT)/lib/libipps.a $(IPPROOT)/lib/libippcore.a
++        else
++            IPPLIBS = $(IPPROOT)/lib/intel64/libippdc.a $(IPPROOT)/lib/intel64/libipps.a $(IPPROOT)/lib/intel64/libippcore.a
++        endif
++    endif
++endif
+\ No newline at end of file
+diff -ruN zfp-0.5.5/include/bitstream.h zfp-0.5.5_opt/include/bitstream.h
+--- zfp-0.5.5/include/bitstream.h	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/include/bitstream.h	2019-05-30 18:26:10.199185000 +0300
+@@ -81,6 +81,9 @@
+ /* copy n bits from one bit stream to another */
+ void stream_copy(bitstream* dst, bitstream* src, size_t n);
+ 
++#if defined(WITH_IPP)
++void stream_set_eos(bitstream* s, size_t byte_len);
++#endif
+ #ifdef BIT_STREAM_STRIDED
+ /* set block size in number of words and spacing in number of blocks */
+ int stream_set_stride(bitstream* stream, size_t block, ptrdiff_t delta);
+diff -ruN zfp-0.5.5/src/CMakeLists.txt zfp-0.5.5_opt/src/CMakeLists.txt
+--- zfp-0.5.5/src/CMakeLists.txt	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/src/CMakeLists.txt	2019-05-30 18:44:08.954909000 +0300
+@@ -1,3 +1,6 @@
++if(WITH_IPP)
++# This file is modified with Intel(R) Integrated Performance Primitives content
++endif()
+ if(ZFP_WITH_CUDA)
+   SET(CMAKE_CXX_FLAGS_PREVIOUS ${CMAKE_CXX_FLAGS})
+   SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC" )
+@@ -27,13 +30,41 @@
+                 ${zfp_cuda_backend_obj})
+ add_library(zfp::zfp ALIAS zfp)
+ 
++if(WITH_IPP)
++   if(ARCH STREQUAL "ia32")
++      set(CMAKE_C_FLAGS -m32)
++      set(CMAKE_CXX_FLAGS -m32)
++      if(UNIX)
++         add_definitions("-m32")
++	 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
++	     message(FATAL_ERROR "ia32 IPP Optimization not supported for MacOSx")
++	 else()
++             target_link_libraries(zfp ${IPPROOT}/lib/ia32/libippdc.a ${IPPROOT}/lib/ia32/libipps.a ${IPPROOT}/lib/ia32/libippcore.a)
++	 endif()
++      else()
++         target_link_libraries(zfp ${IPPROOT}/lib/ia32/ippdcmt.lib ${IPPROOT}/lib/ia32/ippsmt.lib ${IPPROOT}/lib/ia32/ippcoremt.lib)
++      endif()
++   else()
++      if(UNIX)
++          if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
++              target_link_libraries(zfp ${IPPROOT}/lib/libippdc.a ${IPPROOT}/lib/libipps.a ${IPPROOT}/lib/libippcore.a)
++	  else()
++            target_link_libraries(zfp ${IPPROOT}/lib/intel64/libippdc.a ${IPPROOT}/lib/intel64/libipps.a ${IPPROOT}/lib/intel64/libippcore.a)
++	  endif()
++      else()
++            target_link_libraries(zfp ${IPPROOT}/lib/intel64/ippdcmt.lib ${IPPROOT}/lib/intel64/ippsmt.lib ${IPPROOT}/lib/intel64/ippcoremt.lib)
++      endif()
++   endif()
++endif()
+ if(ZFP_WITH_OPENMP)
+   target_compile_options(zfp PRIVATE ${OpenMP_C_FLAGS})
+-  target_link_libraries(zfp PRIVATE ${OpenMP_C_LIBRARIES})
++  #target_link_libraries(zfp PRIVATE ${OpenMP_C_LIBRARIES})
++  target_link_libraries(zfp ${OpenMP_C_LIBRARIES})
+ endif()
+ 
+ if(HAVE_LIBM_MATH)
+-  target_link_libraries(zfp PRIVATE m)
++  #target_link_libraries(zfp PRIVATE m)
++  target_link_libraries(zfp m)
+ endif()
+ 
+ if(WIN32)
+diff -ruN zfp-0.5.5/src/inline/bitstream.c zfp-0.5.5_opt/src/inline/bitstream.c
+--- zfp-0.5.5/src/inline/bitstream.c	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/src/inline/bitstream.c	2019-05-30 18:26:10.323186000 +0300
+@@ -100,6 +100,11 @@
+    caught.
+ */
+ 
++#if defined(WITH_IPP)
++/*
++ * This source code file was modified with Intel(R) Integrated Performance Primitives library content
++ */
++#endif
+ #include <limits.h>
+ #include <stdlib.h>
+ 
+@@ -454,4 +459,11 @@
+   return c;
+ }
+ 
+-#undef unused_
++#if defined(WITH_IPP)
++inline_
++void stream_set_eos(bitstream* s, size_t byte_len)
++{
++    if (s)
++        s->ptr = s->begin + byte_len / sizeof(word);
++}
++#endif
+diff -ruN zfp-0.5.5/src/share/parallel.c zfp-0.5.5_opt/src/share/parallel.c
+--- zfp-0.5.5/src/share/parallel.c	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/src/share/parallel.c	2019-05-30 18:26:10.379167000 +0300
+@@ -1,5 +1,10 @@
+ #ifdef _OPENMP
+ 
++#if defined(WITH_IPP)
++#include <ipps.h>
++#define BYTE_MASK  7
++#define BYTES_IN_BIT_STREAM(x) ((x) >> 3)
++#endif
+ /* block index at which chunk begins */
+ static uint
+ chunk_offset(uint blocks, uint chunks, uint chunk)
+@@ -96,5 +101,43 @@
+   if (!copy)
+     stream_wseek(dst, offset);
+ }
+-
++#if defined (WITH_IPP)
++static void
++compress_finish_par_opt(zfp_stream* stream, bitstream** src, uint chunks, Ipp64u* chunk_lengths)
++{
++    bitstream* dst_bitstream = zfp_stream_bit_stream(stream);
++    Ipp8u* dst_start = (Ipp8u*)stream_data(dst_bitstream);
++    size_t total_offset = stream_wtell(dst_bitstream);
++    int first_byte_offset = 0;
++    Ipp8u* chunk_data;
++    int copy = (dst_start != stream_data(*src));
++    for (uint chunk = 0; chunk < chunks; chunk++) {
++		Ipp8u* dst = NULL;
++        size_t bits = chunk_lengths[chunk];
++		chunk_data = (Ipp8u*)stream_data(src[chunk]);
++		if (!copy){
++			total_offset += bits;
++			stream_close(src[chunk]);
++			first_byte_offset = total_offset & BYTE_MASK;
++			continue;
++		}
++
++		while (bits > IPP_MAX_32S){
++			dst = dst_start + BYTES_IN_BIT_STREAM(IPP_MAX_32S);
++			ippsCopyBE_1u(chunk_data, 0, dst, first_byte_offset, IPP_MAX_32S);
++			total_offset += bits;
++			first_byte_offset = total_offset & BYTE_MASK;
++			bits -= IPP_MAX_32S;
++		}
++		dst = dst_start + BYTES_IN_BIT_STREAM(total_offset);
++        ippsCopyBE_1u(chunk_data, 0, dst, first_byte_offset, (int)bits);
++		total_offset += bits;
++        first_byte_offset = total_offset & BYTE_MASK;
++		free(stream_data(src[chunk]));
++        stream_close(src[chunk]);
++    }
++    free(src);
++    stream_wseek(dst_bitstream, total_offset);
++}
++#endif
+ #endif
+diff -ruN zfp-0.5.5/src/template/compress.c zfp-0.5.5_opt/src/template/compress.c
+--- zfp-0.5.5/src/template/compress.c	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/src/template/compress.c	2019-05-30 18:26:10.413195000 +0300
+@@ -1,3 +1,9 @@
++#if defined(WITH_IPP)
++/*
++* This source code file was modified with Intel(R) Integrated Performance Primitives library content
++*/
++#define REVERSIBLE(zfp) ((zfp)->minexp < ZFP_MIN_EXP) /* reversible mode? */
++#endif
+ /* compress 1d contiguous array */
+ static void
+ _t2(compress, Scalar, 1)(zfp_stream* stream, const zfp_field* field)
+@@ -55,6 +61,26 @@
+     }
+ }
+ 
++#if defined(WITH_IPP) && !defined(_SET_TMP_BLOCK_FROM_)
++#define _SET_TMP_BLOCK_FROM_
++static void  CopyFromPartialBlock(const Ipp32f *pSrc, int stepY, int stepZ, int sizeX, int sizeY, int sizeZ, Ipp32f *pTmpBlock)
++{
++    Ipp32f    *pTmp;
++    int       x, y, z, serIdx;
++    int       copyX, copyY, copyZ;
++    for (serIdx = z = 0; z < 4; z++) {
++        copyZ = (z < sizeZ) ? z : sizeZ - 1;
++        for (y = 0; y < 4; y++) {
++            copyY = (y < sizeY) ? y : sizeY - 1;
++            pTmp = (Ipp32f*)pSrc + copyZ * stepZ + copyY * stepY;
++            for (x = 0; x < 4; x++) {
++                copyX = (x < sizeX) ? x : sizeX - 1;
++                pTmpBlock[serIdx++] = pTmp[copyX];
++            }
++        }
++    }
++}
++#endif
+ /* compress 3d strided array */
+ static void
+ _t2(compress_strided, Scalar, 3)(zfp_stream* stream, const zfp_field* field)
+@@ -68,16 +94,73 @@
+   int sz = field->sz ? field->sz : (int)(nx * ny);
+   uint x, y, z;
+ 
++#if defined(IPP_OPTIMIZATION_ENABLED)
++
++  IppEncodeZfpState_32f* pState = NULL;
++  int srcStep = nx * sizeof(Ipp32f);
++  int srcPlaneStep = srcStep * ny;
++  Ipp32f pTmpBlock[64];
++  bitstream *pBitStream = NULL;
++  uint min_bits, max_bits, max_prec;
++  int min_exp;
++  int sizeState = 0;
++  if (!(REVERSIBLE(stream)))
++  {
++    ippsEncodeZfpGetStateSize_32f(&sizeState);
++    pState = (IppEncodeZfpState_32f *)ippsMalloc_8u(sizeState);
++    pBitStream = stream->stream;
++    ippsEncodeZfpInitLong_32f((Ipp8u*)stream_data(pBitStream), stream_capacity(pBitStream), pState);
++    zfp_stream_params(stream, &min_bits, &max_bits, &max_prec, &min_exp);
++    ippsEncodeZfpSet_32f(min_bits, max_bits, max_prec, min_exp, pState);
++  }
++#endif
+   /* compress array one block of 4x4x4 values at a time */
+   for (z = 0; z < nz; z += 4)
+     for (y = 0; y < ny; y += 4)
+       for (x = 0; x < nx; x += 4) {
+         const Scalar* p = data + sx * (ptrdiff_t)x + sy * (ptrdiff_t)y + sz * (ptrdiff_t)z;
+         if (nx - x < 4 || ny - y < 4 || nz - z < 4)
++        {
++        #if !defined(IPP_OPTIMIZATION_ENABLED)
+           _t2(zfp_encode_partial_block_strided, Scalar, 3)(stream, p, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), sx, sy, sz);
++        #else
++          if (!(REVERSIBLE(stream)))
++          {
++            CopyFromPartialBlock((const Ipp32f *)p, sy, sz, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), pTmpBlock);
++            ippsEncodeZfp444_32f(pTmpBlock, 4 * sizeof(Ipp32f), 4 * 4 * sizeof(Ipp32f), pState);
++          }
++          else
++          {
++            _t2(zfp_encode_partial_block_strided, Scalar, 3)(stream, p, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), sx, sy, sz);
++          }
++        #endif
++        }
+         else
+-          _t2(zfp_encode_block_strided, Scalar, 3)(stream, p, sx, sy, sz);
++        { 
++	      #if !defined(IPP_OPTIMIZATION_ENABLED)
++           _t2(zfp_encode_block_strided, Scalar, 3)(stream, p, sx, sy, sz);
++        #else
++          if (!(REVERSIBLE(stream)))
++          {
++            ippsEncodeZfp444_32f((const Ipp32f *)p, srcStep, srcPlaneStep, pState);
++          }
++          else
++          {
++            _t2(zfp_encode_block_strided, Scalar, 3)(stream, p, sx, sy, sz);
++          }
++        #endif
++        }
+       }
++#if defined(IPP_OPTIMIZATION_ENABLED)
++  if (!(REVERSIBLE(stream)) && pState != NULL)
++  {
++      Ipp64u comprLen;
++      ippsEncodeZfpFlush_32f(pState);
++      ippsEncodeZfpGetCompressedSizeLong_32f(pState, &comprLen);
++      stream_set_eos(pBitStream, comprLen);
++      ippsFree(pState);
++  }
++#endif
+ }
+ 
+ /* compress 4d strided array */
+diff -ruN zfp-0.5.5/src/template/decompress.c zfp-0.5.5_opt/src/template/decompress.c
+--- zfp-0.5.5/src/template/decompress.c	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/src/template/decompress.c	2019-05-30 18:26:10.447191000 +0300
+@@ -1,3 +1,9 @@
++#if defined(WITH_IPP)
++/*
++* This source code file was modified with Intel(R) Integrated Performance Primitives library content
++*/
++#define REVERSIBLE(zfp) ((zfp)->minexp < ZFP_MIN_EXP) /* reversible mode? */
++#endif
+ /* decompress 1d contiguous array */
+ static void
+ _t2(decompress, Scalar, 1)(zfp_stream* stream, zfp_field* field)
+@@ -55,6 +61,20 @@
+     }
+ }
+ 
++#if defined(IPP_OPTIMIZATION_ENABLED) && !defined(_SET_TMP_BLOCK_TO_)
++#define _SET_TMP_BLOCK_TO_
++static void CopyToPartialBlock(Ipp32f *pDst, int stepY, int stepZ, int sizeX, int sizeY, int sizeZ, const Ipp32f *pTmpBlock)
++{
++    int       x, y, z;
++    for(z = 0; z < sizeZ; z++)
++        for(y = 0; y < sizeY; y++)
++            for (x = 0; x < sizeX; x++)
++            {
++                int idx = x + stepY * y + stepZ * z;
++                pDst[idx] = pTmpBlock[x + 4 * y + 4 * 4 * z];
++            }
++}
++#endif
+ /* decompress 3d strided array */
+ static void
+ _t2(decompress_strided, Scalar, 3)(zfp_stream* stream, zfp_field* field)
+@@ -68,16 +88,71 @@
+   int sz = field->sz ? field->sz : (int)(nx * ny);
+   uint x, y, z;
+ 
++#if defined(IPP_OPTIMIZATION_ENABLED)
++  IppDecodeZfpState_32f* pState = NULL;
++  int stateSize;
++  bitstream* pBitStream = NULL;
++  uint min_bits, max_bits, max_prec;
++  int min_exp;
++  int dstStep = nx * sizeof(Ipp32f);
++  int dstPlaneStep = dstStep * ny;
++  Ipp32f tmpBlock[64];
++  if (!(REVERSIBLE(stream)))
++  {
++    ippsDecodeZfpGetStateSize_32f(&stateSize);
++    pState = (IppDecodeZfpState_32f*)ippsMalloc_8u(stateSize);
++    pBitStream = stream->stream;
++    ippsDecodeZfpInitLong_32f((Ipp8u*)stream_data(pBitStream), stream_capacity(pBitStream), pState);
++    zfp_stream_params(stream, &min_bits, &max_bits, &max_prec, &min_exp);
++    ippsDecodeZfpSet_32f(min_bits, max_bits, max_prec, min_exp, pState);
++  }
++#endif
+   /* decompress array one block of 4x4x4 values at a time */
+   for (z = 0; z < nz; z += 4)
+     for (y = 0; y < ny; y += 4)
+       for (x = 0; x < nx; x += 4) {
+         Scalar* p = data + sx * (ptrdiff_t)x + sy * (ptrdiff_t)y + sz * (ptrdiff_t)z;
+         if (nx - x < 4 || ny - y < 4 || nz - z < 4)
++        {
++        #if !defined(IPP_OPTIMIZATION_ENABLED)
+           _t2(zfp_decode_partial_block_strided, Scalar, 3)(stream, p, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), sx, sy, sz);
++        #else
++          if (!(REVERSIBLE(stream)))
++          {
++            ippsDecodeZfp444_32f(pState, (Ipp32f*)tmpBlock, 4 * sizeof(Ipp32f), 4 * 4 * sizeof(Ipp32f));
++            CopyToPartialBlock((Ipp32f*)p, sy, sz, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), (const Ipp32f*)tmpBlock);
++          }
++          else 
++          {
++            _t2(zfp_decode_partial_block_strided, Scalar, 3)(stream, p, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), sx, sy, sz);
++          }
++        #endif
++        }
+         else
++        {
++        #if !defined(IPP_OPTIMIZATION_ENABLED)
+           _t2(zfp_decode_block_strided, Scalar, 3)(stream, p, sx, sy, sz);
++        #else
++          if (!(REVERSIBLE(stream)))
++          {
++            ippsDecodeZfp444_32f(pState, (Ipp32f*)p, dstStep, dstPlaneStep);
++          }
++          else
++          {
++            _t2(zfp_decode_block_strided, Scalar, 3)(stream, p, sx, sy, sz);
++          }
++        #endif
++        }
++      }
++#if defined(IPP_OPTIMIZATION_ENABLED)
++      if (!(REVERSIBLE(stream)) && pState != NULL)
++      {
++          Ipp64u decompressed_size = 0;
++          ippsDecodeZfpGetDecompressedSizeLong_32f(pState, &decompressed_size);
++          ippsFree(pState);
++          stream_set_eos(pBitStream, decompressed_size);
+       }
++#endif
+ }
+ 
+ /* decompress 4d strided array */
+diff -ruN zfp-0.5.5/src/template/ompcompress.c zfp-0.5.5_opt/src/template/ompcompress.c
+--- zfp-0.5.5/src/template/ompcompress.c	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/src/template/ompcompress.c	2019-05-30 18:26:10.478240000 +0300
+@@ -1,5 +1,10 @@
+ #ifdef _OPENMP
+ 
++#if defined(WITH_IPP)
++/*
++* This source code file was modified with Intel(R) Integrated Performance Primitives library content
++*/
++#endif
+ /* compress 1d contiguous array in parallel */
+ static void
+ _t2(compress_omp, Scalar, 1)(zfp_stream* stream, const zfp_field* field)
+@@ -150,6 +155,26 @@
+   compress_finish_par(stream, bs, chunks);
+ }
+ 
++#if defined(IPP_OPTIMIZATION_ENABLED) && !defined(_SET_TMP_BLOCK_FROM_)
++#define _SET_TMP_BLOCK_FROM_
++static void  CopyFromPartialBlock(const Ipp32f *pSrc, int stepY, int stepZ, int sizeX, int sizeY, int sizeZ, Ipp32f *pTmpBlock)
++{
++    Ipp32f    *pTmp;
++    int       x, y, z, serIdx;
++    int       copyX, copyY, copyZ;
++    for (serIdx = z = 0; z < 4; z++) {
++        copyZ = (z < sizeZ) ? z : sizeZ - 1;
++        for (y = 0; y < 4; y++) {
++            copyY = (y < sizeY) ? y : sizeY - 1;
++            pTmp = (Ipp32f*)pSrc + copyZ * stepZ + copyY * stepY;
++            for (x = 0; x < 4; x++) {
++                copyX = (x < sizeX) ? x : sizeX - 1;
++                pTmpBlock[serIdx++] = pTmp[copyX];
++            }
++        }
++    }
++}
++#endif
+ /* compress 3d strided array in parallel */
+ static void
+ _t2(compress_strided_omp, Scalar, 3)(zfp_stream* stream, const zfp_field* field)
+@@ -173,12 +198,40 @@
+ 
+   /* allocate per-thread streams */
+   bitstream** bs = compress_init_par(stream, field, chunks, blocks);
+-  if (!bs)
+-    return;
+ 
++#if defined (IPP_OPTIMIZATION_ENABLED)
++
++    IppEncodeZfpState_32f* pStates = NULL;
++    Ipp64u* chunk_bit_lengths = (Ipp64u*)malloc(sizeof(Ipp64u)* chunks);
++    int srcBlockLineStep = nx * sizeof(Ipp32f);
++    int srcBlockPlaneStep = ny * srcBlockLineStep;
++    uint min_bits, max_bits, max_prec;
++    int min_exp;
++    int sizeState = 0;
++    if (!(REVERSIBLE(stream)))
++    {
++      zfp_stream_params(stream, &min_bits, &max_bits, &max_prec, &min_exp);
++      ippsEncodeZfpGetStateSize_32f(&sizeState);
++      pStates = (IppEncodeZfpState_32f*)ippsMalloc_8u(sizeState * threads);
++    }
++#endif
+   /* compress chunks of blocks in parallel */
+   int chunk;
++#if !defined (IPP_OPTIMIZATION_ENABLED)
+   #pragma omp parallel for num_threads(threads)
++#else
++#pragma omp parallel \
++    num_threads(threads)
++    {
++      bitstream *pBitStream = NULL;
++      IppEncodeZfpState_32f* pState = NULL;
++      Ipp32f pTmpBlock[64];
++      if (!(REVERSIBLE(stream)))
++      {
++        pState = (IppEncodeZfpState_32f*)((Ipp8u*)pStates + omp_get_thread_num() * sizeState);
++      }
++#pragma omp for
++#endif
+   for (chunk = 0; chunk < (int)chunks; chunk++) {
+     /* determine range of block indices assigned to this thread */
+     uint bmin = chunk_offset(blocks, chunks, chunk + 0);
+@@ -187,6 +240,14 @@
+     /* set up thread-local bit stream */
+     zfp_stream s = *stream;
+     zfp_stream_set_bit_stream(&s, bs[chunk]);
++#if defined (IPP_OPTIMIZATION_ENABLED)
++    if (!(REVERSIBLE(stream)))
++    {
++      pBitStream = bs[chunk];
++      ippsEncodeZfpInitLong_32f((Ipp8u*)stream_data(pBitStream), stream_capacity(pBitStream), pState);
++      ippsEncodeZfpSet_32f(min_bits, max_bits, max_prec, min_exp, pState);
++    }
++#endif  
+     /* compress sequence of blocks */
+     for (block = bmin; block < bmax; block++) {
+       /* determine block origin (x, y, z) within array */
+@@ -199,13 +260,60 @@
+       p += sx * (ptrdiff_t)x + sy * (ptrdiff_t)y + sz * (ptrdiff_t)z;
+       /* compress partial or full block */
+       if (nx - x < 4 || ny - y < 4 || nz - z < 4)
+-        _t2(zfp_encode_partial_block_strided, Scalar, 3)(&s, p, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), sx, sy, sz);
++      {
++        #if !defined(IPP_OPTIMIZATION_ENABLED)
++            _t2(zfp_encode_partial_block_strided, Scalar, 3)(&s, p, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), sx, sy, sz);
++        #else
++          if (!(REVERSIBLE(stream)))
++          {
++            CopyFromPartialBlock((const Ipp32f *)p, sy, sz, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), pTmpBlock);
++            ippsEncodeZfp444_32f(pTmpBlock, 4 * sizeof(Ipp32f), 4 * 4 * sizeof(Ipp32f), pState);
++          }
++          else
++          {
++            _t2(zfp_encode_partial_block_strided, Scalar, 3)(&s, p, MIN(nx - x, 4u), MIN(ny - y, 4u), MIN(nz - z, 4u), sx, sy, sz);
++          }
++        #endif
++      }
+       else
+-        _t2(zfp_encode_block_strided, Scalar, 3)(&s, p, sx, sy, sz);
+-    }
++      {
++        #if !defined(IPP_OPTIMIZATION_ENABLED)
++          _t2(zfp_encode_block_strided, Scalar, 3)(&s, p, sx, sy, sz);
++        #else
++          if (!(REVERSIBLE(stream)))
++          {
++            ippsEncodeZfp444_32f((const Ipp32f *)p, srcBlockLineStep, srcBlockPlaneStep, pState);
++          }
++          else 
++          {
++            _t2(zfp_encode_block_strided, Scalar, 3)(&s, p, sx, sy, sz);
++          }
++        #endif
++     }
+   }
+ 
++#if defined (IPP_OPTIMIZATION_ENABLED)
++    if (!(REVERSIBLE(stream)) && pState != NULL)
++    {
++      Ipp64u chunk_compr_length;
++      ippsEncodeZfpGetCompressedBitSize_32f(pState, &chunk_bit_lengths[chunk]);
++      ippsEncodeZfpFlush_32f(pState);
++      chunk_compr_length = (size_t)((chunk_bit_lengths[chunk] + 7) >> 3);
++      stream_set_eos(pBitStream, chunk_compr_length);
++    }
++#endif
++    }
++#if defined (IPP_OPTIMIZATION_ENABLED)
++    }//The end of pragma omp parallel block
+   /* concatenate per-thread streams */
++    if (!(REVERSIBLE(stream)) && pStates != NULL)
++    {
++        compress_finish_par_opt(stream, bs, chunks, chunk_bit_lengths);
++        free(chunk_bit_lengths);
++        ippsFree(pStates);
++        return;
++    }
++#endif
+   compress_finish_par(stream, bs, chunks);
+ }
+ 
+diff -ruN zfp-0.5.5/src/zfp.c zfp-0.5.5_opt/src/zfp.c
+--- zfp-0.5.5/src/zfp.c	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/src/zfp.c	2019-05-30 18:26:10.506205000 +0300
+@@ -6,6 +6,10 @@
+ #include "zfp/macros.h"
+ #include "template/template.h"
+ 
++#if defined(WITH_IPP)
++#include <ippdc.h>
++#include <ipps.h>
++#endif
+ /* public data ------------------------------------------------------------- */
+ 
+ export_ const uint zfp_codec_version = ZFP_CODEC;
+@@ -61,11 +65,17 @@
+ #undef Scalar
+ 
+ #define Scalar float
++#if defined (WITH_IPP)
++	#define IPP_OPTIMIZATION_ENABLED
++#endif
+ #include "template/compress.c"
+ #include "template/decompress.c"
+ #include "template/ompcompress.c"
+ #include "template/cudacompress.c"
+ #include "template/cudadecompress.c"
++#if defined (WITH_IPP)
++	#undef IPP_OPTIMIZATION_ENABLED
++#endif
+ #undef Scalar
+ 
+ #define Scalar double
+diff -ruN zfp-0.5.5/tests/Makefile zfp-0.5.5_opt/tests/Makefile
+--- zfp-0.5.5/tests/Makefile	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/tests/Makefile	2019-05-30 18:26:10.542198000 +0300
+@@ -7,7 +7,11 @@
+ all: $(TARGETS)
+ 
+ $(BINDIR)/testzfp: testzfp.cpp ../lib/$(LIBZFP)
++ifeq ($(WITH_IPP), yes)
++	$(CXX) $(CXXFLAGS) -I../array testzfp.cpp $(CXXLIBS) -o $@ $(IPPLIBS)
++else
+ 	$(CXX) $(CXXFLAGS) -I../array testzfp.cpp $(CXXLIBS) -o $@
++endif
+ 
+ test: $(BINDIR)/testzfp
+ 	$(BINDIR)/testzfp
+diff -ruN zfp-0.5.5/utils/Makefile zfp-0.5.5_opt/utils/Makefile
+--- zfp-0.5.5/utils/Makefile	2019-05-06 03:11:11.000000000 +0300
++++ zfp-0.5.5_opt/utils/Makefile	2019-05-30 18:26:10.633211000 +0300
+@@ -6,7 +6,11 @@
+ 
+ $(TARGET): zfp.c ../lib/$(LIBZFP)
+ 	mkdir -p ../bin
++ifeq ($(WITH_IPP), yes)
++	$(CC) $(CFLAGS) zfp.c -L../lib -lzfp -lm -o $(TARGET) $(IPPLIBS)
++else
+ 	$(CC) $(CFLAGS) zfp.c -L../lib -lzfp -lm -o $(TARGET)
++endif
+ 
+ clean:
+ 	rm -f $(TARGET) fields.o

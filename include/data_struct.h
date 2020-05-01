@@ -4,10 +4,22 @@
 #include <iostream>
 #include <vector>
 #include "mpi.h"
+#include <cmath>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
+
+
+inline index_t rem_sz(index_t sz, unsigned int k){
+    return static_cast<index_t>( sz * ((k+1) / 8.0) );
+}
+
+inline index_t tot_sz(index_t sz, unsigned int k, int q){
+//    printf("r_sz: %u, \tq: %d, \tsizeof(short): %ld, tot: %ld\n", rem_sz(sz, k), q, sizeof(short), rem_sz(sz, k) + q * sizeof(short));
+    return rem_sz(sz, k) + q * sizeof(short);
+}
+
 
 // the order of this class is "column-major order"
 class cooEntry{
@@ -406,10 +418,27 @@ std::ostream & operator<<(std::ostream & stream, const vecCol & item);
 bool vecCol_col_major (const vecCol& node1, const vecCol& node2);
 
 
+class GR_sz {
+public:
+    unsigned int k   = 0; // Golomb-Rice parameter (M = 2^k)
+    unsigned int r   = 0; // remainder size in bytes
+    int          q   = 0; // quotient size in number of short numbers
+    unsigned int tot = 0; // total size in bytes
+
+    unsigned long max_tot = 0; // in bytes (char)
+
+    std::vector<int> ks;
+    std::vector<int> qs;
+
+    GR_sz() = default;
+};
+
 class CSCMat{
 private:
 
 public:
+
+    MPI_Comm comm = MPI_COMM_WORLD;
 
     index_t *row      = nullptr;
     value_t *val      = nullptr;
@@ -419,14 +448,109 @@ public:
     nnz_t   nnz     = 0;
     nnz_t   max_nnz = 0;
     index_t max_M   = 0;
-//    index_t M    = 0;
-//    index_t Mbig;
-//    nnz_t   nnz_g;
-//    bool free_memory = false;
+
+    bool use_trans = true;
+
     std::vector<index_t> split;
     std::vector<nnz_t>   nnz_list;
 
+    // compresseion parameters
+    // =======================
+
+    bool verbose_prep_compute = false;
+    bool verbose_prep         = false;
+    unsigned long max_comp_sz = 0; // in bytes (char)
+
+    GR_sz comp_row;
+    GR_sz comp_col;
+
+    // =======================
+
     CSCMat() = default;
+    int compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz);
+    int compress_prep_compute2(const index_t *v, index_t v_sz, GR_sz &comp_sz);
+    int compress_prep();
 };
+
+
+class CSCMat_mm{
+private:
+
+public:
+
+    index_t row_sz, row_offset, col_sz, col_offset;
+    nnz_t   nnz;
+
+    index_t *r, *col_scan;
+    value_t *v;
+
+    bool free_r = false, free_c = false, free_v = false;
+
+    CSCMat_mm(): row_sz(0), row_offset(0), col_sz(0), col_offset(0), nnz(0), r(nullptr), v(nullptr), col_scan(nullptr) {}
+
+    CSCMat_mm(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset, nnz_t _nnz):
+              row_sz(_row_sz), row_offset(_row_offset), col_sz(_col_sz), col_offset(_col_offset), nnz(_nnz),
+              r(nullptr), v(nullptr), col_scan(nullptr) {}
+
+    CSCMat_mm(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset, nnz_t _nnz,
+              index_t *_r, value_t *_v, index_t *_col_scan):
+              row_sz(_row_sz), row_offset(_row_offset), col_sz(_col_sz), col_offset(_col_offset), nnz(_nnz),
+              r(_r), v(_v), col_scan(_col_scan) {}
+
+    ~CSCMat_mm(){
+        if(free_r){
+            delete []r;
+            free_r = false;
+        }
+        if(free_c){
+            delete []col_scan;
+            free_c = false;
+        }
+        if(free_v){
+            delete []v;
+            free_v = false;
+        }
+    }
+
+    void set_params(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset, nnz_t _nnz){
+        row_sz     = _row_sz;
+        row_offset = _row_offset;
+        col_sz     = _col_sz;
+        col_offset = _col_offset;
+        nnz        = _nnz;
+    }
+
+    void set_params(index_t _row_sz, index_t _row_offset, index_t _col_sz, index_t _col_offset, nnz_t _nnz,
+                    index_t *_r, value_t *_v, index_t *_col_scan){
+        row_sz     = _row_sz;
+        row_offset = _row_offset;
+        col_sz     = _col_sz;
+        col_offset = _col_offset;
+        nnz        = _nnz;
+        r          = _r;
+        v          = _v;
+        col_scan   = _col_scan;
+    }
+};
+
+
+class CSRMat{
+private:
+
+public:
+    index_t *col      = nullptr;
+    value_t *val      = nullptr;
+    index_t *row_scan = nullptr;
+
+    index_t row_sz  = 0;
+    nnz_t   nnz     = 0;
+    nnz_t   max_nnz = 0;
+    index_t max_M   = 0;
+    std::vector<index_t> split;
+    std::vector<nnz_t>   nnz_list;
+
+    CSRMat() = default;
+};
+
 
 #endif //SAENA_DATA_STRUCT_H

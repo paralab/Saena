@@ -1,3 +1,5 @@
+#ifdef _USE_PETSC_
+
 #ifndef SAENA_PETSC_FUNCTIONS_H
 #define SAENA_PETSC_FUNCTIONS_H
 
@@ -23,5 +25,8 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
 int petsc_matmat(saena_matrix *A, saena_matrix *B);
 int petsc_matmat_ave(saena_matrix *A, saena_matrix *B, int matmat_iter);
 int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB);
+int petsc_mat_diff(Mat &A, Mat &B, saena_matrix *B_saena);
 
 #endif //SAENA_PETSC_FUNCTIONS_H
+
+#endif //_USE_PETSC_
