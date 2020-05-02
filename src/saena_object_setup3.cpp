@@ -48,7 +48,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
 	int a_elemno = 10;
 	int elemno = 100;
 	int prodim   = 2;
-	string filename = "/home/songzhex/Desktop/Saena/data/nektar/nek_map_cont_4.txt";
+    string filename = "/home/majidrp/Dropbox/Projects/Saena/data/nektar/nek_map_cont_4.txt";
 	//vector< vector<int> > map = connect(order, a_elemno, prodim);
 	vector< vector<int> > map = mesh_info(order, elemno, filename, map_all);
 	
@@ -122,6 +122,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
     return 0;
 }
 
+
 vector<int> saena_object::next_p_level(vector<int> ind_fine, int order)
 {
     // assuming the elemental ordering is like
@@ -129,25 +130,33 @@ vector<int> saena_object::next_p_level(vector<int> ind_fine, int order)
     // |  |  |
     // 4--5--6
     // |  |  |
-    // 1--2--3  
-    vector<int> indices;
-    for (int i=0; i<order/2+1; i++)
-        for (int j=0; j<order/2+1; j++)
-            indices.push_back(ind_fine[2*j+2*(order+1)*i]);
+    // 1--2--3
 
-	
+    vector<int> indices;
+    for (int i=0; i<order/2+1; i++){
+        for (int j=0; j<order/2+1; j++){
+#ifdef __DEBUG1__
+//            ASSERT((2*j+2*(order+1)*i >= 0) && (2*j+2*(order+1)*i < ind_fine.size()),
+//                   i << "\t" << j << "\t" << order << "\t" << 2*j+2*(order+1)*i);
+//            cout << i << "\t" << j << "\t" << order << "\t" << ind_fine.size() << "\t" << 2*j+2*(order+1)*i << "\t" << ind_fine[2*j+2*(order+1)*i] << endl;
+#endif
+            indices.push_back(ind_fine[2*j+2*(order+1)*i]);
+        }
+    }
+
     // 3--7--4
     // |  |  |
     // 8--9--6
     // |  |  |
-    // 1--5--2  
-	// only for test from 2 -> 1
-	/*vector<int> indices;
+    // 1--5--2
+    // only for test from 2 -> 1
+    /*vector<int> indices;
     for (int i=0; i<4; i++)
-    	indices.push_back(ind_fine[i]);*/
+        indices.push_back(ind_fine[i]);*/
 
     return indices;
 }
+
 
 void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > map, int prodim, vector< vector<double> > &Pp)//, vector< vector<double> > &Rp)
 {
