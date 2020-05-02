@@ -43,18 +43,19 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-	cout << "set up P" << endl;
+	//cout << "set up P" << endl;
 	int order    = A->p_order;
 	int a_elemno = 10;
 	int elemno = 100;
 	int prodim   = 2;
     string filename = "/home/majidrp/Dropbox/Projects/Saena/data/nektar/nek_map_cont_4.txt";
+//	string filename = "../data/nektar/nek_map_cont_4.txt";
 	//vector< vector<int> > map = connect(order, a_elemno, prodim);
 	vector< vector<int> > map = mesh_info(order, elemno, filename, map_all);
 	
 	int row_m = map.size();
-	int col_m = map[0].size();
-	cout << "map row: " << row_m << ", and col: " << col_m << "\n";
+	int col_m = map.at(0).size();
+	//cout << "map row: " << row_m << ", and col: " << col_m << "\n";
 	/*for (int i=0; i<row; i++)
 	{
 		for (int j=0; j<col; j++)
@@ -70,8 +71,8 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
 		
 
 	int row_p = Pp.size();
-	int col_p = Pp[0].size();
-	cout << "Pp row: " << row_p << ", and col: " << col_p << "\n";
+	int col_p = Pp.at(0).size();
+	//cout << "Pp row: " << row_p << ", and col: " << col_p << "\n";
 /*	FILE *filename;
 	filename = fopen("P.txt", "w");
 	for (int i=0; i<row; i++)
@@ -91,7 +92,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
     P->split = A->split;
 	P->Mbig  = Pp.size();
 	P->M     = P->Mbig;
-	P->Nbig  = Pp[0].size();
+	P->Nbig  = Pp.at(0).size();
 	int iter = 0;
 
 	//TODO: change for parallel
@@ -102,11 +103,11 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
     P->entry.clear();
     for(int i=0;i<Pp.size();i++)
 	{
-    	for(int j=0;j<Pp[0].size();j++)
+    	for(int j=0;j<Pp.at(0).size();j++)
 		{
-			if (fabs(Pp[i][j]) > 1e-12)
+			if (fabs(Pp.at(i).at(j)) > 1e-12)
 			{
-        		P->entry.emplace_back(cooEntry(i, j, Pp[i][j]));
+        		P->entry.emplace_back(cooEntry(i, j, Pp.at(i).at(j)));
         		iter++;
 			}
     	}
@@ -173,13 +174,13 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
     int nodeno_coarse = pow(a_elemno*(order/2)+1, prodim);
     Pp.resize(nodeno_fine);
     for (int i = 0; i < nodeno_fine; i++)
-        Pp[i].resize(nodeno_coarse);
+        Pp.at(i).resize(nodeno_coarse);
     // coarse_node_ind index is coraser mesh node index
     // coarse_node_ind value is finer mesh node index
     vector<int> coarse_node_ind = coarse_p_node_arr(map, order);
     //sort(coarse_node_ind.begin(), coarse_node_ind.end());
 
-	cout << map.size() << " " << map[0].size() << "\n";
+	//cout << map.size() << " " << map.at(0).size() << "\n";
     // loop over all elements
     int total_elem = map.size();
 
@@ -187,9 +188,11 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
     for (int i=0; i<total_elem; i++)
     {
         // for each element extract coraser element indices
-        vector<int> ind_coarse = next_p_level(map[i], order);
+        vector<int> ind_coarse = next_p_level(map.at(i), order);
+		//std::cout << "ind_coarse size: " << ind_coarse.size() << std::endl;
+		//std::cout << "map.at(i) size: " << map.at(i).size() << std::endl;
 		for (int ii=0; ii<ind_coarse.size(); ii++)
-			std::cout << ind_coarse[ii] << " ";
+			std::cout << ind_coarse.at(ii) << " ";
 		std::cout << std::endl;
 		//cout << ind_coarse.size() << "\n";
         for (int j=0; j<ind_coarse.size(); j++)
@@ -202,30 +205,30 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
             // find coarse_node_ind index (coarser mesh node index) that
             // has the same value (finer mesh node index) as ind_coarse value
             // This is slow, may need smarter way
-            int P_col = findloc(coarse_node_ind, ind_coarse[j]);
+            int P_col = findloc(coarse_node_ind, ind_coarse.at(j));
             // assuming the map ordering (connectivity) is the same as ref element
             // shared nodes between elements should have the same values
             // when evaluated in each of the elememnts
             for (int k=0; k<val.size(); k++)
 			{
-                Pp[map[i][k]-1][P_col] = val[k];
+                Pp.at(map.at(i).at(k)-1).at(P_col) = val.at(k);
 				//cout << val[k] << "\n";
 			}
 
 			// For nektar which removes dirichlet bc in matrix
-			if (ind_coarse[j] < bnd && !ismember(P_col, skip))
+			if (ind_coarse.at(j) < bnd && !ismember(P_col, skip))
 				skip.push_back(P_col);
         }
     }
 
-	cout << "skip size: " << skip.size() << "\n";
-	for (int ii=0; ii<skip.size(); ii++)
-            std::cout << skip[ii] << " ";
-    std::cout << std::endl;
+	//cout << "skip size: " << skip.size() << "\n";
+	/*for (int ii=0; ii<skip.size(); ii++)
+            std::cout << skip.at(ii) << " ";
+    std::cout << std::endl;*/
 
 	int row_p = Pp.size();
-    int col_p = Pp[0].size();
-    cout << "inside set_PR_from_p, Pp row: " << row_p << ", and col: " << col_p << "\n";
+    int col_p = Pp.at(0).size();
+    //cout << "inside set_PR_from_p, Pp row: " << row_p << ", and col: " << col_p << "\n";
 
 	// Just to match nektar++ petsc matrix
 	// assume all the Dirichlet BC nodes are at the begining
@@ -234,10 +237,10 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
 	for (int i=0; i<Pp.size(); i++)
 	{
 		int counter = 0;
-		for (int j = 0; j<Pp[i].size();)
+		for (int j = 0; j<Pp.at(i).size();)
 		{
 			if (ismember(counter,skip))
-				Pp[i].erase(Pp[i].begin()+j);
+				Pp.at(i).erase(Pp.at(i).begin()+j);
 			else
 				j++;
 			
@@ -248,11 +251,11 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
 	Pp.erase(Pp.begin(), Pp.begin()+bnd);
     //Rp = transp(Pp);
 	int row_after = Pp.size();
-    int col_after = Pp[0].size();
-    cout << "inside set_PR_from_p after remove, Pp row: " << row_after << ", and col: " << col_after << "\n";
+    int col_after = Pp.at(0).size();
+    //cout << "inside set_PR_from_p after remove, Pp row: " << row_after << ", and col: " << col_after << "\n";
 }
 
-inline vector< vector<double> > saena_object::transp(vector< vector<double> > M)
+/*inline vector< vector<double> > saena_object::transp(vector< vector<double> > M)
 {
     int row = M.size();
     int col = M[0].size();
@@ -262,7 +265,7 @@ inline vector< vector<double> > saena_object::transp(vector< vector<double> > M)
             N[i][j] = M[j][i];
 
     return N;
-}
+}*/
 
 //this is the function as mesh info for test for now
 inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int prodim)
@@ -278,7 +281,7 @@ inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int 
             //en = st + order;
             for (int m=0; m<order+1; m++)
                 for (int n=0; n<order+1; n++)
-                    map[k].push_back(st+m*a_nodeno+n+1);
+                    map.at(k).push_back(st+m*a_nodeno+n+1);
         }
     }
     return map;
@@ -303,17 +306,22 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
             {
                 int val;
                 iss >> val;
-                map[i].push_back(val+1);
+                map.at(i).push_back(val+1);
             }
             iss.clear();
         }
         ifs.close();
         iss.clear();
         ifs.clear();
+		/*for(int k=0; k<map.at(0).size();k++)
+		{
+			std::cout << map.at(0).at(k) << std::endl;
+		}
+		exit(0);*/
     }
     else
     { 
-        vector< vector<int> > map_pre = map_all[map_all.size()-1];
+        vector< vector<int> > map_pre = map_all.at(map_all.size()-1);
         // coarse_node_ind index is coraser mesh node index
         // coarse_node_ind value is finer mesh node index
         vector<int> coarse_node_ind = coarse_p_node_arr(map_pre, order*2);
@@ -321,12 +329,12 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
         
         for (int i=0; i<elemno; i++)
         {
-            vector<int> aline = map_pre[i];
+            vector<int> aline = map_pre.at(i);
             vector<int> ind_coarse = next_p_level(aline, order*2);
             for (int j=0; j<ind_coarse.size(); j++)
             {
-                int mapped_val = findloc(coarse_node_ind, ind_coarse[j]);
-                map[i].push_back(mapped_val+1);
+                int mapped_val = findloc(coarse_node_ind, ind_coarse.at(j));
+                map.at(i).push_back(mapped_val+1);
             }
         }
     }
@@ -334,14 +342,14 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
 	map_all.push_back(vector< vector<int> >());
 	for (int i=0; i<map.size(); i++)
 	{
-		map_all[map_all.size()-1].push_back(vector<int>());
-		for (int j=0; j<map[0].size(); j++)
+		map_all.at(map_all.size()-1).push_back(vector<int>());
+		for (int j=0; j<map.at(0).size(); j++)
 		{
-			map_all[map_all.size()-1][i].push_back(map[i][j]);
+			map_all.at(map_all.size()-1).at(i).push_back(map.at(i).at(j));
 		}
 	}
 
-	std::cout << map_all.size() << " " << map_all[map_all.size()-1].size() << " " << map_all[map_all.size()-1][0].size() << std::endl;
+	//std::cout << map_all.size() << " " << map_all.at(map_all.size()-1).size() << " " << map_all.at(map_all.size()-1).at(0).size() << std::endl;
     return map;
 }
 
@@ -371,16 +379,16 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
 			{
             	double x = -1.0+2.0/order*j;
             	double y = -1.0+2.0/order*i;
-            	coord[(order+1)*i+j].push_back(x);
-            	coord[(order+1)*i+j].push_back(y);
+            	coord.at((order+1)*i+j).push_back(x);
+            	coord.at((order+1)*i+j).push_back(y);
 			}
 			else if (order == 4)
 			{
 				const double gl[5] = {-1.0, -sqrt(3.0/7), 0, sqrt(3.0/7), 1.0};
             	double x = gl[j];
             	double y = gl[i];
-            	coord[(order+1)*i+j].push_back(x);
-            	coord[(order+1)*i+j].push_back(y);
+            	coord.at((order+1)*i+j).push_back(x);
+            	coord.at((order+1)*i+j).push_back(y);
 			}
         }
     }
@@ -396,7 +404,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (1-coord[k][0])/2*(1-coord[k][1])/2;
+                        double tmp = (1-coord.at(k).at(0))/2*(1-coord.at(k).at(1))/2;
                         val.push_back(tmp);
                     }
                 }
@@ -407,7 +415,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (1+coord[k][0])/2*(1-coord[k][1])/2;
+                        double tmp = (1+coord.at(k).at(0))/2*(1-coord.at(k).at(1))/2;
                         val.push_back(tmp);
                     }
                 }
@@ -418,7 +426,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (1-coord[k][0])/2*(1+coord[k][1])/2;
+                        double tmp = (1-coord.at(k).at(0))/2*(1+coord.at(k).at(1))/2;
                         val.push_back(tmp);
                     }
                 }
@@ -429,7 +437,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (1+coord[k][0])/2*(1+coord[k][1])/2;
+                        double tmp = (1+coord.at(k).at(0))/2*(1+coord.at(k).at(1))/2;
                         val.push_back(tmp);
                     }
                 }
@@ -448,8 +456,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (coord[k][0]-1)*coord[k][0]/2*
-                                     (coord[k][1]-1)*coord[k][1]/2;
+                        double tmp = (coord.at(k).at(0)-1)*coord.at(k).at(0)/2*
+                                     (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -460,8 +468,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (1-coord[k][0])*(coord[k][0]+1)*
-                                     (coord[k][1]-1)*coord[k][1]/2;
+                        double tmp = (1-coord.at(k).at(0))*(coord.at(k).at(0)+1)*
+                                     (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -472,8 +480,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (1+coord[k][0])*coord[k][0]/2*
-                                     (coord[k][1]-1)*coord[k][1]/2;
+                        double tmp = (1+coord.at(k).at(0))*coord.at(k).at(0)/2*
+                                     (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -484,8 +492,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (coord[k][0]-1)*coord[k][0]/2*
-                                     (1-coord[k][1])*(1+coord[k][1]);
+                        double tmp = (coord.at(k).at(0)-1)*coord.at(k).at(0)/2*
+                                     (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
                         val.push_back(tmp);
                     }
                 }
@@ -496,8 +504,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (1-coord[k][0])*(1+coord[k][0])*
-                                     (1-coord[k][1])*(1+coord[k][1]);
+                        double tmp = (1-coord.at(k).at(0))*(1+coord.at(k).at(0))*
+                                     (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
                         val.push_back(tmp);
                     }
                 }
@@ -508,8 +516,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (coord[k][0]+1)*coord[k][0]/2*
-                                     (1-coord[k][1])*(1+coord[k][1]);
+                        double tmp = (coord.at(k).at(0)+1)*coord.at(k).at(0)/2*
+                                     (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
                         val.push_back(tmp);
                     }
                 }
@@ -520,8 +528,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (coord[k][0]-1)*coord[k][0]/2*
-                                     (1+coord[k][1])*coord[k][1]/2;
+                        double tmp = (coord.at(k).at(0)-1)*coord.at(k).at(0)/2*
+                                     (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -532,8 +540,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (1-coord[k][0])*(coord[k][0]+1)*
-                                     (1+coord[k][1])*coord[k][1]/2;
+                        double tmp = (1-coord.at(k).at(0))*(coord.at(k).at(0)+1)*
+                                     (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -544,8 +552,8 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
                     for (int j=0; j<order+1; j++)
                     {
                         int k = (order+1)*i+j;
-                        double tmp = (coord[k][0]+1)*coord[k][0]/2*
-                                     (1+coord[k][1])*coord[k][1]/2;
+                        double tmp = (coord.at(k).at(0)+1)*coord.at(k).at(0)/2*
+                                     (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -564,7 +572,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
 			for (int j=0; j<order+1; j++)
 			{
 				int k = (order+1)*i+j;
-				double tmp = table[x_dir][j]*table[y_dir][i];
+				double tmp = table.at(x_dir).at(j)*table.at(y_dir).at(i);
 				val.push_back(tmp);
 			}
 		}
@@ -580,11 +588,11 @@ vector<int> saena_object::coarse_p_node_arr(vector< vector<int> > map, int order
     vector<int> ind;
     for (int i=0; i<total_elem; i++)
     {
-        vector<int> ind_coarse = next_p_level(map[i], order);
+        vector<int> ind_coarse = next_p_level(map.at(i), order);
         for (int j=0; j<ind_coarse.size(); j++)
         {
-            if (!ismember(ind_coarse[j], ind))
-                ind.push_back(ind_coarse[j]);
+            if (!ismember(ind_coarse.at(j), ind))
+                ind.push_back(ind_coarse.at(j));
         }
        
     }
@@ -595,7 +603,7 @@ inline bool saena_object::ismember(int a, vector<int> arr)
 {
     for (int i=0; i<arr.size(); i++)
     {
-        if (a == arr[i])
+        if (a == arr.at(i))
             return true;
     }
     return false;
@@ -605,7 +613,7 @@ inline int saena_object::findloc(vector<int> arr, int a)
 {
     for (int i=0; i<arr.size(); i++)
     {
-        if (a == arr[i])
+        if (a == arr.at(i))
             return i;
     }
     
@@ -629,9 +637,9 @@ inline vector< vector<double> > saena_object::eighth_order(int order)
 			for (int k=0; k<order/2+1; k++)
 			{
 				if (i!=k)
-					val *= (gl8[j]-gl4[k])/(gl4[i]-gl4[k]);
+					val *= (gl8.at(j)-gl4.at(k))/(gl4.at(i)-gl4.at(k));
 			}
-			table[i].push_back(val);
+			table.at(i).push_back(val);
 		}
 	}
 	return table;

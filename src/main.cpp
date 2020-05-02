@@ -190,7 +190,7 @@ int main(int argc, char* argv[]){
             res[i] = Au[i] - rhs_std[i];
 //                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
             }
-        std::cout << "norm(Au-b) = " << pnorm(res, comm) << "\n";
+        std::cout << "norm(Au-b)     = " << pnorm(res, comm) << "\n";
     // *************************** check correctness of the solution 2 ****************************
 /*
     bool_correct = true;
@@ -217,7 +217,7 @@ int main(int argc, char* argv[]){
 
     vector<double> sol_load;
     ifstream ifs;
-	ifs.open("/home/songzhex/Desktop/Saena/data/nektar/sol_4matlab.txt");
+	ifs.open("../data/nektar/sol_4matlab.txt");
 	istringstream iss;
 	for (int i=0; i<num_local_row; i++)
 	{
