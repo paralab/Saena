@@ -1978,10 +1978,11 @@ void saena_object::ApplyPlaneRotation(double &dx, double &dy, const double &cs, 
 //                        const Preconditioner &M, Matrix &H, int &m, int &max_iter, double &tol){
 int saena_object::pGMRES(std::vector<double> &u){
     // GMRES proconditioned with AMG
-    // M is the preconditioner.
+//    Preconditioner &M, Matrix &H;
 
     saena_matrix *A = grids[0].A; // todo: double-check
 
+//    MPI_Comm comm = MPI_COMM_WORLD; //todo
     MPI_Comm comm = A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1995,14 +1996,14 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 #endif
 
-    int     m        = 100; // the restart parameter
+    int     m        = A->Mbig; // todo: decide when to restart.
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
 //    double  *rhs     = &grids[0].rhs[0];
 
-    double resid, beta;
-    long   i, j, k;
+    double  resid, beta;
+    long i, j, k;
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2014,6 +2015,8 @@ int saena_object::pGMRES(std::vector<double> &u){
 #endif
 
     // ************** setup SuperLU **************
+
+    saena_matrix *A_coarsest = &grids.back().Ac;
 
     if(A_coarsest->active) {
         setup_SuperLU();
@@ -2027,32 +2030,26 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 #endif
 
-    // *************************
-
-//    Vector *v = new Vector[m+1];
-    std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
-
-//    double normb = norm(M.solve(rhs));
-//    double normb = pnorm(grids[0].rhs, comm); // todo: this is different from the above line. try the following vcycle.
-
-    std::vector<double> temp(size, 0);
-    vcycle(&grids[0], temp, grids[0].rhs); //todo: M should be used here.
-    //temp = grids[0].rhs; //todo: M should be used here.
-    double normb = pnorm(temp, comm);
-
-    if (normb == 0.0){
-        normb = 1.0;
-    }
-
     // use AMG as preconditioner
     // *************************
 //    std::vector<double> r = M.solve(rhs - A * u);
 
-    std::vector<double> res(size), r(size, 0);
+    std::vector<double> res(size), r(size);
     u.assign(size, 0); // initial guess // todo: decide where to do this.
-//    A->residual_negative(u, grids[0].rhs, res); // when the initial guess u is 0, this is equal to rhs
-    vcycle(&grids[0], r, grids[0].rhs); //todo: M should be used here.
-    //r = grids[0].rhs;
+    A->residual_negative(u, grids[0].rhs, res);
+    vcycle(&grids[0], r, res); //todo: M should be used here.
+
+    // *************************
+
+    //    Vector *v = new Vector[m+1];
+    std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
+
+//    double normb = norm(M.solve(rhs));
+    double normb = pnorm(grids[0].rhs, comm); // todo: this is different from the above line
+
+    if (normb == 0.0){
+        normb = 1;
+    }
 
 //    if(rank==0) printf("******************************************************");
     if(rank==0) printf("\ninitial residual = %e \n", normb);
@@ -2075,19 +2072,19 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // initialize the Hessenberg matrix H
     // **********************************
-    saena_matrix_dense H(m + 1, m, comm);
+    saena_matrix_dense H(m, m, comm); // todo: passed Mbig instead of Nbig.
 //    #pragma omp parallel for // todo: set default
     for(i = 0; i < m; i++){
-//        std::fill(&H.entry[i][0], &H.entry[i][m], 0);
-        for(j = 0; j < m; j++) {
-            H.set(i, j, 0);
-        }
+        std::fill(&H.entry[i][0], &H.entry[i][m], 0);
+//        for(j = 0; j < A->Mbig; j++) {
+//            H.set(i, j, 0);
+//        }
     }
 
     // **********************************
 
     double tmp_scalar1 = 0, tmp_scalar2 = 0;
-    std::vector<double> s(m + 1), cs(m + 1), sn(m + 1), w(size);
+    std::vector<double> s(m + 1), cs(m + 1), sn(m + 1), w(size), temp(size);
     j = 1;
     while (j <= max_iter) {
 
@@ -2113,7 +2110,7 @@ int saena_object::pGMRES(std::vector<double> &u){
 #ifdef __DEBUG1__
             if (verbose_solve) {
                 MPI_Barrier(comm);
-                if (rank == 0) printf("\npGMRES: j = %ld: for i = %ld: AMG \n", j, i);
+                if (rank == 0) printf("pGMRES: j = %ld: for i = %ld: AMG \n", j, i);
                 MPI_Barrier(comm);
             }
 #endif
@@ -2122,7 +2119,6 @@ int saena_object::pGMRES(std::vector<double> &u){
             A->matvec(v[i], temp);
             std::fill(w.begin(), w.end(), 0); // todo
             vcycle(&grids[0], w, temp); //todo: M should be used here.
-            //w = temp;
 
 #ifdef __DEBUG1__
             if (verbose_solve) {
@@ -2156,10 +2152,10 @@ int saena_object::pGMRES(std::vector<double> &u){
             // compute H(i+1, i) = ||w||
             H.set(i + 1, i, pnorm(w, comm));
 
-//            if(fabs(H.get(i + 1, i)) < 1e-15){
-//                printf("EXIT_FAILURE: Division by zero inside pGMRES: H[%ld, %ld] = %e \n", i+1, i, H.get(i + 1, i));
-//                exit(EXIT_FAILURE);
-//            }
+            if(fabs(H.get(i + 1, i)) < 1e-15){
+                printf("EXIT_FAILURE: Division by zero inside pGMRES: H[%ld, %ld] = %e \n", i+1, i, H.get(i + 1, i));
+                exit(EXIT_FAILURE);
+            }
 
             // v[i+1] = w / H(i+1, i)
             scale_vector_scalar(w, 1.0 / H.get(i + 1, i), v[i + 1]);
@@ -2173,39 +2169,26 @@ int saena_object::pGMRES(std::vector<double> &u){
 #endif
 
             for (k = 0; k < i; k++) {
-                // set H.entry[k][i] and H.entry[k + 1][i], for k = 0,1,...,i-1
                 ApplyPlaneRotation(H.entry[k][i], H.entry[k + 1][i], cs[k], sn[k]);
             }
 
-            // set cs[i], sn[i]
             GeneratePlaneRotation(H.entry[i][i], H.entry[i + 1][i], cs[i], sn[i]);
-
-            // set H.entry[i][i] and H.entry[i + 1][i]
             ApplyPlaneRotation(H.entry[i][i], H.entry[i + 1][i], cs[i], sn[i]);
-
-            // set s[i] and s[i + 1]
             ApplyPlaneRotation(s[i], s[i + 1], cs[i], sn[i]);
 
-            // compute relative residual
             resid = fabs(s[i + 1]) / normb;
 
-//            GMRES_update(u, i, H, s, v);
-//            A->residual_negative(u, grids[0].rhs, temp);
-//            resid = pnorm(temp, comm) / normb;
-
-//            if (rank == 0) printf("resid = %e\n", resid);
+            if (rank == 0) printf("%e\n", resid);
 #ifdef __DEBUG1__
-//            if (!rank) printf("s[i+1] = %e\n", s[i + 1]);
             if (verbose_solve) {
                 MPI_Barrier(comm);
-                if (rank == 0) printf("resid = %e \t1st resid\n", resid);
+                if (rank == 0) printf("resid: %e \t1st resid\n", resid);
                 MPI_Barrier(comm);
             }
 #endif
 
             if (resid < tol) {
                 GMRES_update(u, i, H, s, v);
-//                print_vector(u, -1, "u", comm);
                 goto gmres_out;
             }
         }
@@ -2231,19 +2214,10 @@ int saena_object::pGMRES(std::vector<double> &u){
         // r = M.solve(rhs - A * u);
         A->residual_negative(u, grids[0].rhs, res);
         vcycle(&grids[0], r, res); //todo: M should be used here.
-        //r = res;
 
         beta  = pnorm(r, comm);
         resid = beta / normb;
-
-#ifdef __DEBUG1__
-        if(verbose_solve){
-            MPI_Barrier(comm);
-            if(rank == 0) printf("resid: %e \t2nd resid\n", resid);
-            MPI_Barrier(comm);
-        }
-#endif
-
+        if(rank == 0) printf("resid: %e \t2nd resid\n", resid);
         if (resid < tol) {
             goto gmres_out;
         }
@@ -2254,15 +2228,13 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // ************** destroy matrix from SuperLU **************
 
-    /*if(A_coarsest->active) {
+    if(A_coarsest->active) {
         destroy_SuperLU();
-    }*/
+    }
 
     // ************** scale u **************
 
-    if(scale){
-        scale_vector(u, grids[0].A->inv_sq_diag);
-    }
+    scale_vector(u, grids[0].A->inv_sq_diag);
 
 #ifdef __DEBUG1__
     if(verbose_solve){

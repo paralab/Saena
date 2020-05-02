@@ -216,7 +216,7 @@ int saena_matrix::remove_duplicates() {
     // check for dupliactes on boundary points of the processors
     // ---------------------------------------------------------
     // receive first element of your left neighbor and check if it is equal to your last element.
-    cooEntry first_element_neighbor;
+    cooEntry first_element_neighbor = cooEntry(0, 0, 0.0);
     if(rank != nprocs-1)
         MPI_Recv(&first_element_neighbor, 1, cooEntry::mpi_datatype(), rank+1, 0, comm, MPI_STATUS_IGNORE);
 
