@@ -2178,10 +2178,10 @@ int saena_object::pGMRES(std::vector<double> &u){
 
             resid = fabs(s[i + 1]) / normb;
 
-            if (rank == 0) printf("%e\n", resid);
 #ifdef __DEBUG1__
             if (verbose_solve) {
                 MPI_Barrier(comm);
+                if (rank == 0) printf("%e\n", resid);
                 if (rank == 0) printf("resid: %e \t1st resid\n", resid);
                 MPI_Barrier(comm);
             }
@@ -2217,7 +2217,13 @@ int saena_object::pGMRES(std::vector<double> &u){
 
         beta  = pnorm(r, comm);
         resid = beta / normb;
-        if(rank == 0) printf("resid: %e \t2nd resid\n", resid);
+
+#ifdef __DEBUG1__
+        if(verbose_solve){
+            if(rank == 0) printf("resid: %e \t2nd resid\n", resid);
+        }
+#endif
+
         if (resid < tol) {
             goto gmres_out;
         }
