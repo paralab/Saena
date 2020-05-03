@@ -317,7 +317,9 @@ int saena_object::compute_coarsen(Grid *grid) {
         }
 #endif
 
-        repartition_u_shrink_prepare(grid);
+        if(nprocs > 1){
+            repartition_u_shrink_prepare(grid);
+        }
 
         Ac->active = true;
 //        Ac->active_minor = true;
