@@ -8,6 +8,7 @@
 #include "grid.h"
 #include "saena.hpp"
 #include <sstream>
+#include <omp.h>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -33,6 +34,9 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+
+    // set the number of OpenMP threads at run-time
+    omp_set_num_threads(1);
 
     // *************************** set the scaling factor ****************************
 
