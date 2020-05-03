@@ -46,21 +46,19 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
 	//cout << "set up P" << endl;
 	int order    = A->p_order;
 	int a_elemno = 10;
-	int elemno = 100;
+	int elemno   = 100;
 	int prodim   = 2;
-    string filename = "/home/majidrp/Dropbox/Projects/Saena/data/nektar/nek_map_cont_4.txt";
-//	string filename = "../data/nektar/nek_map_cont_4.txt";
+    string filename = "../data/nektar/nek_map_cont_4.txt";
 	//vector< vector<int> > map = connect(order, a_elemno, prodim);
 	vector< vector<int> > map = mesh_info(order, elemno, filename, map_all);
 	
 	int row_m = map.size();
 	int col_m = map.at(0).size();
 	//cout << "map row: " << row_m << ", and col: " << col_m << "\n";
-	/*for (int i=0; i<row; i++)
-	{
+
+	/*for (int i=0; i<row; i++){
 		for (int j=0; j<col; j++)
 			cout << map[i][j] << "\t";
-
 		cout << "\n";
 	}
 	exit(0);*/
@@ -68,11 +66,10 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
 	vector< vector<double> > Pp;//, Rp;
 	set_PR_from_p(order, a_elemno, map, prodim, Pp);//, Rp);
 
-		
-
 	int row_p = Pp.size();
 	int col_p = Pp.at(0).size();
 	//cout << "Pp row: " << row_p << ", and col: " << col_p << "\n";
+
 /*	FILE *filename;
 	filename = fopen("P.txt", "w");
 	for (int i=0; i<row; i++)
@@ -98,7 +95,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
 	//TODO: change for parallel
     P->splitNew.resize(nprocs+1);
     P->splitNew[0]      = 0;
-    P->splitNew[nprocs] = P->Mbig;
+    P->splitNew[nprocs] = P->Nbig;
 
     P->entry.clear();
     for(int i=0;i<Pp.size();i++)
@@ -124,8 +121,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
 }
 
 
-vector<int> saena_object::next_p_level(vector<int> ind_fine, int order)
-{
+vector<int> saena_object::next_p_level(vector<int> ind_fine, int order){
     // assuming the elemental ordering is like
     // 7--8--9
     // |  |  |
@@ -161,20 +157,20 @@ vector<int> saena_object::next_p_level(vector<int> ind_fine, int order)
 
 void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > map, int prodim, vector< vector<double> > &Pp)//, vector< vector<double> > &Rp)
 {
-	int bnd;
+	int bnd = 320;
 	// hard coded ...
 	if (order == 2)
 		bnd = 80;
 	else if (order == 4)
 		bnd = 160;
-	else
-		bnd = 320;
 
-    int nodeno_fine = pow(a_elemno*order+1, prodim);
-    int nodeno_coarse = pow(a_elemno*(order/2)+1, prodim);
+    int nodeno_fine   = pow(a_elemno * order+1,     prodim);
+    int nodeno_coarse = pow(a_elemno * (order/2)+1, prodim);
     Pp.resize(nodeno_fine);
+
     for (int i = 0; i < nodeno_fine; i++)
         Pp.at(i).resize(nodeno_coarse);
+
     // coarse_node_ind index is coraser mesh node index
     // coarse_node_ind value is finer mesh node index
     vector<int> coarse_node_ind = coarse_p_node_arr(map, order);
@@ -183,17 +179,18 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
 	//cout << map.size() << " " << map.at(0).size() << "\n";
     // loop over all elements
     int total_elem = map.size();
-
 	vector<int> skip;
-    for (int i=0; i<total_elem; i++)
-    {
+
+    for (int i=0; i<total_elem; ++i){
         // for each element extract coraser element indices
         vector<int> ind_coarse = next_p_level(map.at(i), order);
 		//std::cout << "ind_coarse size: " << ind_coarse.size() << std::endl;
 		//std::cout << "map.at(i) size: " << map.at(i).size() << std::endl;
-		for (int ii=0; ii<ind_coarse.size(); ii++)
-			std::cout << ind_coarse.at(ii) << " ";
-		std::cout << std::endl;
+
+//		for (int ii=0; ii<ind_coarse.size(); ii++)
+//			std::cout << ind_coarse.at(ii) << " ";
+//		std::cout << std::endl;
+
 		//cout << ind_coarse.size() << "\n";
         for (int j=0; j<ind_coarse.size(); j++)
         {
@@ -209,8 +206,7 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
             // assuming the map ordering (connectivity) is the same as ref element
             // shared nodes between elements should have the same values
             // when evaluated in each of the elememnts
-            for (int k=0; k<val.size(); k++)
-			{
+            for (int k=0; k<val.size(); k++){
                 Pp.at(map.at(i).at(k)-1).at(P_col) = val.at(k);
 				//cout << val[k] << "\n";
 			}
@@ -234,8 +230,7 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
 	// assume all the Dirichlet BC nodes are at the begining
 	// remove them from the matrix
 	// remove columns
-	for (int i=0; i<Pp.size(); i++)
-	{
+	for (int i=0; i<Pp.size(); i++){
 		int counter = 0;
 		for (int j = 0; j<Pp.at(i).size();)
 		{
@@ -247,13 +242,16 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
 			counter ++;
 		}
 	}
+
 	// remove rows
 	Pp.erase(Pp.begin(), Pp.begin()+bnd);
+
     //Rp = transp(Pp);
 	int row_after = Pp.size();
     int col_after = Pp.at(0).size();
     //cout << "inside set_PR_from_p after remove, Pp row: " << row_after << ", and col: " << col_after << "\n";
 }
+
 
 /*inline vector< vector<double> > saena_object::transp(vector< vector<double> > M)
 {
@@ -267,9 +265,9 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
     return N;
 }*/
 
+
 //this is the function as mesh info for test for now
-inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int prodim)
-{
+inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int prodim){
     vector <vector<int> > map(pow(a_elemno, prodim));
     int a_nodeno = a_elemno*order+1;
     for (int i=0; i<a_elemno; i++)
@@ -287,9 +285,9 @@ inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int 
     return map;
 }
 
+
 //this is the function as mesh info for test for now
-inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno, string filename, vector< vector< vector<int> > > &map_all)
-{
+inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno, string filename, vector< vector< vector<int> > > &map_all){
     vector <vector<int> > map(elemno);
     if (map_all.empty())
     {
@@ -304,7 +302,7 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
             iss.str(aLine);
             for (int j=0; j<(order+1)*(order+1); j++)
             {
-                int val;
+                int val = 0;
                 iss >> val;
                 map.at(i).push_back(val+1);
             }
@@ -318,9 +316,7 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
 			std::cout << map.at(0).at(k) << std::endl;
 		}
 		exit(0);*/
-    }
-    else
-    { 
+    }else{
         vector< vector<int> > map_pre = map_all.at(map_all.size()-1);
         // coarse_node_ind index is coraser mesh node index
         // coarse_node_ind value is finer mesh node index
@@ -353,10 +349,10 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
     return map;
 }
 
+
 // TODO hard coded
 // assuming 2d for now ...
-vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
-{
+vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
     vector<double> val;//((order+1)*(order+1));
     vector< vector<double> > coord((order+1)*(order+1));
 	// uniformly distributed
@@ -370,6 +366,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
             coord[(order+1)*i+j].push_back(y);
         }
     }*/
+
 	// Guass Lobatto distributed
     for (int i=0; i<order+1; i++)
     {
@@ -618,7 +615,6 @@ inline int saena_object::findloc(vector<int> arr, int a)
     }
     
     cout << "coarse column is not in the fine mesh!!!" << endl;
-    exit(0);
     return -1;
 }
 
