@@ -8,6 +8,7 @@
 #include "grid.h"
 #include "saena.hpp"
 #include <sstream>
+#include <omp.h>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -19,7 +20,7 @@ int main(int argc, char* argv[]){
 
     MPI_Init(&argc, &argv);
     MPI_Comm comm = MPI_COMM_WORLD;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -34,6 +35,9 @@ int main(int argc, char* argv[]){
         return -1;
     }
 
+    // set the number of OpenMP threads at run-time
+    omp_set_num_threads(1);
+
     // *************************** set the scaling factor ****************************
 
     bool scale = true;
@@ -46,6 +50,7 @@ int main(int argc, char* argv[]){
     char* file_name(argv[1]);
     saena::matrix A (comm);
     A.read_file(file_name);
+//    A.read_file(file_name, "triangle");
 
     // set the p_order of the input matrix A.
     int p_order = 2;
@@ -114,7 +119,7 @@ int main(int argc, char* argv[]){
 
     // 1- set them manually
     int    solver_max_iter    = 1000;
-    double relative_tolerance = 1e-15;
+    double relative_tolerance = 1e-14;
     std::string smoother      = "chebyshev";
     int    preSmooth          = 3;
     int    postSmooth         = 3;
@@ -127,7 +132,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(2);
+    solver.set_multigrid_max_level(3);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -136,14 +141,13 @@ int main(int argc, char* argv[]){
     // solve the system Au = rhs
 
     // solve the system using AMG as the solver
-	std::vector<double> u_direct(num_local_row, 0); // initial guess = 0
-    solver.solve(u_direct, &opts);
+//    solver.solve(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
-//    solver.solve_pGMRES(u, &opts);
+    solver.solve_pGMRES(u, &opts);
 
     // *************************** print or write the solution ****************************
 
@@ -151,7 +155,7 @@ int main(int argc, char* argv[]){
 //    print_vector(u_direct, -1, "solution", comm);
 //    write_to_file_vec(u, "solution", comm);
 
-    // *************************** check correctness of the solution ****************************
+    // *************************** check correctness of the solution 1 ****************************
 
     // A is scaled. read it from the file and don't scale.
 
@@ -161,8 +165,8 @@ int main(int argc, char* argv[]){
 
     saena_matrix *AAA = AA.get_internal_matrix();
     std::vector<double> Au(num_local_row, 0);
-    //std::vector<double> sol = u;
-	std::vector<double> sol = u_direct; // the SuperLU solution
+    std::vector<double> sol = u;
+//	std::vector<double> sol = u_direct; // the SuperLU solution
     AAA->matvec(sol, Au);
 
     bool bool_correct = true;
@@ -170,7 +174,7 @@ int main(int argc, char* argv[]){
         printf("\n******************************************************\n");
         printf("Checking the correctness of the solution:\n");
 //        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
-        for(index_t i = 0; i < num_local_row; i++){
+        for(index_t i = 0; i < num_local_row; ++i){
             if(fabs(Au[i] - rhs_std[i]) > 1e-12){
                 bool_correct = false;
 //                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
@@ -185,13 +189,16 @@ int main(int argc, char* argv[]){
             printf("\n******************************************************\n");
         }
     }
-		std::vector<double> res(num_local_row,0);
-        for(index_t i = 0; i < num_local_row; i++){
-            res[i] = Au[i] - rhs_std[i];
-//                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
-            }
-        std::cout << "norm(Au-b) = " << pnorm(res, comm) << "\n";
+
+    std::vector<double> res(num_local_row,0);
+    for(index_t i = 0; i < num_local_row; ++i){
+        res[i] = Au[i] - rhs_std[i];
+//        printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
+    }
+    std::cout << "norm(Au-b)     = " << pnorm(res, comm) << "\n";
+
     // *************************** check correctness of the solution 2 ****************************
+
 /*
     bool_correct = true;
     if(rank==0){
@@ -213,20 +220,25 @@ int main(int argc, char* argv[]){
         }
     }
 */
-    // *************************** Destroy ****************************
+
+    // *************************** check correctness of the solution 3 ****************************
+
+    ifstream ifs("../data/nektar/sol_4matlab.txt");
+    if(!ifs){
+        std::cout << "Could not open the solution file!" << std::endl;
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+    }
 
     vector<double> sol_load;
-    ifstream ifs;
-	ifs.open("../data/nektar/sol_4matlab.txt");
-	istringstream iss;
-	for (int i=0; i<num_local_row; i++)
-	{
+    istringstream iss;
+	for (int i=0; i<num_local_row; ++i){
 		string aLine;
 		getline(ifs, aLine);
 		iss.str(aLine);
 	
-		int v,a;
-		double l;
+		int v = 0, a = 0;
+		double l = 0.0;
 		iss >> v >> a >> l;
 		sol_load.push_back(l);
 		
@@ -237,12 +249,13 @@ int main(int argc, char* argv[]){
 	ifs.clear();
 
 	std::vector<double> u_diff(num_local_row,0);
-    for(index_t i = 0; i < num_local_row; i++)
-	{
-        u_diff[i] = u_direct[i] - sol_load[i];
-//            printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
+    for(index_t i = 0; i < num_local_row; ++i){
+        u_diff[i] = u[i] - sol_load[i];
+//        printf("%.16f \t%.16f \t%.16f \n", u[i], sol_load[i], u_diff[i]);
     }
     std::cout << "norm(u-u_load) = " << pnorm(u_diff, comm) << "\n";
+
+    // *************************** Destroy ****************************
 
     A.destroy();
     solver.destroy();

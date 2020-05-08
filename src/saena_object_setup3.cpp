@@ -108,7 +108,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
 	//TODO: change for parallel
     P->splitNew.resize(nprocs+1);
     P->splitNew[0]      = 0;
-    P->splitNew[nprocs] = P->Mbig;
+    P->splitNew[nprocs] = P->Nbig;
 
     P->entry.clear();
     for(int i=0;i<Pp.size();i++)
@@ -133,30 +133,36 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     return 0;
 }
 
-vector<int> saena_object::next_p_level(vector<int> ind_fine, int order)
-{
+
+vector<int> saena_object::next_p_level(vector<int> ind_fine, int order){
     // assuming the elemental ordering is like
     // 7--8--9
     // |  |  |
     // 4--5--6
     // |  |  |
-    // 1--2--3  
+    // 1--2--3
+
     vector<int> indices;
-    for (int i=0; i<order/2+1; i++)
-        for (int j=0; j<order/2+1; j++)
-		{
-            indices.push_back(ind_fine.at(2*j+2*(order+1)*i));
-		}
-	
+    for (int i=0; i<order/2+1; i++){
+        for (int j=0; j<order/2+1; j++){
+#ifdef __DEBUG1__
+//            ASSERT((2*j+2*(order+1)*i >= 0) && (2*j+2*(order+1)*i < ind_fine.size()),
+//                   i << "\t" << j << "\t" << order << "\t" << 2*j+2*(order+1)*i);
+//            cout << i << "\t" << j << "\t" << order << "\t" << ind_fine.size() << "\t" << 2*j+2*(order+1)*i << "\t" << ind_fine[2*j+2*(order+1)*i] << endl;
+#endif
+            indices.push_back(ind_fine[2*j+2*(order+1)*i]);
+        }
+    }
+
     // 3--7--4
     // |  |  |
     // 8--9--6
     // |  |  |
-    // 1--5--2  
-	// only for test from 2 -> 1
-	/*vector<int> indices;
+    // 1--5--2
+    // only for test from 2 -> 1
+    /*vector<int> indices;
     for (int i=0; i<4; i++)
-    	indices.push_back(ind_fine[i]);*/
+        indices.push_back(ind_fine[i]);*/
 
     return indices;
 }
@@ -541,8 +547,10 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
 		bnd = 320;*/
 
     Pp.resize(nodeno_fine);
+
     for (int i = 0; i < nodeno_fine; i++)
         Pp.at(i).resize(nodeno_coarse);
+
     // coarse_node_ind index is coraser mesh node index
     // coarse_node_ind value is finer mesh node index
     vector<int> coarse_node_ind = coarse_p_node_arr(map, order);
@@ -551,17 +559,18 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
 	//cout << map.size() << " " << map.at(0).size() << "\n";
     // loop over all elements
     int total_elem = map.size();
-
 	vector<int> skip;
-    for (int i=0; i<total_elem; i++)
-    {
+
+    for (int i=0; i<total_elem; ++i){
         // for each element extract coraser element indices
         vector<int> ind_coarse = next_p_level(map.at(i), order);
 		//std::cout << "ind_coarse size: " << ind_coarse.size() << std::endl;
 		//std::cout << "map.at(i) size: " << map.at(i).size() << std::endl;
-		for (int ii=0; ii<ind_coarse.size(); ii++)
-			std::cout << ind_coarse.at(ii) << " ";
-		std::cout << std::endl;
+
+//		for (int ii=0; ii<ind_coarse.size(); ii++)
+//			std::cout << ind_coarse.at(ii) << " ";
+//		std::cout << std::endl;
+
 		//cout << ind_coarse.size() << "\n";
         for (int j=0; j<ind_coarse.size(); j++)
         {
@@ -577,8 +586,7 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
             // assuming the map ordering (connectivity) is the same as ref element
             // shared nodes between elements should have the same values
             // when evaluated in each of the elememnts
-            for (int k=0; k<val.size(); k++)
-			{
+            for (int k=0; k<val.size(); k++){
                 Pp.at(map.at(i).at(k)-1).at(P_col) = val.at(k);
 				//cout << val[k] << "\n";
 			}
@@ -602,8 +610,7 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
 	// assume all the Dirichlet BC nodes are at the begining
 	// remove them from the matrix
 	// remove columns
-	for (int i=0; i<Pp.size(); i++)
-	{
+	for (int i=0; i<Pp.size(); i++){
 		int counter = 0;
 		for (int j = 0; j<Pp.at(i).size();)
 		{
@@ -615,6 +622,7 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
 			counter ++;
 		}
 	}
+
 	// remove rows
 	Pp.erase(Pp.begin(), Pp.begin()+bdydof);
     //Rp = transp(Pp);
@@ -622,6 +630,7 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
     int col_after = Pp.at(0).size();
     //cout << "inside set_PR_from_p after remove, Pp row: " << row_after << ", and col: " << col_after << "\n";
 }
+
 
 /*inline vector< vector<double> > saena_object::transp(vector< vector<double> > M)
 {
@@ -634,6 +643,7 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
 
     return N;
 }*/
+
 
 //this is the function as mesh info for test for now
 /*inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int prodim)
@@ -654,6 +664,7 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
     }
     return map;
 }*/
+
 
 //this is the function as mesh info for test for now
 inline vector< std::vector<int> > saena_object::mesh_info(int order, string filename, vector< vector< vector<int> > > &map_all, MPI_Comm comm)
@@ -679,7 +690,7 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, string file
             iss.str(aLine);
             for (int j=0; j<(order+1)*(order+1); j++)
             {
-                int val;
+                int val = 0;
                 iss >> val;
                 map.at(map.size()-1).push_back(val+1);
             }
@@ -845,8 +856,7 @@ inline std::vector<int> saena_object::g2umap(int order, string filename, vector<
 
 // TODO hard coded
 // assuming 2d for now ...
-vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
-{
+vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
     vector<double> val;//((order+1)*(order+1));
     vector< vector<double> > coord((order+1)*(order+1));
 	// uniformly distributed
@@ -860,6 +870,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
             coord[(order+1)*i+j].push_back(y);
         }
     }*/
+
 	// Guass Lobatto distributed
     for (int i=0; i<order+1; i++)
     {
