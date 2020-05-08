@@ -227,9 +227,9 @@ public:
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
 
     int setup(saena_matrix* A);
-    int coarsen(Grid *grid,std::vector< std::vector< std::vector<int> > > &map_all);
+    int coarsen(Grid *grid,std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
     int SA(Grid *grid);
-    int pcoarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all);
+    int pcoarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
     int compute_coarsen(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid);
@@ -260,7 +260,7 @@ public:
     int aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
-    int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all);
+    int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
 
     int set_repartition_rhs(saena_vector *rhs);
 
@@ -418,15 +418,23 @@ public:
     }
 
     std::vector<int> next_p_level(std::vector<int> ind_fine, int order);
-    void set_PR_from_p(int order, int a_elemno, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp);//, std::vector< std::vector<double> > &Rp);
+    void set_PR_from_p(int order, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp);//, std::vector< std::vector<double> > &Rp);
     std::vector<double> get_interpolation(int ind, int order, int prodim);
     std::vector<int> coarse_p_node_arr(std::vector< std::vector<int> > map, int order);
     inline int findloc(std::vector<int> arr, int a);
-	inline std::vector< std::vector<double> > transp(std::vector< std::vector<double> > M);
+	//inline std::vector< std::vector<double> > transp(std::vector< std::vector<double> > M);
 	inline bool ismember(int a, std::vector<int> arr);
-	inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
+	//inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
 	inline std::vector< std::vector<double> > eighth_order(int order);
-	inline std::vector< std::vector<int> > mesh_info(int order, int elemno, std::string filename, std::vector< std::vector< std::vector<int> > > &map_all);
+	inline std::vector< std::vector<int> > mesh_info(int order, std::string filename, std::vector< std::vector< std::vector<int> > > &map_all, MPI_Comm comm);
+	inline std::vector<int> g2umap(int order, std::string filename, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector<int> > map, MPI_Comm comm);
+	void set_PR_from_p_mpi(int order, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp, MPI_Comm comm, std::vector<int> g2u);//, vector< vector<double> > &Rp)
+	int bdydof;
+    int elemno;
+    int nodeno_fine;
+    int nodeno_coarse;
+    // for debugging
+    int rank_v = 0;
 };
 
 #endif //SAENA_SAENA_OBJECT_H

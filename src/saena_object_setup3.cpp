@@ -15,7 +15,7 @@ using namespace std;
 
 // Assume the mesh info is the connectivity
 // using a 2d vector for now
-int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all){
+int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,std::vector< std::vector<int> > &g2u_all){
 
     saena_matrix   *A  = grid->A;
     prolong_matrix *P  = &grid->P;
@@ -45,33 +45,44 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all)
 
 	//cout << "set up P" << endl;
 	int order    = A->p_order;
-	int a_elemno = 10;
-	int elemno = 100;
 	int prodim   = 2;
-	string filename = "../data/nektar/nek_map_cont_4.txt";
+    
+    std::string filename_map = "../data/nektar/nek_map_"+std::to_string(rank)+".txt";
+	std::string filename_g2u = "../data/nektar/nek_g2u_"+std::to_string(rank)+".txt";
 	//vector< vector<int> > map = connect(order, a_elemno, prodim);
-	vector< vector<int> > map = mesh_info(order, elemno, filename, map_all);
-	
-	int row_m = map.size();
-	int col_m = map.at(0).size();
-	//cout << "map row: " << row_m << ", and col: " << col_m << "\n";
-	/*for (int i=0; i<row; i++)
-	{
-		for (int j=0; j<col; j++)
-			cout << map[i][j] << "\t";
+	vector< vector<int> > map = mesh_info(order, filename_map, map_all,comm);
+    vector<int> g2u;
+    if (map_all.size() == 1)
+        g2u = g2umap(order, filename_g2u, g2u_all, map, comm);
+	else
+        g2u = g2umap(order, filename_g2u, g2u_all, map_all.at(map_all.size()-2), comm);
+    
 
-		cout << "\n";
-	}
+	/*int row_m = map.size();
+	int col_m = map.at(0).size();
+    if (rank == rank_v) {
+	    cout << "map row: " << row_m << ", and col: " << col_m << "\n";
+	    for (int i=0; i<row_m; i++)
+	    {
+		    for (int j=0; j<col_m; j++)
+			    cout << map[i][j] << "\t";
+
+		    cout << "\n";
+	    }
+        cout << "g2u size: " << g2u.size() << "\n";
+        for (int i=0; i<g2u.size(); i++)
+            cout << g2u[i] << endl;
+    }
+    MPI_Barrier(comm);
 	exit(0);*/
 
 	vector< vector<double> > Pp;//, Rp;
-	set_PR_from_p(order, a_elemno, map, prodim, Pp);//, Rp);
-
-		
+	//set_PR_from_p(order, map, prodim, Pp);//, Rp);
+    set_PR_from_p_mpi(order, map, prodim, Pp, comm, g2u);//, Rp);
 
 	int row_p = Pp.size();
 	int col_p = Pp.at(0).size();
-	//cout << "Pp row: " << row_p << ", and col: " << col_p << "\n";
+	cout << "Pp row: " << row_p << ", and col: " << col_p << "\n";
 /*	FILE *filename;
 	filename = fopen("P.txt", "w");
 	for (int i=0; i<row; i++)
@@ -150,26 +161,392 @@ vector<int> saena_object::next_p_level(vector<int> ind_fine, int order)
     return indices;
 }
 
-void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > map, int prodim, vector< vector<double> > &Pp)//, vector< vector<double> > &Rp)
+vector<int> saena_object::coarse_p_node_arr(vector< vector<int> > map, int order)
 {
-	int bnd;
+    int total_elem = map.size();
+    vector<int> ind;
+    for (int i=0; i<total_elem; i++)
+    {
+        vector<int> ind_coarse = next_p_level(map.at(i), order);
+        for (int j=0; j<ind_coarse.size(); j++)
+        {
+            if (!ismember(ind_coarse.at(j), ind))
+                ind.push_back(ind_coarse.at(j));
+        }
+       
+    }
+    return ind;
+} 
+
+void saena_object::set_PR_from_p_mpi(int order, vector< vector<int> > map, int prodim, vector< vector<double> > &Pp, MPI_Comm comm, vector<int> g2u)//, vector< vector<double> > &Rp)
+{
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // get universal number of dof
+    // any other better way?
+	int g2u_univ_size;
+	int g2u_size = g2u.size();
+   
+	MPI_Allreduce(&g2u_size, &g2u_univ_size, 1, MPI_INT, MPI_SUM, comm);
+	vector<int> g2u_univ_map(g2u_univ_size);
+	vector<int> count_arr(nprocs);
+	MPI_Allgather(&g2u_size,1,MPI_INT,count_arr.data(),1, MPI_INT,comm);
+	vector<int> displs(nprocs);
+	displs[0] = 0;
+	for (int i=1; i<nprocs;i++)
+		displs[i] = displs[i-1]+count_arr[i-1];
+
+	MPI_Allgatherv(g2u.data(), g2u.size(), MPI_INT, g2u_univ_map.data(), count_arr.data(), displs.data(), MPI_INT, comm);
+    
+    vector<int> g2u_univ_map_tmp = g2u_univ_map;
+    sort( g2u_univ_map_tmp.begin(), g2u_univ_map_tmp.end() );
+    g2u_univ_map_tmp.erase( unique( g2u_univ_map_tmp.begin(), g2u_univ_map_tmp.end() ), g2u_univ_map_tmp.end() );
+    
+    int univ_nodeno_fine = g2u_univ_map_tmp.size();
+    g2u_univ_map_tmp.clear();
+    g2u_univ_map.clear();
+    /*cout << "total_dof = " << univ_nodeno_fine << "\n";
+    MPI_Barrier(comm);
+    exit(0);*/
+
+    //find bdydof next level
+    vector<int> coarse_node_ind = coarse_p_node_arr(map, order);
+    for (int i=0; i<coarse_node_ind.size();i++)
+    {
+
+        if (coarse_node_ind[i] < bdydof)
+        {
+            coarse_node_ind.erase(coarse_node_ind.begin()+i);   
+            nodeno_coarse --;
+            i--;
+        }
+    }
+    // col is global
+    // row is universal
+    vector< vector<double> > Pp_loc;
+    Pp_loc.resize(univ_nodeno_fine);
+    for (int i = 0; i < univ_nodeno_fine; i++)
+        Pp_loc.at(i).resize(nodeno_coarse,0);
+
+    if (rank == rank_v)
+        std::cout << "Pp_loc has row (universal) = " << Pp_loc.size() << ", and col(global) = " << Pp_loc[0].size() << endl;
+    /*MPI_Barrier(comm);
+    exit(0);*/
+    // next level g2u
+    // index next level node index
+    // value this level g2u value
+	vector<int> g2u_map(nodeno_coarse);
+    // coarse_node_ind index is coraser mesh node index
+    // coarse_node_ind value is finer mesh node index
+
+    sort(coarse_node_ind.begin(), coarse_node_ind.end());
+
+	//cout << map.size() << " " << map.at(0).size() << "\n";
+    //skip bdy node
+	//vector<int> skip;
+    // loop over all elements
+    for (int i=0; i<elemno; i++)
+    {
+        // for each element extract coraser element indices
+        vector<int> ind_coarse = next_p_level(map.at(i), order);
+		//std::cout << "ind_coarse size: " << ind_coarse.size() << std::endl;
+		//std::cout << "map.at(i) size: " << map.at(i).size() << std::endl;
+		/*for (int ii=0; ii<ind_coarse.size(); ii++)
+			std::cout << ind_coarse.at(ii) << " ";
+		std::cout << std::endl;*/
+		//cout << ind_coarse.size() << "\n";
+        for (int j=0; j<ind_coarse.size(); j++)
+        {   
+            // skip bdy node
+            if (ind_coarse.at(j)-1 < bdydof)
+                continue;
+
+            // interpolate basis function of j at all other nodes
+            // in this element as the values of corresponding P entries
+            // TODO only for 2d now upto basis order 8
+            vector<double> val = get_interpolation(j+1,order,prodim);
+			// cout << val.size() << "\n";
+            // find coarse_node_ind index (coarser mesh node index) that
+            // has the same value (finer mesh node index) as ind_coarse value
+            // TODO This is slow, may need smarter way
+            int P_col = findloc(coarse_node_ind, ind_coarse.at(j));
+            /*if (rank == rank_v && ind_coarse[j] == 42)
+                cout << "P_col = " << P_col << std::endl;*/
+            // index corase level dof
+            // value universal value at this level
+			g2u_map.at(P_col) = g2u[ind_coarse.at(j)-1-bdydof];
+            // assuming the map ordering (connectivity) is the same as ref element
+            // shared nodes between elements should have the same values
+            // when evaluated in each of the elememnts
+            //cout << "val size " << val.size() << endl;
+            
+            for (int k=0; k<val.size(); k++)
+			{
+                if (map.at(i).at(k)-1 < bdydof)
+                    continue;
+                
+                Pp_loc.at(g2u.at(map.at(i).at(k)-1-bdydof)).at(P_col) = val.at(k);
+                /*if (rank == rank_v && ind_coarse[j] == 42)
+				    cout << "row = " << g2u.at(map.at(i).at(k)-1-bdydof) << ", and value = " << val[k] << "\n";*/
+			}
+            /*if (rank == rank_v && ind_coarse[j] == 42)
+                cout << "\n";*/
+            /*if (rank == rank_v)
+                cout << endl;*/
+			// For nektar which removes dirichlet bc in matrix
+			//if (ind_coarse.at(j) < bdydof && !ismember(P_col, skip))
+				//skip.push_back(P_col);
+        }
+    }
+
+    // this is different as the allgather at begining of the function
+    // g2u's index is for current level global
+    // while g2u_map's index is for next corase level
+	g2u_size = g2u_map.size();
+	MPI_Allreduce(&g2u_size, &g2u_univ_size, 1, MPI_INT, MPI_SUM, comm);
+    //g2u_univ_map.clear();
+	g2u_univ_map.resize(g2u_univ_size);
+    count_arr.clear();
+    count_arr.resize(nprocs);
+	MPI_Allgather(&g2u_size,1,MPI_INT,count_arr.data(),1, MPI_INT,comm);
+	displs.clear();
+    displs.resize(nprocs);
+	displs[0] = 0;
+	for (int i=1; i<nprocs;i++)
+		displs[i] = displs[i-1]+count_arr[i-1];
+
+	MPI_Allgatherv(g2u_map.data(), g2u_map.size(), MPI_INT, g2u_univ_map.data(), count_arr.data(), displs.data(), MPI_INT, comm);
+    
+	//cout << "skip size: " << skip.size() << "\n";
+	/*for (int ii=0; ii<skip.size(); ii++)
+            std::cout << skip.at(ii) << " ";
+    std::cout << std::endl;*/
+    /*if (rank == rank_v)
+    {
+	    int row_p = Pp_loc.size();
+        int col_p = Pp_loc.at(0).size();
+        cout << "inside set_PR_from_p, Pp_loc row: " << row_p << ", and col: " << col_p << "\n";
+        for (int i=0; i<Pp_loc.size(); i++)
+        {
+            for (int j=0; j<Pp_loc[0].size(); j++)
+                cout << Pp_loc[i][j] << " ";
+            cout<<endl;
+        }
+    }*/
+    /* MPI_Barrier(comm);
+    exit(0); */
+	// Just to match nektar++ petsc matrix
+	// assume all the Dirichlet BC nodes are at the begining
+	// remove them from the matrix
+	// remove columns
+	/*for (int i=0; i<Pp_loc.size(); i++)
+	{
+		int counter = 0;
+		for (int j = 0; j<Pp_loc.at(i).size();)
+		{
+			if (ismember(counter,skip))
+				Pp_loc.at(i).erase(Pp_loc.at(i).begin()+j);
+			else
+				j++;
+			
+			counter ++;
+		}
+	}*/
+	// remove rows
+	//Pp_loc.erase(Pp_loc.begin(), Pp_loc.begin()+bdydof);
+    //Rp = transp(Pp_loc);
+
+	// comunication of universal P
+	// collect glb_map and P colums
+	// recast 2d vector into 1d
+	// TODO this may be big. 
+	// Pp is better in a COO or other proper format
+    // col leading
+	vector<double> Pp_1d;
+	for (int i=0; i<Pp_loc[0].size(); i++)
+	{
+		for (int j=0; j<Pp_loc.size(); j++)
+        {
+			Pp_1d.push_back(Pp_loc[j][i]);
+            //if (rank == rank_v)
+               //cout << Pp_1d[Pp_1d.size()-1] << std::endl;
+        }
+	}
+    //Pp_loc.clear();
+	
+	int Pp_univ_size;
+	int Pp_size = Pp_1d.size();
+	MPI_Allreduce(&Pp_size, &Pp_univ_size, 1, MPI_INT, MPI_SUM, comm);
+	vector<double> Pp_univ(Pp_univ_size);
+    count_arr.clear();
+    count_arr.resize(nprocs);
+    displs.clear();
+    displs.resize(nprocs);
+	MPI_Allgather(&Pp_size,1,MPI_INT,count_arr.data(),1, MPI_INT,comm);
+	displs[0] = 0;
+	for (int i=1; i<nprocs;i++)
+		displs[i] = displs[i-1]+count_arr[i-1];
+    
+	MPI_Allgatherv(Pp_1d.data(), Pp_1d.size(), MPI_DOUBLE, Pp_univ.data(), count_arr.data(), displs.data(), MPI_DOUBLE, comm);
+    //Pp_1d.clear();
+    // make sure the ordering of Pp is the same as g2u map
+	// recast Pp to 2d vector for sorting
+	vector < vector<double> > Pp_2d;
+	for (int i=0; i<Pp_univ.size()/univ_nodeno_fine; i++)
+    {
+        Pp_2d.push_back(vector<double>());
+		for (int j=0; j<univ_nodeno_fine; j++)
+            Pp_2d[i].push_back(Pp_univ[i*univ_nodeno_fine+j]);
+    }
+    //Pp_univ.clear();
+   
+   /*  if (rank == rank_v)
+	{
+        for (int i=0; i<univ_nodeno_fine; i++)
+	    {
+		    for (int j=0; j<Pp_univ.size()/univ_nodeno_fine; j++)
+			    cout << Pp_univ[univ_nodeno_fine*j+i] << " ";
+            
+            std::cout << "\n";
+	    }
+        
+    } */
+    /*MPI_Barrier(comm);
+    exit(0);*/
+
+    /*if (rank == rank_v)
+    {
+        cout << "before sort" << endl;
+        for (int i=0; i<g2u_univ_map.size(); i++)
+            cout << g2u_univ_map[i] << endl;
+    }
+    
+    if (rank == rank_v)
+    {
+        cout << "before sort" << endl;
+        for (int i=0; i<univ_nodeno_fine; i++)
+        {
+            for (int j=0; j<Pp_univ.size()/univ_nodeno_fine;j++)
+                cout << Pp_2d[j][i]<< " ";
+            cout << endl;
+        }
+    }*/
+
+    //sort Pp according to g2u_univ_map
+    vector<pair<int, int> > vp;  
+    for (int i = 0; i < g2u_univ_size; ++i) { 
+        vp.push_back(make_pair(g2u_univ_map[i], i)); 
+    } 
+
+    //g2u_univ_map.clear();
+    // Sorting pair vector 
+    sort(vp.begin(), vp.end()); 
+    
+    vector < vector<double> > Pp_2d_tmp(Pp_2d.size(), vector<double>(Pp_2d[0].size()));
+    for (int i=0; i<Pp_2d.size();i++)
+        Pp_2d_tmp[i] = Pp_2d[vp[i].second];
+
+    //Pp_2d.clear();
+    /*if (rank == rank_v)
+    {
+        cout << "after sort" << endl;
+        for (int i=0; i<g2u_univ_map.size(); i++)
+            cout << vp[i].first << endl;
+        cout << "after sort" << endl;
+        for (int i=0; i<g2u_univ_map.size(); i++)
+            cout << vp[i].second << endl;
+    }
+    if (rank == rank_v)
+    {
+        cout << "after sort" << endl;
+        for (int i=0; i<univ_nodeno_fine; i++)
+        {
+            for (int j=0; j<Pp_univ.size()/univ_nodeno_fine;j++)
+                cout << Pp_2d_tmp[j][i]<< " ";
+            cout << endl;
+        }
+    }*/
+
+
+    
+    /*MPI_Barrier(comm);
+    exit(0);*/
+	// combine P for shared col (some of the rows are in one processor while others are in another) and remove extra ones 
+   
+    // for testing
+    //vector< vector<double> > Pp_2d_tmp1 = Pp_2d_tmp;
+	for (int i=0; i<Pp_2d_tmp.size()-1; )
+	{
+		if ( vp[i].first == vp[i+1].first )
+        {
+		    //same P_col			
+		    //merge that P_col;
+            do
+            {
+				for (int j=0; j< Pp_2d_tmp[0].size(); j++)
+				{
+					if (Pp_2d_tmp[i][j] == 0 && Pp_2d_tmp[i+1][j] != 0)
+						Pp_2d_tmp[i][j] = Pp_2d_tmp[i+1][j];
+				}
+                // remove
+				Pp_2d_tmp.erase(Pp_2d_tmp.begin()+i+1);
+                vp.erase(vp.begin()+i+1);
+			} 
+            while (vp[i].first == vp[i+1].first);
+		}
+        i++;
+	}
+	
+    Pp.resize(Pp_2d_tmp[0].size());
+    for (int i=0; i<Pp.size(); i++)
+        Pp[i].resize(Pp_2d_tmp.size());
+	for (int i=0; i<Pp_2d_tmp.size(); i++)
+	{
+		for (int j=0; j<Pp_2d_tmp[0].size(); j++)
+			Pp[j][i] = Pp_2d_tmp[i][j];
+	}  
+
+    /*if (rank == rank_v)
+    {
+        cout << "last" << endl;
+        for (int i=0; i<last.size(); i++)
+	    {
+		    for (int j=0; j<last[0].size(); j++)
+			    cout << last[i][j] << " ";
+            cout << endl;
+	    }  
+    }*/
+
+    /*if (rank == rank_v)
+    {
+        cout << "after sort" << endl;
+        for (int j=0; j<univ_nodeno_fine;j++)
+            cout << Pp_2d_tmp1[36][j]<< " " << Pp_2d_tmp1[37][j] << " " << Pp[j][36] << endl;
+    }
+    MPI_Barrier(comm);
+    exit(0);*/
+}
+
+void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodim, vector< vector<double> > &Pp)//, vector< vector<double> > &Rp)
+{
+	/*int bnd;
 	// hard coded ...
 	if (order == 2)
 		bnd = 80;
 	else if (order == 4)
 		bnd = 160;
 	else
-		bnd = 320;
+		bnd = 320;*/
 
-    int nodeno_fine = pow(a_elemno*order+1, prodim);
-    int nodeno_coarse = pow(a_elemno*(order/2)+1, prodim);
     Pp.resize(nodeno_fine);
     for (int i = 0; i < nodeno_fine; i++)
         Pp.at(i).resize(nodeno_coarse);
     // coarse_node_ind index is coraser mesh node index
     // coarse_node_ind value is finer mesh node index
     vector<int> coarse_node_ind = coarse_p_node_arr(map, order);
-    //sort(coarse_node_ind.begin(), coarse_node_ind.end());
+    sort(coarse_node_ind.begin(), coarse_node_ind.end());
 
 	//cout << map.size() << " " << map.at(0).size() << "\n";
     // loop over all elements
@@ -207,7 +584,7 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
 			}
 
 			// For nektar which removes dirichlet bc in matrix
-			if (ind_coarse.at(j) < bnd && !ismember(P_col, skip))
+			if (ind_coarse.at(j) < bdydof && !ismember(P_col, skip))
 				skip.push_back(P_col);
         }
     }
@@ -239,7 +616,7 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
 		}
 	}
 	// remove rows
-	Pp.erase(Pp.begin(), Pp.begin()+bnd);
+	Pp.erase(Pp.begin(), Pp.begin()+bdydof);
     //Rp = transp(Pp);
 	int row_after = Pp.size();
     int col_after = Pp.at(0).size();
@@ -259,7 +636,7 @@ void saena_object::set_PR_from_p(int order, int a_elemno, vector< vector<int> > 
 }*/
 
 //this is the function as mesh info for test for now
-inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int prodim)
+/*inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int prodim)
 {
     vector <vector<int> > map(pow(a_elemno, prodim));
     int a_nodeno = a_elemno*order+1;
@@ -276,39 +653,49 @@ inline vector< vector<int> > saena_object::connect(int order, int a_elemno, int 
         }
     }
     return map;
-}
+}*/
 
 //this is the function as mesh info for test for now
-inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno, string filename, vector< vector< vector<int> > > &map_all)
+inline vector< std::vector<int> > saena_object::mesh_info(int order, string filename, vector< vector< vector<int> > > &map_all, MPI_Comm comm)
 {
-    vector <vector<int> > map(elemno);
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    vector <vector<int> > map;
     if (map_all.empty())
     {
         // assume pure quad elememt for now
         ifstream ifs;
         ifs.open(filename.c_str());
+        //std::cout << filename << std::endl;
         istringstream iss;
-        for (int i=0; i<elemno; i++)
+        string aLine;
+        getline(ifs, aLine);
+        elemno = 0;
+        while(!aLine.empty())
         {
-            string aLine;
-            getline(ifs, aLine);
+            elemno++;
+            map.push_back(vector<int>());
             iss.str(aLine);
             for (int j=0; j<(order+1)*(order+1); j++)
             {
                 int val;
                 iss >> val;
-                map.at(i).push_back(val+1);
+                map.at(map.size()-1).push_back(val+1);
             }
             iss.clear();
+            getline(ifs, aLine);
         }
+        ifs.clear();
         ifs.close();
         iss.clear();
-        ifs.clear();
+
 		/*for(int k=0; k<map.at(0).size();k++)
 		{
-			std::cout << map.at(0).at(k) << std::endl;
+			std::cout << map.at(0).at(k) << " ";
 		}
-		exit(0);*/
+		std::cout << "\n";*/
+		//exit(0);
     }
     else
     { 
@@ -340,8 +727,120 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, int elemno,
 		}
 	}
 
+
+    // get fine and corase number of nodes in this P level
+    nodeno_coarse = coarse_p_node_arr(map, order).size();
+    nodeno_fine = 0;
+    for (int i=0; i<map.size(); i++)
+    {
+        nodeno_fine = std::max(*max_element(map[i].begin(), map[i].end()), nodeno_fine);        
+    }
+    if (rank == rank_v)
+    {
+        cout << "elem # = " << elemno << endl;
+        cout << "fine node # = " << nodeno_fine << ", and coarse node # = " << nodeno_coarse << endl;
+    }
 	//std::cout << map_all.size() << " " << map_all.at(map_all.size()-1).size() << " " << map_all.at(map_all.size()-1).at(0).size() << std::endl;
     return map;
+}
+
+//this is the function as mesh info for test for now
+inline std::vector<int> saena_object::g2umap(int order, string filename, vector< vector<int> > &g2u_all, vector< vector<int> > map, MPI_Comm comm)
+{
+    vector<int> g2u;
+    if (g2u_all.empty())
+    {
+        // assume pure quad elememt for now
+        ifstream ifs;
+        ifs.open(filename.c_str());
+        istringstream iss;
+        string aLine;
+        getline(ifs, aLine);
+        iss.str(aLine);
+		iss >> bdydof;
+		iss.clear();
+		getline(ifs, aLine);
+        while (!aLine.empty())
+        {
+            iss.str(aLine);
+            int uid;
+            iss >> uid;
+            g2u.push_back(uid);
+            iss.clear();
+        	getline(ifs, aLine);
+        }
+        ifs.clear();
+        ifs.close();
+        iss.clear();
+		/*for(int k=0; k<g2u.size()/2;k++)
+		{
+			std::cout << g2u.at(2*k) << " " << g2u.at(2*k+1);
+		}
+		std::cout << "\n";
+		exit(0);*/
+    }
+    else
+    { 
+		vector <int> next_level_g2u;
+        // coarse_node_ind index is coraser mesh node index
+        // coarse_node_ind value is finer mesh node index
+        vector<int> coarse_node_ind = coarse_p_node_arr(map, order*2);
+        int next_bdydof = 0;
+        for (int i=0; i<coarse_node_ind.size(); i++)
+        {
+			// get universal dof value
+			// this value will go to next level
+            if (coarse_node_ind.at(i)-1 <bdydof)
+                next_bdydof ++;
+            else
+                next_level_g2u.push_back(g2u_all.at(g2u_all.size()-1).at(coarse_node_ind.at(i)-1-bdydof));
+        }
+		// now fill mapping from global to universal in next level
+		// need communication
+    	int nprocs, rank;
+    	MPI_Comm_size(comm, &nprocs);
+    	MPI_Comm_rank(comm, &rank);
+
+		int g2u_univ_size;
+		int glb_size = next_level_g2u.size();
+		MPI_Allreduce(&glb_size, &g2u_univ_size, 1, MPI_INT, MPI_SUM, comm);
+		vector<int> g2u_univ(g2u_univ_size);
+		vector<int> count_arr(nprocs);
+		MPI_Allgather(&glb_size,1,MPI_INT,count_arr.data(),1, MPI_INT,comm);
+		vector<int> displs(nprocs);
+		displs[0] = 0;
+		for (int i=1; i<nprocs;i++)
+			displs[i] = displs[i-1]+count_arr[i-1];
+
+		MPI_Allgatherv(next_level_g2u.data(), next_level_g2u.size(), MPI_INT, g2u_univ.data(), count_arr.data(), displs.data(), MPI_INT, comm);
+		// sort the universal g2u map to make sure it is consistent with universal Ac = R*A*P dof ordering 
+		// since universal P column is also sorted in the same way
+		// now universal g2u index becomes the map value for Ac
+		sort(g2u_univ.begin(),g2u_univ.end());
+        g2u_univ.erase( unique( g2u_univ.begin(), g2u_univ.end() ), g2u_univ.end() );
+		// loop over global map to assign universal value to it
+		
+		for (int i=0; i<coarse_node_ind.size(); i++)
+		{
+			// if it is boundary node, it has no conterpart in g2u
+			// bdydof will be at the begining since coarse_node_ind is sorted
+			if (coarse_node_ind[i] -1 < bdydof)
+                continue;
+			int next_g2u_val = findloc(g2u_univ, g2u_all.at(g2u_all.size()-1).at(coarse_node_ind[i]-1-bdydof));
+			// relate i-bdydof (global dof in next level) and next_g2u_val (universal dof in next level)
+			g2u.push_back(next_g2u_val);		
+		}
+		bdydof = next_bdydof;
+    }
+
+	g2u_all.push_back( vector<int> ());
+	for (int i=0; i<g2u.size(); i++)
+	{
+		g2u_all.at(g2u_all.size()-1).push_back(g2u.at(i));
+	}
+
+	//std::cout << map_all.size() << " " << map_all.at(map_all.size()-1).size() << " " << map_all.at(map_all.size()-1).at(0).size() << std::endl;
+    return g2u;
 }
 
 // TODO hard coded
@@ -573,22 +1072,6 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim)
 	return val;
 }
 
-vector<int> saena_object::coarse_p_node_arr(vector< vector<int> > map, int order)
-{
-    int total_elem = map.size();
-    vector<int> ind;
-    for (int i=0; i<total_elem; i++)
-    {
-        vector<int> ind_coarse = next_p_level(map.at(i), order);
-        for (int j=0; j<ind_coarse.size(); j++)
-        {
-            if (!ismember(ind_coarse.at(j), ind))
-                ind.push_back(ind_coarse.at(j));
-        }
-       
-    }
-    return ind;
-} 
 
 inline bool saena_object::ismember(int a, vector<int> arr)
 {
@@ -609,7 +1092,7 @@ inline int saena_object::findloc(vector<int> arr, int a)
     }
     
     cout << "coarse column is not in the fine mesh!!!" << endl;
-    exit(0);
+    //exit(0);
     return -1;
 }
 

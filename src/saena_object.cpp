@@ -90,12 +90,13 @@ int saena_object::setup(saena_matrix* A) {
 
     if(verbose_setup_steps && rank==0) printf("setup: other Grids\n");
     std::vector< std::vector< std::vector<int> > > map_all;
+    std::vector< std::vector<int> > g2u_all;
     for(int i = 0; i < max_level; i++){
 //        MPI_Barrier(grids[0].A->comm); printf("rank = %d, level setup; before if\n", rank); MPI_Barrier(grids[0].A->comm);
 //        if(grids[i].A->active) {
             if (shrink_level_vector.size()>i+1) if(shrink_level_vector[i+1]) grids[i].A->enable_shrink_next_level = true;
             if (shrink_values_vector.size()>i+1) grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
-            coarsen(&grids[i], map_all); // create P, R and Ac for grid[i]
+            coarsen(&grids[i], map_all, g2u_all); // create P, R and Ac for grid[i]
             grids[i + 1] = Grid(&grids[i].Ac, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i]) // todo: use emplace_back for grids.
             grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
 
@@ -226,7 +227,7 @@ int saena_object::setup(saena_matrix* A) {
 }
 
 
-int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all){
+int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all){
 
 #ifdef __DEBUG1__
     int nprocs, rank;
@@ -249,7 +250,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
     t1 = omp_get_wtime();
 #endif
 
-    create_prolongation(grid, map_all);
+    create_prolongation(grid, map_all,g2u_all);
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
@@ -325,12 +326,12 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 }
 
 
-int saena_object::create_prolongation(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all) {
+int saena_object::create_prolongation(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all) {
 
     if(grid->A->p_order == 1){
         SA(grid);
     }else{
-        pcoarsen(grid, map_all);
+        pcoarsen(grid, map_all, g2u_all);
     }
 
     return 0;

@@ -141,7 +141,7 @@ set(SOURCE_FILES ${SOURCE_FILES}
 # ZFP: for compressing arrays
 
 set(ZFP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/zfp)
-set(ZFP_LIB ${CMAKE_CURRENT_BINARY_DIR}/build_zfp/lib64/libzfp.so)
+set(ZFP_LIB ${CMAKE_CURRENT_BINARY_DIR}/build_zfp/lib/libzfp.so)
 include_directories(
         ${ZFP_DIR}/array
         ${ZFP_DIR}/array/zfp
