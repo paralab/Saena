@@ -765,7 +765,7 @@ int saena_object::repartition_u_shrink_prepare(Grid *grid){
 
 //    print_vector(grid->scount2, -1, "scount2", comm);
 
-    grid->scount2.resize(nprocs);
+    grid->rcount2.resize(nprocs);
     MPI_Alltoall(&grid->scount2[0], 1, MPI_INT, &grid->rcount2[0], 1, MPI_INT, comm);
 
 //    print_vector(grid->rcount2, -1, "rcount2", comm);
@@ -773,18 +773,20 @@ int saena_object::repartition_u_shrink_prepare(Grid *grid){
 //    std::vector<int> sdispls2(nprocs);
     grid->sdispls2.resize(nprocs);
     grid->sdispls2[0] = 0;
-    for (int i=1; i<nprocs; i++)
+    for (int i = 1; i < nprocs; ++i){
         grid->sdispls2[i] = grid->scount2[i-1] + grid->sdispls2[i-1];
+    }
 
 //    print_vector(grid->sdispls2, "sdispls2, -1, comm);
 
 //    std::vector<int> rdispls2(nprocs);
     grid->rdispls2.resize(nprocs);
     grid->rdispls2[0] = 0;
-    for (int i=1; i<nprocs; i++)
+    for (int i = 1; i < nprocs; ++i){
         grid->rdispls2[i] = grid->rcount2[i-1] + grid->rdispls2[i-1];
+    }
 
-//    print_vector(grid->rdispls2, -1, "rdispls2, comm);
+//    print_vector(grid->rdispls2, -1, "rdispls2", comm);
 
     return 0;
 }
