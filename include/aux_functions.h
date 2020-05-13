@@ -9,6 +9,7 @@
 #include <cmath>
 #include <mpi.h>
 #include <fstream>
+#include <sstream>
 
 
 class strength_matrix;
@@ -147,12 +148,16 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    std::stringstream buffer;
     index_t iter = 0;
     if(ran >= 0) {
         if (rank == ran) {
             printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), ran, v.size());
             for (auto i:v) {
-                std::cout << iter << "\t" << i << std::endl;
+                buffer << iter << "\t" << i;
+                std::cout << buffer.str() << std::endl;
+                buffer.str("");
+//                std::cout << iter << "\t" << i << std::endl;
                 iter++;
             }
             printf("\n");
@@ -163,7 +168,10 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
             if (rank == proc) {
                 printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), proc, v.size());
                 for (auto i:v) {
-                    std::cout << iter << "\t" << i << std::endl;
+                    buffer << iter << "\t" << i;
+                    std::cout << buffer.str() << std::endl;
+                    buffer.str("");
+//                    std::cout << iter << "\t" << i << std::endl;
                     iter++;
                 }
                 printf("\n");
