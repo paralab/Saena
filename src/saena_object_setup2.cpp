@@ -20,16 +20,7 @@
 
 
 int saena_object::compute_coarsen(Grid *grid) {
-
     // Output: Ac = R * A * P
-    // Steps:
-    // 1- Compute AP = A * P. To do that use the transpose of R_i, instead of P. Pass all R_j's to all the processors,
-    //    Then, multiply local A_i by R_j on each process.
-    // 2- Compute RAP = R * AP. Use transpose of P_i instead of R. It is done locally. So multiply P_i * (AP)_i.
-    // 3- Sort and remove local duplicates.
-    // 4- Do a parallel sort based on row-major order. A modified version of par::sampleSort from usort is used here.
-    //    Again, remove duplicates.
-    // 5- Not complete yet: Sparsify Ac.
 
     saena_matrix    *A  = grid->A;
     prolong_matrix  *P  = &grid->P;
@@ -384,23 +375,23 @@ int saena_object::triple_mat_mult(Grid *grid){
 #ifdef __DEBUG1__
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
-//    print_vector(R->entry, 0, "R->entry", comm);
+//    print_vector(R->entry, -1, "R->entry", comm);
 
     if (verbose_triple_mat_mult) {
         MPI_Barrier(comm);
         if (rank == 0) printf("\nstart of triple_mat_mult: nprocs: %d \n", nprocs);
         MPI_Barrier(comm);
-        printf("rank %d: A: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n",
+        printf("rank %d: A: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu\n",
                 rank, A->Mbig, A->M, A->nnz_g, A->nnz_l);
-//        MPI_Barrier(comm);
-//        printf("rank %d: P: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n",
-//                rank, P->Mbig, P->M, P->nnz_g, P->nnz_l);
         MPI_Barrier(comm);
-        printf("rank %d: R: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u \n",
+        printf("rank %d: P: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u\n",
+                rank, P->Mbig, P->M, P->nnz_g, P->nnz_l, P->Nbig);
+        MPI_Barrier(comm);
+        printf("rank %d: R: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u\n",
                 rank, R->Mbig, R->M, R->nnz_g, R->nnz_l, R->Nbig);
         MPI_Barrier(comm);
-//        print_vector(A->split,    1, "A->split",    comm);
-//        print_vector(R->splitNew, 1, "R->splitNew", comm);
+        print_vector(A->split,    1, "A->split",    comm);
+        print_vector(R->splitNew, 1, "R->splitNew", comm);
 //        print_vector(A->nnz_list, 1, "A->nnz_list", comm);
 //        print_vector(R->nnz_list, 1, "R->nnz_list", comm);
     }
