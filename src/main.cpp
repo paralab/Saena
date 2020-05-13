@@ -195,7 +195,9 @@ int main(int argc, char* argv[]){
         res[i] = Au[i] - rhs_std[i];
 //        printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
     }
-    std::cout << "norm(Au-b)     = " << pnorm(res, comm) << "\n";
+
+    float norm1 = pnorm(res, comm);
+    if(!rank) std::cout << "norm(Au-b)     = " << norm1 << "\n";
 
     // *************************** check correctness of the solution 2 ****************************
 
@@ -253,7 +255,9 @@ int main(int argc, char* argv[]){
         u_diff[i] = u[i] - sol_load[i];
 //        printf("%.16f \t%.16f \t%.16f \n", u[i], sol_load[i], u_diff[i]);
     }
-    std::cout << "norm(u-u_load) = " << pnorm(u_diff, comm) << "\n";
+
+    float norm2 = pnorm(u_diff, comm);
+    if(!rank) std::cout << "norm(u-u_load) = " << norm2 << "\n";
 
     // *************************** Destroy ****************************
 
