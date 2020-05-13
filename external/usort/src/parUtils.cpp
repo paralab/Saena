@@ -10,6 +10,8 @@
 #include "dtypes.h"
 #include "parUtils.h"
 
+//#include "data_struct.h"
+
 #ifdef __DEBUG__
 #ifndef __DEBUG_PAR__
 #define __DEBUG_PAR__
@@ -383,6 +385,194 @@ namespace par {
 		 
 		return 1;
 	}
+
+
+	// this version of sampleSort redistributes arr to have entries with row indices between split[rank] and split[rank+1] on proc. rank.
+	// this only works on cooEntry_row, because the ordering should be row-major.
+	// To convert this function to template T, instad of cooEntry_row, a new compare function can be implemented for comparing arr[i] with split[k].
+    int sampleSort(std::vector<cooEntry_row>& arr, std::vector<cooEntry_row> & SortedElem, std::vector<index_t> &split, MPI_Comm comm){
+
+        int npes = 0;
+        MPI_Comm_size(comm, &npes);
+
+        //--
+        int rank = 0;
+        MPI_Comm_rank(comm, &rank);
+
+//      std::cout << rank << " : " << __func__ << arr.size() << std::endl;
+
+        assert(arr.size());
+
+        if (npes == 1) {
+//          std::cout <<" have to use seq. sort"
+//          <<" since npes = 1 . inpSize: "<<(arr.size()) <<std::endl;
+//        std::sort(arr.begin(), arr.end());
+//        omp_par::merge_sort(arr.begin(),arr.end());
+            std::sort(arr.begin(),arr.end());
+            SortedElem = arr;
+            return 0;
+        }
+
+        int myrank = 0;
+        MPI_Comm_rank(comm, &myrank);
+
+        DendroIntL nelem = arr.size();
+        DendroIntL nelemCopy = nelem;
+        DendroIntL totSize = 0;
+        par::Mpi_Allreduce<DendroIntL>(&nelemCopy, &totSize, 1, MPI_SUM, comm);
+
+        DendroIntL npesLong = npes;
+        const DendroIntL FIVE = 5;
+
+        if(totSize < (FIVE*npesLong*npesLong)) {
+//            if(!myrank) {
+//                std::cout <<" Using bitonic sort since totSize < (5*(npes^2)). totSize: "
+//                <<totSize<<" npes: "<<npes <<std::endl;
+//            }
+
+            par::partitionW<cooEntry_row>(arr, NULL, comm);
+
+#ifdef __DEBUG_PAR__
+            MPI_Barrier(comm);
+        if(!myrank) {
+          std::cout<<"SampleSort (small n): Stage-1 passed."<<std::endl;
+        }
+        MPI_Barrier(comm);
+#endif
+
+            SortedElem = arr;
+            MPI_Comm new_comm;
+            if(totSize < npesLong) {
+//                if(!myrank) {
+//                    std::cout<<" Input to sort is small. splittingComm: "
+//                             <<npes<<" -> "<< totSize <<std::endl;
+//                }
+                par::splitCommUsingSplittingRank(static_cast<int>(totSize), &new_comm, comm);
+            } else {
+                new_comm = comm;
+            }
+
+#ifdef __DEBUG_PAR__
+            MPI_Barrier(comm);
+        if(!myrank) {
+          std::cout<<"SampleSort (small n): Stage-2 passed."<<std::endl;
+        }
+        MPI_Barrier(comm);
+#endif
+
+            if(!SortedElem.empty()) {
+                par::bitonicSort<cooEntry_row>(SortedElem, new_comm);
+            }
+
+#ifdef __DEBUG_PAR__
+            MPI_Barrier(comm);
+        if(!myrank) {
+          std::cout<<"SampleSort (small n): Stage-3 passed."<<std::endl;
+        }
+        MPI_Barrier(comm);
+#endif
+
+        }// end if
+
+#ifdef __DEBUG_PAR__
+        if(!myrank) {
+            std::cout<<"Using sample sort to sort nodes. n/p^2 is fine."<<std::endl;
+        }
+#endif
+
+        //Re-part arr so that each proc. has at least p elements.
+        par::partitionW<cooEntry_row>(arr, NULL, comm);
+
+        nelem = arr.size();
+
+//      std::sort(arr.begin(),arr.end());
+        omp_par::merge_sort(arr.begin(),arr.end());
+
+        int *sendcnts = new int[npes];
+        assert(sendcnts);
+
+        int * recvcnts = new int[npes];
+        assert(recvcnts);
+
+        int * sdispls = new int[npes];
+        assert(sdispls);
+
+        int * rdispls = new int[npes];
+        assert(rdispls);
+
+#pragma omp parallel for
+        for(int k = 0; k < npes; k++){
+            sendcnts[k] = 0;
+        }
+
+        //To be parallelized
+        int k = 0;
+        for (DendroIntL j = 0; j < nelem; j++) {
+            if (arr[j].row < split[k+1]) {
+                sendcnts[k]++;
+//            if(rank==0){
+//                std::cout << arr[j] << "\tk = " << k << "\t" << splitters[k] << "\t" << splitters[k+1] << "\tfirst" << std::endl;
+//            }
+
+            } else {
+                k = (int)lower_bound3(&split[0], &split[npes-1], arr[j].row);
+
+                if (k == (npes-1) ){
+                    //could not find any splitter >= arr[j]
+                    sendcnts[k] = nelem - j;
+                    break;
+                } else {
+                    assert(k < (npes-1));
+                    assert(arr[j].row < split[k+1]);
+                    sendcnts[k]++;
+                }
+            }//end if-else
+
+        }//end for j
+
+        par::Mpi_Alltoall<int>(sendcnts, recvcnts, 1, comm);
+
+        sdispls[0] = 0; rdispls[0] = 0;
+//      for (int j = 1; j < npes; j++){
+//        sdispls[j] = sdispls[j-1] + sendcnts[j-1];
+//        rdispls[j] = rdispls[j-1] + recvcnts[j-1];
+//      }
+        omp_par::scan(sendcnts,sdispls,npes);
+        omp_par::scan(recvcnts,rdispls,npes);
+
+        DendroIntL nsorted = rdispls[npes-1] + recvcnts[npes-1];
+        SortedElem.resize(nsorted);
+
+        cooEntry_row* arrPtr = NULL;
+        cooEntry_row* SortedElemPtr = NULL;
+        if(!arr.empty()) {
+            arrPtr = &(*(arr.begin()));
+        }
+        if(!SortedElem.empty()) {
+            SortedElemPtr = &(*(SortedElem.begin()));
+        }
+        par::Mpi_Alltoallv_dense<cooEntry_row>(arrPtr, sendcnts, sdispls,
+                                               SortedElemPtr, recvcnts, rdispls, comm);
+
+        arr.clear();
+
+        delete [] sendcnts;
+        sendcnts = nullptr;
+
+        delete [] recvcnts;
+        recvcnts = nullptr;
+
+        delete [] sdispls;
+        sdispls = nullptr;
+
+        delete [] rdispls;
+        rdispls = nullptr;
+
+//      sort(SortedElem.begin(), SortedElem.end());
+        omp_par::merge_sort(&SortedElem[0], &SortedElem[nsorted]);
+
+    }//end function
+
 
 }// end namespace
 
