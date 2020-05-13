@@ -197,6 +197,7 @@ public:
     bool verbose_setup            = true;
     bool verbose_setup_steps      = false;
     bool verbose_level_setup      = false;
+    bool verbose_coarsen          = false;
     bool verbose_compute_coarsen  = false;
     bool verbose_triple_mat_mult  = false;
     bool verbose_matmat           = false;
@@ -419,6 +420,7 @@ public:
 
     std::vector<int> next_p_level(std::vector<int> ind_fine, int order);
     void set_PR_from_p(int order, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp);//, std::vector< std::vector<double> > &Rp);
+    void set_P_from_mesh(int order, std::vector< std::vector<int> > map, int prodim, std::vector<cooEntry_row> &P_temp, MPI_Comm comm, std::vector<int> g2u);
     std::vector<double> get_interpolation(int ind, int order, int prodim);
     std::vector<int> coarse_p_node_arr(std::vector< std::vector<int> > map, int order);
     inline int findloc(std::vector<int> arr, int a);
@@ -428,7 +430,6 @@ public:
 	inline std::vector< std::vector<double> > eighth_order(int order);
 	inline std::vector< std::vector<int> > mesh_info(int order, std::string filename, std::vector< std::vector< std::vector<int> > > &map_all, MPI_Comm comm);
 	inline std::vector<int> g2umap(int order, std::string filename, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector<int> > map, MPI_Comm comm);
-	void set_PR_from_p_mpi(int order, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp, MPI_Comm comm, std::vector<int> g2u);//, vector< vector<double> > &Rp)
 	int bdydof;
     int elemno;
     int nodeno_fine;
