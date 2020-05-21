@@ -227,6 +227,204 @@ int saena_object::setup(saena_matrix* A) {
 }
 
 
+int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof) {
+    int nprocs, rank, rank_new;
+    MPI_Comm_size(A->comm, &nprocs);
+    MPI_Comm_rank(A->comm, &rank);
+    A->active_old_comm = true;
+
+#pragma omp parallel default(none) shared(rank, nprocs)
+    if(!rank && omp_get_thread_num()==0)
+        printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
+
+#ifdef SPLIT_NNZ
+    if(!rank) printf("fast_mm: split based on nnz\n");
+#endif
+#ifdef SPLIT_SIZE
+//    if(rank==0) printf("fast_mm: split based on matrix size\n");
+#endif
+//    if(!rank) std::cout << "coarsen_method: " << coarsen_method << std::endl;
+
+//    float row_reduction_min;
+//    float total_row_reduction;
+//    index_t M_current;
+
+    if(verbose_setup)
+        if(rank==0){
+            printf("_____________________________\n\n");
+            printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
+                   nprocs, A->Mbig, A->nnz_g, A->density);}
+
+    if(fabs(sample_sz_percent - 1) < 1e-4) doSparsify = false;
+
+    if(verbose_setup_steps && rank==0) printf("setup: find_eig()\n");
+    if(smoother=="chebyshev"){
+//        double t1 = omp_get_wtime();
+        find_eig(*A);
+//        double t2 = omp_get_wtime();
+//        if(verbose_level_setup) print_time(t1, t2, "find_eig() level 0: ", A->comm);
+    }
+
+    if(verbose_setup_steps && rank==0) printf("setup: generate_dense_matrix()\n");
+    A->switch_to_dense = switch_to_dense;
+    A->dense_threshold = dense_threshold;
+    if(switch_to_dense && A->density > dense_threshold) {
+        A->generate_dense_matrix();
+    }
+
+//    mempool1 = new value_t[matmat_size_thre2];
+//    mempool2 = new index_t[A->Mbig * 4];
+
+    if(verbose_setup_steps && rank==0) printf("setup: first Grid\n");
+    grids.resize(max_level+1);
+    grids[0] = Grid(A, 0); // pass A to grids[0]
+
+    if(verbose_setup_steps && rank==0) printf("setup: other Grids\n");
+
+    std::vector< std::vector< std::vector<int> > > map_all;
+    map_all.emplace_back(m_l2g);
+
+    std::vector< std::vector<int> > g2u_all;
+    g2u_all.emplace_back(m_g2u);
+
+     bdydof = m_bdydof;
+
+    for(int i = 0; i < max_level; i++){
+//        MPI_Barrier(grids[0].A->comm); printf("rank = %d, level setup; before if\n", rank); MPI_Barrier(grids[0].A->comm);
+//        if(grids[i].A->active) {
+        if (shrink_level_vector.size()>i+1) if(shrink_level_vector[i+1]) grids[i].A->enable_shrink_next_level = true;
+        if (shrink_values_vector.size()>i+1) grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
+        coarsen(&grids[i], map_all, g2u_all); // create P, R and Ac for grid[i]
+        grids[i + 1] = Grid(&grids[i].Ac, i + 1); // Pass A to grids[i+1] (created as Ac in grids[i]) // todo: use emplace_back for grids.
+        grids[i].coarseGrid = &grids[i + 1]; // connect grids[i+1] to grids[i]
+
+        if(grids[i].Ac.active) {
+            if (smoother == "chebyshev") {
+//                    double t1 = omp_get_wtime();
+                find_eig(grids[i].Ac);
+//                    double t2 = omp_get_wtime();
+//                    if(verbose_level_setup) print_time(t1, t2, "find_eig(): ", A->comm);
+            }
+
+            if (verbose_setup) {
+                MPI_Comm_rank(grids[i].Ac.comm, &rank_new);
+                if (rank_new == 0) {
+//                    MPI_Comm_size(grids[i].Ac.comm, &nprocs);
+                    printf("_____________________________\n\n");
+                    printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu"
+                           "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
+                           grids[i + 1].currentLevel, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
+                           grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
+                }
+            }
+        }
+
+        // decide if next level for multigrid is required or not.
+        // threshold to set maximum multigrid level
+        if(dynamic_levels){
+//                MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
+//                total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
+            grids[i+1].row_reduction_min = (float) grids[i].Ac.Mbig / grids[i].A->Mbig;
+
+//                if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold); MPI_Barrier(grids[i].Ac.comm);}
+//                if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
+//                row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
+//                MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
+//                if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f \n", row_reduction_min, row_reduction_up_thrshld);
+//                if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
+
+            if ( (grids[i].Ac.Mbig < least_row_threshold) ||
+                 (grids[i+1].row_reduction_min > row_reduction_up_thrshld) ||
+                 (grids[i+1].row_reduction_min < row_reduction_down_thrshld) ) {
+
+                if(grids[i].Ac.Mbig < least_row_threshold) {
+                    max_level = grids[i].currentLevel + 1;
+                }
+
+                if(grids[i+1].row_reduction_min > row_reduction_up_thrshld ||
+                   grids[i+1].row_reduction_min < row_reduction_down_thrshld){
+                    max_level = grids[i].currentLevel;
+//                        grids.resize(max_level);
+//                        grids.pop_back();
+                    // todo: when destroy() for P and R is written, delete them by that.
+                }
+//                    if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("rank %d: max_level is set to %d \n", rank, max_level); MPI_Barrier(grids[i].Ac.comm);}
+            }
+        }
+//        }
+
+        if(!grids[i].Ac.active)
+            break;
+    }
+    // max_level is the lowest on the active processors in the last grid. So MPI_MIN is used in the following MPI_Allreduce.
+    int max_level_send = max_level;
+    MPI_Allreduce(&max_level_send, &max_level, 1, MPI_INT, MPI_MIN, grids[0].A->comm);
+    grids.resize(max_level);
+
+    if(max_level == 0){
+        A_coarsest = A;
+    }else{
+        A_coarsest = &grids.back().Ac;
+    }
+
+//    printf("rank = %d, max_level = %d\n", rank, max_level);
+//    printf("i = %u, max_level = %u \n", i, max_level);
+
+    // set the "active" flag to false to next levels after the first not active processor.
+//    for(int l = 0; l < max_level; ++l){
+//        if(!grids[l].A->active) {
+//            for (int k = l+1; k < max_level; ++k) {
+//                printf("rank = %d level %d\n", rank, k);
+//                grids[k].Ac.active = false;
+//            }
+//            break;
+//        }
+//    }
+
+//    MPI_Barrier(A->comm);
+//    for(int l = 0; l < max_level; ++l){
+//        printf("\nlevel = %d\n", l);
+//        if(grids[l].Ac.active) {
+//            printf("rank = %d active\n", rank);
+//        } else {
+//            printf("rank = %d not active\n", rank);
+//        }
+//        MPI_Barrier(A->comm);
+//    }
+
+/*
+    // grids[i+1].row_reduction_min is 0 by default. for the active processors in the last grid, it will be non-zero.
+    // that's why MPI_MAX is used in the following MPI_Allreduce.
+    float row_reduction_min_send = grids[i].row_reduction_min;
+    MPI_Allreduce(&row_reduction_min_send, &grids[i].row_reduction_min, 1, MPI_FLOAT, MPI_MAX, grids[0].A->comm);
+    // delete the coarsest level, if the size is not reduced much.
+    if (grids[i].row_reduction_min > row_reduction_up_thrshld) {
+        grids.pop_back();
+        max_level--;
+    }
+*/
+
+//    delete[] mempool1;
+//    delete[] mempool2;
+
+    if(verbose_setup){
+        MPI_Barrier(A->comm);
+        if(!rank){
+            printf("_____________________________\n\n");
+            printf("number of levels = << %d >> (the finest level is 0)\n", max_level);
+            if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
+            printf("\n******************************************************\n");
+        }
+        MPI_Barrier(A->comm);
+    }
+
+//    MPI_Barrier(grids[0].A->comm); printf("rank %d: setup done!\n", rank); MPI_Barrier(grids[0].A->comm);
+//    if(rank==0) dollar::text(std::cout);
+
+    return 0;
+}
+
+
 int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all){
 
 #ifdef __DEBUG1__

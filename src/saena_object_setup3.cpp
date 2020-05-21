@@ -1194,14 +1194,14 @@ void saena_object::set_PR_from_p(int order, vector< vector<int> > map, int prodi
 
 
 //this is the function as mesh info for test for now
-inline vector< std::vector<int> > saena_object::mesh_info(int order, string filename, vector< vector< vector<int> > > &map_all, MPI_Comm comm)
-{
+inline vector< std::vector<int> > saena_object::mesh_info(int order, string filename, vector< vector< vector<int> > > &map_all, MPI_Comm comm){
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     vector <vector<int> > map;
-    if (map_all.empty())
-    {
+    if (map_all.size() == 1) {
+        elemno = map_all[0].size();
+#if 0
         // assume pure quad elememt for now
         ifstream ifs;
         ifs.open(filename.c_str());
@@ -1234,9 +1234,8 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, string file
 		}
 		std::cout << "\n";*/
 		//exit(0);
-    }
-    else
-    { 
+#endif
+    }else{
         vector< vector<int> > map_pre = map_all.at(map_all.size()-1);
         // coarse_node_ind index is coraser mesh node index
         // coarse_node_ind value is finer mesh node index
@@ -1282,7 +1281,10 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, string file
 inline std::vector<int> saena_object::g2umap(int order, string filename, vector< vector<int> > &g2u_all, vector< vector<int> > map, MPI_Comm comm)
 {
     vector<int> g2u;
-    if (g2u_all.empty()){
+    if (g2u_all.size() == 1) {
+        g2u = g2u_all[0];
+
+#if 0
         // assume pure quad elememt for now
         ifstream ifs;
         ifs.open(filename.c_str());
@@ -1292,6 +1294,7 @@ inline std::vector<int> saena_object::g2umap(int order, string filename, vector<
         iss.str(aLine);
 		iss >> bdydof;
 		iss.clear();
+
 		getline(ifs, aLine);
         while (!aLine.empty())
         {
@@ -1305,15 +1308,15 @@ inline std::vector<int> saena_object::g2umap(int order, string filename, vector<
         ifs.clear();
         ifs.close();
         iss.clear();
+
 		/*for(int k=0; k<g2u.size()/2;k++)
 		{
 			std::cout << g2u.at(2*k) << " " << g2u.at(2*k+1);
 		}
 		std::cout << "\n";
 		exit(0);*/
-    }
-    else
-    { 
+#endif
+    } else {
 		vector <int> next_level_g2u;
         // coarse_node_ind index is coraser mesh node index
         // coarse_node_ind value is finer mesh node index
