@@ -177,7 +177,10 @@ namespace par {
     int sampleSort(std::vector<T>& in, std::vector<T> & out, MPI_Comm comm); 
 
   template<typename T>
-    int sampleSort(std::vector<T>& in, MPI_Comm comm); 
+    int sampleSort(std::vector<T>& in, MPI_Comm comm);
+
+
+    int sampleSort(std::vector<cooEntry_row>& arr, std::vector<cooEntry_row> & SortedElem, std::vector<index_t> &split, MPI_Comm comm);
 
   /**
     @brief Splits a communication group into two, one containing processors that passed a value of 'false' 

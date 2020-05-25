@@ -301,7 +301,9 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 
     // scale rhs
     // ---------
-    scale_vector(grids[0].rhs, grids[0].A->inv_sq_diag);
+    if(scale){
+        scale_vector(grids[0].rhs, grids[0].A->inv_sq_diag);
+    }
 
     return 0;
 }
@@ -718,12 +720,19 @@ int saena_object::repartition_u_shrink_prepare(Grid *grid){
 
 
 int saena_object::repartition_u_shrink_prepare(Grid *grid){
+    // this function should only be called in parallel
+    // this function sets the following parameters of grid:
+    // scount2, sdispls2, rcount2, rdispls2
 
 //    MPI_Comm comm = grid->A->comm;
     MPI_Comm comm = grid->Ac.comm;
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    assert(nprocs > 0);
+#endif
 
     // Note: A is grid->Ac!
     // --------------------
@@ -735,11 +744,11 @@ int saena_object::repartition_u_shrink_prepare(Grid *grid){
 
     grid->scount2.assign(nprocs, 0);
 
-    long least_proc = 0, curr_proc;
+    long least_proc = 0, curr_proc = 0;
     if(A->M_old != 0){
         least_proc = lower_bound3(&A->split[0], &A->split[nprocs], 0 + A->split_old[rank]);
         grid->scount2[least_proc]++;
-//    printf("rank %d: 0 + A.split_old[rank] = %u, least_proc = %ld \n", rank, 0 + A->split_old[rank], least_proc);
+//        printf("rank %d: 0 + A.split_old[rank] = %u, least_proc = %ld \n", rank, 0 + A->split_old[rank], least_proc);
 
         curr_proc = least_proc;
         for(index_t i = 1; i < A->M_old; i++){
@@ -750,34 +759,34 @@ int saena_object::repartition_u_shrink_prepare(Grid *grid){
                     curr_proc++;
             }
             grid->scount2[curr_proc]++;
-            //        if(rank==2) printf("i + A.split_old[rank] = %u, curr_proc = %ld \n", i + A->split_old[rank], curr_proc);
+//            if(rank==0) printf("i + A.split_old[rank] = %u, curr_proc = %ld \n", i + A->split_old[rank], curr_proc);
         }
     }
 
 //    print_vector(grid->scount2, -1, "scount2", comm);
 
-    // instead of only resizing rcount2, it is put equal to scount2 in case of nprocs = 1.
-    grid->rcount2 = grid->scount2;
-    if(nprocs > 1)
-        MPI_Alltoall(&grid->scount2[0], 1, MPI_INT, &grid->rcount2[0], 1, MPI_INT, comm);
+    grid->rcount2.resize(nprocs);
+    MPI_Alltoall(&grid->scount2[0], 1, MPI_INT, &grid->rcount2[0], 1, MPI_INT, comm);
 
 //    print_vector(grid->rcount2, -1, "rcount2", comm);
 
 //    std::vector<int> sdispls2(nprocs);
     grid->sdispls2.resize(nprocs);
     grid->sdispls2[0] = 0;
-    for (int i=1; i<nprocs; i++)
+    for (int i = 1; i < nprocs; ++i){
         grid->sdispls2[i] = grid->scount2[i-1] + grid->sdispls2[i-1];
+    }
 
 //    print_vector(grid->sdispls2, "sdispls2, -1, comm);
 
 //    std::vector<int> rdispls2(nprocs);
     grid->rdispls2.resize(nprocs);
     grid->rdispls2[0] = 0;
-    for (int i=1; i<nprocs; i++)
+    for (int i = 1; i < nprocs; ++i){
         grid->rdispls2[i] = grid->rcount2[i-1] + grid->rdispls2[i-1];
+    }
 
-//    print_vector(grid->rdispls2, -1, "rdispls2, comm);
+//    print_vector(grid->rdispls2, -1, "rdispls2", comm);
 
     return 0;
 }
@@ -802,7 +811,7 @@ int saena_object::repartition_u_shrink_coarsest_prepare(Grid *grid){
 
     grid->scount2.assign(nprocs, 0);
 
-    long least_proc = 0, curr_proc;
+    long least_proc = 0, curr_proc = 0;
     if(A->M_old != 0){
         least_proc = lower_bound3(&A->split[0], &A->split[nprocs], 0 + A->split_old[rank]);
         grid->scount2[least_proc]++;
@@ -851,11 +860,12 @@ int saena_object::repartition_u_shrink_coarsest_prepare(Grid *grid){
 
 
 int saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
+    // this is used in vcycle
 
     MPI_Comm comm = grid.Ac.comm;
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
+//    int rank, nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+//    MPI_Comm_rank(comm, &rank);
 
 //    MPI_Barrier(grid.A->comm);
 //    printf("rank %d: A->M = %u, A->M_old = %u \n", rank, grid.Ac.M, grid.Ac.M_old);
@@ -872,6 +882,7 @@ int saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
 
 
 int saena_object::repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid){
+    // this is used in vcycle
 
     MPI_Comm comm = grid.Ac.comm;
 //    MPI_Comm comm = grid.A->comm;

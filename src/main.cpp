@@ -7,6 +7,8 @@
 
 #include "grid.h"
 #include "saena.hpp"
+#include <sstream>
+#include <omp.h>
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -18,7 +20,7 @@ int main(int argc, char* argv[]){
 
     MPI_Init(&argc, &argv);
     MPI_Comm comm = MPI_COMM_WORLD;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -27,22 +29,32 @@ int main(int argc, char* argv[]){
         if(rank == 0)
         {
             cout << "Usage: ./Saena <MatrixA> <rhs>" << endl;
-            cout << "Matrix file should be in COO format with column-major order." << endl;
+            cout << "Matrix file should be in COO format in column-major order." << endl;
         }
         MPI_Finalize();
         return -1;
     }
 
-    // *************************** initialize the matrix ****************************
+    // set the number of OpenMP threads at run-time
+    omp_set_num_threads(1);
 
+    // *************************** set the scaling factor ****************************
+
+    bool scale = true;
+
+    // *************************** initialize the matrix ****************************
     // there are two ways to create a matrix:
 
     // 1- read from file: pass as an argument in the command line
     // example: ./Saena ../data/81s4x8o1mu1.bin
     char* file_name(argv[1]);
     saena::matrix A (comm);
-//    A.read_file(file_name);
-    A.read_file(file_name, "triangle");
+    A.read_file(file_name);
+//    A.read_file(file_name, "triangle");
+
+    // set the p_order of the input matrix A.
+    int p_order = 2;
+    A.set_p_order(p_order);
 
     // 2- use the set functions
 //    saena::matrix A(comm); // comm: MPI_Communicator
@@ -64,7 +76,8 @@ int main(int argc, char* argv[]){
 //    A.set(&I[0], &J[0], &V[0], I.size());
 
     // after setting the matrix entries, the assemble function should be called.
-    A.assemble();
+    // pass false to not scale the matrix. default is true.
+    A.assemble(scale);
 
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
@@ -81,8 +94,9 @@ int main(int argc, char* argv[]){
     std::vector<double> rhs_std;
 
     char* Vname(argv[2]);
-//    saena::read_vector_file(rhs_std, A, Vname, comm);
-    read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
+    read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
+
+//    write_to_file_vec(rhs_std, "rhs_std", comm);
 
     // set rhs_std
 //    A.get_internal_matrix()->matvec(v, rhs_std);
@@ -104,19 +118,22 @@ int main(int argc, char* argv[]){
     // There are 3 ways to set options:
 
     // 1- set them manually
-//    int vcycle_num            = 300;
-//    double relative_tolerance = 1e-8;
-//    std::string smoother      = "jacobi";
-//    int preSmooth             = 2;
-//    int postSmooth            = 2;
-//    saena::options opts(vcycle_num, relative_tolerance, smoother, preSmooth, postSmooth);
+    int    solver_max_iter    = 1000;
+    double relative_tolerance = 1e-14;
+    std::string smoother      = "chebyshev";
+    int    preSmooth          = 3;
+    int    postSmooth         = 3;
+    saena::options opts(solver_max_iter, relative_tolerance, smoother, preSmooth, postSmooth);
 
     // 2- read the options from an xml file
 //    saena::options opts((char*)"options001.xml");
 
     // 3- use the default options
-    saena::options opts;
+//    saena::options opts;
+
     saena::amg solver;
+    solver.set_multigrid_max_level(3);
+    solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
@@ -127,11 +144,120 @@ int main(int argc, char* argv[]){
 //    solver.solve(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-    solver.solve_pcg(u, &opts);
+//    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
-//    fill(u.begin(), u.end(), 0);
-//    solver.solve_pGMRES(u, &opts);
+    solver.solve_pGMRES(u, &opts);
+
+    // *************************** print or write the solution ****************************
+
+//    print_vector(u, -1, "solution", comm);
+//    print_vector(u_direct, -1, "solution", comm);
+//    write_to_file_vec(u, "solution", comm);
+
+    // *************************** check correctness of the solution 1 ****************************
+
+    // A is scaled. read it from the file and don't scale.
+
+    saena::matrix AA (comm);
+    AA.read_file(file_name);
+    AA.assemble(false);
+
+    saena_matrix *AAA = AA.get_internal_matrix();
+    std::vector<double> Au(num_local_row, 0);
+    std::vector<double> sol = u;
+//	std::vector<double> sol = u_direct; // the SuperLU solution
+    AAA->matvec(sol, Au);
+
+    bool bool_correct = true;
+    if(rank==0){
+        printf("\n******************************************************\n");
+        printf("Checking the correctness of the solution:\n");
+//        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
+        for(index_t i = 0; i < num_local_row; ++i){
+            if(fabs(Au[i] - rhs_std[i]) > 1e-12){
+                bool_correct = false;
+//                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
+            }
+        }
+        if(bool_correct){
+            printf("\nThe solution is correct!\n");
+            printf("\n******************************************************\n");
+        }
+        else{
+            printf("\nThe solution is NOT correct!\n");
+            printf("\n******************************************************\n");
+        }
+    }
+
+    std::vector<double> res(num_local_row,0);
+    for(index_t i = 0; i < num_local_row; ++i){
+        res[i] = Au[i] - rhs_std[i];
+//        printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
+    }
+
+    float norm1 = pnorm(res, comm);
+    if(!rank) std::cout << "norm(Au-b)     = " << norm1 << "\n";
+
+    // *************************** check correctness of the solution 2 ****************************
+
+/*
+    bool_correct = true;
+    if(rank==0){
+        printf("Checking the correctness of GMRES with SuperLU:\n");
+//        printf("Correct u \t\tGMRES u\n");
+        for(index_t i = 0; i < num_local_row; i++){
+//            if(fabs(u_direct[i] - u[i]) > 1e-12){
+                bool_correct = false;
+                printf("%.6f \t%.6f \t%.6f\n", u_direct[i], u[i], u_direct[i] - u[i]);
+//            }
+        }
+        if(bool_correct){
+            printf("\nGMRES matches SuperLU!\n");
+            printf("\n******************************************************\n");
+        }
+        else{
+             printf("\nGMRES does NOT match SuperLU!\n");
+            printf("\n******************************************************\n");
+        }
+    }
+*/
+
+    // *************************** check correctness of the solution 3 ****************************
+
+    ifstream ifs("../data/nektar/sol_4matlab.txt");
+    if(!ifs){
+        std::cout << "Could not open the solution file!" << std::endl;
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+    }
+
+    vector<double> sol_load;
+    istringstream iss;
+	for (int i=0; i<num_local_row; ++i){
+		string aLine;
+		getline(ifs, aLine);
+		iss.str(aLine);
+	
+		int v = 0, a = 0;
+		double l = 0.0;
+		iss >> v >> a >> l;
+		sol_load.push_back(l);
+		
+		iss.clear();
+	}
+   	ifs.close();
+	iss.clear();
+	ifs.clear();
+
+	std::vector<double> u_diff(num_local_row,0);
+    for(index_t i = 0; i < num_local_row; ++i){
+        u_diff[i] = u[i] - sol_load[i];
+//        printf("%.16f \t%.16f \t%.16f \n", u[i], sol_load[i], u_diff[i]);
+    }
+
+    float norm2 = pnorm(u_diff, comm);
+    if(!rank) std::cout << "norm(u-u_load) = " << norm2 << "\n";
 
     // *************************** Destroy ****************************
 

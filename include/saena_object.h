@@ -1,10 +1,7 @@
 #ifndef SAENA_SAENA_OBJECT_H
 #define SAENA_SAENA_OBJECT_H
 
-//#include <spp.h> //sparsepp
 #include "superlu_ddefs.h"
-//#include "superlu_defs.h"
-
 #include "aux_functions.h"
 #include "saena_vector.h"
 #include "saena_matrix_dense.h"
@@ -71,6 +68,8 @@ public:
     bool adaptive_coarsening = false;
 //    bool shrink_cpu          = true;
 
+    bool scale = true;
+
     saena_matrix *A_coarsest = nullptr;
 
     // *****************
@@ -113,13 +112,6 @@ public:
 
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
     double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
-
-//    std::unordered_map<index_t, value_t> map_matmat;
-//    spp::sparse_hash_map<index_t, value_t> map_matmat;
-//    std::unique_ptr<value_t[]> mempool1; // todo: try to use these smart pointers
-//    std::unique_ptr<index_t[]> mempool2;
-//    std::unique_ptr<value_t[]> mempool3;
-
 
     // *****************
     // shrink
@@ -205,6 +197,7 @@ public:
     bool verbose_setup            = true;
     bool verbose_setup_steps      = false;
     bool verbose_level_setup      = false;
+    bool verbose_coarsen          = false;
     bool verbose_compute_coarsen  = false;
     bool verbose_triple_mat_mult  = false;
     bool verbose_matmat           = false;
@@ -235,28 +228,22 @@ public:
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
 
     int setup(saena_matrix* A);
-    int coarsen(Grid *grid);
-    int pcoarsen(Grid *grid);
+    int setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof);
+    int coarsen(Grid *grid,std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
+    int SA(Grid *grid);
+    int pcoarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
     int compute_coarsen(Grid *grid);
-//    int compute_coarsen_old(Grid *grid);
-//    int compute_coarsen_old2(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
-//    int triple_mat_mult(Grid *grid);
-//    int triple_mat_mult_old2(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-    int compute_coarsen_update_Ac_old(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid);
-//    int triple_mat_mult(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-//    int triple_mat_mult_old_RAP(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-//    int triple_mat_mult_no_overlap(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
-//    int triple_mat_mult_basic(Grid *grid, std::vector<cooEntry_row> &RAP_row_sorted);
 
-    int matmat_grid(Grid *grid);
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false, bool B_trans = true);
-    int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C);
-//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
+    int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans = false);
     int matmat_memory_alloc(CSCMat &Acsc, CSCMat &Bcsc);
     int matmat_memory_free();
     int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+
+    int matmat_grid(Grid *grid);
+//    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
 //    int matmat_COO(saena_matrix *A, saena_matrix *B, saena_matrix *C);
 
 //    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
@@ -270,27 +257,13 @@ public:
 
     void fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C, MPI_Comm comm);
 
-//    void fast_mm(index_t *Ar, value_t *Av, index_t *Ac_scan,
-//                 index_t *Br, value_t *Bv, index_t *Bc_scan,
-//                 mat_info *A_info, mat_info *B_info,
-//                 std::vector<cooEntry> &C, MPI_Comm comm);
-
-//    void fast_mm_basic(const cooEntry *A, const cooEntry *B, std::vector<cooEntry> &C,
-//                       nnz_t A_nnz, nnz_t B_nnz,
-//                       index_t A_row_size, index_t A_row_offset, index_t A_col_size, index_t A_col_offset,
-//                       index_t B_col_size, index_t B_col_offset,
-//                       const index_t *nnzPerColScan_leftStart,  const index_t *nnzPerColScan_leftEnd,
-//                       const index_t *nnzPerColScan_rightStart, const index_t *nnzPerColScan_rightEnd,
-//                       MPI_Comm comm);
-
     int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
     int aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
-    int create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P);
+    int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
 
-    //    int set_repartition_rhs(std::vector<value_t> rhs);
     int set_repartition_rhs(saena_vector *rhs);
 
     // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
@@ -445,6 +418,25 @@ public:
 
         return 0;
     }
+
+    std::vector<int> next_p_level(std::vector<int> ind_fine, int order);
+    void set_PR_from_p(int order, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp);//, std::vector< std::vector<double> > &Rp);
+    void set_P_from_mesh(int order, std::vector< std::vector<int> > map, int prodim, std::vector<cooEntry_row> &P_temp, MPI_Comm comm, std::vector<int> g2u);
+    std::vector<double> get_interpolation(int ind, int order, int prodim);
+    std::vector<int> coarse_p_node_arr(std::vector< std::vector<int> > map, int order);
+    inline int findloc(std::vector<int> arr, int a);
+	//inline std::vector< std::vector<double> > transp(std::vector< std::vector<double> > M);
+	inline bool ismember(int a, std::vector<int> arr);
+	//inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
+	inline std::vector< std::vector<double> > eighth_order(int order);
+	inline std::vector< std::vector<int> > mesh_info(int order, std::string filename, std::vector< std::vector< std::vector<int> > > &map_all, MPI_Comm comm);
+	inline std::vector<int> g2umap(int order, std::string filename, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector<int> > map, MPI_Comm comm);
+	int bdydof;
+    int elemno;
+    int nodeno_fine;
+    int nodeno_coarse;
+    // for debugging
+    int rank_v = 0;
 };
 
 #endif //SAENA_SAENA_OBJECT_H

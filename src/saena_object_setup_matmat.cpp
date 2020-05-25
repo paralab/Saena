@@ -107,14 +107,14 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
                << ", B.col_scan[0]: " << B.col_scan[0] << ", B.col_scan[B.col_sz]: " << B.col_scan[B.col_sz]);
 
         // assert A entries
-        index_t col_idx;
+        index_t col_idx = 0;
         for (nnz_t i = 0; i < A.col_sz; i++) {
 //            col_idx = i + A.col_offset;
             for (nnz_t j = A.col_scan[i] - 1; j < A.col_scan[i + 1] - 1; j++) {
 //                std::cout << j << "\t" << A.r[j] << "\t" << col_idx << "\t" << A.v[j] << "\n";
                 ASSERT((A.r[j] >= 0) && (A.r[j] <= A.row_sz), "rank: " << rank << ", A.r[j]: " << A.r[j] << ", A.row_sz: " << A.row_sz);
                 assert(i < A.col_sz);
-                ASSERT(fabs(A.v[j]) > ALMOST_ZERO, "rank: " << rank << ", A.v[j]: " << A.v[j]);
+//                ASSERT(fabs(A.v[j]) > ALMOST_ZERO, "rank: " << rank << ", A.v[j]: " << A.v[j]);
             }
         }
 
@@ -453,10 +453,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 #endif
 
         CSCMat_mm A1(A.row_sz, A.row_offset, A_col_size_half, A.col_offset, A.col_scan[A_col_size_half] - A.col_scan[0],
-                      A.r, A.v, A.col_scan);
+                     A.r, A.v, A.col_scan);
 
         CSCMat_mm A2(A.row_sz, A.row_offset, A.col_sz - A1.col_sz, A.col_offset + A1.col_sz, A.nnz - A1.nnz,
-                      A.r, A.v, &A.col_scan[A_col_size_half]);
+                     A.r, A.v, &A.col_scan[A_col_size_half]);
 
 #ifdef __DEBUG1__
 /*
@@ -924,7 +924,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         // prepare splits of matrix A by row
 
         CSCMat_mm A1(A.row_sz / 2, A.row_offset, A.col_sz, A.col_offset, 0,
-                    A.r, A.v, A.col_scan);
+                     A.r, A.v, A.col_scan);
 
         CSCMat_mm A2(A.row_sz - A1.row_sz, A.row_offset + A1.row_sz, A.col_sz, A.col_offset, 0);
 
@@ -1634,7 +1634,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
     }
 #endif
 
-    C->matrix_setup();
+    C->matrix_setup(scale);
 
 #ifdef __DEBUG1__
     if(verbose_matmat_assemble){
@@ -1645,7 +1645,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
 }
 
 
-int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
+int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans /*= false*/){
 
     MPI_Comm comm = C.comm;
     int nprocs, rank;
@@ -2279,15 +2279,36 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C){
     t_temp = MPI_Wtime();
 //#if 0
     if(!AB_temp.empty()) {
-
-        std::sort(AB_temp.begin(), AB_temp.end());
-
+        auto tmp = cooEntry(0, 0, 0.0);
         nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
-        for (long i = 0; i < AB_temp.size(); i++) {
-            C.entry.emplace_back(AB_temp[i]);
-            while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+
+        if(trans){
+            std::sort(AB_temp.begin(), AB_temp.end(), row_major);
+
+            for (long i = 0; i < AB_temp.size(); ++i) {
+                tmp = cooEntry(AB_temp[i].col, AB_temp[i].row, AB_temp[i].val);
+                while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
 //                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-                C.entry.back().val += AB_temp[++i].val;
+                    tmp.val += AB_temp[++i].val;
+                }
+
+                if(fabs(tmp.val) > ALMOST_ZERO){
+                    C.entry.emplace_back(tmp);
+                }
+            }
+        }else{
+            std::sort(AB_temp.begin(), AB_temp.end());
+
+            for (long i = 0; i < AB_temp.size(); ++i) {
+                tmp = AB_temp[i];
+                while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+//                std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
+                    tmp.val += AB_temp[++i].val;
+                }
+
+                if(fabs(tmp.val) > ALMOST_ZERO){
+                    C.entry.emplace_back(tmp);
+                }
             }
         }
 

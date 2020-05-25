@@ -230,9 +230,7 @@ int saena_vector::remove_duplicates() {
 }
 
 int saena_vector::assemble(){
-
     remove_duplicates();
-
     return 0;
 }
 

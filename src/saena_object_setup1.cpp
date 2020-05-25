@@ -2,15 +2,12 @@
 #include "saena_matrix.h"
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
-#include "restrict_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
 #include "parUtils.h"
+#include "superlu_defs.h"
 #include "dollar.hpp"
-#include "superlu_ddefs.h"
-#include <superlu_defs.h>
 
-#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -20,7 +17,7 @@
 #include <mpi.h>
 
 
-int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long>& aggregate, prolong_matrix* P){
+int saena_object::SA(Grid *grid){
     // formula for the prolongation matrix from Irad Yavneh's paper:
     // P = (I - 4/(3*rhoDA) * DA) * P_t
 
@@ -32,6 +29,9 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     // todo: think about smoothing preconditioners other than damped jacobi. check the following paper:
     // todo: Eran Treister and Irad Yavneh, Non-Galerkin Multigrid based on Sparsified Smoothed Aggregation. page22.
 
+    saena_matrix   *A = grid->A;
+    prolong_matrix *P = &grid->P;
+
 //    MPI_Comm_dup(A->comm, &P->comm);
     P->comm = A->comm;
     MPI_Comm comm = A->comm;
@@ -41,6 +41,12 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
 //    unsigned int i, j;
     float omega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
 
+    std::vector<unsigned long> aggregate(grid->A->M);
+    find_aggregation(grid->A, aggregate, grid->P.splitNew);
+
+    std::vector<unsigned long> vSendULong(A->vIndexSize);
+    std::vector<unsigned long> vecValuesULong(A->recvSize);
+
     P->Mbig = A->Mbig;
     P->Nbig = P->splitNew[nprocs]; // This is the number of aggregates, which is the number of columns of P.
     P->M = A->M;
@@ -49,21 +55,20 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     // todo: is it ok to use vSend instead of vSendULong? vSend is double and vSendULong is unsigned long.
     // todo: the same question for vecValues and Isend and Ireceive.
     for(index_t i = 0; i < A->vIndexSize; i++){
-        A->vSendULong[i] = aggregate[( A->vIndex[i] )];
+        vSendULong[i] = aggregate[( A->vIndex[i] )];
 //        std::cout <<  A->vIndex[i] << "\t" << A->vSendULong[i] << std::endl;
     }
 
     MPI_Request* requests = new MPI_Request[A->numSendProc+A->numRecvProc];
     MPI_Status*  statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
 
-    // todo: here
     // todo: are vSendULong and vecValuesULong required to be a member of the class.
 
     for(index_t i = 0; i < A->numRecvProc; i++)
-        MPI_Irecv(&A->vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &(requests[i]));
+        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &(requests[i]));
 
     for(index_t i = 0; i < A->numSendProc; i++)
-        MPI_Isend(&A->vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
+        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
 
     std::vector<cooEntry> PEntryTemp;
 
@@ -90,12 +95,11 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     MPI_Waitall(A->numRecvProc, requests, statuses);
 
     // remote
-    // ------saena_object
     iter = 0;
     for (index_t i = 0; i < A->col_remote_size; ++i) {
         for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
             PEntryTemp.emplace_back(cooEntry(A->row_remote[iter],
-                                             A->vecValuesULong[A->col_remote[iter]],
+                                             vecValuesULong[A->col_remote[iter]],
                                              -omega * A->values_remote[iter] * A->inv_diag[A->row_remote[iter]]));
 //            P->values.emplace_back(A->values_remote[iter]);
 //            std::cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t"
@@ -110,11 +114,15 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     // todo: here
 //    P->entry.resize(PEntryTemp.size());
     // remove duplicates.
+    cooEntry tmp(0, 0, 0.0);
     for(index_t i=0; i<PEntryTemp.size(); i++){
-        P->entry.emplace_back(PEntryTemp[i]);
+        tmp = PEntryTemp[i];
         while(i<PEntryTemp.size()-1 && PEntryTemp[i] == PEntryTemp[i+1]){ // values of entries with the same row and col should be added.
-            P->entry.back().val += PEntryTemp[i+1].val;
-            i++;
+            tmp.val += PEntryTemp[++i].val;
+        }
+
+        if(fabs(tmp.val) > ALMOST_ZERO){
+            P->entry.emplace_back(tmp);
         }
     }
 
@@ -130,7 +138,7 @@ int saena_object::create_prolongation(saena_matrix* A, std::vector<unsigned long
     delete [] statuses;
 
     return 0;
-}// end of saena_object::create_prolongation
+}
 
 
 int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew){
@@ -1643,23 +1651,23 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 
     // ************* compute splitNew *************
 
-    splitNew.assign(nprocs+1, 0);
-    splitNew[rank] = aggArray.size();
-
-    std::vector<index_t> splitNewTemp(nprocs);
-    MPI_Allreduce(&splitNew[0], &splitNewTemp[0], nprocs, MPI_UNSIGNED, MPI_SUM, comm);
+    index_t agg_sz = aggArray.size();
+    splitNew.resize(nprocs+1);
+    MPI_Allgather(&agg_sz, 1, MPI_UNSIGNED, &splitNew[1], 1, MPI_UNSIGNED, comm);
 
     // do scan on splitNew
     splitNew[0] = 0;
     for(unsigned long i = 1; i < nprocs+1; ++i)
-        splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
+        splitNew[i] += splitNew[i-1];
 
+#ifdef __DEBUG1__
 //    print_vector(splitNew, 0, "splitNew", comm);
 //    if(rank==0){
 //        std::cout << "split and splitNew:" << std::endl;
 //        for(i=0; i<nprocs+1; i++)
 //            std::cout << S->split[i] << "\t" << splitNew[i] << std::endl;
 //        std::cout << std::endl;}
+#endif
 
     // local update
     // --------------
@@ -1698,7 +1706,9 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 //        if(rank==0) std::cout << i << "\t" << procNum << std::endl;
     }
 
+#ifdef __DEBUG1__
 //    print_vector(recvCount, -1, "recvCount", comm);
+#endif
 
     int recvSize = 0;
     int vIndexSize = 0;
@@ -1707,7 +1717,9 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
         std::vector<int> vIndexCount(nprocs);
         MPI_Alltoall(&recvCount[0], 1, MPI_INT, &vIndexCount[0], 1, MPI_INT, comm);
 
+#ifdef __DEBUG1__
 //        print_vector(vIndexCount, -1, "vIndexCount", comm);
+#endif
 
         // this part is for isend and ireceive.
         std::vector<int> recvProcRank;
@@ -1718,21 +1730,19 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
         int numSendProc = 0;
         for (int i = 0; i < nprocs; i++) {
             if (recvCount[i] != 0) {
-                numRecvProc++;
+                ++numRecvProc;
                 recvProcRank.emplace_back(i);
                 recvProcCount.emplace_back(recvCount[i]);
             }
             if (vIndexCount[i] != 0) {
-                numSendProc++;
+                ++numSendProc;
                 sendProcRank.emplace_back(i);
                 sendProcCount.emplace_back(vIndexCount[i]);
             }
         }
 
-        std::vector<int> vdispls;
-        std::vector<int> rdispls;
-        vdispls.resize(nprocs);
-        rdispls.resize(nprocs);
+        std::vector<int> vdispls(nprocs);
+        std::vector<int> rdispls(nprocs);
         vdispls[0] = 0;
         rdispls[0] = 0;
 
@@ -1743,7 +1753,9 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
         vIndexSize = vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
         recvSize   = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
+#ifdef __DEBUG1__
 //        MPI_Barrier(comm); printf("rank %d: vIndexSize = %d, recvSize = %d \n", rank, vIndexSize, recvSize); MPI_Barrier(comm);
+#endif
 
         std::vector<unsigned long> vIndex(vIndexSize);
         MPI_Alltoallv(&*aggregateRemote.begin(), &recvCount[0], &*rdispls.begin(), MPI_UNSIGNED_LONG, &vIndex[0],
@@ -1767,12 +1779,12 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 
         for (int i = 0; i < numRecvProc; i++)
             MPI_Irecv(&aggRecv[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_UNSIGNED_LONG, recvProcRank[i], 1, comm,
-                      &(requests2[i]));
+                      &requests2[i]);
 
         //Next send the messages. Do not send to self.
         for (int i = 0; i < numSendProc; i++)
             MPI_Isend(&aggSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_UNSIGNED_LONG, sendProcRank[i], 1, comm,
-                      &(requests2[numRecvProc + i]));
+                      &requests2[numRecvProc + i]);
 
         MPI_Waitall(numRecvProc, requests2, statuses2);
 
@@ -1794,7 +1806,9 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
             }
         }
 
+#ifdef __DEBUG1__
 //        print_vector(aggregate, -1, "aggregate", comm);
+#endif
 
         MPI_Waitall(numSendProc, numRecvProc + requests2, numRecvProc + statuses2);
         delete[] requests2;

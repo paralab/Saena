@@ -63,6 +63,8 @@ public:
     nnz_t   nnz_max = 0; // biggest nnz on all the processors
     index_t M_max   = 0; // biggest M on all the processors
 
+    int p_order = 1;
+
     std::set<cooEntry_row> data_coo;
     std::vector<cooEntry>  entry;
     std::vector<cooEntry>  entry_temp; // is used for updating the matrix
@@ -97,8 +99,7 @@ public:
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
-    std::vector<unsigned long> vSendULong;
-    std::vector<unsigned long> vecValuesULong;
+
 //    send_zfp::array1<double> vSend_zfp;
 //    send_zfp::array1<double> vecValues_zfp;
 
@@ -231,19 +232,18 @@ public:
 //    int set3(unsigned int row, unsigned int col, double val);
 //    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
 
-    int assemble();
-    int assemble_no_scale();
+    void set_p_order(int _p_order);
+
+    int assemble(bool scale = true);
     int setup_initial_data();
     int remove_duplicates();
     int repartition_nnz_initial(); // based on nnz.
-    int matrix_setup();
-    int matrix_setup_no_scale();
+    int matrix_setup(bool scale = true);
 
     // these versions are used after matrix is assembled and needs to be updated again.
     int setup_initial_data2();
     int repartition_nnz_update(); // based on nnz.
-    int matrix_setup_update();
-    int matrix_setup_update_no_scale();
+    int matrix_setup_update(bool scale = true);
 
     int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
     int repartition_row(); // based on M.   use this for repartitioning A's after they are created.

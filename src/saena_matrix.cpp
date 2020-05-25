@@ -482,6 +482,11 @@ int saena_matrix::set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local
 }
 
 
+void saena_matrix::set_p_order(int _p_order){
+    p_order = _p_order;
+}
+
+
 // int saena_matrix::set3(unsigned int row, unsigned int col, double val)
 /*
 int saena_matrix::set3(unsigned int row, unsigned int col, double val){
@@ -674,8 +679,6 @@ int saena_matrix::erase2(){
     vIndex.clear();
     vSend.clear();
     vecValues.clear();
-    vSendULong.clear();
-    vecValuesULong.clear();
     indicesP_local.clear();
     indicesP_remote.clear();
     recvCount.clear();
@@ -713,8 +716,6 @@ int saena_matrix::erase2(){
     vIndex.shrink_to_fit();
     vSend.shrink_to_fit();
     vecValues.shrink_to_fit();
-    vSendULong.shrink_to_fit();
-    vecValuesULong.shrink_to_fit();
     indicesP_local.shrink_to_fit();
     indicesP_remote.shrink_to_fit();
     recvCount.shrink_to_fit();
@@ -833,8 +834,6 @@ int saena_matrix::erase_keep_remote2(){
     vIndex.clear();
     vSend.clear();
     vecValues.clear();
-    vSendULong.clear();
-    vecValuesULong.clear();
     indicesP_local.clear();
     indicesP_remote.clear();
     recvCount.clear();
@@ -1154,7 +1153,7 @@ int saena_matrix::residual_negative(std::vector<value_t>& u, std::vector<value_t
     MPI_Allreduce(&zero_vector_local, &zero_vector, 1, MPI_CXX_BOOL, MPI_LOR, comm);
 
     if(zero_vector){
-        memcpy(&res[0], &rhs[0], M); // todo: check memcpy. size is not right.
+        memcpy(&res[0], &rhs[0], M * sizeof(value_t));
     } else {
 
         matvec(u, res);

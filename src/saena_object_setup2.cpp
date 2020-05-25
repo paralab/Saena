@@ -9,7 +9,6 @@
 #include "dollar.hpp"
 #include "superlu_ddefs.h"
 
-//#include <spp.h> //sparsepp
 //#include "petsc_functions.h"
 
 #include <cstdio>
@@ -21,16 +20,7 @@
 
 
 int saena_object::compute_coarsen(Grid *grid) {
-
     // Output: Ac = R * A * P
-    // Steps:
-    // 1- Compute AP = A * P. To do that use the transpose of R_i, instead of P. Pass all R_j's to all the processors,
-    //    Then, multiply local A_i by R_j on each process.
-    // 2- Compute RAP = R * AP. Use transpose of P_i instead of R. It is done locally. So multiply P_i * (AP)_i.
-    // 3- Sort and remove local duplicates.
-    // 4- Do a parallel sort based on row-major order. A modified version of par::sampleSort from usort is used here.
-    //    Again, remove duplicates.
-    // 5- Not complete yet: Sparsify Ac.
 
     saena_matrix    *A  = grid->A;
     prolong_matrix  *P  = &grid->P;
@@ -81,6 +71,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     // set some of Ac parameters
     // -------------------------
     Ac->Mbig  = P->Nbig;
+    Ac->Nbig  = P->Nbig;
     Ac->split = P->splitNew;
     Ac->M     = Ac->split[rank+1] - Ac->split[rank];
     Ac->M_old = Ac->M;
@@ -317,7 +308,9 @@ int saena_object::compute_coarsen(Grid *grid) {
         }
 #endif
 
-        repartition_u_shrink_prepare(grid);
+        if(nprocs > 1){
+            repartition_u_shrink_prepare(grid);
+        }
 
         Ac->active = true;
 //        Ac->active_minor = true;
@@ -334,8 +327,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 #endif
 
         if (Ac->active) {
-            Ac->matrix_setup();
-//            Ac->matrix_setup_no_scale();
+            Ac->matrix_setup(scale);
 
             if (Ac->shrinked && Ac->enable_dummy_matvec)
                 Ac->compute_matvec_dummy_time();
@@ -383,23 +375,23 @@ int saena_object::triple_mat_mult(Grid *grid){
 #ifdef __DEBUG1__
 //    print_vector(A->entry, -1, "A->entry", comm);
 //    print_vector(P->entry, -1, "P->entry", comm);
-//    print_vector(R->entry, 0, "R->entry", comm);
+//    print_vector(R->entry, -1, "R->entry", comm);
 
     if (verbose_triple_mat_mult) {
         MPI_Barrier(comm);
         if (rank == 0) printf("\nstart of triple_mat_mult: nprocs: %d \n", nprocs);
         MPI_Barrier(comm);
-        printf("rank %d: A: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n",
+        printf("rank %d: A: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu\n",
                 rank, A->Mbig, A->M, A->nnz_g, A->nnz_l);
-//        MPI_Barrier(comm);
-//        printf("rank %d: P: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n",
-//                rank, P->Mbig, P->M, P->nnz_g, P->nnz_l);
         MPI_Barrier(comm);
-        printf("rank %d: R: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u \n",
+        printf("rank %d: P: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u\n",
+                rank, P->Mbig, P->M, P->nnz_g, P->nnz_l, P->Nbig);
+        MPI_Barrier(comm);
+        printf("rank %d: R: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u\n",
                 rank, R->Mbig, R->M, R->nnz_g, R->nnz_l, R->Nbig);
         MPI_Barrier(comm);
-//        print_vector(A->split,    1, "A->split",    comm);
-//        print_vector(R->splitNew, 1, "R->splitNew", comm);
+        print_vector(A->split,    1, "A->split",    comm);
+        print_vector(R->splitNew, 1, "R->splitNew", comm);
 //        print_vector(A->nnz_list, 1, "A->nnz_list", comm);
 //        print_vector(R->nnz_list, 1, "R->nnz_list", comm);
     }
@@ -411,9 +403,10 @@ int saena_object::triple_mat_mult(Grid *grid){
 
 #ifdef __DEBUG1__
     for(nnz_t i = 0; i < R->nnz_l; i++){
+//        std::cout << i << "\t" << R->entry[i] << std::endl;
         assert( (R->entry[i].row >= 0) && (R->entry[i].row < R->M) );
         assert( (R->entry[i].col >= 0) && (R->entry[i].col < R->Nbig) );
-        assert( fabs(R->entry[i].val) > ALMOST_ZERO );
+//        ASSERT( fabs(R->entry[i].val) > ALMOST_ZERO, i << "\t" << R->entry[i] );
     }
 #endif
 
@@ -480,7 +473,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     for(nnz_t i = 0; i < A->nnz_l; i++){
         assert( (A->entry[i].row - A->split[rank] >= 0) && (A->entry[i].row - A->split[rank] < A->M) );
         assert( (A->entry[i].col >= 0) && (A->entry[i].col < A->Mbig) );
-        assert( fabs(A->entry[i].val) > ALMOST_ZERO );
+//        ASSERT( fabs(A->entry[i].val) > ALMOST_ZERO, i << A->entry[i] );
     }
 #endif
 
@@ -786,7 +779,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 //    saena_matrix RAP;
     MPI_Comm comm_temp = Ac->comm;
     Ac->comm = A->comm;
-    matmat_CSC(RAcsc, Pcsc, *Ac);
+    matmat_CSC(RAcsc, Pcsc, *Ac, true);
     Ac->comm = comm_temp;
 
 #ifdef __DEBUG1__

@@ -3,8 +3,8 @@
 
 #include <iostream>
 #include <vector>
-#include "mpi.h"
 #include <cmath>
+#include "mpi.h"
 
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
@@ -89,10 +89,37 @@ public:
         return (cooEntry(row, col, val+node2.val));
     }
 
-//    cooEntry operator++ () const
-//    {
-//        return (cooEntry(row+1, col, val));
-//    }
+    // Define prefix increment operator.
+    cooEntry& operator ++ ()
+    {
+        ++row;
+        ++col;
+        return *this;
+    }
+
+    // Define postfix increment operator.
+    cooEntry operator ++ (int)
+    {
+        cooEntry tmp = *this;
+        ++*this;
+        return tmp;
+    }
+
+    // Define prefix decrement operator.
+    cooEntry& operator -- ()
+    {
+        --row;
+        --col;
+        return *this;
+    }
+
+    // Define postfix decrement operator.
+    cooEntry operator -- (int)
+    {
+        cooEntry tmp = *this;
+        --*this;
+        return tmp;
+    }
 
     value_t get_val() const
     {
@@ -188,7 +215,7 @@ public:
 
     bool operator >= (const cooEntry_row& node2) const
     {
-        if(  row > node2.row)
+        if(row > node2.row)
             return (true);
         else if(row == node2.row)
             return( col >= node2.col);
@@ -204,9 +231,36 @@ public:
         return (cooEntry_row(row, col, val+node2.val));
     }
 
-    cooEntry_row operator++ (int) const
+    // Define prefix increment operator.
+    cooEntry_row& operator ++ ()
     {
-        return (cooEntry_row(row, col+1, val));
+        ++row;
+        ++col;
+        return *this;
+    }
+
+    // Define postfix increment operator.
+    cooEntry_row operator ++ (int)
+    {
+        cooEntry_row tmp = *this;
+        ++*this;
+        return tmp;
+    }
+
+    // Define prefix decrement operator.
+    cooEntry_row& operator -- ()
+    {
+        --row;
+        --col;
+        return *this;
+    }
+
+    // Define postfix decrement operator.
+    cooEntry_row operator -- (int)
+    {
+        cooEntry_row tmp = *this;
+        --*this;
+        return tmp;
     }
 
     static MPI_Datatype mpi_datatype()
