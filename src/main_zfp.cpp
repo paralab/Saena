@@ -214,7 +214,7 @@ int main(int argc, char* argv[]){
     print_time(t1 / matvec_iter, "matvec original:", comm);
 
     B->matvec_print_time();
-    
+
     B->matvec_iter = 0;
     B->part1 = 0;
     B->part2 = 0;
@@ -222,7 +222,6 @@ int main(int argc, char* argv[]){
     B->part4 = 0;
     B->part5 = 0;
     B->part6 = 0;
-
 
     MPI_Barrier(comm);
     t1 = MPI_Wtime();

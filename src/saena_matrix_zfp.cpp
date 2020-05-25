@@ -80,12 +80,12 @@ void saena_matrix::matvec_print_time(){
 //    print_time(part5 / tmp, "decompress", comm);
 //    print_time(part6 / tmp, "remote", comm);
 
-    double p1ave = print_time_ave_consecutive(part1 / tmp, comm);
-    double p2ave = print_time_ave_consecutive(part2 / tmp, comm);
-    double p3ave = print_time_ave_consecutive((part3-part4-part5-part6) / tmp, comm);
-    double p4ave = print_time_ave_consecutive(part4 / tmp, comm);
-    double p5ave = print_time_ave_consecutive(part5 / tmp, comm);
-    double p6ave = print_time_ave_consecutive(part6 / tmp, comm);
+    double p1ave = print_time_ave(part1 / tmp, "", comm);
+    double p2ave = print_time_ave(part2 / tmp, "", comm);
+    double p3ave = print_time_ave((part3-part4-part5-part6) / tmp, "", comm);
+    double p4ave = print_time_ave(part4 / tmp, "", comm);
+    double p5ave = print_time_ave(part5 / tmp, "", comm);
+    double p6ave = print_time_ave(part6 / tmp, "", comm);
     if(!rank){
 //        printf("matvec iteration: %ld", matvec_iter);
         printf("average time:\nsend buff\ncompress\ncomm\nlocal\ndecompress\nremote\n\n"

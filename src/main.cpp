@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
 //    A.read_file(file_name, "triangle");
 
     // set the p_order of the input matrix A.
-    int p_order = 2;
+    int p_order = 1;
     A.set_p_order(p_order);
 
     // 2- use the set functions
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(3);
+    solver.set_multigrid_max_level(1);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -144,10 +144,10 @@ int main(int argc, char* argv[]){
 //    solver.solve(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-//    solver.solve_pcg(u, &opts);
+    solver.solve_pcg(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
-    solver.solve_pGMRES(u, &opts);
+//    solver.solve_pGMRES(u, &opts);
 
     // *************************** print or write the solution ****************************
 
@@ -175,8 +175,9 @@ int main(int argc, char* argv[]){
         printf("Checking the correctness of the solution:\n");
 //        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
         for(index_t i = 0; i < num_local_row; ++i){
-            if(fabs(Au[i] - rhs_std[i]) > 1e-12){
+            if(fabs(Au[i] - rhs_std[i]) > 1e-8){
                 bool_correct = false;
+                break;
 //                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
             }
         }
@@ -222,42 +223,6 @@ int main(int argc, char* argv[]){
         }
     }
 */
-
-    // *************************** check correctness of the solution 3 ****************************
-
-    ifstream ifs("../data/nektar/sol_4matlab.txt");
-    if(!ifs){
-        std::cout << "Could not open the solution file!" << std::endl;
-        MPI_Finalize();
-        exit(EXIT_FAILURE);
-    }
-
-    vector<double> sol_load;
-    istringstream iss;
-	for (int i=0; i<num_local_row; ++i){
-		string aLine;
-		getline(ifs, aLine);
-		iss.str(aLine);
-	
-		int v = 0, a = 0;
-		double l = 0.0;
-		iss >> v >> a >> l;
-		sol_load.push_back(l);
-		
-		iss.clear();
-	}
-   	ifs.close();
-	iss.clear();
-	ifs.clear();
-
-	std::vector<double> u_diff(num_local_row,0);
-    for(index_t i = 0; i < num_local_row; ++i){
-        u_diff[i] = u[i] - sol_load[i];
-//        printf("%.16f \t%.16f \t%.16f \n", u[i], sol_load[i], u_diff[i]);
-    }
-
-    float norm2 = pnorm(u_diff, comm);
-    if(!rank) std::cout << "norm(u-u_load) = " << norm2 << "\n";
 
     // *************************** Destroy ****************************
 
