@@ -171,6 +171,7 @@ int main(int argc, char* argv[]){
     saena::amg solver;
     solver.set_verbose(verbose); // set verbose at the beginning of the main function.
 
+    solver.set_multigrid_max_level(0);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
@@ -184,7 +185,7 @@ int main(int argc, char* argv[]){
 
     // *************************** zfp ****************************
 
-    int matvec_warmup_iter = 3;
+    int matvec_warmup_iter = 2;
     int matvec_iter = 3;
 
 //    solver.get_object()->grids[0].A->allocate_zfp(solver.get_object()->grids[0].rhs);
@@ -200,7 +201,8 @@ int main(int argc, char* argv[]){
 //    print_vector(v, -1, "v", comm);
 
     for(int i = 0; i < matvec_warmup_iter; ++i){
-        B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
+        B->matvec_sparse_test(solver.get_object()->grids[0].rhs, v);
+        B->matvec_sparse_compressed(solver.get_object()->grids[0].rhs, v);
     }
 
     B->matvec_iter = 0;
@@ -214,7 +216,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse(solver.get_object()->grids[0].rhs, v);
+        B->matvec_sparse_test(solver.get_object()->grids[0].rhs, v);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec original:", comm);
@@ -232,7 +234,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse_zfp(solver.get_object()->grids[0].rhs, w);
+        B->matvec_sparse_compressed(solver.get_object()->grids[0].rhs, w);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec zfp:", comm);
