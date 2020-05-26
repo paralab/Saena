@@ -14,6 +14,7 @@
 #include <vector>
 #include <omp.h>
 #include <dollar.hpp>
+#include <iomanip>
 #include "mpi.h"
 
 
@@ -37,6 +38,9 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+
+    // set the number of OpenMP threads at run-time
+    omp_set_num_threads(1);
 
 #pragma omp parallel default(none) shared(rank, nprocs)
     if(!rank && omp_get_thread_num()==0)
@@ -91,7 +95,7 @@ int main(int argc, char* argv[]){
 //    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
 
     if (!rank) {
-        printf("A.Mbig = %u,\tA.nnz = %ld\n", A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g);
+        printf("A.Mbig = %u, A.nnz = %ld\n", A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g);
 //        printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
     }
 
@@ -189,6 +193,8 @@ int main(int argc, char* argv[]){
     std::vector<double> v(B->split[rank+1] - B->split[rank], 0);
     std::vector<double> w(B->split[rank+1] - B->split[rank], 0);
 
+//    B->matvec_sparse_zfp(solver.get_object()->grids[0].rhs, w);
+
 //    print_vector(B->split, 0, "B.split", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 //    print_vector(v, -1, "v", comm);
@@ -234,14 +240,29 @@ int main(int argc, char* argv[]){
     B->matvec_print_time();
 
     // *************************** zfp: check the accuracy ****************************
+/*
+    bool bool_correct = true;
+    MPI_Barrier(comm);
+    if(rank == 1){
+        printf("\n******************************************************\n");
+        std::cout << "\nChecking the correctness:" << std::endl;
+        for(int i = 0; i < v.size(); ++i){
+            if(fabs(w[i] - v[i]) > 1e-8){
+                std::cout << i << "\t" << std::setprecision(10) << v[i] << "\t" << w[i] << "\t" << v[i] - w[i] << std::endl;
+                bool_correct = false;
+            }
+        }
 
-//    if(rank == 1){
-//        for(int i = 0; i < v.size(); ++i){
-//            if(fabs(w[i] - v[i]) > 1e-8)
-//                std::cout << std::setprecision(10) << v[i] << "\t" << w[i] << "\t" << v[i] - w[i] << std::endl;
-//        }
-//    }
-
+        if(bool_correct){
+            printf("\nThe solution is correct!\n");
+            printf("\n******************************************************\n");
+        }
+        else{
+            printf("\nThe solution is NOT correct!\n");
+            printf("\n******************************************************\n");
+        }
+    }
+*/
     // *************************** AMG - Solve ****************************
 /*
     t1 = MPI_Wtime();
