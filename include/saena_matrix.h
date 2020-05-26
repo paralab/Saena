@@ -177,7 +177,7 @@ public:
     int generate_dense_matrix();
     // ***********************************************************
 
-    // send_zfp parameters
+    // zfp parameters
     // ***********************************************************
     zfp_type    zfptype = zfp_type_double;
 
@@ -205,9 +205,9 @@ public:
 //    unsigned char *recv_buffer;
 
     int allocate_zfp();
-//    int allocate_zfp(const std::vector<double> &v);
     int deallocate_zfp();
 
+    // for the compression paper
     void matvec_print_time();
     unsigned long matvec_iter = 0;
     double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0;
@@ -254,7 +254,6 @@ public:
     int matrix_setup_lazy_update();
     int update_diag_lazy();
 
-    //    int set_rho();
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();
@@ -268,6 +267,7 @@ public:
     int matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w);
     int compute_matvec_dummy_time();
 
+    // shrinking
     int decide_shrinking(std::vector<double> &prev_time);
     int shrink_cpu();
     int shrink_cpu_minor();
@@ -275,26 +275,35 @@ public:
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
-    int matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
-    int matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
-    int matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
-    int matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
-    int matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
-    int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+
+    // for the compression paper
+    int matvec_sparse_test(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_compressed(std::vector<value_t>& v, std::vector<value_t>& w);
+
+    // matvec timing functions for the matvec paper
+//    int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+//    int matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+//    int matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+//    int matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+//    int matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+//    int matvec_timing5(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
+//    int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
 
     int residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res);
     int residual_negative(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res);
     int inverse_diag();
+
+    // smoothers
     int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
     int chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
 
+    // I/O functions
     int print_entry(int ran, std::string name = "");
     int print_info(int ran, std::string name = "");
     int writeMatrixToFile();
     int writeMatrixToFile(const char *folder_name);
 
+    // erase and destroy
     int set_zero();
     int erase();
     int erase2();
