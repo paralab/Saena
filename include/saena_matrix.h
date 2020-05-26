@@ -278,7 +278,10 @@ public:
 
     // for the compression paper
     int matvec_sparse_test(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_sparse_compressed(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_t>& w);
+    // openmp versions
+    int matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<value_t>& w);
 
     // matvec timing functions for the matvec paper
 //    int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);

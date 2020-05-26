@@ -202,7 +202,7 @@ int main(int argc, char* argv[]){
 
     for(int i = 0; i < matvec_warmup_iter; ++i){
         B->matvec_sparse_test(solver.get_object()->grids[0].rhs, v);
-        B->matvec_sparse_compressed(solver.get_object()->grids[0].rhs, v);
+        B->matvec_sparse_comp(solver.get_object()->grids[0].rhs, v);
     }
 
     B->matvec_iter = 0;
@@ -234,7 +234,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse_compressed(solver.get_object()->grids[0].rhs, w);
+        B->matvec_sparse_comp(solver.get_object()->grids[0].rhs, w);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec zfp:", comm);
