@@ -108,9 +108,11 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
 
 //    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
 
-    double t, tcomm;
+    double t = 0, tcomm = 0;
     MPI_Request* requests = nullptr;
     MPI_Status*  statuses = nullptr;
+
+    ++matvec_iter;
 
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
@@ -131,13 +133,21 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
     requests = new MPI_Request[numSendProc+numRecvProc];
     statuses = new MPI_Status[numSendProc+numRecvProc];
 
+    // for MPI_Test
+    int flag = 0;
+
     // receive and put the remote parts of v in vecValues.
     // they are received in order: first put the values from the lowest rank matrix, and so on.
-    for(int i = 0; i < numRecvProc; i++)
-        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+    for(int i = 0; i < numRecvProc; i++){
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &flag, statuses);
+    }
 
-    for(int i = 0; i < numSendProc; i++)
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+    for(int i = 0; i < numSendProc; i++){
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+        MPI_Test(&requests[numRecvProc + i], &flag, statuses);
+    }
+
 //    }
 
     // local loop
@@ -201,9 +211,14 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    double t = 0, tcomm = 0;
+    MPI_Request* requests = nullptr;
+    MPI_Status*  statuses = nullptr;
+
     ++matvec_iter;
 
-    double t = MPI_Wtime();
+    t = MPI_Wtime();
+
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
     for(index_t i = 0;i < vIndexSize; ++i){
@@ -214,6 +229,7 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
     part1 += t;
 
     t = MPI_Wtime();
+
     if(vIndexSize || recvSize){
         zfp_stream_rewind(send_zfp);
         if(vIndexSize){
@@ -225,25 +241,28 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
 //            }
         }
     }
+
     t = MPI_Wtime() - t;
     part2 += t;
 
-    double tcomm = MPI_Wtime();
-    auto *requests = new MPI_Request[numSendProc+numRecvProc];
-    auto *statuses = new MPI_Status[numSendProc+numRecvProc];
+    tcomm = MPI_Wtime();
+    requests = new MPI_Request[numSendProc+numRecvProc];
+    statuses = new MPI_Status[numSendProc+numRecvProc];
+
+    // for MPI_Test
+    int flag = 0;
 
     // receive and put the remote parts of v in vecValues.
     // they are received in order: first put the values from the lowest rank matrix, and so on.
     for(int i = 0; i < numRecvProc; ++i) {
-        MPI_Irecv(&zfp_recv_buff[(zfp_rate/CHAR_BIT)*rdispls[recvProcRank[i]]], (zfp_rate/CHAR_BIT)*recvProcCount[i], MPI_UNSIGNED_CHAR, recvProcRank[i], 1, comm, &(requests[i]));
+        MPI_Irecv(&zfp_recv_buff[(zfp_rate/CHAR_BIT)*rdispls[recvProcRank[i]]], (zfp_rate/CHAR_BIT)*recvProcCount[i], MPI_UNSIGNED_CHAR, recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &flag, statuses);
     }
 
     for(int i = 0; i < numSendProc; ++i){
-        MPI_Isend(&zfp_send_buff[(zfp_rate/CHAR_BIT)*vdispls[sendProcRank[i]]], (zfp_rate/CHAR_BIT)*sendProcCount[i], MPI_UNSIGNED_CHAR, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+        MPI_Isend(&zfp_send_buff[(zfp_rate/CHAR_BIT)*vdispls[sendProcRank[i]]], (zfp_rate/CHAR_BIT)*sendProcCount[i], MPI_UNSIGNED_CHAR, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+        MPI_Test(&requests[numRecvProc + i], &flag, statuses);
     }
-
-//    int flag = 0;
-//    MPI_Test(requests, &flag, statuses);
 
     // local loop
     // ----------
