@@ -196,7 +196,7 @@ public:
                   zfp_send_comp_sz = 0,
                   zfp_recv_buff_sz = 0;
 
-    unsigned zfp_rate      = 64;
+    unsigned zfp_rate      = 32;
     double   zfp_precision = 32;
 
 //    double  *zfp_send_buff = nullptr, // storage for compressed send_stream
