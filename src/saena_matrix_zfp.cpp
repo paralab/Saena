@@ -1,16 +1,21 @@
 #include "saena_matrix.h"
 #include "zfparray1.h"
 #include <omp.h>
+#include <cassert>
 
 // The zfp_field parameter object holds information about the uncompressed array. To specify the compressed array,
 //a zfp_stream object must be allocated.
 
 int saena_matrix::allocate_zfp(){
-/*
+
     free_zfp_buff = true;
 
-    zfp_send_buff_sz = zfp_rate / 2 * (unsigned)ceil(vIndexSize/4.0); // rate/8 * 4 * ceil(size/4). This is in bytes.
-    zfp_recv_buff_sz = zfp_rate / 2 * (unsigned)ceil(recvSize/4.0);
+    // compute zfp_send_buff_sz in bytes:
+    // rate / 8 * 4 * ceil(size / 4).
+    // divide by 8 to convert bits to bytes
+    // 4 * ceil(size / 4): because zfp compresses blocks of size 4.
+    zfp_send_buff_sz = zfp_rate / 2 * (unsigned)ceil(vIndexSize / 4.0);
+    zfp_recv_buff_sz = zfp_rate / 2 * (unsigned)ceil(recvSize / 4.0);
 //    zfp_send_buff = (double*)malloc(zfp_send_buff_sz);
 //    zfp_recv_buff = (double*)malloc(zfp_recv_buff_sz);
     zfp_send_buff    = new uchar[zfp_send_buff_sz];
@@ -35,16 +40,16 @@ int saena_matrix::allocate_zfp(){
 //    recv_stream      = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
 //    zfp_stream_set_bit_stream(recv_zfp, recv_stream);
 
-    recv_field = zfp_field_1d(&vecValues[0], zfptype, recvSize);
+    recv_field  = zfp_field_1d(&vecValues[0], zfptype, recvSize);
     recv_stream = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
-    recv_zfp = zfp_stream_open(recv_stream);
+    recv_zfp    = zfp_stream_open(recv_stream);
     zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
-*/
+
     return 0;
 }
 
 int saena_matrix::deallocate_zfp(){
-/*
+
     if(free_zfp_buff){
 
         zfp_field_free(send_field);
@@ -60,7 +65,7 @@ int saena_matrix::deallocate_zfp(){
         free_zfp_buff = false;
 
     }
-*/
+
     return 0;
 }
 
@@ -120,6 +125,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
         zfp_stream_rewind(send_zfp);
         if(vIndexSize){
             zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
+            assert(zfp_send_buff_sz == zfp_send_comp_sz);
 //            printf("rank %d: vIndexSize = %u, zfp_send_buff_sz = %u, \tzfp_send_comp_sz = %u\n", rank, vIndexSize, zfp_send_buff_sz, zfp_send_comp_sz);
 //            if(zfp_send_buff_sz != zfp_send_comp_sz){
 //                printf("ERROR: rank %d: vIndexSize = %u, zfp_send_buff_sz = %u, \tzfp_send_comp_sz = %u\n", rank, vIndexSize, zfp_send_buff_sz, zfp_send_comp_sz);
@@ -130,8 +136,8 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     part2 += t;
 
     double tcomm = MPI_Wtime();
-    auto requests = new MPI_Request[numSendProc+numRecvProc];
-    auto statuses = new MPI_Status[numSendProc+numRecvProc];
+    auto *requests = new MPI_Request[numSendProc+numRecvProc];
+    auto *statuses = new MPI_Status[numSendProc+numRecvProc];
 
     // receive and put the remote parts of v in vecValues.
     // they are received in order: first put the values from the lowest rank matrix, and so on.
@@ -142,6 +148,9 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     for(int i = 0; i < numSendProc; ++i){
         MPI_Isend(&zfp_send_buff[(zfp_rate/CHAR_BIT)*vdispls[sendProcRank[i]]], (zfp_rate/CHAR_BIT)*sendProcCount[i], MPI_UNSIGNED_CHAR, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
     }
+
+//    int flag = 0;
+//    MPI_Test(requests, &flag, statuses);
 
     // local loop
     // ----------
