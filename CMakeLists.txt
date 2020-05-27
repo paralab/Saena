@@ -325,8 +325,8 @@ ENDIF()
 #add_executable(Saena src/main_read_2file.cpp  ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_band_matrix.cpp ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_lazy.cpp        ${SOURCE_FILES} ${HEADER_FILES})
-add_executable(Saena src/main_zfp.cpp         ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena src/main_matmat.cpp      ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena src/main_zfp.cpp         ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Saena src/main_matmat.cpp      ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_matmat_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 # -----------------------------------------------------------------------

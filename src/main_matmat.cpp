@@ -3,15 +3,21 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-#include "combblas_functions.h"
-#include "petsc_functions.h"
-
 #include <iostream>
 #include <vector>
 #include <dollar.hpp>
 #include <omp.h>
-#include "mpi.h"
+#include <mpi.h>
 
+#ifdef _USE_COMBBLAS_
+#include "combblas_functions.h"
+#endif
+
+#ifdef _USE_PETSC_
+#include "petsc_functions.h"
+#endif
+
+using namespace std;
 
 int main(int argc, char* argv[]){
 
@@ -33,6 +39,9 @@ int main(int argc, char* argv[]){
         MPI_Finalize();
         return -1;
     }
+
+    // set the number of OpenMP threads at run-time
+    omp_set_num_threads(1);
 
 #pragma omp parallel default(none) shared(rank, nprocs)
     if(!rank && omp_get_thread_num()==0)
