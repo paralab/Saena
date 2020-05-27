@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.10)
 project(Saena)
 
 set(CMAKE_CXX_STANDARD 14) #CombBLAS requires 14
@@ -180,7 +180,7 @@ if(ENABLE_PETSC)
     set(HEADER_FILES ${HEADER_FILES} include/petsc_functions.h)
     set(SOURCE_FILES ${SOURCE_FILES} src/petsc_functions.cpp)
 
-    add_definitions(-D_USE_PETSC_)
+    add_compile_definitions(_USE_PETSC_)
 
 endif(ENABLE_PETSC)
 
@@ -205,7 +205,7 @@ if(ENABLE_COMBBLAS)
     set(HEADER_FILES ${HEADER_FILES} include/combblas_functions.h)
     set(SOURCE_FILES ${SOURCE_FILES} src/combblas_functions.cpp)
 
-    add_definitions(-D_USE_COMBBLAS_)
+    add_compile_definitions(_USE_COMBBLAS_)
 
 endif(ENABLE_COMBBLAS)
 
