@@ -208,7 +208,8 @@ public:
     int deallocate_zfp();
 
     // for the compression paper
-    void matvec_print_time();
+    void matvec_time_init();
+    void matvec_time_print() const;
     unsigned long matvec_iter = 0;
     double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0;
 

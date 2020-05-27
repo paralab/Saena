@@ -69,7 +69,18 @@ int saena_matrix::deallocate_zfp(){
     return 0;
 }
 
-void saena_matrix::matvec_print_time(){
+
+void saena_matrix::matvec_time_init(){
+    matvec_iter = 0;
+    part1 = 0;
+    part2 = 0;
+    part3 = 0;
+    part4 = 0;
+    part5 = 0;
+    part6 = 0;
+}
+
+void saena_matrix::matvec_time_print() const{
     int rank;
     MPI_Comm_rank(comm, &rank);
 

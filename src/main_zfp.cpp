@@ -3,20 +3,25 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-#include "combblas_functions.h"
-#include "petsc_functions.h"
-//#include <petsc_functions.h>
-
 #include <iostream>
+#include <vector>
+#include <iomanip>
+#include <omp.h>
+#include <mpi.h>
 #include <algorithm>
 #include <fstream>
 #include <sys/stat.h>
-#include <vector>
-#include <omp.h>
 #include <dollar.hpp>
-#include <iomanip>
-#include "mpi.h"
 
+#ifdef _USE_COMBBLAS_
+#include "combblas_functions.h"
+#endif
+
+#ifdef _USE_PETSC_
+#include "petsc_functions.h"
+#endif
+
+using namespace std;
 
 int main(int argc, char* argv[]){
 
@@ -183,7 +188,7 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 //    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
 
-    // *************************** zfp ****************************
+    // *************************** warmup ****************************
 
     int matvec_warmup_iter = 2;
     int matvec_iter = 3;
@@ -194,59 +199,21 @@ int main(int argc, char* argv[]){
     std::vector<double> v(B->split[rank+1] - B->split[rank], 0);
     std::vector<double> w(B->split[rank+1] - B->split[rank], 0);
 
-//    B->matvec_sparse_zfp(solver.get_object()->grids[0].rhs, w);
-
 //    print_vector(B->split, 0, "B.split", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 //    print_vector(v, -1, "v", comm);
 
     for(int i = 0; i < matvec_warmup_iter; ++i){
         B->matvec_sparse_test(solver.get_object()->grids[0].rhs, v);
-        B->matvec_sparse_comp(solver.get_object()->grids[0].rhs, v);
-    }
-
-    B->matvec_iter = 0;
-    B->part1 = 0;
-    B->part2 = 0;
-    B->part3 = 0;
-    B->part4 = 0;
-    B->part5 = 0;
-    B->part6 = 0;
-
-    MPI_Barrier(comm);
-    t1 = MPI_Wtime();
-    for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse_test(solver.get_object()->grids[0].rhs, v);
-    }
-    t1 = MPI_Wtime() - t1;
-    print_time(t1 / matvec_iter, "matvec original:", comm);
-
-    B->matvec_print_time();
-
-    B->matvec_iter = 0;
-    B->part1 = 0;
-    B->part2 = 0;
-    B->part3 = 0;
-    B->part4 = 0;
-    B->part5 = 0;
-    B->part6 = 0;
-
-    MPI_Barrier(comm);
-    t1 = MPI_Wtime();
-    for(int i = 0; i < matvec_iter; ++i){
         B->matvec_sparse_comp(solver.get_object()->grids[0].rhs, w);
     }
-    t1 = MPI_Wtime() - t1;
-    print_time(t1 / matvec_iter, "matvec zfp:", comm);
 
-    B->matvec_print_time();
+    // *************************** check the correctness ****************************
 
-    // *************************** zfp: check the accuracy ****************************
-/*
     bool bool_correct = true;
     MPI_Barrier(comm);
     if(rank == 1){
-        printf("\n******************************************************\n");
+        cout << MAGENTA << "\n******************************************************\n" << COLORRESET;
         std::cout << "\nChecking the correctness:" << std::endl;
         for(int i = 0; i < v.size(); ++i){
             if(fabs(w[i] - v[i]) > 1e-8){
@@ -256,15 +223,39 @@ int main(int argc, char* argv[]){
         }
 
         if(bool_correct){
-            printf("\nThe solution is correct!\n");
-            printf("\n******************************************************\n");
-        }
-        else{
-            printf("\nThe solution is NOT correct!\n");
-            printf("\n******************************************************\n");
+            cout << "\nThe solution is correct!\n" << endl;
+            cout << MAGENTA << "\n******************************************************\n" << COLORRESET;
+        }else{
+            cout << "\nThe solution is " << RED << "NOT" << COLORRESET << " correct!\n" << endl;
+            cout << MAGENTA << "\n******************************************************\n" << COLORRESET;
         }
     }
-*/
+
+    // *************************** compare normal matvec with the compressed matvec ****************************
+
+    B->matvec_time_init();
+    MPI_Barrier(comm);
+    t1 = MPI_Wtime();
+    for(int i = 0; i < matvec_iter; ++i){
+        B->matvec_sparse_test(solver.get_object()->grids[0].rhs, v);
+    }
+    t1 = MPI_Wtime() - t1;
+    print_time(t1 / matvec_iter, "matvec original:", comm);
+
+    B->matvec_time_print();
+
+    B->matvec_time_init();
+
+    MPI_Barrier(comm);
+    t1 = MPI_Wtime();
+    for(int i = 0; i < matvec_iter; ++i){
+        B->matvec_sparse_comp(solver.get_object()->grids[0].rhs, w);
+    }
+    t1 = MPI_Wtime() - t1;
+    print_time(t1 / matvec_iter, "matvec zfp:", comm);
+
+    B->matvec_time_print();
+
     // *************************** AMG - Solve ****************************
 /*
     t1 = MPI_Wtime();
