@@ -196,6 +196,8 @@ int main(int argc, char* argv[]){
 //    solver.get_object()->grids[0].A->allocate_zfp(solver.get_object()->grids[0].rhs);
     saena_matrix *B = solver.get_object()->grids[0].A;
 
+    B->use_zfp = true; // to allocate and set the zfp related parameters
+
     std::vector<double> v(B->split[rank+1] - B->split[rank], 0);
     std::vector<double> w(B->split[rank+1] - B->split[rank], 0);
 

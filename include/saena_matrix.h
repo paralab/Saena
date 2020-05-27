@@ -179,6 +179,7 @@ public:
 
     // zfp parameters
     // ***********************************************************
+
     zfp_type    zfptype = zfp_type_double;
 
     zfp_field*  send_field;  // array meta data
@@ -189,6 +190,7 @@ public:
     zfp_stream* recv_zfp;    // compressed stream
     bitstream*  recv_stream; // bit stream to write to or read from
 
+    bool          use_zfp          = false;
     bool          free_zfp_buff    = false;
     unsigned char *zfp_send_buff   = nullptr, // storage for compressed stream to be sent
                   *zfp_recv_buff   = nullptr; // storage for compressed stream to be received
