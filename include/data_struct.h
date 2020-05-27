@@ -9,6 +9,7 @@
 typedef unsigned int index_t;
 typedef unsigned long nnz_t;
 typedef double value_t;
+typedef unsigned char uchar;
 
 
 inline index_t rem_sz(index_t sz, unsigned int k){

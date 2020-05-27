@@ -1,6 +1,7 @@
 #ifndef SAENA_SAENA_OBJECT_H
 #define SAENA_SAENA_OBJECT_H
 
+#include "data_struct.h"
 #include "superlu_ddefs.h"
 #include "aux_functions.h"
 #include "saena_vector.h"
@@ -16,15 +17,8 @@
 //#define SPLIT_NNZ
 #define SPLIT_SIZE
 
-//#define FAST_MM_MAP
-//#define FAST_MM_VECTOR
-
-typedef unsigned int  index_t;
-typedef unsigned long nnz_t;
-typedef double        value_t;
-typedef unsigned char uchar;
-
-#define ITER_LAZY 20        // number of update steps for lazy-update
+// number of update steps for lazy-update
+#define ITER_LAZY 20
 
 const double ALMOST_ZERO = 1e-16;
 

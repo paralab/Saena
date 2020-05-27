@@ -7,11 +7,6 @@
 #include "mpi.h"
 
 
-typedef unsigned int index_t;
-typedef unsigned long nnz_t;
-typedef double value_t;
-
-
 class prolong_matrix {
 // A matrix of this class is ordered <<ONLY>> if it is defined in createProlongation function in saena_object.cpp.
 // Otherwise it can be ordered using the following line:

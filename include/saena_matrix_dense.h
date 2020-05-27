@@ -1,13 +1,12 @@
-#ifndef MATVEC003_SAENA_MATRIX_DENSE_H
-#define MATVEC003_SAENA_MATRIX_DENSE_H
+#ifndef SAENA_MATRIX_DENSE_H
+#define SAENA_MATRIX_DENSE_H
+
+#include "data_struct.h"
 
 #include "vector"
 #include <mpi.h>
 #include <cstdlib>
 
-typedef unsigned int index_t;
-typedef unsigned long nnz_t;
-typedef double value_t;
 
 class saena_matrix;
 
@@ -63,4 +62,4 @@ public:
     int convert_saena_matrix(saena_matrix *A);
 };
 
-#endif //MATVEC003_SAENA_MATRIX_DENSE_H
+#endif //SAENA_MATRIX_DENSE_H

@@ -1,6 +1,12 @@
 #ifndef SAENA_SAENA_MATRIX_H
 #define SAENA_SAENA_MATRIX_H
 
+/**
+ * @author Majid Rasouli
+ * @breif Contains the basic structure for the Saena matrix class (saena_matrix).
+ *
+ * */
+
 #include "saena_matrix_dense.h"
 #include "aux_functions.h"
 #include "zfparray1.h"
@@ -10,16 +16,6 @@
 #include <set>
 #include <mpi.h>
 
-
-/**
- * @author Majid Rasouli
- * @breif Contains the basic structure for the Saena matrix class (saena_matrix).
- *
- * */
-
-typedef unsigned int  index_t;
-typedef unsigned long nnz_t;
-typedef double        value_t;
 
 class saena_matrix {
 
