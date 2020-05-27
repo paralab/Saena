@@ -61,6 +61,7 @@ int main(int argc, char* argv[]){
     int band(std::stoi(argv[2]));
 
     saena::matrix A(comm);
+    A.get_internal_matrix()->use_zfp = true; // to allocate and set the zfp related parameters
     saena::band_matrix(A, M, band);
 
 //    A.print(-1, "A");
@@ -72,6 +73,7 @@ int main(int argc, char* argv[]){
     float dens(std::stof(argv[2]));
 
     saena::matrix A(comm);
+    A.get_internal_matrix()->use_zfp = true; // to allocate and set the zfp related parameters
     saena::random_symm_matrix(A, M, dens);
 
 //    A.print(-1, "A");
@@ -83,6 +85,7 @@ int main(int argc, char* argv[]){
     saena::matrix A(comm);
 //    A.read_file(Aname);
     A.read_file(Aname, "triangle");
+    A.get_internal_matrix()->use_zfp = true; // to allocate and set the zfp related parameters
     A.assemble();
 
 //    saena::matrix B(A);
@@ -195,8 +198,6 @@ int main(int argc, char* argv[]){
 
 //    solver.get_object()->grids[0].A->allocate_zfp(solver.get_object()->grids[0].rhs);
     saena_matrix *B = solver.get_object()->grids[0].A;
-
-    B->use_zfp = true; // to allocate and set the zfp related parameters
 
     std::vector<double> v(B->split[rank+1] - B->split[rank], 0);
     std::vector<double> w(B->split[rank+1] - B->split[rank], 0);
