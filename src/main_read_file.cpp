@@ -73,7 +73,7 @@ int main(int argc, char* argv[]){
     std::vector<double> rhs_std;
 
     // ********** 1 - set rhs_std: random **********
-/*
+
     rhs_std.resize(num_local_row);
     generate_rhs_old(rhs_std);
 
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-*/
+
     // ********** 2 - set rhs_std: ordered: 1, 2, 3, ... **********
 
 //    rhs_std.resize(num_local_row);
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]){
 //        rhs_std[i] = i + 1 + A.get_internal_matrix()->split[rank];
 
     // ********** 3 - set rhs: read from file **********
-
+/*
     char* Vname(argv[2]);
 //    saena::read_vector_file(rhs_std, A, Vname, comm);
     read_vector_file(rhs_std, A.get_internal_matrix(), Vname, comm);
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-
+*/
     // ********** print rhs **********
 
 //    print_vector(rhs_std, -1, "rhs_std", comm);
