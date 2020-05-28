@@ -667,7 +667,7 @@ int saena_matrix::set_off_on_diagonal(){
             sendCountScan.resize(nprocs);
             recvCountScan[0] = 0;
             sendCountScan[0] = 0;
-            for (unsigned int i = 1; i < nprocs; i++){
+            for (index_t i = 1; i < nprocs; i++){
                 recvCountScan[i] = recvCountScan[i-1] + recvCount[i-1];
                 sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
             }
@@ -1011,7 +1011,7 @@ int saena_matrix::scale_matrix(){
 
 #pragma omp parallel
         {
-            unsigned int i;
+            index_t i;
             int thread_id = omp_get_thread_num();
             nnz_t iter = iter_remote_array[thread_id];
 #pragma omp for
@@ -1123,7 +1123,7 @@ int saena_matrix::scale_back_matrix(){
 
 #pragma omp parallel
         {
-            unsigned int i;
+            index_t i;
             int thread_id = omp_get_thread_num();
             nnz_t iter = iter_remote_array[thread_id];
 #pragma omp for

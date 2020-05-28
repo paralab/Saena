@@ -101,7 +101,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                     while (inFile.peek() == '%') inFile.ignore(2048, '\n');
 
                     // M and N are the size of the matrix with nnz nonzeros
-                    unsigned int M, N, nnz;
+                    nnz_t M, N, nnz;
                     inFile >> M >> N >> nnz;
 
 //                printf("M = %u, N = %u, nnz = %u \n", M, N, nnz);
@@ -114,7 +114,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                     // number of nonzeros is less than 2*nnz, considering the diagonal
                     // that's why there is a resize for entry when nnz is found.
 
-                    unsigned int a, b, i = 0;
+                    index_t a, b, i = 0;
                     double c;
 
                     if (input_type.empty()) {
@@ -239,7 +239,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
                     std::string line;
                     double temp;
-                    unsigned int row = 0, col;
+                    index_t row = 0, col;
 
                     while (std::getline(inFile, line)) {
                         std::istringstream iss(line);
@@ -403,7 +403,7 @@ int saena_matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local)
     std::pair<std::set<cooEntry_row>::iterator, bool> p;
 
     // todo: isn't it faster to allocate memory for nnz_local, then assign, instead of inserting one by one.
-    for(unsigned int i=0; i<nnz_local; i++){
+    for(nnz_t i=0; i<nnz_local; i++){
 
         temp_new = cooEntry_row(row[i], col[i], val[i]);
         p = data_coo.insert(temp_new);
@@ -461,7 +461,7 @@ int saena_matrix::set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local
     cooEntry_row temp_old, temp_new;
     std::pair<std::set<cooEntry_row>::iterator, bool> p;
 
-    for(unsigned int i=0; i<nnz_local; i++){
+    for(nnz_t i=0; i<nnz_local; ++i){
         if(!almost_zero(val[i])){
             temp_new = cooEntry_row(row[i], col[i], val[i]);
             p = data_coo.insert(temp_new);

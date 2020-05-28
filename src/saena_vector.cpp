@@ -338,7 +338,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         sendCountScan.resize(nprocs);
         recvCountScan[0] = 0;
         sendCountScan[0] = 0;
-        for (unsigned int i = 1; i < nprocs; i++) {
+        for (index_t i = 1; i < nprocs; i++) {
             recvCountScan[i] = recvCountScan[i - 1] + recvCount[i - 1];
             sendCountScan[i] = sendCountScan[i - 1] + sendCount[i - 1];
         }

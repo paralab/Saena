@@ -164,7 +164,7 @@ int saena_matrix_dense::matvec(std::vector<value_t>& v, std::vector<value_t>& w)
 //    if(rank==0) printf("%d, %d\n", left_neighbor, right_neighbor);
 
     int owner, next_owner;
-    unsigned int recv_size, send_size = M;
+    index_t recv_size, send_size = M;
 
     std::vector<value_t> v_recv = v;
     std::vector<value_t> v_send = v;

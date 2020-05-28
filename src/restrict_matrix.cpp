@@ -638,7 +638,7 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     #pragma omp parallel
     {
-        unsigned int i, l;
+        index_t i, l;
         int thread_id = omp_get_thread_num();
         value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)

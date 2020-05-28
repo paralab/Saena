@@ -713,7 +713,7 @@ int saena_matrix::repartition_nnz(){
 //    if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
     float offsetResSum = 0;
     splitOffset[0] = 0;
-    for(unsigned int i=1; i<n_buckets; i++){
+    for(index_t i=1; i<n_buckets; i++){
         splitOffset[i] = baseOffset;
         offsetResSum += offsetRes;
         if (offsetResSum >= 1){
@@ -949,7 +949,7 @@ int saena_matrix::repartition_row(){
 //    if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
     float offsetResSum = 0;
     splitOffset[0] = 0;
-    for(unsigned int i=1; i<nprocs; i++){
+    for(index_t i=1; i<nprocs; i++){
         splitOffset[i] = baseOffset;
         offsetResSum += offsetRes;
         if (offsetResSum >= 1){

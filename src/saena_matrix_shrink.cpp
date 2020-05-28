@@ -42,9 +42,9 @@ int saena_matrix::shrink_cpu(){
     // create a new comm including only processes with 4k rank.
     MPI_Group bigger_group;
     MPI_Comm_group(comm, &bigger_group);
-    total_active_procs = (unsigned int)ceil((double)nprocs / cpu_shrink_thre2); // note: this is ceiling, not floor.
+    total_active_procs = (index_t)ceil((double)nprocs / cpu_shrink_thre2); // note: this is ceiling, not floor.
     std::vector<int> ranks(total_active_procs);
-    for(unsigned int i = 0; i < total_active_procs; i++)
+    for(index_t i = 0; i < total_active_procs; i++)
         ranks[i] = cpu_shrink_thre2 * i;
 //        ranks.emplace_back(Ac->cpu_shrink_thre2 * i);
 
@@ -64,7 +64,7 @@ int saena_matrix::shrink_cpu(){
         split.shrink_to_fit();
         split[0] = 0;
         split[total_active_procs] = Mbig;
-        for(unsigned int i = 1; i < total_active_procs; i++){
+        for(index_t i = 1; i < total_active_procs; i++){
 //            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
             split[i] = split_temp[ranks[i]];
         }
@@ -102,7 +102,7 @@ int saena_matrix::shrink_cpu_minor(){
 
     total_active_procs = 0;
     std::vector<int> ranks(nprocs);
-    for(unsigned int i = 0; i < nprocs; i++){
+    for(index_t i = 0; i < nprocs; i++){
         if(split[i+1] - split[i] != 0){
             ranks[total_active_procs] = i;
             total_active_procs++;
@@ -127,7 +127,7 @@ int saena_matrix::shrink_cpu_minor(){
         split.shrink_to_fit();
         split[0] = 0;
         split[total_active_procs] = Mbig;
-        for(unsigned int i = 1; i < total_active_procs; i++){
+        for(index_t i = 1; i < total_active_procs; i++){
 //            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
             split[i] = split_old_minor[ranks[i]];
         }
@@ -451,7 +451,7 @@ int saena_matrix::set_off_on_diagonal_dummy(){
         sendCountScan.resize(nprocs);
         recvCountScan[0] = 0;
         sendCountScan[0] = 0;
-        for (unsigned int i = 1; i < nprocs; i++){
+        for (index_t i = 1; i < nprocs; i++){
             recvCountScan[i] = recvCountScan[i-1] + recvCount[i-1];
             sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
         }

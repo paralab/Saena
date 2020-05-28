@@ -416,7 +416,7 @@ int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<va
 
 #pragma omp parallel
     {
-        unsigned int i = 0, l = 0;
+        index_t i = 0, l = 0;
         int thread_id = omp_get_thread_num();
         value_t *w_local = &w_buff[0] + (thread_id*M);
         if(thread_id==0)
@@ -580,7 +580,7 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
     // the corresponding vector element is saved in vecValues[0]. and so on.
 
     t = MPI_Wtime();
-    unsigned int i;
+    index_t i;
     iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
         for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {

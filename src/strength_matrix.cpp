@@ -239,12 +239,12 @@ int strength_matrix::setup_matrix(float connStrength){
 
          // change the indices from global to local
          #pragma omp parallel for
-         for (unsigned int j = 0; j < vIndexSize; j++)
+         for (index_t j = 0; j < vIndexSize; j++)
              vIndex[j] -= split[rank];
     }
 
     indicesP_local.resize(nnz_l_local);
-    for(unsigned int j = 0; j < nnz_l_local; j++)
+    for(nnz_t j = 0; j < nnz_l_local; j++)
         indicesP_local[j] = j;
 
     index_t *row_localP = &*row_local.begin();

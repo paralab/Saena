@@ -40,11 +40,11 @@ void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nn
         MPI_Finalize();
     }
 
-    offset = rank * (unsigned int) (floor(1.0 * nnz_g / nprocs)) * 24; // row index(long=8) + column index(long=8) + value(double=8) = 24
+    offset = rank * (index_t) (floor(1.0 * nnz_g / nprocs)) * 24; // row index(long=8) + column index(long=8) + value(double=8) = 24
     MPI_File_read_at(fh, offset, datap, 3 * initial_nnz_l, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
-    for(unsigned int i = 0; i<initial_nnz_l; i++){
+    for(index_t i = 0; i<initial_nnz_l; i++){
         I[i] = data[3*i];
         J[i] = data[3*i+1];
         V[i] = reinterpret_cast<double&>(data[3*i+2]);
@@ -241,7 +241,7 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
     int       i,j,k,xm,ym,zm,xs,ys,zs;
     double    Hx,Hy,Hz;
 //    double    ***array;
-    unsigned int node;
+    index_t node;
 
 #define PETSC_PI 3.14159265358979323846
 
@@ -319,7 +319,7 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
     // check if the size of rhs match the number of rows of A
     struct stat st;
     stat(file, &st);
-    unsigned int rhs_size = st.st_size / sizeof(double);
+    index_t rhs_size = st.st_size / sizeof(double);
     if(rhs_size != A->Mbig){
         if(!rank){
             printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");

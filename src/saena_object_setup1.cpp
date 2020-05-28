@@ -391,8 +391,8 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     // remote ST values
     // add OpenMP just like matvec.
     iter = 0;
-    for (nnz_t i = 0; i < A->vElement_remote.size(); ++i) {
-        for (unsigned int j = 0; j < A->vElementRep_remote[i]; ++j, ++iter) {
+    for (index_t i = 0; i < A->vElement_remote.size(); ++i) {
+        for (index_t j = 0; j < A->vElementRep_remote[i]; ++j, ++iter) {
 //            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->values_remote[iter] / A->vecValues[i]);
 //            w[A->row_remote[A->indicesP_remote[iter]]] += A->values_remote[A->indicesP_remote[iter]] * A->vecValues[A->col_remote[A->indicesP_remote[iter]]];
             S->entryT[iter + A->nnz_l_local] = cooEntry(A->row_remote[iter], A->col_remote2[iter], -A->values_remote[iter] / A->vecValues[i]);
