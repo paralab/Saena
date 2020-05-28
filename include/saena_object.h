@@ -419,15 +419,25 @@ public:
     }
 
     std::vector<int> next_p_level(std::vector<int> ind_fine, int order);
+    std::vector<int> next_p_level_new(std::vector<int> ind_fine, int order, int &type);
     void set_PR_from_p(int order, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp);//, std::vector< std::vector<double> > &Rp);
     void set_P_from_mesh(int order, std::vector< std::vector<int> > map, int prodim, std::vector<cooEntry_row> &P_temp, MPI_Comm comm, std::vector<int> g2u);
+    
     std::vector<double> get_interpolation(int ind, int order, int prodim);
+    // replace above one after testing
+    std::vector<double> get_interpolation_new(int ind, int order, int prodim, int type);
+    
     std::vector<int> coarse_p_node_arr(std::vector< std::vector<int> > map, int order);
     inline int findloc(std::vector<int> arr, int a);
 	//inline std::vector< std::vector<double> > transp(std::vector< std::vector<double> > M);
 	inline bool ismember(int a, std::vector<int> arr);
 	//inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
+    inline int factorial(int n);
+    inline std::vector<double> comp_L(int i, int order);
 	inline std::vector< std::vector<double> > eighth_order(int order);
+    // replace above one after testing
+    inline std::vector< std::vector<double> > one_interp_P(int order);
+
 	inline std::vector< std::vector<int> > mesh_info(int order, std::string filename, std::vector< std::vector< std::vector<int> > > &map_all, MPI_Comm comm);
 	inline std::vector<int> g2umap(int order, std::string filename, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector<int> > map, MPI_Comm comm);
 	int bdydof;

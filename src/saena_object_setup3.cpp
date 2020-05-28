@@ -279,6 +279,134 @@ vector<int> saena_object::next_p_level(vector<int> ind_fine, int order){
     return indices;
 }
 
+vector<int> saena_object::next_p_level_new(vector<int> ind_fine, int order, int &type){
+    // assuming the elemental ordering is like
+    // 7--8--9
+    // |  |  |
+    // 4--5--6
+    // |  |  |
+    // 1--2--3
+
+    // check element type
+    // 1: quad
+    // 2: tri
+    // 3: hex
+    // 4: tet
+    int vert_size = ind_fine.size();
+    // quad
+    if (vert_size == (order+1)*(order+1))
+        type = 1;
+    else if (vert_size == (order+1)*(order+1)*(order+1))
+        type = 3;
+    else if (vert_size == (order+1)*(order+2)/2)
+        type = 2;
+    else if (vert_size == order*order*order/6+order*order+11*order/6+1)
+        type = 4;
+    else
+    {
+        std::cout << "element type is not implemented!" << std::endl;
+    }
+    
+    vector<int> indices;
+    if (type == 1){
+        for (int i=0; i<order/2+1; i++){
+            for (int j=0; j<order/2+1; j++){
+#ifdef __DEBUG1__
+//            ASSERT((2*j+2*(order+1)*i >= 0) && (2*j+2*(order+1)*i < ind_fine.size()),
+//                   i << "\t" << j << "\t" << order << "\t" << 2*j+2*(order+1)*i);
+//            cout << i << "\t" << j << "\t" << order << "\t" << ind_fine.size() << "\t" << 2*j+2*(order+1)*i << "\t" << ind_fine[2*j+2*(order+1)*i] << endl;
+#endif
+                indices.push_back(ind_fine[2*j+2*(order+1)*i]);
+            }
+        }
+    }
+    if (type == 3)
+    {
+        for (int i=0; i<order/2+1; i++){
+            for (int j=0; j<order/2+1; j++){
+                for (int k=0; k<order/2+1; k++){
+                    indices.push_back(ind_fine[2*k+2*(order+1)*j+2*(order+1)*(order+1)*i]);
+                }
+            }
+        }
+
+    }
+    if (type == 2)
+    {
+        // vertex
+        int counter = 0;
+        for (int i=0; i<3; i++)
+        {
+            indices.push_back(ind_fine[i]);
+        }
+        //edge
+        for (int i=0; i<3; i++)
+        {
+            if (order == 4)
+            {
+                indices.push_back(ind_fine[3+(order-1)*i+1]);
+            }
+            if (order == 8)
+            {
+                indices.push_back(ind_fine[3+(order-1)*i+1]);
+                indices.push_back(ind_fine[3+(order-1)*i+3]);
+                indices.push_back(ind_fine[3+(order-1)*i+5]);
+            }
+        }
+        // interior
+        // TODO need to double check (This is wrong)
+        if (order == 8)
+        {
+            indices.push_back(ind_fine[ind_fine.size()-3]);
+            indices.push_back(ind_fine[ind_fine.size()-2]);
+            indices.push_back(ind_fine[ind_fine.size()-1]);
+        }
+    }
+    if (type == 4)
+    {
+        // vertex
+        int counter = 0;
+        for (int i=0; i<4; i++)
+        {
+            indices.push_back(ind_fine[i]);
+        }
+        //edge
+        for (int i=0; i<6; i++)
+        {
+            if (order == 4)
+            {
+                indices.push_back(ind_fine[4+(order-1)*i+1]);
+            }
+            if (order == 8)
+            {
+                indices.push_back(ind_fine[3+(order-1)*i+1]);
+                indices.push_back(ind_fine[3+(order-1)*i+3]);
+                indices.push_back(ind_fine[3+(order-1)*i+5]);
+            }
+        }
+        // face
+        if (order == 8)
+        {
+            for (int i=0; i<6; i++)
+            {
+                indices.push_back(ind_fine[ind_fine.size()-3]);
+                indices.push_back(ind_fine[ind_fine.size()-2]);
+                indices.push_back(ind_fine[ind_fine.size()-1]);
+            }
+        }
+        // interior
+        if (order == 8)
+        {
+            indices.push_back(ind_fine[ind_fine.size()-3]);
+            indices.push_back(ind_fine[ind_fine.size()-2]);
+            indices.push_back(ind_fine[ind_fine.size()-1]);
+        }
+
+    }
+
+    return indices;
+}
+
 vector<int> saena_object::coarse_p_node_arr(vector< vector<int> > map, int order)
 {
     int total_elem = map.size();
@@ -378,7 +506,9 @@ void saena_object::set_P_from_mesh(int order, vector<vector<int>> map, int prodi
     // elemno is the local element number
     for (int i=0; i<elemno; i++){
         // for each element extract coraser element indices
-        vector<int> ind_coarse = next_p_level(map.at(i), order);
+        //vector<int> ind_coarse = next_p_level(map.at(i), order);
+        int elem_type;
+        vector<int> ind_coarse = next_p_level_new(map.at(i), order, elem_type);
 
 		//std::cout << "ind_coarse size: " << ind_coarse.size() << std::endl;
 		//std::cout << "map.at(i) size: " << map.at(i).size() << std::endl;
@@ -395,7 +525,8 @@ void saena_object::set_P_from_mesh(int order, vector<vector<int>> map, int prodi
             // interpolate basis function of j at all other nodes
             // in this element as the values of corresponding P entries
             // TODO only for 2d now upto basis order 8
-            vector<double> val = get_interpolation(j + 1, order, prodim);
+            //vector<double> val = get_interpolation(j + 1, order, prodim);
+            vector<double> val = get_interpolation_new(j + 1, order, prodim, elem_type);
 
 			// cout << val.size() << "\n";
 
@@ -1379,9 +1510,10 @@ inline std::vector<int> saena_object::g2umap(int order, string filename, vector<
 // TODO hard coded
 // assuming 2d for now ...
 vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
+    
     vector<double> val;//((order+1)*(order+1));
     vector< vector<double> > coord((order+1)*(order+1));
-	// uniformly distributed
+    // uniformly distributed
     /*for (int i=0; i<order+1; i++)
     {
         for (int j=0; j<order+1; j++)
@@ -1393,26 +1525,26 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
         }
     }*/
 
-	// Guass Lobatto distributed
+    // Guass Lobatto distributed
     for (int i=0; i<order+1; i++)
     {
         for (int j=0; j<order+1; j++)
         {
-			if (order == 2)
-			{
-            	double x = -1.0+2.0/order*j;
-            	double y = -1.0+2.0/order*i;
-            	coord.at((order+1)*i+j).push_back(x);
-            	coord.at((order+1)*i+j).push_back(y);
-			}
-			else if (order == 4)
-			{
-				const double gl[5] = {-1.0, -sqrt(3.0/7), 0, sqrt(3.0/7), 1.0};
-            	double x = gl[j];
-            	double y = gl[i];
-            	coord.at((order+1)*i+j).push_back(x);
-            	coord.at((order+1)*i+j).push_back(y);
-			}
+            if (order == 2)
+            {
+                double x = -1.0+2.0/order*j;
+                double y = -1.0+2.0/order*i;
+                coord.at((order+1)*i+j).push_back(x);
+                coord.at((order+1)*i+j).push_back(y);
+            }
+            else if (order == 4)
+            {
+                const double gl[5] = {-1.0, -sqrt(3.0/7), 0, sqrt(3.0/7), 1.0};
+                double x = gl[j];
+                double y = gl[i];
+                coord.at((order+1)*i+j).push_back(x);
+                coord.at((order+1)*i+j).push_back(y);
+            }
         }
     }
     // from 2->1
@@ -1480,7 +1612,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (coord.at(k).at(0)-1)*coord.at(k).at(0)/2*
-                                     (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
+                                    (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -1492,7 +1624,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (1-coord.at(k).at(0))*(coord.at(k).at(0)+1)*
-                                     (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
+                                    (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -1504,7 +1636,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (1+coord.at(k).at(0))*coord.at(k).at(0)/2*
-                                     (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
+                                    (coord.at(k).at(1)-1)*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -1516,7 +1648,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (coord.at(k).at(0)-1)*coord.at(k).at(0)/2*
-                                     (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
+                                    (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
                         val.push_back(tmp);
                     }
                 }
@@ -1528,7 +1660,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (1-coord.at(k).at(0))*(1+coord.at(k).at(0))*
-                                     (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
+                                    (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
                         val.push_back(tmp);
                     }
                 }
@@ -1540,7 +1672,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (coord.at(k).at(0)+1)*coord.at(k).at(0)/2*
-                                     (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
+                                    (1-coord.at(k).at(1))*(1+coord.at(k).at(1));
                         val.push_back(tmp);
                     }
                 }
@@ -1552,7 +1684,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (coord.at(k).at(0)-1)*coord.at(k).at(0)/2*
-                                     (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
+                                    (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -1564,7 +1696,7 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (1-coord.at(k).at(0))*(coord.at(k).at(0)+1)*
-                                     (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
+                                    (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
@@ -1576,57 +1708,238 @@ vector<double> saena_object::get_interpolation(int ind, int order, int prodim){
                     {
                         int k = (order+1)*i+j;
                         double tmp = (coord.at(k).at(0)+1)*coord.at(k).at(0)/2*
-                                     (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
+                                    (1+coord.at(k).at(1))*coord.at(k).at(1)/2;
                         val.push_back(tmp);
                     }
                 }
                 break;
         }
     }
-	// This is a more clean way
-	// will change above to this later
-	else if (order == 8)
-	{
-		vector< vector<double> > table = eighth_order(order);
-		int x_dir = (ind-1) % (order/2+1);
-		int y_dir = (ind-1) / (order/2+1);
-		for (int i=0; i<order+1; i++)
-		{
-			for (int j=0; j<order+1; j++)
-			{
-				int k = (order+1)*i+j;
-				double tmp = table.at(x_dir).at(j)*table.at(y_dir).at(i);
-				val.push_back(tmp);
-			}
-		}
+    // This is a more clean way
+    // will change above to this later
+    else if (order == 8)
+    {
+        vector< vector<double> > table = eighth_order(order);
+        int x_dir = (ind-1) % (order/2+1);
+        int y_dir = (ind-1) / (order/2+1);
+        for (int i=0; i<order+1; i++)
+        {
+            for (int j=0; j<order+1; j++)
+            {
+                double tmp = table.at(x_dir).at(j)*table.at(y_dir).at(i);
+                val.push_back(tmp);
+            }
+        }
 
-	}
+    }
 	
 	return val;
 }
 
-
-inline bool saena_object::ismember(int a, vector<int> arr)
-{
-    for (int i=0; i<arr.size(); i++)
+// generalized version of get_interpolation
+vector<double> saena_object::get_interpolation_new(int ind, int order, int prodim, int type){
+    
+    // tensor product from 1d interpolant
+    vector<double> val;//((order+1)*(order+1));
+    //quad and hex
+    //use tensor product
+    if (type == 1 || type == 3)
     {
-        if (a == arr.at(i))
-            return true;
+        vector< vector<double> > table = one_interp_P(order);
+        if (prodim == 2)
+        {
+            int x_dir = (ind-1) % (order/2+1);
+            int y_dir = (ind-1) / (order/2+1);
+            for (int i=0; i<order+1; i++)
+            {
+                for (int j=0; j<order+1; j++)
+                {
+                    double tmp = table.at(x_dir).at(j)*table.at(y_dir).at(i);
+                    val.push_back(tmp);
+                }
+            }
+        }
+        else if (prodim == 3)
+        {
+            // for a 2->1 example 
+            // id: 0 1 2 3 4 5 6 7 
+            //  x: 0 1 0 1 0 1 0 1
+            //  y: 0 0 1 1 0 0 1 1
+            //  z: 0 0 0 0 1 1 1 1
+
+            int x_dir = (ind-1) % (order/2+1);
+            int y_dir = ((ind-1) % ((order/2+1)*(order/2+1))) / (order/2+1);
+            int z_dir = (ind-1) / ((order/2+1)*(order/2+1));
+            for (int i=0; i<order+1; i++)
+            {
+                for (int j=0; j<order+1; j++)
+                {
+                    for (int k=0; k<order+1; k++)
+                    {   
+                        double tmp = table.at(x_dir).at(k)*table.at(y_dir).at(j)*table.at(z_dir).at(i);
+                        val.push_back(tmp);
+                    }
+                }
+            }
+        }
     }
-    return false;
+    // tri and tet
+    // use natrual coordinate
+    else if (type == 2 || type == 4)
+    {
+        if (prodim == 2)
+        {
+            if (order == 8)
+            {
+                //order 4 basis
+                for (int i=0; i<(order+1)*(order+2)/2; i++)
+                {
+                    std::vector<double> L = comp_L(i, order);
+                    double tmp ;
+                    // vertex
+                    if (ind < 4)
+                    {
+                        tmp = pow(order/2, order/2-1)/factorial(order/2-1)*L[ind-1]*(L[ind-1]-(1./4))*(L[ind-1]-(2./4))*(L[ind-1]-(3./4));
+                    }
+                    // edge
+                    else if (ind < 4+3*(order-1))
+                    {
+                        if (ind == 4)
+                            tmp = 1.0/((3./4)*(1./4)*(3./4-1./4)*(3./4-2./4))*L[0]*L[1]*(L[0]-(1./4))*(L[0]-(2./4));
+                        if (ind == 5)
+                            tmp = 1.0/((2./4)*(2./4)*(2./4-1./4)*(2./4-3./4))*L[0]*L[1]*(L[0]-(1./4))*(L[0]-(3./4));
+                        if (ind == 6)
+                            tmp = 1.0/((1./4)*(3./4)*(1./4-2./4)*(1./4-3./4))*L[0]*L[1]*(L[0]-(2./4))*(L[0]-(3./4));
+
+                        if (ind == 7)
+                            tmp = 1.0/((3./4)*(1./4)*(3./4-1./4)*(3./4-2./4))*L[1]*L[2]*(L[1]-(1./4))*(L[1]-(2./4));
+                        if (ind == 8)
+                            tmp = 1.0/((2./4)*(2./4)*(2./4-1./4)*(2./4-3./4))*L[1]*L[2]*(L[1]-(1./4))*(L[1]-(3./4));
+                        if (ind == 9)
+                            tmp = 1.0/((1./4)*(3./4)*(1./4-2./4)*(1./4-3./4))*L[1]*L[2]*(L[1]-(2./4))*(L[1]-(3./4));
+
+                        if (ind == 10)
+                            tmp = 1.0/((3./4)*(1./4)*(3./4-1./4)*(3./4-2./4))*L[2]*L[0]*(L[2]-(1./4))*(L[2]-(2./4));
+                        if (ind == 11)
+                            tmp = 1.0/((2./4)*(2./4)*(2./4-1./4)*(2./4-3./4))*L[2]*L[0]*(L[2]-(1./4))*(L[2]-(3./4));
+                        if (ind == 12)
+                            tmp = 1.0/((1./4)*(3./4)*(1./4-2./4)*(1./4-3./4))*L[2]*L[0]*(L[2]-(2./4))*(L[2]-(3./4));
+
+                    }
+                    else
+                    {
+                        // TODO
+                    }
+                    val.push_back(tmp);
+                }
+            }
+            //order 2 basis
+            if (order == 4)
+            {
+                for (int i=0; i<(order+1)*(order+2)/2; i++)
+                {
+                    std::vector<double> L = comp_L(i, order);
+                    double tmp ;
+                    // vertex
+                    if (ind < 4)
+                    {
+                        tmp = pow(order/2, order/2-1)/factorial(order/2-1)*L[ind-1]*(L[ind-1]-(1./2));
+                    }
+                    // edge
+                    else if (ind < 4+3*(order-1))
+                    {
+                        if (ind == 4)
+                            tmp = 1.0/((1./2)*(1./2))*L[0]*L[1];
+                        if (ind == 5)
+                            tmp = 1.0/((1./2)*(1./2))*L[1]*L[2];
+                        if (ind == 6)
+                            tmp = 1.0/((1./2)*(1./2))*L[2]*L[0];
+                    }
+                    val.push_back(tmp);
+                }
+            }
+            //order 1 basis
+            if (order == 2)
+            {
+                for (int i=0; i<(order+1)*(order+2)/2; i++)
+                {
+                    std::vector<double> L = comp_L(i,order);
+                    double tmp ;
+                    // vertex
+                    if (ind < 4)
+                    {
+                        tmp = pow(order/2, order/2-1)/factorial(order/2-1)*L[ind-1];
+                    }
+                    val.push_back(tmp);
+                }
+            }
+        }
+        if (prodim == 3)
+        {
+
+            // TODO tet
+        }
+    }
+	
+    return val;
 }
 
-inline int saena_object::findloc(vector<int> arr, int a)
+inline std::vector<double> saena_object::comp_L(int i, int order)
 {
-    for (int i=0; i<arr.size(); i++)
+    std::vector<double> L(3,0);
+    // vertex
+    if (i < 4)
     {
-        if (a == arr.at(i))
-            return i;
+        L[i-1] = 1.0;
     }
-    
-    cout << "coarse column is not in the fine mesh!!!" << endl;
-    //exit(0);
-    return -1;
+    // edge
+    else if (i < 4+(order-1))
+    {
+            L[0] = 1./order*(4+(order-1)-i);
+            L[1] = 1./order*(i-3);
+            L[2] = 0.;
+    }
+    else if (i < 4+2*(order-1))
+    {
+            L[1] = 1./order*(4+(order-1)-i);
+            L[2] = 1./order*(i-3);
+            L[0] = 0.;
+    }
+    else if (i < 4+3*(order-1))
+    {
+            L[2] = 1./order*(4+(order-1)-i);
+            L[0] = 1./order*(i-3);
+            L[1] = 0.;
+    }
+    // interior
+    // only for order 8
+    else
+    {
+        // TODO
+    }
+}
+
+
+inline int saena_object::factorial(int n)
+{
+    if (n < 0)
+    {
+        std::cout << "wrong value to perform factorial operation" << std::endl;
+        return 0;
+    }
+
+    if (n == 0)
+    {
+        return 1;
+    }
+
+    int prod=n;
+    while (n>1)
+    {
+        prod *= n-1;
+        n --;
+    }
+    return prod;   
 }
 
 // may make this general in the future
@@ -1650,4 +1963,60 @@ inline vector< vector<double> > saena_object::eighth_order(int order)
 		}
 	}
 	return table;
+}
+
+// genralized version of eight_order
+inline vector< vector<double> > saena_object::one_interp_P(int order)
+{
+    // this is 1d interpolation for later tensor product
+    const vector<double> gl1{-1.0, 1.0};
+    const vector<double> gl2{-1.0, 0, 1.0};
+	const vector<double> gl4{-1.0, -sqrt(3.0/7), 0, sqrt(3.0/7), 1.0};
+	const vector<double> gl8{-1.0, -0.8997579954, -0.6771862795, -0.3631174638, 0, 0.3631174638, 0.6771862795, 0.8997579954, 1.0};
+	vector< vector<double> > table;
+	for (int i=0; i<order/2+1; i++)
+	{
+		table.push_back(vector<double>());
+		for (int j=0; j<order+1; j++)
+		{
+			double val = 1.0;
+			for (int k=0; k<order/2+1; k++)
+			{
+				if (i!=k)
+                {
+                    if (order == 8)
+					    val *= (gl8.at(j)-gl4.at(k))/(gl4.at(i)-gl4.at(k));
+                    if (order == 4)
+                        val *= (gl4.at(j)-gl2.at(k))/(gl2.at(i)-gl2.at(k));
+                    if (order == 2)
+                        val *= (gl2.at(j)-gl1.at(k))/(gl1.at(i)-gl1.at(k));
+                }
+			}
+			table.at(i).push_back(val);
+		}
+	}
+	return table;
+}
+
+inline bool saena_object::ismember(int a, vector<int> arr)
+{
+    for (int i=0; i<arr.size(); i++)
+    {
+        if (a == arr.at(i))
+            return true;
+    }
+    return false;
+}
+
+inline int saena_object::findloc(vector<int> arr, int a)
+{
+    for (int i=0; i<arr.size(); i++)
+    {
+        if (a == arr.at(i))
+            return i;
+    }
+    
+    cout << "coarse column is not in the fine mesh!!!" << endl;
+    //exit(0);
+    return -1;
 }
