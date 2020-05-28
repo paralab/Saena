@@ -320,13 +320,13 @@ ENDIF()
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=c++14 -DTHREADED -fopenmp -DNDEBUG -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -Drestrict=__restrict__ -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
 
-#add_executable(Saena src/main.cpp             ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Saena src/main.cpp             ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_read_file.cpp   ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_read_2file.cpp  ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_band_matrix.cpp ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_lazy.cpp        ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_zfp.cpp         ${SOURCE_FILES} ${HEADER_FILES})
-add_executable(Saena src/main_matmat.cpp      ${SOURCE_FILES} ${HEADER_FILES})
+#add_executable(Saena src/main_matmat.cpp      ${SOURCE_FILES} ${HEADER_FILES})
 #add_executable(Saena src/main_matmat_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 # -----------------------------------------------------------------------

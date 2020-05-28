@@ -42,6 +42,8 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
     // there are two ways to create a matrix:
 
+    double t1 = MPI_Wtime();
+
     // 1- read from file: pass as an argument in the command line
     // example: ./Saena ../data/81s4x8o1mu1.bin
     char* file_name(argv[1]);
@@ -134,8 +136,13 @@ int main(int argc, char* argv[]){
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
+    double t2 = MPI_Wtime();
+    print_time(t1, t2, "Setup:", comm);
+
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
+
+    t1 = MPI_Wtime();
 
     // solve the system using AMG as the solver
 //    solver.solve(u, &opts);
@@ -145,6 +152,9 @@ int main(int argc, char* argv[]){
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
 //    solver.solve_pGMRES(u, &opts);
+
+    t2 = MPI_Wtime();
+    print_time(t1, t2, "Solve:", comm);
 
     // *************************** print or write the solution ****************************
 
