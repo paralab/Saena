@@ -2,21 +2,16 @@
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
-#include "prolong_matrix.h"
-#include "restrict_matrix.h"
+//#include "prolong_matrix.h"
+//#include "restrict_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
 #include "ietl_saena.h"
-#include "dollar.hpp"
+//#include "dollar.hpp"
 
 //#include "petsc_functions.h"
 
-#include <sys/stat.h>
 #include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <algorithm>
-#include <set>
 #include <random>
 #include <mpi.h>
 

@@ -6,11 +6,10 @@
 #include <cmath>
 #include "mpi.h"
 
-typedef unsigned int index_t;
-typedef unsigned long nnz_t;
-typedef double value_t;
+typedef int           index_t; // Saena index type
+typedef long          nnz_t;   // Saena nonzero type
+typedef double        value_t; // Saena value type
 typedef unsigned char uchar;
-
 
 //the following are UBUNTU/LINUX, and MacOS ONLY terminal color codes.
 #define COLORRESET   "\033[0m"

@@ -492,10 +492,10 @@ int saena_matrix::set_off_on_diagonal_dummy(){
         recvSize   = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
         vIndex.resize(vIndexSize);
-        MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
-                      &vIndex[0],          &sendCount[0], &vdispls[0], MPI_UNSIGNED, comm);
+        MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], par::Mpi_datatype<index_t>::value(),
+                      &vIndex[0],          &sendCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
 
-//    print_vector(vIndex, -1, "vIndex", comm);
+//        print_vector(vIndex, -1, "vIndex", comm);
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);

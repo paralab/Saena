@@ -1,5 +1,6 @@
 #include "aux_functions.h"
 #include "saena_matrix.h"
+#include "parUtils.h"
 
 #include <iostream>
 #include <random>
@@ -178,11 +179,11 @@ double average_time(double t_dif, MPI_Comm comm){
 
 
 double average_iter(index_t iter, MPI_Comm comm){
-    int nprocs;
+    int nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
 
-    index_t average;
-    MPI_Reduce(&iter, &average, 1, MPI_UNSIGNED, MPI_SUM, 0, comm);
+    index_t average = 0;
+    MPI_Reduce(&iter, &average, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, 0, comm);
     return static_cast<double>(average)/nprocs;
 }
 

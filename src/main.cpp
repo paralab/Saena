@@ -2,17 +2,14 @@
 // ./Saena ../data/81s4x8o1mu1.bin ../data/vectors/v81.bin
 // ./Saena ../data/289s8x16o1mu1.bin ../data/vectors/v289.bin
 
-#include <iostream>
-#include "mpi.h"
-
 #include "grid.h"
 #include "saena.hpp"
+#include "data_struct.h"
+
+#include <iostream>
 #include <sstream>
 #include <omp.h>
-
-typedef unsigned int index_t;
-typedef unsigned long nnz_t;
-typedef double value_t;
+#include "mpi.h"
 
 using namespace std;
 

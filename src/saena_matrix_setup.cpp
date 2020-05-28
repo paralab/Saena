@@ -62,7 +62,7 @@ int saena_matrix::setup_initial_data(){
     if(data_unsorted.back().row > Mbig_local)
         Mbig_local = data_unsorted[iter].row;
 
-    MPI_Allreduce(&Mbig_local, &Mbig, 1, MPI_UNSIGNED, MPI_MAX, comm);
+    MPI_Allreduce(&Mbig_local, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
 //    std::cout << "Mbig = " << Mbig << std::endl;
 
@@ -71,7 +71,7 @@ int saena_matrix::setup_initial_data(){
     remove_duplicates();
 
     initial_nnz_l = data.size();
-    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 //    MPI_Barrier(comm); printf("rank = %d, Mbig = %u, nnz_g = %u, initial_nnz_l = %u \n", rank, Mbig, nnz_g, initial_nnz_l); MPI_Barrier(comm);
 
     return 0;
@@ -103,7 +103,7 @@ int saena_matrix::setup_initial_data2(){
 
     initial_nnz_l = data.size();
     nnz_t nnz_g_temp = nnz_g;
-    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
     if((nnz_g_temp != nnz_g) && rank == 0){
         printf("error: number of global nonzeros is changed during the matrix update:\nbefore: %lu \tafter: %lu", nnz_g, nnz_g_temp);
         MPI_Finalize();
@@ -331,8 +331,8 @@ int saena_matrix::matrix_setup(bool scale /*= true*/) {
 #if 0
         nnz_t total_nnz_l_local;
         nnz_t total_nnz_l_remote;
-        MPI_Allreduce(&nnz_l_local,  &total_nnz_l_local,  1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
-        MPI_Allreduce(&nnz_l_remote, &total_nnz_l_remote, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+        MPI_Allreduce(&nnz_l_local,  &total_nnz_l_local,  1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
+        MPI_Allreduce(&nnz_l_remote, &total_nnz_l_remote, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
         int local_percent  = int(100*(float)total_nnz_l_local/nnz_g);
         int remote_percent = int(100*(float)total_nnz_l_remote/nnz_g);
         if(rank==0) printf("\nMbig = %u, nnz_g = %lu, total_nnz_l_local = %lu (%%%d), total_nnz_l_remote = %lu (%%%d) \n",
@@ -340,9 +340,9 @@ int saena_matrix::matrix_setup(bool scale /*= true*/) {
 
 //        printf("rank %d: col_remote_size = %u \n", rank, col_remote_size);
         index_t col_remote_size_min, col_remote_size_ave, col_remote_size_max;
-        MPI_Allreduce(&col_remote_size, &col_remote_size_min, 1, MPI_UNSIGNED, MPI_MIN, comm);
-        MPI_Allreduce(&col_remote_size, &col_remote_size_ave, 1, MPI_UNSIGNED, MPI_SUM, comm);
-        MPI_Allreduce(&col_remote_size, &col_remote_size_max, 1, MPI_UNSIGNED, MPI_MAX, comm);
+        MPI_Allreduce(&col_remote_size, &col_remote_size_min, 1, par::Mpi_datatype<index_t>::value(), MPI_MIN, comm);
+        MPI_Allreduce(&col_remote_size, &col_remote_size_ave, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+        MPI_Allreduce(&col_remote_size, &col_remote_size_max, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
         if(rank==0) printf("\nremote_min = %u, remote_ave = %u, remote_max = %u \n",
                            col_remote_size_min, (col_remote_size_ave/nprocs), col_remote_size_max);
 #endif
@@ -707,8 +707,8 @@ int saena_matrix::set_off_on_diagonal(){
             recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
             vIndex.resize(vIndexSize);
-            MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
-                          &vIndex[0],          &sendCount[0], &vdispls[0], MPI_UNSIGNED, comm);
+            MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], par::Mpi_datatype<index_t>::value(),
+                          &vIndex[0],          &sendCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
 
 //            print_vector(vIndex, -1, "vIndex", comm);
 
@@ -748,11 +748,11 @@ int saena_matrix::set_off_on_diagonal(){
         }
 
         // compute nnz_max
-        MPI_Allreduce(&nnz_l, &nnz_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+        MPI_Allreduce(&nnz_l, &nnz_max, 1, par::Mpi_datatype<nnz_t>::value(), MPI_MAX, comm);
 
         // compute nnz_list
         nnz_list.resize(nprocs);
-        MPI_Allgather(&nnz_l, 1, MPI_UNSIGNED_LONG, &nnz_list[0], 1, MPI_UNSIGNED_LONG, comm);
+        MPI_Allgather(&nnz_l, 1, par::Mpi_datatype<nnz_t>::value(), &nnz_list[0], 1, par::Mpi_datatype<nnz_t>::value(), comm);
 //        print_vector(nnz_list, 1, "nnz_list", comm);
     }
 

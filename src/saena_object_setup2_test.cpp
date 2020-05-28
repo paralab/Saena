@@ -2407,9 +2407,9 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
     // part 1: multiply: AP_temp = A_i * P_j. in which P_j = R_j_tranpose and 0 <= j < nprocs.
     // *******************************************************
 
-    unsigned long send_size_max;
-    unsigned long send_size = R->entry.size();
-    MPI_Allreduce(&send_size, &send_size_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+    nnz_t send_size_max;
+    nnz_t send_size = R->entry.size();
+    MPI_Allreduce(&send_size, &send_size_max, 1, par::Mpi_datatype<nnz_t>::value(), MPI_MAX, comm);
 
     // local transpose of R is being used to compute A*P. So R is transposed locally here.
 //    std::vector<cooEntry> mat_send(R->entry.size());
@@ -2502,8 +2502,8 @@ int saena_object::triple_mat_mult_test(Grid *grid, std::vector<cooEntry_row> &RA
             // --------------------------------------------------------------------
 
             // communicate size
-            MPI_Irecv(&recv_size, 1, MPI_UNSIGNED_LONG, right_neighbor, right_neighbor, comm, requests);
-            MPI_Isend(&send_size, 1, MPI_UNSIGNED_LONG, left_neighbor,  rank,           comm, requests+1);
+            MPI_Irecv(&recv_size, 1, par::Mpi_datatype<nnz_t>::value(), right_neighbor, right_neighbor, comm, requests);
+            MPI_Isend(&send_size, 1, par::Mpi_datatype<nnz_t>::value(), left_neighbor,  rank,           comm, requests+1);
             MPI_Waitall(1, requests, statuses);
 //          printf("rank %d: recv_size = %lu, send_size = %lu \n", rank, recv_size, send_size);
 //            mat_recv.resize(recv_size);

@@ -189,7 +189,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 #endif
 
     nnz_l = entry.size();
-    MPI_Allreduce(&nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 
 #ifdef __DEBUG1__
     if(verbose_transposeP){
@@ -365,16 +365,16 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         vIndexSize = (index_t)vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
         recvSize   = (index_t)rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
-//    for (int i=0; i<nprocs; i++)
-//        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
-//    MPI_Barrier(comm);
-//    for (int i=0; i<nprocs; i++)
-//        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
+//        for (int i=0; i<nprocs; i++)
+//            if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
+//        MPI_Barrier(comm);
+//        for (int i=0; i<nprocs; i++)
+//            if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
 
         // vIndex is the set of indices of elements that should be sent.
         vIndex.resize(vIndexSize);
-        MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], MPI_UNSIGNED,
-                      &vIndex[0], &vIndexCount[0], &vdispls[0], MPI_UNSIGNED, comm);
+        MPI_Alltoallv(&vElement_remote[0], &recvCount[0],   &rdispls[0], par::Mpi_datatype<index_t>::value(),
+                      &vIndex[0],          &vIndexCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
 
 #ifdef __DEBUG1__
         if (verbose_transposeP) {
@@ -385,7 +385,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 #endif
 
 #pragma omp parallel for
-        for (index_t i = 0; i < vIndexSize; i++) {
+        for (index_t i = 0; i < vIndexSize; ++i) {
 //        if(rank==1) cout << vIndex[i] << "\t" << vIndex[i]-P->split[rank] << endl;
             vIndex[i] -= split[rank];
         }
@@ -398,7 +398,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     }
 
     indicesP_local.resize(nnz_l_local);
-    for(nnz_t i = 0; i < nnz_l_local; i++)
+    for(nnz_t i = 0; i < nnz_l_local; ++i)
         indicesP_local[i] = i;
     index_t *row_localP = &*row_local.begin();
     std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
@@ -439,11 +439,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     w_buff.resize(num_threads*M); // allocate for w_buff for matvec
 
     // compute nnz_max
-    MPI_Allreduce(&nnz_l, &nnz_max, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+    MPI_Allreduce(&nnz_l, &nnz_max, 1, par::Mpi_datatype<nnz_t>::value(), MPI_MAX, comm);
 
     // compute nnz_list
     nnz_list.resize(nprocs);
-    MPI_Allgather(&nnz_l, 1, MPI_UNSIGNED_LONG, &nnz_list[0], 1, MPI_UNSIGNED_LONG, comm);
+    MPI_Allgather(&nnz_l, 1, par::Mpi_datatype<nnz_t>::value(), &nnz_list[0], 1, par::Mpi_datatype<nnz_t>::value(), comm);
 //    print_vector(nnz_list, 1, "nnz_list", comm);
 
     return 0;

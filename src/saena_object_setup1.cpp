@@ -59,16 +59,14 @@ int saena_object::SA(Grid *grid){
 //        std::cout <<  A->vIndex[i] << "\t" << A->vSendULong[i] << std::endl;
     }
 
-    MPI_Request* requests = new MPI_Request[A->numSendProc+A->numRecvProc];
-    MPI_Status*  statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
-
-    // todo: are vSendULong and vecValuesULong required to be a member of the class.
+    auto* requests = new MPI_Request[A->numSendProc+A->numRecvProc];
+    auto* statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
 
     for(index_t i = 0; i < A->numRecvProc; i++)
-        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &(requests[i]));
+        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], par::Mpi_datatype<nnz_t>::value(), A->recvProcRank[i], 1, comm, &(requests[i]));
 
     for(index_t i = 0; i < A->numSendProc; i++)
-        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
+        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], par::Mpi_datatype<nnz_t>::value(), A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
 
     std::vector<cooEntry> PEntryTemp;
 
@@ -129,7 +127,7 @@ int saena_object::SA(Grid *grid){
 //    print_vector(P->entry, 0, "P->entry", comm);
 
     P->nnz_l = P->entry.size();
-    MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
     P->split = A->split;
     P->findLocalRemote();
 
@@ -159,13 +157,13 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
     aggregation_1_dist(&S, aggregate, aggArray);
 //    aggregation_2_dist(&S, aggregate, aggArray);
 
-    double division = 0;
-    unsigned int new_size_local, new_size=0;
+    double  division    = 0;
+    index_t new_size    = 0;
+    auto new_size_local = (index_t) aggArray.size(); // new_size is the size of the new coarse matrix.
 
-    // new_size is the size of the new coarse matrix.
-    new_size_local = unsigned(aggArray.size());
-    MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, comm);
-    division = (double)A->Mbig / new_size;
+    MPI_Allreduce(&new_size_local, &new_size, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+    division = (double) A->Mbig / new_size;
+
 //    if(rank==0) {
 //        printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
 //               connStrength, A->Mbig, new_size, division);
@@ -204,9 +202,10 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<unsigned long>& 
 //            aggregation_2_dist(&S, aggregate, aggArray);
 
             // new_size is the size of the new coarse matrix.
-            new_size_local = unsigned(aggArray.size());
-            MPI_Allreduce(&new_size_local, &new_size, 1, MPI_UNSIGNED, MPI_SUM, comm);
+            new_size_local = (index_t) aggArray.size(); // new_size is the size of the new coarse matrix.
+            MPI_Allreduce(&new_size_local, &new_size, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
             division = (double)A->Mbig / new_size;
+
             if(rank==0) printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
                                connStrength_temp, A->Mbig, new_size, division);
 
@@ -428,9 +427,8 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate,
                                      std::vector<unsigned long> &aggArray) {
 
-    // todo: update the comments for 1-distance independent set.
-    // For each node, first assign it to a 1-distance root. If there is not any root in distance-1, find a distance-2 root.
-    // If there is not any root in distance-2, that node should become a root.
+    // For each node, first assign it to a 1-distance root.
+    // If there is not any root in distance-1, that node should become a root.
 
     // aggregate: of size dof at the end will shows to what root node (aggregate) each node is assigned.
     // aggArray: the root nodes of the coarse matrix.
@@ -447,8 +445,8 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    unsigned long i, j;
-    unsigned long size = S->M;
+    index_t i = 0, j = 0;
+    index_t size = S->M;
 
     std::vector<unsigned long> aggregate2(size);
     std::vector<unsigned long> weight(size);
@@ -481,13 +479,13 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
     unsigned long i_remote, j_remote, weight_neighbor, agg_neighbor, aggStatus_neighbor, iter, col_index;
     int whileiter = 0;
 
-    MPI_Request *requests = new MPI_Request[S->numSendProc + S->numRecvProc];
-    MPI_Status *statuses  = new MPI_Status[S->numSendProc + S->numRecvProc];
+    auto *requests = new MPI_Request[S->numSendProc + S->numRecvProc];
+    auto *statuses = new MPI_Status[S->numSendProc + S->numRecvProc];
 
 //    if(rank==0) std::cout << "set boundary points: " << std::endl;
 
     // initialization -> this part is merged to the first "for" loop in the following "while".
-    for(i=0; i<size; i++) {
+    for(i = 0; i < size; ++i) {
         aggregate[i] = i + S->split[rank];
 //        aggStatus2[i] = 1;
         // Some boundary nodes are the ones that only have one neighbor which is itself (so one nnzPerRow),
@@ -579,8 +577,6 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
 */
 
 //        if(rank==0 && weight[1]&UNDECIDED) printf("node1: local 1: weight = %lu, aggregate = %lu \n", weight2[1]&weightMax, aggregate[1]);
-//        if(rank==0 && weight[3]&UNDECIDED) printf("node3: local 1: weight = %lu, aggregate = %lu \n", weight2[3]&weightMax, aggregate[3]);
-//        if(rank==0 && weight[7]&UNDECIDED) printf("node7: local 1: weight = %lu, aggregate = %lu \n", weight2[7]&weightMax, aggregate[7]);
 
         //    if(rank==0){
         //        std::cout << std::endl << "after first max computation!" << std::endl;
@@ -609,20 +605,22 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
 //                         << std::endl;
 //                }
 
-        for (i = 0; i < S->vIndexSize; i++){
+        for (i = 0; i < S->vIndexSize; ++i){
             S->vSend[2*i] = weight[S->vIndex[i]];
-            aggStatusTemp = (unsigned long)root_distance[S->vIndex[i]]; // this is root_distance of the neighbor's aggregate.
+            aggStatusTemp = (unsigned long) root_distance[S->vIndex[i]]; // this is root_distance of the neighbor's aggregate.
             S->vSend[2*i+1] = ( (aggStatusTemp<<wOffset) | (aggregate[S->vIndex[i]]&weightMax) );
 //            if(rank==1) std::cout << "vsend: " << S->vIndex[i]+S->split[rank] << "\tw = " << (S->vSend[2*i]&weightMax) << "\tst = " << (S->vSend[2*i]>>wOffset) << "\tagg = " << (S->vSend[2*i+1]&weightMax) << "\t oneDis = " << (S->vSend[2*i+1]>>wOffset) << std::endl;
         }
 
-        for (i = 0; i < S->numRecvProc; i++)
-            MPI_Irecv(&S->vecValues[S->rdispls[S->recvProcRank[i]]], S->recvProcCount[i], MPI_UNSIGNED_LONG,
-                      S->recvProcRank[i], 1, comm, &(requests[i]));
+        // not using adaptive Mpitype for the following commands, since they should be unsigned long.
 
-        for (i = 0; i < S->numSendProc; i++)
+        for (i = 0; i < S->numRecvProc; ++i)
+            MPI_Irecv(&S->vecValues[S->rdispls[S->recvProcRank[i]]], S->recvProcCount[i], MPI_UNSIGNED_LONG,
+                      S->recvProcRank[i], 1, comm, &requests[i]);
+
+        for (i = 0; i < S->numSendProc; ++i)
             MPI_Isend(&S->vSend[S->vdispls[S->sendProcRank[i]]], S->sendProcCount[i], MPI_UNSIGNED_LONG,
-                      S->sendProcRank[i], 1, comm, &(requests[S->numRecvProc + i]));
+                      S->sendProcRank[i], 1, comm, &requests[S->numRecvProc + i]);
 
         // ******************************* second round of max computation *******************************
         // "for" loop is of size "number of rows". It checks if a node is UNDECIDED and also if it does not have a
@@ -670,10 +668,10 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
                     weightTemp    = weight2[i_remote] & weightMax;
                     aggregateTemp = aggregate2[i_remote] & weightMax;
 
-//                if(rank==1 && i_remote+S->split[rank]==9) printf("i_remote = %lu \tj_remote = %u, weight = %lu, status = %lu, aggregate = %lu, root_dist = %lu, \t\tstatus of this node = %lu \n",
-//                                   i_remote+S->split[rank], S->col_remote2[iter], weight_neighbor&weightMax, weight_neighbor>>wOffset, agg_neighbor&weightMax, agg_neighbor>>wOffset, weight[i_remote]>>wOffset);
-//                if(rank==0 && i_remote==3) printf("i_remote = %lu \tj_remote = %u, weight = %lu, status = %lu, aggregate = %lu, root_dist = %lu, \t\tstatus of this node = %lu \n",
-//                                                                 i_remote+S->split[rank], S->col_remote2[iter], weight_neighbor&weightMax, weight_neighbor>>wOffset, agg_neighbor&weightMax, agg_neighbor>>wOffset, weight[i_remote]>>wOffset);
+//                    if(rank==1 && i_remote+S->split[rank]==9) printf("i_remote = %lu \tj_remote = %u, weight = %lu, status = %lu, aggregate = %lu, root_dist = %lu, \t\tstatus of this node = %lu \n",
+//                                       i_remote+S->split[rank], S->col_remote2[iter], weight_neighbor&weightMax, weight_neighbor>>wOffset, agg_neighbor&weightMax, agg_neighbor>>wOffset, weight[i_remote]>>wOffset);
+//                    if(rank==0 && i_remote==3) printf("i_remote = %lu \tj_remote = %u, weight = %lu, status = %lu, aggregate = %lu, root_dist = %lu, \t\tstatus of this node = %lu \n",
+//                                                                     i_remote+S->split[rank], S->col_remote2[iter], weight_neighbor&weightMax, weight_neighbor>>wOffset, agg_neighbor&weightMax, agg_neighbor>>wOffset, weight[i_remote]>>wOffset);
 
                     // distance-1 aggregate
                     // there should be at most one root in distance 1.
@@ -701,7 +699,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
         // put weight2 in weight and aggregate2 in aggregate.
         // if a row does not have a remote element then (weight2[i]&weightMax) == (weight[i]&weightMax)
         // update aggStatus of remote elements at the same time
-        for(i=0; i<size; i++){
+        for(i = 0; i < size; ++i){
             if( (weight[i]&UNDECIDED) && aggregate[i] != aggregate2[i] ){
                 aggregate[i] = aggregate2[i];
                 weight[i] = ( 1UL<<wOffset | weight2[i] ); // keep it undecided.
@@ -862,7 +860,8 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<unsigned lo
 //        aggregate[i]--;
 
     // aggArray is the set of root nodes.
-    if(!aggArray.empty()) std::sort(aggArray.begin(), aggArray.end());
+    if(!aggArray.empty())
+        std::sort(aggArray.begin(), aggArray.end());
 
 //    if(rank==1){
 //        std::cout << "aggArray:" << aggArray.size() << std::endl;
@@ -1169,6 +1168,8 @@ int saena_object::aggregation_2_dist(strength_matrix *S, std::vector<unsigned lo
             S->vSend[2*i+1] = ( (aggStatusTemp<<wOffset) | (aggregate[S->vIndex[i]]&weightMax) );
 //            if(rank==1) std::cout << "vsend: " << S->vIndex[i]+S->split[rank] << "\tw = " << (S->vSend[2*i]&weightMax) << "\tst = " << (S->vSend[2*i]>>wOffset) << "\tagg = " << (S->vSend[2*i+1]&weightMax) << "\t oneDis = " << (S->vSend[2*i+1]>>wOffset) << std::endl;
         }
+
+        // not using adaptive Mpitype for the following commands, since they should be unsigned long.
 
         for (i = 0; i < S->numRecvProc; i++)
             MPI_Irecv(&S->vecValues[S->rdispls[S->recvProcRank[i]]], S->recvProcCount[i], MPI_UNSIGNED_LONG,
@@ -1558,13 +1559,13 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<index_t>& aggr
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-    int i;
+    index_t i = 0;
 
     MPI_Status status;
     MPI_File fh;
     MPI_Offset offset;
 
-    std::string aggName = "/home/abaris/Dropbox/Projects/Saena/build/juliaAgg.bin";
+    std::string aggName = "agg.bin";
     int mpiopen = MPI_File_open(comm, aggName.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
         if (rank==0) std::cout << "Unable to open the vector file!" << std::endl;
@@ -1573,7 +1574,7 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<index_t>& aggr
     }
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A->split[rank] * 8; // value(long=8)
+    offset = A->split[rank] * sizeof(double);
     MPI_File_read_at(fh, offset, &*aggregate.begin(), A->M, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh);
 
@@ -1594,7 +1595,7 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<index_t>& aggr
 
     std::vector<unsigned long> aggArray(A->M);
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset2 = A->split[rank] * 8; // value(long=8)
+    offset2 = A->split[rank] * sizeof(double);
     MPI_File_read_at(fh2, offset2, &*aggArray.begin(), A->M, MPI_UNSIGNED_LONG, &status);
     MPI_File_close(&fh2);
 
@@ -1613,18 +1614,19 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<index_t>& aggr
     fill(splitNew.begin(), splitNew.end(), 0);
     splitNew[rank] = newSize;
 
-    unsigned long* splitNewTemp = (unsigned long*)malloc(sizeof(unsigned long)*nprocs);
-    MPI_Allreduce(&splitNew[0], splitNewTemp, nprocs, MPI_UNSIGNED, MPI_SUM, comm);
+    auto* splitNewTemp = new index_t[nprocs];
+//    auto* splitNewTemp = (unsigned long*)malloc(sizeof(unsigned long)*nprocs);
+    MPI_Allreduce(&splitNew[0], splitNewTemp, nprocs, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
 
     // do scan on splitNew
     splitNew[0] = 0;
-    for(i=1; i<nprocs+1; i++)
+    for(i = 1; i < nprocs+1; ++i)
         splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
 
 //    for(i=0; i<nprocs+1; i++)
 //        std::cout << splitNew[i] << std::endl;
 
-    free(splitNewTemp);
+    delete []splitNewTemp;
 
     return 0;
 }
@@ -1653,11 +1655,12 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 
     index_t agg_sz = aggArray.size();
     splitNew.resize(nprocs+1);
-    MPI_Allgather(&agg_sz, 1, MPI_UNSIGNED, &splitNew[1], 1, MPI_UNSIGNED, comm);
+    MPI_Allgather(&agg_sz,      1, par::Mpi_datatype<index_t>::value(),
+                  &splitNew[1], 1, par::Mpi_datatype<index_t>::value(), comm);
 
     // do scan on splitNew
     splitNew[0] = 0;
-    for(unsigned long i = 1; i < nprocs+1; ++i)
+    for(index_t i = 1; i < nprocs+1; ++i)
         splitNew[i] += splitNew[i-1];
 
 #ifdef __DEBUG1__
@@ -1758,8 +1761,8 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 #endif
 
         std::vector<unsigned long> vIndex(vIndexSize);
-        MPI_Alltoallv(&*aggregateRemote.begin(), &recvCount[0], &*rdispls.begin(), MPI_UNSIGNED_LONG, &vIndex[0],
-                      &vIndexCount[0], &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
+        MPI_Alltoallv(&aggregateRemote[0], &recvCount[0],   &rdispls[0], MPI_UNSIGNED_LONG,
+                      &vIndex[0],          &vIndexCount[0], &vdispls[0], MPI_UNSIGNED_LONG, comm);
 //        MPI_Alltoallv(&*aggregateRemote2.begin(), recvCount, &*rdispls.begin(), MPI_UNSIGNED_LONG, vIndex, vIndexCount, &*vdispls.begin(), MPI_UNSIGNED_LONG, comm);
 
         std::vector<unsigned long> aggSend(vIndexSize);
@@ -1774,8 +1777,8 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
         // replace this alltoallv with isend and irecv.
 //        MPI_Alltoallv(aggSend, vIndexCount, &*(vdispls.begin()), MPI_UNSIGNED_LONG, aggRecv, recvCount, &*(rdispls.begin()), MPI_UNSIGNED_LONG, comm);
 
-        auto requests2 = new MPI_Request[numSendProc + numRecvProc];
-        auto statuses2 = new MPI_Status[numSendProc + numRecvProc];
+        auto* requests2 = new MPI_Request[numSendProc + numRecvProc];
+        auto* statuses2 = new MPI_Status[numSendProc + numRecvProc];
 
         for (int i = 0; i < numRecvProc; i++)
             MPI_Irecv(&aggRecv[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_UNSIGNED_LONG, recvProcRank[i], 1, comm,
@@ -1799,7 +1802,7 @@ int saena_object::aggregate_index_update(strength_matrix* S, std::vector<unsigne
 //        }
 
         // remote
-        for (unsigned long i = 0; i < size; ++i) {
+        for (nnz_t i = 0; i < size; ++i) {
             if (isAggRemote[i]) {
                 aggregate[i] = aggRecv[lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i])];
 //                if(rank==1) std::cout << i << "\t" << aggRecv[ lower_bound2(&*aggregateRemote.begin(), &*aggregateRemote.end(), aggregate[i]) ] << std::endl;

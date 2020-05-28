@@ -5,10 +5,10 @@
 #include "saena_object.h"
 //#include "pugixml.hpp"
 #include "dollar.hpp"
+#include "parUtils.h"
 
 #include <vector>
 #include <string>
-//#include <cstring>
 #include <mpi.h>
 #include <random>
 #include <cmath>
@@ -285,11 +285,6 @@ int saena::vector::set(const index_t i, const value_t val){
 }
 
 int saena::vector::set(const index_t* idx, const value_t* val, const index_t size){
-    m_pImpl->set(idx, val, size);
-    return 0;
-}
-
-int saena::vector::set(const int* idx, const value_t* val, const int size){
     m_pImpl->set(idx, val, size);
     return 0;
 }
@@ -1170,7 +1165,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 
     B->active = true;
     B->nnz_l = iter;
-    MPI_Allreduce(&iter, &B->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, A.get_comm());
+    MPI_Allreduce(&iter, &B->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, A.get_comm());
     B->Mbig = Mbig;
     B->M = M;
     B->density = ((double)B->nnz_g / B->Mbig) / B->Mbig;
@@ -1327,7 +1322,8 @@ index_t saena::find_split(index_t loc_size, index_t &my_split, MPI_Comm comm){
 
     std::vector<index_t> split_temp(nprocs);
     split_temp[rank] = loc_size;
-    MPI_Allgather(&loc_size, 1, MPI_UNSIGNED, &*split_temp.begin(), 1, MPI_UNSIGNED, comm);
+    MPI_Allgather(&loc_size,      1, par::Mpi_datatype<index_t>::value(),
+                  &split_temp[0], 1, par::Mpi_datatype<index_t>::value(), comm);
 
     std::vector<index_t> split_vec(nprocs+1);
     split_vec[0] = 0;

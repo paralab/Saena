@@ -1,14 +1,15 @@
 #include "strength_matrix.h"
 #include "data_struct.h"
 #include "aux_functions.h"
+#include "parUtils.h"
 
 #include <cstdlib>
 #include <algorithm>
 #include <iostream>
 #include <cstring>
-#include "mpi.h"
 #include <algorithm>
 #include <random>
+#include "mpi.h"
 
 
 /*
@@ -94,7 +95,7 @@ int strength_matrix::setup_matrix(float connStrength){
     c.shrink_to_fit();
     v.shrink_to_fit();
 
-    MPI_Allreduce(&nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 //    if(rank==0) printf("S.nnz_l = %lu, S.nnz_g = %lu \n", nnz_l, nnz_g);
 
 //    print_vector(r, -1, "row vector", comm);
@@ -109,7 +110,7 @@ int strength_matrix::setup_matrix(float connStrength){
     // *************************** setup the matrix ****************************
 
     long procNum;
-    unsigned long i;
+    nnz_t i = 0;
     col_remote_size = 0; // number of remote columns
     nnz_l_local = 0;
     nnz_l_remote = 0;
@@ -129,9 +130,8 @@ int strength_matrix::setup_matrix(float connStrength){
 
         //vElement_local.emplace_back(col[0]);
         vElementRep_local.emplace_back(1);
-
     } else{
-        nnz_l_remote++;
+        ++nnz_l_remote;
 
         values_remote.emplace_back(v[0]);
         row_remote.emplace_back(r[0]);
@@ -145,12 +145,12 @@ int strength_matrix::setup_matrix(float connStrength){
         recvCount[lower_bound2(&split[0], &split[nprocs], c[0])] = 1;
     }
 
-    for (i = 1; i < nnz_l; i++) {
-        nnzPerRow[r[i]]++;
+    for (i = 1; i < nnz_l; ++i) {
+        ++nnzPerRow[r[i]];
 
         if (c[i] >= split[rank] && c[i] < split[rank+1]) {
-            nnzPerRow_local[r[i]]++;
-            nnz_l_local++;
+            ++nnzPerRow_local[r[i]];
+            ++nnz_l_local;
 
             values_local.emplace_back(v[i]);
             row_local.emplace_back(r[i]);
@@ -162,22 +162,22 @@ int strength_matrix::setup_matrix(float connStrength){
 //                (*(vElementRep_local.end()-1))++;
 //            }
         } else {
-            nnz_l_remote++;
+            ++nnz_l_remote;
             values_remote.emplace_back(v[i]);
             row_remote.emplace_back(r[i]);
             // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
             col_remote2.emplace_back(c[i]);
 
             if (c[i] != c[i - 1]) {
-                col_remote_size++;
+                ++col_remote_size;
                 vElement_remote.emplace_back(c[i]);
                 vElementRep_remote.emplace_back(1);
                 procNum = lower_bound2(&split[0], &split[nprocs], c[i]);
-                recvCount[procNum]++;
+                ++recvCount[procNum];
                 nnzPerCol_remote.emplace_back(1);
             } else {
-                vElementRep_remote.back()++;
-                nnzPerCol_remote.back()++;
+                ++vElementRep_remote.back();
+                ++nnzPerCol_remote.back();
             }
             // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
             col_remote.emplace_back(col_remote_size-1);
@@ -187,7 +187,7 @@ int strength_matrix::setup_matrix(float connStrength){
 
      if(nprocs !=1){
          std::vector<int> vIndexCount(nprocs);
-         MPI_Alltoall(&recvCount[0], 1, MPI_INT, &vIndexCount[0], 1, MPI_INT, comm);
+         MPI_Alltoall(&recvCount[0], 1, par::Mpi_datatype<index_t>::value(), &vIndexCount[0], 1, par::Mpi_datatype<index_t>::value(), comm);
 
          numRecvProc = 0;
          numSendProc = 0;
@@ -220,8 +220,8 @@ int strength_matrix::setup_matrix(float connStrength){
          recvSize = rdispls[nprocs-1] + recvCount[nprocs-1];
 
          vIndex.resize(vIndexSize);
-         MPI_Alltoallv(&*vElement_remote.begin(), &recvCount[0],   &*rdispls.begin(), MPI_UNSIGNED,
-                       &vIndex[0],                &vIndexCount[0], &*vdispls.begin(), MPI_UNSIGNED, comm);
+         MPI_Alltoallv(&vElement_remote[0], &recvCount[0],   &rdispls[0], par::Mpi_datatype<index_t>::value(),
+                       &vIndex[0],          &vIndexCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
 
          // vSend = vector values to send to other procs
          // vecValues = vector values that received from other procs
@@ -509,15 +509,15 @@ int strength_matrix::randomVector(std::vector<unsigned long>& V, long size, MPI_
 
     unsigned long max_weight = ( (1UL<<63) - 1);
 
-    unsigned long i;
-    unsigned int max_degree_local = 0;
-    for(i=0; i<M; i++){
+    nnz_t i = 0;
+    index_t max_degree_local = 0;
+    for(i = 0; i < M; ++i){
         if(nnzPerRow[i] > max_degree_local)
             max_degree_local = nnzPerRow[i];
     }
 
-    unsigned int max_degree;
-    MPI_Allreduce(&max_degree_local, &max_degree, 1, MPI_UNSIGNED, MPI_MAX, comm);
+    index_t max_degree = 0;
+    MPI_Allreduce(&max_degree_local, &max_degree, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     max_degree++;
 //    printf("rank = %d, max degree local = %lu, max degree = %lu \n", rank, max_degree_local, max_degree);
 
@@ -590,15 +590,15 @@ int strength_matrix::randomVector3(std::vector<unsigned long>& V, MPI_Comm comm)
 //        V[i] = rand()%(V.size());
 //    }
 
-    unsigned long i;
-    unsigned long max_degree_local = 0;
-    for(i = 0; i < M; i++){
+    nnz_t i = 0;
+    index_t max_degree_local = 0;
+    for(i = 0; i < M; ++i){
         if(nnzPerRow[i] > max_degree_local)
             max_degree_local = nnzPerRow[i];
     }
 
-    unsigned long max_degree;
-    MPI_Allreduce(&max_degree_local, &max_degree, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+    index_t max_degree = 0;
+    MPI_Allreduce(&max_degree_local, &max_degree, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     max_degree++;
 //    printf("rank = %d, max degree local = %lu, max degree = %lu \n", rank, max_degree_local, max_degree);
 
@@ -612,7 +612,7 @@ int strength_matrix::randomVector3(std::vector<unsigned long>& V, MPI_Comm comm)
 //    rng.seed(std::random_device{}());
 
     std::vector<double> rand(M);
-    for (i = 0; i < V.size(); i++){
+    for (i = 0; i < V.size(); ++i){
         V[i] = max_degree - nnzPerRow[i];
 //        if(rank==1) std::cout << i << "\tnnzPerRow = " << nnzPerRow[i] << "\t weight = " << V[i] << std::endl;
     }

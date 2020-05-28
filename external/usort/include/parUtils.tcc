@@ -38,7 +38,7 @@
 		#define KWAY 64
 #endif
 
-typedef unsigned int index_t;
+//typedef unsigned int index_t;
 
 namespace par {
 

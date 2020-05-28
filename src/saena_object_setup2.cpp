@@ -196,11 +196,14 @@ int saena_object::compute_coarsen(Grid *grid) {
 //        print_vector(Ac_orig, -1, "Ac_orig", A->comm);
 #endif
 
-        nnz_t sample_size_local, sample_size;
-        sample_size_local = nnz_t(sample_sz_percent * Ac->nnz_l);
-        MPI_Allreduce(&sample_size_local, &sample_size, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+        auto sample_size_local = (nnz_t) (sample_sz_percent * Ac->nnz_l);
+        nnz_t sample_size = 0;
+        MPI_Allreduce(&sample_size_local, &sample_size, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
+
+#ifdef __DEBUG1__
 //        if(rank==0) printf("sample_size     = %lu \n", sample_size);
-//
+#endif
+
 //        if(sparsifier == "TRSL"){
 //
 //            sparsify_trsl1(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
@@ -246,7 +249,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     // Finally, shrink_cpu() and matrix_setup() are called. In this way, matrix_setup is called only once.
 
     Ac->nnz_l = Ac->entry.size();
-    MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&Ac->nnz_l, &Ac->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 
 #ifdef __DEBUG1__
     if (verbose_compute_coarsen) {
@@ -622,7 +625,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     RAcsc.col_scan = new index_t[RAcsc.col_sz + 1];
 
     // compute nnz_max
-    MPI_Allreduce(&RAcsc.nnz, &RAcsc.max_nnz, 1, MPI_UNSIGNED_LONG, MPI_MAX, comm);
+    MPI_Allreduce(&RAcsc.nnz, &RAcsc.max_nnz, 1, par::Mpi_datatype<nnz_t>::value(), MPI_MAX, comm);
 
     std::fill(&RAcsc.col_scan[0], &RAcsc.col_scan[RAcsc.col_sz + 1], 0);
     RAcsc.col_scan[0] = 1;
@@ -644,7 +647,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 
     // compute nnz_list
     RAcsc.nnz_list.resize(nprocs);
-    MPI_Allgather(&RAcsc.nnz, 1, MPI_UNSIGNED_LONG, &RAcsc.nnz_list[0], 1, MPI_UNSIGNED_LONG, comm);
+    MPI_Allgather(&RAcsc.nnz, 1, par::Mpi_datatype<nnz_t>::value(), &RAcsc.nnz_list[0], 1, par::Mpi_datatype<nnz_t>::value(), comm);
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {

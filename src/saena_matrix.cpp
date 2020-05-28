@@ -342,7 +342,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
     // after removing duplicates, initial_nnz_l and nnz_g will be smaller, so update them.
     initial_nnz_l = data.size();
-    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 
     // *************************** find Mbig (global number of rows) ****************************
     // Since data[] has row-major order, the last element on the last process is the number of rows.
@@ -350,7 +350,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
     cooEntry last_element = data.back();
     Mbig = last_element.row + 1; // since indices start from 0, not 1.
-    MPI_Bcast(&Mbig, 1, MPI_UNSIGNED, nprocs-1, comm);
+    MPI_Bcast(&Mbig, 1, par::Mpi_datatype<index_t>::value(), nprocs-1, comm);
 
     if(verbose_saena_matrix){
         MPI_Barrier(comm);

@@ -192,16 +192,16 @@ int prolong_matrix::findLocalRemote(){
         vIndexSize = vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
         recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
-//    for (int i=0; i<nprocs; i++)
-//        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
-//    MPI_Barrier(comm);
-//    for (int i=0; i<nprocs; i++)
-//        if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
+//        for (int i=0; i<nprocs; i++)
+//            if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
+//        MPI_Barrier(comm);
+//        for (int i=0; i<nprocs; i++)
+//            if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
 
         // vIndex is the set of indices of elements that should be sent.
         vIndex.resize(vIndexSize);
-        MPI_Alltoallv(&*vElement_remote.begin(), &recvCount[0], &*rdispls.begin(), MPI_UNSIGNED,
-                      &vIndex[0], &vIndexCount[0], &*vdispls.begin(), MPI_UNSIGNED, comm);
+        MPI_Alltoallv(&*vElement_remote.begin(), &recvCount[0], &*rdispls.begin(), par::Mpi_datatype<index_t>::value(),
+                      &vIndex[0], &vIndexCount[0], &*vdispls.begin(), par::Mpi_datatype<index_t>::value(), comm);
 
         vIndexCount.clear();
         vIndexCount.shrink_to_fit();

@@ -5,15 +5,15 @@
 #include "GR_encoder.h"
 #include "aux_functions.h"
 #include "parUtils.h"
-#include "dollar.hpp"
+//#include "dollar.hpp"
 
 #include <mkl_spblas.h>
 
-#include <cstdio>
+//#include <cstdio>
 #include <fstream>
 #include <algorithm>
+//#include <iomanip>
 #include <mpi.h>
-#include <iomanip>
 
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
@@ -1601,7 +1601,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
     C->M_old = C->M;
 
     C->nnz_l = C->entry.size();
-    MPI_Allreduce(&C->nnz_l, &C->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+    MPI_Allreduce(&C->nnz_l, &C->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 
     C->comm            = A->comm;
     C->comm_old        = A->comm;

@@ -192,17 +192,11 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     }
 #endif
 
-//    P->comm  = A->comm;
-//    P->split = A->split;
-//    P->Mbig  = A->Mbig;
-//    P->M     = A->M;
-//	P->Nbig  = Pp.at(0).size(); //TODO
-
     if(rank == nprocs - 1){
         P->Nbig = P->entry.back().col + 1;
     }
 
-    MPI_Bcast(&P->Nbig, 1, MPI_UNSIGNED, nprocs-1, comm);
+    MPI_Bcast(&P->Nbig, 1, par::Mpi_datatype<index_t>::value(), nprocs-1, comm);
 
     P->splitNew.resize(nprocs+1);
     P->splitNew[0]      = 0;
@@ -214,7 +208,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     }
 
     P->nnz_l = P->entry.size();
-    MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, MPI_UNSIGNED_LONG, MPI_SUM, P->comm);
+    MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, P->comm);
 
 #ifdef __DEBUG1__
     if(verbose_coarsen) {

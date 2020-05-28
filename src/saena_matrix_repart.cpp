@@ -121,7 +121,7 @@ int saena_matrix::repartition_nnz_initial(){
 
     // H_g is the histogram of (global) nnz per bucket
     std::vector<index_t> H_g(n_buckets);
-    MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, MPI_UNSIGNED, MPI_SUM, comm);
+    MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
 
     H_l.clear();
     H_l.shrink_to_fit();
@@ -760,7 +760,7 @@ int saena_matrix::repartition_nnz(){
 
     // H_g is the histogram of (global) nnz per bucket
     std::vector<index_t> H_g(n_buckets);
-    MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, MPI_UNSIGNED, MPI_SUM, comm);
+    MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
 
     H_l.clear();
     H_l.shrink_to_fit();
