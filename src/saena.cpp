@@ -454,6 +454,12 @@ int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
     return 0;
 }
 
+int saena::amg::set_matrix(saena::matrix* A, saena::options* opts, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof){
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
+                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->setup(A->get_internal_matrix(), m_l2g, m_g2u, m_bdydof);
+    return 0;
+}
 
 //int saena::amg::set_rhs(std::vector<double> rhs){
 //    m_pImpl->set_repartition_rhs(rhs);
