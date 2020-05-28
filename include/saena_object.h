@@ -251,11 +251,11 @@ public:
 
     void fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C, MPI_Comm comm);
 
-    int find_aggregation(saena_matrix* A, std::vector<unsigned long>& aggregate, std::vector<index_t>& splitNew);
+    int find_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S);
-    int aggregation_1_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
+    int aggregation_1_dist(strength_matrix *S, std::vector<index_t> &aggregate, std::vector<index_t> &aggArray);
     int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
-    int aggregate_index_update(strength_matrix* S, std::vector<unsigned long>& aggregate, std::vector<unsigned long>& aggArray, std::vector<index_t>& splitNew);
+    int aggregate_index_update(strength_matrix* S, std::vector<index_t>& aggregate, std::vector<index_t>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
 
     int set_repartition_rhs(saena_vector *rhs);
