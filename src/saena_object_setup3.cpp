@@ -1193,7 +1193,9 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, string file
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     vector <vector<int> > map;
+
     if (map_all.size() == 1) {
+        map = map_all[0];
         elemno = map_all[0].size();
 #if 0
         // assume pure quad elememt for now
