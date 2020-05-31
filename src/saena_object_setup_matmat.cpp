@@ -209,11 +209,27 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             MKL_INT request = 0;
 //            MKL_INT nnz_max = m * k;
 
+#ifdef __INTEL_COMPILER
+#pragma warning (disable:1478)
+#endif
+
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
             mkl_dcsrmultcsr("n", &request, &sort, &m, &n, &k,
                             B.v, (int *) B.r, (int *) B.col_scan,
                             A.v, (int *) A.r, (int *) A.col_scan,
                             Cmkl_v, (int *) Cmkl_r, (int *) Cmkl_c_scan,
                             &matmat_thre1, &info);
+
+#ifdef __INTEL_COMPILER
+#pragma warning (enable:1478)
+#endif
+
+#ifdef __GNUC__
+#pragma GCC diagnostic warning "-Wdeprecated-declarations"
+#endif
 
 #ifdef __DEBUG1__
 //            printf("mkl_dcsrmultcsr result: %d\n", info);
