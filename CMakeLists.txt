@@ -123,7 +123,7 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MKL_LIB_CORE} ${MKL_LIB_L
 
 set(IETL_DIR ${EXT_DIR}/ietl)
 include_directories(${IETL_DIR})
-set(HEADER_FILES ${HEADER_FILES}
+set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
         ${SAENA_INCLUDE_DIR}/ietl_saena.h
         )
 
@@ -132,7 +132,7 @@ set(HEADER_FILES ${HEADER_FILES}
 
 set(USORT_DIR ${EXT_DIR}/usort)
 include_directories(${USORT_DIR}/include)
-set(SOURCE_FILES ${SOURCE_FILES}
+set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
         ${USORT_DIR}/src/binUtils.cpp
         ${USORT_DIR}/src/parUtils.cpp
         ${USORT_DIR}/src/sort_profiler.cpp
@@ -186,8 +186,8 @@ if(ENABLE_PETSC)
 
     SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PETSC_LIB})
 
-    set(HEADER_FILES ${HEADER_FILES} include/petsc_functions.h)
-    set(SOURCE_FILES ${SOURCE_FILES} src/petsc_functions.cpp)
+    set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES} include/petsc_functions.h)
+    set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES} src/petsc_functions.cpp)
 
 #    add_compile_definitions(_USE_PETSC_) // requires newer cmake versions
     add_definitions(-D_USE_PETSC_)
@@ -212,8 +212,8 @@ if(ENABLE_COMBBLAS)
 
     SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${COMBBLAS_LIB})
 
-    set(HEADER_FILES ${HEADER_FILES} include/combblas_functions.h)
-    set(SOURCE_FILES ${SOURCE_FILES} src/combblas_functions.cpp)
+    set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES} include/combblas_functions.h)
+    set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES} src/combblas_functions.cpp)
 
 #    add_compile_definitions(_USE_COMBBLAS_)
     add_definitions(-D_USE_COMBBLAS_)
@@ -242,7 +242,7 @@ include_directories(
 
 include_directories(include)
 
-set(HEADER_FILES ${HEADER_FILES}
+set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
         ${SAENA_INCLUDE_DIR}/saena.hpp
         ${SAENA_INCLUDE_DIR}/aux_functions.h
         ${SAENA_INCLUDE_DIR}/data_struct.h
@@ -257,7 +257,7 @@ set(HEADER_FILES ${HEADER_FILES}
         ${SAENA_INCLUDE_DIR}/GR_encoder.h
         )
 
-set(SOURCE_FILES ${SOURCE_FILES}
+set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 #        ${HEADER_FILES}
         ${SAENA_SRC_DIR}/saena.cpp
         ${SAENA_SRC_DIR}/aux_functions.cpp
