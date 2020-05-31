@@ -19,6 +19,13 @@ ENDIF()
 message(--\ Saena:\ CMAKE_BUILD_TYPE:\ ${CMAKE_BUILD_TYPE})
 
 # -----------------------------------------------------------------------
+
+# set the include, src and external libraries directories
+set(EXT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external)
+set(SAENA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(SAENA_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# -----------------------------------------------------------------------
 # OpenMP
 
 find_package(OpenMP)
@@ -114,19 +121,21 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MKL_LIB_CORE} ${MKL_LIB_L
 # -----------------------------------------------------------------------
 # IETL: eigensolver
 
-include_directories(external/ietl)
+set(IETL_DIR ${EXT_DIR}/ietl)
+include_directories(${IETL_DIR})
 set(HEADER_FILES ${HEADER_FILES}
-        include/ietl_saena.h
+        ${SAENA_INCLUDE_DIR}/ietl_saena.h
         )
 
 # -----------------------------------------------------------------------
 # usort: to sort elements in parallel
 
-include_directories(external/usort/include)
+set(USORT_DIR ${EXT_DIR}/usort)
+include_directories(${USORT_DIR}/include)
 set(SOURCE_FILES ${SOURCE_FILES}
-        external/usort/src/binUtils.cpp
-        external/usort/src/parUtils.cpp
-        external/usort/src/sort_profiler.cpp
+        ${USORT_DIR}/src/binUtils.cpp
+        ${USORT_DIR}/src/parUtils.cpp
+        ${USORT_DIR}/src/sort_profiler.cpp
         )
 
 # -----------------------------------------------------------------------
@@ -180,7 +189,8 @@ if(ENABLE_PETSC)
     set(HEADER_FILES ${HEADER_FILES} include/petsc_functions.h)
     set(SOURCE_FILES ${SOURCE_FILES} src/petsc_functions.cpp)
 
-    add_compile_definitions(_USE_PETSC_)
+#    add_compile_definitions(_USE_PETSC_) // requires newer cmake versions
+    add_definitions(-D_USE_PETSC_)
 
 endif(ENABLE_PETSC)
 
@@ -205,7 +215,8 @@ if(ENABLE_COMBBLAS)
     set(HEADER_FILES ${HEADER_FILES} include/combblas_functions.h)
     set(SOURCE_FILES ${SOURCE_FILES} src/combblas_functions.cpp)
 
-    add_compile_definitions(_USE_COMBBLAS_)
+#    add_compile_definitions(_USE_COMBBLAS_)
+    add_definitions(-D_USE_COMBBLAS_)
 
 endif(ENABLE_COMBBLAS)
 
@@ -213,7 +224,7 @@ endif(ENABLE_COMBBLAS)
 # dollar: for profiling
 # https://github.com/r-lyeh-archived/dollar
 
-set(DOLLAR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/dollar")
+set(DOLLAR_DIR "${EXT_DIR}/dollar")
 include_directories(
         ${DOLLAR_DIR}
 )
@@ -232,50 +243,48 @@ include_directories(
 include_directories(include)
 
 set(HEADER_FILES ${HEADER_FILES}
-        include/saena.hpp
-        include/aux_functions.h
-        include/data_struct.h
-        include/saena_matrix.h
-        include/saena_matrix_dense.h
-        include/saena_object.h
-        include/strength_matrix.h
-        include/prolong_matrix.h
-        include/restrict_matrix.h
-        include/grid.h
-        include/saena_vector.h
-        include/GR_encoder.h
+        ${SAENA_INCLUDE_DIR}/saena.hpp
+        ${SAENA_INCLUDE_DIR}/aux_functions.h
+        ${SAENA_INCLUDE_DIR}/data_struct.h
+        ${SAENA_INCLUDE_DIR}/saena_matrix.h
+        ${SAENA_INCLUDE_DIR}/saena_matrix_dense.h
+        ${SAENA_INCLUDE_DIR}/saena_object.h
+        ${SAENA_INCLUDE_DIR}/strength_matrix.h
+        ${SAENA_INCLUDE_DIR}/prolong_matrix.h
+        ${SAENA_INCLUDE_DIR}/restrict_matrix.h
+        ${SAENA_INCLUDE_DIR}/grid.h
+        ${SAENA_INCLUDE_DIR}/saena_vector.h
+        ${SAENA_INCLUDE_DIR}/GR_encoder.h
         )
 
 set(SOURCE_FILES ${SOURCE_FILES}
-        ${HEADER_FILES}
-        src/saena.cpp
-        src/aux_functions.cpp
-        src/data_struct.cpp
-        src/strength_matrix.cpp
-        src/prolong_matrix.cpp
-        src/restrict_matrix.cpp
-        src/saena_matrix_dense.cpp
-        src/saena_vector.cpp
-        src/GR_encoder.cpp
-
-        src/saena_matrix.cpp
-        src/saena_matrix_repart.cpp
-        src/saena_matrix_setup.cpp
-        src/saena_matrix_matvec.cpp
-        src/saena_matrix_shrink.cpp
-        src/saena_matrix_zfp.cpp
-
-        src/saena_object.cpp
-        src/saena_object_setup1.cpp
-        src/saena_object_setup2.cpp
-        src/saena_object_setup3.cpp
-        src/saena_object_setup_matmat.cpp
-        src/saena_object_solve.cpp
-        src/saena_object_lazy.cpp
-        src/saena_object_repart_shrink.cpp
-        src/saena_object_sparsify.cpp
-        src/saena_object_elemental.cpp
-        src/saena_object_write2file.cpp
+#        ${HEADER_FILES}
+        ${SAENA_SRC_DIR}/saena.cpp
+        ${SAENA_SRC_DIR}/aux_functions.cpp
+        ${SAENA_SRC_DIR}/data_struct.cpp
+        ${SAENA_SRC_DIR}/strength_matrix.cpp
+        ${SAENA_SRC_DIR}/prolong_matrix.cpp
+        ${SAENA_SRC_DIR}/restrict_matrix.cpp
+        ${SAENA_SRC_DIR}/saena_matrix_dense.cpp
+        ${SAENA_SRC_DIR}/saena_vector.cpp
+        ${SAENA_SRC_DIR}/GR_encoder.cpp
+        ${SAENA_SRC_DIR}/saena_matrix.cpp
+        ${SAENA_SRC_DIR}/saena_matrix_repart.cpp
+        ${SAENA_SRC_DIR}/saena_matrix_setup.cpp
+        ${SAENA_SRC_DIR}/saena_matrix_matvec.cpp
+        ${SAENA_SRC_DIR}/saena_matrix_shrink.cpp
+        ${SAENA_SRC_DIR}/saena_matrix_zfp.cpp
+        ${SAENA_SRC_DIR}/saena_object.cpp
+        ${SAENA_SRC_DIR}/saena_object_setup1.cpp
+        ${SAENA_SRC_DIR}/saena_object_setup2.cpp
+        ${SAENA_SRC_DIR}/saena_object_setup3.cpp
+        ${SAENA_SRC_DIR}/saena_object_setup_matmat.cpp
+        ${SAENA_SRC_DIR}/saena_object_solve.cpp
+        ${SAENA_SRC_DIR}/saena_object_lazy.cpp
+        ${SAENA_SRC_DIR}/saena_object_repart_shrink.cpp
+        ${SAENA_SRC_DIR}/saena_object_sparsify.cpp
+        ${SAENA_SRC_DIR}/saena_object_elemental.cpp
+        ${SAENA_SRC_DIR}/saena_object_write2file.cpp
         )
 
 # -----------------------------------------------------------------------
@@ -316,21 +325,7 @@ ENDIF()
 
 # -----------------------------------------------------------------------
 
-#Compile
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=c++14 -DTHREADED -fopenmp -DNDEBUG -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
-#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -Drestrict=__restrict__ -w -DGRAPH_GENERATOR_SEQ -O2 -DMPICH_IGNORE_CXX_SEEK")
-
-#add_executable(Saena src/main.cpp             ${SOURCE_FILES} ${HEADER_FILES})
-add_executable(Saena src/main_read_file.cpp   ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena src/main_read_2file.cpp  ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena src/main_band_matrix.cpp ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena src/main_lazy.cpp        ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena src/main_zfp.cpp         ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena src/main_matmat.cpp      ${SOURCE_FILES} ${HEADER_FILES})
-#add_executable(Saena src/main_matmat_read_2file.cpp ${SOURCE_FILES} ${HEADER_FILES})
+# compile and link experiments
+add_subdirectory(experiments)
 
 # -----------------------------------------------------------------------
-
-#Link
-#message("SAENA_LIB_DEPENDENCIES:\ " ${SAENA_LIB_DEPENDENCIES})
-target_link_libraries(Saena ${SAENA_LIB_DEPENDENCIES})
