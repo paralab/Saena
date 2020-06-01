@@ -212,7 +212,7 @@ int main(int argc, char* argv[]){
     }
 
     // *************************** check the correctness ****************************
-
+/*
     bool bool_correct = true;
     MPI_Barrier(comm);
     if(rank == 1){
@@ -233,7 +233,7 @@ int main(int argc, char* argv[]){
             cout << MAGENTA << "\n******************************************************\n" << COLORRESET;
         }
     }
-
+*/
     // *************************** normal matvec ****************************
 
     B->matvec_time_init();
