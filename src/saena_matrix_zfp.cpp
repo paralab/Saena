@@ -151,12 +151,12 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
     // they are received in order: first put the values from the lowest rank matrix, and so on.
     for(int i = 0; i < numRecvProc; i++){
         MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
-        MPI_Test(&requests[i], &flag, statuses);
+        MPI_Test(&requests[i], &flag, &statuses[i]);
     }
 
     for(int i = 0; i < numSendProc; i++){
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &flag, statuses);
+        MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
     }
 
 //    }
@@ -170,9 +170,149 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
 
     value_t* v_p  = &v[0] - split[rank];
     nnz_t    iter = 0;
-    for (index_t i = 0; i < M; ++i) {
+    for (index_t i = 0; i < M; ++i) { // rows
         w[i] = 0;
-        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
+//            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
+            w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+        }
+    }
+
+    t = MPI_Wtime() - t;
+    part4 += t;
+
+//    if(nprocs > 1){
+    // Wait for the receive communication to finish.
+    MPI_Waitall(numRecvProc, requests, statuses);
+
+//    print_vector(vecValues, 1, "vecValues", comm);
+
+    // remote loop
+    // -----------
+    // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
+    // the corresponding vector element is saved in vecValues[0]. and so on.
+
+    t = MPI_Wtime();
+
+    iter = 0;
+    for (index_t j = 0; j < col_remote_size; ++j) {
+        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+//            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j], values_remote[iter] * vecValues[j]);
+            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+        }
+    }
+
+    t = MPI_Wtime() - t;
+    part6 += t;
+
+    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
+    delete [] requests;
+    delete [] statuses;
+//    }
+
+    tcomm = MPI_Wtime() - tcomm;
+    part3 += tcomm;
+
+    return 0;
+}
+
+int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w) {
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
+
+    double t = 0, tcomm = 0;
+    MPI_Request* requests = nullptr;
+    MPI_Status*  statuses = nullptr;
+
+    ++matvec_iter;
+
+//    print_info(-1);
+//    print_vector(v, -1, "v", comm);
+
+//    if(nprocs > 1){
+    t = MPI_Wtime();
+    // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
+    // put the values of thoss indices in vSend to send to other procs.
+    for(index_t i=0;i<vIndexSize;i++)
+        vSend[i] = v[(vIndex[i])];
+
+    t = MPI_Wtime() - t;
+    part1 += t;
+
+//    print_vector(vSend, 0, "vSend", comm);
+
+    tcomm = MPI_Wtime();
+    requests = new MPI_Request[numSendProc+numRecvProc];
+    statuses = new MPI_Status[numSendProc+numRecvProc];
+
+    // for MPI_Test
+    int flag = 0;
+
+    // receive and put the remote parts of v in vecValues.
+    // they are received in order: first put the values from the lowest rank matrix, and so on.
+    for(int i = 0; i < numRecvProc; i++){
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &flag, &statuses[i]);
+    }
+
+    for(int i = 0; i < numSendProc; i++){
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+        MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
+    }
+
+
+
+
+    int owner = 0, next_owner = 0;
+    for(int k = rank; k < rank+nprocs; k++) {
+        next_owner = (k+1)%nprocs;
+        if(recvCount[next_owner] != 0){
+            MPI_Irecv(&vecValues[rdispls[recvProcRank[k]]], recvProcCount[k], MPI_DOUBLE, k, 1, comm, &requests[k]);
+        }
+
+        if(sendCount[next_owner] != 0){
+            MPI_Isend(&vSend[vdispls[sendProcRank[k]]], sendProcCount[k], MPI_DOUBLE, sendProcRank[k], 1, comm, &requests[numRecvProc+k]);
+        }
+
+        owner = k%nprocs;
+        if(!recvCount[owner]){
+            continue;
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//    }
+
+    // local loop
+    // ----------
+    // compute the on-diagonal part of matvec on each thread and save it in w_local.
+    // then, do a reduction on w_local on all threads, based on a binary tree.
+
+    t = MPI_Wtime();
+
+    value_t* v_p  = &v[0] - split[rank];
+    nnz_t    iter = 0;
+    for (index_t i = 0; i < M; ++i) { // rows
+        w[i] = 0;
+        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
 //            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
             w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
         }
