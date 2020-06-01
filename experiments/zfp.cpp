@@ -35,10 +35,10 @@ int main(int argc, char* argv[]){
 
     if(argc != 3){
         if(!rank){
-//            std::cout << "This is how you can generate a 3DLaplacian:\n./Saena_zfp <x grid size> <y grid size> <z grid size>" << std::endl;
-//            std::cout << "This is how you can generate a banded matrix:\n./Saena_zfp <local size> <bandwidth>" << std::endl;
-            std::cout << "This is how you can generate a random symmetric matrix:\n./Saena_zfp <local size> <density>" << std::endl;
-//            std::cout << "This is how you can read a matrix from a file:\n./Saena_zfp <MatrixA>" << std::endl;
+//            std::cout << "This is how you can generate a 3DLaplacian:\n./zfp <x grid size> <y grid size> <z grid size>" << std::endl;
+//            std::cout << "This is how you can generate a banded matrix:\n./zfp <local size> <bandwidth>" << std::endl;
+            std::cout << "This is how you can generate a random symmetric matrix:\n./zfp <local size> <density>" << std::endl;
+//            std::cout << "This is how you can read a matrix from a file:\n./zfp <MatrixA>" << std::endl;
         }
         MPI_Finalize();
         return -1;
@@ -234,7 +234,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    // *************************** compare normal matvec with the compressed matvec ****************************
+    // *************************** normal matvec ****************************
 
     B->matvec_time_init();
     MPI_Barrier(comm);
@@ -246,6 +246,8 @@ int main(int argc, char* argv[]){
     print_time(t1 / matvec_iter, "matvec original:", comm);
 
     B->matvec_time_print();
+
+    // *************************** compressed matvec ****************************
 
     B->matvec_time_init();
 
