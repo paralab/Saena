@@ -379,8 +379,6 @@ int saena_matrix::set_off_on_diagonal_dummy(){
                 col_remote2.emplace_back(entry[0].col);
                 nnzPerCol_remote.emplace_back(1);
                 vElement_remote.emplace_back(entry[0].col);
-                vElementRep_remote.emplace_back(1);
-//                if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[0].col, lower_bound3(&split[0], &split[nprocs], entry[0].col));
                 recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
             }
         }
@@ -396,11 +394,6 @@ int saena_matrix::set_off_on_diagonal_dummy(){
 //                    values_local.emplace_back(entry[i].val);
 //                    row_local.emplace_back(entry[i].row - split[rank]);
                     col_local.emplace_back(entry[i].col);
-
-//                    if (entry[i].col != entry[i - 1].col)
-//                        vElementRep_local.emplace_back(1);
-//                    else
-//                        vElementRep_local.back()++;
                 } else {
                     nnz_l_remote++;
 //                    nnzPerRow_remote[entry[i].row - split[rank]]++;
@@ -412,13 +405,11 @@ int saena_matrix::set_off_on_diagonal_dummy(){
                     if (entry[i].col != entry[i - 1].col) {
                         col_remote_size++;
                         vElement_remote.emplace_back(entry[i].col);
-                        vElementRep_remote.emplace_back(1);
                         procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
 //                        if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[i].col, procNum);
                         recvCount[procNum]++;
                         nnzPerCol_remote.emplace_back(1);
                     } else {
-                        vElementRep_remote.back()++;
                         nnzPerCol_remote.back()++;
                     }
                     // the original col values are not being used. the ordering starts from 0, and goes up by 1.

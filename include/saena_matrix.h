@@ -121,8 +121,6 @@ public:
     std::vector<nnz_t> iter_local_array2;
     std::vector<nnz_t> iter_remote_array2;
     std::vector<index_t> vElement_remote;
-//    std::vector<index_t> vElementRep_local;
-    std::vector<index_t> vElementRep_remote;
     std::vector<value_t> w_buff; // for matvec3()
 
     bool add_duplicates = true;

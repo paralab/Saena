@@ -605,8 +605,6 @@ int saena_matrix::erase(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
-//    vElementRep_local.clear();
-    vElementRep_remote.clear();
 
     entry.shrink_to_fit();
     split.shrink_to_fit();
@@ -628,8 +626,6 @@ int saena_matrix::erase(){
     sendProcRank.shrink_to_fit();
     sendProcCount.shrink_to_fit();
     sendProcCount.shrink_to_fit();
-//    vElementRep_local.shrink_to_fit();
-    vElementRep_remote.shrink_to_fit();
 
     if(free_zfp_buff){
         deallocate_zfp();
@@ -676,8 +672,6 @@ int saena_matrix::erase2(){
     recvProcCount.clear();
     sendProcRank.clear();
     sendProcCount.clear();
-//    vElementRep_local.clear();
-    vElementRep_remote.clear();
     vIndex.clear();
     vSend.clear();
     vecValues.clear();
@@ -713,8 +707,6 @@ int saena_matrix::erase2(){
     recvProcCount.shrink_to_fit();
     sendProcRank.shrink_to_fit();
     sendProcCount.shrink_to_fit();
-//    vElementRep_local.shrink_to_fit();
-    vElementRep_remote.shrink_to_fit();
     vIndex.shrink_to_fit();
     vSend.shrink_to_fit();
     vecValues.shrink_to_fit();
@@ -788,8 +780,6 @@ int saena_matrix::erase_update_local(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
-//    vElementRep_local.clear();
-    vElementRep_remote.clear();
 
 //    M = 0;
 //    Mbig = 0;
@@ -833,8 +823,6 @@ int saena_matrix::erase_keep_remote2(){
     recvProcCount.clear();
     sendProcRank.clear();
     sendProcCount.clear();
-//    vElementRep_local.clear();
-    vElementRep_remote.clear();
     vIndex.clear();
     vSend.clear();
     vecValues.clear();
@@ -885,8 +873,6 @@ int saena_matrix::erase_after_shrink() {
     col_remote2.clear();
     values_remote.clear();
 
-//    vElementRep_local.clear();
-    vElementRep_remote.clear();
     vElement_remote.clear();
 
 //    nnzPerRow_local.clear();
@@ -930,8 +916,6 @@ int saena_matrix::erase_after_decide_shrinking() {
     col_remote2.clear();
     values_remote.clear();
 
-//    vElementRep_local.clear();
-    vElementRep_remote.clear();
     vElement_remote.clear();
 
 //    nnzPerRow_local.clear();
@@ -1035,8 +1019,6 @@ int saena_matrix::erase_no_shrink_to_fit(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
-//    vElementRep_local.clear();
-    vElementRep_remote.clear();
 
 //    data.shrink_to_fit();
 //    data_unsorted.shrink_to_fit();
