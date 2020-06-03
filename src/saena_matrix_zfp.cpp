@@ -224,7 +224,8 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
 
 //    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
 
-    double t = 0, tcomm = 0;
+    double t = 0;
+//    double tcomm = 0;
     MPI_Request* requests = nullptr;
     MPI_Status*  statuses = nullptr;
 
@@ -237,67 +238,39 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
     t = MPI_Wtime();
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
-    for(index_t i=0;i<vIndexSize;i++)
+    for(index_t i = 0;i < vIndexSize; ++i){
         vSend[i] = v[(vIndex[i])];
+    }
 
     t = MPI_Wtime() - t;
     part1 += t;
 
 //    print_vector(vSend, 0, "vSend", comm);
 
-    tcomm = MPI_Wtime();
-    requests = new MPI_Request[numSendProc+numRecvProc];
-    statuses = new MPI_Status[numSendProc+numRecvProc];
+//    tcomm = MPI_Wtime();
+    requests = new MPI_Request[2];
+    statuses = new MPI_Status[2];
 
     // for MPI_Test
     int flag = 0;
 
-    // receive and put the remote parts of v in vecValues.
-    // they are received in order: first put the values from the lowest rank matrix, and so on.
-    for(int i = 0; i < numRecvProc; i++){
-        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
-        MPI_Test(&requests[i], &flag, &statuses[i]);
+    // send to right, receive from left
+    int send_proc = (rank + 1) % nprocs;
+    int recv_proc = rank-1;
+    if(recv_proc < 0)
+        recv_proc += nprocs;
+    int recv_proc_prev = 0; // the processor that we received data in the previous round
+
+    int k = 0;
+    if(recvCount[recv_proc] != 0){
+        MPI_Irecv(&vecValues[rdispls[recv_proc]], recvProcCount[recv_proc], MPI_DOUBLE, recv_proc, 1, comm, &requests[0]);
+        MPI_Test(&requests[k], &flag, &statuses[k]);
     }
 
-    for(int i = 0; i < numSendProc; i++){
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
+    if(sendCount[send_proc] != 0){
+        MPI_Isend(&vSend[vdispls[send_proc]], sendProcCount[send_proc], MPI_DOUBLE, send_proc, 1, comm, &requests[1]);
+        MPI_Test(&requests[nprocs + k], &flag, &statuses[nprocs + k]);
     }
-
-
-
-
-    int owner = 0, next_owner = 0;
-    for(int k = rank; k < rank+nprocs; k++) {
-        next_owner = (k+1)%nprocs;
-        if(recvCount[next_owner] != 0){
-            MPI_Irecv(&vecValues[rdispls[recvProcRank[k]]], recvProcCount[k], MPI_DOUBLE, k, 1, comm, &requests[k]);
-        }
-
-        if(sendCount[next_owner] != 0){
-            MPI_Isend(&vSend[vdispls[sendProcRank[k]]], sendProcCount[k], MPI_DOUBLE, sendProcRank[k], 1, comm, &requests[numRecvProc+k]);
-        }
-
-        owner = k%nprocs;
-        if(!recvCount[owner]){
-            continue;
-        }
-
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //    }
 
@@ -322,36 +295,61 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
     part4 += t;
 
 //    if(nprocs > 1){
-    // Wait for the receive communication to finish.
-    MPI_Waitall(numRecvProc, requests, statuses);
+    // Wait for the first receive communication to finish.
+    MPI_Waitall(2, &requests[0], &statuses[0]);
 
-//    print_vector(vecValues, 1, "vecValues", comm);
+    while(k < nprocs - 1) { // subtrct 1 from nprocs, because no need to communicate with itself.
 
-    // remote loop
-    // -----------
-    // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
-    // the corresponding vector element is saved in vecValues[0]. and so on.
+        ++k;
+        send_proc = (send_proc + 1) % nprocs;
+        recv_proc_prev = recv_proc--;
+        if(recv_proc < 0)
+            recv_proc += nprocs;
 
-    t = MPI_Wtime();
-
-    iter = 0;
-    for (index_t j = 0; j < col_remote_size; ++j) {
-        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-//            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j], values_remote[iter] * vecValues[j]);
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+        if(recvCount[recv_proc] != 0){
+            MPI_Irecv(&vecValues[rdispls[recv_proc]], recvProcCount[recv_proc], MPI_DOUBLE, recv_proc, 1, comm, &requests[0]);
+            MPI_Test(&requests[k], &flag, &statuses[0]);
         }
+
+        if(sendCount[send_proc] != 0){
+            MPI_Isend(&vSend[vdispls[send_proc]], sendProcCount[send_proc], MPI_DOUBLE, send_proc, 1, comm, &requests[1]);
+            MPI_Test(&requests[nprocs + k], &flag, &statuses[1]);
+        }
+
+        if(!recvCount[recv_proc]){
+            continue;
+        }
+
+    //    print_vector(vecValues, 1, "vecValues", comm);
+
+        // perform matvec for recv_proc_prev's data
+        // ----------
+        // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
+        // the corresponding vector element is saved in vecValues[0]. and so on.
+
+        t = MPI_Wtime();
+
+//        iter = 0;
+//        for (index_t j = 0; j < col_remote_size; ++j) {
+//            for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+//                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j], values_remote[iter] * vecValues[j]);
+//                w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+//            }
+//        }
+
+        t = MPI_Wtime() - t;
+        part6 += t;
+
+        // wait to finish the comm.
+        MPI_Waitall(2, &requests[0], &statuses[0]);
     }
 
-    t = MPI_Wtime() - t;
-    part6 += t;
-
-    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     delete [] requests;
     delete [] statuses;
 //    }
 
-    tcomm = MPI_Wtime() - tcomm;
-    part3 += tcomm;
+//    tcomm = MPI_Wtime() - tcomm;
+//    part3 += tcomm;
 
     return 0;
 }
