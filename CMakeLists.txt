@@ -77,7 +77,9 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PARMETIS_LIBRARY} ${METIS
 # For Colorado Summit cluster:
 #include_directories("/curc/sw/intel/17.4/mkl/include")
 # For Frontera:
-#include_directories(/opt/apps/intel19/python2_7/boost/1.69/include)
+# first: module load boost
+#set(BOOST_INC_DIR $ENV{TACC_BOOST_INC})
+#include_directories(${BOOST_INC_DIR})
 
 # -----------------------------------------------------------------------
 # BLAS
