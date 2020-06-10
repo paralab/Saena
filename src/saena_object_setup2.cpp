@@ -78,7 +78,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     Ac->M_old = Ac->M;
 
     // set dense parameters
-    Ac->density         = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
+    Ac->density         = (static_cast<float>(Ac->nnz_g) / Ac->Mbig) / Ac->Mbig;
     Ac->switch_to_dense = switch_to_dense;
     Ac->dense_threshold = dense_threshold;
 
