@@ -77,7 +77,9 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PARMETIS_LIBRARY} ${METIS
 # For Colorado Summit cluster:
 #include_directories("/curc/sw/intel/17.4/mkl/include")
 # For Frontera:
-#include_directories(/opt/apps/intel19/python2_7/boost/1.69/include)
+# first: module load boost
+#set(BOOST_INC_DIR $ENV{TACC_BOOST_INC})
+#include_directories(${BOOST_INC_DIR})
 
 # -----------------------------------------------------------------------
 # BLAS
@@ -188,8 +190,8 @@ if(ENABLE_PETSC)
 
     SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PETSC_LIB})
 
-    set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES} include/petsc_functions.h)
-    set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES} src/petsc_functions.cpp)
+    set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES} ${SAENA_INCLUDE_DIR}/petsc_functions.h)
+    set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES} ${SAENA_SRC_DIR}/petsc_functions.cpp)
 
 #    add_compile_definitions(_USE_PETSC_) // requires newer cmake versions
     add_definitions(-D_USE_PETSC_)
@@ -214,8 +216,8 @@ if(ENABLE_COMBBLAS)
 
     SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${COMBBLAS_LIB})
 
-    set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES} include/combblas_functions.h)
-    set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES} src/combblas_functions.cpp)
+    set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES} ${SAENA_INCLUDE_DIR}/combblas_functions.h)
+    set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES} ${SAENA_SRC_DIR}/combblas_functions.cpp)
 
 #    add_compile_definitions(_USE_COMBBLAS_)
     add_definitions(-D_USE_COMBBLAS_)
@@ -260,7 +262,6 @@ set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
         )
 
 set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
-#        ${HEADER_FILES}
         ${SAENA_SRC_DIR}/saena.cpp
         ${SAENA_SRC_DIR}/aux_functions.cpp
         ${SAENA_SRC_DIR}/data_struct.cpp
