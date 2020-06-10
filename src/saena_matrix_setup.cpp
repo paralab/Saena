@@ -588,11 +588,8 @@ int saena_matrix::set_off_on_diagonal(){
 
         nnz_t i = 1;
         while(i < nnz_l) {
-            // to speed-up start the binary tree search, start the search from the previous proc, instead of proc 0.
-            // lower_bound2 returns the distrance from the starting point, so use "+=".
-            procNumTmp = procNum;
-            procNum += lower_bound2(&split[procNumTmp], &split[nprocs], entry[i].col);
-//            if(rank==1) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
+            procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+//            if(rank==0) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
 
             if(procNum == rank){ // local
                 while(i < nnz_l && entry[i].col < split[procNum + 1]) {
