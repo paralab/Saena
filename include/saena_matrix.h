@@ -121,7 +121,6 @@ public:
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
 
     bool active = false;
-    bool active_old_comm = false; // this is used for prolong and post-smooth
 
     bool enable_shrink = false;  // default = true
     bool do_shrink     = false; // default = false
