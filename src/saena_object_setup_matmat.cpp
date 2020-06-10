@@ -1620,8 +1620,6 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
     MPI_Allreduce(&C->nnz_l, &C->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 
     C->comm            = A->comm;
-    C->comm_old        = A->comm;
-    C->active_old_comm = true;
     C->active          = true;
     C->active_minor    = true;
 

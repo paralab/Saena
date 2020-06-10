@@ -108,7 +108,7 @@ int main(int argc, char* argv[]){
     }
 
     // *************************** set rhs_std ****************************
-
+/*
     saena::vector rhs(comm);
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-
+*/
     // ********** 2 - set rhs_std: ordered: 1, 2, 3, ... **********
 
 //    rhs_std.resize(num_local_row);
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]){
 
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
-*/
+
     // ********** print right-hand side **********
 
 //    print_vector(rhs_std, -1, "rhs_std", comm);
@@ -190,25 +190,29 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].A->entry, -1, "A", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 //    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
-
+*/
     // *************************** warmup ****************************
 
     int matvec_warmup_iter = 2;
     int matvec_iter = 3;
 
-//    solver.get_object()->grids[0].A->allocate_zfp(solver.get_object()->grids[0].rhs);
-    saena_matrix *B = solver.get_object()->grids[0].A;
+//    saena_matrix *B = solver.get_object()->grids[0].A;
+    saena_matrix *B = A.get_internal_matrix();
 
-    std::vector<double> v(B->split[rank+1] - B->split[rank], 0);
-    std::vector<double> w(B->split[rank+1] - B->split[rank], 0);
+    unsigned int num_local_row = A.get_num_local_rows();
+    std::vector<double> rhs_std(num_local_row);
+    generate_rhs_old(rhs_std);
+
+    std::vector<double> v(num_local_row, 0);
+    std::vector<double> w(num_local_row, 0);
 
 //    print_vector(B->split, 0, "B.split", comm);
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 //    print_vector(v, -1, "v", comm);
 
     for(int i = 0; i < matvec_warmup_iter; ++i){
-        B->matvec_sparse_test(solver.get_object()->grids[0].rhs, v);
-        B->matvec_sparse_comp(solver.get_object()->grids[0].rhs, w);
+        B->matvec_sparse_test(rhs_std, v);
+        B->matvec_sparse_comp(rhs_std, w);
     }
 
     // *************************** check the correctness ****************************
@@ -240,7 +244,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse_test(solver.get_object()->grids[0].rhs, v);
+        B->matvec_sparse_test(rhs_std, v);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec original:", comm);
@@ -254,7 +258,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse_comp(solver.get_object()->grids[0].rhs, w);
+        B->matvec_sparse_comp(rhs_std, w);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec zfp:", comm);

@@ -48,7 +48,6 @@ private:
 public:
     MPI_Comm comm            = MPI_COMM_WORLD;
     MPI_Comm comm_horizontal = MPI_COMM_WORLD;
-    MPI_Comm comm_old        = MPI_COMM_WORLD;
 
     index_t Mbig    = 0; // global number of rows
     index_t Nbig    = 0; // global number of columns
@@ -83,10 +82,8 @@ public:
     std::vector<index_t> nnzPerRow_local2; // todo: remove this. this is used for openmp part of saena_matrix.cpp
     std::vector<index_t> nnzPerRow_remote; // It is also used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
-    std::vector<index_t> nnzPerColScan; // used in triple_mat_mult. free it when done. // todo: change this to nnz_t
 
     std::vector<value_t> inv_diag;
-    std::vector<value_t> inv_diag_original;
     std::vector<value_t> inv_sq_diag;
 //    double norm1, normInf, rhoDA;
 
@@ -95,9 +92,6 @@ public:
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
-
-//    send_zfp::array1<double> vSend_zfp;
-//    send_zfp::array1<double> vecValues_zfp;
 
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;
@@ -127,7 +121,6 @@ public:
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
 
     bool active = false;
-    bool active_old_comm = false; // this is used for prolong and post-smooth
 
     bool enable_shrink = false;  // default = true
     bool do_shrink     = false; // default = false

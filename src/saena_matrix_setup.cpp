@@ -546,9 +546,10 @@ int saena_matrix::set_off_on_diagonal(){
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote1 \n", rank);
             MPI_Barrier(comm);
+//            print_entry(-1);
         }
 
-//        print_entry(-1);
+//        int stidx = lower_bound2(&split[0], &split[nprocs], entry[0].col);
 
         col_remote_size = 0;
         nnz_l_local = 0;
@@ -558,92 +559,77 @@ int saena_matrix::set_off_on_diagonal(){
         if(nprocs > 1){
             nnzPerRow_remote.assign(M, 0);
         }
-//        nnzPerRow.assign(M,0);
-//        nnzPerCol_local.assign(Mbig,0); // Nbig = Mbig, assuming A is symmetric.
-//        nnzPerCol_remote.assign(M,0);
-//        std::vector<index_t> nnzPerCol(Mbig, 0);
-        nnzPerColScan.assign(Mbig + 1, 0);
-        index_t *nnzPerCol = &nnzPerColScan[1];
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
-//        nnzPerRow[row[0]-split[rank]]++;
-        long procNum;
+        index_t procNum, procNumTmp;
         if(!entry.empty()){
+//            if(rank==1) std::cout << entry[0] << std::endl;
             if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
-                nnzPerRow_local[entry[0].row - split[rank]]++;
-//                nnzPerCol_local[col[0]]++;
-                nnz_l_local++;
-                values_local.emplace_back(entry[0].val);
+                ++nnz_l_local;
+                ++nnzPerRow_local[entry[0].row - split[rank]];
                 row_local.emplace_back(entry[0].row - split[rank]);
                 col_local.emplace_back(entry[0].col);
+                values_local.emplace_back(entry[0].val);
             } else {
-                nnz_l_remote++;
-                nnzPerRow_remote[entry[0].row - split[rank]]++;
-                values_remote.emplace_back(entry[0].val);
+                ++nnz_l_remote;
+                ++nnzPerRow_remote[entry[0].row - split[rank]];
                 row_remote.emplace_back(entry[0].row - split[rank]);
-                col_remote_size++;
-                col_remote.emplace_back(col_remote_size - 1);
-                col_remote2.emplace_back(entry[0].col);
+                col_remote.emplace_back(col_remote_size);
+                values_remote.emplace_back(entry[0].val);
+                ++col_remote_size;
                 nnzPerCol_remote.emplace_back(1);
+                col_remote2.emplace_back(entry[0].col);
                 vElement_remote.emplace_back(entry[0].col);
-                recvCount[lower_bound2(&split[0], &split[nprocs], entry[0].col)] = 1;
+                procNum = lower_bound2(&split[0], &split[nprocs], entry[0].col);
+                recvCount[procNum] = 1;
+//                if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[0].col, procNum);
             }
-            nnzPerCol[entry[0].col]++;
         }
 
-        if(entry.size() >= 2){
-            for (nnz_t i = 1; i < nnz_l; i++) {
-//                nnzPerRow[row[i]-split[rank]]++;
-//                if(rank==0) std::cout << entry[i] << std::endl;
-                if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
-                    nnz_l_local++;
-//                    nnzPerCol_local[col[i]]++;
-                    nnzPerRow_local[entry[i].row - split[rank]]++;
-                    values_local.emplace_back(entry[i].val);
+        nnz_t i = 1;
+        while(i < nnz_l) {
+            procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+//            if(rank==0) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
+
+            if(procNum == rank){ // local
+                while(i < nnz_l && entry[i].col < split[procNum + 1]) {
+                    ++nnz_l_local;
+                    ++nnzPerRow_local[entry[i].row - split[rank]];
                     row_local.emplace_back(entry[i].row - split[rank]);
                     col_local.emplace_back(entry[i].col);
+                    values_local.emplace_back(entry[i].val);
+                    ++i;
+                }
 
-//                    if (entry[i].col != entry[i - 1].col)
-//                        vElementRep_local.emplace_back(1);
-//                    else
-//                        vElementRep_local.back()++;
-                } else {
-                    nnz_l_remote++;
-                    nnzPerRow_remote[entry[i].row - split[rank]]++;
-                    values_remote.emplace_back(entry[i].val);
+            }else{ // remote
+                while(i < nnz_l && entry[i].col < split[procNum + 1]) {
+                    ++nnz_l_remote;
+                    ++nnzPerRow_remote[entry[i].row - split[rank]];
                     row_remote.emplace_back(entry[i].row - split[rank]);
                     // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
                     col_remote2.emplace_back(entry[i].col);
+                    values_remote.emplace_back(entry[i].val);
 
                     if (entry[i].col != entry[i - 1].col) {
-                        col_remote_size++;
+                        ++col_remote_size;
                         vElement_remote.emplace_back(entry[i].col);
-                        procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
-//                        if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[i].col, procNum);
-                        recvCount[procNum]++;
+                        ++recvCount[procNum];
                         nnzPerCol_remote.emplace_back(1);
                     } else {
-                        nnzPerCol_remote.back()++;
+                        ++nnzPerCol_remote.back();
                     }
                     // the original col values are not being used. the ordering starts from 0, and goes up by 1.
                     col_remote.emplace_back(col_remote_size - 1);
+                    ++i;
                 }
-                nnzPerCol[entry[i].col]++;
-            } // for i
-        }
+            }
+        } // for i
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote2 \n", rank);
             MPI_Barrier(comm);
         }
-
-//        nnzPerColScan.resize(Mbig + 1);
-//        nnzPerColScan[0] = 0;
-        for(nnz_t i = 1; i < Mbig+1; i++){
-            nnzPerColScan[i] += nnzPerColScan[i-1];
-        }
-//        nnzPerCol.clear();
 
         // don't receive anything from yourself
         recvCount[rank] = 0;
