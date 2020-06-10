@@ -48,7 +48,6 @@ private:
 public:
     MPI_Comm comm            = MPI_COMM_WORLD;
     MPI_Comm comm_horizontal = MPI_COMM_WORLD;
-    MPI_Comm comm_old        = MPI_COMM_WORLD;
 
     index_t Mbig    = 0; // global number of rows
     index_t Nbig    = 0; // global number of columns
@@ -85,7 +84,6 @@ public:
     std::vector<index_t> nnzPerCol_remote;
 
     std::vector<value_t> inv_diag;
-    std::vector<value_t> inv_diag_original;
     std::vector<value_t> inv_sq_diag;
 //    double norm1, normInf, rhoDA;
 
@@ -94,9 +92,6 @@ public:
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
-
-//    send_zfp::array1<double> vSend_zfp;
-//    send_zfp::array1<double> vecValues_zfp;
 
     std::vector<nnz_t> indicesP_local;
     std::vector<nnz_t> indicesP_remote;

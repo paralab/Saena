@@ -77,7 +77,6 @@ int saena_object::compute_coarsen(Grid *grid) {
     Ac->M_old = Ac->M;
 
     Ac->comm            = A->comm;
-    Ac->comm_old        = A->comm;
     Ac->active_old_comm = true;
 
     // set dense parameters

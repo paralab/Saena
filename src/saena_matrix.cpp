@@ -18,13 +18,11 @@ saena_matrix::saena_matrix() = default;
 
 saena_matrix::saena_matrix(MPI_Comm com) {
     comm = com;
-    comm_old = com;
 }
 
 
 void saena_matrix::set_comm(MPI_Comm com){
     comm = com;
-    comm_old = com;
 }
 
 
