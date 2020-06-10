@@ -83,7 +83,6 @@ public:
     std::vector<index_t> nnzPerRow_local2; // todo: remove this. this is used for openmp part of saena_matrix.cpp
     std::vector<index_t> nnzPerRow_remote; // It is also used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
-    std::vector<index_t> nnzPerColScan; // used in triple_mat_mult. free it when done. // todo: change this to nnz_t
 
     std::vector<value_t> inv_diag;
     std::vector<value_t> inv_diag_original;
