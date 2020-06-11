@@ -2,6 +2,7 @@
 #define SAENA_MATRIX_DENSE_H
 
 #include "data_struct.h"
+#include "zfparray1.h"
 
 #include "vector"
 #include <mpi.h>
@@ -33,6 +34,8 @@ public:
 
     saena_matrix_dense& operator=(const saena_matrix_dense &B);
 
+    int assemble();
+
     int erase();
 
     value_t get(index_t row, index_t col){
@@ -60,6 +63,44 @@ public:
     int print(int ran);
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int convert_saena_matrix(saena_matrix *A);
+
+    // zfp parameters and functions
+    // ***********************************************************
+
+    zfp_type    zfptype = zfp_type_double;
+
+    zfp_field*  send_field;  // array meta data
+    zfp_stream* send_zfp;    // compressed stream
+    bitstream*  send_stream; // bit stream to write to or read from
+
+    zfp_field*  recv_field;  // array meta data
+    zfp_stream* recv_zfp;    // compressed stream
+    bitstream*  recv_stream; // bit stream to write to or read from
+
+    bool          use_zfp          = false;
+    bool          free_zfp_buff    = false;
+    unsigned char *zfp_send_buff   = nullptr, // storage for compressed stream to be sent
+    *zfp_recv_buff   = nullptr; // storage for compressed stream to be received
+    unsigned      zfp_send_buff_sz = 0,
+            zfp_send_comp_sz = 0,
+            zfp_recv_buff_sz = 0;
+
+    unsigned zfp_rate      = 32;
+    double   zfp_precision = 32;
+
+    std::vector<value_t> vSend;
+    std::vector<value_t> vecValues;
+
+    int matvec_test(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_comp(std::vector<value_t>& v, std::vector<value_t>& w);
+
+    int allocate_zfp();
+    int deallocate_zfp();
+
+    void matvec_time_init();
+    void matvec_time_print() const;
+    unsigned long matvec_iter = 0;
+    double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0;
 };
 
 #endif //SAENA_MATRIX_DENSE_H
