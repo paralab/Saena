@@ -95,17 +95,21 @@ int main(int argc, char* argv[]){
 //    saena::vector rhs(comm);
     std::vector<double> rhs(M);
 
-    // ********** set rhs_std: ordered: 1, 2, 3, ... **********
+    // ********** set rhs: random **********
 
-    ofst = rank * M + 1;
-    for(index_t i = 0; i < M; i++){
-        rhs[i] = i + ofst;
+    generate_rhs_old(rhs);
+
+    // ********** set rhs: ordered: 1, 2, 3, ... **********
+
+//    ofst = rank * M + 1;
+//    for(index_t i = 0; i < M; i++){
+//        rhs[i] = i + ofst;
 //        if(rank==1) cout << i << "\t" << rhs[i] << endl;
-    }
+//    }
 
     // ********** print right-hand side **********
 
-//    print_vector(rhs_std, -1, "rhs_std", comm);
+//    print_vector(rhs, -1, "rhs", comm);
 
     // *************************** warmup ****************************
 
@@ -125,7 +129,7 @@ int main(int argc, char* argv[]){
     }
 
     // *************************** check the correctness ****************************
-
+/*
     double thrshld = 1e-10;
     bool bool_correct = true;
     MPI_Barrier(comm);
@@ -147,7 +151,7 @@ int main(int argc, char* argv[]){
             cout << MAGENTA << "******************************************************\n" << COLORRESET;
         }
     }
-
+*/
     // *************************** normal matvec ****************************
 
     A.matvec_time_init();
