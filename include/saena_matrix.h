@@ -62,25 +62,26 @@ public:
 
     std::set<cooEntry_row> data_coo;
     std::vector<cooEntry>  entry;
-    std::vector<cooEntry>  entry_temp; // is used for updating the matrix
+    std::vector<cooEntry>  entry_temp;      // is used for updating the matrix
 
-    std::vector<index_t> split; // (row-wise) partition of the matrix between processes
+    std::vector<index_t> split;             // (row-wise) partition of the matrix between processes
     std::vector<index_t> split_old;
-    std::vector<nnz_t>   nnz_list; // number of nonzeros on each process. todo: Since it is local to each processor, unsigned int is enough. nnz_l should be changed too.
+    std::vector<nnz_t>   nnz_list;          // number of nonzeros on each process.
+                                            // todo: Since it is local to each processor, int is enough. nnz_l should be changed too.
 
     nnz_t   nnz_l_local     = 0;
     nnz_t   nnz_l_remote    = 0;
-    index_t col_remote_size = 0; // number of remote columns
+    index_t col_remote_size = 0;            // number of remote columns
     std::vector<value_t> values_local;
     std::vector<value_t> values_remote;
     std::vector<index_t> row_local;
     std::vector<index_t> row_remote;
     std::vector<index_t> col_local;
-    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
-    std::vector<index_t> col_remote2; //original col index
-    std::vector<index_t> nnzPerRow_local;  // todo: this is used for openmp part of saena_matrix.cpp
-    std::vector<index_t> nnzPerRow_local2; // todo: remove this. this is used for openmp part of saena_matrix.cpp
-    std::vector<index_t> nnzPerRow_remote; // It is also used for PETSc function: MatMPIAIJSetPreallocation()
+    std::vector<index_t> col_remote;        // index starting from 0, instead of the original column index
+    std::vector<index_t> col_remote2;       // original col index
+    std::vector<index_t> nnzPerRow_local;   // todo: this is used for openmp part of saena_matrix.cpp
+//    std::vector<index_t> nnzPerRow_local2;  // todo: remove this. this is used for openmp part of saena_matrix.cpp
+    std::vector<index_t> nnzPerRow_remote;  // It is also used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
 
     std::vector<value_t> inv_diag;
@@ -112,7 +113,7 @@ public:
     unsigned int num_threads = 1;
     std::vector<nnz_t> iter_local_array;
     std::vector<nnz_t> iter_remote_array;
-    std::vector<nnz_t> iter_local_array2;
+//    std::vector<nnz_t> iter_local_array2;
     std::vector<nnz_t> iter_remote_array2;
     std::vector<index_t> vElement_remote;
     std::vector<value_t> w_buff; // for matvec3()
@@ -122,7 +123,7 @@ public:
 
     bool active = false;
 
-    bool enable_shrink = false;  // default = true
+    bool enable_shrink = false; // default = true
     bool do_shrink     = false; // default = false
     bool shrinked      = false; // default = false. if shrinking happens for the matrix, set this to true.
     bool enable_dummy_matvec = true; // default = true

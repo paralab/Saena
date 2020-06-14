@@ -552,8 +552,6 @@ int saena_matrix::set_off_on_diagonal(){
 //        int stidx = lower_bound2(&split[0], &split[nprocs], entry[0].col);
 
         col_remote_size = 0;
-        nnz_l_local = 0;
-        nnz_l_remote = 0;
         recvCount.assign(nprocs, 0);
         nnzPerRow_local.assign(M, 0);
         if(nprocs > 1){
@@ -565,18 +563,15 @@ int saena_matrix::set_off_on_diagonal(){
         if(!entry.empty()){
 //            if(rank==1) std::cout << entry[0] << std::endl;
             if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
-                ++nnz_l_local;
                 ++nnzPerRow_local[entry[0].row - split[rank]];
                 row_local.emplace_back(entry[0].row - split[rank]);
                 col_local.emplace_back(entry[0].col);
                 values_local.emplace_back(entry[0].val);
             } else {
-                ++nnz_l_remote;
                 ++nnzPerRow_remote[entry[0].row - split[rank]];
                 row_remote.emplace_back(entry[0].row - split[rank]);
-                col_remote.emplace_back(col_remote_size);
+                col_remote.emplace_back(0);
                 values_remote.emplace_back(entry[0].val);
-                ++col_remote_size;
                 nnzPerCol_remote.emplace_back(1);
                 col_remote2.emplace_back(entry[0].col);
                 vElement_remote.emplace_back(entry[0].col);
@@ -593,7 +588,6 @@ int saena_matrix::set_off_on_diagonal(){
 
             if(procNum == rank){ // local
                 while(i < nnz_l && entry[i].col < split[procNum + 1]) {
-                    ++nnz_l_local;
                     ++nnzPerRow_local[entry[i].row - split[rank]];
                     row_local.emplace_back(entry[i].row - split[rank]);
                     col_local.emplace_back(entry[i].col);
@@ -603,7 +597,6 @@ int saena_matrix::set_off_on_diagonal(){
 
             }else{ // remote
                 while(i < nnz_l && entry[i].col < split[procNum + 1]) {
-                    ++nnz_l_remote;
                     ++nnzPerRow_remote[entry[i].row - split[rank]];
                     row_remote.emplace_back(entry[i].row - split[rank]);
                     // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
@@ -611,7 +604,6 @@ int saena_matrix::set_off_on_diagonal(){
                     values_remote.emplace_back(entry[i].val);
 
                     if (entry[i].col != entry[i - 1].col) {
-                        ++col_remote_size;
                         vElement_remote.emplace_back(entry[i].col);
                         ++recvCount[procNum];
                         nnzPerCol_remote.emplace_back(1);
@@ -619,11 +611,15 @@ int saena_matrix::set_off_on_diagonal(){
                         ++nnzPerCol_remote.back();
                     }
                     // the original col values are not being used. the ordering starts from 0, and goes up by 1.
-                    col_remote.emplace_back(col_remote_size - 1);
+                    col_remote.emplace_back(vElement_remote.size() - 1);
                     ++i;
                 }
             }
         } // for i
+
+        nnz_l_local     = row_local.size();
+        nnz_l_remote    = row_remote.size();
+        col_remote_size = vElement_remote.size();
 
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
@@ -646,14 +642,14 @@ int saena_matrix::set_off_on_diagonal(){
             sendCountScan.resize(nprocs);
             recvCountScan[0] = 0;
             sendCountScan[0] = 0;
-            for (index_t i = 1; i < nprocs; i++){
+            for (i = 1; i < nprocs; ++i){
                 recvCountScan[i] = recvCountScan[i-1] + recvCount[i-1];
                 sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
             }
 
             numRecvProc = 0;
             numSendProc = 0;
-            for (int i = 0; i < nprocs; i++) {
+            for (i = 0; i < nprocs; ++i) {
                 if (recvCount[i] != 0) {
                     numRecvProc++;
                     recvProcRank.emplace_back(i);
@@ -678,12 +674,12 @@ int saena_matrix::set_off_on_diagonal(){
             vdispls[0] = 0;
             rdispls[0] = 0;
 
-            for (int i = 1; i < nprocs; i++) {
+            for (i = 1; i < nprocs; ++i) {
                 vdispls[i] = vdispls[i - 1] + sendCount[i - 1];
                 rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
             }
             vIndexSize = vdispls[nprocs - 1] + sendCount[nprocs - 1];
-            recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
+            recvSize   = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
             vIndex.resize(vIndexSize);
             MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], par::Mpi_datatype<index_t>::value(),
@@ -699,7 +695,7 @@ int saena_matrix::set_off_on_diagonal(){
 
             // change the indices from global to local
 #pragma omp parallel for
-            for (index_t i = 0; i < vIndexSize; i++){
+            for (i = 0; i < vIndexSize; i++){
                 vIndex[i] -= split[rank];
             }
 
@@ -720,7 +716,7 @@ int saena_matrix::set_off_on_diagonal(){
         // compute M_max
 //        MPI_Allreduce(&M, &M_max, 1, MPI_UNSIGNED, MPI_MAX, comm);
         M_max = 0;
-        for(index_t i = 0; i < nprocs; i++){
+        for(i = 0; i < nprocs; ++i){
             if(split[i+1] - split[i] > M_max){
                 M_max = split[i+1] - split[i];
             }
@@ -878,6 +874,7 @@ int saena_matrix::openmp_setup() {
 
         // setup variables for another matvec implementation
         // -------------------------------------------------
+/*
         iter_local_array2.resize(num_threads+1);
         iter_local_array2[0] = 0;
         iter_local_array2[num_threads] = iter_local_array[num_threads];
@@ -912,6 +909,7 @@ int saena_matrix::openmp_setup() {
             }
 
         } // end of omp parallel
+*/
 
 //        if(rank==0){
 //            printf("\niter_local_array and iter_local_array2: \n");
