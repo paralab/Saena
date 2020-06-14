@@ -487,6 +487,9 @@ int saena_matrix::set_off_on_diagonal_dummy(){
 
 //        print_vector(vIndex, -1, "vIndex", comm);
 
+        vElement_remote.clear();
+        vElement_remote.shrink_to_fit();
+
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup_dummy: rank = %d, local remote4 \n", rank);
