@@ -225,7 +225,7 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
 //    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
 
     double t = 0;
-//    double tcomm = 0;
+    double tcomm = 0;
     MPI_Request* requests = nullptr;
     MPI_Status*  statuses = nullptr;
 
@@ -234,7 +234,14 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
 
-//    if(nprocs > 1){
+    requests = new MPI_Request[2];
+    statuses = new MPI_Status[2];
+
+    int send_proc = 0, recv_proc = 0, recv_proc_prev = 0;
+    // for MPI_Test
+    int flag = 0;
+
+    if(nprocs > 1){
     t = MPI_Wtime();
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
@@ -247,32 +254,28 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
 
 //    print_vector(vSend, 0, "vSend", comm);
 
-//    tcomm = MPI_Wtime();
-    requests = new MPI_Request[2];
-    statuses = new MPI_Status[2];
-
-    // for MPI_Test
-    int flag = 0;
+    tcomm = MPI_Wtime();
 
     // send to right, receive from left
-    int send_proc = (rank + 1) % nprocs;
-    int recv_proc = rank-1;
+    send_proc = (rank + 1) % nprocs;
+    recv_proc = rank-1;
     if(recv_proc < 0)
         recv_proc += nprocs;
-    int recv_proc_prev = 0; // the processor that we received data in the previous round
+    recv_proc_prev = 0; // the processor that we received data in the previous round
 
-    int k = 0;
     if(recvCount[recv_proc] != 0){
-        MPI_Irecv(&vecValues[rdispls[recv_proc]], recvProcCount[recv_proc], MPI_DOUBLE, recv_proc, 1, comm, &requests[0]);
-        MPI_Test(&requests[k], &flag, &statuses[k]);
+//        if(rank==rankv) std::cout << "recv_proc: " << recv_proc << ", recvCount[recv_proc]: " << recvCount[recv_proc] << std::endl;
+        MPI_Irecv(&vecValues[rdispls[recv_proc]], recvCount[recv_proc], MPI_DOUBLE, recv_proc, 1, comm, &requests[0]);
+        MPI_Test(&requests[0], &flag, &statuses[0]);
     }
 
     if(sendCount[send_proc] != 0){
-        MPI_Isend(&vSend[vdispls[send_proc]], sendProcCount[send_proc], MPI_DOUBLE, send_proc, 1, comm, &requests[1]);
-        MPI_Test(&requests[nprocs + k], &flag, &statuses[nprocs + k]);
+//        if(rank==rankv) std::cout << "send_proc: " << send_proc << ", sendCount[send_proc]: " << sendCount[send_proc] << std::endl;
+        MPI_Isend(&vSend[vdispls[send_proc]], sendCount[send_proc], MPI_DOUBLE, send_proc, 1, comm, &requests[1]);
+        MPI_Test(&requests[1], &flag, &statuses[1]);
     }
 
-//    }
+    }
 
     // local loop
     // ----------
@@ -286,7 +289,8 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
     for (index_t i = 0; i < M; ++i) { // rows
         w[i] = 0;
         for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
-//            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
+//            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n",
+//            row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
             w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
         }
     }
@@ -294,62 +298,78 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
     t = MPI_Wtime() - t;
     part4 += t;
 
-//    if(nprocs > 1){
-    // Wait for the first receive communication to finish.
-    MPI_Waitall(2, &requests[0], &statuses[0]);
-
-    while(k < nprocs - 1) { // subtrct 1 from nprocs, because no need to communicate with itself.
-
-        ++k;
-        send_proc = (send_proc + 1) % nprocs;
-        recv_proc_prev = recv_proc--;
-        if(recv_proc < 0)
-            recv_proc += nprocs;
-
-        if(recvCount[recv_proc] != 0){
-            MPI_Irecv(&vecValues[rdispls[recv_proc]], recvProcCount[recv_proc], MPI_DOUBLE, recv_proc, 1, comm, &requests[0]);
-            MPI_Test(&requests[k], &flag, &statuses[0]);
+    if(nprocs > 1) {
+        // Wait for the first receive communication to finish.
+        if (recvCount[recv_proc] != 0) {
+            MPI_Wait(&requests[0], &statuses[0]);
+        }
+        if (sendCount[send_proc] != 0) {
+            MPI_Wait(&requests[1], &statuses[1]);
         }
 
-        if(sendCount[send_proc] != 0){
-            MPI_Isend(&vSend[vdispls[send_proc]], sendProcCount[send_proc], MPI_DOUBLE, send_proc, 1, comm, &requests[1]);
-            MPI_Test(&requests[nprocs + k], &flag, &statuses[1]);
+        int k = 0;
+        while (k < nprocs) {
+
+            ++k;
+            send_proc = (send_proc + 1) % nprocs;
+            recv_proc_prev = recv_proc--;
+            if (recv_proc < 0)
+                recv_proc += nprocs;
+
+//            int rankv = 0;
+//            if (rank == rankv) std::cout << "k: " << k << ", send_proc:" << send_proc << ", recv_proc: " << recv_proc
+//                          << ", recv_proc_prev: " << recv_proc_prev << std::endl;
+
+            if (recvCount[recv_proc] != 0) {
+                MPI_Irecv(&vecValues[rdispls[recv_proc]], recvCount[recv_proc], par::Mpi_datatype<value_t>::value(), recv_proc, 1, comm, &requests[0]);
+                MPI_Test(&requests[0], &flag, &statuses[0]);
+            }
+
+            if (sendCount[send_proc] != 0) {
+                MPI_Isend(&vSend[vdispls[send_proc]], sendCount[send_proc], par::Mpi_datatype<value_t>::value(), send_proc, 1, comm, &requests[1]);
+                MPI_Test(&requests[1], &flag, &statuses[1]);
+            }
+
+            if (recvCount[recv_proc_prev]) {
+
+//            print_vector(vecValues, 1, "vecValues", comm);
+
+                // perform matvec for recv_proc_prev's data
+                // ----------
+                // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
+                // the corresponding vector element is saved in vecValues[0]. and so on.
+
+                t = MPI_Wtime();
+
+                iter = recvCountScan[recv_proc_prev];
+                for (index_t j = recvCountScan[recv_proc_prev]; j < recvCountScan[recv_proc_prev + 1]; ++j) {
+                    for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+//                        if(rank==rankv) printf("%ld \t%u \t%u \t%f \t%f \t%f \n",
+//                        iter, row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j], values_remote[iter] * vecValues[j]);
+                        w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+                    }
+                }
+
+                t = MPI_Wtime() - t;
+                part6 += t;
+
+            }
+
+            // wait to finish the comm.
+            if (recvCount[recv_proc] != 0) {
+                MPI_Wait(&requests[0], &statuses[0]);
+            }
+            if (sendCount[send_proc] != 0) {
+                MPI_Wait(&requests[1], &statuses[1]);
+            }
         }
 
-        if(!recvCount[recv_proc]){
-            continue;
-        }
-
-    //    print_vector(vecValues, 1, "vecValues", comm);
-
-        // perform matvec for recv_proc_prev's data
-        // ----------
-        // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
-        // the corresponding vector element is saved in vecValues[0]. and so on.
-
-        t = MPI_Wtime();
-
-//        iter = 0;
-//        for (index_t j = 0; j < col_remote_size; ++j) {
-//            for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-//                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j], values_remote[iter] * vecValues[j]);
-//                w[row_remote[iter]] += values_remote[iter] * vecValues[j];
-//            }
-//        }
-
-        t = MPI_Wtime() - t;
-        part6 += t;
-
-        // wait to finish the comm.
-        MPI_Waitall(2, &requests[0], &statuses[0]);
+        delete[] requests;
+        delete[] statuses;
     }
 
-    delete [] requests;
-    delete [] statuses;
-//    }
-
-//    tcomm = MPI_Wtime() - tcomm;
-//    part3 += tcomm;
+    tcomm = MPI_Wtime() - tcomm;
+    part3 += tcomm;
 
     return 0;
 }
