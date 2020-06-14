@@ -1,13 +1,9 @@
 #include "saena_matrix.h"
-#include "parUtils.h"
 #include "dollar.hpp"
 
-#include <fstream>
 #include <cstring>
 #include <algorithm>
-//#include <sys/stat.h>
 #include <omp.h>
-//#include <printf.h>
 #include "mpi.h"
 
 
@@ -638,13 +634,13 @@ int saena_matrix::set_off_on_diagonal(){
 
 //            print_vector(sendCount, 0, "sendCount", comm);
 
-            recvCountScan.resize(nprocs);
-            sendCountScan.resize(nprocs);
+            recvCountScan.resize(nprocs + 1);
+//            sendCountScan.resize(nprocs + 1);
             recvCountScan[0] = 0;
-            sendCountScan[0] = 0;
-            for (i = 1; i < nprocs; ++i){
+//            sendCountScan[0] = 0;
+            for (i = 1; i < nprocs + 1; ++i){
                 recvCountScan[i] = recvCountScan[i-1] + recvCount[i-1];
-                sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
+//                sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
             }
 
             numRecvProc = 0;

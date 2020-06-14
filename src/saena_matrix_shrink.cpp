@@ -439,12 +439,12 @@ int saena_matrix::set_off_on_diagonal_dummy(){
 //        print_vector(sendCount, 0, "sendCount", comm);
 
         recvCountScan.resize(nprocs);
-        sendCountScan.resize(nprocs);
+//        sendCountScan.resize(nprocs);
         recvCountScan[0] = 0;
-        sendCountScan[0] = 0;
+//        sendCountScan[0] = 0;
         for (index_t i = 1; i < nprocs; i++){
             recvCountScan[i] = recvCountScan[i-1] + recvCount[i-1];
-            sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
+//            sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
         }
 
         numRecvProc = 0;

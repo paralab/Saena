@@ -10,6 +10,7 @@
 #include "saena_matrix_dense.h"
 #include "aux_functions.h"
 #include "zfparray1.h"
+#include "parUtils.h"
 
 #include <iostream>
 #include <vector>
@@ -104,7 +105,7 @@ public:
     std::vector<int> recvCount;
     std::vector<int> recvCountScan;
     std::vector<int> sendCount;
-    std::vector<int> sendCountScan;
+//    std::vector<int> sendCountScan;
     std::vector<int> recvProcRank;
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
