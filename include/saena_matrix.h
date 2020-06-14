@@ -96,7 +96,6 @@ public:
     std::vector<value_t> vecValues;
 
     std::vector<nnz_t> indicesP_local;
-    std::vector<nnz_t> indicesP_remote;
 
     int numRecvProc = 0;
     int numSendProc = 0;
