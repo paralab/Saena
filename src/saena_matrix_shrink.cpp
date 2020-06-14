@@ -447,20 +447,19 @@ int saena_matrix::set_off_on_diagonal_dummy(){
 //            sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
         }
 
-        numRecvProc = 0;
-        numSendProc = 0;
         for (int i = 0; i < nprocs; i++) {
             if (recvCount[i] != 0) {
-                numRecvProc++;
                 recvProcRank.emplace_back(i);
                 recvProcCount.emplace_back(recvCount[i]);
             }
             if (sendCount[i] != 0) {
-                numSendProc++;
                 sendProcRank.emplace_back(i);
                 sendProcCount.emplace_back(sendCount[i]);
             }
         }
+
+        numRecvProc = recvProcRank.size();
+        numSendProc = sendProcRank.size();
 
 //        if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << std::endl;
 
