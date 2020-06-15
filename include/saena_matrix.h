@@ -95,6 +95,7 @@ public:
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
+    std::vector<value_t> vecValues2; // for compressed matvec
 
     std::vector<nnz_t> indicesP_local;
 
