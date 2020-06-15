@@ -677,7 +677,7 @@ int saena_matrix::erase2(){
     recvCount.clear();
     recvCountScan.clear();
     sendCount.clear();
-//    sendCountScan.clear();
+    sendCountScan.clear();
     iter_local_array.clear();
     iter_remote_array.clear();
 //    iter_local_array2.clear();
@@ -710,7 +710,7 @@ int saena_matrix::erase2(){
     recvCount.shrink_to_fit();
     recvCountScan.shrink_to_fit();
     sendCount.shrink_to_fit();
-//    sendCountScan.shrink_to_fit();
+    sendCountScan.shrink_to_fit();
     iter_local_array.shrink_to_fit();
     iter_remote_array.shrink_to_fit();
 //    iter_local_array2.shrink_to_fit();
@@ -824,7 +824,7 @@ int saena_matrix::erase_keep_remote2(){
     recvCount.clear();
     recvCountScan.clear();
     sendCount.clear();
-//    sendCountScan.clear();
+    sendCountScan.clear();
     iter_local_array.clear();
     iter_remote_array.clear();
 //    iter_local_array2.clear();

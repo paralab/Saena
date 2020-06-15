@@ -104,7 +104,7 @@ public:
     std::vector<int> recvCount;
     std::vector<int> recvCountScan;
     std::vector<int> sendCount;
-//    std::vector<int> sendCountScan;
+    std::vector<int> sendCountScan;
     std::vector<int> recvProcRank;
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
