@@ -556,6 +556,9 @@ int saena_matrix::set_off_on_diagonal(){
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
         index_t procNum, procNumTmp;
+        nnz_t tmp = 0;
+        nnzPerProcScan.assign(nprocs + 1, 0);
+        auto *nnzProc_p = &nnzPerProcScan[1];
 
         nnz_t i = 0;
         while(i < nnz_l) {
@@ -572,6 +575,7 @@ int saena_matrix::set_off_on_diagonal(){
                 }
 
             }else{ // remote
+                tmp = i;
                 while(i < nnz_l && entry[i].col < split[procNum + 1]) {
 
                     vElement_remote.emplace_back(entry[i].col);
@@ -589,6 +593,7 @@ int saena_matrix::set_off_on_diagonal(){
                         ++nnzPerCol_remote.back();
                     }while(++i < nnz_l && entry[i].col == entry[i - 1].col);
                 }
+                nnzProc_p[procNum] = i - tmp;
             }
         } // for i
 
@@ -608,6 +613,13 @@ int saena_matrix::set_off_on_diagonal(){
 //        print_vector(recvCount, 0, "recvCount", comm);
 
         if(nprocs != 1){
+
+            for (i = 1; i < nprocs + 1; ++i){
+                nnzPerProcScan[i] += nnzPerProcScan[i - 1];
+            }
+
+//            print_vector(nnzPerProcScan, 0, "nnzPerProcScan", comm);
+
             sendCount.resize(nprocs);
             MPI_Alltoall(&recvCount[0], 1, MPI_INT, &sendCount[0], 1, MPI_INT, comm);
 
@@ -682,6 +694,7 @@ int saena_matrix::set_off_on_diagonal(){
             // These will be used in matvec and they are set here to reduce the time of matvec.
             vSend.resize(vIndexSize);
             vecValues.resize(recvSize);
+            vecValues2.resize(recvSize);
 
 //            printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
 //               rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);

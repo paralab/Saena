@@ -84,6 +84,7 @@ public:
 //    std::vector<index_t> nnzPerRow_local2;  // todo: remove this. this is used for openmp part of saena_matrix.cpp
     std::vector<index_t> nnzPerRow_remote;  // It is also used for PETSc function: MatMPIAIJSetPreallocation()
     std::vector<index_t> nnzPerCol_remote;
+    std::vector<nnz_t>   nnzPerProcScan; // number of remote nonzeros on each proc. used in matvec_comp.
 
     std::vector<value_t> inv_diag;
     std::vector<value_t> inv_sq_diag;
@@ -270,7 +271,9 @@ public:
     // for the compression paper
     int matvec_sparse_test(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_test3(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value_t>& w);
     // openmp versions
     int matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<value_t>& w);
