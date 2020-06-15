@@ -556,28 +556,8 @@ int saena_matrix::set_off_on_diagonal(){
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
         index_t procNum, procNumTmp;
-        if(!entry.empty()){
-//            if(rank==1) std::cout << entry[0] << std::endl;
-            if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
-                ++nnzPerRow_local[entry[0].row - split[rank]];
-                row_local.emplace_back(entry[0].row - split[rank]);
-                col_local.emplace_back(entry[0].col);
-                values_local.emplace_back(entry[0].val);
-            } else {
-                ++nnzPerRow_remote[entry[0].row - split[rank]];
-                row_remote.emplace_back(entry[0].row - split[rank]);
-                col_remote.emplace_back(0);
-                values_remote.emplace_back(entry[0].val);
-                nnzPerCol_remote.emplace_back(1);
-                col_remote2.emplace_back(entry[0].col);
-                vElement_remote.emplace_back(entry[0].col);
-                procNum = lower_bound2(&split[0], &split[nprocs], entry[0].col);
-                recvCount[procNum] = 1;
-//                if(rank==1) printf("col = %u \tprocNum = %ld \n", entry[0].col, procNum);
-            }
-        }
 
-        nnz_t i = 1;
+        nnz_t i = 0;
         while(i < nnz_l) {
             procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
 //            if(rank==0) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
@@ -593,22 +573,21 @@ int saena_matrix::set_off_on_diagonal(){
 
             }else{ // remote
                 while(i < nnz_l && entry[i].col < split[procNum + 1]) {
-                    ++nnzPerRow_remote[entry[i].row - split[rank]];
-                    row_remote.emplace_back(entry[i].row - split[rank]);
-                    // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
-                    col_remote2.emplace_back(entry[i].col);
-                    values_remote.emplace_back(entry[i].val);
 
-                    if (entry[i].col != entry[i - 1].col) {
-                        vElement_remote.emplace_back(entry[i].col);
-                        ++recvCount[procNum];
-                        nnzPerCol_remote.emplace_back(1);
-                    } else {
+                    vElement_remote.emplace_back(entry[i].col);
+                    ++recvCount[procNum];
+                    nnzPerCol_remote.emplace_back(0);
+
+                    do{
+                        // the original col values are not being used in matvec. the ordering starts from 0, and goes up by 1.
+                        // col_remote2 is the original col value and will be used in making strength matrix.
+                        col_remote.emplace_back(vElement_remote.size() - 1);
+                        col_remote2.emplace_back(entry[i].col);
+                        row_remote.emplace_back(entry[i].row - split[rank]);
+                        values_remote.emplace_back(entry[i].val);
+                        ++nnzPerRow_remote[entry[i].row - split[rank]];
                         ++nnzPerCol_remote.back();
-                    }
-                    // the original col values are not being used. the ordering starts from 0, and goes up by 1.
-                    col_remote.emplace_back(vElement_remote.size() - 1);
-                    ++i;
+                    }while(++i < nnz_l && entry[i].col == entry[i - 1].col);
                 }
             }
         } // for i
