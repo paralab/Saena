@@ -31,6 +31,20 @@ typedef unsigned char uchar;
 #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
 
 
+#ifndef NDEBUG
+#   define ASSERT(condition, message) \
+    do { \
+        if (! (condition)) { \
+            std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
+                      << " line " << __LINE__ << ": " << message << std::endl; \
+            std::terminate(); \
+        } \
+    } while (false)
+#else
+#   define ASSERT(condition, message) do { } while (false)
+#endif
+
+
 inline index_t rem_sz(index_t sz, unsigned int k){
     return static_cast<index_t>( sz * ((k+1) / 8.0) );
 }
