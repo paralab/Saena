@@ -218,8 +218,9 @@ int main(int argc, char* argv[]){
     for(int i = 0; i < matvec_warmup_iter; ++i){
 //        B->matvec_sparse_test(rhs_std, v);
         B->matvec_sparse_test2(rhs_std, v);
+        B->matvec_sparse_test3(rhs_std, w);
 //        B->matvec_sparse_comp(rhs_std, w);
-        B->matvec_sparse_comp2(rhs_std, w);
+//        B->matvec_sparse_comp2(rhs_std, w);
     }
 
     // *************************** check the correctness ****************************
@@ -274,7 +275,6 @@ int main(int argc, char* argv[]){
     // *************************** compressed matvec ****************************
 
     B->matvec_time_init();
-
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){

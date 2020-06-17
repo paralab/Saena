@@ -94,6 +94,7 @@ public:
     index_t recvSize   = 0;
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
+    std::vector<value_t> vSend2;
     std::vector<value_t> vecValues;
     std::vector<value_t> vecValues2; // for compressed matvec
 
@@ -274,6 +275,7 @@ public:
     int matvec_sparse_test(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_test3(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_test4(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value_t>& w);
     // openmp versions
