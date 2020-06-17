@@ -239,17 +239,8 @@ int saena_matrix_dense::matvec_test(std::vector<value_t>& v, std::vector<value_t
 
 //    if(rank==0) printf("dense matvec! \n");
 
-    if(split.empty()){
-        if(rank==0) printf("Error: split for the dense matrix is not set!\n");
-        MPI_Finalize();
-        return -1;
-    }
-
-    if(M != v.size()){
-        if(rank==0) printf("Error: vector v does not have the same size as the local number of the rows of the matrix!\n");
-        MPI_Finalize();
-        return -1;
-    }
+    assert(!split.empty());
+    assert(M == v.size());
 
     double t = 0, tcomm = 0;
     ++matvec_iter;
@@ -336,19 +327,10 @@ int saena_matrix_dense::matvec_comp(std::vector<value_t>& v, std::vector<value_t
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if(rank==0) printf("dense matvec! \n");
+//    if(rank==0) printf("dense compressed matvec! \n");
 
-    if(split.empty()){
-        if(rank==0) printf("Error: split for the dense matrix is not set!\n");
-        MPI_Finalize();
-        return -1;
-    }
-
-    if(M != v.size()){
-        if(rank==0) printf("Error: vector v does not have the same size as the local number of the rows of the matrix!\n");
-        MPI_Finalize();
-        return -1;
-    }
+    assert(!split.empty());
+    assert(M == v.size());
 
     double t = 0, tcomm = 0;
     ++matvec_iter;
@@ -360,9 +342,12 @@ int saena_matrix_dense::matvec_comp(std::vector<value_t>& v, std::vector<value_t
         left_neighbor += nprocs;
 //    if(rank==0) printf("%d, %d\n", left_neighbor, right_neighbor);
 
-    int flag = 0;
+    int flag = 0; // for MPI_Test
     int owner = 0, next_owner = 0;
-    index_t recv_size = 0, send_size = M;
+    index_t recv_size = 0;
+    index_t send_size = M;
+    index_t recv_size_comp = 0;
+    index_t send_size_comp = zfp_rate / 2 * (index_t)ceil(send_size / 4.0);
 
 //    std::vector<value_t> v_recv = v;
 //    std::vector<value_t> v_send = v;
@@ -402,6 +387,7 @@ int saena_matrix_dense::matvec_comp(std::vector<value_t>& v, std::vector<value_t
         // compute recv_size
         next_owner = (k + 1) % nprocs;
         recv_size  = split[next_owner+1] - split[next_owner];
+        recv_size_comp = zfp_rate / 2 * (index_t)ceil(recv_size / 4.0);
 //        v_recv.resize(recv_size);
 
 //        MPI_Irecv(&vecValues[0], recv_size, par::Mpi_datatype<value_t>::value(), right_neighbor, right_neighbor, comm, &requests[0]);
@@ -412,10 +398,10 @@ int saena_matrix_dense::matvec_comp(std::vector<value_t>& v, std::vector<value_t
 
         tcomm = MPI_Wtime();
 
-        MPI_Irecv(&zfp_recv_buff[0], (zfp_rate/CHAR_BIT) * recv_size, MPI_UNSIGNED_CHAR, right_neighbor, right_neighbor, comm, &requests[0]);
-        MPI_Isend(&zfp_send_buff[0], (zfp_rate/CHAR_BIT) * send_size, MPI_UNSIGNED_CHAR, left_neighbor,  rank,           comm, &requests[1]);
-
+        MPI_Irecv(&zfp_recv_buff[0], recv_size_comp, MPI_UNSIGNED_CHAR, right_neighbor, right_neighbor, comm, &requests[0]);
         MPI_Test(requests,   &flag, statuses);
+
+        MPI_Isend(&zfp_send_buff[0], send_size_comp, MPI_UNSIGNED_CHAR, left_neighbor,  rank,           comm, &requests[1]);
         MPI_Test(requests+1, &flag, statuses+1);
 
         t = MPI_Wtime();
@@ -431,6 +417,7 @@ int saena_matrix_dense::matvec_comp(std::vector<value_t>& v, std::vector<value_t
 
         t = MPI_Wtime();
 
+        // TODO: change vSend to use pointer shiftted by split[owner]
         owner = k % nprocs;
 #pragma omp parallel for
         for(index_t i = 0; i < M; ++i) {
@@ -465,6 +452,8 @@ int saena_matrix_dense::matvec_comp(std::vector<value_t>& v, std::vector<value_t
 //        send_zfp    = zfp_stream_open(send_stream);
         zfp_stream_set_bit_stream(send_zfp, send_stream);
 
+        // TODO: change M in zfp_field_1d to split[nex_owner + 1] - split[nex_owner]
+
         recv_field  = zfp_field_1d(&vecValues[0], zfptype, M);
         recv_stream = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
 //        recv_zfp    = zfp_stream_open(recv_stream);
@@ -485,6 +474,7 @@ int saena_matrix_dense::allocate_zfp(){
 
     free_zfp_buff = true;
 
+    // TODO: update the sizes for general cases.
     vSend.resize(M);
     vecValues.resize(M);
 
@@ -494,29 +484,16 @@ int saena_matrix_dense::allocate_zfp(){
     // 4 * ceil(size / 4): because zfp compresses blocks of size 4.
     zfp_send_buff_sz = zfp_rate / 2 * (unsigned)ceil(M / 4.0);
     zfp_recv_buff_sz = zfp_rate / 2 * (unsigned)ceil(M / 4.0);
-//    zfp_send_buff = (double*)malloc(zfp_send_buff_sz);
-//    zfp_recv_buff = (double*)malloc(zfp_recv_buff_sz);
     zfp_send_buff    = new uchar[zfp_send_buff_sz];
     zfp_recv_buff    = new uchar[zfp_recv_buff_sz];
 
-    send_field = zfp_field_1d(&vSend[0], zfptype, M);
-
-    send_zfp   = zfp_stream_open(nullptr);
+    send_field  = zfp_field_1d(&vSend[0], zfptype, M);
+    send_stream = stream_open(zfp_send_buff, zfp_send_buff_sz);
+    send_zfp    = zfp_stream_open(send_stream);
     zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
 //    zfp_stream_set_precision(send_zfp, zfp_precision);
 
-//    zfp_send_buff_sz = zfp_stream_maximum_size(send_zfp, send_field);
-//    zfp_send_buff    = new uchar[zfp_send_buff_sz];
-    send_stream      = stream_open(zfp_send_buff, zfp_send_buff_sz);
-    zfp_stream_set_bit_stream(send_zfp, send_stream);
-
 //    printf("M = %u, \tvIndexSize = %u, \tzfp_send_buff_sz = %u\n", M, vIndexSize, zfp_send_buff_sz);
-
-//    recv_field = zfp_field_1d(&vecValues[0], zfptype, recvSize);
-//    recv_zfp   = zfp_stream_open(nullptr);
-//    zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
-//    recv_stream      = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
-//    zfp_stream_set_bit_stream(recv_zfp, recv_stream);
 
     recv_field  = zfp_field_1d(&vecValues[0], zfptype, M);
     recv_stream = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
@@ -574,12 +551,12 @@ void saena_matrix_dense::matvec_time_print() const{
 //    print_time(part5 / tmp, "decompress", comm);
 //    print_time(part6 / tmp, "remote", comm);
 
-    double p1ave = print_time_ave(part1 / tmp, "", comm);
-    double p2ave = print_time_ave(part2 / tmp, "", comm);
-    double p3ave = print_time_ave((part3-part4-part5) / tmp, "", comm);
-    double p4ave = print_time_ave(part4 / tmp, "", comm);
-    double p5ave = print_time_ave(part5 / tmp, "", comm);
-    double p6ave = print_time_ave(part6 / tmp, "", comm);
+    double p1ave = print_time_ave(part1 / tmp, "", comm);               // send buff
+    double p2ave = print_time_ave(part2 / tmp, "", comm);               // compress
+    double p3ave = print_time_ave((part3-part4-part5) / tmp, "", comm); // comm
+    double p4ave = print_time_ave(part4 / tmp, "", comm);               // decompress
+    double p5ave = print_time_ave(part5 / tmp, "", comm);               // compute
+    double p6ave = print_time_ave(part6 / tmp, "", comm);               // swap
     if(!rank){
 //        printf("matvec iteration: %ld", matvec_iter);
         printf("average time:\nsend buff\ncompress\ncomm\ndecompress\ncompute\nswap\n\n"
