@@ -14,13 +14,13 @@ int saena_matrix::allocate_zfp(){
     // rate / 8 * 4 * ceil(size / 4).
     // divide by 8 to convert bits to bytes
     // 4 * ceil(size / 4): because zfp compresses blocks of size 4.
-    zfp_send_buff_sz = zfp_rate / 2 * (index_t)ceil(M / 4.0);
-    zfp_recv_buff_sz = zfp_rate / 2 * (index_t)ceil(M / 4.0);
+    zfp_send_buff_sz = zfp_rate / 2 * (index_t)ceil(vIndexSize / 4.0);
+    zfp_recv_buff_sz = zfp_rate / 2 * (index_t)ceil(recvSize / 4.0);
     zfp_send_buff  = new uchar[zfp_send_buff_sz];
     zfp_recv_buff  = new uchar[zfp_recv_buff_sz];
     zfp_recv_buff2 = new uchar[zfp_recv_buff_sz];
 
-    send_field  = zfp_field_1d(&vSend[0], zfptype, M);
+    send_field  = zfp_field_1d(&vSend[0], zfptype, vIndexSize);
     send_stream = stream_open(zfp_send_buff, zfp_send_buff_sz);
     send_zfp    = zfp_stream_open(send_stream);
     zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
@@ -28,7 +28,7 @@ int saena_matrix::allocate_zfp(){
 
 //    printf("M = %u, \tvIndexSize = %u, \tzfp_send_buff_sz = %u\n", M, vIndexSize, zfp_send_buff_sz);
 
-    recv_field  = zfp_field_1d(&vecValues[0], zfptype, M);
+    recv_field  = zfp_field_1d(&vecValues[0], zfptype, recvSize);
     recv_stream = stream_open(zfp_recv_buff, zfp_recv_buff_sz);
     recv_zfp    = zfp_stream_open(recv_stream);
     zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
