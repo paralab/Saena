@@ -325,10 +325,15 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
 //                          << recvCount[recv_proc] << ", recvCount[recv_proc_prev]: " << recvCount[recv_proc_prev]
 //                          << ", sendCount[send_proc]: " << sendCount[send_proc] << std::endl;
 
+            t = MPI_Wtime();
+
             iter = 0;
             for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
                 vSend[iter++] = v[(vIndex[i])];
             }
+
+            t = MPI_Wtime() - t;
+            part1 += t;
 
             tcomm = MPI_Wtime();
 
