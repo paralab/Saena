@@ -125,18 +125,18 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
 //    print_vector(v, -1, "v", comm);
 
 //    if(nprocs > 1){
-    t = MPI_Wtime();
+    t = omp_get_wtime();
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
     for(index_t i=0;i<vIndexSize;i++)
         vSend[i] = v[(vIndex[i])];
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part1 += t;
 
 //    print_vector(vSend, 0, "vSend", comm);
 
-    tcomm = MPI_Wtime();
+    tcomm = omp_get_wtime();
     requests = new MPI_Request[numSendProc+numRecvProc];
     statuses = new MPI_Status[numSendProc+numRecvProc];
 
@@ -162,7 +162,7 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     value_t* v_p  = &v[0] - split[rank];
     nnz_t    iter = 0;
@@ -174,7 +174,7 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part4 += t;
 
 //    if(nprocs > 1){
@@ -188,7 +188,7 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
     // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
     // the corresponding vector element is saved in vecValues[0]. and so on.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
@@ -198,7 +198,7 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part6 += t;
 
     MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
@@ -206,7 +206,7 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
     delete [] statuses;
 //    }
 
-    tcomm = MPI_Wtime() - tcomm;
+    tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
 
     return 0;
@@ -247,7 +247,7 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
             recv_proc += nprocs;
         recv_proc_prev = 0; // the processor that we received data in the previous round
 
-        t = MPI_Wtime();
+        t = omp_get_wtime();
 
         // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
         // put the values of thoss indices in vSend to send to other procs.
@@ -257,12 +257,12 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
             ++iter;
         }
 
-        t = MPI_Wtime() - t;
+        t = omp_get_wtime() - t;
         part1 += t;
 
 //        print_vector(vSend, 0, "vSend", comm);
 
-        tcomm = MPI_Wtime();
+        tcomm = omp_get_wtime();
 
         if(recvCount[recv_proc] != 0){
 //            if(rank==rankv) std::cout << "recv_proc: " << recv_proc << ", recvCount[recv_proc]: " << recvCount[recv_proc] << std::endl;
@@ -283,7 +283,7 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     value_t* v_p  = &v[0] - split[rank];
     nnz_t    iter = 0;
@@ -296,11 +296,11 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part5 += t;
 
     if(nprocs > 1) {
-        t = MPI_Wtime();
+        t = omp_get_wtime();
 
         // Wait for the first receive communication to finish.
         if (recvCount[recv_proc] != 0) {
@@ -310,10 +310,10 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
             MPI_Wait(&requests[1], &statuses[1]);
         }
 
-        t = MPI_Wtime() - t;
+        t = omp_get_wtime() - t;
         part7 += t;
 
-        tcomm = MPI_Wtime() - tcomm;
+        tcomm = omp_get_wtime() - tcomm;
         part3 += tcomm;
 
         int k = 1;
@@ -332,17 +332,17 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
 //                          << recvCount[recv_proc] << ", recvCount[recv_proc_prev]: " << recvCount[recv_proc_prev]
 //                          << ", sendCount[send_proc]: " << sendCount[send_proc] << std::endl;
 
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             iter = 0;
             for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
                 vSend[iter++] = v[(vIndex[i])];
             }
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part1 += t;
 
-            tcomm = MPI_Wtime();
+            tcomm = omp_get_wtime();
 
             if (recvCount[recv_proc] != 0) {
                 MPI_Irecv(&vecValues2[0], recvCount[recv_proc], par::Mpi_datatype<value_t>::value(), recv_proc, recv_proc, comm, &requests[0]);
@@ -363,7 +363,7 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
                 // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
                 // the corresponding vector element is saved in vecValues[0]. and so on.
 
-                t = MPI_Wtime();
+                t = omp_get_wtime();
 
                 auto *nnzPerCol_remote_p = &nnzPerCol_remote[recvCountScan[recv_proc_prev]];
                 iter = nnzPerProcScan[recv_proc_prev];
@@ -375,11 +375,11 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
                     }
                 }
 
-                t = MPI_Wtime() - t;
+                t = omp_get_wtime() - t;
                 part5 += t;
             }
 
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             // wait to finish the comm.
             if (recvCount[recv_proc] != 0) {
@@ -389,17 +389,17 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
                 MPI_Wait(&requests[1], &statuses[1]);
             }
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part7 += t;
 
-            tcomm = MPI_Wtime() - tcomm;
+            tcomm = omp_get_wtime() - tcomm;
             part3 += tcomm;
 
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             vecValues.swap(vecValues2);
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part6 += t;
 
             ++k;
@@ -439,7 +439,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
     int flag = 0;
 
     if(nprocs > 1){
-        t = MPI_Wtime();
+        t = omp_get_wtime();
 
         // send to right, receive from left
         send_proc = (rank + 1) % nprocs;
@@ -454,12 +454,12 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
             vSend[i] = v[(vIndex[i])];
         }
 
-        t = MPI_Wtime() - t;
+        t = omp_get_wtime() - t;
         part1 += t;
 
 //        print_vector(vSend, 0, "vSend", comm);
 
-        tcomm = MPI_Wtime();
+        tcomm = omp_get_wtime();
 
         if(recvCount[recv_proc] != 0){
 //            if(rank==rankv) std::cout << "recv_proc: " << recv_proc << ", recvCount[recv_proc]: " << recvCount[recv_proc] << std::endl;
@@ -480,7 +480,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     value_t* v_p  = &v[0] - split[rank];
     nnz_t    iter = 0;
@@ -493,7 +493,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part4 += t;
 
     if(nprocs > 1) {
@@ -537,7 +537,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
                 // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
                 // the corresponding vector element is saved in vecValues[0]. and so on.
 
-                t = MPI_Wtime();
+                t = omp_get_wtime();
 
                 iter = recvCountScan[recv_proc_prev];
                 for (index_t j = recvCountScan[recv_proc_prev]; j < recvCountScan[recv_proc_prev + 1]; ++j) {
@@ -548,7 +548,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
                     }
                 }
 
-                t = MPI_Wtime() - t;
+                t = omp_get_wtime() - t;
                 part6 += t;
 
             }
@@ -566,7 +566,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
         delete[] statuses;
     }
 
-    tcomm = MPI_Wtime() - tcomm;
+    tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
 
     return 0;
@@ -585,7 +585,7 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
 
     ++matvec_iter;
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
@@ -593,10 +593,10 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
         vSend[i] = v[(vIndex[i])];
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part1 += t;
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     if(vIndexSize || recvSize){ // todo : is this "if" required?
         zfp_stream_rewind(send_zfp);
@@ -610,10 +610,10 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part2 += t;
 
-    tcomm = MPI_Wtime();
+    tcomm = omp_get_wtime();
     requests = new MPI_Request[numSendProc+numRecvProc];
     statuses = new MPI_Status[numSendProc+numRecvProc];
 
@@ -637,7 +637,7 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     value_t* v_p  = &v[0] - split[rank];
     nnz_t    iter = 0;
@@ -648,19 +648,19 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part4 += t;
 
     // Wait for the receive communication to finish.
     MPI_Waitall(numRecvProc, requests, statuses);
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
     // decompress
     if(recvSize){
         zfp_stream_rewind(recv_zfp);
         zfp_decompress(recv_zfp, recv_field);
     }
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part5 += t;
 
 //    print_vector(vecValues, -1, "vecValues", comm);
@@ -670,7 +670,7 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
     // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
     // the corresponding vector element is saved in vecValues[0]. and so on.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
@@ -680,14 +680,14 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part6 += t;
 
     MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     delete [] requests;
     delete [] statuses;
 
-    tcomm = MPI_Wtime() - tcomm;
+    tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
 
     return 0;
@@ -734,18 +734,18 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
         // put the values of thoss indices in vSend to send to other procs.
         if (sendCount[send_proc] != 0) {
             // set send buff
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             iter = 0;
             for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
                 vSend[iter++] = v[(vIndex[i])];
             }
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part1 += t;
 
             // compress
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             send_size_comp = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
             zfp_send_buff_sz = send_size_comp;
@@ -757,11 +757,11 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
             zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
             ASSERT(zfp_send_comp_sz == send_size_comp, "zfp_send_comp_sz: " << zfp_send_comp_sz << ", send_size_comp: " << send_size_comp);
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part2 += t;
         }
 
-        tcomm = MPI_Wtime();
+        tcomm = omp_get_wtime();
 
         if(recvCount[recv_proc] != 0){
             recv_size_comp = zfp_rate / 2 * (index_t)ceil(recvCount[recv_proc] / 4.0);
@@ -786,7 +786,7 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     value_t* v_p  = &v[0] - split[rank];
     iter = 0;
@@ -799,12 +799,12 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part5 += t;
 
     if(nprocs > 1) {
 
-        t = MPI_Wtime();
+        t = omp_get_wtime();
 
         // Wait for the first receive communication to finish.
         if (recvCount[recv_proc] != 0) {
@@ -814,10 +814,10 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
             MPI_Wait(&requests[1], &statuses[1]);
         }
 
-        t = MPI_Wtime() - t;
+        t = omp_get_wtime() - t;
         part7 += t;
 
-        tcomm = MPI_Wtime() - tcomm;
+        tcomm = omp_get_wtime() - tcomm;
         part3 += tcomm;
 
         std::swap(zfp_recv_buff, zfp_recv_buff2);
@@ -838,17 +838,17 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
 //                          << recvCount[recv_proc] << ", recvCount[recv_proc_prev]: " << recvCount[recv_proc_prev]
 //                          << ", sendCount[send_proc]: " << sendCount[send_proc] << std::endl;
 
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             iter = 0;
             for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
                 vSend[iter++] = v[(vIndex[i])];
             }
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part1 += t;
 
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             if (sendCount[send_proc] != 0) {
                 send_size_comp = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
@@ -862,10 +862,10 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
                 ASSERT(zfp_send_comp_sz == send_size_comp, "zfp_send_comp_sz: " << zfp_send_comp_sz << ", send_size_comp: " << send_size_comp);
             }
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part2 += t;
 
-            tcomm = MPI_Wtime();
+            tcomm = omp_get_wtime();
 
             if (recvCount[recv_proc] != 0) {
                 recv_size_comp = zfp_rate / 2 * (index_t)ceil(recvCount[recv_proc] / 4.0);
@@ -882,7 +882,7 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
 
             if (recvCount[recv_proc_prev] != 0) {
 
-                t = MPI_Wtime();
+                t = omp_get_wtime();
 
                 zfp_recv_buff_sz = zfp_rate / 2 * (index_t)ceil(recvCount[recv_proc_prev] / 4.0);
                 recv_field  = zfp_field_1d(&vecValues[0], zfptype, recvCount[recv_proc_prev]);
@@ -896,7 +896,7 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
 //                    fprintf(stderr, "decompression failed\n");
 //                }
 
-                t = MPI_Wtime() - t;
+                t = omp_get_wtime() - t;
                 part4 += t;
 
 //                if(rank==rankv) printf("recv_proc_prev = %d, recvCount[recv_proc_prev] = %d, zfp_recv_buff_sz = %d\n",
@@ -908,7 +908,7 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
                 // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
                 // the corresponding vector element is saved in vecValues[0]. and so on.
 
-                t = MPI_Wtime();
+                t = omp_get_wtime();
 
                 auto *nnzPerCol_remote_p = &nnzPerCol_remote[recvCountScan[recv_proc_prev]];
                 iter = nnzPerProcScan[recv_proc_prev];
@@ -920,11 +920,11 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
                     }
                 }
 
-                t = MPI_Wtime() - t;
+                t = omp_get_wtime() - t;
                 part5 += t;
             }
 
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             // wait to finish the comm.
             if (recvCount[recv_proc] != 0) {
@@ -934,18 +934,18 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
                 MPI_Wait(&requests[1], &statuses[1]);
             }
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part7 += t;
 
-            tcomm = MPI_Wtime() - tcomm;
+            tcomm = omp_get_wtime() - tcomm;
             part3 += tcomm;
 
-            t = MPI_Wtime();
+            t = omp_get_wtime();
 
             vecValues.swap(vecValues2);
             std::swap(zfp_recv_buff, zfp_recv_buff2);
 
-            t = MPI_Wtime() - t;
+            t = omp_get_wtime() - t;
             part6 += t;
 
             ++k;
@@ -974,19 +974,19 @@ int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<va
 //    print_vector(v, -1, "v", comm);
 
 //    if(nprocs > 1){
-    t = MPI_Wtime();
+    t = omp_get_wtime();
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
 #pragma omp parallel for
     for(index_t i=0;i<vIndexSize;i++)
         vSend[i] = v[(vIndex[i])];
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part1 += t;
 
 //    print_vector(vSend, 0, "vSend", comm);
 
-    tcomm = MPI_Wtime();
+    tcomm = omp_get_wtime();
     requests = new MPI_Request[numSendProc+numRecvProc];
     statuses = new MPI_Status[numSendProc+numRecvProc];
 
@@ -1004,7 +1004,7 @@ int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<va
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
     value_t* v_p = &v[0] - split[rank];
 #pragma omp parallel
@@ -1020,7 +1020,7 @@ int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<va
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part4 += t;
 
 //    if(nprocs > 1){
@@ -1034,7 +1034,7 @@ int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<va
     // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
     // the corresponding vector element is saved in vecValues[0]. and so on.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
 
 #pragma omp parallel
     {
@@ -1076,7 +1076,7 @@ int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<va
         }
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part6 += t;
 
     // basic remote loop without openmp
@@ -1093,7 +1093,7 @@ int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<va
     delete [] statuses;
 //    }
 
-    tcomm = MPI_Wtime() - tcomm;
+    tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
 
     return 0;
@@ -1108,7 +1108,7 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
 
     ++matvec_iter;
 
-    double t = MPI_Wtime();
+    double t = omp_get_wtime();
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
 #pragma omp parallel for
@@ -1116,10 +1116,10 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
         vSend[i] = v[(vIndex[i])];
     }
 
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part1 += t;
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
     if(vIndexSize || recvSize){
         zfp_stream_rewind(send_zfp);
         if(vIndexSize){
@@ -1131,10 +1131,10 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
 //            }
         }
     }
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part2 += t;
 
-    double tcomm = MPI_Wtime();
+    double tcomm = omp_get_wtime();
     auto *requests = new MPI_Request[numSendProc+numRecvProc];
     auto *statuses = new MPI_Status[numSendProc+numRecvProc];
 
@@ -1156,7 +1156,7 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
     value_t* v_p  = &v[0] - split[rank];
     nnz_t    iter = 0;
     for (index_t i = 0; i < M; ++i) {
@@ -1165,7 +1165,7 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
             w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
         }
     }
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part4 += t;
 
     // the openmp version
@@ -1186,12 +1186,12 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
     // Wait for the receive communication to finish.
     MPI_Waitall(numRecvProc, requests, statuses);
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
     if(recvSize){
         zfp_stream_rewind(recv_zfp);
         zfp_decompress(recv_zfp, recv_field);
     }
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part5 += t;
 
 //    print_vector(vecValues, -1, "vecValues", comm);
@@ -1201,7 +1201,7 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
     // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
     // the corresponding vector element is saved in vecValues[0]. and so on.
 
-    t = MPI_Wtime();
+    t = omp_get_wtime();
     index_t i;
     iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
@@ -1209,13 +1209,13 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
             w[row_remote[iter]] += values_remote[iter] * vecValues[j];
         }
     }
-    t = MPI_Wtime() - t;
+    t = omp_get_wtime() - t;
     part6 += t;
 
     MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     delete [] requests;
     delete [] statuses;
-    tcomm = MPI_Wtime() - tcomm;
+    tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
 
     return 0;
