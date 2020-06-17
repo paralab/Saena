@@ -33,12 +33,12 @@ int main(int argc, char* argv[]){
 
     bool verbose = false;
 
-    if(argc != 3){
+    if(argc != 2){
         if(!rank){
 //            std::cout << "This is how you can generate a 3DLaplacian:\n./zfp <x grid size> <y grid size> <z grid size>" << std::endl;
 //            std::cout << "This is how you can generate a banded matrix:\n./zfp <local size> <bandwidth>" << std::endl;
-            std::cout << "This is how you can generate a random symmetric matrix:\n./zfp <local size> <density>" << std::endl;
-//            std::cout << "This is how you can read a matrix from a file:\n./zfp <MatrixA>" << std::endl;
+//            std::cout << "This is how you can generate a random symmetric matrix:\n./zfp <local size> <density>" << std::endl;
+            std::cout << "This is how you can read a matrix from a file:\n./zfp <MatrixA>" << std::endl;
         }
         MPI_Finalize();
         return -1;
@@ -68,35 +68,32 @@ int main(int argc, char* argv[]){
 //    A.get_internal_matrix()->print_info(-1, "A");
 */
     // *************************** option 2: random symmetric ****************************
-
+/*
     int M(std::stoi(argv[1]));
     float dens(std::stof(argv[2]));
 
     saena::matrix A(comm);
     A.get_internal_matrix()->use_zfp = true; // to allocate and set the zfp related parameters
     saena::random_symm_matrix(A, M, dens);
-
-//    A.print(-1, "A");
-//    A.get_internal_matrix()->print_info(-1, "A");
-
+*/
     // *************************** option 3: read from file ****************************
-/*
+
     char *Aname(argv[1]);
     saena::matrix A(comm);
-//    A.read_file(Aname);
-    A.read_file(Aname, "triangle");
+    A.read_file(Aname);
+//    A.read_file(Aname, "triangle");
     A.get_internal_matrix()->use_zfp = true; // to allocate and set the zfp related parameters
     A.assemble();
 
 //    saena::matrix B(A);
-*/
+
     // ********** print matrix info and time **********
 
     double t2 = MPI_Wtime();
     if (verbose) print_time(t1, t2, "Matrix Assemble:", comm);
 //    print_time(t1, t2, "Matrix Assemble:", comm);
 
-//    A.print(0);
+//    A.print(-1);
 //    A.get_internal_matrix()->print_info(0);
 //    A.get_internal_matrix()->writeMatrixToFile("matrix_folder/matrix");
 //    petsc_viewer(A.get_internal_matrix());
@@ -106,7 +103,7 @@ int main(int argc, char* argv[]){
         printf("A.Mbig = %u, A.nnz = %ld\n", A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g);
 //        printf("threshold1 = %u,\tthreshold2 = %u\n", solver.get_object()->matmat_size_thre1, solver.get_object()->matmat_size_thre2);
     }
-
+#if 0
     // *************************** set rhs_std ****************************
 /*
     saena::vector rhs(comm);
@@ -191,9 +188,10 @@ int main(int argc, char* argv[]){
 //    print_vector(solver.get_object()->grids[0].rhs, -1, "rhs", comm);
 //    print_vector(A.get_internal_matrix()->split, 0, "split", comm);
 */
+#endif
     // *************************** warmup ****************************
 
-    int matvec_warmup_iter = 2;
+    int matvec_warmup_iter = 1;
     int matvec_iter = 3;
 
 //    saena_matrix *B = solver.get_object()->grids[0].A;
@@ -203,6 +201,13 @@ int main(int argc, char* argv[]){
     std::vector<double> rhs_std(num_local_row);
     generate_rhs_old(rhs_std);
 
+//    index_t ofst = A.get_internal_matrix()->split[rank];
+//    for(index_t i = 0; i < num_local_row; ++i){
+//        rhs_std[i] = i + ofst;
+//    }
+
+//    print_vector(rhs_std, -1, "rhs_std", comm);
+
     std::vector<double> v(num_local_row, 0);
     std::vector<double> w(num_local_row, 0);
 
@@ -211,40 +216,55 @@ int main(int argc, char* argv[]){
 //    print_vector(v, -1, "v", comm);
 
     for(int i = 0; i < matvec_warmup_iter; ++i){
-        B->matvec_sparse_test(rhs_std, v);
-        B->matvec_sparse_comp(rhs_std, w);
+//        B->matvec_sparse_test(rhs_std, v);
+        B->matvec_sparse_test2(rhs_std, v);
+//        B->matvec_sparse_comp(rhs_std, w);
+        B->matvec_sparse_comp2(rhs_std, w);
     }
 
     // *************************** check the correctness ****************************
-/*
+
+    std::stringstream buf;
     bool bool_correct = true;
     MPI_Barrier(comm);
-    if(rank == 1){
-        cout << MAGENTA << "\n******************************************************\n" << COLORRESET;
-        std::cout << "\nChecking the correctness:" << std::endl;
+    if(rank == 0) {
+        buf << MAGENTA << "\n******************************************************\n" << COLORRESET;
+        buf << "\nChecking the correctness. Show a message only when the solution is not correct." << std::endl;
+        cout << buf.str() << endl;
+        buf.str(string());
+    }
+
+//    if(rank == 0){
         for(int i = 0; i < v.size(); ++i){
             if(fabs(w[i] - v[i]) > 1e-8){
-                std::cout << i << "\t" << std::setprecision(10) << v[i] << "\t" << w[i] << "\t" << v[i] - w[i] << std::endl;
+                buf << i << "\t" << std::setprecision(10) << v[i] << "\t" << w[i] << "\t" << v[i] - w[i] << std::endl;
+                cout << buf.str() << endl;
+                buf.str(string());
                 bool_correct = false;
             }
         }
 
-        if(bool_correct){
-            cout << "\nThe solution is correct!\n" << endl;
-            cout << MAGENTA << "\n******************************************************\n" << COLORRESET;
-        }else{
-            cout << "\nThe solution is " << RED << "NOT" << COLORRESET << " correct!\n" << endl;
-            cout << MAGENTA << "\n******************************************************\n" << COLORRESET;
+        if(!bool_correct){
+            buf << "\nThe solution is " << RED << "NOT" << COLORRESET << " correct on rank " << rank << "!\n" << endl;
+            cout << buf.str() << endl;
+            buf.str(string());
         }
+//    }
+
+    if(rank == 0) {
+        buf << MAGENTA << "\n******************************************************" << COLORRESET;
+        cout << buf.str() << endl;
+        buf.str(string());
     }
-*/
+
     // *************************** normal matvec ****************************
 
     B->matvec_time_init();
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse_test(rhs_std, v);
+//        B->matvec_sparse_test(rhs_std, v);
+        B->matvec_sparse_test2(rhs_std, w);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec original:", comm);
@@ -258,7 +278,8 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse_comp(rhs_std, w);
+//        B->matvec_sparse_comp(rhs_std, w);
+        B->matvec_sparse_comp2(rhs_std, w);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec zfp:", comm);
