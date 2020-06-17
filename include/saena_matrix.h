@@ -204,7 +204,7 @@ public:
     void matvec_time_init();
     void matvec_time_print(const int &opt = 1) const;
     unsigned long matvec_iter = 0;
-    double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0;
+    double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0, part7 = 0;
 
     // ***********************************************************
 

@@ -67,6 +67,7 @@ void saena_matrix::matvec_time_init(){
     part4 = 0;
     part5 = 0;
     part6 = 0;
+    part7 = 0;
 }
 
 void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
@@ -96,10 +97,11 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
     double p4ave = print_time_ave(part4 / tmp, "", comm); // decompress
     double p5ave = print_time_ave(part5 / tmp, "", comm); // compute
     double p6ave = print_time_ave(part6 / tmp, "", comm); // swap
+    double p7ave = print_time_ave(part7 / tmp, "", comm); // wait
     if(!rank){
 //        printf("matvec iteration: %ld", matvec_iter);
-        printf("average time:\nsend buff\ncompress\ncomm\ndecompress\ncompute\nswap\n\n"
-               "%f\n%f\n%f\n%f\n%f\n%f\n", p1ave, p2ave, p3ave, p4ave, p5ave, p6ave);
+        printf("average time:\nsend buff\ncompress\ncomm\ndecompress\ncompute\nswap\nwait\n\n"
+               "%f\n%f\n%f\n%f\n%f\n%f\n%f\n", p1ave, p2ave, p3ave, p4ave, p5ave, p6ave, p7ave);
     }
 
 }
@@ -298,6 +300,8 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
     part5 += t;
 
     if(nprocs > 1) {
+        t = MPI_Wtime();
+
         // Wait for the first receive communication to finish.
         if (recvCount[recv_proc] != 0) {
             MPI_Wait(&requests[0], &statuses[0]);
@@ -305,6 +309,9 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
         if (sendCount[send_proc] != 0) {
             MPI_Wait(&requests[1], &statuses[1]);
         }
+
+        t = MPI_Wtime() - t;
+        part7 += t;
 
         tcomm = MPI_Wtime() - tcomm;
         part3 += tcomm;
@@ -372,6 +379,8 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
                 part5 += t;
             }
 
+            t = MPI_Wtime();
+
             // wait to finish the comm.
             if (recvCount[recv_proc] != 0) {
                 MPI_Wait(&requests[0], &statuses[0]);
@@ -379,6 +388,9 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
             if (sendCount[send_proc] != 0) {
                 MPI_Wait(&requests[1], &statuses[1]);
             }
+
+            t = MPI_Wtime() - t;
+            part7 += t;
 
             tcomm = MPI_Wtime() - tcomm;
             part3 += tcomm;
@@ -791,6 +803,9 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
     part5 += t;
 
     if(nprocs > 1) {
+
+        t = MPI_Wtime();
+
         // Wait for the first receive communication to finish.
         if (recvCount[recv_proc] != 0) {
             MPI_Wait(&requests[0], &statuses[0]);
@@ -798,6 +813,9 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
         if (sendCount[send_proc] != 0) {
             MPI_Wait(&requests[1], &statuses[1]);
         }
+
+        t = MPI_Wtime() - t;
+        part7 += t;
 
         tcomm = MPI_Wtime() - tcomm;
         part3 += tcomm;
@@ -906,6 +924,8 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
                 part5 += t;
             }
 
+            t = MPI_Wtime();
+
             // wait to finish the comm.
             if (recvCount[recv_proc] != 0) {
                 MPI_Wait(&requests[0], &statuses[0]);
@@ -913,6 +933,9 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
             if (sendCount[send_proc] != 0) {
                 MPI_Wait(&requests[1], &statuses[1]);
             }
+
+            t = MPI_Wtime() - t;
+            part7 += t;
 
             tcomm = MPI_Wtime() - tcomm;
             part3 += tcomm;
