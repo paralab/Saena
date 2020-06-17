@@ -183,7 +183,8 @@ public:
     bool          use_zfp          = false;
     bool          free_zfp_buff    = false;
     unsigned char *zfp_send_buff   = nullptr, // storage for compressed stream to be sent
-                  *zfp_recv_buff   = nullptr; // storage for compressed stream to be received
+                  *zfp_recv_buff   = nullptr, // storage for compressed stream to be received
+                  *zfp_recv_buff2  = nullptr; // storage for compressed stream to be received
     unsigned      zfp_send_buff_sz = 0,
                   zfp_send_comp_sz = 0,
                   zfp_recv_buff_sz = 0;
@@ -201,7 +202,7 @@ public:
 
     // for the compression paper
     void matvec_time_init();
-    void matvec_time_print() const;
+    void matvec_time_print(const int &opt = 1) const;
     unsigned long matvec_iter = 0;
     double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0;
 
