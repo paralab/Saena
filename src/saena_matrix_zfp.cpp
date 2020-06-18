@@ -17,6 +17,7 @@ int saena_matrix::allocate_zfp(){
     zfp_send_buff_sz = zfp_rate / 2 * (index_t)ceil(vIndexSize / 4.0);
     zfp_recv_buff_sz = zfp_rate / 2 * (index_t)ceil(recvSize / 4.0);
     zfp_send_buff  = new uchar[zfp_send_buff_sz];
+    zfp_send_buff2 = new uchar[zfp_send_buff_sz];
     zfp_recv_buff  = new uchar[zfp_recv_buff_sz];
     zfp_recv_buff2 = new uchar[zfp_recv_buff_sz];
 
@@ -49,6 +50,7 @@ int saena_matrix::deallocate_zfp(){
         stream_close(recv_stream);
 
         delete []zfp_send_buff;
+        delete []zfp_send_buff2;
         delete []zfp_recv_buff;
         delete []zfp_recv_buff2;
         free_zfp_buff = false;
@@ -421,7 +423,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
+    assert(v.size() == M);
 
     double t = 0;
     double tcomm = 0;
@@ -439,9 +441,11 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
     nnz_t iter = 0;
     int send_proc = 0, recv_proc = 0, send_proc_prev = 0, recv_proc_prev = 0;
     int flag = 0; // for MPI_Test
+    int k = 0; // counter for number of communications
 
     if(nprocs > 1){
         // send to right, receive from left
+        ++k;
         send_proc = (rank + 1) % nprocs;
         recv_proc = rank - 1;
         if(recv_proc < 0)
@@ -500,7 +504,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
     part5 += t;
 
     if(nprocs > 1) {
-
+        ++k;
         send_proc_prev = send_proc;
         send_proc = (send_proc + 1) % nprocs;
         recv_proc_prev = recv_proc--;
@@ -509,7 +513,6 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
 
         t = omp_get_wtime();
 
-        int k = 2;
         if(k < nprocs + 1){
             iter = 0;
             for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
@@ -583,24 +586,24 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
                 part5 += t;
             }
 
+            ++k;
             send_proc_prev = send_proc;
             send_proc = (send_proc + 1) % nprocs;
             recv_proc_prev = recv_proc--;
             if (recv_proc < 0)
                 recv_proc += nprocs;
 
-            t = omp_get_wtime();
-
-            ++k;
             if(k < nprocs + 1){
+                t = omp_get_wtime();
+
                 iter = 0;
                 for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
                     vSend[iter++] = v[(vIndex[i])];
                 }
-            }
 
-            t = omp_get_wtime() - t;
-            part1 += t;
+                t = omp_get_wtime() - t;
+                part1 += t;
+            }
 
             t = omp_get_wtime();
 
@@ -1070,6 +1073,7 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
             t = omp_get_wtime() - t;
             part1 += t;
 
+            // compress
             t = omp_get_wtime();
 
             if (sendCount[send_proc] != 0) {
@@ -1171,6 +1175,322 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
             part6 += t;
 
             ++k;
+        }
+
+        delete[] requests;
+        delete[] statuses;
+    }
+
+    return 0;
+}
+
+int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value_t>& w) {
+
+    // the size of vSend and vecValues are set too big for this function.
+    // move "setting the send buffer" part into the overlapped communication
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    assert(v.size() == M);
+
+    double t = 0;
+    double tcomm = 0;
+    MPI_Request* requests = nullptr;
+    MPI_Status*  statuses = nullptr;
+
+    ++matvec_iter;
+
+//    print_info(-1);
+//    print_vector(v, -1, "v", comm);
+
+    requests = new MPI_Request[2];
+    statuses = new MPI_Status[2];
+
+    size_t desize = 0;
+    nnz_t iter = 0;
+    index_t recv_size_comp = 0, send_size_comp = 0;
+    int send_proc = 0, recv_proc = 0, send_proc_prev = 0, recv_proc_prev = 0;
+    int flag = 0; // for MPI_Test
+    int k = 0;
+    int rankv = 0;
+
+    if(nprocs > 1){
+        // send to right, receive from left
+        ++k;
+        send_proc = (rank + 1) % nprocs;
+        recv_proc = rank - 1;
+        if(recv_proc < 0)
+            recv_proc += nprocs;
+        recv_proc_prev = 0; // the processor that we received data in the previous round
+
+//        print_vector(split, rankv, "split", comm);
+//        print_vector(recvCount, -1, "recvCount", comm);
+//        print_vector(recvCountScan, rankv, "recvCountScan", comm);
+//        if (rank == rankv) std::cout << "\nk: " << k << "\nsend_proc:" << send_proc << ", recv_proc: " << recv_proc
+//                                     << "\nsendCount[send_proc]: " << sendCount[send_proc]
+//                                     << ", recvCount[recv_proc]: " << recvCount[recv_proc]
+//                                     << std::endl;
+
+        if (sendCount[send_proc] != 0) {
+            // set send buff
+            t = omp_get_wtime();
+
+            iter = 0;
+            for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
+                vSend[iter++] = v[(vIndex[i])];
+            }
+
+//            print_vector(vSend, 0, "vSend", comm);
+
+            t = omp_get_wtime() - t;
+            part1 += t;
+
+            // compress
+            t = omp_get_wtime();
+
+            send_size_comp = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
+            zfp_send_buff_sz = send_size_comp;
+            send_field = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
+            send_stream = stream_open(zfp_send_buff, zfp_send_buff_sz);
+            send_zfp = zfp_stream_open(send_stream);
+            zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
+            zfp_stream_rewind(send_zfp);
+            zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
+            ASSERT(zfp_send_comp_sz == send_size_comp, "zfp_send_comp_sz: " << zfp_send_comp_sz << ", send_size_comp: " << send_size_comp);
+
+            t = omp_get_wtime() - t;
+            part2 += t;
+        }
+
+        tcomm = omp_get_wtime();
+
+        if(recvCount[recv_proc] != 0){
+            recv_size_comp = zfp_rate / 2 * (index_t)ceil(recvCount[recv_proc] / 4.0);
+//            if(rank==rankv) std::cout << "recv_proc: " << recv_proc << ", recvCount[recv_proc]: " << recvCount[recv_proc] << std::endl;
+//            MPI_Irecv(&vecValues[0], recvCount[recv_proc], par::Mpi_datatype<value_t>::value(), recv_proc, recv_proc, comm, &requests[0]);
+            MPI_Irecv(&zfp_recv_buff[0], recv_size_comp, MPI_UNSIGNED_CHAR, recv_proc, recv_proc, comm, &requests[0]);
+            MPI_Test(&requests[0], &flag, &statuses[0]);
+        }
+
+        if(sendCount[send_proc] != 0){
+//            if(rank==rankv) std::cout << "send_proc: " << send_proc << ", sendCount[send_proc]: " << sendCount[send_proc] << std::endl;
+//            MPI_Isend(&vSend[0], sendCount[send_proc], par::Mpi_datatype<value_t>::value(), send_proc, rank, comm, &requests[1]);
+            MPI_Isend(&zfp_send_buff[0], send_size_comp, MPI_UNSIGNED_CHAR, send_proc, rank, comm, &requests[1]);
+            MPI_Test(&requests[1], &flag, &statuses[1]);
+        }
+
+    }
+
+    // local loop
+    // ----------
+    // compute the on-diagonal part of matvec on each thread and save it in w_local.
+    // then, do a reduction on w_local on all threads, based on a binary tree.
+
+    t = omp_get_wtime();
+
+    value_t* v_p  = &v[0] - split[rank];
+    iter = 0;
+    for (index_t i = 0; i < M; ++i) { // rows
+        w[i] = 0;
+        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
+//            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n",
+//            row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
+            w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+        }
+    }
+
+    t = omp_get_wtime() - t;
+    part5 += t;
+
+    if(nprocs > 1) {
+        ++k;
+        send_proc_prev = send_proc;
+        send_proc = (send_proc + 1) % nprocs;
+        recv_proc_prev = recv_proc--;
+        if (recv_proc < 0)
+            recv_proc += nprocs;
+
+//        if (rank == rankv) std::cout << "\nk: " << k << "\nsend_proc:" << send_proc << ", recv_proc: " << recv_proc
+//        << "\nsendCount[send_proc]: " << sendCount[send_proc] << ", recvCount[recv_proc]: " << recvCount[recv_proc]
+//        << ", recv_proc_prev: " << recv_proc_prev << ", recvCount[recv_proc_prev]: " << recvCount[recv_proc_prev] << std::endl;
+
+        t = omp_get_wtime();
+
+        if(k < nprocs + 1){
+            iter = 0;
+            for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
+                vSend[iter++] = v[(vIndex[i])];
+            }
+        }
+
+        t = omp_get_wtime() - t;
+        part1 += t;
+
+        // compress
+        t = omp_get_wtime();
+
+        if (sendCount[send_proc] != 0) {
+            send_size_comp = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
+            zfp_send_buff_sz = send_size_comp;
+            send_field = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
+            send_stream = stream_open(zfp_send_buff2, zfp_send_buff_sz);
+            send_zfp = zfp_stream_open(send_stream);
+            zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
+            zfp_stream_rewind(send_zfp);
+            zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
+            ASSERT(zfp_send_comp_sz == send_size_comp, "zfp_send_comp_sz: " << zfp_send_comp_sz << ", send_size_comp: " << send_size_comp);
+        }
+
+        t = omp_get_wtime() - t;
+        part2 += t;
+
+        t = omp_get_wtime();
+
+        // Wait for the first receive communication to finish.
+        if (recvCount[recv_proc_prev] != 0) {
+            MPI_Wait(&requests[0], &statuses[0]);
+        }
+        if (sendCount[send_proc_prev] != 0) {
+            MPI_Wait(&requests[1], &statuses[1]);
+        }
+
+        t = omp_get_wtime() - t;
+        part7 += t;
+
+        tcomm = omp_get_wtime() - tcomm;
+        part3 += tcomm;
+
+        std::swap(zfp_send_buff, zfp_send_buff2);
+        std::swap(zfp_recv_buff, zfp_recv_buff2);
+
+        while (k < nprocs + 1) {
+
+            tcomm = omp_get_wtime();
+
+            if (recvCount[recv_proc] != 0) {
+                recv_size_comp = zfp_rate / 2 * (index_t)ceil(recvCount[recv_proc] / 4.0);
+//                MPI_Irecv(&vecValues2[0], recvCount[recv_proc], par::Mpi_datatype<value_t>::value(), recv_proc, recv_proc, comm, &requests[0]);
+                MPI_Irecv(&zfp_recv_buff[0], recv_size_comp, MPI_UNSIGNED_CHAR, recv_proc, recv_proc, comm, &requests[0]);
+                MPI_Test(&requests[0], &flag, &statuses[0]);
+            }
+
+            if (sendCount[send_proc] != 0) {
+//                MPI_Isend(&vSend2[0], sendCount[send_proc], par::Mpi_datatype<value_t>::value(), send_proc, rank, comm, &requests[1]);
+                MPI_Isend(&zfp_send_buff[0], send_size_comp, MPI_UNSIGNED_CHAR, send_proc, rank, comm, &requests[1]);
+                MPI_Test(&requests[1], &flag, &statuses[1]);
+            }
+
+            if (recvCount[recv_proc_prev] != 0) {
+
+                t = omp_get_wtime();
+
+                zfp_recv_buff_sz = zfp_rate / 2 * (index_t)ceil(recvCount[recv_proc_prev] / 4.0);
+                recv_field  = zfp_field_1d(&vecValues[0], zfptype, recvCount[recv_proc_prev]);
+                recv_stream = stream_open(zfp_recv_buff2, zfp_recv_buff_sz);
+                recv_zfp    = zfp_stream_open(recv_stream);
+                zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
+                zfp_stream_rewind(recv_zfp);
+                desize = zfp_decompress(recv_zfp, recv_field);
+
+//                if (!desize) {
+//                    fprintf(stderr, "decompression failed\n");
+//                }
+
+                t = omp_get_wtime() - t;
+                part4 += t;
+
+//                if(rank==rankv) printf("recv_proc_prev = %d, recvCount[recv_proc_prev] = %d, zfp_recv_buff_sz = %d\n",
+//                                        recv_proc_prev, recvCount[recv_proc_prev], zfp_recv_buff_sz);
+//                print_vector(vecValues, rankv, "vecValues", comm);
+
+                // perform matvec for recv_proc_prev's data
+                // ----------
+                // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
+                // the corresponding vector element is saved in vecValues[0]. and so on.
+
+                t = omp_get_wtime();
+
+                auto *nnzPerCol_remote_p = &nnzPerCol_remote[recvCountScan[recv_proc_prev]];
+                iter = nnzPerProcScan[recv_proc_prev];
+                for (index_t j = 0; j < recvCount[recv_proc_prev]; ++j) {
+                    for (index_t i = 0; i < nnzPerCol_remote_p[j]; ++i, ++iter) {
+//                        if(rank==rankv) printf("%ld \t%u \t%u \t%f \t%f\n",
+//                        iter, row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j]);
+                        w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+                    }
+                }
+
+                t = omp_get_wtime() - t;
+                part5 += t;
+            }
+
+            ++k;
+            send_proc_prev = send_proc;
+            send_proc = (send_proc + 1) % nprocs;
+            recv_proc_prev = recv_proc--;
+            if (recv_proc < 0)
+                recv_proc += nprocs;
+
+//            if (rank == rankv) std::cout << "\nk: " << k << "\nsend_proc:" << send_proc << ", recv_proc: " << recv_proc
+//            << "\nsendCount[send_proc]: " << sendCount[send_proc] << ", recvCount[recv_proc]: " << recvCount[recv_proc]
+//            << ", recv_proc_prev: " << recv_proc_prev << ", recvCount[recv_proc_prev]: " << recvCount[recv_proc_prev] << std::endl;
+
+            if(k < nprocs + 1){
+                t = omp_get_wtime();
+
+                iter = 0;
+                for(index_t i = sendCountScan[send_proc]; i < sendCountScan[send_proc + 1]; ++i){
+                    vSend[iter++] = v[(vIndex[i])];
+                }
+
+                t = omp_get_wtime() - t;
+                part1 += t;
+
+                // compress
+                t = omp_get_wtime();
+
+                if (sendCount[send_proc] != 0) {
+                    send_size_comp = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
+                    zfp_send_buff_sz = send_size_comp;
+                    send_field = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
+                    send_stream = stream_open(zfp_send_buff2, zfp_send_buff_sz);
+                    send_zfp = zfp_stream_open(send_stream);
+                    zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
+                    zfp_stream_rewind(send_zfp);
+                    zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
+                    ASSERT(zfp_send_comp_sz == send_size_comp, "zfp_send_comp_sz: " << zfp_send_comp_sz << ", send_size_comp: " << send_size_comp);
+                }
+
+                t = omp_get_wtime() - t;
+                part2 += t;
+            }
+
+            t = omp_get_wtime();
+
+            // wait to finish the comm.
+            if (recvCount[recv_proc_prev] != 0) {
+                MPI_Wait(&requests[0], &statuses[0]);
+            }
+            if (sendCount[send_proc_prev] != 0) {
+                MPI_Wait(&requests[1], &statuses[1]);
+            }
+
+            t = omp_get_wtime() - t;
+            part7 += t;
+
+            tcomm = omp_get_wtime() - tcomm;
+            part3 += tcomm;
+
+            t = omp_get_wtime();
+
+            vecValues.swap(vecValues2);
+            std::swap(zfp_send_buff, zfp_send_buff2);
+            std::swap(zfp_recv_buff, zfp_recv_buff2);
+
+            t = omp_get_wtime() - t;
+            part6 += t;
         }
 
         delete[] requests;

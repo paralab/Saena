@@ -216,15 +216,12 @@ int main(int argc, char* argv[]){
 //    print_vector(v, -1, "v", comm);
 
     for(int i = 0; i < matvec_warmup_iter; ++i){
-//        B->matvec_sparse_test(rhs_std, v);
-        B->matvec_sparse_test2(rhs_std, v);
-        B->matvec_sparse_test3(rhs_std, w);
-//        B->matvec_sparse_comp(rhs_std, w);
-//        B->matvec_sparse_comp2(rhs_std, w);
+        B->matvec_sparse_test3(rhs_std, v);
+        B->matvec_sparse_comp3(rhs_std, w);
     }
 
     // *************************** check the correctness ****************************
-
+/*
     std::stringstream buf;
     bool bool_correct = true;
     MPI_Barrier(comm);
@@ -257,15 +254,14 @@ int main(int argc, char* argv[]){
         cout << buf.str() << endl;
         buf.str(string());
     }
-
+*/
     // *************************** normal matvec ****************************
 
     B->matvec_time_init();
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-//        B->matvec_sparse_test(rhs_std, v);
-        B->matvec_sparse_test2(rhs_std, w);
+        B->matvec_sparse_test3(rhs_std, w);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec original:", comm);
@@ -278,8 +274,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-//        B->matvec_sparse_comp(rhs_std, w);
-        B->matvec_sparse_comp2(rhs_std, w);
+        B->matvec_sparse_comp3(rhs_std, w);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec zfp:", comm);

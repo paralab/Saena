@@ -184,6 +184,7 @@ public:
     bool          use_zfp          = false;
     bool          free_zfp_buff    = false;
     unsigned char *zfp_send_buff   = nullptr, // storage for compressed stream to be sent
+                  *zfp_send_buff2  = nullptr,
                   *zfp_recv_buff   = nullptr, // storage for compressed stream to be received
                   *zfp_recv_buff2  = nullptr; // storage for compressed stream to be received
     unsigned      zfp_send_buff_sz = 0,
@@ -278,6 +279,7 @@ public:
     int matvec_sparse_test4(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value_t>& w);
     // openmp versions
     int matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<value_t>& w);
