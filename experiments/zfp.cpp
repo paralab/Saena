@@ -191,8 +191,8 @@ int main(int argc, char* argv[]){
 #endif
     // *************************** warmup ****************************
 
-    int matvec_warmup_iter = 1;
-    int matvec_iter = 3;
+    int matvec_warmup_iter = 5;
+    int matvec_iter = 10;
 
 //    saena_matrix *B = solver.get_object()->grids[0].A;
     saena_matrix *B = A.get_internal_matrix();
@@ -261,7 +261,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(comm);
     t1 = MPI_Wtime();
     for(int i = 0; i < matvec_iter; ++i){
-        B->matvec_sparse_test3(rhs_std, w);
+        B->matvec_sparse_test3(rhs_std, v);
     }
     t1 = MPI_Wtime() - t1;
     print_time(t1 / matvec_iter, "matvec original:", comm);
