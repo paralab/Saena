@@ -1228,7 +1228,7 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
 
     size_t desize = 0;
     nnz_t iter = 0;
-    index_t recv_size_comp = 0, send_size_comp = 0;
+    index_t send_size_comp = 0, recv_size_comp = 0, recv_size_comp_prev = 0;
     int send_proc = 0, recv_proc = 0, send_proc_prev = 0, recv_proc_prev = 0;
     int flag = 0; // for MPI_Test
     int k = 0;
@@ -1268,15 +1268,15 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
             // compress
             t = omp_get_wtime();
 
-            send_size_comp = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
+            send_size_comp   = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
             zfp_send_buff_sz = send_size_comp;
-            send_field = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
-            send_stream = stream_open(zfp_send_buff, zfp_send_buff_sz);
-            send_zfp = zfp_stream_open(send_stream);
+            send_field       = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
+            send_stream      = stream_open(zfp_send_buff, zfp_send_buff_sz);
+//            send_zfp         = zfp_stream_open(send_stream);
             zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
             zfp_stream_rewind(send_zfp);
             zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
-            ASSERT(zfp_send_comp_sz == send_size_comp, "zfp_send_comp_sz: " << zfp_send_comp_sz << ", send_size_comp: " << send_size_comp);
+            assert(zfp_send_comp_sz == send_size_comp);
 
             t = omp_get_wtime() - t;
             part2 += t;
@@ -1350,15 +1350,15 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
         t = omp_get_wtime();
 
         if (sendCount[send_proc] != 0) {
-            send_size_comp = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
+            send_size_comp   = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
             zfp_send_buff_sz = send_size_comp;
-            send_field = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
-            send_stream = stream_open(zfp_send_buff2, zfp_send_buff_sz);
-            send_zfp = zfp_stream_open(send_stream);
+            send_field       = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
+            send_stream      = stream_open(zfp_send_buff2, zfp_send_buff_sz);
+            send_zfp         = zfp_stream_open(send_stream);
             zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
             zfp_stream_rewind(send_zfp);
             zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
-            ASSERT(zfp_send_comp_sz == send_size_comp, "zfp_send_comp_sz: " << zfp_send_comp_sz << ", send_size_comp: " << send_size_comp);
+            assert(zfp_send_comp_sz == send_size_comp);
         }
 
         t = omp_get_wtime() - t;
@@ -1381,8 +1381,14 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
         tcomm = omp_get_wtime() - tcomm;
         part3 += tcomm;
 
+        t = omp_get_wtime();
+
+        recv_size_comp_prev = recv_size_comp;
         std::swap(zfp_send_buff, zfp_send_buff2);
         std::swap(zfp_recv_buff, zfp_recv_buff2);
+
+        t = omp_get_wtime() - t;
+        part6 += t;
 
         while (k < nprocs + 1) {
 
@@ -1405,10 +1411,11 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
 
                 t = omp_get_wtime();
 
-                zfp_recv_buff_sz = zfp_rate / 2 * (index_t)ceil(recvCount[recv_proc_prev] / 4.0);
-                recv_field  = zfp_field_1d(&vecValues[0], zfptype, recvCount[recv_proc_prev]);
-                recv_stream = stream_open(zfp_recv_buff2, zfp_recv_buff_sz);
-                recv_zfp    = zfp_stream_open(recv_stream);
+//                zfp_recv_buff_sz = zfp_rate / 2 * (index_t)ceil(recvCount[recv_proc_prev] / 4.0);
+                zfp_recv_buff_sz = recv_size_comp_prev;
+                recv_field       = zfp_field_1d(&vecValues[0], zfptype, recvCount[recv_proc_prev]);
+                recv_stream      = stream_open(zfp_recv_buff2, zfp_recv_buff_sz);
+                recv_zfp         = zfp_stream_open(recv_stream);
                 zfp_stream_set_rate(recv_zfp, zfp_rate, zfptype, 1, 0);
                 zfp_stream_rewind(recv_zfp);
                 desize = zfp_decompress(recv_zfp, recv_field);
@@ -1471,15 +1478,15 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
                 t = omp_get_wtime();
 
                 if (sendCount[send_proc] != 0) {
-                    send_size_comp = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
+                    send_size_comp   = zfp_rate / 2 * (index_t)ceil(sendCount[send_proc] / 4.0);
                     zfp_send_buff_sz = send_size_comp;
-                    send_field = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
-                    send_stream = stream_open(zfp_send_buff2, zfp_send_buff_sz);
+                    send_field       = zfp_field_1d(&vSend[0], zfptype, sendCount[send_proc]);
+                    send_stream      = stream_open(zfp_send_buff2, zfp_send_buff_sz);
                     send_zfp = zfp_stream_open(send_stream);
                     zfp_stream_set_rate(send_zfp, zfp_rate, zfptype, 1, 0);
                     zfp_stream_rewind(send_zfp);
                     zfp_send_comp_sz = zfp_compress(send_zfp, send_field);
-                    ASSERT(zfp_send_comp_sz == send_size_comp, "zfp_send_comp_sz: " << zfp_send_comp_sz << ", send_size_comp: " << send_size_comp);
+                    assert(zfp_send_comp_sz == send_size_comp);
                 }
 
                 t = omp_get_wtime() - t;
@@ -1505,7 +1512,8 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
 
             t = omp_get_wtime();
 
-            vecValues.swap(vecValues2);
+            recv_size_comp_prev = recv_size_comp;
+//            vecValues.swap(vecValues2);
             std::swap(zfp_send_buff, zfp_send_buff2);
             std::swap(zfp_recv_buff, zfp_recv_buff2);
 
