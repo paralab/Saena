@@ -229,6 +229,8 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
     MPI_Request* requests = nullptr;
     MPI_Status*  statuses = nullptr;
 
+//    std::vector<double> waitt;
+
     ++matvec_iter;
 
 //    print_info(-1);
@@ -314,6 +316,7 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
 
         t = omp_get_wtime() - t;
         part7 += t;
+//        waitt.emplace_back(t);
 
         tcomm = omp_get_wtime() - tcomm;
         part3 += tcomm;
@@ -393,6 +396,7 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
 
             t = omp_get_wtime() - t;
             part7 += t;
+//            waitt.emplace_back(t);
 
             tcomm = omp_get_wtime() - tcomm;
             part3 += tcomm;
@@ -410,6 +414,8 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
         delete[] requests;
         delete[] statuses;
     }
+
+//    print_vector(waitt, -1, "wait time", comm);
 
     return 0;
 }
@@ -429,6 +435,8 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
     double tcomm = 0;
     MPI_Request* requests = nullptr;
     MPI_Status*  statuses = nullptr;
+
+//    std::vector<double> waitt;
 
     ++matvec_iter;
 
@@ -535,6 +543,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
 
         t = omp_get_wtime() - t;
         part7 += t;
+//        waitt.emplace_back(t);
 
         tcomm = omp_get_wtime() - tcomm;
         part3 += tcomm;
@@ -617,6 +626,7 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
 
             t = omp_get_wtime() - t;
             part7 += t;
+//            waitt.emplace_back(t);
 
             tcomm = omp_get_wtime() - tcomm;
             part3 += tcomm;
@@ -633,6 +643,8 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
         delete[] requests;
         delete[] statuses;
     }
+
+//    print_vector(waitt, -1, "wait time", comm);
 
     return 0;
 }
@@ -933,6 +945,8 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
     MPI_Request* requests = nullptr;
     MPI_Status*  statuses = nullptr;
 
+//    std::vector<double> waitt;
+
     ++matvec_iter;
 
 //    print_info(-1);
@@ -1041,6 +1055,7 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
 
         t = omp_get_wtime() - t;
         part7 += t;
+//        waitt.emplace_back(t);
 
         tcomm = omp_get_wtime() - tcomm;
         part3 += tcomm;
@@ -1162,6 +1177,7 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
 
             t = omp_get_wtime() - t;
             part7 += t;
+//            waitt.emplace_back(t);
 
             tcomm = omp_get_wtime() - tcomm;
             part3 += tcomm;
@@ -1199,6 +1215,8 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
     double tcomm = 0;
     MPI_Request* requests = nullptr;
     MPI_Status*  statuses = nullptr;
+
+//    std::vector<double> waitt;
 
     ++matvec_iter;
 
@@ -1358,6 +1376,7 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
 
         t = omp_get_wtime() - t;
         part7 += t;
+//        waitt.emplace_back(t);
 
         tcomm = omp_get_wtime() - tcomm;
         part3 += tcomm;
@@ -1479,6 +1498,7 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
 
             t = omp_get_wtime() - t;
             part7 += t;
+//            waitt.emplace_back(t);
 
             tcomm = omp_get_wtime() - tcomm;
             part3 += tcomm;
@@ -1496,6 +1516,8 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
         delete[] requests;
         delete[] statuses;
     }
+
+//    print_vector(waitt, -1, "wait time", comm);
 
     return 0;
 }
