@@ -254,14 +254,6 @@ int saena_object::compute_coarsen(Grid *grid) {
         printf("compute_coarsen: step 6: rank = %d\n", rank);
         MPI_Barrier(comm);
     }
-#endif
-
-//    if(Ac->active_minor){
-//        comm = Ac->comm;
-//        int rank_new;
-//        MPI_Comm_rank(Ac->comm, &rank_new);
-
-#ifdef __DEBUG1__
 //        Ac->print_info(-1);
 //        Ac->print_entry(-1);
 #endif
@@ -292,9 +284,10 @@ int saena_object::compute_coarsen(Grid *grid) {
 
         // decide to partition based on number of rows or nonzeros.
         if (switch_repartition && Ac->density >= repartition_threshold) {
-            if (rank == 0)
+            if (!rank){
                 printf("equi-ROW partition for the next level: density = %f, repartition_threshold = %f \n",
                        Ac->density, repartition_threshold);
+            }
             Ac->repartition_row(); // based on number of rows
         } else {
             Ac->repartition_nnz(); // based on number of nonzeros
@@ -333,8 +326,12 @@ int saena_object::compute_coarsen(Grid *grid) {
                 Ac->compute_matvec_dummy_time();
 
             if (switch_to_dense && Ac->density > dense_threshold) {
-                if (rank == 0)
-                    printf("Switch to dense: density = %f, dense_threshold = %f \n", Ac->density, dense_threshold);
+#ifdef __DEBUG1__
+                if (verbose_compute_coarsen && !rank) {
+                    printf("Switch to dense: density = %f, dense_thres = %f\n", Ac->density, dense_threshold);
+                }
+#endif
+
                 Ac->generate_dense_matrix();
             }
         }

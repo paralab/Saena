@@ -55,10 +55,10 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
 
         if(!rank){
 #ifdef SPLIT_NNZ
-            if(!rank) printf("\nsplit based on nnz\n");
+            printf("\nsplit based on nnz\n");
 #endif
 #ifdef SPLIT_SIZE
-            if(!rank) printf("\nsplit based on matrix size\n");
+            printf("\nsplit based on matrix size\n");
 #endif
             std::cout << "coarsen_method: " << coarsen_method << std::endl;
             printf("\nsetup: start: find_eig()\n");
