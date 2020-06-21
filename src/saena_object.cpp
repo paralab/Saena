@@ -48,27 +48,51 @@ int saena_object::setup(saena_matrix* A) {
 #endif
 //    if(!rank) std::cout << "coarsen_method: " << coarsen_method << std::endl;
 
-    if(verbose_setup)
-        if(rank==0){
+#ifdef __DEBUG1__
+    if(verbose_setup){
+        MPI_Barrier(A->comm);
+        if(!rank){
             printf("_____________________________\n\n");
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
-                   nprocs, A->Mbig, A->nnz_g, A->density);}
+                   nprocs, A->Mbig, A->nnz_g, A->density);
+        }
+        MPI_Barrier(A->comm);
+    }
+    if(verbose_setup_steps){
+        MPI_Barrier(A->comm);
+        if(!rank) printf("\nsetup: start: find_eig()\n");
+        MPI_Barrier(A->comm);
+    }
+#endif
 
-    if(fabs(sample_sz_percent - 1) < 1e-4) doSparsify = false;
-
-    if(verbose_setup_steps && rank==0) printf("setup: find_eig()\n");
     if(smoother=="chebyshev"){
         find_eig(*A);
     }
 
-    if(verbose_setup_steps && rank==0) printf("setup: generate_dense_matrix()\n");
+    if(fabs(sample_sz_percent - 1) < 1e-4)
+        doSparsify = false;
+
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+        MPI_Barrier(A->comm);
+        if(!rank) printf("setup: generate_dense_matrix()\n");
+        MPI_Barrier(A->comm);
+    }
+#endif
+
     A->switch_to_dense = switch_to_dense;
     A->dense_threshold = dense_threshold;
     if(switch_to_dense && A->density > dense_threshold) {
         A->generate_dense_matrix();
     }
 
-    if(verbose_setup_steps && rank==0) printf("setup: level 0\n");
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+        MPI_Barrier(A->comm);
+        if(!rank) printf("setup: level 0\n");
+        MPI_Barrier(A->comm);
+    }
+#endif
 
     grids.resize(max_level);
     grids[0] = Grid(A,0);
@@ -78,7 +102,14 @@ int saena_object::setup(saena_matrix* A) {
 
     int res = 0;
     for(int i = 0; i < max_level; ++i){
-        if(verbose_setup_steps && rank==0) printf("setup: level %d\n", i+1);
+
+#ifdef __DEBUG1__
+        if(verbose_setup_steps){
+            MPI_Barrier(A->comm);
+            if(!rank) printf("\nsetup: level %d\n", i+1);
+            MPI_Barrier(A->comm);
+        }
+#endif
 
         if (shrink_level_vector.size() > i + 1 && shrink_level_vector[i+1])
             grids[i].A->enable_shrink_next_level = true;
@@ -103,6 +134,14 @@ int saena_object::setup(saena_matrix* A) {
         grids[i].coarseGrid = &grids[i + 1];        // connect grids[i+1] to grids[i]
 
         if(grids[i].Ac.active) {
+#ifdef __DEBUG1__
+            if(verbose_setup_steps){
+                MPI_Barrier(A->comm);
+                if(!rank) printf("setup: find_eig()\n");
+                MPI_Barrier(A->comm);
+            }
+#endif
+
             if (smoother == "chebyshev") {
                 find_eig(grids[i].Ac);
             }
@@ -110,7 +149,7 @@ int saena_object::setup(saena_matrix* A) {
             if (verbose_setup) {
                 MPI_Comm_rank(grids[i].Ac.comm, &rank_new);
 
-                if (rank_new == 0) {
+                if (!rank_new) {
 //                    MPI_Comm_size(grids[i].Ac.comm, &nprocs);
                     printf("_____________________________\n\n");
                     printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu"
@@ -126,14 +165,18 @@ int saena_object::setup(saena_matrix* A) {
 
     }
 
-    if(verbose_setup_steps && rank==0) printf("setup: finished creating the hierarchy.\n");
-
     // max_level is the lowest on the active processors in the last grid. So MPI_MIN is used in the following MPI_Allreduce.
     int max_level_send = max_level;
     MPI_Allreduce(&max_level_send, &max_level, 1, MPI_INT, MPI_MIN, grids[0].A->comm);
     grids.resize(max_level);
 
-    if(verbose_setup_steps && rank==0) printf("max_level = %u \n", max_level);
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+        MPI_Barrier(A->comm);
+        if(!rank) printf("setup: finished creating the hierarchy. max_level = %u \n", max_level);
+        MPI_Barrier(A->comm);
+    }
+#endif
 
     if(max_level == 0){
         A_coarsest = A;
@@ -141,6 +184,8 @@ int saena_object::setup(saena_matrix* A) {
         A_coarsest = &grids.back().Ac;
     }
 
+#ifdef __DEBUG1__
+    {
 //    MPI_Barrier(A->comm);
 //    for(int l = 0; l < max_level; ++l){
 //        printf("\nlevel = %d\n", l);
@@ -163,6 +208,8 @@ int saena_object::setup(saena_matrix* A) {
         max_level--;
     }
 */
+    }
+#endif
 
     if(verbose_setup){
         MPI_Barrier(A->comm);
@@ -175,8 +222,14 @@ int saena_object::setup(saena_matrix* A) {
         MPI_Barrier(A->comm);
     }
 
-//    MPI_Barrier(grids[0].A->comm); printf("rank %d: setup done!\n", rank); MPI_Barrier(grids[0].A->comm);
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+        MPI_Barrier(A->comm);
+        if(!rank) printf("rank %d: setup done!\n", rank);
+        MPI_Barrier(A->comm);
+    }
 //    if(rank==0) dollar::text(std::cout);
+#endif
 
     return 0;
 }
@@ -199,41 +252,54 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 #endif
 //    if(!rank) std::cout << "coarsen_method: " << coarsen_method << std::endl;
 
-//    float row_reduction_min;
-//    float total_row_reduction;
-//    index_t M_current;
-
-    if(verbose_setup)
-        if(rank==0){
+#ifdef __DEBUG1__
+    if(verbose_setup){
+        MPI_Barrier(A->comm);
+        if(!rank){
             printf("_____________________________\n\n");
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
-                   nprocs, A->Mbig, A->nnz_g, A->density);}
+                   nprocs, A->Mbig, A->nnz_g, A->density);
+        }
+        MPI_Barrier(A->comm);
+    }
+    if(verbose_setup_steps){
+        MPI_Barrier(A->comm);
+        if(!rank) printf("\nsetup: start: find_eig()\n");
+        MPI_Barrier(A->comm);
+    }
+#endif
 
-    if(fabs(sample_sz_percent - 1) < 1e-4) doSparsify = false;
-
-    if(verbose_setup_steps && rank==0) printf("setup: find_eig()\n");
     if(smoother=="chebyshev"){
-//        double t1 = omp_get_wtime();
         find_eig(*A);
-//        double t2 = omp_get_wtime();
-//        if(verbose_level_setup) print_time(t1, t2, "find_eig() level 0: ", A->comm);
     }
 
-    if(verbose_setup_steps && rank==0) printf("setup: generate_dense_matrix()\n");
+    if(fabs(sample_sz_percent - 1) < 1e-4)
+        doSparsify = false;
+
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+        MPI_Barrier(A->comm);
+        if(!rank) printf("setup: generate_dense_matrix()\n");
+        MPI_Barrier(A->comm);
+    }
+#endif
+
     A->switch_to_dense = switch_to_dense;
     A->dense_threshold = dense_threshold;
     if(switch_to_dense && A->density > dense_threshold) {
         A->generate_dense_matrix();
     }
 
-//    mempool1 = new value_t[matmat_size_thre2];
-//    mempool2 = new index_t[A->Mbig * 4];
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+        MPI_Barrier(A->comm);
+        if(!rank) printf("setup: level 0\n");
+        MPI_Barrier(A->comm);
+    }
+#endif
 
-    if(verbose_setup_steps && rank==0) printf("setup: first Grid\n");
     grids.resize(max_level+1);
     grids[0] = Grid(A, 0); // pass A to grids[0]
-
-    if(verbose_setup_steps && rank==0) printf("setup: other Grids\n");
 
     std::vector< std::vector< std::vector<int> > > map_all;
     map_all.emplace_back(m_l2g);
@@ -244,8 +310,15 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
      bdydof = m_bdydof;
 
     for(int i = 0; i < max_level; i++){
-//        MPI_Barrier(grids[0].A->comm); printf("rank = %d, level setup; before if\n", rank); MPI_Barrier(grids[0].A->comm);
-//        if(grids[i].A->active) {
+
+#ifdef __DEBUG1__
+        if(verbose_setup_steps){
+            MPI_Barrier(A->comm);
+            if(!rank) printf("\nsetup: level %d\n", i+1);
+            MPI_Barrier(A->comm);
+        }
+#endif
+
         if (shrink_level_vector.size()>i+1) if(shrink_level_vector[i+1]) grids[i].A->enable_shrink_next_level = true;
         if (shrink_values_vector.size()>i+1) grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
         coarsen(&grids[i], map_all, g2u_all); // create P, R and Ac for grid[i]

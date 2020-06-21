@@ -181,11 +181,11 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     division = (double) A->Mbig / new_size;
 
 #ifdef __DEBUG1__
-    MPI_Barrier(comm);
-    if(verbose_setup_steps && rank==0)
-        printf("\nfind_aggregation: connStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
-               connStrength, A->Mbig, new_size, division);
-    MPI_Barrier(comm);
+//    MPI_Barrier(comm);
+//    if(verbose_setup_steps && rank==0)
+//        printf("\nfind_aggregation: connStrength = %.2f, current size = %u, next level's size = %u, division = %.2f\n",
+//               connStrength, A->Mbig, new_size, division);
+//    MPI_Barrier(comm);
 #endif
 
     if(adaptive_coarsening){
@@ -263,7 +263,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 #ifdef __DEBUG1__
         MPI_Barrier(comm);
         if(verbose_setup_steps && rank==0)
-            printf("dynamic levels: current size / new size = %d / %d = %f\n", new_size, A->Mbig, row_reduc_min);
+            printf("dynamic levels: next level's size / current size = %d / %d = %f\n", new_size, A->Mbig, row_reduc_min);
         MPI_Barrier(comm);
 #endif
 
