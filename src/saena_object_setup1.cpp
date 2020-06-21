@@ -17,8 +17,13 @@
 #include <mpi.h>
 
 
-// Smoothed Aggregation (SA)
 int saena_object::SA(Grid *grid){
+    // Smoothed Aggregation (SA)
+    // return value:
+    // 0: normal
+    // 1: this will be last level.
+    // 2: stop the coarsening. the previous level will be set as the last level.
+
     // formula for the prolongation matrix from Irad Yavneh's paper:
     // P = (I - 4/(3*rhoDA) * DA) * P_t
 
@@ -44,7 +49,11 @@ int saena_object::SA(Grid *grid){
     double omega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
 
     std::vector<index_t> aggregate(grid->A->M);
-    find_aggregation(grid->A, aggregate, grid->P.splitNew);
+    int ret_val = find_aggregation(grid->A, aggregate, grid->P.splitNew);
+
+    if(ret_val == 2){ // stop the coarsening
+        return ret_val;
+    }
 
     std::vector<unsigned long> vSendULong(A->vIndexSize);
     std::vector<unsigned long> vecValuesULong(A->recvSize);
@@ -138,13 +147,18 @@ int saena_object::SA(Grid *grid){
     delete [] requests;
     delete [] statuses;
 
-    return 0;
+    return ret_val;
 }
 
 
 int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew){
     // finding aggregation is written in an adaptive way. An aggregation_2_dist is being created first. If it is too small,
     // or too big it will be recreated until an aggregation_2_dist with size within the acceptable range is produced.
+
+    // return value:
+    // 0: normal
+    // 1: this will be last level.
+    // 2: stop the coarsening. the previous level will be set as the last level.
 
     MPI_Comm comm = A->comm;
     int rank;
@@ -166,10 +180,13 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     MPI_Allreduce(&new_size_local, &new_size, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
     division = (double) A->Mbig / new_size;
 
-//    if(rank==0) {
-//        printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
-//               connStrength, A->Mbig, new_size, division);
-//    }
+#ifdef __DEBUG1__
+    MPI_Barrier(comm);
+    if(verbose_setup_steps && rank==0)
+        printf("\nfind_aggregation: connStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
+               connStrength, A->Mbig, new_size, division);
+    MPI_Barrier(comm);
+#endif
 
     if(adaptive_coarsening){
 
@@ -208,8 +225,13 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
             MPI_Allreduce(&new_size_local, &new_size, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
             division = (double)A->Mbig / new_size;
 
-            if(rank==0) printf("\nconnStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
-                               connStrength_temp, A->Mbig, new_size, division);
+#ifdef __DEBUG1__
+            MPI_Barrier(comm);
+            if(verbose_setup_steps && rank==0)
+                printf("\nadaptive coarsening: connStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
+                       connStrength_temp, A->Mbig, new_size, division);
+            MPI_Barrier(comm);
+#endif
 
             if (connStrength_temp < 0.2 || connStrength_temp > 0.95){
                 continue_agg = false;
@@ -222,12 +244,48 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 //    if(rank==0) printf("\nfinal: connStrength = %f, current size = %u, new size = %u,  division = %d\n",
 //                       connStrength_temp, A->Mbig, new_size, division);
 
+    // decide if next level for multigrid is required or not.
+    // threshold to set maximum multigrid level
+    int ret_val = 0;
+    if(dynamic_levels){
+//        MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
+//        total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
+        float row_reduc_min = static_cast<float>(new_size) / A->Mbig;
+
+//        if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold); MPI_Barrier(grids[i].Ac.comm);}
+//        if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
+//        row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
+//        MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
+//        if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f \n", row_reduction_min, row_reduction_up_thrshld);
+//        if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
+//        if(rank==0) printf("new_size = %d, A->Mbig = %d, new_size =%d \n", new_size, A->Mbig, new_size);
+
+#ifdef __DEBUG1__
+        MPI_Barrier(comm);
+        if(verbose_setup_steps && rank==0)
+            printf("dynamic levels: current size / new size = %d / %d = %f\n", new_size, A->Mbig, row_reduc_min);
+        MPI_Barrier(comm);
+#endif
+
+        if ( (new_size < least_row_threshold) ||
+             (row_reduc_min > row_reduction_up_thrshld) ||
+             (row_reduc_min < row_reduction_down_thrshld) ) {
+
+            if(new_size < least_row_threshold) {
+                ret_val = 1; // this will be the last level.
+            }else{
+                return 2; // stop the coarsening. the previous level will be set as the last level.
+            }
+
+        }
+    }
+
     aggregate_index_update(&S, aggregate, aggArray, splitNew);
 
 //    updateAggregation(aggregate, &aggSize);
 //    print_vector(aggArray, -1, "aggArray", comm);
 
-    return 0;
+    return ret_val;
 } // end of SaenaObject::findAggregation
 
 
