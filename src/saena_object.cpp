@@ -113,7 +113,7 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
     }
 #endif
 
-    grids.resize(max_level);
+    grids.resize(max_level + 1);
     grids[0] = Grid(A,0);
 
     int res = 0;
@@ -282,7 +282,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
-    if(verbose_level_setup) print_time(t1, t2, "Prolongation: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    if(verbose_coarsen) print_time(t1, t2, "Prolongation: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after create_prolongation!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->P.split, 0, "grid->P.split", grid->A->comm);
@@ -301,7 +301,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
-    if(verbose_level_setup) print_time(t1, t2, "Restriction: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    if(verbose_coarsen) print_time(t1, t2, "Restriction: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after transposeP!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->R.entry_local, -1, "grid->R.entry_local", grid->A->comm);
@@ -323,7 +323,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
 //    double t22 = MPI_Wtime();
-    if(verbose_level_setup) print_time(t1, t2, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    if(verbose_coarsen) print_time(t1, t2, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
 //    print_time_ave(t22-t11, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after compute_coarsen!!! \n", rank); MPI_Barrier(grid->A->comm);
