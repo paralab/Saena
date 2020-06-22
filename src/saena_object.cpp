@@ -152,9 +152,9 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
         if(grids[i].Ac.active) {
 #ifdef __DEBUG1__
             if(verbose_setup_steps){
-                MPI_Barrier(A->comm);
+                MPI_Barrier(grids[i].Ac.comm);
                 if(!rank) printf("setup: find_eig()\n");
-                MPI_Barrier(A->comm);
+                MPI_Barrier(grids[i].Ac.comm);
             }
 #endif
 
@@ -175,10 +175,11 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
                 }
             }
         }else{
-            printf("!grids[i].Ac.active\n");
+#ifdef __DEBUG1__
+            if(verbose_setup_steps){printf("rank %d is not active for grids[%d].Ac.\n", rank, i);}
+#endif
             break;
         }
-
     }
 
     // max_level is the lowest on the active processors in the last grid. So MPI_MIN is used in the following MPI_Allreduce.
@@ -225,7 +226,6 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
     }
 */
     }
-#endif
 
     if(verbose_setup){
         MPI_Barrier(A->comm);
@@ -238,7 +238,6 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
         MPI_Barrier(A->comm);
     }
 
-#ifdef __DEBUG1__
     if(verbose_setup_steps){
         MPI_Barrier(A->comm);
         if(!rank) printf("rank %d: setup done!\n", rank);

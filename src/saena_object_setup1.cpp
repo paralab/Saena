@@ -226,11 +226,13 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
             division = (double)A->Mbig / new_size;
 
 #ifdef __DEBUG1__
-            MPI_Barrier(comm);
-            if(verbose_setup_steps && rank==0)
-                printf("\nadaptive coarsening: connStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
-                       connStrength_temp, A->Mbig, new_size, division);
-            MPI_Barrier(comm);
+            if(verbose_setup_steps){
+                MPI_Barrier(comm);
+                if(!rank)
+                    printf("\nfind_agg: adaptive coarsening: connStrength = %.2f \ncurrent size = %u \nnew size     = %u \ndivision     = %.2f\n",
+                           connStrength_temp, A->Mbig, new_size, division);
+                MPI_Barrier(comm);
+            }
 #endif
 
             if (connStrength_temp < 0.2 || connStrength_temp > 0.95){
@@ -257,14 +259,14 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 //        row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
 //        MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
 //        if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f \n", row_reduction_min, row_reduction_up_thrshld);
-//        if(rank==0) printf("grids[i].Ac.Mbig = %d, grids[0].A->Mbig = %d, inequality = %d \n", grids[i].Ac.Mbig, grids[0].A->Mbig, (grids[i].Ac.Mbig*1000 < grids[0].A->Mbig));
-//        if(rank==0) printf("new_size = %d, A->Mbig = %d, new_size =%d \n", new_size, A->Mbig, new_size);
 
 #ifdef __DEBUG1__
-        MPI_Barrier(comm);
-        if(verbose_setup_steps && rank==0)
-            printf("dynamic levels: next level's size / current size = %d / %d = %f\n", new_size, A->Mbig, row_reduc_min);
-        MPI_Barrier(comm);
+        if(verbose_setup_steps) {
+            MPI_Barrier(comm);
+            if (!rank) printf("find_agg: dynamic levels: next level's size / current size = %d / %d = %f\n",
+                               new_size, A->Mbig, row_reduc_min);
+            MPI_Barrier(comm);
+        }
 #endif
 
         if ( (new_size < least_row_threshold) ||
@@ -280,10 +282,25 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
         }
     }
 
+#ifdef __DEBUG1__
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm);
+        if (!rank) printf("find_agg: update indices\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
     aggregate_index_update(&S, aggregate, aggArray, splitNew);
 
+#ifdef __DEBUG1__
 //    updateAggregation(aggregate, &aggSize);
 //    print_vector(aggArray, -1, "aggArray", comm);
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm);
+        if (!rank) printf("find_agg: done\n");
+        MPI_Barrier(comm);
+    }
+#endif
 
     return ret_val;
 } // end of SaenaObject::findAggregation
