@@ -44,9 +44,8 @@ public:
     double       row_reduction_down_thrshld = 0.10;
 
     bool repartition         = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
-    bool dynamic_levels      = true;
+    bool dynamic_levels      = false;
     bool adaptive_coarsening = false;
-//    bool shrink_cpu          = true;
 
     bool scale = true;
 
@@ -56,10 +55,10 @@ public:
     // matmat
     // *****************
 
-    std::string          coarsen_method = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const int            matmat_thre1 = 10000000;   // split until (A_row * B_col < matmat_thre1)
-    index_t              matmat_thre2 = 0;          // split until (B.col_sz < matmat_thre2). It will be set as ceil(sqrt(matmat_thre1))
-    static const index_t matmat_thre3 = 40;         // split until (case2_iter + case3_iter == matmat_thre3)
+    std::string          coarsen_method  = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
+    const int            matmat_thre1    = 10000000;   // split until (A_row * B_col < matmat_thre1)
+    index_t              matmat_thre2    = 0;          // split until (B.col_sz < matmat_thre2). It will be set as ceil(sqrt(matmat_thre1))
+    static const index_t matmat_thre3    = 40;         // split until (case2_iter + case3_iter == matmat_thre3)
     const index_t        matmat_nnz_thre = 200;     //default 200
 
 //    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
@@ -176,7 +175,6 @@ public:
     bool verbose                  = false;
     bool verbose_setup            = true;
     bool verbose_setup_steps      = false;
-    bool verbose_level_setup      = false;
     bool verbose_coarsen          = false;
     bool verbose_compute_coarsen  = false;
     bool verbose_triple_mat_mult  = false;
