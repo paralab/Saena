@@ -185,8 +185,9 @@ int saena::matrix::print(int ran, std::string name){
     return 0;
 }
 
-int saena::matrix::enable_shrink(bool val){
-    m_pImpl->enable_shrink = val;
+int saena::matrix::set_shrink(bool val){
+    m_pImpl->enable_shrink   = val;
+    m_pImpl->enable_shrink_c = val;
     return 0;
 }
 

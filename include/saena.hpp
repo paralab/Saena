@@ -52,7 +52,7 @@ namespace saena {
 
         int print(int ran, std::string name = "");
 
-        int enable_shrink(bool val);
+        int set_shrink(bool val);
 
         int erase();
         int erase_lazy_update();
