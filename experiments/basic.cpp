@@ -173,6 +173,7 @@ int main(int argc, char* argv[]){
 
     bool bool_correct = true;
     if(rank==0){
+        std::stringstream buf;
         print_sep();
         printf("Checking the correctness of the solution:\n");
 //        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
@@ -184,11 +185,13 @@ int main(int argc, char* argv[]){
             }
         }
         if(bool_correct){
-            printf("\nThe solution is correct!\n");
+            buf << "\nThe solution is correct!\n";
+            std::cout << buf.str();
             print_sep();
         }
         else{
-            printf("\nThe solution is NOT correct!\n");
+            buf << "\nThe solution is " << RED << "NOT" << COLORRESET << " correct!\n";
+            std::cout << buf.str();
             print_sep();
         }
     }
