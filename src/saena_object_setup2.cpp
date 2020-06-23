@@ -11,11 +11,8 @@
 
 //#include "petsc_functions.h"
 
-#include <cstdio>
-#include <cstdlib>
 #include <fstream>
 #include <algorithm>
-#include <iomanip>
 #include <mpi.h>
 
 
@@ -28,7 +25,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     saena_matrix    *Ac = &grid->Ac;
 
     MPI_Comm comm = A->comm;
-    int nprocs, rank;
+    int nprocs = -1, rank = -1;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -92,6 +89,8 @@ int saena_object::compute_coarsen(Grid *grid) {
     A->cpu_shrink_thre2_next_level = -1;
     A->enable_shrink_next_level = false;
 
+    Ac->comm_old  = Ac->comm;
+
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
 //    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",
@@ -110,7 +109,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     // -------------------------------------
     Ac->active       = true;
     Ac->active_minor = true;
-    for(index_t i = 0; i < Ac->split.size()-1; i++){
+    for(index_t i = 0; i < Ac->split.size()-1; ++i){
         if(Ac->split[i+1] - Ac->split[i] == 0){
 //            printf("rank %d: shrink minor in compute_coarsen: i = %d, split[i] = %d, split[i+1] = %d\n",
 //                    rank, i, Ac->split[i], Ac->split[i+1]);
@@ -121,7 +120,8 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
     if(verbose_compute_coarsen){
-        MPI_Barrier(comm); printf("compute_coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); printf("compute_coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);
+    }
 #endif
 
     // *******************************************************
@@ -140,23 +140,20 @@ int saena_object::compute_coarsen(Grid *grid) {
 //    std::vector<cooEntry_row> RAP_row_sorted;
 
     if (coarsen_method == "recursive") {
-//        triple_mat_mult(grid, RAP_row_sorted);
         triple_mat_mult(grid);
     } else if (coarsen_method == "basic") {
         printf("Update coarsen_method = <basic>\n");
-//            triple_mat_mult_basic(grid, RAP_row_sorted);
+//        triple_mat_mult_basic(grid, RAP_row_sorted);
     } else if (coarsen_method == "no_overlap") {
         printf("Update coarsen_method = <no_overlap>\n");
-//            triple_mat_mult_no_overlap(grid, RAP_row_sorted);
+//        triple_mat_mult_no_overlap(grid, RAP_row_sorted);
     } else {
         printf("wrong coarsen method!\n");
     }
 
 #ifdef __DEBUG1__
     if (verbose_compute_coarsen) {
-        MPI_Barrier(comm);
-        printf("compute_coarsen: step 4: rank = %d\n", rank);
-        MPI_Barrier(comm);
+        MPI_Barrier(comm); printf("compute_coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
@@ -202,17 +199,11 @@ int saena_object::compute_coarsen(Grid *grid) {
 #endif
 
 //        if(sparsifier == "TRSL"){
-//
 //            sparsify_trsl1(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
-//
 //        }else if(sparsifier == "drineas"){
-//
 //            sparsify_drineas(Ac_orig, Ac->entry, norm_frob_sq, sample_size, comm);
-//
 //        }else if(sparsifier == "majid"){
-//
 //            sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, comm);
-//
 //        }else{
 //            printf("\nerror: wrong sparsifier!");
 //        }
@@ -230,11 +221,9 @@ int saena_object::compute_coarsen(Grid *grid) {
     }
 
 #ifdef __DEBUG1__
-//        print_vector(Ac->entry, -1, "Ac->entry", A->comm);
+//    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if (verbose_compute_coarsen) {
-        MPI_Barrier(comm);
-        printf("compute_coarsen: step 5: rank = %d\n", rank);
-        MPI_Barrier(comm);
+        MPI_Barrier(comm); printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
@@ -250,12 +239,10 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
     if (verbose_compute_coarsen) {
-        MPI_Barrier(comm);
-        printf("compute_coarsen: step 6: rank = %d\n", rank);
-        MPI_Barrier(comm);
+        MPI_Barrier(comm); printf("compute_coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);
     }
-//        Ac->print_info(-1);
-//        Ac->print_entry(-1);
+//    Ac->print_info(-1);
+//    Ac->print_entry(-1);
 #endif
 
     if(Ac->active_minor) {
@@ -266,7 +253,10 @@ int saena_object::compute_coarsen(Grid *grid) {
 
         // ********** decide about shrinking **********
         //---------------------------------------------
-        if (Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1) {
+
+        if(Ac->enable_shrink_c && !dynamic_levels && grid->currentLevel + 1 == max_level){ // coarsest level
+            Ac->decide_shrinking_c();
+        }else if (Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1) {
 //            MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
             Ac->matrix_setup_dummy();
             Ac->compute_matvec_dummy_time();
@@ -276,9 +266,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
         if (verbose_compute_coarsen) {
-            MPI_Barrier(comm);
-            printf("compute_coarsen: step 7: rank = %d\n", rank);
-            MPI_Barrier(comm);
+            MPI_Barrier(comm); printf("compute_coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);
         }
 #endif
 
@@ -295,9 +283,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
         if (verbose_compute_coarsen) {
-            MPI_Barrier(comm);
-            printf("compute_coarsen: step 8: rank = %d\n", rank);
-            MPI_Barrier(comm);
+            MPI_Barrier(comm); printf("compute_coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);
         }
 #endif
 
@@ -306,16 +292,17 @@ int saena_object::compute_coarsen(Grid *grid) {
         }
 
         Ac->active = true;
-//        Ac->active_minor = true;
         if (Ac->shrinked) {
-            Ac->shrink_cpu();
+            if(!dynamic_levels && grid->currentLevel + 1 == max_level) {
+                Ac->shrink_cpu_c();
+            }else{
+                Ac->shrink_cpu();
+            }
         }
 
 #ifdef __DEBUG1__
         if (verbose_compute_coarsen) {
-            MPI_Barrier(comm);
-            printf("compute_coarsen: step 9: rank = %d\n", rank);
-            MPI_Barrier(comm);
+            MPI_Barrier(comm); printf("compute_coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);
         }
 #endif
 
@@ -328,6 +315,8 @@ int saena_object::compute_coarsen(Grid *grid) {
             if (switch_to_dense && Ac->density > dense_threshold) {
 #ifdef __DEBUG1__
                 if (verbose_compute_coarsen && !rank) {
+                    Ac->print_info(-1);
+//                    Ac->print_entry(-1);
                     printf("Switch to dense: density = %f, dense_thres = %f\n", Ac->density, dense_threshold);
                 }
 #endif
@@ -335,18 +324,14 @@ int saena_object::compute_coarsen(Grid *grid) {
                 Ac->generate_dense_matrix();
             }
         }
-
-#ifdef __DEBUG1__
-//        Ac->print_info(-1);
-//        Ac->print_entry(-1);
-#endif
-
     }
 
     comm = grid->A->comm;
 
 #ifdef __DEBUG1__
-    if(verbose_compute_coarsen){MPI_Barrier(comm); printf("end of compute_coarsen: rank = %d\n", rank); MPI_Barrier(comm);}
+    if(verbose_compute_coarsen){
+        MPI_Barrier(comm); printf("compute_coarsen: done! rank = %d\n", rank); MPI_Barrier(comm);
+    }
 
     // view matrix Ac
     // --------------

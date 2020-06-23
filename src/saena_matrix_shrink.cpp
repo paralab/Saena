@@ -6,275 +6,8 @@
 #include <algorithm>
 #include <omp.h>
 
-
-int saena_matrix::shrink_cpu(){
-
-    // if number of rows on Ac < threshold * number of rows on A, then shrink.
-    // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-//    bool verbose_shrink = false;
-
-//    MPI_Barrier(comm); if(rank==0) printf("***********SHRINK***********\n"); MPI_Barrier(comm);
-//    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, nnz_l); MPI_Barrier(comm);
-//    print_vector(entry, -1, "entry", comm);
-
-    // For simplicity, assume cpu_shrink_thre2 is 4 (it is simpler to explain this way)
-    // create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
-    int color = rank / cpu_shrink_thre2;
-    MPI_Comm_split(comm, color, rank, &comm_horizontal);
-
-    int rank_new, nprocs_new;
-    MPI_Comm_size(comm_horizontal, &nprocs_new);
-    MPI_Comm_rank(comm_horizontal, &rank_new);
-
-//    MPI_Barrier(comm_horizontal);
-//    printf("rank = %d, rank_new = %d on Ac->comm_horizontal \n", rank, rank_new);
-//    MPI_Barrier(comm_horizontal);
-
-    active = false;
-    if(rank_new == 0){
-        active = true;
-//        printf("active: rank = %d, rank_new = %d \n", rank, rank_new);
-    }
-
-    // create a new comm including only processes with 4k rank.
-    MPI_Group bigger_group;
-    MPI_Comm_group(comm, &bigger_group);
-    total_active_procs = (index_t)ceil((double)nprocs / cpu_shrink_thre2); // note: ceiling should be used, not floor.
-    std::vector<int> ranks(total_active_procs);
-    for(index_t i = 0; i < total_active_procs; i++)
-        ranks[i] = cpu_shrink_thre2 * i;
-
-//    MPI_Barrier(comm);
-//    printf("total_active_procs = %u \n", total_active_procs);
-//    for(i = 0; i < ranks.size(); ++i)
-//        if(rank==0) std::cout << ranks[i] << std::endl;
-//    MPI_Barrier(comm);
-
-    MPI_Group group_new;
-    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
-    MPI_Comm_create_group(comm, group_new, 0, &comm);
-
-    std::vector<index_t> split_temp = split;
-    split.clear();
-    if(active){
-        split.resize(total_active_procs + 1);
-        split.shrink_to_fit();
-        split[0] = 0;
-        split[total_active_procs] = Mbig;
-        for(index_t i = 1; i < total_active_procs; ++i){
-//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
-            split[i] = split_temp[ranks[i]];
-        }
-//        print_vector(split, -1, comm);
-    }
-
-//    print_vector(split, -1, "split", comm);
-
-    MPI_Group_free(&bigger_group);
-    MPI_Group_free(&group_new);
-    return 0;
-}
-
-
-int saena_matrix::shrink_cpu_minor(){
-
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-//    MPI_Barrier(comm); if(rank==0) printf("********MINOR SHRINK********\n"); MPI_Barrier(comm);
-//    print_vector(split, 0, "split before shrinking", comm);
-
-    shrinked_minor = true;
-
-    active_minor = false;
-    if(split[rank+1] - split[rank] != 0){
-        active_minor = true;
-//        printf("active: rank = %d \n", rank);
-    }
-    active = active_minor;
-
-    MPI_Group bigger_group;
-    MPI_Comm_group(comm, &bigger_group);
-
-    total_active_procs = 0;
-    std::vector<int> ranks(nprocs);
-    for(index_t i = 0; i < nprocs; i++){
-        if(split[i+1] - split[i] != 0){
-            ranks[total_active_procs++] = i;
-        }
-    }
-
-    ranks.resize(total_active_procs);
-//    ranks.shrink_to_fit();
-
-//    print_vector(split, 0, "split before shrinking", comm);
-
-    MPI_Group group_new;
-    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
-    MPI_Comm_create_group(comm, group_new, 1, &comm);
-
-    split_old_minor = split;
-    split.clear();
-    if(active_minor){
-        split.resize(total_active_procs+1);
-        split.shrink_to_fit();
-        split[0] = 0;
-        split[total_active_procs] = Mbig;
-        for(index_t i = 1; i < total_active_procs; i++){
-//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
-            split[i] = split_old_minor[ranks[i]];
-        }
-//        print_vector(split, 0, "split after shrinking", comm);
-    }
-
-    MPI_Group_free(&bigger_group);
-    MPI_Group_free(&group_new);
-    return 0;
-}
-
-
-int saena_matrix::shrink_cpu_coarsest(){
-
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-//    MPI_Barrier(comm); if(rank==0) printf("******** shrink_cpu_coarsest ********\n"); MPI_Barrier(comm);
-//    print_vector(split, 0, "split before shrinking", comm);
-
-//    shrinked_minor = true;
-
-    bool active_c = false;
-//    if(split[rank+1] - split[rank] != 0){
-//        active_minor = true;
-//        printf("active: rank = %d \n", rank);
-//    }
-    if(rank == 0){
-        active_c = true;
-    }
-    active = active_c;
-
-    MPI_Group bigger_group;
-    MPI_Comm_group(comm, &bigger_group);
-
-//    total_active_procs = 0;
-//    std::vector<int> ranks(nprocs);
-//    for(unsigned int i = 0; i < nprocs; i++){
-//        if(split[i+1] - split[i] != 0){
-//            ranks[total_active_procs] = i;
-//            total_active_procs++;
-//        }
-//    }
-
-    total_active_procs = 1;
-    std::vector<int> ranks(total_active_procs);
-    ranks[0] = 0;
-//    for(unsigned int i = 0; i < nprocs; i++){
-//        if(split[i+1] - split[i] != 0){
-//            ranks[total_active_procs] = i;
-//            total_active_procs++;
-//        }
-//    }
-
-//    ranks.resize(total_active_procs);
-
-//    print_vector(split, 0, "split before shrinking", comm);
-
-//    comm_old_minor = comm;
-    MPI_Group group_new;
-    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
-    MPI_Comm_create_group(comm, group_new, 1, &comm);
-
-    split_old_minor = split;
-    split.clear();
-    if(active_c){
-        split.resize(total_active_procs+1);
-        split.shrink_to_fit();
-        split[0] = 0;
-        split[total_active_procs] = Mbig;
-//        for(unsigned int i = 1; i < total_active_procs; i++){
-//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
-//            split[i] = split_old_minor[ranks[i]];
-//        }
-//        print_vector(split, 0, "split after shrinking", comm);
-    }
-
-    MPI_Group_free(&bigger_group);
-    MPI_Group_free(&group_new);
-    return 0;
-}
-
-
-int saena_matrix::compute_matvec_dummy_time(){
-
-    int rank;
-    MPI_Comm_rank(comm, &rank);
-
-    int matvec_iter_warmup = 5;
-    int matvec_iter        = 5;
-    std::vector<double> v_dummy(M, 1);
-    std::vector<double> w_dummy(M);
-//    std::vector<double> time_matvec(4, 0);
-
-#ifdef __DEBUG1__
-    if(verbose_matvec_dummy) {
-        printf("rank %d: decide shrinking: step1\n", rank);
-        MPI_Barrier(comm);
-    }
-#endif
-
-    // warm-up
-    for (int i = 0; i < matvec_iter_warmup; i++) {
-        matvec_dummy(v_dummy, w_dummy);
-        v_dummy.swap(w_dummy);
-    }
-
-#ifdef __DEBUG1__
-    if(verbose_matvec_dummy) {
-        MPI_Barrier(comm);
-        printf("rank %d: decide shrinking: step2\n", rank);
-        MPI_Barrier(comm);
-    }
-#endif
-
-    std::fill(matvec_dummy_time.begin(), matvec_dummy_time.end(), 0);
-
-    MPI_Barrier(comm); // todo: should I keep this barrier?
-    for (int i = 0; i < matvec_iter; i++) {
-        matvec_dummy(v_dummy, w_dummy);
-        v_dummy.swap(w_dummy);
-    }
-
-#ifdef __DEBUG1__
-    if(verbose_matvec_dummy) {
-        MPI_Barrier(comm);
-        printf("rank %d: decide shrinking: step3\n", rank);
-        MPI_Barrier(comm);
-    }
-#endif
-
-//    double t2 = omp_get_wtime();
-
-    matvec_dummy_time[3] += matvec_dummy_time[0]; // total matvec time
-    matvec_dummy_time[0] = matvec_dummy_time[3] - matvec_dummy_time[1] - matvec_dummy_time[2]; // communication including vSet
-
-//    if (rank == 0) {
-//        std::cout << std::endl << "decide_shrinking:" << std::endl;
-//        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter << std::endl; // comm including "set vSend"
-//        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter << std::endl; // local loop
-//        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter << std::endl; // remote loop
-//        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter << std::endl; // total time
-//    }
-
-    return 0;
-}
-
-
 int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
+    // set cpu_shrink_thre2 and do_shrink
 
     // matvec_dummy_time[0]: communication (including "set vSend")
     // matvec_dummy_time[1]: local loop
@@ -323,12 +56,446 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
     return 0;
 }
 
+int saena_matrix::decide_shrinking_c(){
+    // set cpu_shrink_thre2 and do_shrink
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    do_shrink = true;
+
+    // nprocs_new = nprocs / cpu_shrink_thre2   =>   cpu_shrink_thre2 = nprocs / nprocs_new
+    if(nprocs > 1000){
+        cpu_shrink_thre2 = nprocs / 40; // nprocs_new = 40
+    }else if(nprocs > 500){
+        cpu_shrink_thre2 = nprocs / 20;
+    }else if(nprocs > 200){
+        cpu_shrink_thre2 = nprocs / 10;
+    }else{
+        cpu_shrink_thre2 = nprocs;
+    }
+
+    return 0;
+}
+
+
+int saena_matrix::shrink_set_params(std::vector<int> &send_size_array){
+    int nprocs = -1, rank = -1;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm);
+        if(!rank) print_sep();
+        if(!rank) printf("\nshrink_set_params\n");
+        print_vector(split, 0, "split before shrinking", comm);
+        MPI_Barrier(comm);
+    }
+//    print_vector(send_size_array, -1, "send_size_array", comm);
+#endif
+
+    shrinked = true;
+    last_M_shrink = Mbig;
+//    last_nnz_shrink = nnz_g;
+    last_density_shrink = density;
+    double remainder = 0.0;
+    int root_cpu = nprocs;
+    for(int proc = nprocs - 1; proc > 0; --proc){
+        remainder = proc % cpu_shrink_thre2;
+//        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
+        if(remainder == 0)
+            root_cpu = proc;
+        else{
+            split[proc] = split[root_cpu];
+        }
+    }
+
+    M = split[rank+1] - split[rank];
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm);
+        print_vector(split, 0, "split after shrinking", comm);
+//        if(!rank) printf("M = %d\n", M);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    root_cpu = 0;
+    for(int proc = 0; proc < nprocs; ++proc){
+        remainder = proc % cpu_shrink_thre2;
+//        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
+        if(remainder == 0)
+            root_cpu = proc;
+        else{
+            send_size_array[root_cpu] += send_size_array[proc];
+            send_size_array[proc] = 0;
+        }
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm);
+        if(!rank) printf("\nshrink_set_params: done\n");
+        if(!rank) print_sep();
+        MPI_Barrier(comm);
+    }
+//    print_vector(send_size_array, -1, "send_size_array", comm);
+#endif
+
+    return 0;
+}
+
+int saena_matrix::shrink_cpu(){
+
+    // if number of rows on Ac < threshold * number of rows on A, then shrink.
+    // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm);
+        if(!rank) print_sep();
+        if(!rank) printf("\nshrink_cpu\n");
+        MPI_Barrier(comm);
+    }
+//    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, nnz_l); MPI_Barrier(comm);
+//    print_vector(entry, -1, "entry", comm);
+#endif
+
+    // For simplicity, assume cpu_shrink_thre2 is 4 (it is simpler to explain this way)
+    // create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
+    int color = rank / cpu_shrink_thre2;
+    MPI_Comm_split(comm, color, rank, &comm_horizontal);
+
+    int rank_new, nprocs_new;
+    MPI_Comm_size(comm_horizontal, &nprocs_new);
+    MPI_Comm_rank(comm_horizontal, &rank_new);
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm_horizontal);
+        printf("rank = %d, rank_new = %d on Ac->comm_horizontal \n", rank, rank_new);
+        MPI_Barrier(comm_horizontal);
+    }
+#endif
+
+//    MPI_Barrier(comm_horizontal);
+//    printf("rank = %d, rank_new = %d on Ac->comm_horizontal \n", rank, rank_new);
+//    MPI_Barrier(comm_horizontal);
+
+    active = false;
+    if(rank_new == 0){
+        active = true;
+//        printf("active: rank = %d, rank_new = %d \n", rank, rank_new);
+    }
+
+    // create a new comm including only processes with 4k rank.
+    MPI_Group bigger_group;
+    MPI_Comm_group(comm, &bigger_group);
+    total_active_procs = (index_t)ceil((double)nprocs / cpu_shrink_thre2); // note: ceiling should be used, not floor.
+    std::vector<int> ranks(total_active_procs);
+    for(index_t i = 0; i < total_active_procs; i++)
+        ranks[i] = cpu_shrink_thre2 * i;
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm);
+        print_vector(ranks, 0, "ranks", comm);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    MPI_Group group_new;
+    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
+    MPI_Comm_create_group(comm, group_new, 0, &comm);
+
+    MPI_Group_free(&bigger_group);
+    MPI_Group_free(&group_new);
+
+    std::vector<index_t> split_temp = split;
+    split.clear();
+    if(active){
+        split.resize(total_active_procs + 1);
+        split.shrink_to_fit();
+        split[0] = 0;
+        split[total_active_procs] = Mbig;
+        for(index_t i = 1; i < total_active_procs; ++i){
+//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
+            split[i] = split_temp[ranks[i]];
+        }
+    }
+
+#ifdef __DEBUG1__
+    if(active && verbose_shrink) {
+        MPI_Barrier(comm);
+        print_vector(split, 0, "split after shrinking", comm);
+        if(!rank) printf("\nshrink_cpu: done\n");
+        if(!rank) print_sep();
+        MPI_Barrier(comm);
+    }
+#endif
+
+    return 0;
+}
+
+int saena_matrix::shrink_cpu_minor(){
+
+    int rank = -1, nprocs = -1;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm);
+        if(!rank) print_sep();
+        if(!rank) printf("\nshrink_cpu_minor\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+//    shrinked_minor = true;
+
+    active_minor = false;
+    if(split[rank+1] - split[rank] != 0){
+        active_minor = true;
+//        printf("active: rank = %d \n", rank);
+    }
+    active = active_minor;
+
+    MPI_Group bigger_group;
+    MPI_Comm_group(comm, &bigger_group);
+
+    total_active_procs = 0;
+    std::vector<int> ranks(nprocs);
+    for(index_t i = 0; i < nprocs; i++){
+        if(split[i+1] - split[i] != 0){
+            ranks[total_active_procs++] = i;
+        }
+    }
+
+    ranks.resize(total_active_procs);
+//    ranks.shrink_to_fit();
+
+    MPI_Group group_new;
+    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
+    MPI_Comm_create_group(comm, group_new, 1, &comm);
+
+    MPI_Group_free(&bigger_group);
+    MPI_Group_free(&group_new);
+
+#ifdef __DEBUG1__
+    if(active_minor && verbose_shrink){
+        MPI_Comm_size(comm, &nprocs);
+        MPI_Comm_rank(comm, &rank);
+        MPI_Barrier(comm); print_vector(split, 0, "split before shrinking", comm); MPI_Barrier(comm);
+    }
+#endif
+
+    comm_old = comm;
+
+    split_old_minor = split;
+    split.clear();
+    if(active_minor){
+        split.resize(total_active_procs + 1);
+        split.shrink_to_fit();
+        split[0] = 0;
+        split[total_active_procs] = Mbig;
+        for(index_t i = 1; i < total_active_procs; ++i){
+//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
+            split[i] = split_old_minor[ranks[i]];
+        }
+    }
+
+#ifdef __DEBUG1__
+    if(active_minor && verbose_shrink) {
+//        MPI_Barrier(comm);
+        print_vector(split, 0, "split after shrinking", comm);
+        if(!rank) printf("\nshrink_cpu_minor: done\n");
+        if(!rank) print_sep();
+//        MPI_Barrier(comm);
+    }
+#endif
+
+    return 0;
+}
+
+int saena_matrix::shrink_cpu_c(){
+    // to make this enable:
+    // set enable_shrink_c in saena_matrix.h to true
+    // set dynamic_levels in saena_object.h to false
+    // find a good number of levels for the multigrid hierarchy, then set that in solver.set_multigrid_max_level
+    // decide_shrinking_c() should be called before this funcion to set cpu_shrink_thre2 and do_shrink.
+
+    // For simplicity, assume cpu_shrink_thre2 is 4 (it is simpler to explain this way)
+    // if number of rows on Ac < threshold * number of rows on A, then shrink.
+    // redistribute Ac from processes 4k+1, 4k+2 and 4k+3 to process 4k.
+    int rank = -1, nprocs = -1;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm);
+        if(!rank) print_sep();
+        if(!rank) printf("\nshrink_cpu_coarsest\n");
+        MPI_Barrier(comm);
+    }
+//    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, nnz_l); MPI_Barrier(comm);
+//    print_vector(entry, -1, "entry", comm);
+#endif
+
+    comm_old = comm;
+
+    // create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
+    int color = rank / cpu_shrink_thre2;
+    MPI_Comm_split(comm, color, rank, &comm_horizontal);
+
+    int rank_new = -1, nprocs_new = -1;
+    MPI_Comm_size(comm_horizontal, &nprocs_new);
+    MPI_Comm_rank(comm_horizontal, &rank_new);
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        MPI_Barrier(comm_horizontal);
+        if(!rank) printf("rank = %d, rank_new = %d on Ac->comm_horizontal \n", rank, rank_new);
+        MPI_Barrier(comm_horizontal);
+    }
+//    MPI_Barrier(comm); printf("rank = %d \tnnz_l = %u \n", rank, nnz_l); MPI_Barrier(comm);
+//    print_vector(entry, -1, "entry", comm);
+#endif
+
+    active = false;
+    if(rank_new == 0){
+        active = true;
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_shrink && !rank_new){
+        printf("active: rank = %d, rank_new = %d \n", rank, rank_new);
+    }
+#endif
+
+    // create a new comm including only processes with 4k rank.
+    MPI_Group bigger_group;
+    MPI_Comm_group(comm, &bigger_group);
+    total_active_procs = (index_t) ceil( (double)nprocs / cpu_shrink_thre2 ); // note: ceiling should be used, not floor.
+    std::vector<int> ranks(total_active_procs);
+    for(index_t i = 0; i < total_active_procs; ++i)
+        ranks[i] = cpu_shrink_thre2 * i;
+
+#ifdef __DEBUG1__
+    if(verbose_shrink){
+        if(!rank_new) printf("total_active_procs = %u \n", total_active_procs);
+        print_vector(ranks, 0, "ranks", comm);
+        print_vector(split, 0, "split before shrinking", comm);
+    }
+#endif
+
+    MPI_Group group_new;
+    MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
+    MPI_Comm_create_group(comm, group_new, 0, &comm);
+
+    MPI_Group_free(&bigger_group);
+    MPI_Group_free(&group_new);
+
+    std::vector<index_t> split_temp = split;
+    split.clear();
+    if(active){
+        split.resize(total_active_procs + 1);
+        split.shrink_to_fit();
+        split[0] = 0;
+        split[total_active_procs] = Mbig;
+        for(index_t i = 1; i < total_active_procs; ++i){
+//            if(rank==0) printf("%u \t%lu \n", i, split_old[ranks[i]]);
+            split[i] = split_temp[ranks[i]];
+        }
+    }
+
+#ifdef __DEBUG1__
+    if(active && verbose_shrink){
+        print_vector(split, 0, "split after shrinking", comm);
+        if(!rank) printf("\nshrink_cpu_c: done\n");
+        if(!rank) print_sep();
+    }
+#endif
+
+    return 0;
+}
+
+
+int saena_matrix::compute_matvec_dummy_time(){
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    int matvec_iter_warmup = 5;
+    int matvec_iter_dummy  = 5;
+    std::vector<double> v_dummy(M, 1);
+    std::vector<double> w_dummy(M);
+//    std::vector<double> time_matvec(4, 0);
+
+#ifdef __DEBUG1__
+    if(verbose_matvec_dummy) {
+        printf("rank %d: decide shrinking: step1\n", rank);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // warm-up
+    for (int i = 0; i < matvec_iter_warmup; ++i) {
+        matvec_dummy(v_dummy, w_dummy);
+        v_dummy.swap(w_dummy);
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_matvec_dummy) {
+        MPI_Barrier(comm);
+        printf("rank %d: decide shrinking: step2\n", rank);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    std::fill(matvec_dummy_time.begin(), matvec_dummy_time.end(), 0);
+
+    MPI_Barrier(comm); // todo: should I keep this barrier?
+    for (int i = 0; i < matvec_iter_dummy; i++) {
+        matvec_dummy(v_dummy, w_dummy);
+        v_dummy.swap(w_dummy);
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_matvec_dummy) {
+        MPI_Barrier(comm);
+        printf("rank %d: decide shrinking: step3\n", rank);
+        MPI_Barrier(comm);
+    }
+#endif
+
+//    double t2 = omp_get_wtime();
+
+    matvec_dummy_time[3] += matvec_dummy_time[0]; // total matvec time
+    matvec_dummy_time[0] = matvec_dummy_time[3] - matvec_dummy_time[1] - matvec_dummy_time[2]; // communication including vSet
+
+//    if (rank == 0) {
+//        std::cout << std::endl << "decide_shrinking:" << std::endl;
+//        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter << std::endl; // comm including "set vSend"
+//        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter << std::endl; // local loop
+//        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter << std::endl; // remote loop
+//        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter << std::endl; // total time
+//    }
+
+    return 0;
+}
 
 int saena_matrix::matrix_setup_dummy(){
     set_off_on_diagonal_dummy();
     return 0;
 }
-
 
 int saena_matrix::set_off_on_diagonal_dummy(){
     // set and exchange on-diagonal and off-diagonal elements
@@ -511,7 +678,6 @@ int saena_matrix::set_off_on_diagonal_dummy(){
     return 0;
 }
 
-
 int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
@@ -681,43 +847,3 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
 
     return 0;
 }
-
-
-// int saena_matrix::find_sortings_dummy()
-/*
-int saena_matrix::find_sortings_dummy(){
-    //find the sorting on rows on both local and remote data, which will be used in matvec
-
-    if(active){
-        int rank;
-        MPI_Comm_rank(comm, &rank);
-        if(verbose_matrix_setup) {
-            MPI_Barrier(comm);
-            printf("matrix_setup: rank = %d, find_sortings \n", rank);
-            MPI_Barrier(comm);
-        }
-
-        indicesP_local.resize(nnz_l_local);
-#pragma omp parallel for
-        for (nnz_t i = 0; i < nnz_l_local; i++)
-            indicesP_local[i] = i;
-
-        index_t *row_localP = &*row_local.begin();
-        std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
-
-//    if(rank==0)
-//        for(index_t i=0; i<nnz_l_local; i++)
-//            std::cout << row_local[indicesP_local[i]] << "\t" << col_local[indicesP_local[i]]
-//                      << "\t" << values_local[indicesP_local[i]] << std::endl;
-
-//        indicesP_remote.resize(nnz_l_remote);
-//        for (nnz_t i = 0; i < nnz_l_remote; i++)
-//            indicesP_remote[i] = i;
-//
-//        index_t *row_remoteP = &*row_remote.begin();
-//        std::sort(&indicesP_remote[0], &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
-    }
-
-    return 0;
-}
-*/

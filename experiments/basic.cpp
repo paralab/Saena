@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-//    solver.set_multigrid_max_level(4);
+    solver.set_multigrid_max_level(4);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -204,8 +204,8 @@ int main(int argc, char* argv[]){
 //        printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
     }
 
-    float norm1 = pnorm(res, comm);
-    if(!rank) std::cout << "norm(Au-b)     = " << norm1 << "\n";
+//    float norm1 = pnorm(res, comm);
+//    if(!rank) std::cout << "norm(Au-b)     = " << norm1 << "\n";
 
     // *************************** check correctness of the solution 2 ****************************
 

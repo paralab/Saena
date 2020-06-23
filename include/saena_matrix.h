@@ -45,9 +45,11 @@ private:
     bool verbose_repartition_update = false;
     bool verbose_matvec_dummy       = false;
     bool verbose_comp_matvec_dummy  = false;
+    bool verbose_shrink             = false;
 
 public:
     MPI_Comm comm            = MPI_COMM_WORLD;
+    MPI_Comm comm_old        = MPI_COMM_WORLD;
     MPI_Comm comm_horizontal = MPI_COMM_WORLD;
 
     index_t Mbig    = 0; // global number of rows
@@ -126,18 +128,22 @@ public:
 
     bool active = false;
 
-    bool enable_shrink = false; // default = true
-    bool do_shrink     = false; // default = false
-    bool shrinked      = false; // default = false. if shrinking happens for the matrix, set this to true.
-    bool enable_dummy_matvec = true; // default = true
+    bool enable_shrink   = false; // default = true
+    bool enable_shrink_c = true;  // default = true. enables shrinking for the coarsest level.
+    bool do_shrink       = false; // default = false
+    bool shrinked        = false; // default = false. if shrinking happens for the matrix, set this to true.
+    bool enable_dummy_matvec = false; // default = true
+
     std::vector<double> matvec_dummy_time;
-    unsigned int total_active_procs = 0;
+    int total_active_procs = 0;
+
     int cpu_shrink_thre1 = 1; // default = 1. set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
     int cpu_shrink_thre2 = 1; // default = 1. number of procs after shrinking = nprocs / cpu_shrink_thre2
     int cpu_shrink_thre2_next_level = -1;
     float shrink_total_thre     = 1.25;
     float shrink_local_thre     = 1.25;
     float shrink_communic_thre  = 1.5;
+
     index_t last_M_shrink       = 0;
     nnz_t   last_nnz_shrink     = 0;
     double  last_density_shrink = 0;
@@ -147,10 +153,7 @@ public:
 
     // shrink_minor: if there no entry for the coarse matrix on this proc, then shrink.
     bool active_minor = false;    // default = false
-//    index_t M_old_minor = 0; // local number of rows, before being repartitioned.
     std::vector<index_t> split_old_minor;
-    bool shrinked_minor = false; // default = false
-//    MPI_Comm comm_old_minor;
 
     double density = -1.0;
     float jacobi_omega = float(2.0/3);
@@ -265,9 +268,11 @@ public:
 
     // shrinking
     int decide_shrinking(std::vector<double> &prev_time);
+    int decide_shrinking_c(); // for the coarsest level
+    int shrink_set_params(std::vector<int> &send_size_array);
     int shrink_cpu();
     int shrink_cpu_minor();
-    int shrink_cpu_coarsest();
+    int shrink_cpu_c(); // for the coarsest level
 
     int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);

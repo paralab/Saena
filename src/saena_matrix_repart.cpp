@@ -669,9 +669,9 @@ int saena_matrix::repartition_nnz(){
     // summary: number of buckets are computed based of the number of <<rows>> and number of processors.
     // firstSplit[] is of size n_buckets+1 and is a row partition of the matrix with almost equal number of rows.
     // then the buckets (firsSplit) are combined to have almost the same number of nonzeros. This is split[].
-    // note: this version of repartition3() is WITH cpu shrinking.
+    // note: this function includes cpu shrinking.
 
-    int nprocs, rank;
+    int nprocs = -1, rank = -1;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -699,9 +699,9 @@ int saena_matrix::repartition_nnz(){
     else if(nprocs <= Mbig){
         n_buckets = Mbig;
     } else{ // nprocs > Mbig
-        // todo: it may be better to set nprocs=Mbig and work with only the first Mbig processors.
+        // todo: it may be better to call shrink_cpu_minor, so then nprocs=Mbig and work only with the first Mbig processors.
         if(rank == 0)
-            std::cout << "number of MPI tasks cannot be greater than the number of rows of the matrix." << std::endl;
+            printf("number of MPI tasks (%d) cannot be greater than the number of rows of the matrix (%d).\n", nprocs, Mbig);
         MPI_Finalize();
     }
 
@@ -808,64 +808,31 @@ int saena_matrix::repartition_nnz(){
 
     if(nprocs > 1){
         std::vector<int> send_size_array(nprocs, 0);
-        //    for (unsigned int i=0; i<initial_nnz_l; i++){
-        //        tempIndex = lower_bound2(&split[0], &split[nprocs], entry[i].row);
-        //        sendSizeArray[tempIndex]++;
-        //    }
+//        for (unsigned int i=0; i<initial_nnz_l; i++){
+//            tempIndex = lower_bound2(&split[0], &split[nprocs], entry[i].row);
+//            sendSizeArray[tempIndex]++;
+//        }
 
         long least_proc, last_proc;
         least_proc = lower_bound2(&split[0], &split[nprocs], entry[0].row);
         last_proc  = lower_bound2(&split[0], &split[nprocs], entry.back().row);
         last_proc++;
 
-        //    if (rank==1) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
+//        if (rank==1) std::cout << "\nleast_proc:" << least_proc << ", last_proc = " << last_proc << std::endl;
 
-        for (nnz_t i=0; i<initial_nnz_l; i++){
+        for (nnz_t i = 0; i < initial_nnz_l; ++i){
             least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry[i].row);
             send_size_array[least_proc]++;
         }
 
-        //    print_vector(send_size_array, 0, "send_size_array", comm);
+//        print_vector(send_size_array, 0, "send_size_array", comm);
 
         // this part is for cpu shrinking. assign all the rows on non-root procs to their roots.
         // ---------------------------------
-        //    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
-        //    if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
-        if(enable_shrink && (nprocs >= cpu_shrink_thre2) && do_shrink){
-            shrinked = true;
-            last_M_shrink = Mbig;
-            //        last_nnz_shrink = nnz_g;
-            last_density_shrink = density;
-            double remainder;
-            int root_cpu = nprocs;
-            for(int proc = nprocs-1; proc > 0; proc--){
-                remainder = proc % cpu_shrink_thre2;
-                //        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
-                if(remainder == 0)
-                    root_cpu = proc;
-                else{
-                    split[proc] = split[root_cpu];
-                }
-            }
-
-            //        M_old = M;
-            M = split[rank+1] - split[rank];
-
-//            print_vector(split, 0, "split", comm);
-
-            root_cpu = 0;
-            for(int proc = 0; proc < nprocs; proc++){
-                remainder = proc % cpu_shrink_thre2;
-//                if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
-                if(remainder == 0)
-                    root_cpu = proc;
-                else{
-                    send_size_array[root_cpu] += send_size_array[proc];
-                    send_size_array[proc] = 0;
-                }
-            }
-
-//            print_vector(send_size_array, -1, "send_size_array", comm);
+//        if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
+//        if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
+        if( (enable_shrink || enable_shrink_c) && (nprocs >= cpu_shrink_thre2) && do_shrink){
+            shrink_set_params(send_size_array);
         }
 
         std::vector<int> recv_size_array(nprocs);
@@ -1012,41 +979,8 @@ int saena_matrix::repartition_row(){
     // ---------------------------------
 //    if(enable_shrink && nprocs >= cpu_shrink_thre2 && (last_M_shrink >= (Mbig * cpu_shrink_thre1)) ){
 //    if(rank==0) printf("last_density_shrink = %f, density = %f, inequality = %d \n", last_density_shrink, density, (density >= (last_density_shrink * cpu_shrink_thre1)));
-    if(enable_shrink && (nprocs >= cpu_shrink_thre2) && do_shrink){
-        shrinked = true;
-        last_M_shrink = Mbig;
-//        last_nnz_shrink = nnz_g;
-        last_density_shrink = density;
-        double remainder;
-        int root_cpu = nprocs;
-        for(int proc = nprocs-1; proc > 0; proc--){
-            remainder = proc % cpu_shrink_thre2;
-//        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
-            if(remainder == 0)
-                root_cpu = proc;
-            else{
-                split[proc] = split[root_cpu];
-            }
-        }
-
-//        M_old = M;
-        M = split[rank+1] - split[rank];
-
-//        print_vector(split, 0, "split", comm);
-
-        root_cpu = 0;
-        for(int proc = 0; proc < nprocs; proc++){
-            remainder = proc % cpu_shrink_thre2;
-//        if(rank==0) printf("proc = %ld, remainder = %f\n", proc, remainder);
-            if(remainder == 0)
-                root_cpu = proc;
-            else{
-                send_size_array[root_cpu] += send_size_array[proc];
-                send_size_array[proc] = 0;
-            }
-        }
-
-//        print_vector(send_size_array, 0, "send_size_array", comm);
+    if((enable_shrink || enable_shrink_c) && (nprocs >= cpu_shrink_thre2) && do_shrink){
+        shrink_set_params(send_size_array);
     }
 
     std::vector<int> recv_size_array(nprocs);
