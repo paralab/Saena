@@ -895,10 +895,8 @@ int saena_matrix::repartition_row(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    bool repartition_verbose = false;
-
 //    if(rank==0) printf("\nuse repartition based on the number of rows for the next level!\n");
-    if(repartition_verbose && rank==0) printf("repartition4 - step 1!\n");
+    if(verbose_repartition && rank==0) printf("repartition4 - step 1!\n");
 
     density = (nnz_g / double(Mbig)) / (Mbig);
 
@@ -927,7 +925,7 @@ int saena_matrix::repartition_row(){
 
 //    print_vector(splitOffset, 0, "splitOffset", comm);
 
-    if(repartition_verbose && rank==0) printf("repartition4 - step 2!\n");
+    if(verbose_repartition && rank==0) printf("repartition4 - step 2!\n");
 
     std::vector<index_t> split_extra;
     split_old = split;
@@ -951,7 +949,7 @@ int saena_matrix::repartition_row(){
     M = split[rank+1] - split[rank];
 //    M_old = M;
 
-    if(repartition_verbose && rank==0) printf("repartition4 - step 4!\n");
+    if(verbose_repartition && rank==0) printf("repartition4 - step 4!\n");
 
 //    unsigned int M_min_global;
 //    MPI_Allreduce(&M, &M_min_global, 1, MPI_UNSIGNED, MPI_MIN, comm);
@@ -1002,12 +1000,12 @@ int saena_matrix::repartition_row(){
 
 //    print_vector(recv_offset, 0, "recv_offset", comm);
 
-    if(repartition_verbose && rank==0) printf("repartition4 - step 5!\n");
+    if(verbose_repartition && rank==0) printf("repartition4 - step 5!\n");
 
     nnz_l = recv_offset[nprocs-1] + recv_size_array[nprocs-1];
 //    printf("rank=%d \t A.nnz_l=%lu \t A.nnz_g=%lu \n", rank, nnz_l, nnz_g);
 
-    if(repartition_verbose && rank==0) printf("repartition4 - step 6!\n");
+    if(verbose_repartition && rank==0) printf("repartition4 - step 6!\n");
 
     std::vector<cooEntry> entry_old = entry;
 //    entry.clear();
@@ -1021,7 +1019,7 @@ int saena_matrix::repartition_row(){
 
 //    print_vector(entry, -1, "entry", comm);
 
-    if(repartition_verbose) {
+    if(verbose_repartition) {
         MPI_Barrier(comm);
         printf("repartition4 - step 7! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
                rank, Mbig, M, nnz_g, nnz_l);
@@ -1043,9 +1041,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    bool repartition_verbose = false;
-
-    if(repartition_verbose && rank==0) printf("repartition5 - step 1!\n");
+    if(verbose_repartition && rank==0) printf("repartition5 - step 1!\n");
 
     density = (nnz_g / double(Mbig)) / (Mbig);
 
@@ -1083,7 +1079,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
         send_size_array[least_proc]++;
     }
 
-    if(repartition_verbose && rank==0) printf("repartition5 - step 2!\n");
+    if(verbose_repartition && rank==0) printf("repartition5 - step 2!\n");
 
 //    print_vector(send_size_array, -1, "send_size_array", comm);
 
@@ -1108,7 +1104,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
 
 //    print_vector(recv_offset, -1, "recv_offset", comm);
 
-    if(repartition_verbose && rank==0) printf("repartition5 - step 3!\n");
+    if(verbose_repartition && rank==0) printf("repartition5 - step 3!\n");
 
     nnz_t recv_size = recv_offset[nprocs-1] + recv_size_array[nprocs-1];
 //    printf("rank=%d \t recv_size=%lu \t A.nnz_g=%lu \tremote size = %lu \n", rank, recv_size, nnz_g, row_remote.size());
@@ -1123,7 +1119,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
     std::sort(entry_temp.begin(), entry_temp.end());
 
 //    print_vector(entry_temp, -1, "entry_temp", comm);
-    if(repartition_verbose && rank==0) printf("repartition5 - step 4!\n");
+    if(verbose_repartition && rank==0) printf("repartition5 - step 4!\n");
 
     // copy the entries into a std::set to have O(logn) (?) for finding elements, since it will be sorted.
     std::set<cooEntry> entry_set(entry.begin(), entry.end());
@@ -1175,7 +1171,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
 //            entry_set.erase(p.first);
 //    }
 
-    if(repartition_verbose && rank==0) printf("repartition5 - step 6!\n");
+    if(verbose_repartition && rank==0) printf("repartition5 - step 6!\n");
 
 //    printf("rank %d: entry.size = %lu, entry_set.size = %lu \n", rank, entry.size(), entry_set.size());
 
@@ -1196,7 +1192,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
 //    entry_temp.clear();
 //    entry_temp.shrink_to_fit();
 
-    if(repartition_verbose) {
+    if(verbose_repartition) {
         MPI_Barrier(comm);
         printf("repartition5 - end! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
                rank, Mbig, M, nnz_g, nnz_l);
