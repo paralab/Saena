@@ -2,18 +2,15 @@
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
-//#include "prolong_matrix.h"
-//#include "restrict_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
 #include "ietl_saena.h"
-//#include "dollar.hpp"
 
+//#include "dollar.hpp"
 //#include "petsc_functions.h"
 
 #include <cstdio>
 #include <random>
-#include <mpi.h>
 
 
 void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm){
@@ -32,7 +29,7 @@ MPI_Comm saena_object::get_orig_comm(){
 
 
 int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_l2g /*= {}*/, const std::vector<int> &m_g2u /*= {}*/, int m_bdydof /*= 0*/) {
-    int nprocs, rank, rank_new;
+    int nprocs = -1, rank = -1, rank_new = -1;
     MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
 
@@ -40,7 +37,6 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
     if(!rank && omp_get_thread_num()==0)
         printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
 
-#ifdef __DEBUG1__
     if(verbose_setup){
         MPI_Barrier(A->comm);
         if(!rank){
@@ -50,16 +46,18 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
         }
         MPI_Barrier(A->comm);
     }
+
+#ifdef __DEBUG1__
     if(verbose_setup_steps){
         MPI_Barrier(A->comm);
 
         if(!rank){
-#ifdef SPLIT_NNZ
+            #ifdef SPLIT_NNZ
             printf("\nsplit based on nnz\n");
-#endif
-#ifdef SPLIT_SIZE
+            #endif
+            #ifdef SPLIT_SIZE
             printf("\nsplit based on matrix size\n");
-#endif
+            #endif
             std::cout << "coarsen_method: " << coarsen_method << std::endl;
             printf("\nsetup: start: find_eig()\n");
         }
@@ -201,6 +199,19 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
         A_coarsest = &grids.back().Ac;
     }
 
+    if(verbose_setup){
+        MPI_Barrier(A->comm);
+        if(!rank){
+            std::stringstream buf;
+            buf << "_____________________________\n\n"
+            << "number of levels = << " << BLUE << max_level << COLORRESET << " >> (the finest level is 0)\n";
+            std::cout << buf.str();
+            if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
+            print_sep();
+        }
+        MPI_Barrier(A->comm);
+    }
+
 #ifdef __DEBUG1__
     {
 //    MPI_Barrier(A->comm);
@@ -227,21 +238,10 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
 */
     }
 
-    if(verbose_setup){
-        MPI_Barrier(A->comm);
-        if(!rank){
-            printf("_____________________________\n\n");
-            printf("number of levels = << %d >> (the finest level is 0)\n", max_level);
-            if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
-            printf("\n******************************************************\n");
-        }
-        MPI_Barrier(A->comm);
-    }
-
     if(verbose_setup_steps){
-        MPI_Barrier(A->comm);
+//        MPI_Barrier(A->comm);
         if(!rank) printf("rank %d: setup done!\n", rank);
-        MPI_Barrier(A->comm);
+//        MPI_Barrier(A->comm);
     }
 //    if(rank==0) dollar::text(std::cout);
 #endif

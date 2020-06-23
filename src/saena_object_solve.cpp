@@ -11,7 +11,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
-#include <mpi.h>
 
 // use this to store number of iterations for the lazy-update experiment.
 std::vector<int> iter_num_lazy;
@@ -1406,7 +1405,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 int saena_object::solve(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
-    int nprocs, rank;
+    int nprocs = -1, rank = -1;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -1446,38 +1445,40 @@ int saena_object::solve(std::vector<value_t>& u){
 
     std::vector<value_t> r(grids[0].A->M);
     grids[0].A->residual(u, grids[0].rhs, r);
-    double initial_dot, current_dot;
+    double initial_dot = 0.0, current_dot = 0.0;
     dotProduct(r, r, &initial_dot, comm);
-    if(rank==0) std::cout << "******************************************************" << std::endl;
-    if(rank==0) printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
+    if(!rank){
+        print_sep();
+        printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
+    }
 
     // if max_level==0, it means only direct solver is being used.
     if(max_level == 0 && rank==0){
         printf("\nonly using the direct solver! \n");
     }
 
-    int i;
-    for(i=0; i < solver_max_iter; i++){
+    int i = 0;
+    for(i = 0; i < solver_max_iter; ++i){
         vcycle(&grids[0], u, grids[0].rhs);
         grids[0].A->residual(u, grids[0].rhs, r);
         dotProduct(r, r, &current_dot, comm);
 
 //        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
 //        if(rank==0) printf("vcycle iteration = %d, residual = %f \n\n", i, sqrt(current_dot));
-        if( current_dot/initial_dot < solver_tol * solver_tol )
+        if( current_dot / initial_dot < solver_tol * solver_tol )
             break;
     }
 
     // set number of iterations that took to find the solution
     // only do the following if the end of the previous for loop was reached.
     if(i == solver_max_iter)
-        i--;
+        --i;
 
     if(rank==0){
-        std::cout << "******************************************************" << std::endl;
+        print_sep();
         printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
                        "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot/initial_dot));
-        std::cout << "******************************************************" << std::endl;
+        print_sep();
     }
 
 //    print_vector(u, -1, "u", comm);
@@ -1584,7 +1585,6 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     double initial_dot, current_dot;
 //    double previous_dot;
     dotProduct(r, r, &initial_dot, comm);
-//    if(rank==0) std::cout << "******************************************************" << std::endl;
     if(rank==0) printf("\ninitial residual = %e \n", sqrt(initial_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
@@ -1597,10 +1597,10 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 //        if(rank==0) std::cout << "dot = " << current_dot << std::endl;
 
         if(rank==0){
-            std::cout << "******************************************************" << std::endl;
+            print_sep();
             printf("\nfinal:\nonly using the direct solver! \nfinal absolute residual = %e"
                            "\nrelative residual       = %e \n\n", sqrt(current_dot), sqrt(current_dot/initial_dot));
-            std::cout << "******************************************************" << std::endl;
+            print_sep();
         }
 
         // scale the solution u
@@ -1636,8 +1636,8 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     std::vector<value_t> h(grids[0].A->M);
     std::vector<value_t> p = rho;
 
-    int i;
-    double rho_res, pdoth, alpha, beta;
+    int i = 0;
+    double rho_res = 0.0, pdoth = 0.0, alpha = 0.0, beta = 0.0;
     current_dot = initial_dot;
 //    previous_dot = initial_dot;
 
@@ -1696,10 +1696,10 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
 //    print_time(t_dif, "solve_pcg", comm);
 
     if(rank==0){
-        std::cout << "\n******************************************************" << std::endl;
+        print_sep();
         printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
                        "\nrelative residual       = %e \n\n", i+1, sqrt(current_dot), sqrt(current_dot/initial_dot));
-        std::cout << "******************************************************" << std::endl;
+        print_sep();
     }
 
     iter_num_lazy.emplace_back(i+1);

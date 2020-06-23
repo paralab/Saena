@@ -178,7 +178,7 @@ int main(int argc, char* argv[]){
 
     bool bool_correct = true;
     if(rank==0){
-        printf("\n******************************************************\n");
+        print_sep();
         printf("Checking the correctness of the solution:\n");
 //        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
         for(index_t i = 0; i < num_local_row; ++i){
@@ -190,11 +190,11 @@ int main(int argc, char* argv[]){
         }
         if(bool_correct){
             printf("\nThe solution is correct!\n");
-            printf("\n******************************************************\n");
+            print_sep();
         }
         else{
             printf("\nThe solution is NOT correct!\n");
-            printf("\n******************************************************\n");
+            print_sep();
         }
     }
 
