@@ -819,10 +819,21 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
     delete [] requests;
     delete [] statuses;
 
-    matvec_dummy_time.assign(4, 0);
+    matvec_dummy_time.resize(4);
+    std::vector<double> tempt(4);
 
+    tempt[0] = (t0_end - t0_start) / nprocs;
+    tempt[1] = (t1_end - t1_start) / nprocs;
+    tempt[2] = (t2_end - t2_start) / nprocs;
+    tempt[3] = (t3_end - t3_start) / nprocs;
+
+    MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
+
+//    print_vector(matvec_dummy_time, 0, "matvec_dummy_time", comm);
+
+#if 0
     // set vsend
-    double time0_local = t0_end-t0_start;
+    double time0_local = t0_end - t0_start;
     double time0;
     MPI_Allreduce(&time0_local, &time0, 1, MPI_DOUBLE, MPI_SUM, comm);
     matvec_dummy_time[0] += time0/nprocs;
@@ -844,6 +855,7 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
     double time3;
     MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
     matvec_dummy_time[3] += time3/nprocs;
+#endif
 
     return 0;
 }
