@@ -1,20 +1,9 @@
-#include <cmath>
-
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "aux_functions.h"
 #include "dollar.hpp"
-#include "parUtils.h"
-
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <set>
-#include <random>
-#include <mpi.h>
 
 //#include <numeric> // accumulate
-//#include <cassert>
 
 // parts related to TRSL
 #if 0

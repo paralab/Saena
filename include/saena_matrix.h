@@ -12,10 +12,7 @@
 #include "zfparray1.h"
 #include "parUtils.h"
 
-#include <iostream>
-#include <vector>
 #include <set>
-#include <mpi.h>
 
 
 class saena_matrix {

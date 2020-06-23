@@ -4,11 +4,6 @@
 #include "data_struct.h"
 #include "zfparray1.h"
 
-#include "vector"
-#include <mpi.h>
-#include <cstdlib>
-
-
 class saena_matrix;
 
 class saena_matrix_dense {

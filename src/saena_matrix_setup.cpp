@@ -1,11 +1,4 @@
 #include "saena_matrix.h"
-#include "dollar.hpp"
-
-#include <cstring>
-#include <algorithm>
-#include <omp.h>
-#include "mpi.h"
-
 
 int saena_matrix::assemble(bool scale /*= true*/) {
 

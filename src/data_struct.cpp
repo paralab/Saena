@@ -1,6 +1,3 @@
-#include <cmath>
-#include <aux_functions.h>
-#include <iomanip>
 #include "data_struct.h"
 
 

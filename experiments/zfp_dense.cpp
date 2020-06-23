@@ -4,23 +4,6 @@
 #include "saena_matrix_dense.h"
 #include "saena.hpp"
 
-#include <iostream>
-#include <vector>
-#include <iomanip>
-#include <omp.h>
-#include <mpi.h>
-#include <algorithm>
-#include <fstream>
-#include <sys/stat.h>
-#include <dollar.hpp>
-
-#ifdef _USE_COMBBLAS_
-#include "combblas_functions.h"
-#endif
-
-#ifdef _USE_PETSC_
-#include "petsc_functions.h"
-#endif
 
 using namespace std;
 

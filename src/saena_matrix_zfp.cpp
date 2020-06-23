@@ -1,7 +1,5 @@
 #include "saena_matrix.h"
 #include "zfparray1.h"
-#include <omp.h>
-#include <cassert>
 
 // The zfp_field parameter object holds information about the uncompressed array. To specify the compressed array,
 //a zfp_stream object must be allocated.

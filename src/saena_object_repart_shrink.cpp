@@ -2,14 +2,9 @@
 #include "saena_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
-#include <parUtils.h>
-#include "dollar.hpp"
+#include "parUtils.h"
 
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <mpi.h>
-#include <saena_vector.h>
+#include "saena_vector.h"
 
 
 //int saena_object::set_repartition_rhs(std::vector<value_t> rhs0)

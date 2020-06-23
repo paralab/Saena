@@ -7,9 +7,6 @@
 #include "saena_matrix.h"
 #include "saena_vector.h"
 
-#include <vector>
-#include <mpi.h>
-
 
 class Grid{
 public:

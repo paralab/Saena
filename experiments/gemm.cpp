@@ -3,20 +3,6 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-#include <iostream>
-#include <vector>
-#include <dollar.hpp>
-#include <omp.h>
-#include <mpi.h>
-
-#ifdef _USE_COMBBLAS_
-#include "combblas_functions.h"
-#endif
-
-#ifdef _USE_PETSC_
-#include "petsc_functions.h"
-#endif
-
 using namespace std;
 
 int main(int argc, char* argv[]){

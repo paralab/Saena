@@ -3,15 +3,6 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-#ifdef _USE_PETSC_
-#include "petsc_functions.h"
-#endif
-
-#include <iostream>
-#include <vector>
-#include <omp.h>
-#include "mpi.h"
-
 
 int main(int argc, char* argv[]){
 

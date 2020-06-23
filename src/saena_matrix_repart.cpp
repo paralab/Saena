@@ -1,14 +1,4 @@
 #include "saena_matrix.h"
-#include "parUtils.h"
-#include "dollar.hpp"
-
-#include <fstream>
-#include <cstring>
-#include <algorithm>
-#include <omp.h>
-#include <iomanip>
-#include "mpi.h"
-
 
 int saena_matrix::repartition_nnz_initial(){
     // before using this function these variables of saena_matrix should be set:

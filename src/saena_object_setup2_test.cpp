@@ -6,14 +6,6 @@
 #include "grid.h"
 #include "aux_functions.h"
 #include "parUtils.h"
-#include "dollar.hpp"
-
-//#include "petsc_functions.h"
-
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <mpi.h>
 
 // =======================================================
 // There are two methods to split the matrices recursively:

@@ -2,10 +2,34 @@
 #define SAENA_DATA_STRUCT_H
 
 #include <iostream>
-#include <vector>
-#include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <sstream>
+#include <fstream>
+#include <sys/stat.h>
+#include <iomanip>
+
+#include <string>
+#include <vector>
+#include <set>
+#include <cmath>
+#include <algorithm>
+#include <random>
+
 #include "mpi.h"
+#include <omp.h>
+
+#include "dollar.hpp"
+
+#ifdef _USE_COMBBLAS_
+#include "combblas_functions.h"
+#endif
+
+#ifdef _USE_PETSC_
+#include "petsc_functions.h"
+#endif
+
+using namespace std;
 
 typedef int           index_t; // Saena index type
 typedef long          nnz_t;   // Saena nonzero type

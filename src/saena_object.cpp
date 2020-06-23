@@ -6,10 +6,6 @@
 #include "aux_functions.h"
 #include "ietl_saena.h"
 
-//#include "dollar.hpp"
-//#include "petsc_functions.h"
-
-#include <cstdio>
 #include <random>
 
 

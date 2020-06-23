@@ -3,9 +3,6 @@
 
 #include "aux_functions.h"
 
-#include <vector>
-#include "mpi.h"
-
 
 class prolong_matrix {
 // A matrix of this class is ordered <<ONLY>> if it is defined in createProlongation function in saena_object.cpp.

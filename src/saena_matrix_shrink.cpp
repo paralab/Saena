@@ -1,10 +1,5 @@
 #include "saena_matrix.h"
 #include "parUtils.h"
-#include "dollar.hpp"
-
-#include <fstream>
-#include <algorithm>
-#include <omp.h>
 
 int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
     // set cpu_shrink_thre2 and do_shrink

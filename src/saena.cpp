@@ -1,18 +1,12 @@
 #include "saena.hpp"
 #include "saena_matrix.h"
-//#include "saena_matrix_dense.h"
 #include "saena_vector.h"
 #include "saena_object.h"
-//#include "pugixml.hpp"
-#include "dollar.hpp"
+#include "grid.h"
 #include "parUtils.h"
+//#include "pugixml.hpp"
 
-#include <vector>
-#include <string>
-#include <mpi.h>
 #include <random>
-#include <cmath>
-#include <grid.h>
 
 # define PETSC_PI 3.14159265358979323846
 

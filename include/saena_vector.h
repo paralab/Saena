@@ -4,8 +4,6 @@
 #include "aux_functions.h"
 
 #include <set>
-#include "mpi.h"
-//#include <boost/numeric/ublas/vector.hpp>
 
 /**
  * @author Majid Rasouli

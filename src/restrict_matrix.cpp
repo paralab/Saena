@@ -1,18 +1,7 @@
 #include "data_struct.h"
-#include <prolong_matrix.h>
-#include <restrict_matrix.h>
-
-
+#include "prolong_matrix.h"
+#include "restrict_matrix.h"
 #include "parUtils.h" // for writeMatrixToFile()
-#include <fstream> // for writeMatrixToFile()
-
-#include "dollar.hpp"
-#include <iostream>
-#include <algorithm>
-#include <omp.h>
-
-
-using namespace std;
 
 
 restrict_matrix::restrict_matrix() = default;

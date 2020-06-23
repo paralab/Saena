@@ -7,15 +7,8 @@
 #include "aux_functions.h"
 #include "parUtils.h"
 
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <mpi.h>
-#include <iomanip>
-
 
 // to write saena matrix to a file use the related function from the saena_matrix class.
-
 int saena_object::writeMatrixToFile(std::vector<cooEntry>& A, const std::string &folder_name, MPI_Comm comm){
     // This function writes a vector of entries to a file. The vector should be sorted, if not
     // use the std::sort on the vector before calling this function.

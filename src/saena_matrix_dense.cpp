@@ -2,9 +2,6 @@
 #include <saena_matrix.h>
 #include <dtypes.h>
 
-#include "iostream"
-
-using namespace std;
 
 saena_matrix_dense::saena_matrix_dense() = default;
 

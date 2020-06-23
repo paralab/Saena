@@ -3,12 +3,6 @@
 #include "grid.h"
 #include "aux_functions.h"
 #include "parUtils.h"
-#include "dollar.hpp"
-
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <mpi.h>
 
 
 int saena_object::update1(saena_matrix* A_new){

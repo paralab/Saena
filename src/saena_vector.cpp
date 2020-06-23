@@ -2,8 +2,6 @@
 #include "aux_functions.h"
 #include "parUtils.h"
 
-#include <set>
-
 saena_vector::saena_vector() = default;
 
 saena_vector::saena_vector(MPI_Comm com) {

@@ -3,14 +3,6 @@
 #include "aux_functions.h"
 #include "parUtils.h"
 
-#include <cstdlib>
-#include <algorithm>
-#include <iostream>
-#include <cstring>
-#include <algorithm>
-#include <random>
-#include "mpi.h"
-
 
 /*
 // sort indices and store the ordering.

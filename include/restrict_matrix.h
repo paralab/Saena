@@ -3,9 +3,6 @@
 
 #include "aux_functions.h"
 
-#include <vector>
-#include <mpi.h>
-
 class prolong_matrix;
 
 

@@ -1,16 +1,7 @@
 #ifndef SAENA_AUXFUNCTIONS_H
 #define SAENA_AUXFUNCTIONS_H
 
-#include <data_struct.h>
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include <cmath>
-#include <mpi.h>
-#include <fstream>
-#include <sstream>
-
+#include "data_struct.h"
 
 class strength_matrix;
 class saena_matrix;

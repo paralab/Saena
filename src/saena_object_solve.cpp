@@ -1,16 +1,10 @@
 #include <cmath>
 #include "superlu_ddefs.h"
-//#include "superlu_defs.h"
 
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
-#include "dollar.hpp"
-
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
 
 // use this to store number of iterations for the lazy-update experiment.
 std::vector<int> iter_num_lazy;

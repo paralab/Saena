@@ -6,11 +6,6 @@
 #include "saena.hpp"
 #include "data_struct.h"
 
-#include <iostream>
-#include <sstream>
-#include <omp.h>
-#include "mpi.h"
-
 using namespace std;
 
 int main(int argc, char* argv[]){

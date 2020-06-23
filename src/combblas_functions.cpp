@@ -3,13 +3,8 @@
 #include "combblas_functions.h"
 #include "aux_functions.h"
 
-#include <mpi.h>
 #include <sys/time.h>
-#include <iostream>
 #include <functional>
-#include <algorithm>
-#include <vector>
-#include <sstream>
 
 #define COMBBLAS_ITER 5
 #define ElementType double

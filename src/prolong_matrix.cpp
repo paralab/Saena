@@ -2,13 +2,6 @@
 #include "data_struct.h"
 
 #include "parUtils.h" // for writeMatrixToFile()
-#include <fstream> // for writeMatrixToFile()
-
-#include <cstdlib>
-#include <algorithm>
-#include <iostream>
-#include <omp.h>
-#include "mpi.h"
 
 
 prolong_matrix::prolong_matrix() = default;

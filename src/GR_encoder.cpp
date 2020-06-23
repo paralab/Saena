@@ -1,8 +1,8 @@
-#include <aux_functions.h>
+#include "GR_encoder.h"
+
 #include <bitset>
 #include <cassert>
 #include <iomanip>
-#include "GR_encoder.h"
 
 #ifndef NDEBUG
 #   define ASSERT(condition, message) \

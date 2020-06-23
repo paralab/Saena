@@ -2,10 +2,6 @@
 
 #include "data_struct.h"
 
-#include <vector>
-#include <string>
-#include <mpi.h>
-
 class saena_matrix;
 class saena_vector;
 class saena_matrix_dense;

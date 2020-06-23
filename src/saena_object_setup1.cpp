@@ -5,16 +5,6 @@
 #include "grid.h"
 #include "aux_functions.h"
 #include "parUtils.h"
-#include "superlu_defs.h"
-#include "dollar.hpp"
-
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <algorithm>
-#include <set>
-#include <random>
-#include <mpi.h>
 
 
 int saena_object::SA(Grid *grid){

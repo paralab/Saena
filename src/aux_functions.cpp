@@ -2,11 +2,7 @@
 #include "saena_matrix.h"
 #include "parUtils.h"
 
-#include <iostream>
 #include <random>
-#include <cmath>
-#include <sys/stat.h>
-#include <iomanip>
 
 class saena_matrix;
 

@@ -3,18 +3,6 @@
 #include "saena_matrix.h"
 #include "saena.hpp"
 
-#include "petsc_functions.h"
-//#include "combblas_functions.h"
-
-#include <iostream>
-#include <algorithm>
-#include <fstream>
-#include <sys/stat.h>
-#include <vector>
-#include <omp.h>
-#include <dollar.hpp>
-#include "mpi.h"
-
 
 int main(int argc, char* argv[]){
 

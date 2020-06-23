@@ -5,15 +5,8 @@
 #include "GR_encoder.h"
 #include "aux_functions.h"
 #include "parUtils.h"
-//#include "dollar.hpp"
 
 #include <mkl_spblas.h>
-
-//#include <cstdio>
-#include <fstream>
-#include <algorithm>
-//#include <iomanip>
-#include <mpi.h>
 
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm

@@ -6,14 +6,7 @@
 #include "grid.h"
 #include "aux_functions.h"
 #include "parUtils.h"
-#include "dollar.hpp"
 #include "superlu_ddefs.h"
-
-//#include "petsc_functions.h"
-
-#include <fstream>
-#include <algorithm>
-#include <mpi.h>
 
 
 int saena_object::compute_coarsen(Grid *grid) {

@@ -1,16 +1,6 @@
 #include "data_struct.h"
 #include "saena_matrix.h"
 #include "parUtils.h"
-#include "dollar.hpp"
-
-#include <fstream>
-#include <cstring>
-#include <algorithm>
-#include <sys/stat.h>
-#include <omp.h>
-#include <printf.h>
-#include <iomanip>
-#include "mpi.h"
 
 
 saena_matrix::saena_matrix() = default;

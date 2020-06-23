@@ -5,12 +5,8 @@
 //#include "restrict_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
+#include "parUtils.h"
 
-#include <vector>
-#include <cmath>
-#include <stdio.h>
-#include <sstream>
-#include <parUtils.h>
 
 using namespace std;
 

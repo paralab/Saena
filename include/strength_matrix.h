@@ -3,10 +3,6 @@
 
 #include "aux_functions.h"
 
-#include <vector>
-#include "mpi.h"
-
-
 class strength_matrix {
 
 public:
