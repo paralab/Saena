@@ -153,7 +153,6 @@ public:
 
     // shrink_minor: if there no entry for the coarse matrix on this proc, then shrink.
     bool active_minor = false;    // default = false
-    std::vector<index_t> split_old_minor;
 
     double density = -1.0;
     float jacobi_omega = float(2.0/3);

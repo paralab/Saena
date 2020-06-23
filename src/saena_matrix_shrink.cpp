@@ -298,7 +298,7 @@ int saena_matrix::shrink_cpu_minor(){
 
     comm_old = comm;
 
-    split_old_minor = split;
+    std::vector<index_t> split_old_minor = split;
     split.clear();
     if(active_minor){
         split.resize(total_active_procs + 1);
