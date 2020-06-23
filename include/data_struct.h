@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <sstream>
 #include "mpi.h"
 
 typedef int           index_t; // Saena index type
@@ -43,6 +44,13 @@ typedef unsigned char uchar;
 #else
 #   define ASSERT(condition, message) do { } while (false)
 #endif
+
+
+void inline print_sep(){
+    std::stringstream buf;
+    buf << MAGENTA << "\n******************************************************\n" << COLORRESET;
+    std::cout << buf.str();
+}
 
 
 inline index_t rem_sz(index_t sz, unsigned int k){
