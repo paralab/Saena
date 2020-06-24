@@ -306,8 +306,8 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 #ENDIF()
 
 IF(CMAKE_BUILD_TYPE STREQUAL Release)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g")
 ENDIF()
 
 # -----------------------------------------------------------------------
