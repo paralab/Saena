@@ -18,8 +18,6 @@
 // number of update steps for lazy-update
 #define ITER_LAZY 20
 
-const double ALMOST_ZERO = 1e-16;
-
 class strength_matrix;
 class saena_matrix;
 class prolong_matrix;
