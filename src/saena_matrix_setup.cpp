@@ -36,8 +36,7 @@ int saena_matrix::setup_initial_data(){
     // read this: https://stackoverflow.com/questions/5034211/c-copy-set-to-vector
     data_unsorted.resize(data_coo.size());
     for(it = data_coo.begin(); it != data_coo.end(); ++it){
-        data_unsorted[iter] = *it;
-        ++iter;
+        data_unsorted[iter++] = *it;
 
         temp = *it;
         if(temp.col > Mbig_local)
@@ -84,8 +83,7 @@ int saena_matrix::setup_initial_data2(){
 
     data_unsorted.resize(data_coo.size());
     for(it = data_coo.begin(); it != data_coo.end(); ++it){
-        data_unsorted[iter] = *it;
-        ++iter;
+        data_unsorted[iter++] = *it;
     }
 
     remove_duplicates();
@@ -155,52 +153,60 @@ int saena_matrix::remove_duplicates() {
 
     // size of data may be smaller because of duplicates. In that case its size will be reduced after finding the exact size.
     data.resize(data_sorted.size());
+
     // put the first element of data_unsorted to data.
+    value_t tmp     = 0.0;
     nnz_t data_size = 0;
-    if(!data_sorted.empty()){
-        data[0] = data_sorted[0];
-        data_size++;
-    }
+    nnz_t sz        = data_sorted.size();
+
     if(add_duplicates){
-        for(nnz_t i = 1; i < data_sorted.size(); i++) {
-            if (data_sorted[i] == data_sorted[i - 1]) {
-                data[data_size - 1].val += data_sorted[i].val;
-            } else {
-                data[data_size] = data_sorted[i];
-                data_size++;
+        for(nnz_t i = 0; i < sz; ++i) {
+//            cout << data_sorted[i] << endl;
+            tmp = data_sorted[i].val;
+            while(i + 1 < sz && data_sorted[i + 1] == data_sorted[i]){
+                tmp += data_sorted[++i].val;
+            }
+
+            if (fabs(tmp) > ALMOST_ZERO) {
+                data[data_size++] = cooEntry(data_sorted[i].row, data_sorted[i].col, tmp);
             }
         }
     } else {
-        for(nnz_t i = 1; i < data_sorted.size(); i++){
-            if(data_sorted[i] == data_sorted[i - 1]){
-                data[data_size - 1] = data_sorted[i];
-            }else{
-                data[data_size] = data_sorted[i];
-                data_size++;
+        for(nnz_t i = 0; i < sz; ++i) {
+            while(i + 1 < sz && data_sorted[i + 1] == data_sorted[i]){
+                ++i;
+            }
+            if (fabs(data_sorted[i].val) > ALMOST_ZERO) {
+                data[data_size++] = data_sorted[i];
             }
         }
     }
-    data.resize(data_size);
-    data.shrink_to_fit();
+
+    if(data_size != data_sorted.size()){
+        data.resize(data_size);
+        data.shrink_to_fit();
+    }
 
     // todo: replace the previous part with this
-//    nnz_t data_sorted_size_minus1 = data_sorted.size()-1;
-//    if(add_duplicates){
-//        for(nnz_t i = 0; i < data_sorted.size(); i++){
-//            data.emplace_back(data_sorted[i]);
-//            while(i < data_sorted_size_minus1 && data_sorted[i] == data_sorted[i+1]){ // values of entries with the same row should be added.
-//                //            std::cout << data_sorted[i] << "\t" << data_sorted[i+1] << std::endl;
-//                data.back().val += data_sorted[++i].val;
-//            }
-//        }
-//    } else {
-//        for(nnz_t i = 0; i < data_sorted.size(); i++){
-//            data.emplace_back(data_sorted[i]);
-//            while(i < data_sorted_size_minus1 && data_sorted[i] == data_sorted[i+1]){ // values of entries with the same row should be added.
-//                ++i;
-//            }
-//        }
-//    }
+#if 0
+    nnz_t data_sorted_size_minus1 = data_sorted.size()-1;
+    if(add_duplicates){
+        for(nnz_t i = 0; i < data_sorted.size(); i++){
+            data.emplace_back(data_sorted[i]);
+            while(i < data_sorted_size_minus1 && data_sorted[i] == data_sorted[i+1]){ // values of entries with the same row should be added.
+                std::cout << data_sorted[i] << "\t" << data_sorted[i+1] << std::endl;
+                data.back().val += data_sorted[++i].val;
+            }
+        }
+    } else {
+        for(nnz_t i = 0; i < data_sorted.size(); i++){
+            data.emplace_back(data_sorted[i]);
+            while(i < data_sorted_size_minus1 && data_sorted[i] == data_sorted[i+1]){ // values of entries with the same row should be added.
+                ++i;
+            }
+        }
+    }
+#endif
 
     // check for dupliactes on boundary points of the processors
     // ---------------------------------------------------------
