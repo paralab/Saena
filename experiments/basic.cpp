@@ -196,15 +196,16 @@ int main(int argc, char* argv[]){
         }
     }
 
+/*
     std::vector<double> res(num_local_row,0);
     for(index_t i = 0; i < num_local_row; ++i){
         res[i] = Au[i] - rhs_std[i];
 //        printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
     }
 
-//    float norm1 = pnorm(res, comm);
-//    if(!rank) std::cout << "norm(Au-b)     = " << norm1 << "\n";
-
+    float norm1 = pnorm(res, comm);
+    if(!rank) std::cout << "norm(Au-b)     = " << norm1 << "\n";
+*/
     // *************************** check correctness of the solution 2 ****************************
 
 /*

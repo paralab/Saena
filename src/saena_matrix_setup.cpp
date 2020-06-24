@@ -60,7 +60,10 @@ int saena_matrix::setup_initial_data(){
 
     initial_nnz_l = data.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
-//    MPI_Barrier(comm); printf("rank = %d, Mbig = %u, nnz_g = %u, initial_nnz_l = %u \n", rank, Mbig, nnz_g, initial_nnz_l); MPI_Barrier(comm);
+
+//    MPI_Barrier(comm);
+//    printf("rank = %d, Mbig = %u, nnz_g = %ld, initial_nnz_l = %ld \n", rank, Mbig, nnz_g, initial_nnz_l);
+//    MPI_Barrier(comm);
 
     return 0;
 }

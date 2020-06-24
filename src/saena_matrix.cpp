@@ -335,7 +335,8 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
     if(verbose_saena_matrix){
         MPI_Barrier(comm);
         printf("saena_matrix: part 2. rank = %d, nnz_g = %lu, initial_nnz_l = %lu, Mbig = %u \n", rank, nnz_g, initial_nnz_l, Mbig);
-        MPI_Barrier(comm);}
+        MPI_Barrier(comm);
+    }
 
 //    print_vector(data, -1, "data", comm);
 
