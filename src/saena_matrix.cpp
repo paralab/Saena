@@ -49,7 +49,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
         std::ifstream inFile_check(filename.c_str());
         if (!inFile_check.is_open()) {
             if (!rank) std::cout << "\nCould not open file <" << filename << ">" << std::endl;
-            MPI_Barrier(comm);
+            MPI_Finalize();
             exit(EXIT_FAILURE);
         }
         inFile_check.close();
@@ -79,42 +79,35 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
                     std::ifstream inFile(filename.c_str());
 
-//                if (!inFile.is_open()) {
-//                    std::cout << "Could not open the file!" << std::endl;
-//                    MPI_Barrier(comm);
-//                    return -1;
-//                }
-
                     // ignore comments
                     while (inFile.peek() == '%') inFile.ignore(2048, '\n');
 
                     // M and N are the size of the matrix with nnz nonzeros
-                    nnz_t M, N, nnz;
-                    inFile >> M >> N >> nnz;
+                    nnz_t M_in, N_in, nnz;
+                    inFile >> M_in >> N_in >> nnz;
 
-//                printf("M = %u, N = %u, nnz = %u \n", M, N, nnz);
+//                    printf("M = %ld, N = %ld, nnz = %ld \n", M_in, N_in, nnz);
 
                     std::ofstream outFile;
                     outFile.open(outFileName.c_str(), std::ios::out | std::ios::binary);
 
                     std::vector<cooEntry> entry_temp1;
-//                std::vector<cooEntry> entry;
+//                    std::vector<cooEntry> entry;
                     // number of nonzeros is less than 2*nnz, considering the diagonal
                     // that's why there is a resize for entry when nnz is found.
 
-                    index_t a, b, i = 0;
-                    double c;
+                    index_t a = 0, b = 0, i = 0;
+                    value_t c = 0.0;
 
                     if (input_type.empty()) {
 
                         while (inFile >> a >> b >> c) {
                             entry_temp1.resize(nnz);
                             // for mtx format, rows and columns start from 1, instead of 0.
-//                        std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
+//                            std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
                             entry_temp1[i] = cooEntry(a - 1, b - 1, c);
                             i++;
-//                        cout << entry_temp1[i] << endl;
-
+//                            cout << entry_temp1[i] << endl;
                         }
 
                     } else if (input_type == "triangle") {
@@ -144,7 +137,6 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                             entry_temp1[i] = cooEntry(a - 1, b - 1, double(1));
                             i++;
 //                        cout << entry_temp1[i] << endl;
-
                         }
 
                     } else if (input_type == "tripattern") {
@@ -174,8 +166,8 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
                     std::sort(entry_temp1.begin(), entry_temp1.end());
 
-                    for (i = 0; i < nnz; i++) {
-//                    std::cout << entry_temp1[i] << std::endl;
+                    for (i = 0; i < nnz; ++i) {
+//                        std::cout << entry_temp1[i] << std::endl;
                         outFile.write((char *) &entry_temp1[i].row, sizeof(index_t));
                         outFile.write((char *) &entry_temp1[i].col, sizeof(index_t));
                         outFile.write((char *) &entry_temp1[i].val, sizeof(value_t));

@@ -12,8 +12,6 @@
 #include "zfparray1.h"
 #include "parUtils.h"
 
-#include <set>
-
 
 class saena_matrix {
 
@@ -165,8 +163,8 @@ public:
     bool dense_matrix_generated = false;
     float dense_threshold = 0.1; // 0 < dense_threshold <= 1 decide when to also generate dense_matrix for this matrix.
     int generate_dense_matrix();
-    // ***********************************************************
 
+    // ***********************************************************
     // zfp parameters
     // ***********************************************************
 
