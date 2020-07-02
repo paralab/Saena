@@ -83,7 +83,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                     while (inFile.peek() == '%') inFile.ignore(2048, '\n');
 
                     // M and N are the size of the matrix with nnz nonzeros
-                    nnz_t M_in, N_in, nnz;
+                    nnz_t M_in = 0, N_in = 0, nnz = 0;
                     inFile >> M_in >> N_in >> nnz;
 
 //                    printf("M = %ld, N = %ld, nnz = %ld \n", M_in, N_in, nnz);
@@ -101,28 +101,25 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
                     if (input_type.empty()) {
 
+                        entry_temp1.resize(nnz);
                         while (inFile >> a >> b >> c) {
-                            entry_temp1.resize(nnz);
                             // for mtx format, rows and columns start from 1, instead of 0.
 //                            std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
-                            entry_temp1[i] = cooEntry(a - 1, b - 1, c);
-                            i++;
+                            entry_temp1[i++] = cooEntry(a - 1, b - 1, c);
 //                            cout << entry_temp1[i] << endl;
                         }
 
                     } else if (input_type == "triangle") {
 
+                        entry_temp1.resize(2 * nnz);
                         while (inFile >> a >> b >> c) {
-                            entry_temp1.resize(2 * nnz);
                             // for mtx format, rows and columns start from 1, instead of 0.
 //                        std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
-                            entry_temp1[i] = cooEntry(a - 1, b - 1, c);
-                            i++;
+                            entry_temp1[i++] = cooEntry(a - 1, b - 1, c);
 //                        cout << entry_temp1[i] << endl;
                             // add the lower triangle, not any diagonal entry
                             if (a != b) {
-                                entry_temp1[i] = cooEntry(b - 1, a - 1, c);
-                                i++;
+                                entry_temp1[i++] = cooEntry(b - 1, a - 1, c);
                                 nnz++;
                             }
                         }
@@ -130,29 +127,26 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
                     } else if (input_type == "pattern") { // add 1 for value for a pattern matrix
 
+                        entry_temp1.resize(nnz);
                         while (inFile >> a >> b) {
-                            entry_temp1.resize(nnz);
                             // for mtx format, rows and columns start from 1, instead of 0.
 //                        std::cout << "a = " << a << ", b = " << b << std::endl;
-                            entry_temp1[i] = cooEntry(a - 1, b - 1, double(1));
-                            i++;
+                            entry_temp1[i++] = cooEntry(a - 1, b - 1, double(1));
 //                        cout << entry_temp1[i] << endl;
                         }
 
                     } else if (input_type == "tripattern") {
 
+                        entry_temp1.resize(2 * nnz);
                         while (inFile >> a >> b) {
-                            entry_temp1.resize(2 * nnz);
                             // for mtx format, rows and columns start from 1, instead of 0.
 //                        std::cout << "a = " << a << ", b = " << b << std::endl;
-                            entry_temp1[i] = cooEntry(a - 1, b - 1, double(1));
-                            i++;
+                            entry_temp1[i++] = cooEntry(a - 1, b - 1, double(1));
 //                        std::cout << entry_temp1[i] << std::endl;
 
                             // add the lower triangle, not any diagonal entry
                             if (a != b) {
-                                entry_temp1[i] = cooEntry(b - 1, a - 1, double(1));
-                                i++;
+                                entry_temp1[i++] = cooEntry(b - 1, a - 1, double(1));
                                 nnz++;
                             }
                         }
@@ -161,7 +155,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                     } else {
                         std::cerr << "the input type is not acceptable!" << std::endl;
                         MPI_Finalize();
-                        return -1;
+                        exit(EXIT_FAILURE);
                     }
 
                     std::sort(entry_temp1.begin(), entry_temp1.end());
@@ -179,7 +173,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
             }
 
-            // wait until the binary file writing by proc 0 is done.
+            // wait until the binary file being written by proc 0 is ready.
             MPI_Barrier(comm);
 
         } else if (file_extension == "dat") { // dense matrix
@@ -238,7 +232,7 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
 //                print_vector(entry_temp1, 0, "entry_temp1", comm);
 
-                    for (nnz_t i = 0; i < entry_temp1.size(); i++) {
+                    for (nnz_t i = 0; i < entry_temp1.size(); ++i) {
 //                    std::cout << entry_temp1[i] << std::endl;
                         outFile.write((char *) &entry_temp1[i].row, sizeof(index_t));
                         outFile.write((char *) &entry_temp1[i].col, sizeof(index_t));
