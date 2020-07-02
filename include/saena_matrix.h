@@ -57,6 +57,7 @@ public:
     index_t M_max   = 0; // biggest M on all the processors
 
     int p_order = 1;
+    int prodim = 2;
 
     std::set<cooEntry_row> data_coo;
     std::vector<cooEntry>  entry;

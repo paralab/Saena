@@ -392,23 +392,44 @@ public:
     }
 
     std::vector<int> next_p_level(std::vector<int> ind_fine, int order);
-    void set_PR_from_p(int order, std::vector< std::vector<int> > map, int prodim, std::vector< std::vector<double> > &Pp);//, std::vector< std::vector<double> > &Rp);
-    void set_P_from_mesh(int order, std::vector< std::vector<int> > map, int prodim, std::vector<cooEntry_row> &P_temp, MPI_Comm comm, std::vector<int> g2u);
-    std::vector<double> get_interpolation(int ind, int order, int prodim);
+    std::vector<int> next_p_level_new(std::vector<int> ind_fine, int order, int *type = NULL);
+    std::vector<int> next_p_level_new2(std::vector<int> ind_fine, int order, int *type = NULL);
+    void set_PR_from_p(int order, std::vector< std::vector<int> > map, std::vector< std::vector<double> > &Pp);//, std::vector< std::vector<double> > &Rp);
+    void set_P_from_mesh(int order, std::vector< std::vector<int> > map, std::vector<cooEntry_row> &P_temp, MPI_Comm comm, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector< std::vector<int> > > &map_all);
+
+    std::vector<double> get_interpolation(int ind, int orderm);
+    // replace above one after testing
+    std::vector<double> get_interpolation_new(int ind, int order, int type);
+    std::vector<double> get_interpolation_new2(int ind, int order, int type, bool flag);
+
     std::vector<int> coarse_p_node_arr(std::vector< std::vector<int> > map, int order);
     inline int findloc(std::vector<int> arr, int a);
-	//inline std::vector< std::vector<double> > transp(std::vector< std::vector<double> > M);
-	inline bool ismember(int a, std::vector<int> arr);
-	//inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
-	inline std::vector< std::vector<double> > eighth_order(int order);
-	inline std::vector< std::vector<int> > mesh_info(int order, std::string filename, std::vector< std::vector< std::vector<int> > > &map_all, MPI_Comm comm);
-	inline std::vector<int> g2umap(int order, std::string filename, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector<int> > map, MPI_Comm comm);
-	int bdydof;
+    //inline std::vector< std::vector<double> > transp(std::vector< std::vector<double> > M);
+    inline bool ismember(int a, std::vector<int> arr);
+    //inline std::vector< std::vector<int> > connect(int order, int a_elemno, int prodim);
+    inline int factorial(int n);
+    inline std::vector<double> comp_L(int i, int order);
+    inline std::vector< std::vector<double> > eighth_order(int order);
+    // replace above one after testing
+    inline std::vector< std::vector<double> > one_interp_P(int order);
+
+    inline std::vector< std::vector<int> > mesh_info(int order, std::string filename, std::vector< std::vector< std::vector<int> > > &map_all, MPI_Comm comm);
+    void g2umap(int order, std::string filename, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector< std::vector<int> > > &map, MPI_Comm comm);
+    int bdydof;
+    int next_bdydof;
     int elemno;
     int nodeno_fine;
     int nodeno_coarse;
     // for debugging
     int rank_v = 0;
+    inline std::vector<double> gl_1d(int order);
+    inline double phi_P(int type, int p, double z, int q = 0, int r = 0);
+    inline double phi_Pq(int type, int p, int q, double z, int r = 0);
+    inline double phi_Pqr(int type, int p, int q, int r, double z);
+    inline double *jacobiP(int n, double alpha, double beta, double x[], int m=1);
+    int prodim;
+    std::vector<int> ordering_map;
+    void comp_ordering_map(int type, int order);
 };
 
 #endif //SAENA_SAENA_OBJECT_H
