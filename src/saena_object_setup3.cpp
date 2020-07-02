@@ -5,12 +5,9 @@
 //#include "restrict_matrix.h"
 #include "grid.h"
 #include "aux_functions.h"
+#include "parUtils.h"
 
-#include <vector>
-#include <cmath>
-#include <stdio.h>
-#include <sstream>
-#include <parUtils.h>
+#include <numeric>
 
 using namespace std;
 
@@ -28,11 +25,6 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
 	cout << xx[N] << endl;
 	exit(0);*/
 
-    saena_matrix   *A  = grid->A;
-    prolong_matrix *P  = &grid->P;
-    saena_matrix   *Ac = &grid->Ac;
-    Ac->set_p_order(A->p_order / 2);
-
     // A parameters:
     // A.entry[i]: to access entry i of A, which is local to this processor.
     //             each entry is in COO format: i, j, val
@@ -49,6 +41,12 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     // P.Nbig: the colume size of P
     // P->entry[i] = cooEntry(i, j, val);
 
+    saena_matrix   *A  = grid->A;
+    prolong_matrix *P  = &grid->P;
+    saena_matrix   *Ac = &grid->Ac;
+
+    Ac->set_p_order(A->p_order / 2);
+
     MPI_Comm comm = A->comm;
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -61,11 +59,11 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
 #endif
 
     //cout << "set up P" << endl;
-    int order  = A->p_order;
-    prodim = A->prodim;
+    int order = A->p_order;
+    prodim    = A->prodim;
 
     //std::cout << "problem dim = " << prodim << endl;
-    //exit(0);
+
     std::string filename_map = "../data/nektar/nek_map_"+std::to_string(rank)+".txt";
     std::string filename_g2u = "../data/nektar/nek_g2u_"+std::to_string(rank)+".txt";
 
@@ -120,9 +118,8 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     //set_PR_from_p(order, map, prodim, Pp);//, Rp);
     set_P_from_mesh(order, map, P_temp, comm, g2u_all, map_all);//, Rp);
 
-
     bdydof = next_bdydof;
-    print_vector(P_temp, -1, "P_temp", comm);
+
 #ifdef __DEBUG1__
 //    print_vector(P_temp, -1, "P_temp", comm);
 
@@ -174,28 +171,25 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     if(verbose_coarsen) {
         MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);
     }
-//    std::sort(P_temp.begin(), P_temp.end(), row_major);
 //    print_vector(P_temp, -1, "P_temp", comm);
 #endif
 
-//    std::sort(P_temp.begin(), P_temp.end(), row_major);
-
-    if (!rank)
-    {
-        cout<< "\n===============" << endl;
-        cout << "Start SampleSort" << endl;
-        cout<< "===============" << endl;
-    }
-
     vector<cooEntry_row> Pent;
-//    P->entry.clear();
     par::sampleSort(P_temp, Pent, P->split, comm);
-    if (!rank)
-        cout << "Finish SampleSort" << endl;
-    //Pent = P_temp;
-    //print_vector(P_temp, -1, "P_temp", comm);
+
     // remove duplicates
     Pent.erase( unique( Pent.begin(), Pent.end() ), Pent.end() );
+
+#ifdef __DEBUG1__
+//    std::sort(P_temp.begin(), P_temp.end(), row_major);
+//    Pent = P_temp;
+
+//    print_vector(Pent, -1, "Pent", comm);
+//    print_vector(P->split, -1, "P->split", comm);
+    if(verbose_coarsen) {
+        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);
+    }
+#endif
 
     P->entry.clear();
     P->entry.resize(Pent.size());
@@ -207,26 +201,29 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     }
 
     std::sort(P->entry.begin(), P->entry.end());
+
 #ifdef __DEBUG1__
 //    std::sort(A->entry.begin(), A->entry.end(), row_major);
 //    print_vector(A->entry, -1, "A", comm);
 //    print_vector(P->entry, -1, "P", comm);
-//    print_vector(Pent, -1, "Pent", comm);
-//    print_vector(P->split, -1, "P->split", comm);
     if(verbose_coarsen) {
-        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); printf("coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
-    if(rank == nprocs - 1){
-        P->Nbig = P->entry.back().col + 1;
+    // set nnz_l and nnz_g
+    P->nnz_l = P->entry.size();
+    MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, P->comm);
+
+    // set Nbig
+    index_t Nbig_loc = 0;
+    if(P->nnz_l != 0){
+        Nbig_loc = P->entry.back().col + 1;
     }
-    cout << "bbbbbbbb" << endl;
+    MPI_Allreduce(&Nbig_loc, &P->Nbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
 
-    MPI_Bcast(&P->Nbig, 1, par::Mpi_datatype<index_t>::value(), nprocs-1, comm);
-    cout << "ccccccccc" << endl;
-
-    P->splitNew.resize(nprocs+1);
+    // set splitNew
+    P->splitNew.resize(nprocs + 1);
     P->splitNew[0]      = 0;
     P->splitNew[nprocs] = P->Nbig;
 
@@ -234,9 +231,6 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     for(int i = 1; i < nprocs; ++i){
         P->splitNew[i] = i * ofst;
     }
-
-    P->nnz_l = P->entry.size();
-    MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, P->comm);
 
 #ifdef __DEBUG1__
     if(verbose_coarsen) {
@@ -247,12 +241,8 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
         cout << buffer.str() << endl;
 //        print_vector(P->splitNew, 0, "P->splitNew", comm);
         MPI_Barrier(comm);
-    }
-#endif
-
-#ifdef __DEBUG1__
-    if(verbose_coarsen) {
-        MPI_Barrier(comm); printf("coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);
+        printf("coarsen: step 7: rank = %d\n", rank);
+        MPI_Barrier(comm);
     }
 #endif
 
@@ -260,7 +250,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
 
 #ifdef __DEBUG1__
     if(verbose_coarsen) {
-        MPI_Barrier(comm); printf("end of coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
@@ -2433,7 +2423,6 @@ inline int saena_object::findloc(vector<int> arr, int a)
     //exit(0);
     return -1;
 }
-
 
 
 inline double saena_object::phi_P(int type, int p, double z, int q, int r)
