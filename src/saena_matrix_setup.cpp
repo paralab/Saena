@@ -547,8 +547,8 @@ int saena_matrix::set_off_on_diagonal(){
 //            print_entry(-1);
         }
 
-//        int stidx = lower_bound2(&split[0], &split[nprocs], entry[0].col);
-
+        nnz_l_local     = 0;
+        nnz_l_remote    = 0;
         col_remote_size = 0;
         recvCount.assign(nprocs, 0);
         nnzPerRow_local.assign(M, 0);
