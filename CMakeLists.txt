@@ -298,11 +298,13 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 # -xCORE-AVX512     for Cascade Lake Processors (like Frontera) and Skylake
 # -xCORE-AVX2       for Broadwell and Haswell
 # -xAVX             for Ivy Bridge and Sandy Bridge
+# -shared-intel     Enable identifying the libm and C runtime calls as system functions and differentiating them
+#                   from the user code when a proper filter mode is applied to the VTune Profiler collection result.
 
 # Enable Intel Optimization flags
 #IF(CMAKE_BUILD_TYPE STREQUAL Release)
-#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2")
+#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -g -parallel-source-info=2 -shared-intel")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -g -parallel-source-info=2 -shared-intel")
 #ENDIF()
 
 IF(CMAKE_BUILD_TYPE STREQUAL Release)
