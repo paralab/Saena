@@ -17,21 +17,20 @@ prolong_matrix::~prolong_matrix() = default;
 
 int prolong_matrix::findLocalRemote(){
 
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
 //    printf("rank=%d \t P.nnz_l=%lu \t P.nnz_g=%lu \n", rank, nnz_l, nnz_g);
 //    print_vector(entry, -1, "entry", comm);
 
-    long procNum;
+    index_t procNum = 0;
+    nnz_l_local     = 0;
+    nnz_l_remote    = 0;
     col_remote_size = 0; // number of remote columns
-    nnz_l_local = 0;
-    nnz_l_remote = 0;
     std::vector<int> recvCount(nprocs, 0);
-//    int* recvCount_t = (int*)malloc(sizeof(int)*nprocs);
-//    std::fill(recvCount_t, recvCount_t + nprocs, 0);
-    nnzPerRow_local.assign(M,0);
+    nnzPerRow_local.assign(M, 0);
+    nnzPerRowScan_local.assign(M + 1, 0);
 
     entry_local.clear();
     entry_remote.clear();
@@ -46,91 +45,75 @@ int prolong_matrix::findLocalRemote(){
 
     std::vector<int> vIndexCount_t(nprocs, 0);
 
-    // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
-    if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) { // local
-        nnzPerRow_local[entry[0].row]++;
-        nnz_l_local++;
-        entry_local.emplace_back(entry[0]);
-        row_local.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
-//        col_local.emplace_back(entry[0].col);
-//        values_local.emplace_back(entry[0].val);
-        //vElement_local.emplace_back(col[0]);
-        vElementRep_local.emplace_back(1);
-    } else { // remote
-        nnz_l_remote++;
-        entry_remote.emplace_back(entry[0]);
-//        row_remote.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
-//        col_remote2.emplace_back(entry[0].col);
-//        values_remote.emplace_back(entry[0].val);
-        col_remote_size++; // number of remote columns
-//        col_remote.emplace_back(col_remote_size-1);
-//        nnzPerCol_remote[col_remote_size-1]++;
-        nnzPerCol_remote.emplace_back(1);
+    if(nnz_l != 0) {
 
-        vElement_remote.emplace_back(entry[0].col);
-        vElementRep_remote.emplace_back(1);
-        recvCount[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
-
-//        nnzPerCol_remote_t.emplace_back(1);
-        vElement_remote_t.emplace_back(nnz_l_remote-1);
-        vIndexCount_t[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
-//        recvCount_t[lower_bound2(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
-    }
-
-    for (nnz_t i = 1; i < nnz_l; i++) {
-
-        // local
-        if (entry[i].col >= splitNew[rank] && entry[i].col < splitNew[rank+1]) {
-            nnzPerRow_local[entry[i].row]++;
+        // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
+        if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) { // local
+            nnzPerRow_local[entry[0].row]++;
             nnz_l_local++;
-            entry_local.emplace_back(entry[i]);
-            row_local.emplace_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear.
-//            col_local.emplace_back(entry[i].col);
-//            values_local.emplace_back(entry[i].val);
-            if (entry[i].col != entry[i-1].col)
-                vElementRep_local.emplace_back(1);
-            else
-                (*(vElementRep_local.end()-1))++;
-
-        // remote
-        } else {
+            entry_local.emplace_back(entry[0]);
+            row_local.emplace_back(
+                    entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
+            vElementRep_local.emplace_back(1);
+        } else { // remote
             nnz_l_remote++;
-//            if(rank==2) printf("entry[i].row = %lu\n", entry[i].row+split[rank]);
-            entry_remote.emplace_back(entry[i]);
-//            row_remote.emplace_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector.
-            // col_remote2 is the original col value. col_remote starts from 0.
-//            col_remote2.emplace_back(entry[i].col);
-//            values_remote.emplace_back(entry[i].val);
-            procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
-            vIndexCount_t[procNum]++;
-//            recvCount_t[procNum]++;
-            vElement_remote_t.emplace_back((index_t)nnz_l_remote-1); // todo: is (unsigned long) required here?
-//            nnzPerCol_remote_t.emplace_back(1);
+            entry_remote.emplace_back(entry[0]);
+            col_remote_size++; // number of remote columns
+            nnzPerCol_remote.emplace_back(1);
 
-            if (entry[i].col != entry[i-1].col) {
-                col_remote_size++;
-                vElement_remote.emplace_back(entry[i].col);
-                vElementRep_remote.emplace_back(1);
-                procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
-                recvCount[procNum]++;
-                nnzPerCol_remote.emplace_back(1);
-            } else {
-                (*(vElementRep_remote.end()-1))++;
-                (*(nnzPerCol_remote.end()-1))++;
-            }
-            // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-//            col_remote.emplace_back(col_remote_size-1);
-//            nnzPerCol_remote[col_remote_size-1]++;
+            vElement_remote.emplace_back(entry[0].col);
+            vElementRep_remote.emplace_back(1);
+            recvCount[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
+
+            vElement_remote_t.emplace_back(nnz_l_remote - 1);
+            vIndexCount_t[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
         }
-    } // for i
+
+        for (nnz_t i = 1; i < nnz_l; i++) {
+
+            // local
+            if (entry[i].col >= splitNew[rank] && entry[i].col < splitNew[rank + 1]) {
+                nnzPerRow_local[entry[i].row]++;
+                nnz_l_local++;
+                entry_local.emplace_back(entry[i]);
+                row_local.emplace_back(
+                        entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear.
+                if (entry[i].col != entry[i - 1].col)
+                    vElementRep_local.emplace_back(1);
+                else
+                    (*(vElementRep_local.end() - 1))++;
+
+                // remote
+            } else {
+                nnz_l_remote++;
+//            if(rank==2) printf("entry[i].row = %lu\n", entry[i].row+split[rank]);
+                entry_remote.emplace_back(entry[i]);
+                procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
+                vIndexCount_t[procNum]++;
+                vElement_remote_t.emplace_back((index_t) nnz_l_remote - 1); // todo: is (unsigned long) required here?
+
+                if (entry[i].col != entry[i - 1].col) {
+                    col_remote_size++;
+                    vElement_remote.emplace_back(entry[i].col);
+                    vElementRep_remote.emplace_back(1);
+                    procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
+                    recvCount[procNum]++;
+                    nnzPerCol_remote.emplace_back(1);
+                } else {
+                    (*(vElementRep_remote.end() - 1))++;
+                    (*(nnzPerCol_remote.end() - 1))++;
+                }
+            }
+        } // for i
 
 //    MPI_Barrier(comm); printf("rank=%d, P.nnz_l=%lu, P.nnz_l_local=%u, P.nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
 
-    nnzPerRowScan_local.assign(M+1, 0);
-    for(index_t i=0; i<M; i++){
-        nnzPerRowScan_local[i+1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
+        for (index_t i = 0; i < M; ++i) {
+            nnzPerRowScan_local[i + 1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
 //        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
-    }
+        }
+
+    }// if(nnz_l != 0)
 
     if(nprocs >1) {
 
@@ -140,13 +123,13 @@ int prolong_matrix::findLocalRemote(){
         std::vector<int> recvCount_t(nprocs);
         MPI_Alltoall(&vIndexCount_t[0], 1, MPI_INT, &recvCount_t[0], 1, MPI_INT, comm);
 
-//    for(int i=0; i<nprocs; i++){
+//        for(int i=0; i<nprocs; i++){
+//            MPI_Barrier(comm);
+//            if(rank==1) cout << "recieve from proc " << i << "\trecvCount   = " << recvCount[i] << "\t\trecvCount_t   = " << recvCount_t[i] << endl;
+//            MPI_Barrier(comm);
+//            if(rank==1) cout << "send to proc      " << i << "\tvIndexCount = " << vIndexCount[i] << "\t\tvIndexCount_t = " << vIndexCount_t[i] << endl;
+//        }
 //        MPI_Barrier(comm);
-//        if(rank==1) cout << "recieve from proc " << i << "\trecvCount   = " << recvCount[i] << "\t\trecvCount_t   = " << recvCount_t[i] << endl;
-//        MPI_Barrier(comm);
-//        if(rank==1) cout << "send to proc      " << i << "\tvIndexCount = " << vIndexCount[i] << "\t\tvIndexCount_t = " << vIndexCount_t[i] << endl;
-//    }
-//    MPI_Barrier(comm);
 
         recvProcRank.clear();
         recvProcCount.clear();
@@ -182,8 +165,9 @@ int prolong_matrix::findLocalRemote(){
             vdispls[i] = vdispls[i - 1] + vIndexCount[i - 1];
             rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
         }
+
         vIndexSize = vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
-        recvSize = rdispls[nprocs - 1] + recvCount[nprocs - 1];
+        recvSize   = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
 //        for (int i=0; i<nprocs; i++)
 //            if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
@@ -213,13 +197,13 @@ int prolong_matrix::findLocalRemote(){
                 numRecvProc_t++;
                 recvProcRank_t.emplace_back(i);
                 recvProcCount_t.emplace_back(recvCount_t[i]);
-//            if(rank==2) cout << i << "\trecvCount_t[i] = " << recvCount_t[i] << endl;
+//                if(rank==2) cout << i << "\trecvCount_t[i] = " << recvCount_t[i] << endl;
             }
             if (vIndexCount_t[i] != 0) {
                 numSendProc_t++;
                 sendProcRank_t.emplace_back(i);
                 sendProcCount_t.emplace_back(vIndexCount_t[i]);
-//            if(rank==1) cout << i << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
+//                if(rank==1) cout << i << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
             }
         }
 
@@ -233,25 +217,21 @@ int prolong_matrix::findLocalRemote(){
             vdispls_t[i] = vdispls_t[i - 1] + vIndexCount_t[i - 1];
             rdispls_t[i] = rdispls_t[i - 1] + recvCount_t[i - 1];
         }
+
         vIndexSize_t = vdispls_t[nprocs - 1] + vIndexCount_t[nprocs - 1]; // the same as: vIndexSize_t = nnz_l_remote;
-        recvSize_t = rdispls_t[nprocs - 1] + recvCount_t[nprocs - 1];
+        recvSize_t   = rdispls_t[nprocs - 1] + recvCount_t[nprocs - 1];
 
-//    for (i=1; i<nprocs; i++){
-//        vdispls_t[i] = 2*vdispls_t[i];
-//        rdispls_t[i] = 2*rdispls_t[i];
-//    }
-
-//    MPI_Barrier(comm);
-//    printf("rank = %d\tvIndexSize_t = %u\trecvSize_t = %u \n", rank, vIndexSize_t, recvSize_t);
+//        MPI_Barrier(comm);
+//        printf("rank = %d\tvIndexSize_t = %u\trecvSize_t = %u \n", rank, vIndexSize_t, recvSize_t);
 
         // todo: is this part required?
         // vElement_remote_t is the set of indices of entries that should be sent.
         // recvIndex_t       is the set of indices of entries that should be received.
-//    recvIndex_t = (unsigned long*)malloc(sizeof(unsigned long)*recvSize_t);
-//    MPI_Alltoallv(&(*(vElement_remote_t.begin())), vIndexCount_t, &*(vdispls_t.begin()), MPI_UNSIGNED_LONG, recvIndex_t, recvCount_t, &(*(rdispls_t.begin())), MPI_UNSIGNED_LONG, comm);
-
-//    if(rank==1) cout << endl << endl;
-//    for (unsigned int i=0; i<vElement_remote.size(); i++)
+//        recvIndex_t = (unsigned long*)malloc(sizeof(unsigned long)*recvSize_t);
+//        MPI_Alltoallv(&(*(vElement_remote_t.begin())), vIndexCount_t, &*(vdispls_t.begin()), MPI_UNSIGNED_LONG, recvIndex_t, recvCount_t, &(*(rdispls_t.begin())), MPI_UNSIGNED_LONG, comm);
+//
+//        if(rank==1) cout << endl << endl;
+//        for (unsigned int i=0; i<vElement_remote.size(); i++)
 //        if(rank==1) cout << vElement_remote[i] << endl;
 
         // change the indices from global to local
@@ -271,20 +251,14 @@ int prolong_matrix::findLocalRemote(){
 
     // todo: change the following two parts the same as indicesP for A in compute_coarsen, which is using entry, instead of row_local and row_remote.
     indicesP_local.resize(nnz_l_local);
-    for(nnz_t i=0; i<nnz_l_local; i++)
+    for(nnz_t i = 0; i < nnz_l_local; ++i){
         indicesP_local[i] = i;
+    }
+
     index_t *row_localP = &*row_local.begin();
     std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
     row_local.clear();
     row_local.shrink_to_fit();
-
-//    long start;
-//    for(i = 0; i < M; ++i) {
-//        start = nnzPerRowScan_local[i];
-//        for(long j=0; j < nnzPerRow_local[i]; j++){
-//            if(rank==1) printf("%lu \t %lu \t %f \n", entry_local[indicesP_local[start + j]].row+split[rank], entry_local[indicesP_local[start + j]].col, entry_local[indicesP_local[start + j]].val);
-//        }
-//    }
 
 //    indicesP_remote.resize(nnz_l_remote);
 //    for(nnz_t i=0; i<nnz_l_remote; i++)
