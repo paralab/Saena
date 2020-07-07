@@ -25,6 +25,12 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
 	cout << xx[N] << endl;
 	exit(0);*/
 
+    saena_matrix   *A  = grid->A;
+    prolong_matrix *P  = &grid->P;
+    saena_matrix   *Ac = &grid->Ac;
+
+    Ac->set_p_order(A->p_order / 2);
+
     // A parameters:
     // A.entry[i]: to access entry i of A, which is local to this processor.
     //             each entry is in COO format: i, j, val
@@ -40,12 +46,6 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     // A.print_entry: print entries of A.
     // P.Nbig: the colume size of P
     // P->entry[i] = cooEntry(i, j, val);
-
-    saena_matrix   *A  = grid->A;
-    prolong_matrix *P  = &grid->P;
-    saena_matrix   *Ac = &grid->Ac;
-
-    Ac->set_p_order(A->p_order / 2);
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
@@ -171,25 +171,20 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     if(verbose_coarsen) {
         MPI_Barrier(comm); printf("coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);
     }
+//    std::sort(P_temp.begin(), P_temp.end(), row_major);
 //    print_vector(P_temp, -1, "P_temp", comm);
 #endif
 
     vector<cooEntry_row> Pent;
     par::sampleSort(P_temp, Pent, P->split, comm);
 
-    // remove duplicates
-    Pent.erase( unique( Pent.begin(), Pent.end() ), Pent.end() );
-
-#ifdef __DEBUG1__
 //    std::sort(P_temp.begin(), P_temp.end(), row_major);
 //    Pent = P_temp;
 
-//    print_vector(Pent, -1, "Pent", comm);
-//    print_vector(P->split, -1, "P->split", comm);
-    if(verbose_coarsen) {
-        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);
-    }
-#endif
+    //print_vector(Pent, -1, "Pent", comm);
+
+    // remove duplicates
+    Pent.erase( unique( Pent.begin(), Pent.end() ), Pent.end() );
 
     P->entry.clear();
     P->entry.resize(Pent.size());
@@ -206,8 +201,10 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
 //    std::sort(A->entry.begin(), A->entry.end(), row_major);
 //    print_vector(A->entry, -1, "A", comm);
 //    print_vector(P->entry, -1, "P", comm);
+//    print_vector(Pent, -1, "Pent", comm);
+//    print_vector(P->split, -1, "P->split", comm);
     if(verbose_coarsen) {
-        MPI_Barrier(comm); printf("coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); printf("coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
@@ -241,7 +238,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
         cout << buffer.str() << endl;
 //        print_vector(P->splitNew, 0, "P->splitNew", comm);
         MPI_Barrier(comm);
-        printf("coarsen: step 7: rank = %d\n", rank);
+        printf("coarsen: step 6: rank = %d\n", rank);
         MPI_Barrier(comm);
     }
 #endif
@@ -250,7 +247,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
 
 #ifdef __DEBUG1__
     if(verbose_coarsen) {
-        MPI_Barrier(comm); printf("end of coarsen: rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); printf("end of coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
@@ -325,6 +322,7 @@ vector<int> saena_object::next_p_level_new2(vector<int> ind_fine, int order, int
             std::cout << "element type is not implemented!" << std::endl;
     }
 
+	//cout << "type: " << type << endl;
     //cout << 6+9*(order-1)+3*(order-1)*(order-1)+(order-1)*(order-2)+(order-1)*(order-1)*(order-2)/2 << " " << vert_size << endl;
     //cout << "element type = " << type << endl;
     vector<int> indices;
@@ -354,18 +352,31 @@ vector<int> saena_object::next_p_level_new2(vector<int> ind_fine, int order, int
         }
     }
 
-    // hard coded for now ...
+	// hard coded for now ...
+	//cout << "===============" << endl;
     if (type == 0)
     {
-        for (int i=0; i<=order/2; i++)
-        {
-            for (int j=0; j<=order/2-i; j++)
-            {
-                indices.push_back(ind_fine[(2*order+3-i)*i/2+j]);
-            }
-        }
-    }
+		for (int i=0; i<=order/2; i++)
+		{
+			for (int j=0; j<=order/2-i; j++)
+			{
+				indices.push_back(ind_fine[(2*order+3-i)*i/2+j]);
+				//cout << (2*order+3-i)*i/2+j << endl;
+			}
+		}
+		/*int counter = 0;
+		for (int i=0; i<=order; i++)
+		{
+			for (int j=0; j<=order-i; j++)
+			{
+				if (i<=order/2 && j<=order/2-i)
+					cout << counter << endl;
 
+				counter ++;
+			}
+		}*/
+    }
+	//cout << "==============" << endl;
     if (type == 2)
     {
         int counter = 0;
@@ -377,7 +388,7 @@ vector<int> saena_object::next_p_level_new2(vector<int> ind_fine, int order, int
                 {
                     //cout << sum_i+sum_j+k << endl;
                     if (i<=order/2 && j<=order/2-i && k<= order/2-i-j)
-                        indices.push_back(indices[counter]);
+                        indices.push_back(ind_fine[counter]);
 
                     counter ++;
                 }
@@ -396,7 +407,7 @@ vector<int> saena_object::next_p_level_new2(vector<int> ind_fine, int order, int
                 {
                     //cout << sum_i+sum_j+k << endl;
                     if (i<=order/2 && j<=order/2 && k<= order/2-i)
-                        indices.push_back(indices[counter]);
+                        indices.push_back(ind_fine[counter]);
 
                     counter ++;
                 }
@@ -637,6 +648,7 @@ vector<int> saena_object::coarse_p_node_arr(vector< vector<int> > map, int order
     vector<int> ind;
     for (int i=0; i<total_elem; i++)
     {
+		//cout << i << endl;
         vector<int> ind_coarse = next_p_level_new2(map.at(i), order);
         for (int j=0; j<ind_coarse.size(); j++)
         {
@@ -1666,6 +1678,7 @@ inline vector< std::vector<int> > saena_object::mesh_info(int order, string file
         vector <vector<int> > map_next(elemno);
         for (int i = 0; i < elemno; ++i){
             vector<int> aline = map.at(i);
+			//cout << i << endl;
             vector<int> ind_coarse = next_p_level_new2(aline, order);
             for (int j = 0; j < ind_coarse.size(); ++j){
                 int mapped_val = findloc(coarse_node_ind, ind_coarse.at(j));
@@ -2423,6 +2436,7 @@ inline int saena_object::findloc(vector<int> arr, int a)
     //exit(0);
     return -1;
 }
+
 
 
 inline double saena_object::phi_P(int type, int p, double z, int q, int r)
