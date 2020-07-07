@@ -76,7 +76,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //     A
 // =============================================================
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -228,7 +228,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //            printf("mkl_dcsrmultcsr result: %d\n", info);
 #endif
 
-            MKL_INT i, j;
+            MKL_INT i = 0, j = 0;
             MKL_INT ii = 0;
 //            index_t *Cmkl_r_p = &Cmkl_r[0] - 1;
 //            value_t *Cmkl_v_p = &Cmkl_v[0] - 1;
@@ -313,7 +313,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             double *values_C = nullptr;
             MKL_INT *rows_C = nullptr;
             MKL_INT *pointerB_C = nullptr, *pointerE_C = nullptr;
-            MKL_INT rows, cols, i, j, ii, status;
+            MKL_INT rows = 0, cols = 0, i = 0, j = 0, ii = 0, status = 0;
             sparse_index_base_t indexing;
 
 #ifdef __DEBUG1__
@@ -1455,9 +1455,9 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
 
 int saena_object::matmat_memory_alloc(CSCMat &A, CSCMat &B){
 
-    int nprocs;
+    int nprocs = 0;
     MPI_Comm_size(A.comm, &nprocs);
-    int rank;
+    int rank = 0;
     MPI_Comm_rank(A.comm, &rank);
 
 #ifdef __DEBUG1__
@@ -1655,7 +1655,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
 int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans /*= false*/){
 
     MPI_Comm comm = C.comm;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -1669,7 +1669,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 //    assert(Acsc.col_sz == Bcsc.row_sz);
 #endif
 
-    double t_temp, t_temp2, t_temp3;
+    double t_temp = 0.0, t_temp2 = 0.0, t_temp3 = 0.0;
     t_temp = MPI_Wtime();
 
     // =======================================
@@ -1741,7 +1741,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
         zfp_stream *zfp        = nullptr;
         bitstream  *stream     = nullptr;
         void       *zfp_buffer = nullptr;
-        size_t     bufsize, zfpsize = 0;
+        size_t     bufsize = 0, zfpsize = 0;
         std::vector<long> zfp_comp_szs;
 
         if(zfp_thrshld > 1e-8){
@@ -1879,16 +1879,16 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
         // set the mat_recv data
         nnz_t recv_nnz  = 0, recv_size = 0;
-        index_t row_comp_sz, col_comp_sz, current_comp_sz;
+        index_t row_comp_sz = 0, col_comp_sz = 0, current_comp_sz = 0;
         index_t mat_recv_M = 0, mat_current_M = 0;
         auto mat_recv = &mempool6[mempool6_sz / 2];
 
         auto mat_current = &mempool3[0];
-        index_t *mat_current_r, *mat_current_cscan;
-        value_t *mat_current_v;
+        index_t *mat_current_r = nullptr, *mat_current_cscan = nullptr;
+        value_t *mat_current_v = nullptr;
 
         auto mat_temp = mat_send;
-        int  owner, next_owner;
+        int  owner = 0, next_owner = 0;
         auto *requests = new MPI_Request[2];
         auto *statuses = new MPI_Status[2];
 
@@ -1951,10 +1951,10 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
                 // communicate data
                 MPI_Irecv(mat_recv, recv_size, MPI_CHAR, right_neighbor, right_neighbor, comm, requests);
-                MPI_Isend(mat_send, send_size, MPI_CHAR, left_neighbor, rank, comm, requests + 1);
+                MPI_Isend(mat_send, send_size, MPI_CHAR, left_neighbor,  rank,           comm, requests + 1);
 
-                int flag;
-                MPI_Test(requests, &flag, statuses);
+                int flag = 0;
+                MPI_Test(requests,   &flag, statuses);
                 MPI_Test(requests+1, &flag, statuses+1);
             }
 
@@ -2046,12 +2046,15 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 // assert mat_send
                 // ===============
                 {
-                    ASSERT(Bcsc.nnz_list[owner] == (mat_current_cscan[mat_current_M] - mat_current_cscan[0]),
-                           "rank: " << rank << ", owner: " << owner << ", mat_current_M: " << mat_current_M
-                                    << ", Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner]
-                                    << ", mat_current_cscan[0]: " << mat_current_cscan[0]
-                                    << ", mat_current_cscan[mat_current_M]: " << mat_current_cscan[mat_current_M]);
+                    std::stringstream buf;
+                    buf << "rank: " << rank << ", owner: " << owner << ", mat_current_M: " << mat_current_M
+                        << ", Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner]
+                        << ", mat_current_cscan[0]: " << mat_current_cscan[0]
+                        << ", mat_current_cscan[mat_current_M]: " << mat_current_cscan[mat_current_M];
+                    ASSERT(Bcsc.nnz_list[owner] == (mat_current_cscan[mat_current_M] - mat_current_cscan[0]),buf.str());
+                    assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));
 
+#if 0
 //                    index_t ofst  = Bcsc.split[owner], col_idx;
                     for (nnz_t i = 0; i < mat_current_M; ++i) {
 //                        col_idx = i + ofst;
@@ -2062,7 +2065,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 //                            if(rank==0) std::cout << "mat_current_r[j]: " << mat_current_r[j] << std::endl;
                         }
                     }
-                    assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));
+#endif
                 }
 #endif
 
