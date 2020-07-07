@@ -51,7 +51,7 @@ bool vecCol_col_major (const vecCol& node1, const vecCol& node2)
 
 int CSCMat::compress_prep(){
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     int rank_ver = 0;
@@ -59,10 +59,10 @@ int CSCMat::compress_prep(){
     compress_prep_compute(row,      nnz,      comp_row);
     compress_prep_compute(col_scan, col_sz+1, comp_col);
 
-    unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);
-    unsigned long comp_sz = comp_row.tot + comp_col.tot;
-    float comp_rate_loc = 1.0f - (static_cast<float>(comp_sz) / orig_sz);
-    float comp_rate;
+//    unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);
+//    unsigned long comp_sz = comp_row.tot + comp_col.tot;
+//    float comp_rate_loc = 1.0f - (static_cast<float>(comp_sz) / orig_sz);
+//    float comp_rate;
 
 //    MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
 //    if(rank==rank_ver) printf("GR:  orig sz (rank%d) = %lu, comp sz (rank%d) = %lu, saving %.2f (average), row's k = %d, col's k = %d\n",
@@ -101,6 +101,7 @@ int CSCMat::compress_prep(){
     proc_col_sz = col_sz; // if(!use_trans) then proc_col_sz is fixed.
     for(int i = 0; i < nprocs; ++i){
         row_buf_sz = tot_sz(nnz_list[i], comp_row.ks[i], comp_row.qs[i]);
+
         if(use_trans){
             proc_col_sz = split[i + 1] - split[i];
         }
@@ -135,102 +136,121 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
 //    unsigned int M;
 #endif
 
-    bool skip = false;
-    int k_start = 7, k_end = 16;
     int q_sz = 0, r_sz = 0, tot = 0;
-    int dif = 0, dif_range_max = INT8_MAX;
 
-    // compute the compressed sized for different k values, choose the one for which total size is the least.
-    // Also, by setting the initial total value (comp_sz.tot) to INT32_MAX, make sure the compressed size is smaller
-    // than the original size.
-    comp_sz.tot = INT32_MAX;
+    if(v_sz != 0) {
+        bool skip = false;
+        int k_start = 7, k_end = 16;
+        int dif = 0, dif_range_max = INT8_MAX;
 
-    for(int k = k_start; k < k_end; k += 8) {
+        // compute the compressed sized for different k values, choose the one for which total size is the least.
+        // Also, by setting the initial total value (comp_sz.tot) to INT32_MAX, make sure the compressed size is smaller
+        // than the original size.
+        comp_sz.tot = INT32_MAX;
 
-        if(k == 7){
-            dif_range_max = INT8_MAX; // 7 bits -> 2 ^ 7 (this is signed int)
-        }else if(k == 15){
-            dif_range_max = INT16_MAX;
-        }else{
-            std::cout << "dif_range_max is not set correctly in " << __func__ << std::endl;
-            exit(EXIT_FAILURE);
-        }
+        for (int k = k_start; k < k_end; k += 8) {
 
-        skip = false;
+            if (k == 7) {
+                dif_range_max = INT8_MAX; // 7 bits -> 2 ^ 7 (this is signed int)
+            } else if (k == 15) {
+                dif_range_max = INT16_MAX;
+            } else {
+                std::cout << "dif_range_max is not set correctly in " << __func__ << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            skip = false;
 
 //        M = 1U << k;
-        r_sz = rem_sz(v_sz, k);
+            r_sz = rem_sz(v_sz, k);
 
-        // first v element
-        q_sz = 0;
-        if( (v[0] >> k) != 0 ){
-            ++q_sz;
-        }
+            // first v element
+            q_sz = 0;
+            if ((v[0] >> k) != 0) {
+                ++q_sz;
+            }
 
-        // the rest of v
-        int i = 1;
-        for (; i < v_sz; ++i) {
+            // the rest of v
+            int i = 1;
+            for (; i < v_sz; ++i) {
 //            int diff = static_cast<int>(v[i] - v[i - 1]);
 //            int q = diff >> k;
 //            if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: " << diff << ", M: " << (1U << k) << ", q: " << q << std::endl;
 
-            // check if dif is larger than the maximum value for that many bits, move to higher number of bits.
-            dif = v[i] - v[i - 1];
-            if(dif > dif_range_max){
-                skip = true;
-                break;
-            }
+                // check if dif is larger than the maximum value for that many bits, move to higher number of bits.
+                dif = v[i] - v[i - 1];
 
-            if( (dif >> k) != 0){
+
+//            if(rank == 0){
+                dif = INT32_MAX;
+//            }
+
+
+
+                if (dif > dif_range_max) {
+                    skip = true;
+                    break;
+                }
+
+                if ((dif >> k) != 0) {
 //            if(q != 0){
 //                if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: " << (int)(v[i] - v[i - 1]) << ", M: " << (1U << k) << ", q: " << q << std::endl;
-                ++q_sz;
+                    ++q_sz;
+                }
             }
-        }
 
-        if(!skip) {
-            tot = tot_sz(v_sz, k, q_sz);
-            if (tot < comp_sz.tot) {
-                comp_sz.k = k;
-                comp_sz.r = r_sz; // in bytes
-                comp_sz.q = q_sz; // number of short numbers
-                comp_sz.tot = tot;  // in bytes
-            }
+            if (!skip) {
+                tot = tot_sz(v_sz, k, q_sz);
+                if (tot < comp_sz.tot) {
+                    comp_sz.k = k;
+                    comp_sz.r = r_sz; // in bytes
+                    comp_sz.q = q_sz; // number of short numbers
+                    comp_sz.tot = tot;  // in bytes
+                }
 
 #ifdef __DEBUG1__
-            if (verbose_prep_compute && rank == rank_ver) {
-                std::cout << "k: " << std::setw(2) << k << ", M: " << std::setw(5) << (1U << k)
-                          << ", v_sz: " << std::setw(5) << v_sz << " (" << std::setw(5) << v_sz * sizeof(index_t) << ")"
-                          << ", r_sz: " << std::setw(5) << r_sz
-                          << ", q_sz: " << std::setw(5) << q_sz << " (" << std::setw(5) << q_sz * sizeof(short) << ")"
-                          << ", tot: " << std::setw(5) << tot << std::endl;
-            }
+                if (verbose_prep_compute && rank == rank_ver) {
+                    std::cout << "k: " << std::setw(2) << k << ", M: " << std::setw(5) << (1U << k)
+                              << ", v_sz: " << std::setw(5) << v_sz << " (" << std::setw(5) << v_sz * sizeof(index_t)
+                              << ")"
+                              << ", r_sz: " << std::setw(5) << r_sz
+                              << ", q_sz: " << std::setw(5) << q_sz << " (" << std::setw(5) << q_sz * sizeof(short)
+                              << ")"
+                              << ", tot: " << std::setw(5) << tot << std::endl;
+                }
 #endif
-        }else{
-            if (verbose_prep_compute && rank == rank_ver) {
-                std::stringstream buf;
-                buf << "skipped for k: " << k << "\nv[i]: " << v[i] << ", v[i-1]: " << v[i - 1] << ", dif: " << dif
-                    << ", dif_range_max: " << dif_range_max;
-                std::cout << buf.str() << "\n\n";
+            } else {
+                if (verbose_prep_compute && rank == rank_ver) {
+                    std::stringstream buf;
+                    buf << "compression: skipped for k: " << k << "\nv[i]: " << v[i] << ", v[i-1]: " << v[i - 1]
+                        << ", dif: " << dif
+                        << ", dif_range_max: " << dif_range_max;
+                    std::cout << buf.str() << "\n\n";
+                }
             }
+
         }
 
-    }
+        // if comp_sz.k == 0, it means compression will be disabled for this vector.
+        // So, set the total compresion to the original vector size.
+        if (comp_sz.k == 0) {
+            comp_sz.tot = v_sz * sizeof(index_t);
+        }
+    } // if(v_sz != 0)
 
 #ifdef __DEBUG1__
     if(verbose_prep_compute && rank==rank_ver){
+        std::cout << "final on rank " << rank  << ":\n";
         std::cout << "k: "      << std::setw(2) << comp_sz.k   << ", M: " << std::setw(5) << (1U << comp_sz.k)
-                  << ", v_sz: " << std::setw(5) << v_sz        << " (" << std::setw(5) << v_sz*sizeof(index_t) << ")"
+                  << ", v_sz: " << std::setw(5) << v_sz        << " ("    << std::setw(5) << v_sz*sizeof(index_t) << ")"
                   << ", r_sz: " << std::setw(5) << comp_sz.r
-                  << ", q_sz: " << std::setw(5) << comp_sz.q   << " (" << std::setw(5) << q_sz*sizeof(short) << ")"
-                  << ", tot: "  << std::setw(5) << comp_sz.tot << " (final)\n\n";
+                  << ", q_sz: " << std::setw(5) << comp_sz.q   << " ("    << std::setw(5) << q_sz*sizeof(short) << ")"
+                  << ", tot: "  << std::setw(5) << comp_sz.tot << "\n\n";
     }
 #endif
 
     comp_sz.ks.resize(nprocs);
     comp_sz.qs.resize(nprocs);
-
-//    fill(comp_sz.ks.begin(), comp_sz.ks.end(), comp_sz.k);
 
     // TODO: combine these together.
     // TODO: check if MPI_SHORT works as the datatype for the following commands.

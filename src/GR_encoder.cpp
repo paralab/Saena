@@ -3,6 +3,7 @@
 #include <bitset>
 #include <cassert>
 #include <iomanip>
+#include <cstring>
 
 #ifndef NDEBUG
 #   define ASSERT(condition, message) \
@@ -94,13 +95,15 @@ inline index_t GR_encoder::get_bit(const uint8_t *buf){
 
 void GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uint8_t *buf){
 
-    if(k == 7){
+    if(k == 0){
+        memcpy(buf, v, v_sz * sizeof(index_t));
+    }else if(k == 7){
         compress_1byte(v, v_sz, k, buf);
     }else if(k == 15){
         auto buf2 = reinterpret_cast<uint16_t*>(buf);
         compress_2bytes(v, v_sz, k, buf2);
     }else{
-        printf("compress(): compression for when k != 7 or 15 is not supported! k is %d\n", k);
+        printf("compress(): GR compression is only suppoerted for k = 7 or 15! k is %d\n", k);
         exit(EXIT_FAILURE);
     }
 
@@ -330,16 +333,17 @@ void GR_encoder::compress_2bytes(index_t *v, index_t v_sz, index_t k, uint16_t *
 }
 
 
-
 void GR_encoder::decompress(index_t *v, int v_sz, index_t k, int q_sz, uint8_t *buf) {
 
-    if(k == 7){
+    if(k == 0){
+        memcpy(v, buf, v_sz * sizeof(index_t));
+    }else if(k == 7){
         decompress_1byte(v, v_sz, k, q_sz, buf);
     }else if(k == 15){
         auto buf2 = reinterpret_cast<uint16_t*>(buf);
         decompress_2bytes(v, v_sz, k, q_sz, buf2);
     }else{
-        printf("decompress(): decompression for when k != 7 or 15 is not supported! k is %d\n", k);
+        printf("decompress(): GR decompression is only suppoerted for k = 7 or 15! k is %d\n", k);
         exit(EXIT_FAILURE);
     }
 

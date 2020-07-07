@@ -78,7 +78,8 @@ inline index_t rem_sz(index_t sz, unsigned int k){
 
 inline index_t tot_sz(index_t sz, unsigned int k, int q){
 //    printf("r_sz: %u, \tq: %d, \tsizeof(short): %ld, tot: %ld\n", rem_sz(sz, k), q, sizeof(short), rem_sz(sz, k) + q * sizeof(short));
-    return rem_sz(sz, k) + q * sizeof(short);
+//    return rem_sz(sz, k) + q * sizeof(short);
+    return (k > 0) ? ( rem_sz(sz, k) + q * sizeof(short) ) : ( sz * sizeof(index_t) );
 }
 
 
