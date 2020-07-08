@@ -2000,7 +2000,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 #endif
 
-    int     m        = A->Mbig; // todo: decide when to restart.
+    int     m        = 100; // todo: decide when to restart.
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
