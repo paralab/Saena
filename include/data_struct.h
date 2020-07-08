@@ -19,7 +19,7 @@
 #include "mpi.h"
 #include <omp.h>
 
-#include "dollar.hpp"
+//#include "dollar.hpp"
 #include "combblas_functions.h"
 
 using namespace std;
