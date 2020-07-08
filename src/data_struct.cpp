@@ -220,6 +220,7 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
                 }
 #endif
             } else {
+#ifdef __DEBUG1__
                 if (verbose_prep_compute && rank == rank_ver) {
                     std::stringstream buf;
                     buf << "compression: skipped for k: " << k << "\nv[i]: " << v[i] << ", v[i-1]: " << v[i - 1]
@@ -227,6 +228,7 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
                         << ", dif_range_max: " << dif_range_max;
                     std::cout << buf.str() << "\n\n";
                 }
+#endif
             }
 
         }
