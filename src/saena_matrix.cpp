@@ -461,6 +461,9 @@ void saena_matrix::set_p_order(int _p_order){
     p_order = _p_order;
 }
 
+void saena_matrix::set_prodim(int _prodim){
+    prodim = _prodim;
+}
 
 // int saena_matrix::set3(unsigned int row, unsigned int col, double val)
 /*

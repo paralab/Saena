@@ -117,6 +117,11 @@ void saena::matrix::set_p_order(int _p_order){
     m_pImpl->set_p_order(_p_order);
 }
 
+void saena::matrix::set_prodim(int _prodim){
+    m_pImpl->set_prodim(_prodim);
+}
+
+
 int saena::matrix::assemble(bool scale /*= true*/) {
     m_pImpl->assemble(scale);
     return 0;
