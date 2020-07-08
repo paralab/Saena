@@ -284,28 +284,28 @@ int saena_object::setup_SuperLU() {
 
 //    index_t fst_row = A_coarsest->split[rank_coarsest]; // the offset for the first row
     fst_row = A_coarsest->split[rank_coarsest]; // the offset for the first row
-    std::vector<int> nnz_per_row(m_loc, 0);
 
     // these will be freed when calling Destroy_CompRowLoc_Matrix_dist on the matrix.
-    auto *rowptr    = (int_t *) intMalloc_dist(m_loc + 1);
-    auto *nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
-    auto *colind    = (int_t *) intMalloc_dist(nnz_loc);
+    auto *rowptr    = (int_t *) intMalloc_dist(m_loc + 1);      // scan on nonzeros per row
+    auto *nzval_loc = (double *) doubleMalloc_dist(nnz_loc);    // values
+    auto *colind    = (int_t *) intMalloc_dist(nnz_loc);        // column indices
+
+    std::fill(&rowptr[0], &rowptr[m_loc + 1], 0);
 
     // Do this line to avoid this subtraction for each entry in the next "for" loop.
-    int *nnz_per_row_p = &nnz_per_row[0] - fst_row;
+    int *rowptr_p = &rowptr[1] - fst_row;
 
     for (nnz_t i = 0; i < nnz_loc; i++) {
-        nnz_per_row_p[entry_temp[i].row]++;
+        ++rowptr_p[entry_temp[i].row];
         colind[i]    = entry_temp[i].col;
         nzval_loc[i] = entry_temp[i].val;
     }
 
-    // todo: avoid using nnz_per_row. use rowptr in-place.
-    // rowptr is scan of nnz_per_row.
-    rowptr[0] = 0;
-    for (index_t i = 0; i < m_loc; i++) {
-        rowptr[i + 1] = rowptr[i] + nnz_per_row[i];
+    for (index_t i = 0; i < m_loc; ++i) {
+        rowptr[i + 1] += rowptr[i];
     }
+
+    assert(rowptr[m_loc] == nnz_loc);
 
 #ifdef __DEBUG1__
 /*
@@ -337,6 +337,11 @@ int saena_object::setup_SuperLU() {
 #endif
 
 //    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+
+    // SLU_NR_loc  /* distributed compressed row format  */
+    // SLU_D,      /* double */
+    // SLU_GE,    /* general */ (there are options for symmetric and triangular)
+    // TODO: set an option to set if the matrix is symmetric.
 
     // This function creates the matrix and puts it in the first argument.
     dCreate_CompRowLoc_Matrix_dist(&A_SLU2, m, n, nnz_loc, m_loc, fst_row,
@@ -811,6 +816,25 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
        .
        ------------------------------------------------------------*/
 
+    // TODO: check these info from SuperLU docs, source code and examples:
+#if 0
+//    SolveInitialized { YES | NO }
+//    Specifies whether the initialization has been performed to the triangular solve.
+//    (used only by the distributed input interface)
+//    RefineInitialized { YES | NO }
+//    Specifies whether the initialization has been performed to the sparse matrix-vector multiplication routine needed in the iterative refinement.
+//    (used only by the distributed input interface)
+
+    if ( options->SolveInitialized == NO ) { /* First time */
+        dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
+                   SOLVEstruct);
+        /* Inside this routine, SolveInitialized is set to YES.
+       For repeated call to pdgssvx(), no need to re-initialilze
+       the Solve data & communication structures, unless a new
+       factorization with Fact == DOFACT or SamePattern is asked for. */
+    }
+#endif
+
     /* Set the default input options:
         options.Fact              = DOFACT;
         options.Equil             = YES;
@@ -834,7 +858,6 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     if(first_solve){
         set_default_options_dist(&options);
         options.ColPerm = NATURAL;
-//        options.PrintStat = YES;
     }else{
         options.Fact = FACTORED;
     }
@@ -880,7 +903,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     PStatInit(&stat);
 
     // Call the linear equation solver.
-    // b points to rhs. after calling pdgssvx it will be the solution.
+    // on entry, b points to rhs. on return, it will be the solution.
     pdgssvx(&options, &A_SLU2, &ScalePermstruct, b, ldb, nrhs, &superlu_grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
