@@ -438,6 +438,8 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
 
     ++matvec_iter;
 
+    fill(w.begin(), w.end(), 0);
+
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
 
@@ -498,7 +500,6 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
     value_t* v_p  = &v[0] - split[rank];
     iter = 0;
     for (index_t i = 0; i < M; ++i) { // rows
-        w[i] = 0;
         for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
 //            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n",
 //            row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
@@ -1218,6 +1219,8 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
 
     ++matvec_iter;
 
+    fill(w.begin(), w.end(), 0);
+
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
 
@@ -1309,7 +1312,6 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
     value_t* v_p  = &v[0] - split[rank];
     iter = 0;
     for (index_t i = 0; i < M; ++i) { // rows
-        w[i] = 0;
         for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
 //            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n",
 //            row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
