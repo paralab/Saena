@@ -230,16 +230,22 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     }
 
 #ifdef __DEBUG1__
+    for(int i = 0; i < P->entry.size(); ++i){
+        assert(P->entry[i].row < P->M);
+        assert(P->entry[i].col < P->Nbig);
+        assert(fabs(P->entry[i].val) > ALMOST_ZERO);
+    }
+
     if(verbose_coarsen) {
         MPI_Barrier(comm);
         std::stringstream buffer;
         buffer << "rank " << rank << ": P: " << "M = " << P->M << ", Mbig = " << P->Mbig << ", Nbig = " << P->Nbig
                << ", nnz_l = " << P->nnz_l << ", nnz_g = " << P->nnz_g;
         cout << buffer.str() << endl;
-//        print_vector(P->splitNew, 0, "P->splitNew", comm);
         MPI_Barrier(comm);
         printf("coarsen: step 6: rank = %d\n", rank);
         MPI_Barrier(comm);
+//        print_vector(P->splitNew, 0, "P->splitNew", comm);
     }
 #endif
 
