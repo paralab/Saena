@@ -33,8 +33,8 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
     read_from_file = true;
 
-    std::string filename       = Aname;
-    size_t      extIndex       = filename.find_last_of(".");
+    std::string filename(Aname);
+    size_t      extIndex       = filename.find_last_of('.');
     std::string file_extension = filename.substr(extIndex+1, 3);
 //    if(rank==0) std::cout << "file_extension: " << file_extension << std::endl;
 
