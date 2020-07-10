@@ -192,16 +192,16 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
     A_coarsest = grids.back().A;
 
     if(verbose_setup){
-        MPI_Barrier(A->comm);
+//        MPI_Barrier(A->comm);
         if(!rank){
             std::stringstream buf;
             buf << "_____________________________\n\n"
-            << "number of levels = << " << BLUE << max_level << COLORRESET << " >> (the finest level is 0)\n";
+                << "number of levels = << " << BLUE << max_level << COLORRESET << " >> (the finest level is 0)\n";
             std::cout << buf.str();
             if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
             print_sep();
         }
-        MPI_Barrier(A->comm);
+//        MPI_Barrier(A->comm);
     }
 
 #ifdef __DEBUG1__
@@ -218,21 +218,34 @@ int saena_object::setup(saena_matrix* A, const std::vector<std::vector<int>> &m_
 //    }
 
 /*
-    // grids[i+1].row_reduction_min is 0 by default. for the active processors in the last grid, it will be non-zero.
-    // that's why MPI_MAX is used in the following MPI_Allreduce.
-    float row_reduction_min_send = grids[i].row_reduction_min;
-    MPI_Allreduce(&row_reduction_min_send, &grids[i].row_reduction_min, 1, MPI_FLOAT, MPI_MAX, grids[0].A->comm);
-    // delete the coarsest level, if the size is not reduced much.
-    if (grids[i].row_reduction_min > row_reduction_up_thrshld) {
-        grids.pop_back();
-        max_level--;
-    }
+// grids[i+1].row_reduction_min is 0 by default. for the active processors in the last grid, it will be non-zero.
+// that's why MPI_MAX is used in the following MPI_Allreduce.
+float row_reduction_min_send = grids[i].row_reduction_min;
+MPI_Allreduce(&row_reduction_min_send, &grids[i].row_reduction_min, 1, MPI_FLOAT, MPI_MAX, grids[0].A->comm);
+// delete the coarsest level, if the size is not reduced much.
+if (grids[i].row_reduction_min > row_reduction_up_thrshld) {
+    grids.pop_back();
+    max_level--;
+}
 */
     }
 
     if(verbose_setup_steps){
+//        A_coarsest->print_info(-1);
 //        MPI_Barrier(A->comm);
-        if(!rank) printf("rank %d: setup done!\n", rank);
+        if(!rank) printf("setup: setup_SuperLU()\n");
+//        MPI_Barrier(A->comm);
+    }
+#endif
+
+    if(A_coarsest->active) {
+        setup_SuperLU();
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+//        MPI_Barrier(A->comm);
+        if(!rank) printf("setup done!\n");
 //        MPI_Barrier(A->comm);
     }
 #endif

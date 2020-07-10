@@ -341,6 +341,8 @@ int saena_object::setup_SuperLU() {
 */
 #endif
 
+    // create the matrix
+    // =================
 //    dcreate_matrix(&A_SLU, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
 
     // SLU_NR_loc  /* distributed compressed row format  */
@@ -352,6 +354,63 @@ int saena_object::setup_SuperLU() {
     dCreate_CompRowLoc_Matrix_dist(&A_SLU2, m, n, nnz_loc, m_loc, fst_row,
                                    &nzval_loc[0], &colind[0], &rowptr[0],
                                    SLU_NR_loc, SLU_D, SLU_GE);
+
+    // set the options
+    // =================
+    // TODO: check these info from SuperLU docs, source code and examples:
+#if 0
+    //    SolveInitialized { YES | NO }
+//    Specifies whether the initialization has been performed to the triangular solve.
+//    (used only by the distributed input interface)
+//    RefineInitialized { YES | NO }
+//    Specifies whether the initialization has been performed to the sparse matrix-vector multiplication routine needed in the iterative refinement.
+//    (used only by the distributed input interface)
+
+    if ( options->SolveInitialized == NO ) { /* First time */
+        dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
+                   SOLVEstruct);
+        /* Inside this routine, SolveInitialized is set to YES.
+       For repeated call to pdgssvx(), no need to re-initialilze
+       the Solve data & communication structures, unless a new
+       factorization with Fact == DOFACT or SamePattern is asked for. */
+    }
+#endif
+
+    /* Set the default input options:
+        options.Fact              = DOFACT;
+        options.Equil             = YES;
+        options.ParSymbFact       = NO;
+        options.ColPerm           = METIS_AT_PLUS_A;
+        options.RowPerm           = LargeDiag_MC64;
+        options.ReplaceTinyPivot  = NO;
+        options.IterRefine        = DOUBLE;
+        options.Trans             = NOTRANS;
+        options.SolveInitialized  = NO;
+        options.RefineInitialized = NO;
+        options.PrintStat         = YES; -> I changed this to NO.
+     */
+
+    // I changed options->PrintStat default to NO.
+//    options.ColPerm = NATURAL;
+//    options.SymPattern = YES;
+//    options.PrintStat = YES;
+
+#if 0
+    options.RowPerm = NOROWPERM;
+    options.RowPerm = LargeDiag_AWPM;
+    options.IterRefine = NOREFINE;
+    options.ColPerm = NATURAL;
+    options.Equil = NO;
+    options.ReplaceTinyPivot = YES;
+#endif
+
+    set_default_options_dist(&options);
+    options.ColPerm = NATURAL;
+
+    // initialize the required parameters
+    // =================
+    ScalePermstructInit(m, n, &ScalePermstruct);
+    LUstructInit(n, &LUstruct);
 
 #ifdef __DEBUG1__
     if (verbose_solve_coarse) {
@@ -371,10 +430,10 @@ int saena_object::destroy_SuperLU(){
         ScalePermstructFree(&ScalePermstruct);
         Destroy_LU(A_coarsest->Mbig, &superlu_grid, &LUstruct);
         LUstructFree(&LUstruct);
+        superlu_gridexit(&superlu_grid);
         if ( options.SolveInitialized ) {
             dSolveFinalize(&options, &SOLVEstruct);
         }
-        superlu_gridexit(&superlu_grid);
     }
 
     return 0;
@@ -738,7 +797,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     }
 
     MPI_Comm comm = A->comm;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -754,41 +813,20 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 //        print_vector(u, -1, "u passed to superlu", comm);
 #endif
 
-//    superlu_dist_options_t options;
     SuperLUStat_t stat;
-//    SuperMatrix A_SLU;
-//    ScalePermstruct_t ScalePermstruct;
-//    LUstruct_t LUstruct;
-//    SOLVEstruct_t SOLVEstruct;
-//    gridinfo_t grid;
-    double   *berr;
-    double   *b;
-    int      m, n, m_loc, nnz_loc;
-    int      nprow, npcol;
-    int      iam, info, ldb, nrhs;
+    double   *berr = nullptr;
+    double   *b    = nullptr;
+    int      m = 0, n = 0, m_loc = 0, nnz_loc = 0;
+    int      nprow = 0, npcol = 0;
+    int      iam = 0, info = 0, ldb = 0, nrhs = 0;
 
-//    double   *b, *xtrue;
-//    int      iam, info, ldb, ldx, nrhs;
-//    char     **cpp, c;
-//    FILE *fp, *fopen();
-//    FILE *fp;
-//    int cpp_defs();
+    /* ------------------------------------------------------------
+       INITIALIZE SOME PARAMETERS
+       ------------------------------------------------------------*/
 
     nprow = nprocs; /* Default process rows.      */
     npcol = 1;      /* Default process columns.   */
     nrhs  = 1;      /* Number of right-hand side. */
-
-    /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID.
-       ------------------------------------------------------------*/
-
-//#ifdef __DEBUG1__
-//    if(verbose_solve_coarse) {
-//        MPI_Barrier(comm);
-//        if(rank==0) printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
-//        MPI_Barrier(comm);
-//    }
-//#endif
 
     iam = superlu_grid.iam;
 //    printf("iam = %d, nprow = %d, npcol = %d \n", iam, nprow, npcol);
@@ -800,15 +838,6 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
-
-    /* ------------------------------------------------------------
-       PASS THE MATRIX FROM SAENA
-       ------------------------------------------------------------*/
-
-    // Set up the local A_SLU in NR_loc format
-//    dCreate_CompRowLoc_Matrix_dist(A_SLU, m, n, nnz_loc, m_loc, fst_row,
-//                                   nzval_loc, colind, rowptr,
-//                                   SLU_NR_loc, SLU_D, SLU_GE);
 
     m       = A->Mbig;
     m_loc   = A->M;
@@ -837,63 +866,8 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     u = rhs; // copy rhs to u. the solution will be save in b at the end. then, swap u and rhs.
 
     /* ------------------------------------------------------------
-       .
+       SOLVE THE LINEAR SYSTEM
        ------------------------------------------------------------*/
-
-    // TODO: check these info from SuperLU docs, source code and examples:
-#if 0
-//    SolveInitialized { YES | NO }
-//    Specifies whether the initialization has been performed to the triangular solve.
-//    (used only by the distributed input interface)
-//    RefineInitialized { YES | NO }
-//    Specifies whether the initialization has been performed to the sparse matrix-vector multiplication routine needed in the iterative refinement.
-//    (used only by the distributed input interface)
-
-    if ( options->SolveInitialized == NO ) { /* First time */
-        dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
-                   SOLVEstruct);
-        /* Inside this routine, SolveInitialized is set to YES.
-       For repeated call to pdgssvx(), no need to re-initialilze
-       the Solve data & communication structures, unless a new
-       factorization with Fact == DOFACT or SamePattern is asked for. */
-    }
-#endif
-
-    /* Set the default input options:
-        options.Fact              = DOFACT;
-        options.Equil             = YES;
-        options.ParSymbFact       = NO;
-        options.ColPerm           = METIS_AT_PLUS_A;
-        options.RowPerm           = LargeDiag_MC64;
-        options.ReplaceTinyPivot  = NO;
-        options.IterRefine        = DOUBLE;
-        options.Trans             = NOTRANS;
-        options.SolveInitialized  = NO;
-        options.RefineInitialized = NO;
-        options.PrintStat         = YES; -> I changed this to NO.
-     */
-
-    // I changed options->PrintStat default to NO.
-//    set_default_options_dist(&options);
-//    options.ColPerm = NATURAL;
-//    options.SymPattern = YES;
-//    options.PrintStat = YES;
-
-    if(first_solve){
-        set_default_options_dist(&options);
-        options.ColPerm = NATURAL;
-    }else{
-        options.Fact = FACTORED;
-    }
-
-#if 0
-    options.RowPerm = NOROWPERM;
-    options.RowPerm = LargeDiag_AWPM;
-    options.IterRefine = NOREFINE;
-    options.ColPerm = NATURAL;
-    options.Equil = NO;
-    options.ReplaceTinyPivot = YES;
-#endif
 
 #ifdef __DEBUG1__
     if(verbose_solve_coarse) {
@@ -904,28 +878,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
             fflush(stdout);
         }
         MPI_Barrier(comm);
-        if(rank==0) printf("SOLVE THE LINEAR SYSTEM: step 1 \n");
-        MPI_Barrier(comm);
-    }
-#endif
-
-    // Initialize ScalePermstruct and LUstruct in the first solve call.
-    if(first_solve){
-#ifdef __DEBUG1__
-        if(verbose_solve_coarse) {
-            MPI_Barrier(comm);
-            if(rank==0) printf("SuperLU first solve: initialize ScalePermstruct and LUstruct\n");
-            MPI_Barrier(comm);
-        }
-#endif
-        ScalePermstructInit(m, n, &ScalePermstruct);
-        LUstructInit(n, &LUstruct);
-    }
-
-#ifdef __DEBUG1__
-    if(verbose_solve_coarse) {
-        MPI_Barrier(comm);
-        if(rank==0) printf("SOLVE THE LINEAR SYSTEM: step 2 \n");
+        if(rank==0) printf("SOLVE THE LINEAR SYSTEM\n");
         MPI_Barrier(comm);
     }
 #endif
@@ -953,6 +906,11 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
         PStatPrint(&options, &stat, &superlu_grid); // Print the statistics.
     }
 #endif
+
+    if(first_solve){
+        options.Fact = FACTORED;
+        first_solve  = FALSE;
+    }
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
@@ -985,120 +943,8 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
     }
 #endif
 
-    if(first_solve){
-        first_solve = FALSE;
-    }
-
     return 0;
 }
-
-
-// int SaenaObject::solveCoarsest
-/*
-int SaenaObject::solveCoarsest(SaenaMatrix* A, std::vector<double>& x, std::vector<double>& b, int& max_iter, double& tol, MPI_Comm comm){
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    long i, j;
-
-    double normb_l, normb;
-    normb_l = 0;
-    for(i=0; i<A->M; i++)
-        normb_l += b[i] * b[i];
-    MPI_Allreduce(&normb_l, &normb, 1, MPI_DOUBLE, MPI_SUM, comm);
-    normb = sqrt(normb);
-//    if(rank==1) std::cout << normb << std::endl;
-
-//    Vector r = b - A*x;
-    std::vector<double> matvecTemp(A->M);
-    A->matvec(&*x.begin(), &*matvecTemp.begin(), comm);
-//    if(rank==1)
-//        for(i=0; i<matvecTemp.size(); i++)
-//            std::cout << matvecTemp[i] << std::endl;
-
-    std::vector<double> r(A->M);
-    for(i=0; i<matvecTemp.size(); i++)
-        r[i] = b[i] - matvecTemp[i];
-
-    if (normb == 0.0)
-        normb = 1;
-
-    double resid_l, resid;
-    resid_l = 0;
-    for(i=0; i<A->M; i++)
-        resid_l += r[i] * r[i];
-    MPI_Allreduce(&resid_l, &resid, 1, MPI_DOUBLE, MPI_SUM, comm);
-    resid = sqrt(resid_l);
-
-    if ((resid / normb) <= tol) {
-        tol = resid;
-        max_iter = 0;
-        return 0;
-    }
-
-    double alpha, beta, rho, rho1, tempDot;
-    std::vector<double> z(A->M);
-    std::vector<double> p(A->M);
-    std::vector<double> q(A->M);
-    for (i = 0; i < max_iter; i++) {
-//        z = M.solve(r);
-        // todo: write this part.
-
-//        rho(0) = dot(r, z);
-        rho = 0;
-        for(j = 0; j < A->M; j++)
-            rho += r[j] * z[j];
-
-//        if (i == 1)
-//            p = z;
-//        else {
-//            beta(0) = rho(0) / rho_1(0);
-//            p = z + beta(0) * p;
-//        }
-
-        if(i == 0)
-            p = z;
-        else{
-            beta = rho / rho1;
-            for(j = 0; j < A->M; j++)
-                p[j] = z[j] + (beta * p[j]);
-        }
-
-//        q = A*p;
-        A->matvec(&*p.begin(), &*q.begin(), comm);
-
-//        alpha(0) = rho(0) / dot(p, q);
-        tempDot = 0;
-        for(j = 0; j < A->M; j++)
-            tempDot += p[j] * q[j];
-        alpha = rho / tempDot;
-
-//        x += alpha(0) * p;
-//        r -= alpha(0) * q;
-        for(j = 0; j < A->M; j++){
-            x[j] += alpha * p[j];
-            r[j] -= alpha * q[j];
-        }
-
-        resid_l = 0;
-        for(j = 0; j < A->M; j++)
-            resid_l += r[j] * r[j];
-        MPI_Allreduce(&resid_l, &resid, 1, MPI_DOUBLE, MPI_SUM, comm);
-        resid = sqrt(resid_l);
-
-        if ((resid / normb) <= tol) {
-            tol = resid;
-            max_iter = i;
-            return 0;
-        }
-
-        rho1 = rho;
-    }
-
-    return 0;
-}
-*/
 
 
 int saena_object::smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter){
@@ -1477,14 +1323,6 @@ int saena_object::solve(std::vector<value_t>& u){
 
     u.assign(grids[0].A->M, 0);
 
-    // ************** setup SuperLU **************
-
-//    saena_matrix *A_coarsest = &grids.back().Ac;
-
-    if(A_coarsest->active) {
-        setup_SuperLU();
-    }
-
     // ************** solve **************
 
 //    double temp;
@@ -1610,14 +1448,6 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     // ************** initialize u **************
 
     u.assign(grids[0].A->M, 0);
-
-    // ************** setup SuperLU **************
-
-//    saena_matrix *A_coarsest = &grids.back().Ac;
-
-    if(A_coarsest->active) {
-        setup_SuperLU();
-    }
 
     // ************** solve **************
 
@@ -2044,20 +1874,6 @@ int saena_object::pGMRES(std::vector<double> &u){
     if(verbose_solve){
         MPI_Barrier(comm);
         if(rank == 0) printf("m: %u, \tsize: %u, \ttol: %e, \tmax_iter: %u \n", m, size, tol, max_iter);
-        if(rank == 0) printf("pGMRES: setup SuperLU\n");
-        MPI_Barrier(comm);
-    }
-#endif
-
-    // ************** setup SuperLU **************
-
-    if(A_coarsest->active) {
-        setup_SuperLU();
-    }
-
-#ifdef __DEBUG1__
-    if(verbose_solve){
-        MPI_Barrier(comm);
         if(rank == 0) printf("pGMRES: AMG as preconditioner\n");
         MPI_Barrier(comm);
     }
@@ -2074,7 +1890,7 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // *************************
 
-    //    Vector *v = new Vector[m+1];
+//    Vector *v = new Vector[m+1];
     std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
 
 //    double normb = norm(M.solve(rhs));
