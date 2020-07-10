@@ -146,9 +146,9 @@ int saena_object::setup_SuperLU() {
     int nprow, npcol;
     int iam, ldb;
 
-    nprow = 1;                  // Default process rows.
-    npcol = nprocs_coarsest;    // Default process columns.
-//    nrhs  = 1;                // Number of right-hand side.
+    nprow = nprocs_coarsest; // Default process rows.
+    npcol = 1;               // Default process columns.
+//    nrhs  = 1;             // Number of right-hand side.
 
 #if 0
     // ------------------------------------------------------------
@@ -201,6 +201,7 @@ int saena_object::setup_SuperLU() {
     if (verbose_solve_coarse) {
         MPI_Barrier(*comm_coarsest);
         if (rank_coarsest == 0) {
+            printf("setup_SuperLU: start. \n");
             printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
         }
         MPI_Barrier(*comm_coarsest);
@@ -290,12 +291,16 @@ int saena_object::setup_SuperLU() {
     auto *nzval_loc = (double *) doubleMalloc_dist(nnz_loc);    // values
     auto *colind    = (int_t *) intMalloc_dist(nnz_loc);        // column indices
 
+    assert(rowptr    != nullptr);
+    assert(nzval_loc != nullptr);
+    assert(colind    != nullptr);
+
     std::fill(&rowptr[0], &rowptr[m_loc + 1], 0);
 
     // Do this line to avoid this subtraction for each entry in the next "for" loop.
     int *rowptr_p = &rowptr[1] - fst_row;
 
-    for (nnz_t i = 0; i < nnz_loc; i++) {
+    for (nnz_t i = 0; i < nnz_loc; ++i) {
         ++rowptr_p[entry_temp[i].row];
         colind[i]    = entry_temp[i].col;
         nzval_loc[i] = entry_temp[i].val;
@@ -340,13 +345,21 @@ int saena_object::setup_SuperLU() {
 
     // SLU_NR_loc  /* distributed compressed row format  */
     // SLU_D,      /* double */
-    // SLU_GE,    /* general */ (there are options for symmetric and triangular)
+    // SLU_GE,     /* general */ (there are options for symmetric and triangular)
     // TODO: set an option to set if the matrix is symmetric.
 
     // This function creates the matrix and puts it in the first argument.
     dCreate_CompRowLoc_Matrix_dist(&A_SLU2, m, n, nnz_loc, m_loc, fst_row,
                                    &nzval_loc[0], &colind[0], &rowptr[0],
                                    SLU_NR_loc, SLU_D, SLU_GE);
+
+#ifdef __DEBUG1__
+    if (verbose_solve_coarse) {
+        MPI_Barrier(*comm_coarsest);
+        if (rank_coarsest == 0) printf("setup_SuperLU: done. \n");
+        MPI_Barrier(*comm_coarsest);
+    }
+#endif
 
     return 0;
 }
@@ -732,12 +745,13 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 #ifdef __DEBUG1__
     if(verbose_solve_coarse) {
         MPI_Barrier(comm);
-        if(rank==0) printf("\nstart of solve_coarsest_SuperLU()\n");
+        if(rank==0) printf("\nsolve_coarsest_SuperLU(): start\n");
         MPI_Barrier(comm);
-//        print_vector(rhs, -1, "rhs passed to superlu", comm);
+    }
 //        A->print_info(-1);
 //        A->print_entry(-1);
-    }
+//        print_vector(rhs, -1, "rhs passed to superlu", comm);
+//        print_vector(u, -1, "u passed to superlu", comm);
 #endif
 
 //    superlu_dist_options_t options;
@@ -760,21 +774,21 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 //    FILE *fp;
 //    int cpp_defs();
 
-    nprow = 1;      /* Default process rows.      */
-    npcol = nprocs; /* Default process columns.   */
+    nprow = nprocs; /* Default process rows.      */
+    npcol = 1;      /* Default process columns.   */
     nrhs  = 1;      /* Number of right-hand side. */
 
     /* ------------------------------------------------------------
        INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 
-#ifdef __DEBUG1__
-    if(verbose_solve_coarse) {
-        MPI_Barrier(comm);
-        if(rank==0) printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
-        MPI_Barrier(comm);
-    }
-#endif
+//#ifdef __DEBUG1__
+//    if(verbose_solve_coarse) {
+//        MPI_Barrier(comm);
+//        if(rank==0) printf("INITIALIZE THE SUPERLU PROCESS GRID. \n");
+//        MPI_Barrier(comm);
+//    }
+//#endif
 
     iam = superlu_grid.iam;
 //    printf("iam = %d, nprow = %d, npcol = %d \n", iam, nprow, npcol);
@@ -804,6 +818,16 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
     ABORT("Malloc fails for berr[].");
+
+#ifdef __DEBUG1__
+    if (verbose_solve_coarse) {
+//        MPI_Barrier(*comm_coarsest);
+//        if (rank_coarsest == 0)
+            printf("m = %d, m_loc = %d, n = %d, nnz_g = %ld, nnz_loc = %d, ldb = %d \n",
+                   m, m_loc, n, A_coarsest->nnz_g, nnz_loc, ldb);
+//        MPI_Barrier(*comm_coarsest);
+    }
+#endif
 
     /* ------------------------------------------------------------
        SET THE RIGHT HAND SIDE.
@@ -887,6 +911,13 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
     // Initialize ScalePermstruct and LUstruct in the first solve call.
     if(first_solve){
+#ifdef __DEBUG1__
+        if(verbose_solve_coarse) {
+            MPI_Barrier(comm);
+            if(rank==0) printf("SuperLU first solve: initialize ScalePermstruct and LUstruct\n");
+            MPI_Barrier(comm);
+        }
+#endif
         ScalePermstructInit(m, n, &ScalePermstruct);
         LUstructInit(n, &LUstruct);
     }
@@ -949,7 +980,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 #ifdef __DEBUG1__
     if(verbose_solve_coarse) {
         MPI_Barrier(comm);
-        if(rank==0) printf("end of solve_coarsest_SuperLU()\n\n");
+        if(rank==0) printf("solve_coarsest_SuperLU(): done\n\n");
         MPI_Barrier(comm);
     }
 #endif
@@ -1602,7 +1633,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
     double initial_dot, current_dot;
 //    double previous_dot;
     dotProduct(r, r, &initial_dot, comm);
-    if(rank==0) printf("\ninitial residual = %e \n", sqrt(initial_dot));
+    if(rank==0) printf("\ninitial residual = %.18e \n", sqrt(initial_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
@@ -1698,7 +1729,7 @@ int saena_object::solve_pcg(std::vector<value_t>& u){
         dotProduct(r, rho, &beta, comm);
         beta /= rho_res;
 
-#pragma omp parallel for default(none) shared(u, p, rho, beta)
+//#pragma omp parallel for default(none) shared(u, p, rho, beta)
         for(index_t j = 0; j < u.size(); j++) {
             p[j] = rho[j] + beta * p[j];
         }
@@ -2019,8 +2050,6 @@ int saena_object::pGMRES(std::vector<double> &u){
 #endif
 
     // ************** setup SuperLU **************
-
-    saena_matrix *A_coarsest = &grids.back().Ac;
 
     if(A_coarsest->active) {
         setup_SuperLU();
