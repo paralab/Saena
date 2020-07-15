@@ -51,8 +51,8 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MPI_LIBRARIES})
 set(SuperLU_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SuperLU_DIST_5.4.0)
 set(SuperLU_DIST_LIB ${CMAKE_BINARY_DIR}/build_superlu/lib/libsuperlu_dist.a)
 include_directories(
-        ${SuperLU_DIST_DIR}/build/include
-        ${SuperLU_DIST_DIR}/SRC
+        ${CMAKE_BINARY_DIR}/build_superlu/include
+#        ${SuperLU_DIST_DIR}/SRC
 )
 
 SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${SuperLU_DIST_LIB})
