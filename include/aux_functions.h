@@ -148,7 +148,6 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
                 buffer << iter << "\t" << i;
                 std::cout << buffer.str() << std::endl;
                 buffer.str("");
-//                std::cout << iter << "\t" << i << std::endl;
                 iter++;
             }
             printf("\n");
@@ -162,7 +161,6 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
                     buffer << iter << "\t" << i;
                     std::cout << buffer.str() << std::endl;
                     buffer.str("");
-//                    std::cout << iter << "\t" << i << std::endl;
                     iter++;
                 }
                 printf("\n");

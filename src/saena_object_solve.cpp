@@ -19,11 +19,10 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(verbose_solve_coarse && rank==0) printf("start of solve_coarsest_CG()\n");
 #ifdef __DEBUG1__
     if(verbose_solve_coarse) {
         MPI_Barrier(comm);
-        if(rank==0)
+        if(rank==0) printf("start of solve_coarsest_CG()\n");
         MPI_Barrier(comm);
     }
 #endif
@@ -31,9 +30,11 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
     // since u is zero, res = -rhs, and the residual in this function is the negative of what I have in this library.
     std::vector<value_t> res = rhs;
 
-    double initial_dot;
+    double initial_dot = 0.0;
     dotProduct(res, res, &initial_dot, comm);
 //    if(rank==0) std::cout << "\nsolveCoarsest: initial norm(res) = " << sqrt(initial_dot) << std::endl;
+
+    double thres = initial_dot * CG_coarsest_tol * CG_coarsest_tol;
 
     double dot = initial_dot;
     int max_iter = CG_coarsest_max_iter;
@@ -46,7 +47,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 //    double dot2;
     std::vector<value_t> res2(A->M);
 
-    double factor, dot_prev;
+    double factor = 0.0, dot_prev = 0.0;
     std::vector<value_t> matvecTemp(A->M);
     int i = 1;
     while (i < max_iter) {
@@ -59,7 +60,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 //        if(rank==1) std::cout << "\nsolveCoarsest: factor = " << factor << std::endl;
 
         #pragma omp parallel for
-        for(index_t j = 0; j < A->M; j++){
+        for(index_t j = 0; j < A->M; ++j){
             u[j]   += factor * dir[j];
             res[j] -= factor * matvecTemp[j];
         }
@@ -69,13 +70,11 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 //        if(rank==0) std::cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << std::endl;
 //        if(rank==0) std::cout << sqrt(dot)/initialNorm << std::endl;
 
-        if(verbose_solve_coarse && rank==0)
-            std::cout << "sqrt(dot)/sqrt(initial_dot) = " << sqrt(dot/initial_dot) << "  \tCG_tol = " << CG_coarsest_tol << std::endl;
 #ifdef __DEBUG1__
         if(verbose_solve_coarse) {
             MPI_Barrier(comm);
-            if(rank==0)
-                MPI_Barrier(comm);
+            if(rank==0) printf("sqrt(dot)/sqrt(init_dot) = %.14f\tCG_tol = %.2e\n", sqrt(dot/initial_dot), CG_coarsest_tol);
+            MPI_Barrier(comm);
         }
 #endif
 
@@ -83,8 +82,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 //        dotProduct(res2, res2, &dot2, comm);
 //        if(rank==0) std::cout << "norm(res) = " << sqrt(dot2) << std::endl;
 
-        if (dot/initial_dot < CG_coarsest_tol * CG_coarsest_tol)
-            break;
+        if (dot < thres) break;
 
         factor = dot / dot_prev;
 //        if(rank==1) std::cout << "\nsolveCoarsest: update factor = " << factor << std::endl;
@@ -132,16 +130,6 @@ int saena_object::setup_SuperLU() {
     MPI_Comm_size(*comm_coarsest, &nprocs_coarsest);
     MPI_Comm_rank(*comm_coarsest, &rank_coarsest);
 
-//    superlu_dist_options_t options;
-//    SuperLUStat_t stat;
-//    SuperMatrix A_SLU;
-//    ScalePermstruct_t ScalePermstruct;
-//    LUstruct_t LUstruct;
-//    SOLVEstruct_t SOLVEstruct;
-//    gridinfo_t superlu_grid;
-//    double   *berr;
-//    double   *b;
-//    int      iam, info, ldb, nrhs;
     int m, n, m_loc, nnz_loc;
     int nprow, npcol;
     int iam, ldb;
@@ -359,7 +347,7 @@ int saena_object::setup_SuperLU() {
     // =================
     // TODO: check these info from SuperLU docs, source code and examples:
 #if 0
-    //    SolveInitialized { YES | NO }
+//    SolveInitialized { YES | NO }
 //    Specifies whether the initialization has been performed to the triangular solve.
 //    (used only by the distributed input interface)
 //    RefineInitialized { YES | NO }
@@ -390,22 +378,9 @@ int saena_object::setup_SuperLU() {
         options.PrintStat         = YES; -> I changed this to NO.
      */
 
-    // I changed options->PrintStat default to NO.
-//    options.ColPerm = NATURAL;
-//    options.SymPattern = YES;
-//    options.PrintStat = YES;
-
-#if 0
-    options.RowPerm = NOROWPERM;
-    options.RowPerm = LargeDiag_AWPM;
-    options.IterRefine = NOREFINE;
-    options.ColPerm = NATURAL;
-    options.Equil = NO;
-    options.ReplaceTinyPivot = YES;
-#endif
-
     set_default_options_dist(&options);
     options.ColPerm = NATURAL;
+//    options.SymPattern = YES;
 
     // initialize the required parameters
     // =================
@@ -414,6 +389,7 @@ int saena_object::setup_SuperLU() {
 
 #ifdef __DEBUG1__
     if (verbose_solve_coarse) {
+        options.PrintStat = YES;
         MPI_Barrier(*comm_coarsest);
         if (rank_coarsest == 0) printf("setup_SuperLU: done. \n");
         MPI_Barrier(*comm_coarsest);
@@ -863,7 +839,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
        ------------------------------------------------------------*/
 
     b = &rhs[0];
-    u = rhs; // copy rhs to u. the solution will be save in b at the end. then, swap u and rhs.
+    u = rhs; // copy rhs to u. the solution will be saved in b at the end. then, swap u and rhs.
 
     /* ------------------------------------------------------------
        SOLVE THE LINEAR SYSTEM
@@ -898,8 +874,8 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 //    print_vector(u, -1, "u computed in superlu", comm);
 
     // Check the accuracy of the solution.
-//    pdinf_norm_error(iam, ((NRformat_loc *)A_SLU.Store)->m_loc,
-//                     nrhs, b, ldb, xtrue, ldx, &grid);
+//    pdinf_norm_error(iam, ((NRformat_loc *)A_SLU2.Store)->m_loc,
+//                     nrhs, b, ldb, xtrue, ldb, &superlu_grid);
 
 #ifdef __DEBUG1__
     if(verbose_solve_coarse) {

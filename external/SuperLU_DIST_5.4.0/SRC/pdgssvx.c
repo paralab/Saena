@@ -1302,7 +1302,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #if 0 /* Sherry */
 	    for (i = 0; i < m_loc; ++i) x_col[i] = b_col[i];
 #endif
-            memcpy(x_col, b_col, m_loc * sizeof(double));
+        memcpy(x_col, b_col, m_loc * sizeof(double));
 	    x_col += ldx;  b_col += ldb;
 	}
 

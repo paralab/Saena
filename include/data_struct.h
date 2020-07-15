@@ -550,8 +550,6 @@ public:
 };
 
 class CSCMat{
-private:
-
 public:
 
     MPI_Comm comm = MPI_COMM_WORLD;
@@ -591,10 +589,7 @@ public:
 
 
 class CSCMat_mm{
-private:
-
 public:
-
     index_t row_sz, row_offset, col_sz, col_offset;
     nnz_t   nnz;
 
@@ -652,8 +647,6 @@ public:
 
 
 class CSRMat{
-private:
-
 public:
     index_t *col      = nullptr;
     value_t *val      = nullptr;
@@ -668,6 +661,5 @@ public:
 
     CSRMat() = default;
 };
-
 
 #endif //SAENA_DATA_STRUCT_H

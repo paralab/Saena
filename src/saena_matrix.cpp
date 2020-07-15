@@ -1063,29 +1063,32 @@ int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, s
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+//    print_vector(u, -1, "u", comm);
+//    print_vector(res, -1, "rhs", comm);
+
 //    printf("residual start!!!\n");
 
     // First check if u is zero or not. If it is zero, matvec is not required.
-    bool zero_vector_local = true, zero_vector;
+    bool zero_vector_local = true;
 //#pragma omp parallel for
-    for(index_t i = 0; i < M; i++){
-        if(u[i] != 0){
+    for(index_t i = 0; i < M; ++i){
+        if(fabs(u[i]) > ALMOST_ZERO){
             zero_vector_local = false;
             break;
         }
     }
 
+    bool zero_vector = true;
     MPI_Allreduce(&zero_vector_local, &zero_vector, 1, MPI_CXX_BOOL, MPI_LOR, comm);
 
     if(zero_vector){
         #pragma omp parallel for
-        for(index_t i = 0; i < M; i++)
+        for(index_t i = 0; i < M; ++i)
             res[i] = -rhs[i];
     } else {
         matvec(u, res);
-
         #pragma omp parallel for
-        for(index_t i = 0; i < M; i++){
+        for(index_t i = 0; i < M; ++i){
             res[i] -= rhs[i];
         }
     }

@@ -128,9 +128,9 @@ public:
 
     int         preSmooth     = 3;
     int         postSmooth    = 3;
-    std::string smoother      = "chebyshev"; // choices: "jacobi", "chebyshev"
-    std::string direct_solver = "SuperLU"; // options: 1- CG, 2- SuperLU
-    float       connStrength  = 0.2; // connection strength parameter: control coarsening aggressiveness
+    std::string smoother      = "chebyshev";    // choices: "jacobi", "chebyshev"
+    std::string direct_solver = "SuperLU";      // choices: "CG", "SuperLU"
+    float       connStrength  = 0.2;            // connection strength parameter: control coarsening aggressiveness
 
     // ****************
     // SuperLU
