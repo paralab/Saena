@@ -13,7 +13,7 @@ using namespace std;
 
 // Assume the mesh info is the connectivity
 // using a 2d vector for now
-int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,std::vector< std::vector<int> > &g2u_all){
+int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif){
 
     // test Jacobi
     /*int N = 10;

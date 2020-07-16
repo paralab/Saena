@@ -199,10 +199,11 @@ public:
     MPI_Comm get_orig_comm();
     void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
 
-    int setup(saena_matrix* A, const std::vector<std::vector<int>> &m_l2g = {}, const std::vector<int> &m_g2u = {}, int m_bdydof = 0);
-    int coarsen(Grid *grid,std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
+    int setup(saena_matrix* A);
+    int setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif);
+    int coarsen(Grid *grid,std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
     int SA(Grid *grid);
-    int pcoarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
+    int pcoarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
     int compute_coarsen(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid);
@@ -233,7 +234,7 @@ public:
     int aggregation_1_dist(strength_matrix *S, std::vector<index_t> &aggregate, std::vector<index_t> &aggArray);
     int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<index_t>& aggregate, std::vector<index_t>& aggArray, std::vector<index_t>& splitNew);
-    int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all);
+    int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
 
     int set_repartition_rhs(saena_vector *rhs);
 
@@ -388,6 +389,11 @@ public:
 
         return 0;
     }
+
+    // *****************
+    // pcoarsen functions
+    // **********************************************
+//    saena_mesh mesh;
 
     std::vector<int> next_p_level(std::vector<int> ind_fine, int order);
     std::vector<int> next_p_level_new(std::vector<int> ind_fine, int order, int *type = NULL);
