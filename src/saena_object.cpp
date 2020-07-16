@@ -314,7 +314,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
         map_all.emplace_back(std::move(m_l2g));
 
     std::vector< std::vector<int> > g2u_all;
-    if(!g2u_all.empty())
+    if(!m_g2u.empty())
         g2u_all.emplace_back(std::move(m_g2u));
 
 #ifdef __DEBUG1__
