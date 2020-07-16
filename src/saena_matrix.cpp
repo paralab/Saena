@@ -1287,12 +1287,13 @@ int saena_matrix::print_info(int ran, const std::string name) {
 int saena_matrix::writeMatrixToFile(){
     // the matrix file will be written in the HOME directory.
 
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
+//    int nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+    int rank;
     MPI_Comm_rank(comm, &rank);
-
     if(rank==0) printf("The matrix file will be written in the HOME directory. \n");
     writeMatrixToFile("");
+    return 0;
 }
 
 
