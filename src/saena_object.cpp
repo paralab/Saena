@@ -317,6 +317,8 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     if(!m_g2u.empty())
         g2u_all.emplace_back(std::move(m_g2u));
 
+    bdydof = m_bdydof;
+
 #ifdef __DEBUG1__
     if(verbose_setup_steps){
         MPI_Barrier(A->comm);
