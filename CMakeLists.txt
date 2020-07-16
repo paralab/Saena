@@ -280,7 +280,7 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
         ${SAENA_SRC_DIR}/saena_object.cpp
         ${SAENA_SRC_DIR}/saena_object_setup1.cpp
         ${SAENA_SRC_DIR}/saena_object_setup2.cpp
-        ${SAENA_SRC_DIR}/saena_object_setup3.cpp
+        ${SAENA_SRC_DIR}/saena_object_pcoarsen_modal.cpp
         ${SAENA_SRC_DIR}/saena_object_setup_matmat.cpp
         ${SAENA_SRC_DIR}/saena_object_solve.cpp
         ${SAENA_SRC_DIR}/saena_object_lazy.cpp
