@@ -51,9 +51,9 @@ void setIJV(char* file_name, index_t *I, index_t *J, value_t *V, nnz_t nnz_g, nn
 int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, value_t* dot, MPI_Comm comm){
 
     double dot_l = 0;
-    for(index_t i=0; i<r.size(); i++)
+    for(index_t i = 0; i < r.size(); i++)
         dot_l += r[i] * s[i];
-    MPI_Allreduce(&dot_l, dot, 1, MPI_DOUBLE, MPI_SUM, comm);
+    MPI_Allreduce(&dot_l, dot, 1, par::Mpi_datatype<value_t>::value(), MPI_SUM, comm);
 
     return 0;
 }
@@ -63,9 +63,9 @@ int dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, value_t* dot, M
 int pnorm(std::vector<value_t>& r, value_t &norm, MPI_Comm comm){
 
     double dot_l = 0;
-    for(index_t i=0; i<r.size(); i++)
-        dot_l += r[i] * r[i];
-    MPI_Allreduce(&dot_l, &norm, 1, MPI_DOUBLE, MPI_SUM, comm);
+    for(auto &i : r)
+        dot_l += i * i;
+    MPI_Allreduce(&dot_l, &norm, 1, par::Mpi_datatype<value_t>::value(), MPI_SUM, comm);
     norm = std::sqrt(norm);
 
     return 0;
@@ -74,12 +74,10 @@ int pnorm(std::vector<value_t>& r, value_t &norm, MPI_Comm comm){
 // parallel norm
 value_t pnorm(std::vector<value_t>& r, MPI_Comm comm){
 
-    double dot_l = 0, norm;
-    for(index_t i=0; i<r.size(); i++)
-        dot_l += r[i] * r[i];
-    MPI_Allreduce(&dot_l, &norm, 1, MPI_DOUBLE, MPI_SUM, comm);
-
-//    std::cout << std::sqrt(norm) << std::endl;
+    double dot_l = 0.0, norm = 0.0;
+    for(auto &i : r)
+        dot_l += i * i;
+    MPI_Allreduce(&dot_l, &norm, 1, par::Mpi_datatype<value_t>::value(), MPI_SUM, comm);
 
     return std::sqrt(norm);
 }
@@ -169,7 +167,7 @@ double average_time(double t_dif, MPI_Comm comm){
     MPI_Comm_size(comm, &nprocs);
 
     double average;
-    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    MPI_Reduce(&t_dif, &average, 1, par::Mpi_datatype<value_t>::value(), MPI_SUM, 0, comm);
     return average/nprocs;
 }
 
