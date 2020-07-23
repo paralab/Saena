@@ -404,7 +404,9 @@ int saena_object::destroy_SuperLU(){
     if(superlu_active){
         Destroy_CompRowLoc_Matrix_dist(&A_SLU2);
         ScalePermstructFree(&ScalePermstruct);
-        Destroy_LU(A_coarsest->Mbig, &superlu_grid, &LUstruct);
+        if(lu_created){
+            Destroy_LU(A_coarsest->Mbig, &superlu_grid, &LUstruct);
+        }
         LUstructFree(&LUstruct);
         superlu_gridexit(&superlu_grid);
         if ( options.SolveInitialized ) {
@@ -885,6 +887,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
     if(first_solve){
         options.Fact = FACTORED;
+        lu_created   = TRUE;
         first_solve  = FALSE;
     }
 
@@ -1916,6 +1919,279 @@ void saena_object::ApplyPlaneRotation(double &dx, double &dy, const double &cs, 
 }
 
 
+int saena_object::GMRES(std::vector<double> &u){
+    // GMRES proconditioned with AMG
+//    Preconditioner &M, Matrix &H;
+
+    saena_matrix *A = grids[0].A; // todo: double-check
+
+//    MPI_Comm comm = MPI_COMM_WORLD; //todo
+    MPI_Comm comm = A->comm;
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("pGMRES: start\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+    int     m        = 200; // when to restart.
+    index_t size     = A->M;
+    double  tol      = solver_tol;
+    int     max_iter = solver_max_iter;
+
+    double  resid, beta;
+    long i, j, k;
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("m: %u, \tsize: %u, \ttol: %e, \tmax_iter: %u \n", m, size, tol, max_iter);
+        if(rank == 0) printf("pGMRES: AMG as preconditioner\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // use AMG as preconditioner
+    // *************************
+//    std::vector<double> r = M.solve(rhs - A * u);
+
+    std::vector<double> res(size), r(size);
+    u.assign(size, 0); // initial guess // todo: decide where to do this.
+    A->residual_negative(u, grids[0].rhs, res);
+//    vcycle(&grids[0], r, res); //todo: M should be used here.
+    r = res;
+
+    // *************************
+
+//    Vector *v = new Vector[m+1];
+    std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
+
+//    double normb = norm(M.solve(rhs));
+    double normb = pnorm(grids[0].rhs, comm); // todo: this is different from the above line
+
+    if (normb == 0.0){
+        normb = 1;
+    }
+
+//    if(rank==0) printf("******************************************************");
+    if(rank==0) printf("\ninitial residual = %e \n", normb);
+
+    beta = pnorm(r, comm);
+    resid = beta / normb;
+    if (resid <= tol) {
+        return 0;
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("pGMRES: Hessenberg matrix H(%u, %u)\n", m, m);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // initialize the Hessenberg matrix H
+    // **********************************
+    saena_matrix_dense H(m, m, comm); // todo: passed Mbig instead of Nbig.
+//    #pragma omp parallel for // todo: set default
+    for(i = 0; i < m; i++){
+        std::fill(&H.entry[i][0], &H.entry[i][m], 0);
+//        for(j = 0; j < A->Mbig; j++) {
+//            H.set(i, j, 0);
+//        }
+    }
+
+    // **********************************
+
+    double tmp_scalar1 = 0, tmp_scalar2 = 0;
+    std::vector<double> s(m + 1), cs(m + 1), sn(m + 1), w(size), temp(size);
+    j = 1;
+    while (j <= max_iter) {
+
+#ifdef __DEBUG1__
+        if (verbose_solve) {
+            MPI_Barrier(comm);
+            if (rank == 0) printf("pGMRES: j = %ld: v[0] \n", j);
+            MPI_Barrier(comm);
+        }
+#endif
+
+        // v[0] = r / beta
+        scale_vector_scalar(r, 1.0 / beta, v[0]);
+
+        // s = norm(r) * e_1
+        std::fill(s.begin(), s.end(), 0.0); // s = 0.0;
+        s[0] = beta;
+
+        // this for loop is used to restart after m steps
+        // **********************************************
+        for (i = 0; i < m && j <= max_iter; i++, j++) {
+
+#ifdef __DEBUG1__
+            if (verbose_solve) {
+                MPI_Barrier(comm);
+                if (rank == 0) printf("pGMRES: j = %ld: for i = %ld: AMG \n", j, i);
+                MPI_Barrier(comm);
+            }
+#endif
+
+            // w = M.solve(A * v[i]);
+            A->matvec(v[i], temp);
+            std::fill(w.begin(), w.end(), 0); // todo
+//            vcycle(&grids[0], w, temp);
+            w = temp;
+
+#ifdef __DEBUG1__
+            if (verbose_solve) {
+                MPI_Barrier(comm);
+                if (rank == 0) printf("pGMRES: j = %ld: for i = %ld: for \n", j, i);
+                MPI_Barrier(comm);
+            }
+#endif
+
+            for (k = 0; k <= i; k++) {
+                // compute H(k, i) = dot(w, v[k]);
+                dotProduct(w, v[k], &H.entry[k][i], comm);
+
+                // w -= H(k, i) * v[k];
+                scale_vector_scalar(v[k], -H.get(k, i), w, true);
+            }
+
+#ifdef __DEBUG1__
+            if (verbose_solve) {
+                MPI_Barrier(comm);
+                if (rank == 0) printf("pGMRES: j = %ld: for i = %ld: scale \n", j, i);
+                MPI_Barrier(comm);
+            }
+#endif
+
+//            MPI_Barrier(comm);
+//            if(rank == 1) printf("%ld %ld %e", i+1, i, H.get(i + 1, i));
+//            std::cout << i+1 << " " << i << " " << H.get(i + 1, i) << std::endl;
+//            MPI_Barrier(comm);
+
+            // compute H(i+1, i) = ||w||
+            H.set(i + 1, i, pnorm(w, comm));
+
+            if(fabs(H.get(i + 1, i)) < 1e-15){
+                printf("EXIT_FAILURE: Division by zero inside pGMRES: H[%ld, %ld] = %e \n", i+1, i, H.get(i + 1, i));
+                exit(EXIT_FAILURE);
+            }
+
+            // v[i+1] = w / H(i+1, i)
+            scale_vector_scalar(w, 1.0 / H.get(i + 1, i), v[i + 1]);
+
+#ifdef __DEBUG1__
+            if (verbose_solve) {
+                MPI_Barrier(comm);
+                if (rank == 0) printf("pGMRES: j = %ld: for i = %ld: PlaneRotation \n", j, i);
+                MPI_Barrier(comm);
+            }
+#endif
+
+            for (k = 0; k < i; k++) {
+                ApplyPlaneRotation(H.entry[k][i], H.entry[k + 1][i], cs[k], sn[k]);
+            }
+
+            GeneratePlaneRotation(H.entry[i][i], H.entry[i + 1][i], cs[i], sn[i]);
+            ApplyPlaneRotation(H.entry[i][i], H.entry[i + 1][i], cs[i], sn[i]);
+            ApplyPlaneRotation(s[i], s[i + 1], cs[i], sn[i]);
+
+            resid = fabs(s[i + 1]) / normb;
+
+#ifdef __DEBUG1__
+            if (verbose_solve) {
+                MPI_Barrier(comm);
+                if (rank == 0) printf("%e\n", resid);
+                if (rank == 0) printf("resid: %e \t1st resid\n", resid);
+                MPI_Barrier(comm);
+            }
+#endif
+
+            if (resid < tol) {
+                GMRES_update(u, i, H, s, v);
+                goto gmres_out;
+            }
+        }
+
+#ifdef __DEBUG1__
+        if(verbose_solve){
+            MPI_Barrier(comm);
+            if(rank == 0) printf("pGMRES: j = %ld: update \n", j);
+            MPI_Barrier(comm);
+        }
+#endif
+
+        GMRES_update(u, i - 1, H, s, v);
+
+#ifdef __DEBUG1__
+        if(verbose_solve){
+            MPI_Barrier(comm);
+            if(rank == 0) printf("pGMRES: j = %ld: AMG as preconditioner \n", j);
+            MPI_Barrier(comm);
+        }
+#endif
+
+        // r = M.solve(rhs - A * u);
+        A->residual_negative(u, grids[0].rhs, res);
+//        vcycle(&grids[0], r, res);
+        r = res;
+
+        beta  = pnorm(r, comm);
+        resid = beta / normb;
+
+#ifdef __DEBUG1__
+        if(verbose_solve){
+            if(rank == 0) printf("resid: %e \t2nd resid\n", resid);
+        }
+#endif
+
+        if (resid < tol) {
+            goto gmres_out;
+        }
+    }
+
+    // the exit label to be used by "goto".
+    gmres_out:
+
+    // ************** destroy matrix from SuperLU **************
+
+    if(A_coarsest->active) {
+        destroy_SuperLU();
+    }
+
+    // ************** scale u **************
+
+    scale_vector(u, grids[0].A->inv_sq_diag);
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("pGMRES: end");
+//        if(rank == 0) printf("pGMRES: end. did not reach the accuracy. relative residual: %e, iter = %u \n", resid, j);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    if(rank==0){
+        printf("\n******************************************************\n");
+        printf("\nfinal:\nstopped at iteration = %ld \n", j);
+        printf("relative residual    = %e \n", resid);
+//        printf("final absolute residual = %e", beta);
+        printf("\n******************************************************\n");
+    }
+
+//    max_iter = j;
+//    tol = resid;
+    return 0;
+}
+
+
 //template < class Operator, class Preconditioner, class Matrix>
 //int GMRES(std::vector<double> &u, std::vector<double> &rhs,
 //                        const Preconditioner &M, Matrix &H, int &m, int &max_iter, double &tol){
@@ -1939,7 +2215,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 #endif
 
-    int     m        = 100; // todo: decide when to restart.
+    int     m        = 200; // when to restart.
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;

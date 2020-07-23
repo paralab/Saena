@@ -146,6 +146,7 @@ public:
 
     bool first_solve    = TRUE;
     bool superlu_active = TRUE;
+    bool lu_created     = FALSE;
 
     // **********************************************
 
@@ -289,6 +290,7 @@ public:
     // GMRES functions
     // *****************
 
+    int  GMRES(std::vector<double> &u);
     int  pGMRES(std::vector<double> &u);
     void GMRES_update(std::vector<double> &x, index_t k, saena_matrix_dense &h, std::vector<double> &s, std::vector<std::vector<double>> &v);
     void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);

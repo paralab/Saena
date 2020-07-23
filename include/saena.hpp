@@ -170,6 +170,7 @@ namespace saena {
 //        int solve_pcg_update(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);
         // similar to solve_pcg_update, but updates the LHS with A_new.
 
+        int solve_GMRES(std::vector<value_t>& u, saena::options* opts);
         int solve_pGMRES(std::vector<value_t>& u, saena::options* opts);
 
         int update1(saena::matrix* A_ne); // only update the finest level A, which is the input matrix.
