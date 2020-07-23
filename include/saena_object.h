@@ -284,6 +284,7 @@ public:
     int solve_smoother(std::vector<value_t>& u);
     int solve_CG(std::vector<value_t>& u);
     int solve_pCG(std::vector<value_t>& u);
+    int setup_vcycle_memory();
     int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
 

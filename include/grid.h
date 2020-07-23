@@ -35,6 +35,11 @@ public:
     std::vector<int> rdispls2;
     std::vector<int> sdispls2;
 
+    std::vector<value_t> res;
+    std::vector<value_t> uCorr;
+//    std::vector<value_t> res_coarse;
+//    std::vector<value_t> uCorrCoarse;
+
     Grid() = default;
 
     Grid(saena_matrix* A1, int currentLev){

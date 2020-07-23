@@ -945,6 +945,17 @@ int saena_object::smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_
 }
 
 
+int saena_object::setup_vcycle_memory(){
+    for(int i = 0; i < grids.size() - 1; ++i){
+        grids[i].res.resize(grids[i].A->M);
+        grids[i].uCorr.resize(grids[i].A->M);
+//        grids[i].res_coarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
+//        grids[i].uCorrCoarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
+    }
+    return 0;
+}
+
+
 int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs) {
 
     if (!grid->A->active) {
@@ -1033,11 +1044,15 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         return 0;
     }
 
-    std::vector<value_t> res(grid->A->M);
+    std::vector<value_t> &res         = grid->res;
+    std::vector<value_t> &uCorr       = grid->uCorr;
+//    std::vector<value_t> &res_coarse  = grid->res_coarse;
+//    std::vector<value_t> &uCorrCoarse = grid->uCorrCoarse;
+
     std::vector<value_t> res_coarse(grid->Ac.M_old);
-    std::vector<value_t> uCorr(grid->A->M);
-    std::vector<value_t> uCorrCoarse(grid->Ac.M, 0);
-//    std::vector<value_t> temp(grid->A->M);
+    std::vector<value_t> uCorrCoarse(grid->Ac.M);
+//    std::vector<value_t> res(grid->A->M);
+//    std::vector<value_t> uCorr(grid->A->M);
 
 #ifdef __DEBUG1__
     if (verbose_vcycle_residuals) {
@@ -1161,6 +1176,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag);
 
 //            uCorrCoarse.assign(grid->Ac.M, 0);
+            fill(uCorrCoarse.begin(), uCorrCoarse.end(), 0);
             vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
 
             // scale u
@@ -1301,6 +1317,10 @@ int saena_object::solve(std::vector<value_t>& u){
     // ************** initialize u **************
 
     u.assign(grids[0].A->M, 0);
+
+    // ************** allocate memory for vcycle **************
+
+    setup_vcycle_memory();
 
     // ************** solve **************
 
@@ -1533,7 +1553,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
     dotProduct(r, r, &init_dot, comm);
-    if(rank==0) printf("\ninitial residual = %.18e \n", sqrt(init_dot));
+    if(rank==0) printf("\ninitial residual = %e \n", sqrt(init_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
 /*
@@ -1771,6 +1791,10 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     u.assign(grids[0].A->M, 0);
 
+    // ************** allocate memory for vcycle **************
+
+    setup_vcycle_memory();
+
     // ************** solve **************
 
 //    double t1 = MPI_Wtime();
@@ -1785,7 +1809,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
     dotProduct(r, r, &init_dot, comm);
-    if(rank==0) printf("\ninitial residual = %.18e \n", sqrt(init_dot));
+    if(rank==0) printf("\ninitial residual = %e \n", sqrt(init_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
@@ -2484,6 +2508,9 @@ int saena_object::pGMRES(std::vector<double> &u){
     // use AMG as preconditioner
     // *************************
 //    std::vector<double> r = M.solve(rhs - A * u);
+
+    // allocate memory for vcycle
+    setup_vcycle_memory();
 
     std::vector<double> res(size), r(size);
     u.assign(size, 0); // initial guess // todo: decide where to do this.
