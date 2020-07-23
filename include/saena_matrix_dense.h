@@ -44,7 +44,7 @@ public:
 
     void set(index_t row, index_t col, value_t val){
         if(row >= M || col >= Nbig){
-            printf("\ndense matrix set out of range!\n");
+            printf("\ndense matrix set out of range: row = %d, M = %d, col = %d, Nbig = %d\n", row, M, col, Nbig);
             exit(EXIT_FAILURE);
         }else{
             entry[row][col] = val;
