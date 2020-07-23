@@ -142,11 +142,14 @@ int main(int argc, char* argv[]){
     // solve the system using AMG as the solver
 //    solver.solve(u, &opts);
 
+    // solve the system, using pure CG.
+    solver.solve_CG(u, &opts);
+
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-//    solver.solve_pcg(u, &opts);
+//    solver.solve_pCG(u, &opts);
 
     // solve the system, using pure GMRES.
-    solver.solve_GMRES(u, &opts);
+//    solver.solve_GMRES(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
 //    solver.solve_pGMRES(u, &opts);
