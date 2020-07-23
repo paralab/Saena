@@ -956,11 +956,6 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     double t1 = 0, t2 = 0;
     value_t dot = 0.0;
     std::string func_name;
-    std::vector<value_t> res;
-    std::vector<value_t> res_coarse;
-    std::vector<value_t> uCorrCoarse;
-    std::vector<value_t> uCorr;
-    std::vector<value_t> temp;
 
 #ifdef __DEBUG1__
 //    print_vector(rhs, -1, "rhs in vcycle", comm);
@@ -1006,7 +1001,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             }
 
             if (verbose_vcycle_residuals) {
-                res.resize(grid->A->M);
+                std::vector<value_t> res(grid->A->M);
                 grid->A->residual(u, rhs, res);
                 dotProduct(res, res, &dot, comm);
                 if (rank == 0)
@@ -1035,9 +1030,11 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         return 0;
     }
 
-    res.resize(grid->A->M);
-    uCorr.resize(grid->A->M);
-    temp.resize(grid->A->M);
+    std::vector<value_t> res(grid->A->M);
+    std::vector<value_t> res_coarse(grid->Ac.M_old);
+    std::vector<value_t> uCorr(grid->A->M);
+    std::vector<value_t> uCorrCoarse(grid->Ac.M, 0);
+//    std::vector<value_t> temp(grid->A->M);
 
 #ifdef __DEBUG1__
     if (verbose_vcycle_residuals) {
@@ -1108,7 +1105,6 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     t1 = omp_get_wtime();
 #endif
 
-    res_coarse.resize(grid->Ac.M_old);
     grid->R.matvec(res, res_coarse);
 
 #ifdef __DEBUG1__
@@ -1161,7 +1157,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             // scale rhs of the next level
             scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag);
 
-            uCorrCoarse.assign(grid->Ac.M, 0);
+//            uCorrCoarse.assign(grid->Ac.M, 0);
             vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
 
             // scale u
@@ -1856,7 +1852,6 @@ int saena_object::pGMRES(std::vector<double> &u){
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
-//    double  *rhs     = &grids[0].rhs[0];
 
     double  resid, beta;
     long i, j, k;
