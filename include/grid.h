@@ -42,9 +42,9 @@ public:
 
     Grid() = default;
 
-    Grid(saena_matrix* A1, int currentLev){
+    Grid(saena_matrix* A1, int lev){
         A     = A1;
-        level = currentLev;
+        level = lev;
     }
 
     ~Grid() = default;
