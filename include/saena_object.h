@@ -280,6 +280,7 @@ public:
     // **********************************************
 
     int solve(std::vector<value_t>& u);
+    int solve_smoother(std::vector<value_t>& u);
     int solve_pcg(std::vector<value_t>& u);
     int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
     int smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);

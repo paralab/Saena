@@ -1368,6 +1368,97 @@ int saena_object::solve(std::vector<value_t>& u){
 }
 
 
+int saena_object::solve_smoother(std::vector<value_t>& u){
+
+    MPI_Comm comm = grids[0].A->comm;
+    int nprocs = -1, rank = -1;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // ************** check u size **************
+/*
+    index_t u_size_local = u.size(), u_size_total;
+    MPI_Allreduce(&u_size_local, &u_size_total, 1, MPI_UNSIGNED, MPI_SUM, grids[0].A->comm);
+    if(grids[0].A->Mbig != u_size_total){
+        if(rank==0) printf("Error: size of LHS (=%u) and the solution vector u (=%u) are not equal!\n", grids[0].A->Mbig, u_size_total);
+        MPI_Finalize();
+        return -1;
+    }
+*/
+    // ************** repartition u **************
+/*
+    if(repartition)
+        repartition_u(u);
+*/
+
+    // ************** initialize u **************
+
+    u.assign(grids[0].A->M, 0);
+
+    // ************** solve **************
+
+//    double temp;
+//    current_dot(rhs, rhs, &temp, comm);
+//    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
+
+    std::vector<value_t> r(grids[0].A->M);
+    grids[0].A->residual(u, grids[0].rhs, r);
+    double initial_dot = 0.0, current_dot = 0.0;
+    dotProduct(r, r, &initial_dot, comm);
+    if(!rank){
+        print_sep();
+        printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
+    }
+
+    int i = 0;
+    for(i = 0; i < solver_max_iter; ++i){
+        smooth(&grids[0], u, grids[0].rhs, preSmooth);
+        grids[0].A->residual(u, grids[0].rhs, r);
+        dotProduct(r, r, &current_dot, comm);
+
+//        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
+//        if(rank==0) printf("vcycle iteration = %d, residual = %f \n\n", i, sqrt(current_dot));
+        if( current_dot / initial_dot < solver_tol * solver_tol )
+            break;
+    }
+
+    // set number of iterations that took to find the solution
+    // only do the following if the end of the previous for loop was reached.
+    if(i == solver_max_iter)
+        --i;
+
+    if(rank==0){
+        print_sep();
+        printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
+               "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot/initial_dot));
+        print_sep();
+    }
+
+//    print_vector(u, -1, "u", comm);
+
+    // ************** destroy data from SuperLU **************
+
+//    if(A_coarsest->active) {
+//        destroy_SuperLU();
+//    }
+
+    // ************** scale u **************
+
+    if(scale){
+        scale_vector(u, grids[0].A->inv_sq_diag);
+    }
+
+    // ************** repartition u back **************
+
+//    if(repartition)
+//        repartition_back_u(u);
+
+//    print_vector(u, -1, "u", comm);
+
+    return 0;
+}
+
+
 int saena_object::solve_pcg(std::vector<value_t>& u){
 
     MPI_Comm comm = grids[0].A->comm;
