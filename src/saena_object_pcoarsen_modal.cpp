@@ -50,7 +50,7 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     // assume divided by 2
 //    Ac->set_p_order(A->p_order / 2);
 
-    next_order = A->p_order - order_dif[grid->currentLevel];
+    next_order = A->p_order - order_dif[grid->level];
     if (next_order < 1)
         next_order = 1;
 

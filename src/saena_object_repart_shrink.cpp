@@ -529,7 +529,7 @@ int saena_object::shrink_u_rhs(Grid* grid, std::vector<value_t>& u, std::vector<
 //    }
 
 //    if(rank==0) {
-//        printf("\nbefore shrinking: rank = %d, level = %d, rhs.size = %lu \n", rank, grid->currentLevel,
+//        printf("\nbefore shrinking: rank = %d, level = %d, rhs.size = %lu \n", rank, grid->level,
 //               rhs.size());
 //        for(unsigned long i=0; i<rhs.size(); i++)
 //            printf("rhs[%lu] = %f \n", i, rhs[i]);}
@@ -585,12 +585,12 @@ int saena_object::shrink_u_rhs(Grid* grid, std::vector<value_t>& u, std::vector<
 
 //    MPI_Barrier(grid->Ac.comm_horizontal);
 //    if(rank==0){
-//        printf("\nafter shrinking: rank = %d, level = %d, rhs.size = %lu \n", rank, grid->currentLevel, rhs.size());
+//        printf("\nafter shrinking: rank = %d, level = %d, rhs.size = %lu \n", rank, grid->level, rhs.size());
 //        for(unsigned long i=0; i<rhs.size(); i++)
 //            printf("rhs[%lu] = %f \n", i, rhs[i]);}
 //    MPI_Barrier(grid->Ac.comm_horizontal);
 //    if(rank==1){
-//        printf("\nafter shrinking: rank = %d, level = %d, rhs.size = %lu \n", rank, grid->currentLevel, rhs.size());
+//        printf("\nafter shrinking: rank = %d, level = %d, rhs.size = %lu \n", rank, grid->level, rhs.size());
 //        for(unsigned long i=0; i<rhs.size(); i++)
 //            printf("rhs[%lu] = %f \n", i, rhs[i]);}
 //    MPI_Barrier(grid->Ac.comm_horizontal);
@@ -611,14 +611,14 @@ int saena_object::unshrink_u(Grid* grid, std::vector<value_t>& u) {
 
 //    MPI_Barrier(grid->A->comm);
 //    if(rank==0) {
-//        printf("\nbefore un-shrinking: rank = %d, level = %d, u.size = %lu \n", rank, grid->currentLevel,
+//        printf("\nbefore un-shrinking: rank = %d, level = %d, u.size = %lu \n", rank, grid->level,
 //               u.size());
 //        for(unsigned long i=0; i<u.size(); i++)
 //            printf("u[%lu] = %f \n", i, u[i]);}
 //    MPI_Barrier(grid->A->comm);
 
 //    if(rank==1){
-//        printf("\nbefore un-shrinking: rank_new = %d, level = %d, u.size = %lu \n", rank, grid->currentLevel,
+//        printf("\nbefore un-shrinking: rank_new = %d, level = %d, u.size = %lu \n", rank, grid->level,
 //               u.size());
 //        for(unsigned long i=0; i<u.size(); i++)
 //            printf("u[%lu] = %f \n", i, u[i]);}
@@ -699,22 +699,22 @@ int saena_object::unshrink_u(Grid* grid, std::vector<value_t>& u) {
 
 //    MPI_Barrier(grid->A->comm);
 //    if(rank_horizontal==0){
-//        printf("\nafter un-shrinking: rank = %d, level = %d, u.size = %lu \n", rank, grid->currentLevel, u.size());
+//        printf("\nafter un-shrinking: rank = %d, level = %d, u.size = %lu \n", rank, grid->level, u.size());
 //        for(unsigned long i=0; i<u.size(); i++)
 //            printf("u[%lu] = %f \n", i, u[i]);}
 //    MPI_Barrier(grid->A->comm);
 //    if(rank==1){
-//        printf("\nafter un-shrinking: rank_horizontal = %d, level = %d, u.size = %lu \n", rank_horizontal, grid->currentLevel, u.size());
+//        printf("\nafter un-shrinking: rank_horizontal = %d, level = %d, u.size = %lu \n", rank_horizontal, grid->level, u.size());
 //        for(unsigned long i=0; i<u.size(); i++)
 //            printf("u[%lu] = %f \n", i, u[i]);}
 //    MPI_Barrier(grid->A->comm);
 //    if(rank_horizontal==2){
-//        printf("\nafter un-shrinking: rank = %d, level = %d, u.size = %lu \n", rank, grid->currentLevel, u.size());
+//        printf("\nafter un-shrinking: rank = %d, level = %d, u.size = %lu \n", rank, grid->level, u.size());
 //        for(unsigned long i=0; i<u.size(); i++)
 //            printf("u[%lu] = %f \n", i, u[i]);}
 //    MPI_Barrier(grid->A->comm);
 //    if(rank_horizontal==3){
-//        printf("\nafter un-shrinking: rank = %d, level = %d, u.size = %lu \n", rank, grid->currentLevel, u.size());
+//        printf("\nafter un-shrinking: rank = %d, level = %d, u.size = %lu \n", rank, grid->level, u.size());
 //        for(unsigned long i=0; i<u.size(); i++)
 //            printf("u[%lu] = %f \n", i, u[i]);}
 //    MPI_Barrier(grid->A->comm);

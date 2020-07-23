@@ -152,7 +152,7 @@ int saena_object::setup(saena_matrix* A) {
                     printf("_____________________________\n\n");
                     printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu"
                            "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
-                           grids[i + 1].currentLevel, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
+                           grids[i + 1].level, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
                            grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
                 }
             }
@@ -384,7 +384,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
                     printf("_____________________________\n\n");
                     printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu"
                            "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
-                           grids[i + 1].currentLevel, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
+                           grids[i + 1].level, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
                            grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
                 }
             }
@@ -483,7 +483,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 
 //    if(verbose_level_setup){
 //        MPI_Barrier(grid->A->comm);
-//        printf("rank = %d, start of coarsen: level = %d \n", rank, grid->currentLevel);
+//        printf("rank = %d, start of coarsen: level = %d \n", rank, grid->level);
 //        MPI_Barrier(grid->A->comm);
 //    }
 
@@ -505,7 +505,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
-    if(verbose_coarsen) print_time(t1, t2, "Prolongation: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    if(verbose_coarsen) print_time(t1, t2, "Prolongation: level "+std::to_string(grid->level), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after create_prolongation!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->P.split, 0, "grid->P.split", grid->A->comm);
@@ -524,7 +524,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
-    if(verbose_coarsen) print_time(t1, t2, "Restriction: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    if(verbose_coarsen) print_time(t1, t2, "Restriction: level "+std::to_string(grid->level), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after transposeP!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->R.entry_local, -1, "grid->R.entry_local", grid->A->comm);
@@ -546,8 +546,8 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
 //    double t22 = MPI_Wtime();
-    if(verbose_coarsen) print_time(t1, t2, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
-//    print_time_ave(t22-t11, "compute_coarsen: level "+std::to_string(grid->currentLevel), grid->A->comm);
+    if(verbose_coarsen) print_time(t1, t2, "compute_coarsen: level "+std::to_string(grid->level), grid->A->comm);
+//    print_time_ave(t22-t11, "compute_coarsen: level "+std::to_string(grid->level), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after compute_coarsen!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    if(grid->Ac.active) print_vector(grid->Ac.split, 1, "grid->Ac.split", grid->Ac.comm);

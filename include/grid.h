@@ -22,8 +22,8 @@ public:
     std::vector<value_t> rhs;
     saena_vector         *rhs_orig = nullptr;
 
-    Grid* coarseGrid        = nullptr;
-    int   currentLevel      = 0;
+    Grid* coarseGrid = nullptr;
+    int   level      = 0;
 
     std::vector<int> rcount;
     std::vector<int> scount;
@@ -38,8 +38,8 @@ public:
     Grid() = default;
 
     Grid(saena_matrix* A1, int currentLev){
-        A            = A1;
-        currentLevel = currentLev;
+        A     = A1;
+        level = currentLev;
     }
 
     ~Grid() = default;
