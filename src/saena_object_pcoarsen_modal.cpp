@@ -412,6 +412,7 @@ void saena_object::set_P_from_mesh(int order, vector<cooEntry_row> &P_temp, MPI_
         }
     }
 
+#if 0
     // col is global
     // row is universal
     // nodeno_coarse is the local coarse level size without boundary nodes
@@ -426,6 +427,7 @@ void saena_object::set_P_from_mesh(int order, vector<cooEntry_row> &P_temp, MPI_
             std::cout << "Pp_loc has row (universal) = " << Pp_loc.size() << ", and col(global) = " << Pp_loc[0].size() << endl;
         MPI_Barrier(comm);
     }
+#endif
 #endif
 
     // next level g2u
