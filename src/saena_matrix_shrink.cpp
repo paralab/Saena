@@ -54,12 +54,13 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
 int saena_matrix::decide_shrinking_c(){
     // set cpu_shrink_thre2 and do_shrink
 
-    int rank, nprocs;
+    int rank = -1, nprocs = -1;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
     do_shrink = true;
 
+#if 0
     // nprocs_new = nprocs / cpu_shrink_thre2   =>   cpu_shrink_thre2 = nprocs / nprocs_new
     if(nprocs > 1000){
         cpu_shrink_thre2 = nprocs / 40; // nprocs_new = 40
@@ -70,6 +71,9 @@ int saena_matrix::decide_shrinking_c(){
     }else{
         cpu_shrink_thre2 = nprocs;
     }
+#endif
+
+    cpu_shrink_thre2 = nprocs;
 
     return 0;
 }
