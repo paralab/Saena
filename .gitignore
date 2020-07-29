@@ -1,4 +1,5 @@
 build
+backup
 .idea
 cmake-build-debug
 test_results/
