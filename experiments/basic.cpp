@@ -87,6 +87,11 @@ int main(int argc, char* argv[]){
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
 
+    // to generate random rhs
+//    rhs_std.resize(num_local_row);
+//    generate_rhs_old(rhs_std);
+
+    // to read rhs from file
     char* Vname(argv[2]);
     read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
 
