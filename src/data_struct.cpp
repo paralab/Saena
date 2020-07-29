@@ -27,19 +27,16 @@ std::ostream & operator<<(std::ostream & stream, const vecCol & item) {
 }
 
 
-bool row_major (const cooEntry& node1, const cooEntry& node2)
-{
-    if(node1.row < node2.row)
-        return (true);
-    else if(node1.row == node2.row)
-        return(node1.col <= node2.col);
-    else
-        return false;
+bool row_major (const cooEntry& node1, const cooEntry& node2) {
+    if(node1.row == node2.row){
+        return node1.col < node2.col;
+    } else {
+        return node1.row < node2.row;
+    }
 }
 
 
-bool vecCol_col_major (const vecCol& node1, const vecCol& node2)
-{
+bool vecCol_col_major (const vecCol& node1, const vecCol& node2) {
     if(*node1.c < *node2.c)
         return (true);
     else if(*node1.c == *node2.c)
