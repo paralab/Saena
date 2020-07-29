@@ -51,11 +51,17 @@ public:
     // matmat
     // *****************
 
+    // stop condition for matmat split:
+    // A.row_sz * B.col_sz < matmat_thre1   &&   B.col_sz < matmat_thre2
+    // matmat_thre1 is upper bound for nonzeros of C = A * B.
+    // matmat_thre2 is upper bound for columns of C.
+    // matmat_thre3 is for when we want to have an exact number of splits. (case2_iter + case3_iter == matmat_thre3)
+
     std::string          coarsen_method  = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const int            matmat_thre1    = 10000000;   // split until (A_row * B_col < matmat_thre1)
-    index_t              matmat_thre2    = 0;          // split until (B.col_sz < matmat_thre2). It will be set as ceil(sqrt(matmat_thre1))
-    static const index_t matmat_thre3    = 40;         // split until (case2_iter + case3_iter == matmat_thre3)
-    const index_t        matmat_nnz_thre = 200;     //default 200
+    const int            matmat_thre1    = 50000000;
+    index_t              matmat_thre2    = 0;
+    static const index_t matmat_thre3    = 40;
+    const index_t        matmat_nnz_thre = 200; //default 200
 
 //    std::bitset<matmat_size_thre2> mapbit; // todo: is it possible to clear memory for this (after setup phase)?
 
