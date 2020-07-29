@@ -180,7 +180,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
-            printf("fast_mm: case 1: start \n");
+            printf("fast_mm: case 1\n");
         }
 //        ++case1_iter;
 #endif
@@ -388,12 +388,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             t1 = MPI_Wtime() - t1;
             case1 += t1;
 
-#ifdef __DEBUG1__
-            if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
-                printf("fast_mm: case 1: end \n");
-            }
-#endif
-
             return;
 #endif
 
@@ -403,12 +397,6 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
             t1 = MPI_Wtime() - t1;
             case1 += t1;
-        }
-#endif
-
-#ifdef __DEBUG1__
-        if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
-            printf("fast_mm: case 1: end \n");
         }
 #endif
 
@@ -2305,7 +2293,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 //#if 0
     if(!AB_temp.empty()) {
         auto tmp = cooEntry(0, 0, 0.0);
-        nnz_t sz_m1 = AB_temp.size() - 1;
+        const nnz_t SZ_M1 = AB_temp.size() - 1;
 
         if(trans){
             std::sort(AB_temp.begin(), AB_temp.end(), row_major);
@@ -2313,7 +2301,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
             for (long i = 0; i < AB_temp.size(); ++i) {
                 tmp = cooEntry(AB_temp[i].col, AB_temp[i].row, AB_temp[i].val);
 //                std::cout << "tmp = " << tmp << std::endl;
-                while (i < sz_m1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+                while (i < SZ_M1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
 //                    std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
                     tmp.val += AB_temp[++i].val;
                 }
@@ -2327,7 +2315,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
             for (long i = 0; i < AB_temp.size(); ++i) {
                 tmp = AB_temp[i];
-                while (i < sz_m1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+                while (i < SZ_M1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
 //                    std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
                     tmp.val += AB_temp[++i].val;
                 }
