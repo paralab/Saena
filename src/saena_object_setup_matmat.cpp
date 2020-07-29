@@ -188,7 +188,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         double t1 = MPI_Wtime();
         ++case1_iter;
 
-        if(use_dcsrmultcsr) {
+//        if(use_dcsrmultcsr) {
             // C_mk = A_mn * B_nk = (BT_kn * AT_nm) = CT_km = C_mk
 
             t1 = MPI_Wtime();
@@ -247,6 +247,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             t1 = MPI_Wtime() - t1;
             case1 += t1;
 
+#if 0
         }else {
 
             sparse_matrix_t Amkl = nullptr;
@@ -403,6 +404,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
             t1 = MPI_Wtime() - t1;
             case1 += t1;
         }
+#endif
 
 #ifdef __DEBUG1__
         if (rank == verbose_rank && (verbose_fastmm || verbose_matmat_recursive)) {
