@@ -307,10 +307,10 @@ int saena_object::compute_coarsen(Grid *grid) {
 
             if (switch_to_dense && Ac->density > dense_threshold) {
 #ifdef __DEBUG1__
-                if (verbose_compute_coarsen && !rank) {
-                    Ac->print_info(-1);
+                if (verbose_compute_coarsen) {
+//                    Ac->print_info(-1);
 //                    Ac->print_entry(-1);
-                    printf("Switch to dense: density = %f, dense_thres = %f\n", Ac->density, dense_threshold);
+                    if(!rank) printf("Switch to dense: density = %f, dense_thres = %f\n", Ac->density, dense_threshold);
                 }
 #endif
 
@@ -626,9 +626,9 @@ int saena_object::triple_mat_mult(Grid *grid){
         MPI_Barrier(comm);
         if (rank == 0) printf("triple_mat_mult: step 7\n");
         MPI_Barrier(comm);
-//        printf("RA: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: %u\n",
-//                rank, RAcsc.nnz, RAcsc.max_nnz, RAcsc.col_sz, RAcsc.max_M);
-//        MPI_Barrier(comm);
+        printf("RA: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: not needed for lhs of matmat\n",
+                rank, RAcsc.nnz, RAcsc.max_nnz, RAcsc.col_sz);
+        MPI_Barrier(comm);
     }
 
 //    RA.print_entry(0);

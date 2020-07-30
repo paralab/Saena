@@ -54,30 +54,43 @@ int strength_matrix::setup_matrix(float connStrength){
 
     // *************************** make S symmetric and apply the connection strength parameter ****************************
 
+//    print_vector(entry, -1, "entry", comm);
+//    print_vector(entryT, -1, "entryT", comm);
+
     nnz_l = 0;
     int val_coeff, valT_coeff;
     std::vector<index_t> r(entry.size()), c(entry.size());
     std::vector<value_t> v(entry.size());
 
-    for(nnz_t i=0; i<entry.size(); i++){
+    //TODO: check this part
+//    for(nnz_t i = 0; i < entry.size(); i++){
+//
+//        if (entry[i].val <= connStrength)
+//            val_coeff = 0;
+//        else
+//            val_coeff = 1;
+//
+//        if (entryT[i].val <= connStrength)
+//            valT_coeff = 0;
+//        else
+//            valT_coeff = 1;
+//
+//        if (!val_coeff && !valT_coeff) // if both zero, skip.
+//            continue;
+//
+//        r[nnz_l] = entryT[i].row;
+//        c[nnz_l] = entryT[i].col;
+//        v[nnz_l] = 0.5*(val_coeff * entry[i].val + valT_coeff * entryT[i].val);
+//        nnz_l++;
+//    }
 
-        if (entry[i].val <= connStrength)
-            val_coeff = 0;
-        else
-            val_coeff = 1;
-
-        if (entryT[i].val <= connStrength)
-            valT_coeff = 0;
-        else
-            valT_coeff = 1;
-
-        if (!val_coeff && !valT_coeff) // if both zero, skip.
-            continue;
-
-        r[nnz_l] = entryT[i].row;
-        c[nnz_l] = entryT[i].col;
-        v[nnz_l] = 0.5*(val_coeff * entry[i].val + valT_coeff * entryT[i].val);
-        nnz_l++;
+    for(nnz_t i = 0; i < entry.size(); i++){
+        if (entry[i].val > connStrength){
+            r[nnz_l] = entryT[i].row;
+            c[nnz_l] = entryT[i].col;
+            v[nnz_l] = 0.5*(entry[i].val + entryT[i].val);
+            ++nnz_l;
+        }
     }
 
     r.resize(nnz_l);
@@ -177,7 +190,7 @@ int strength_matrix::setup_matrix(float connStrength){
         }
     } // for i
 
-     if(nprocs !=1){
+     if(nprocs > 1){
          std::vector<int> vIndexCount(nprocs);
          MPI_Alltoall(&recvCount[0], 1, par::Mpi_datatype<index_t>::value(), &vIndexCount[0], 1, par::Mpi_datatype<index_t>::value(), comm);
 
@@ -249,6 +262,7 @@ int strength_matrix::setup_matrix(float connStrength){
 //    std::sort(indicesP_remote, &indicesP_remote[nnz_l_remote], sort_indices(row_remoteP));
 
 //    print_info(-1);
+//    print_entry(-1);
 
     return 0;
 }
@@ -359,7 +373,7 @@ void strength_matrix::print_entry(int ran){
     index_t iter = 0;
     if(ran >= 0) {
         if (rank == ran) {
-            printf("\nstrength matrix (diagonal_block) on proc = %d \n", ran);
+            printf("\nstrength matrix on proc = %d \n", ran);
             printf("nnz = %lu \n", nnz_l);
             for (index_t i = 0; i < nnz_l; i++) {
                 std::cout << iter << "\t" << entry[i] << std::endl;
@@ -370,7 +384,7 @@ void strength_matrix::print_entry(int ran){
         for(index_t proc = 0; proc < nprocs; proc++){
             MPI_Barrier(comm);
             if (rank == proc) {
-                printf("\nstrength matrix (diagonal_block) on proc = %d \n", rank);
+                printf("\nstrength matrix on proc = %d \n", rank);
                 printf("nnz = %lu \n", nnz_l);
                 for (index_t i = 0; i < nnz_l; i++) {
                     std::cout << iter << "\t" << entry[i] << std::endl;

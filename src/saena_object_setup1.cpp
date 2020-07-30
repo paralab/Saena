@@ -41,6 +41,8 @@ int saena_object::SA(Grid *grid){
     std::vector<index_t> aggregate(grid->A->M);
     int ret_val = find_aggregation(grid->A, aggregate, grid->P.splitNew);
 
+//    print_vector(aggregate, -1, "aggregate", comm);
+
     if(ret_val == 2){ // stop the coarsening
         return ret_val;
     }
@@ -60,14 +62,14 @@ int saena_object::SA(Grid *grid){
 //        std::cout << A->vIndex[i] << "\t" << vSendULong[i] << std::endl;
     }
 
-    auto* requests = new MPI_Request[A->numSendProc+A->numRecvProc];
-    auto* statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
+    auto* requests = new MPI_Request[A->numSendProc + A->numRecvProc];
+    auto* statuses = new MPI_Status[A->numSendProc + A->numRecvProc];
 
     for(i = 0; i < A->numRecvProc; ++i)
-        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], par::Mpi_datatype<nnz_t>::value(), A->recvProcRank[i], 1, comm, &(requests[i]));
+        MPI_Irecv(&vecValuesULong[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_UNSIGNED_LONG, A->recvProcRank[i], 1, comm, &requests[i]);
 
     for(i = 0; i < A->numSendProc; ++i)
-        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], par::Mpi_datatype<nnz_t>::value(), A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
+        MPI_Isend(&vSendULong[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_UNSIGNED_LONG, A->sendProcRank[i], 1, comm, &requests[A->numRecvProc+i]);
 
     std::vector<cooEntry> PEntryTemp;
 
@@ -76,19 +78,19 @@ int saena_object::SA(Grid *grid){
     // local
     // -----
     long iter = 0;
-    double one_min_omega = 1 - omega;
+    const double ONE_M_OMEGA = 1 - omega;
     for (i = 0; i < A->M; ++i) {
         for (j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
             if(A->row_local[A->indicesP_local[iter]] == A->col_local[A->indicesP_local[iter]]-A->split[rank]){ // diagonal element
                 PEntryTemp.emplace_back(cooEntry(A->row_local[A->indicesP_local[iter]],
                                                  aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
-                                                 one_min_omega));
+                                                 ONE_M_OMEGA));
             }else{
                 PEntryTemp.emplace_back(cooEntry(A->row_local[A->indicesP_local[iter]],
                                                  aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
                                                  -omega * A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]]));
             }
-//            std::cout << A->row_local[A->indicesP_local[iter]] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]] << std::endl;
+//            if(rank==3) std::cout << A->row_local[A->indicesP_local[iter]] + A->split[rank] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]] << std::endl;
         }
     }
 
@@ -101,23 +103,23 @@ int saena_object::SA(Grid *grid){
             PEntryTemp.emplace_back(cooEntry(A->row_remote[iter],
                                              vecValuesULong[A->col_remote[iter]],
                                              -omega * A->values_remote[iter] * A->inv_diag[A->row_remote[iter]]));
-//            P->values.emplace_back(A->values_remote[iter]);
-//            std::cout << A->row_remote[iter] << "\t" << A->vecValuesULong[A->col_remote[iter]] << "\t"
-//                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << std::endl;
+//            if(rank==3) std::cout << A->row_remote[iter] + A->split[rank] << "\t" << vecValuesULong[A->col_remote[iter]] << "\t"
+//                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << "\t" << A->col_remote[iter] << std::endl;
         }
     }
 
     std::sort(PEntryTemp.begin(), PEntryTemp.end());
 
-//    print_vector(PEntryTemp, 0, "PEntryTemp", comm);
+//    printf("rank %d: PEntryTemp.size = %ld\n", rank, PEntryTemp.size());
+//    print_vector(PEntryTemp, -1, "PEntryTemp", comm);
 
-    // todo: here
-//    P->entry.resize(PEntryTemp.size());
-    // remove duplicates.
+    // add duplicates.
+    // values of entries with the same row and col should be added together.
+    const int SZ_M1 = static_cast<int>(PEntryTemp.size()) - 1;
     cooEntry tmp(0, 0, 0.0);
     for(i = 0; i < PEntryTemp.size(); ++i){
         tmp = PEntryTemp[i];
-        while(i<PEntryTemp.size()-1 && PEntryTemp[i] == PEntryTemp[i+1]){ // values of entries with the same row and col should be added.
+        while(i < SZ_M1 && PEntryTemp[i] == PEntryTemp[i+1]){
             tmp.val += PEntryTemp[++i].val;
         }
 
@@ -126,12 +128,13 @@ int saena_object::SA(Grid *grid){
         }
     }
 
-//    print_vector(P->entry, 0, "P->entry", comm);
-
     P->nnz_l = P->entry.size();
     MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
     P->split = A->split;
     P->findLocalRemote();
+
+//    print_vector(P->entry, -1, "P->entry", comm);
+//    printf("rank %d: P->nnz_l = %ld, P->nnz_g = %ld\n", rank, P->nnz_l, P->nnz_g);
 
     MPI_Waitall(A->numSendProc, A->numRecvProc+requests, A->numRecvProc+statuses);
     delete [] requests;
@@ -158,10 +161,14 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     strength_matrix S;
     create_strength_matrix(A, &S);
 
+//    S.print_entry(-1);
+
     std::vector<index_t> aggArray; // vector of root nodes.
 
     aggregation_1_dist(&S, aggregate, aggArray);
 //    aggregation_2_dist(&S, aggregate, aggArray);
+
+//    print_vector(aggArray, -1, "aggArray", comm);
 
     double  division    = 0;
     index_t new_size    = 0;
@@ -385,6 +392,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 */
     // ******************************** compute max per column - version 2 - if A is symmetric ********************************
 
+    // TODO: assuming A is symmteric!
     // since A is symmetric, use maxPerRow for local entries on each process. receive the remote ones like matvec.
 
     //vSend are maxPerCol for remote elements that should be sent to other processes.
@@ -397,11 +405,11 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     //vecValues are maxperCol for remote elements that are received from other processes.
     // Do not recv from self.
     for(nnz_t i = 0; i < A->numRecvProc; i++)
-        MPI_Irecv(&A->vecValues[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], MPI_DOUBLE, A->recvProcRank[i], 1, comm, &(requests[i]));
+        MPI_Irecv(&A->vecValues[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], par::Mpi_datatype<value_t>::value(), A->recvProcRank[i], 1, comm, &(requests[i]));
 
     // Do not send to self.
     for(nnz_t i = 0; i < A->numSendProc; i++)
-        MPI_Isend(&A->vSend[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], MPI_DOUBLE, A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
+        MPI_Isend(&A->vSend[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], par::Mpi_datatype<value_t>::value(), A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
 
     // ******************************** compute ST - version 2 ********************************
 
@@ -431,16 +439,17 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     }
 */
 
+    // TODO: iter2 is not being used later.
     // local ST values
     S->entryT.resize(A->nnz_l);
     for (nnz_t i = 0; i < A->nnz_l_local; ++i, iter2++) {
 
-        if(A->row_local[i] == A->col_local[i]) // diagonal entry
+        if(A->row_local[i] + A->split[rank] == A->col_local[i]) // diagonal entry
             val_temp = 1;
         else
             val_temp = -A->values_local[i] / maxPerRow[A->col_local[i] - A->split[rank]];
 
-//        if(rank==0) printf("%u \t%u \t%f \n", A->row_local[i], A->col_local[i], val_temp);
+//        if(rank==3) printf("%u \t%u \t%f \n", A->row_local[i] + A->split[rank], A->col_local[i], val_temp);
         S->entryT[i] = cooEntry(A->row_local[i], A->col_local[i], val_temp);
     }
 
@@ -457,10 +466,11 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
     // remote ST values
     // todo: add OpenMP just like matvec.
+    // TODO: double check values for entryT.
     iter = 0;
     double valtmp = 0;
     for (index_t i = 0; i < A->col_remote_size; ++i) {
-        valtmp = -A->vecValues[i];
+        valtmp = -1 / A->vecValues[i];
         for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
 //            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->values_remote[iter] / A->vecValues[i]);
 //            w[A->row_remote[A->indicesP_remote[iter]]] += A->values_remote[A->indicesP_remote[iter]] * A->vecValues[A->col_remote[A->indicesP_remote[iter]]];
@@ -495,7 +505,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
     // For each node, first assign it to a 1-distance root.
     // If there is not any root in distance-1, that node should become a root.
 
-    // aggregate: of size dof at the end will shows to what root node (aggregate) each node is assigned.
+    // aggregate: of size dof. at the end it will show to what root node (aggregate) each node is assigned.
     // aggArray: the root nodes of the coarse matrix.
 
     // variables used in this function:
@@ -918,11 +928,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
     if(!aggArray.empty())
         std::sort(aggArray.begin(), aggArray.end());
 
-//    if(rank==1){
-//        std::cout << "aggArray:" << aggArray.size() << std::endl;
-//        for(auto i:aggArray)
-//            std::cout << i << std::endl;
-//        std::cout << std::endl;}
+//    print_vector(aggArray, -1, "aggArray", comm);
 
     // ************* write the aggregate nodes to a file *************
 
