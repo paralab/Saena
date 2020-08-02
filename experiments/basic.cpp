@@ -37,7 +37,7 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
     // there are two ways to create a matrix:
 
-    double t1 = MPI_Wtime();
+    double t1 = omp_get_wtime();
 
     // 1- read from file: pass as an argument in the command line
     // example: ./Saena ../data/81s4x8o1mu1.bin
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]){
 //    A.get_internal_matrix()->matvec(v, rhs_std);
 //    rhs_std = v;
 
-    index_t my_split;
+    index_t my_split = 0;
     saena::find_split((index_t)rhs_std.size(), my_split, comm);
 
     saena::vector rhs(comm);
@@ -131,18 +131,18 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(4);
+    solver.set_multigrid_max_level(5);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
 
-    double t2 = MPI_Wtime();
+    double t2 = omp_get_wtime();
     print_time(t1, t2, "Setup:", comm);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
-    t1 = MPI_Wtime();
+    t1 = omp_get_wtime();
 
     // solve the system using AMG as the solver
 //    solver.solve(u, &opts);
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]){
     // solve the system, using AMG as the preconditioner. this is preconditioned GMRES.
 //    solver.solve_pGMRES(u, &opts);
 
-    t2 = MPI_Wtime();
+    t2 = omp_get_wtime();
     print_time(t1, t2, "Solve:", comm);
 
     // *************************** print or write the solution ****************************

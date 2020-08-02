@@ -2287,6 +2287,11 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
     if (verbose_matmat) {
         if (rank == verbose_rank) printf("matmat: last step\n");
     }
+//    for (long i = 0; i < AB_temp.size(); ++i) {
+//        ASSERT(AB_temp[i].row < Acsc_M, "AB_temp[i].row: " << AB_temp[i].row << ", Acsc_M: " << Acsc_M);
+//        ASSERT(AB_temp[i].col < Bcsc.col_sz, "AB_temp[i].col: " << AB_temp[i].col << ", Bcsc.col_sz: " << Bcsc.col_sz);
+//        ASSERT(AB_temp[i].val < , "AB_temp[i].val: " << AB_temp[i].val << ", : " << );
+//    }
 #endif
 
     t_temp = MPI_Wtime();
