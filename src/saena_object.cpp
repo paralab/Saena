@@ -97,6 +97,7 @@ int saena_object::setup(saena_matrix* A) {
 
     grids.resize(max_level + 1);
     grids[0] = Grid(A, 0);
+    grids[0].active = true;
 
     int res = 0;
     for(int i = 0; i < max_level; ++i){
@@ -131,16 +132,18 @@ int saena_object::setup(saena_matrix* A) {
         grids[i + 1] = Grid(&grids[i].Ac, i + 1);   // Pass A to grids[i+1] (created as Ac in grids[i])
         grids[i].coarseGrid = &grids[i + 1];        // connect grids[i+1] to grids[i]
 
+        grids[i + 1].active = grids[i].Ac.active;
+
         if(grids[i].Ac.active) {
-#ifdef __DEBUG1__
-            if(verbose_setup_steps){
-                MPI_Barrier(grids[i].Ac.comm);
-                if(!rank) printf("setup: find_eig()\n");
-                MPI_Barrier(grids[i].Ac.comm);
-            }
-#endif
 
             if (smoother == "chebyshev") {
+#ifdef __DEBUG1__
+                if(verbose_setup_steps){
+                    MPI_Barrier(grids[i].Ac.comm);
+                    if(!rank) printf("setup: find_eig()\n");
+                    MPI_Barrier(grids[i].Ac.comm);
+                }
+#endif
                 find_eig(grids[i].Ac);
             }
 
@@ -170,17 +173,28 @@ int saena_object::setup(saena_matrix* A) {
     grids.resize(max_level + 1);
 
 #ifdef __DEBUG1__
-    if(verbose_setup_steps){
-        MPI_Barrier(A->comm);
-        if(!rank) printf("setup: finished creating the hierarchy. max_level = %u \n", max_level);
-        MPI_Barrier(A->comm);
+    {
+        if(verbose_setup_steps){
+            MPI_Barrier(A->comm);
+            if(!rank) printf("setup: finished creating the hierarchy. max_level = %u \n", max_level);
+            MPI_Barrier(A->comm);
+        }
+
+        // print active procs
+        // ==================
+//        int rank_tmp = 0;
+//        MPI_Barrier(A->comm);
+//        for(int l = 0; l < max_level; ++l){
+//            if(grids[l].active) {
+//                MPI_Barrier(grids[l].A->comm);
+//                MPI_Comm_rank(grids[l].A->comm, &rank_tmp);
+//                printf("level %d: rank %d is active\n", l + 1, rank_tmp);
+//            }
+//        }
     }
 #endif
 
-    A_coarsest = grids.back().A;
-
     if(verbose_setup){
-//        MPI_Barrier(A->comm);
         if(!rank){
             std::stringstream buf;
             buf << "_____________________________\n\n"
@@ -189,52 +203,27 @@ int saena_object::setup(saena_matrix* A) {
             if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
             print_sep();
         }
-//        MPI_Barrier(A->comm);
     }
 
 #ifdef __DEBUG1__
-    {
-//    MPI_Barrier(A->comm);
-//    for(int l = 0; l < max_level; ++l){
-//        printf("\nlevel = %d\n", l);
-//        if(grids[l].Ac.active) {
-//            printf("rank = %d active\n", rank);
-//        } else {
-//            printf("rank = %d not active\n", rank);
-//        }
-//        MPI_Barrier(A->comm);
-//    }
-
-/*
-// grids[i+1].row_reduction_min is 0 by default. for the active processors in the last grid, it will be non-zero.
-// that's why MPI_MAX is used in the following MPI_Allreduce.
-float row_reduction_min_send = grids[i].row_reduction_min;
-MPI_Allreduce(&row_reduction_min_send, &grids[i].row_reduction_min, 1, MPI_FLOAT, MPI_MAX, grids[0].A->comm);
-// delete the coarsest level, if the size is not reduced much.
-if (grids[i].row_reduction_min > row_reduction_up_thrshld) {
-    grids.pop_back();
-    max_level--;
-}
-*/
-    }
-
     if(verbose_setup_steps){
-//        A_coarsest->print_info(-1);
-//        MPI_Barrier(A->comm);
+        MPI_Barrier(A->comm);
         if(!rank) printf("setup: setup_SuperLU()\n");
-//        MPI_Barrier(A->comm);
+        MPI_Barrier(A->comm);
     }
 #endif
 
-    if(A_coarsest->active) {
+    if(grids.back().active) {
+        A_coarsest = grids.back().A;
         setup_SuperLU();
     }
 
 #ifdef __DEBUG1__
     if(verbose_setup_steps){
-//        MPI_Barrier(A->comm);
+//        A_coarsest->print_info(-1);
+        MPI_Barrier(A->comm);
         if(!rank) printf("setup done!\n");
-//        MPI_Barrier(A->comm);
+        MPI_Barrier(A->comm);
     }
 #endif
 
@@ -553,8 +542,8 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 //    if(grid->Ac.active) print_vector(grid->Ac.split, 1, "grid->Ac.split", grid->Ac.comm);
 //    if(grid->Ac.active) print_vector(grid->Ac.entry, 1, "grid->Ac.entry", grid->A->comm);
 
-//    printf("rank = %d, M = %u, nnz_l = %lu, nnz_g = %lu, Ac.M = %u, Ac.nnz_l = %lu \n",
-//           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l);
+//    printf("rank = %d, M = %u, nnz_l = %lu, nnz_g = %lu, Ac.M = %u, Ac.nnz_l = %lu, Ac.nnz_g = %lu\n",
+//           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
 
 //    int rank1;
 //    MPI_Comm_rank(grid->A->comm, &rank1);

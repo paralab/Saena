@@ -24,6 +24,7 @@ public:
 
     Grid* coarseGrid = nullptr;
     int   level      = 0;
+    bool  active     = false;
 
     std::vector<int> rcount;
     std::vector<int> scount;

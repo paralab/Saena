@@ -186,7 +186,7 @@ int saena_object::setup_SuperLU() {
     // ------------------------------------------------------------
 
 #ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
+    if (verbose_setup_coarse) {
         MPI_Barrier(*comm_coarsest);
         if (rank_coarsest == 0) {
             printf("setup_SuperLU: start. \n");
@@ -210,7 +210,7 @@ int saena_object::setup_SuperLU() {
     }
 
 #ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
+    if (verbose_setup_coarse) {
         MPI_Barrier(*comm_coarsest);
         if (!iam) {
             int v_major, v_minor, v_bugfix;
@@ -242,7 +242,7 @@ int saena_object::setup_SuperLU() {
 //                                   SLU_NR_loc, SLU_D, SLU_GE);
 
 #ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
+    if (verbose_setup_coarse) {
         MPI_Barrier(*comm_coarsest);
         if (rank_coarsest == 0) printf("PASS THE MATRIX FROM SAENA. \n");
         MPI_Barrier(*comm_coarsest);
@@ -256,7 +256,7 @@ int saena_object::setup_SuperLU() {
     ldb     = m_loc;
 
 #ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
+    if (verbose_setup_coarse) {
         MPI_Barrier(*comm_coarsest);
         if (rank_coarsest == 0)
             printf("m = %d, m_loc = %d, n = %d, nnz_g = %ld, nnz_loc = %d, ldb = %d \n",
@@ -388,7 +388,7 @@ int saena_object::setup_SuperLU() {
     LUstructInit(n, &LUstruct);
 
 #ifdef __DEBUG1__
-    if (verbose_solve_coarse) {
+    if (verbose_setup_coarse) {
         options.PrintStat = YES;
         MPI_Barrier(*comm_coarsest);
         if (rank_coarsest == 0) printf("setup_SuperLU: done. \n");
@@ -947,10 +947,12 @@ int saena_object::smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_
 
 int saena_object::setup_vcycle_memory(){
     for(int i = 0; i < grids.size() - 1; ++i){
-        grids[i].res.resize(grids[i].A->M);
-        grids[i].uCorr.resize(grids[i].A->M);
-//        grids[i].res_coarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
-//        grids[i].uCorrCoarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
+        if(grids[i].active){
+            grids[i].res.resize(grids[i].A->M);
+            grids[i].uCorr.resize(grids[i].A->M);
+//            grids[i].res_coarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
+//            grids[i].uCorrCoarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
+        }
     }
     return 0;
 }
@@ -1391,7 +1393,7 @@ int saena_object::solve(std::vector<value_t>& u){
 
     // ************** destroy data from SuperLU **************
 
-    if(A_coarsest->active) {
+    if(grids.back().active) {
         destroy_SuperLU();
     }
 
@@ -1491,12 +1493,6 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
     }
 
 //    print_vector(u, -1, "u", comm);
-
-    // ************** destroy data from SuperLU **************
-
-//    if(A_coarsest->active) {
-//        destroy_SuperLU();
-//    }
 
     // ************** scale u **************
 
@@ -1736,7 +1732,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 
     // ************** destroy data from SuperLU **************
 
-    if(A_coarsest->active) {
+    if(grids.back().active) {
         destroy_SuperLU();
     }
 
@@ -1992,7 +1988,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     // ************** destroy data from SuperLU **************
 
-    if(A_coarsest->active) {
+    if(grids.back().active) {
         destroy_SuperLU();
     }
 
@@ -2474,7 +2470,7 @@ int saena_object::GMRES(std::vector<double> &u){
 
     // ************** destroy matrix from SuperLU **************
 
-    if(A_coarsest->active) {
+    if(grids.back().active) {
         destroy_SuperLU();
     }
 
@@ -2747,7 +2743,7 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // ************** destroy matrix from SuperLU **************
 
-    if(A_coarsest->active) {
+    if(grids.back().active) {
         destroy_SuperLU();
     }
 

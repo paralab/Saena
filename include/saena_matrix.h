@@ -124,6 +124,9 @@ public:
 
     bool active = false;
 
+    // shrink_minor: if there is no entry for the coarse matrix on this proc, then shrink.
+    bool active_minor = false;    // default = false
+
     bool enable_shrink   = false; // default = true
     bool enable_shrink_c = true;  // default = true. enables shrinking for the coarsest level.
     bool do_shrink       = false; // default = false
@@ -146,9 +149,6 @@ public:
     // use these two parameters to decide shrinking for the level of multigrid
     bool enable_shrink_next_level = false; // default is false. set it to true in the setup() function if it is required.
 //    int cpu_shrink_thre1_next = 0; // set 0 to shrink at every level. density >= (last_density_shrink * cpu_shrink_thre1)
-
-    // shrink_minor: if there no entry for the coarse matrix on this proc, then shrink.
-    bool active_minor = false;    // default = false
 
     double density = -1.0;
     float jacobi_omega = float(2.0/3);

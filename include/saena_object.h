@@ -186,6 +186,8 @@ public:
     bool verbose_matmat_A         = false;
     bool verbose_matmat_B         = false;
     bool verbose_matmat_assemble  = false;
+    bool verbose_setup_coarse     = false;
+
     bool verbose_solve            = false;
     bool verbose_vcycle           = false;
     bool verbose_vcycle_residuals = false;
