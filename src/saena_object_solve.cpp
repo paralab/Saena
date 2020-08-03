@@ -1328,14 +1328,17 @@ int saena_object::solve(std::vector<value_t>& u){
 //    current_dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
+
     std::vector<value_t> r(grids[0].A->M);
     grids[0].A->residual(u, grids[0].rhs, r);
-    double initial_dot = 0.0, current_dot = 0.0;
-    dotProduct(r, r, &initial_dot, comm);
+    double init_dot = 0.0, current_dot = 0.0;
+    dotProduct(r, r, &init_dot, comm);
     if(!rank){
         print_sep();
-        printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
+        printf("\ninitial residual = %e \n\n", sqrt(init_dot));
     }
+
+    const double THRSHLD = init_dot * solver_tol * solver_tol;
 
     // if max_level==0, it means only direct solver is being used.
     if(max_level == 0 && rank==0){
@@ -1350,7 +1353,7 @@ int saena_object::solve(std::vector<value_t>& u){
 
 //        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
 //        if(rank==0) printf("vcycle iteration = %d, residual = %f \n\n", i, sqrt(current_dot));
-        if( current_dot / initial_dot < solver_tol * solver_tol )
+        if(current_dot < THRSHLD)
             break;
     }
 
@@ -1362,7 +1365,7 @@ int saena_object::solve(std::vector<value_t>& u){
     if(rank==0){
         print_sep();
         printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
-                       "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot/initial_dot));
+                       "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot / init_dot));
         print_sep();
     }
 
@@ -1426,12 +1429,14 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 
     std::vector<value_t> r(grids[0].A->M);
     grids[0].A->residual(u, grids[0].rhs, r);
-    double initial_dot = 0.0, current_dot = 0.0;
-    dotProduct(r, r, &initial_dot, comm);
+    double init_dot = 0.0, current_dot = 0.0;
+    dotProduct(r, r, &init_dot, comm);
     if(!rank){
         print_sep();
-        printf("\ninitial residual = %e \n\n", sqrt(initial_dot));
+        printf("\ninitial residual = %e \n\n", sqrt(init_dot));
     }
+
+    const double THRSHLD = init_dot * solver_tol * solver_tol;
 
     int i = 0;
     for(i = 0; i < solver_max_iter; ++i){
@@ -1441,7 +1446,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 
 //        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
 //        if(rank==0) printf("vcycle iteration = %d, residual = %f \n\n", i, sqrt(current_dot));
-        if( current_dot / initial_dot < solver_tol * solver_tol )
+        if(current_dot < THRSHLD)
             break;
     }
 
@@ -1453,7 +1458,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
     if(rank==0){
         print_sep();
         printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
-               "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot/initial_dot));
+               "\nrelative residual       = %e \n\n", ++i, sqrt(current_dot), sqrt(current_dot / init_dot));
         print_sep();
     }
 
