@@ -58,6 +58,10 @@ int saena_matrix::decide_shrinking_c(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(nprocs == 1){
+        return 0;
+    }
+
     do_shrink = true;
 
 #if 0
