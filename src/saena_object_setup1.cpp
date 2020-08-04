@@ -28,12 +28,19 @@ int saena_object::SA(Grid *grid){
     saena_matrix   *A = grid->A;
     prolong_matrix *P = &grid->P;
 
-//    MPI_Comm_dup(A->comm, &P->comm);
-    P->comm = A->comm;
     MPI_Comm comm = A->comm;
     int nprocs = -1, rank = -1;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    P->comm = A->comm;
+//    MPI_Comm_dup(A->comm, &P->comm);
+
+#ifdef __DEBUG1__
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("SA: start\n"); MPI_Barrier(comm);
+    }
+#endif
 
     nnz_t i = 0, j = 0;
     double omega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
@@ -41,7 +48,12 @@ int saena_object::SA(Grid *grid){
     std::vector<index_t> aggregate(grid->A->M);
     int ret_val = find_aggregation(grid->A, aggregate, grid->P.splitNew);
 
+#ifdef __DEBUG1__
 //    print_vector(aggregate, -1, "aggregate", comm);
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("SA: step 1\n"); MPI_Barrier(comm);
+    }
+#endif
 
     if(ret_val == 2){ // stop the coarsening
         return ret_val;
@@ -61,6 +73,12 @@ int saena_object::SA(Grid *grid){
         vSendULong[i] = aggregate[( A->vIndex[i] )];
 //        std::cout << A->vIndex[i] << "\t" << vSendULong[i] << std::endl;
     }
+
+#ifdef __DEBUG1__
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("SA: step 2\n"); MPI_Barrier(comm);
+    }
+#endif
 
     auto* requests = new MPI_Request[A->numSendProc + A->numRecvProc];
     auto* statuses = new MPI_Status[A->numSendProc + A->numRecvProc];
@@ -96,6 +114,12 @@ int saena_object::SA(Grid *grid){
 
     MPI_Waitall(A->numRecvProc, requests, statuses);
 
+#ifdef __DEBUG1__
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("SA: step 3\n"); MPI_Barrier(comm);
+    }
+#endif
+
     // remote
     iter = 0;
     for (i = 0; i < A->col_remote_size; ++i) {
@@ -110,8 +134,13 @@ int saena_object::SA(Grid *grid){
 
     std::sort(PEntryTemp.begin(), PEntryTemp.end());
 
+#ifdef __DEBUG1__
 //    printf("rank %d: PEntryTemp.size = %ld\n", rank, PEntryTemp.size());
 //    print_vector(PEntryTemp, -1, "PEntryTemp", comm);
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("SA: step 4\n"); MPI_Barrier(comm);
+    }
+#endif
 
     // add duplicates.
     // values of entries with the same row and col should be added together.
@@ -133,12 +162,17 @@ int saena_object::SA(Grid *grid){
     P->split = A->split;
     P->findLocalRemote();
 
-//    print_vector(P->entry, -1, "P->entry", comm);
-//    printf("rank %d: P->nnz_l = %ld, P->nnz_g = %ld\n", rank, P->nnz_l, P->nnz_g);
-
     MPI_Waitall(A->numSendProc, A->numRecvProc+requests, A->numRecvProc+statuses);
     delete [] requests;
     delete [] statuses;
+
+#ifdef __DEBUG1__
+//    print_vector(P->entry, -1, "P->entry", comm);
+//    printf("rank %d: P->nnz_l = %ld, P->nnz_g = %ld\n", rank, P->nnz_l, P->nnz_g);
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("SA: end\n"); MPI_Barrier(comm);
+    }
+#endif
 
     return ret_val;
 }
@@ -158,20 +192,36 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     MPI_Comm_rank(comm, &rank);
 //    MPI_Comm_size(A->comm, &nprocs);
 
+#ifdef __DEBUG1__
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("find_agg: start\n"); MPI_Barrier(comm);
+    }
+#endif
+
     strength_matrix S;
     create_strength_matrix(A, &S);
 
+#ifdef __DEBUG1__
 //    S.print_entry(-1);
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("find_agg: step 1\n"); MPI_Barrier(comm);
+    }
+#endif
 
     std::vector<index_t> aggArray; // vector of root nodes.
 
     aggregation_1_dist(&S, aggregate, aggArray);
 //    aggregation_2_dist(&S, aggregate, aggArray);
 
+#ifdef __DEBUG1__
 //    print_vector(aggArray, -1, "aggArray", comm);
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("find_agg: step 2\n"); MPI_Barrier(comm);
+    }
+#endif
 
-    double  division    = 0;
-    index_t new_size    = 0;
+    double  division = 0;
+    index_t new_size = 0;
     index_t new_size_local = aggArray.size(); // new_size is the size of the new coarse matrix.
 
     MPI_Allreduce(&new_size_local, &new_size, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
@@ -240,8 +290,13 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 
     }
 
-//    if(rank==0) printf("\nfinal: connStrength = %f, current size = %u, new size = %u,  division = %d\n",
+#ifdef __DEBUG1__
+//    if(!rank) printf("\nfinal: connStrength = %f, current size = %u, new size = %u,  division = %d\n",
 //                       connStrength_temp, A->Mbig, new_size, division);
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("find_agg: step 3\n"); MPI_Barrier(comm);
+    }
+#endif
 
     // decide if next level for multigrid is required or not.
     // threshold to set maximum multigrid level
@@ -281,9 +336,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 
 #ifdef __DEBUG1__
     if(verbose_setup_steps) {
-        MPI_Barrier(comm);
-        if (!rank) printf("find_agg: update indices\n");
-        MPI_Barrier(comm);
+        MPI_Barrier(comm); if (!rank) printf("find_agg: step 4\n"); MPI_Barrier(comm);
     }
 #endif
 
@@ -293,9 +346,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 //    updateAggregation(aggregate, &aggSize);
 //    print_vector(aggArray, -1, "aggArray", comm);
     if(verbose_setup_steps) {
-        MPI_Barrier(comm);
-        if (!rank) printf("find_agg: done\n");
-        MPI_Barrier(comm);
+        MPI_Barrier(comm); if (!rank) printf("find_agg: end\n"); MPI_Barrier(comm);
     }
 #endif
 
