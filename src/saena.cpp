@@ -614,7 +614,7 @@ int saena::amg::solve_pcg_update3(std::vector<value_t>& u, saena::options* opts)
 
 
 void saena::amg::destroy(){
-    // will add later.
+    m_pImpl->destroy();
 }
 
 

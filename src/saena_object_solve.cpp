@@ -130,6 +130,8 @@ int saena_object::setup_SuperLU() {
     MPI_Comm_size(*comm_coarsest, &nprocs_coarsest);
     MPI_Comm_rank(*comm_coarsest, &rank_coarsest);
 
+    superlu_allocated = true;
+
     int m, n, m_loc, nnz_loc;
     int nprow, npcol;
     int iam, ldb;
@@ -204,7 +206,7 @@ int saena_object::setup_SuperLU() {
 
     // tag for quitting processors that don't belong to the SuperLU's process grid.
     if ( iam >= nprow * npcol ){
-        superlu_active = FALSE;
+        superlu_active = false;
         superlu_gridexit(&superlu_grid);
         return 0;
     }
@@ -401,16 +403,20 @@ int saena_object::setup_SuperLU() {
 
 int saena_object::destroy_SuperLU(){
 
-    if(superlu_active){
-        Destroy_CompRowLoc_Matrix_dist(&A_SLU2);
-        ScalePermstructFree(&ScalePermstruct);
-        if(lu_created){
-            Destroy_LU(A_coarsest->Mbig, &superlu_grid, &LUstruct);
-        }
-        LUstructFree(&LUstruct);
-        superlu_gridexit(&superlu_grid);
-        if ( options.SolveInitialized ) {
-            dSolveFinalize(&options, &SOLVEstruct);
+    if(superlu_allocated){
+        superlu_allocated = false;
+
+        if(superlu_active){
+            Destroy_CompRowLoc_Matrix_dist(&A_SLU2);
+            ScalePermstructFree(&ScalePermstruct);
+            if(lu_created){
+                Destroy_LU(A_coarsest->Mbig, &superlu_grid, &LUstruct);
+            }
+            LUstructFree(&LUstruct);
+            superlu_gridexit(&superlu_grid);
+            if ( options.SolveInitialized ) {
+                dSolveFinalize(&options, &SOLVEstruct);
+            }
         }
     }
 
@@ -1391,12 +1397,6 @@ int saena_object::solve(std::vector<value_t>& u){
 //    print_vector(u, -1, "u", comm);
 #endif
 
-    // ************** destroy data from SuperLU **************
-
-    if(grids.back().active) {
-        destroy_SuperLU();
-    }
-
     // ************** scale u **************
 
     if(scale){
@@ -1730,12 +1730,6 @@ int saena_object::solve_CG(std::vector<value_t>& u){
     }
 #endif
 
-    // ************** destroy data from SuperLU **************
-
-    if(grids.back().active) {
-        destroy_SuperLU();
-    }
-
     // ************** scale u **************
 
     if(scale){
@@ -1988,9 +1982,9 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     // ************** destroy data from SuperLU **************
 
-    if(grids.back().active) {
-        destroy_SuperLU();
-    }
+//    if(grids.back().active) {
+//        destroy_SuperLU();
+//    }
 
     // ************** scale u **************
 
@@ -2468,12 +2462,6 @@ int saena_object::GMRES(std::vector<double> &u){
     // the exit label to be used by "goto".
     gmres_out:
 
-    // ************** destroy matrix from SuperLU **************
-
-    if(grids.back().active) {
-        destroy_SuperLU();
-    }
-
     // ************** scale u **************
 
     scale_vector(u, A->inv_sq_diag);
@@ -2740,12 +2728,6 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // the exit label to be used by "goto".
     gmres_out:
-
-    // ************** destroy matrix from SuperLU **************
-
-    if(grids.back().active) {
-        destroy_SuperLU();
-    }
 
     // ************** scale u **************
 

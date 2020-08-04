@@ -150,9 +150,10 @@ public:
     SOLVEstruct_t           SOLVEstruct;
     superlu_dist_options_t  options;
 
-    bool first_solve    = TRUE;
-    bool superlu_active = TRUE;
-    bool lu_created     = FALSE;
+    bool first_solve       = true;
+    bool superlu_active    = true;
+    bool superlu_allocated = false;
+    bool lu_created        = false;
 
     // **********************************************
 
@@ -195,8 +196,6 @@ public:
     bool verbose_solve_coarse     = false;
     bool verbose_update           = false;
 
-//    bool verbose_triple_mat_mult_test = false;
-
     // **********************************************
     // setup functions
     // **********************************************
@@ -204,6 +203,7 @@ public:
     saena_object()  = default;
     ~saena_object() = default;
     int destroy(){
+        destroy_SuperLU();
         return 0;
     }
 
