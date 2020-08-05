@@ -554,7 +554,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
                                      std::vector<index_t> &aggArray) {
 
     // For each node, first assign it to a 1-distance root.
-    // If there is not any root in distance-1, that node should become a root.
+    // If there is not any root in distance-1, that node will become a root.
 
     // aggregate: of size dof. at the end it will show to what root node (aggregate) each node is assigned.
     // aggArray: the root nodes of the coarse matrix.
@@ -564,27 +564,27 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
     //            status of a node: 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
     //            the max value for weight is 2^63 - 1
     //            weight is first generated randomly by randomVector function and saved in initialWeight. During the
-    //            aggregation_2_dist process, it becomes the weight of the node's aggregate.
+    //            aggregation_1_dist process, it becomes the weight of the node's aggregate.
 
     MPI_Comm comm = S->comm;
     int nprocs = -1, rank = -1;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    index_t i = 0, j = 0;
     index_t size = S->M;
 
-    std::vector<index_t> aggregate2(size);
+    std::vector<index_t>       aggregate2(size);
     std::vector<unsigned long> weight(size);
     std::vector<unsigned long> weight2(size);
     std::vector<unsigned long> initialWeight(size);
-//    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
 
+    S->set_weight(initialWeight);
+
+#ifdef __DEBUG1__
 //    S->randomVector(initialWeight, S->Mbig, comm);
-    S->randomVector3(initialWeight, comm);
 //    S->randomVector4(initialWeight, S->Mbig);
-
 //    print_vector(initialWeight, -1, "initialWeight", comm);
+#endif
 
     const int wOffset = 62;
     // 1UL << wOffset: the status of the node is set to 1 which is "not assigned".
@@ -593,18 +593,17 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
     const unsigned long weightMax = (1UL << wOffset) - 1;
     const unsigned long UNDECIDED = 1UL << wOffset;
     const unsigned long ROOT      = 1UL << (wOffset + 1);
-//    const unsigned long UNDECIDED_OR_ROOT = 3UL<<wOffset;
 
-    index_t aggregateTemp = 0;
-    unsigned long weightTemp = 0, aggStatusTemp = 0;
     int* root_distance = (int*)malloc(sizeof(int)*size);
     // root_distance is initialized to 3(11). root = 0 (00), 1-distance root = 1 (01), 2-distance root = 2 (10).
+
     bool* dist1or2undecided = (bool*)malloc(sizeof(bool)*size);
     // if there is a distance-2 neighbor which is undecided, set this to true.
-    bool continueAggLocal = true;
-    bool continueAgg = true;
-    index_t i_remote = 0, j_remote = 0, iter = 0;
-    unsigned long weight_neighbor = 0, agg_neighbor = 0, aggStatus_neighbor = 0, col_index = 0;
+
+    bool continueAggLocal = true, continueAgg = true;
+    index_t aggregateTemp = 0;
+    index_t i = 0, j = 0, i_remote = 0, j_remote = 0, iter = 0, col_index = 0;
+    unsigned long weightTemp = 0, weight_neighbor = 0, agg_neighbor = 0, aggStatus_neighbor = 0, aggStatusTemp = 0;
     int whileiter = 0;
 
     auto *requests = new MPI_Request[S->numSendProc + S->numRecvProc];
@@ -620,29 +619,33 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
         // and it is the diagonal element. They are roots for every coarse-grid.
 //        if(rank==0) std::cout << i << "\t" << S->nnzPerRow[i] << std::endl;
         if(S->nnzPerRow[i] == 1){
-            weight[i] = ( 2UL<<wOffset | initialWeight[i] );
+            weight[i] = ( (2UL << wOffset) | initialWeight[i] );
             root_distance[i] = 0;
             aggArray.emplace_back(aggregate[i]);
 //            if(rank==0) std::cout << "boundary: " << i+S->split[rank] << std::endl;
         }else{
-            weight[i] = ( 1UL<<wOffset | initialWeight[i] ); // status of each node is initialized to 1 and its weight to initialWeight.
+            weight[i] = ( (1UL << wOffset) | initialWeight[i] ); // status of each node is initialized to 1 and its weight to initialWeight.
 //            if(rank==0) std::cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << std::endl;
         }
     }
 
+#ifdef __DEBUG1__
+    {
 //    S->print_entry(-1);
 //    S->print_diagonal_block(-1);
 //    S->print_off_diagonal(-1);
 //    print_vector(weight, -1, "weight", comm);
 //    print_vector(S->split, 0, "split", comm);
 //    print_vector(S->nnzPerCol_remote, 0, "nnzPerCol_remote", comm);
+    }
+#endif
 
     while(continueAgg) {
         // ******************************* first round of max computation *******************************
         // first "compute max" is local. The second one is both local and remote.
         // for loop is of size "number of rows". it checks if a node is UNDECIDED. Then, it goes over its neighbors,
         // which are nonzeros on that row. If the neighbor is UNDECIDED or ROOT, and its weight is higher than
-        // weightTemp, then that node will be chosen for root for now.
+        // weightTemp, then that node will be chosen root for now.
         // UNDECIDED is also considered because it may become a root later, and it may be a better root for that node.
         // In the next "for" loop, weight and aggregate are updated, but not the status.
 
@@ -654,38 +657,26 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
         // weight and aggregate for node i, since they are not finalized yet.
         // todo: WARNING: S->col_local[S->indicesP_local[iter]] is not ordered row-major! is it fine?
         iter = 0;
+//        index_t *S_col_idx_p = &S->col_local[S->indicesP_local[iter]] - S->split[rank];
         for (i = 0; i < size; ++i) {
-            if(weight[i]&UNDECIDED) {
-//                if(rank==0) printf("\n");
-                root_distance[i] = 3; // initialization
-                dist1or2undecided[i] = false; // initialization
-                aggregate2[i] = aggregate[i];
-                weight2[i] = weight[i]&weightMax;
-//                weight2[i] = weight[i]&weightMax;
-//                aggStatusTemp = 1UL; // this will be used for aggStatus2, and aggStatus2 will be used for the remote part.
+            if(weight[i] & UNDECIDED) {
+                root_distance[i]     = 3;       // initialization
+                dist1or2undecided[i] = false;   // initialization
+                aggregate2[i]        = aggregate[i];
+                weight2[i]           = weight[i] & weightMax;
                 for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
-                    col_index = S->col_local[S->indicesP_local[iter]] - S->split[rank];
-                    aggStatus_neighbor = weight[col_index]>>wOffset;
+                    col_index          = S->col_local[S->indicesP_local[iter]] - S->split[rank];
+                    aggStatus_neighbor = weight[col_index] >> wOffset;
 //                    if(rank==0) printf("node = %lu, \tmy_init_wei = %lu, \tweight2 = %lu, \tcol_ind = %lu, \tneighbor_stat = %lu, \tneighbor_init_wei = %lu, \tneighbor_agg = %lu \n",
 //                                       i, initialWeight[i], weight2[i], col_index, aggStatus_neighbor, initialWeight[col_index], aggregate[col_index]);
                     if( aggStatus_neighbor != 0 ){ // neighbor being ROOT or UNDECIDED (not ASSIGNED).
                         if( (initialWeight[col_index] > weight2[i]) ||
                             ((initialWeight[col_index] == weight2[i]) && (aggregate[col_index] > aggregate2[i])) ){
 
-                            weight2[i] = (weight[col_index] & weightMax);
-                            aggregate2[i] = S->col_local[S->indicesP_local[iter]];
-                            root_distance[i] = 1;
-
-//                            if(aggStatus_neighbor == 2){ // ROOT
-//                                dist1or2undecided[i] = false;
-//                            }else{ // UNDECIDED
-//                                dist1or2undecided[i] = true;
-//                            }
-
+                            weight2[i]           = (weight[col_index] & weightMax);
+                            aggregate2[i]        = S->col_local[S->indicesP_local[iter]];
+                            root_distance[i]     = 1;
                             dist1or2undecided[i] = (aggStatus_neighbor != 2);
-
-//                            weight[i] = (0UL << wOffset | (weight[col_index] & weightMax)); // 0UL << wOffset is not required.
-//                            aggregate[i] = S->col_local[S->indicesP_local[iter]];
 //                            if(rank==0) std::cout << i+S->split[rank] << "\t assigned to = " << aggregate[i] << " distance-1 local \t weight = " << weight[i] << std::endl;
                         }
                     }
@@ -696,6 +687,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
             }
         }
 
+#ifdef __DEBUG1__
 /*
         // todo: for distance-1 it is probably safe to remove this for loop, and change weight2 to weight and aggregate2 to aggregate at the end of the previous for loop.
         for (i = 0; i < size; ++i) {
@@ -706,24 +698,24 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
             }
         }
 */
+        {
+            //        if(rank==0 && weight[1]&UNDECIDED) printf("node1: local 1: weight = %lu, aggregate = %lu \n", weight2[1]&weightMax, aggregate[1]);
 
-//        if(rank==0 && weight[1]&UNDECIDED) printf("node1: local 1: weight = %lu, aggregate = %lu \n", weight2[1]&weightMax, aggregate[1]);
+            //    if(rank==0){
+            //        std::cout << std::endl << "after first max computation!" << std::endl;
+            //        for (i = 0; i < size; ++i)
+            //            std::cout << i << "\tweight = " << weight[i] << "\tindex = " << aggregate[i] << std::endl;
+            //    }
 
-        //    if(rank==0){
-        //        std::cout << std::endl << "after first max computation!" << std::endl;
-        //        for (i = 0; i < size; ++i)
-        //            std::cout << i << "\tweight = " << weight[i] << "\tindex = " << aggregate[i] << std::endl;
-        //    }
+            // ******************************* exchange remote max values for the second round of max computation *******************************
 
-        // ******************************* exchange remote max values for the second round of max computation *******************************
+            // vSend[2*i]:   the first right 62 bits of vSend is maxPerCol for remote elements that should be sent to other processes.
+            //               the first left 2 bits of vSend are aggStatus.
+            // vSend[2*i+1]: the first right 62 bits of vSend is aggregate for remote elements that should be sent to other processes.
+            //               the first left 2 bits are root_distance.
+            //               root_distance is initialized to 3(11). root = 0 (00), 1-distance root = 1 (01), 2-distance root = 2 (10).
 
-        // vSend[2*i]:   the first right 62 bits of vSend is maxPerCol for remote elements that should be sent to other processes.
-        //               the first left 2 bits of vSend are aggStatus.
-        // vSend[2*i+1]: the first right 62 bits of vSend is aggregate for remote elements that should be sent to other processes.
-        //               the first left 2 bits are root_distance.
-        //               root_distance is initialized to 3(11). root = 0 (00), 1-distance root = 1 (01), 2-distance root = 2 (10).
-
-        // the following shows how the data is being stored in vecValues:
+            // the following shows how the data is being stored in vecValues:
 //        iter = 0;
 //        if(rank==1)
 //            for (i = 0; i < S->col_remote_size; ++i)
@@ -735,6 +727,8 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 //                         << "\t status of agg = "             << (S->vecValues[2*S->col_remote[iter]+1]>>wOffset)
 //                         << std::endl;
 //                }
+        }
+#endif
 
         for (i = 0; i < S->vIndexSize; ++i){
             S->vSend[2*i] = weight[S->vIndex[i]];
@@ -763,6 +757,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 
         MPI_Waitall(S->numRecvProc, requests, statuses);
 
+        {
 //        MPI_Barrier(comm);
 //        iter = 0;
 //        if(rank==1)
@@ -779,6 +774,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 
 //        if(rank==0 && i==3) printf("col_index = %lu, status = %lu, aggregate = %u \n", col_index, weight[col_index]>>wOffset, S->col_local[S->indicesP_local[iter]]);
 //        if(rank==1) printf("\n");
+        }
 
         // remote part
         // only when there is a 1-distance root, set that as the root, so use weight[] and aggregate[], instead of
@@ -801,8 +797,6 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 
 //                    if(rank==1 && i_remote+S->split[rank]==9) printf("i_remote = %lu \tj_remote = %u, weight = %lu, status = %lu, aggregate = %lu, root_dist = %lu, \t\tstatus of this node = %lu \n",
 //                                       i_remote+S->split[rank], S->col_remote2[iter], weight_neighbor&weightMax, weight_neighbor>>wOffset, agg_neighbor&weightMax, agg_neighbor>>wOffset, weight[i_remote]>>wOffset);
-//                    if(rank==0 && i_remote==3) printf("i_remote = %lu \tj_remote = %u, weight = %lu, status = %lu, aggregate = %lu, root_dist = %lu, \t\tstatus of this node = %lu \n",
-//                                                                     i_remote+S->split[rank], S->col_remote2[iter], weight_neighbor&weightMax, weight_neighbor>>wOffset, agg_neighbor&weightMax, agg_neighbor>>wOffset, weight[i_remote]>>wOffset);
 
                     // distance-1 aggregate
                     // there should be at most one root in distance 1.
@@ -814,12 +808,6 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
                             weight2[i_remote] = weight_neighbor;
                             aggregate2[i_remote] = agg_neighbor;
                             root_distance[i_remote] = 1;
-
-//                            if (aggStatus_neighbor == 2) // ROOT
-//                                dist1or2undecided[i_remote] = false;
-//                            else // UNDECIDED
-//                                dist1or2undecided[i_remote] = true;
-
                             dist1or2undecided[i_remote] = (aggStatus_neighbor != 2);
                         }
                     }
@@ -865,28 +853,8 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
             }
         }
 
-/*
-        // here for every node that is assigned to a 2-distance root check if there is a 1-distance root.
-        // if there is, then assign to it.
-        iter = 0;
-        for (i = 0; i < size; ++i) {
-            if ( (weight[i] >> wOffset == 0) && (root_distance[i] == 2) ) {
-                for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++iter) {
-                    col_index = S->col_local[S->indicesP_local[iter]] - S->split[rank];
-                    if (weight[col_index] & ROOT) {
-//                        std::cout << i << "\t col_index = " << col_index << "\t weight[col_index] = " << (weight[col_index] & weightMax) << "\t aggregate = " << S->col_local[S->indicesP_local[iter]] << std::endl;
-                        weight[i] = (0UL << wOffset | (weight[col_index] & weightMax));
-                        aggregate[i] = S->col_local[S->indicesP_local[iter]];
-                        root_distance[i] = 1;
-                    }
-//                    break; todo: try to add this break.
-                }
-            }else {
-                iter += S->nnzPerRow_local[i];
-            }
-        }
-*/
-
+#ifdef __DEBUG1__
+        {
 //        for(int k=0; k<nprocs; k++){
 //            MPI_Barrier(comm);
 //            if(rank==k){
@@ -900,6 +868,8 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 //            }
 //            MPI_Barrier(comm);
 //        }
+        }
+#endif
 
         // todo: merge this loop with the previous one.
         continueAggLocal = false;
@@ -925,6 +895,8 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
             }
         }
 
+#ifdef __DEBUG1__
+        {
 //        print_vector(aggregate, -1, "aggregate", comm);
 //        print_vector(aggArray, -1, "aggArray", comm);
 //        if(rank==0){
@@ -933,28 +905,21 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 //                printf("%u \t%lu \t%lu \t%d \n", i+S->split[rank], aggregate[i], (weight[i]>>wOffset), root_distance[i]);
 //            }
 //        }
+        }
+#endif
     } //while(continueAgg)
-
-//    for(i = 0; i < size; ++i)
-//        if(rank==0) std::cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << std::endl;
 
     delete [] requests;
     delete [] statuses;
     free(root_distance);
     free(dist1or2undecided);
 
-    // *************************** avoid P.size == 0  ****************************
+#ifdef __DEBUG1__
+    {
+//    for(i = 0; i < size; ++i)
+//        if(rank==0) std::cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << std::endl;
 
-    // check if there is not any root nodes on a processor make its first node, a root node
-
-    // keep at least one root node on each proc
-//    if(aggArray.empty()){
-//        printf("rank %d = aggArray.empty \n", rank);
-//        aggArray.emplace_back(0+S->split[rank]);
-//        aggregate[0] = 0+S->split[rank];}
-
-    // *************************** update aggregate to new indices ****************************
-
+        // *************************** update aggregate to new indices ****************************
 //    if(rank==0)
 //        std::cout << std::endl << "S.M = " << S->M << ", S.nnz_l = " << S->nnz_l << ", S.nnz_l_local = " << S->nnz_l_local
 //             << ", S.nnz_l_remote = " << S->nnz_l_remote << std::endl << std::endl;
@@ -964,22 +929,16 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 //        for(i=0; i<size; i++)
 //            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
 //        std::cout << std::endl;}
-
-    // ************* write the aggregate values of all the nodes to a file *************
-
-    // use this command to concatenate the output files:
-    // cat aggregateSaena0.txt aggregateSaena1.txt > aggregateSaena.txt
-//    for(i=0; i<aggregate.size(); i++)
-//        aggregate[i]++;
-//    writeVectorToFileul(aggregate, S->Mbig, "aggregateSaena", comm);
-//    for(i=0; i<aggregate.size(); i++)
-//        aggregate[i]--;
+    }
+#endif
 
     // aggArray is the set of root nodes.
     if(!aggArray.empty())
         std::sort(aggArray.begin(), aggArray.end());
 
-//    print_vector(aggArray, -1, "aggArray", comm);
+#ifdef __DEBUG1__
+    {
+    //    print_vector(aggArray, -1, "aggArray", comm);
 
     // ************* write the aggregate nodes to a file *************
 
@@ -995,7 +954,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 //    for(i=0; i<aggArray.size(); i++)
 //        aggArray[i]--;
 
-    // ************* print info *************
+        // ************* print info *************
 //    if(rank==0) printf("\n\nfinal: \n");
 //    print_vector(aggArray, -1, "aggArray", comm);
 //    print_vector(aggregate, -1, "aggregate", comm);
@@ -1009,6 +968,8 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 //        }
 //    }
 //    writeVectorToFileul2(aggregate, "agg1", comm);
+    }
+#endif
 
     return 0;
 }
@@ -1046,8 +1007,8 @@ int saena_object::aggregation_2_dist(strength_matrix *S, std::vector<unsigned lo
     std::vector<unsigned long> initialWeight(size);
 //    std::vector<unsigned long> aggStatus2(size); // 1 for 01 not assigned, 0 for 00 assigned, 2 for 10 root
 
+    S->set_weight(initialWeight);
 //    S->randomVector(initialWeight, S->Mbig, comm);
-    S->randomVector3(initialWeight, comm);
 //    S->randomVector4(initialWeight, S->Mbig);
 
 //    print_vector(initialWeight, -1, "initialWeight", comm);
@@ -1480,8 +1441,6 @@ int saena_object::aggregation_2_dist(strength_matrix *S, std::vector<unsigned lo
         }
 
 //        if(rank==0 && weight[1]&UNDECIDED) printf("node1: remote:  weight = %lu, aggregate = %lu \n", weight2[1]&weightMax, aggregate[1]);
-//        if(rank==0 && weight[3]&UNDECIDED) printf("node3: remote:  weight = %lu, aggregate = %lu \n", weight2[3]&weightMax, aggregate[3]);
-//        if(rank==0 && weight[7]&UNDECIDED) printf("node7: remote:  weight = %lu, aggregate = %lu \n", weight2[7]&weightMax, aggregate[7]);
 //        if(rank==1 && weight[9-S->split[rank]]&UNDECIDED) printf("node9: remote:  weight = %lu, aggregate = %lu \n", weight2[9-S->split[rank]]&weightMax, aggregate[9-S->split[rank]]);
 
         // ******************************* Update Status *******************************

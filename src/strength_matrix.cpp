@@ -580,7 +580,7 @@ int strength_matrix::randomVector2(std::vector<double>& V){
     return 0;
 }
 
-int strength_matrix::randomVector3(std::vector<unsigned long>& V, MPI_Comm comm) {
+int strength_matrix::set_weight(std::vector<unsigned long>& V) {
     // This function DOES NOT generate a random vector. It computes the maximum degree of all the nodes.
     // (degree of node i = number of nonzeros on row i)
     // Then assign to a higher degree, a lower weight ( weight(node i) = max_degree - degree(node i) )
@@ -588,13 +588,8 @@ int strength_matrix::randomVector3(std::vector<unsigned long>& V, MPI_Comm comm)
     // then nodes with higher degrees.
     // Yavneh's paper: Non-Galerkin Multigrid Based on Sparsified Smoothed Aggregation - pages: A51-A52
 
-    int rank;
+    int rank = 0;
     MPI_Comm_rank(comm, &rank);
-
-//    for (unsigned long i=0; i<V.size(); i++){
-//        srand (i);
-//        V[i] = rand()%(V.size());
-//    }
 
     nnz_t i = 0;
     index_t max_degree_local = 0;
@@ -606,30 +601,14 @@ int strength_matrix::randomVector3(std::vector<unsigned long>& V, MPI_Comm comm)
     index_t max_degree = 0;
     MPI_Allreduce(&max_degree_local, &max_degree, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     max_degree++;
+
 //    printf("rank = %d, max degree local = %lu, max degree = %lu \n", rank, max_degree_local, max_degree);
-
-    //Type of random number distribution
-//    std::uniform_real_distribution<double> dist(-1.0,1.0); //(min, max)
-
-    //Mersenne Twister: Good quality random number generator
-//    std::mt19937 rng;
-
-    //Initialize with non-deterministic seeds
-//    rng.seed(std::random_device{}());
 
     std::vector<double> rand(M);
     for (i = 0; i < V.size(); ++i){
         V[i] = max_degree - nnzPerRow[i];
 //        if(rank==1) std::cout << i << "\tnnzPerRow = " << nnzPerRow[i] << "\t weight = " << V[i] << std::endl;
     }
-//        rand[i] = dist(rng);
-
-    // to have one node with the highest weight possible, so that node will be a root and
-    // consequently P and R won't be zero matrices. the median index is being chosen here.
-//    if (V.size() >= 2)
-//        V[ floor(V.size()/2) ] = size + 1;
-//    else if(V.size() == 1)
-//        V[0] = size + 1;
 
     return 0;
 }

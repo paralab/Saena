@@ -4,20 +4,20 @@
 #include "aux_functions.h"
 
 class strength_matrix {
+private:
 
 public:
+    index_t M     = 0;
+    index_t Mbig  = 0;
+    nnz_t   nnz_l = 0;
+    nnz_t   nnz_g = 0;
 
-    index_t M    = 0;
-    index_t Mbig = 0;
-    nnz_t nnz_l  = 0;
-    nnz_t nnz_g  = 0;
-
-    nnz_t nnz_l_local  = 0;
-    nnz_t nnz_l_remote = 0;
+    nnz_t   nnz_l_local     = 0;
+    nnz_t   nnz_l_remote    = 0;
     index_t col_remote_size = 0; // this is the same as vElement_remote.size()
 
-    index_t vIndexSize = 0;
-    std::vector<index_t> vIndex;
+    index_t                    vIndexSize = 0;
+    std::vector<index_t>       vIndex;
     std::vector<unsigned long> vSend;
     std::vector<unsigned long> vecValues;
 
@@ -30,10 +30,9 @@ public:
     std::vector<index_t> col_local;
     std::vector<index_t> col_remote;  // index starting from 0, instead of the original column index
     std::vector<index_t> col_remote2; // original col index
-    std::vector<nnz_t> nnzPerRow;
-    std::vector<nnz_t> nnzPerRow_local;
-//    std::vector<unsigned int> nnzPerRow_remote;
-    std::vector<nnz_t> nnzPerCol_remote;
+    std::vector<nnz_t>   nnzPerRow;
+    std::vector<nnz_t>   nnzPerRow_local;
+    std::vector<nnz_t>   nnzPerCol_remote;
     std::vector<index_t> vElement_remote;
     std::vector<index_t> vElementRep_local;
     std::vector<index_t> vElementRep_remote;
@@ -54,8 +53,6 @@ public:
 
     std::vector<cooEntry> entry;
     std::vector<cooEntry> entryT; // transpose entries
-//    std::vector<index_t> Si, Sj;
-//    std::vector<value_t> Sval, STval;
 
     int set_parameters(index_t M, index_t Mbig, std::vector<index_t> &split, MPI_Comm com);
     int setup_matrix(float connStrength);
@@ -71,11 +68,10 @@ public:
     int print_info(int ran);
     int save_to_disk();
 
+    int set_weight(std::vector<unsigned long>& V);
     int randomVector(std::vector<unsigned long>& V, long size, MPI_Comm comm);
     int randomVector2(std::vector<double>& V);
-    int randomVector3(std::vector<unsigned long>& V, MPI_Comm comm);
     int randomVector4(std::vector<unsigned long>& V, long size);
-
 };
 
 #endif //SAENA_STRENGTH_MATRIX_H
