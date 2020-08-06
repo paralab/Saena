@@ -16,7 +16,7 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(argc != 3)
+    if(argc != 2)
     {
         if(rank == 0)
         {
@@ -88,12 +88,12 @@ int main(int argc, char* argv[]){
     std::vector<double> rhs_std;
 
     // to generate random rhs
-//    rhs_std.resize(num_local_row);
-//    generate_rhs_old(rhs_std);
+    rhs_std.resize(num_local_row);
+    generate_rhs_old(rhs_std);
 
     // to read rhs from file
-    char* Vname(argv[2]);
-    read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
+//    char* Vname(argv[2]);
+//    read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
 
 //    write_to_file_vec(rhs_std, "rhs_std", comm);
 
@@ -161,7 +161,7 @@ int main(int argc, char* argv[]){
 
     t2 = omp_get_wtime();
     print_time(t1, t2, "Solve:", comm);
-
+#if 0
     // *************************** print or write the solution ****************************
 
 //    print_vector(u, -1, "solution", comm);
@@ -242,7 +242,7 @@ int main(int argc, char* argv[]){
 */
 
     // *************************** Destroy ****************************
-
+#endif
     A.destroy();
     solver.destroy();
     MPI_Finalize();

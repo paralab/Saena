@@ -84,8 +84,8 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${PARMETIS_LIBRARY} ${METIS
 #include_directories("/curc/sw/intel/17.4/mkl/include")
 # For Frontera:
 # first: module load boost
-#set(BOOST_INC_DIR $ENV{TACC_BOOST_INC})
-#include_directories(${BOOST_INC_DIR})
+set(BOOST_INC_DIR $ENV{TACC_BOOST_INC})
+include_directories(${BOOST_INC_DIR})
 
 # -----------------------------------------------------------------------
 # BLAS

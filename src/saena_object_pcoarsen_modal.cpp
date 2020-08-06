@@ -128,8 +128,17 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
 //    print_vector(P_temp, -1, "P_temp", comm);
 #endif
 
+//    int Ptsz = P_temp.size();
+//    int Ptsz_tot = 0;
+//    MPI_Allreduce(&Ptsz, &Ptsz_tot, 1, MPI_INT, MPI_SUM, comm);
+
     vector<cooEntry_row> Pent;
     par::sampleSort(P_temp, Pent, P->split, comm);
+
+//    int Pesz = Pent.size();
+//    int Pesz_tot = 0;
+//    MPI_Allreduce(&Pesz, &Pesz_tot, 1, MPI_INT, MPI_SUM, comm);
+//    printf("P_temp.size = %6d,\tPent.size = %6d, P_temp.tot = %6d,\tPent.tot = %6d\n", Ptsz, Pesz, Ptsz_tot, Pesz_tot);
 
 #ifdef __DEBUG1__
 //    print_vector(Pent, -1, "Pent", comm);
