@@ -1056,7 +1056,7 @@ int saena_matrix::set_zero(){
 }
 
 // Vector res = A*u - rhs;
-inline void saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
+void saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
     matvec(u, res);
 #pragma omp parallel for
     for(index_t i = 0; i < M; ++i){
