@@ -95,20 +95,25 @@ int saena_object::SA(Grid *grid){
     // aggreagte is used as P_t in the following "for" loop.
     // local
     // -----
-    long iter = 0;
     const double ONE_M_OMEGA = 1 - omega;
+
+    // use these to avoid subtracting A->split[rank] from each case
+    auto *aggregate_p = &aggregate[0] - A->split[rank];
+
+    long iter = 0;
     for (i = 0; i < A->M; ++i) {
         for (j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
-            if(A->row_local[A->indicesP_local[iter]] == A->col_local[A->indicesP_local[iter]]-A->split[rank]){ // diagonal element
-                PEntryTemp.emplace_back(cooEntry(A->row_local[A->indicesP_local[iter]],
-                                                 aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
+            const auto idx = A->indicesP_local[iter];
+            if(A->row_local[idx] == A->col_local[idx]-A->split[rank]){ // diagonal element
+                PEntryTemp.emplace_back(cooEntry(A->row_local[idx],
+                                                 aggregate_p[A->col_local[idx]],
                                                  ONE_M_OMEGA));
             }else{
-                PEntryTemp.emplace_back(cooEntry(A->row_local[A->indicesP_local[iter]],
-                                                 aggregate[ A->col_local[A->indicesP_local[iter]] - A->split[rank] ],
-                                                 -omega * A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]]));
+                PEntryTemp.emplace_back(cooEntry(A->row_local[idx],
+                                                 aggregate_p[A->col_local[idx]],
+                                                 -omega * A->values_local[idx] * A->inv_diag[A->row_local[idx]]));
             }
-//            if(rank==3) std::cout << A->row_local[A->indicesP_local[iter]] + A->split[rank] << "\t" << aggregate[A->col_local[A->indicesP_local[iter]] - A->split[rank]] << "\t" << A->values_local[A->indicesP_local[iter]] * A->inv_diag[A->row_local[A->indicesP_local[iter]]] << std::endl;
+//            if(rank==3) std::cout << A->row_local[idx] + A->split[rank] << "\t" << aggregate[A->col_local[idx] - A->split[rank]] << "\t" << A->values_local[idx] * A->inv_diag[A->row_local[idx]] << std::endl;
         }
     }
 
