@@ -12,6 +12,8 @@ public:
     nnz_t   nnz_l = 0;
     nnz_t   nnz_g = 0;
 
+    MPI_Comm comm;
+
     nnz_t   nnz_l_local     = 0;
     nnz_t   nnz_l_remote    = 0;
     index_t col_remote_size = 0; // this is the same as vElement_remote.size()
@@ -21,8 +23,11 @@ public:
 
     std::vector<index_t> split;
 
-    std::vector<value_t> values_local;
-    std::vector<value_t> values_remote;
+    std::vector<cooEntry> entry;
+    std::vector<cooEntry> entryT; // transpose entries
+
+//    std::vector<value_t> values_local;
+//    std::vector<value_t> values_remote;
     std::vector<index_t> row_local;
     std::vector<index_t> row_remote;
     std::vector<index_t> col_local;
@@ -37,37 +42,32 @@ public:
     std::vector<index_t> indicesP_local;
     std::vector<index_t> indicesP_remote;
 
+    nnz_t recvSize = 0;
+    int   numRecvProc = 0;
+    int   numSendProc = 0;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
-    nnz_t recvSize = 0;
-    int numRecvProc = 0;
-    int numSendProc = 0;
     std::vector<int> recvProcRank;
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
 
-    MPI_Comm comm;
-
-    std::vector<cooEntry> entry;
-    std::vector<cooEntry> entryT; // transpose entries
-
     int set_parameters(index_t M, index_t Mbig, std::vector<index_t> &split, MPI_Comm com);
     int setup_matrix(float connStrength);
-    ~strength_matrix();
+    ~strength_matrix() = default;
     int erase();
     int erase_update(); // only erase the parameters needed to update the matrix
+    int destroy();
 
+    int print_info(int ran) const;
     // this function is inefficient, since first the entry vector should be created based on local and remote entries.
     void print_entry(int rank);
     // try to use the following print functions
-    void print_diagonal_block(int rank);
-    void print_off_diagonal(int rank);
-    int print_info(int ran);
-    int save_to_disk();
+    void print_diagonal_block(int rank) const;
+    void print_off_diagonal(int rank) const;
 
     int set_weight(std::vector<unsigned long>& V);
-    int randomVector(std::vector<unsigned long>& V, long size, MPI_Comm comm);
+    int randomVector(std::vector<unsigned long>& V, long size);
     int randomVector2(std::vector<double>& V);
     int randomVector4(std::vector<unsigned long>& V, long size);
 };

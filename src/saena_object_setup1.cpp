@@ -342,6 +342,9 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 
     aggregate_index_update(&S, aggregate, aggArray, splitNew);
 
+    // destroy the strength matrix, since it is not needed anymore.
+    S.destroy();
+
 #ifdef __DEBUG1__
 //    updateAggregation(aggregate, &aggSize);
 //    print_vector(aggArray, -1, "aggArray", comm);
