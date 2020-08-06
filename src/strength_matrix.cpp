@@ -76,13 +76,14 @@ int strength_matrix::setup_matrix(float connStrength){
     std::vector<int> recvCount(nprocs, 0);
 //    nnzPerRow.assign(M,0);
     nnzPerRow_local.assign(M,0);
+    std::vector<index_t> col_loc_tmp;
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //    ++nnzPerRow[r[0]];
     if (c[0] >= split[rank] && c[0] < split[rank + 1]) {
         nnzPerRow_local[r[0]]++;
         row_local.emplace_back(r[0]);
-        col_local.emplace_back(c[0]);
+        col_loc_tmp.emplace_back(c[0]);
         vElementRep_local.emplace_back(1);
     } else{
         row_remote.emplace_back(r[0]);
@@ -100,7 +101,7 @@ int strength_matrix::setup_matrix(float connStrength){
         if (c[i] >= split[rank] && c[i] < split[rank+1]) {
             ++nnzPerRow_local[r[i]];
             row_local.emplace_back(r[i]);
-            col_local.emplace_back(c[i]);
+            col_loc_tmp.emplace_back(c[i]);
 
         } else {
             row_remote.emplace_back(r[i]);
@@ -178,12 +179,21 @@ int strength_matrix::setup_matrix(float connStrength){
              vIndex[j] -= split[rank];
     }
 
-    indicesP_local.resize(nnz_l_local);
+     // sort local entries to be sorted in row-major order, but columns are not ordered.
+    std::vector<index_t> indicesP_local(nnz_l_local);
+//    indicesP_local.resize(nnz_l_local);
     for(nnz_t j = 0; j < nnz_l_local; j++)
         indicesP_local[j] = j;
 
     index_t *row_localP = &*row_local.begin();
     std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
+
+    col_local.resize(col_loc_tmp.size());
+    for(i = 0; i < col_loc_tmp.size(); ++i){
+        col_local[i] = col_loc_tmp[indicesP_local[i]];
+    }
+
+    std::sort(&row_local[0], &row_local[nnz_l_local]);
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm); if(!rank) printf("strength_matrix.setup_matrix: end\n"); MPI_Barrier(comm);
@@ -221,7 +231,7 @@ int strength_matrix::erase(){
     nnzPerCol_remote.clear();
     vElement_remote.clear();
     vElementRep_local.clear();
-    indicesP_local.clear();
+//    indicesP_local.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -255,7 +265,7 @@ int strength_matrix::erase_update(){
     nnzPerCol_remote.clear();
     vElement_remote.clear();
     vElementRep_local.clear();
-    indicesP_local.clear();
+//    indicesP_local.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -280,7 +290,7 @@ int strength_matrix::destroy() {
     nnzPerCol_remote.shrink_to_fit();
     vElement_remote.shrink_to_fit();
     vElementRep_local.shrink_to_fit();
-    indicesP_local.shrink_to_fit();
+//    indicesP_local.shrink_to_fit();
     vdispls.shrink_to_fit();
     rdispls.shrink_to_fit();
     recvProcRank.shrink_to_fit();

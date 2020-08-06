@@ -38,7 +38,7 @@ public:
     std::vector<nnz_t>   nnzPerCol_remote;
     std::vector<index_t> vElement_remote;
     std::vector<index_t> vElementRep_local;
-    std::vector<index_t> indicesP_local;
+//    std::vector<index_t> indicesP_local;
 
     nnz_t recvSize = 0;
     int   numRecvProc = 0;
