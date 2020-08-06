@@ -564,14 +564,19 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //    time[0] += (t20-t10);
 
 //    double t13 = MPI_Wtime();
-    MPI_Request* requests = new MPI_Request[numSendProc+numRecvProc];
-    MPI_Status* statuses  = new MPI_Status[numSendProc+numRecvProc];
+    int flag = 0;
+    auto *requests = new MPI_Request[numSendProc + numRecvProc];
+    auto *statuses = new MPI_Status[numSendProc + numRecvProc];
 
-    for(int i = 0; i < numRecvProc; i++)
-        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+    for(int i = 0; i < numRecvProc; i++){
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &flag, &statuses[i]);
+    }
 
-    for(int i = 0; i < numSendProc; i++)
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+    for(int i = 0; i < numSendProc; i++){
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+        MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
+    }
 
     // local loop
     // ----------
