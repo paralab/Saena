@@ -33,14 +33,12 @@ public:
     std::vector<index_t> col_local;
     std::vector<index_t> col_remote;  // index starting from 0, instead of the original column index
     std::vector<index_t> col_remote2; // original col index
-    std::vector<nnz_t>   nnzPerRow;
+//    std::vector<nnz_t>   nnzPerRow;
     std::vector<nnz_t>   nnzPerRow_local;
     std::vector<nnz_t>   nnzPerCol_remote;
     std::vector<index_t> vElement_remote;
     std::vector<index_t> vElementRep_local;
-    std::vector<index_t> vElementRep_remote;
     std::vector<index_t> indicesP_local;
-    std::vector<index_t> indicesP_remote;
 
     nnz_t recvSize = 0;
     int   numRecvProc = 0;
@@ -66,10 +64,10 @@ public:
     void print_diagonal_block(int rank) const;
     void print_off_diagonal(int rank) const;
 
-    int set_weight(std::vector<unsigned long>& V);
-    int randomVector(std::vector<unsigned long>& V, long size);
-    int randomVector2(std::vector<double>& V);
-    int randomVector4(std::vector<unsigned long>& V, long size);
+//    int set_weight(std::vector<unsigned long>& V);
+//    int randomVector(std::vector<unsigned long>& V, long size);
+//    int randomVector2(std::vector<double>& V);
+//    int randomVector4(std::vector<unsigned long>& V, long size);
 };
 
 #endif //SAENA_STRENGTH_MATRIX_H

@@ -35,7 +35,7 @@ int strength_matrix::setup_matrix(float connStrength){
 
     for(nnz_t i = 0; i < entry.size(); i++){
 //        if(!rank) printf("S(%d, %d) \t= %f, %f\n", entryT[i].row, entryT[i].col, entryT[i].val, entry[i].val);
-        if (entry[i].val > connStrength){
+        if (entry[i].val > connStrength || entryT[i].val > connStrength){
             r.emplace_back(entryT[i].row);
             c.emplace_back(entryT[i].col);
 //            v.emplace_back( 0.5 * (entry[i].val + entryT[i].val) );
@@ -74,11 +74,11 @@ int strength_matrix::setup_matrix(float connStrength){
     nnz_l_local = 0;
     nnz_l_remote = 0;
     std::vector<int> recvCount(nprocs, 0);
-    nnzPerRow.assign(M,0);
+//    nnzPerRow.assign(M,0);
     nnzPerRow_local.assign(M,0);
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
-    ++nnzPerRow[r[0]];
+//    ++nnzPerRow[r[0]];
     if (c[0] >= split[rank] && c[0] < split[rank + 1]) {
         nnzPerRow_local[r[0]]++;
         row_local.emplace_back(r[0]);
@@ -91,12 +91,11 @@ int strength_matrix::setup_matrix(float connStrength){
         col_remote2.emplace_back(c[0]);
         nnzPerCol_remote.emplace_back(1);
         vElement_remote.emplace_back(c[0]);
-        vElementRep_remote.emplace_back(1);
         recvCount[lower_bound2(&split[0], &split[nprocs], c[0])] = 1;
     }
 
     for (i = 1; i < nnz_l; ++i) {
-        ++nnzPerRow[r[i]];
+//        ++nnzPerRow[r[i]];
 
         if (c[i] >= split[rank] && c[i] < split[rank+1]) {
             ++nnzPerRow_local[r[i]];
@@ -111,16 +110,14 @@ int strength_matrix::setup_matrix(float connStrength){
             if (c[i] != c[i - 1]) {
                 ++col_remote_size;
                 vElement_remote.emplace_back(c[i]);
-                vElementRep_remote.emplace_back(1);
                 procNum = lower_bound2(&split[0], &split[nprocs], c[i]);
                 ++recvCount[procNum];
                 nnzPerCol_remote.emplace_back(1);
             } else {
-                ++vElementRep_remote.back();
                 ++nnzPerCol_remote.back();
             }
             // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-            col_remote.emplace_back(col_remote_size-1);
+            col_remote.emplace_back(col_remote_size - 1);
         }
     } // for i
 
@@ -137,12 +134,12 @@ int strength_matrix::setup_matrix(float connStrength){
              if(recvCount[j] != 0){
                  numRecvProc++;
                  recvProcRank.emplace_back(j);
-                 recvProcCount.emplace_back(2*recvCount[j]); // make them double size for prolongation the communication in the aggregation_2_dist function.
+                 recvProcCount.emplace_back(2 * recvCount[j]); // make them double size for prolongation the communication in the aggregation_1_dist function.
              }
              if(vIndexCount[j] != 0){
                  numSendProc++;
                  sendProcRank.emplace_back(j);
-                 sendProcCount.emplace_back(2*vIndexCount[j]); // make them double size for prolongation the communication in the aggregation_2_dist function.
+                 sendProcCount.emplace_back(2 * vIndexCount[j]); // make them double size for prolongation the communication in the aggregation_1_dist function.
              }
          }
 
@@ -219,14 +216,12 @@ int strength_matrix::erase(){
     col_local.clear();
     col_remote.clear();
     col_remote2.clear();
-    nnzPerRow.clear();
+//    nnzPerRow.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
     vElement_remote.clear();
     vElementRep_local.clear();
-    vElementRep_remote.clear();
     indicesP_local.clear();
-    indicesP_remote.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -255,14 +250,12 @@ int strength_matrix::erase_update(){
     col_local.clear();
     col_remote.clear();
     col_remote2.clear();
-    nnzPerRow.clear();
+//    nnzPerRow.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
     vElement_remote.clear();
     vElementRep_local.clear();
-    vElementRep_remote.clear();
     indicesP_local.clear();
-    indicesP_remote.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -282,14 +275,12 @@ int strength_matrix::destroy() {
     col_local.shrink_to_fit();
     col_remote.shrink_to_fit();
     col_remote2.shrink_to_fit();
-    nnzPerRow.shrink_to_fit();
+//    nnzPerRow.shrink_to_fit();
     nnzPerRow_local.shrink_to_fit();
     nnzPerCol_remote.shrink_to_fit();
     vElement_remote.shrink_to_fit();
     vElementRep_local.shrink_to_fit();
-    vElementRep_remote.shrink_to_fit();
     indicesP_local.shrink_to_fit();
-    indicesP_remote.shrink_to_fit();
     vdispls.shrink_to_fit();
     rdispls.shrink_to_fit();
     recvProcRank.shrink_to_fit();
@@ -299,6 +290,34 @@ int strength_matrix::destroy() {
     return 0;
 }
 
+int strength_matrix::print_info(int ran) const{
+
+    // if ran >= 0 print the matrix entries on proc with rank = ran
+    // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
+
+    int rank = 0, nprocs = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(ran >= 0) {
+        if (rank == ran) {
+            printf("\nmatrix S info on proc = %d \n", ran);
+            printf("Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", Mbig, M, nnz_g, nnz_l);
+        }
+    } else{
+        MPI_Barrier(comm);
+        if(rank==0) printf("\nmatrix S info:      Mbig = %u, \tnnz_g = %lu \n", Mbig, nnz_g);
+        for(index_t proc = 0; proc < nprocs; proc++){
+            MPI_Barrier(comm);
+            if (rank == proc) {
+                printf("matrix S on rank %d: M    = %u, \tnnz_l = %lu \n", proc, M, nnz_l);
+            }
+            MPI_Barrier(comm);
+        }
+    }
+
+    return 0;
+}
 
 void strength_matrix::print_entry(int ran){
 
@@ -414,36 +433,10 @@ void strength_matrix::print_off_diagonal(int ran) const{
     }
 }
 
-int strength_matrix::print_info(int ran) const{
 
-    // if ran >= 0 print the matrix entries on proc with rank = ran
-    // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
-
-    int rank = 0, nprocs = 0;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    if(ran >= 0) {
-        if (rank == ran) {
-            printf("\nmatrix S info on proc = %d \n", ran);
-            printf("Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu \n", Mbig, M, nnz_g, nnz_l);
-        }
-    } else{
-        MPI_Barrier(comm);
-        if(rank==0) printf("\nmatrix S info:      Mbig = %u, \tnnz_g = %lu \n", Mbig, nnz_g);
-        for(index_t proc = 0; proc < nprocs; proc++){
-            MPI_Barrier(comm);
-            if (rank == proc) {
-                printf("matrix S on rank %d: M    = %u, \tnnz_l = %lu \n", proc, M, nnz_l);
-            }
-            MPI_Barrier(comm);
-        }
-    }
-
-    return 0;
-}
-
-
+// to use this function uncomment nnzPerRow in setup_matrix()
+// int strength_matrix::set_weight(std::vector<unsigned long>& V) {
+#if 0
 int strength_matrix::set_weight(std::vector<unsigned long>& V) {
     // This function DOES NOT generate a random vector. It computes the maximum degree of all the nodes.
     // (degree of node i = number of nonzeros on row i)
@@ -476,7 +469,10 @@ int strength_matrix::set_weight(std::vector<unsigned long>& V) {
 
     return 0;
 }
+#endif
 
+// random vector generators for the aggregation functions
+#if 0
 int strength_matrix::randomVector(std::vector<unsigned long>& V, long size) {
 
     int rank;
@@ -567,3 +563,4 @@ int strength_matrix::randomVector4(std::vector<unsigned long>& V, long size) {
 
     return 0;
 }
+#endif
