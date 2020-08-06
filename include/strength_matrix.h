@@ -16,10 +16,8 @@ public:
     nnz_t   nnz_l_remote    = 0;
     index_t col_remote_size = 0; // this is the same as vElement_remote.size()
 
-    index_t                    vIndexSize = 0;
-    std::vector<index_t>       vIndex;
-    std::vector<unsigned long> vSend;
-    std::vector<unsigned long> vecValues;
+    index_t              vIndexSize = 0;
+    std::vector<index_t> vIndex;
 
     std::vector<index_t> split;
 
