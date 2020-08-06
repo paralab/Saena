@@ -1055,7 +1055,17 @@ int saena_matrix::set_zero(){
     return 0;
 }
 
+// Vector res = A*u - rhs;
+inline void saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
+    matvec(u, res);
+#pragma omp parallel for
+    for(index_t i = 0; i < M; ++i){
+        res[i] -= rhs[i];
+    }
+}
 
+// with allreduce
+#if 0
 int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
     // Vector res = A*u - rhs;
 
@@ -1082,12 +1092,12 @@ int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, s
     MPI_Allreduce(&zero_vector_local, &zero_vector, 1, MPI_CXX_BOOL, MPI_LOR, comm);
 
     if(zero_vector){
-        #pragma omp parallel for
+#pragma omp parallel for
         for(index_t i = 0; i < M; ++i)
             res[i] = -rhs[i];
     } else {
         matvec(u, res);
-        #pragma omp parallel for
+#pragma omp parallel for
         for(index_t i = 0; i < M; ++i){
             res[i] -= rhs[i];
         }
@@ -1097,7 +1107,7 @@ int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, s
 
     return 0;
 }
-
+#endif
 
 int saena_matrix::residual_negative(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
     // Vector res = rhs - A*u
