@@ -510,7 +510,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
         if(A->row_local[i] + A->split[rank] == A->col_local[i]) // diagonal entry
             val_temp = 1;
         else
-            val_temp = -A->values_local[i] / maxPerRow[A->col_local[i] - A->split[rank]];
+            val_temp = -A->values_local[i] / maxPerRow_p[A->col_local[i]];
 
 //        if(rank==3) printf("%u \t%u \t%f \n", A->row_local[i] + A->split[rank], A->col_local[i], val_temp);
         S->entryT[i] = cooEntry(A->row_local[i], A->col_local[i], val_temp);
