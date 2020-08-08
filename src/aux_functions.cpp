@@ -304,9 +304,20 @@ int generate_rhs_old(std::vector<value_t>& rhs){
 
 int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    MPI_Status status;
+    MPI_File fh;
+    MPI_Offset offset;
+
+    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
+        MPI_Finalize();
+        return -1;
+    }
 
     // check if the size of rhs match the number of rows of A
     struct stat st;
@@ -319,20 +330,8 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
             printf("Size of RHS = %d\n", rhs_size);
         }
         MPI_Barrier(comm);
-        exit(EXIT_FAILURE);
-//        MPI_Finalize();
-//        return -1;
-    }
-
-    MPI_Status status;
-    MPI_File fh;
-    MPI_Offset offset;
-
-    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    if(mpiopen){
-        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
         MPI_Finalize();
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     // define the size of v as the local number of rows on each process
