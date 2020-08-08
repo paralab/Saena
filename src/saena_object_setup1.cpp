@@ -464,30 +464,27 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
     //vSend are maxPerCol for remote elements that should be sent to other processes.
     for(nnz_t i = 0; i < A->vIndexSize; ++i)
-        A->vSend[i] = maxPerRow[( A->vIndex[i] )];
+        A->vSend[i] = maxPerRow[A->vIndex[i]];
 
-    auto *requests = new MPI_Request[A->numSendProc+A->numRecvProc];
-    auto *statuses = new MPI_Status[A->numSendProc+A->numRecvProc];
+    int flag = 0;
+    auto *requests = new MPI_Request[A->numSendProc + A->numRecvProc];
+    auto *statuses = new MPI_Status[A->numSendProc + A->numRecvProc];
 
-    //vecValues are maxperCol for remote elements that are received from other processes.
-    // Do not recv from self.
-    for(nnz_t i = 0; i < A->numRecvProc; i++)
-        MPI_Irecv(&A->vecValues[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], par::Mpi_datatype<value_t>::value(), A->recvProcRank[i], 1, comm, &(requests[i]));
+    // vecValues are maxPerRow for remote elements that are received from other processes.
+    for(nnz_t i = 0; i < A->numRecvProc; ++i){
+        MPI_Irecv(&A->vecValues[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], par::Mpi_datatype<value_t>::value(), A->recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &flag, &statuses[i]);
+    }
 
-    // Do not send to self.
-    for(nnz_t i = 0; i < A->numSendProc; i++)
+    for(nnz_t i = 0; i < A->numSendProc; ++i){
         MPI_Isend(&A->vSend[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], par::Mpi_datatype<value_t>::value(), A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
+        MPI_Test(&requests[A->numRecvProc + i], &flag, &statuses[A->numRecvProc + i]);
+    }
 
     // ******************************** compute ST - version 2 ********************************
 
-//    std::vector<long> STi;
-//    std::vector<long> STj;
-//    std::vector<double> STval;
-
-    // add OpenMP just like matvec.
-    long iter = 0;
-    long iter2 = 0;
 /*
+    long iter2 = 0;
     for (i = 0; i < A->M; ++i, iter2++) {
         for (unsigned int j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
 
@@ -509,8 +506,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     // TODO: iter2 is not being used later.
     // local ST values
     S->entryT.resize(A->nnz_l);
-    for (nnz_t i = 0; i < A->nnz_l_local; ++i, iter2++) {
-
+    for (nnz_t i = 0; i < A->nnz_l_local; ++i) {
         if(A->row_local[i] + A->split[rank] == A->col_local[i]) // diagonal entry
             val_temp = 1;
         else
@@ -522,25 +518,26 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
     MPI_Waitall(A->numRecvProc, requests, statuses);
 
-//    iter = 0;
-//    for (i = 0; i < A->col_remote_size; ++i) {
-//        for (unsigned int j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
-//            STi.emplace_back(A->row_remote[A->indicesP_remote[iter]]);
-//            STj.emplace_back(A->col_remote2[A->indicesP_remote[iter]]);
-//            STval.emplace_back( -A->values_remote[A->indicesP_remote[iter]] / A->vecValues[A->col_remote[A->indicesP_remote[iter]]] );
-//        }
-//    }
+/*
+    iter = 0;
+    for (i = 0; i < A->col_remote_size; ++i) {
+        for (unsigned int j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
+            STi.emplace_back(A->row_remote[A->indicesP_remote[iter]]);
+            STj.emplace_back(A->col_remote2[A->indicesP_remote[iter]]);
+            STval.emplace_back( -A->values_remote[A->indicesP_remote[iter]] / A->vecValues[A->col_remote[A->indicesP_remote[iter]]] );
+        }
+    }
+*/
 
     // remote ST values
     // todo: add OpenMP just like matvec.
     // TODO: double check values for entryT.
-    iter = 0;
+    nnz_t iter = 0;
     double valtmp = 0;
     for (index_t i = 0; i < A->col_remote_size; ++i) {
         valtmp = -1 / A->vecValues[i];
         for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
 //            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->values_remote[iter] / A->vecValues[i]);
-//            w[A->row_remote[A->indicesP_remote[iter]]] += A->values_remote[A->indicesP_remote[iter]] * A->vecValues[A->col_remote[A->indicesP_remote[iter]]];
             S->entryT[iter + A->nnz_l_local] = cooEntry(A->row_remote[iter], A->col_remote2[iter], A->values_remote[iter] * valtmp);
         }
     }
@@ -551,7 +548,6 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
     // ******************************** setup the matrix S ********************************
 
     // S indices are local on each process, which means it starts from 0 on each process.
-//    S->setup_matrix(Si2, Sj2, Sval2, A->M, A->Mbig, Si2.size(), A->split, comm);
     S->set_parameters(A->M, A->Mbig, A->split, comm);
     S->setup_matrix(connStrength);
 
