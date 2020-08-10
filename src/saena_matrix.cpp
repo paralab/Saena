@@ -1109,9 +1109,20 @@ int saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, s
 }
 #endif
 
+// Vector res = rhs - A*u
+// The result of this functon is the negative of residual().
 int saena_matrix::residual_negative(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
-    // Vector res = rhs - A*u
-    // The result of this functon is the negative of residual().
+    matvec(u, res);
+#pragma omp parallel for
+    for(index_t i = 0; i < M; i++){
+        res[i] = rhs[i] - res[i];
+    }
+    return 0;
+}
+
+// with allreduce
+#if 0
+int saena_matrix::residual_negative(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1147,7 +1158,7 @@ int saena_matrix::residual_negative(std::vector<value_t>& u, std::vector<value_t
 
     return 0;
 }
-
+#endif
 
 int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp) {
 
