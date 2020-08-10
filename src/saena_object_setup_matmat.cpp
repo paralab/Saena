@@ -1444,6 +1444,13 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     delete []Bcsc.val;
     delete []Bcsc.col_scan;
 
+    Acsc.row = nullptr;
+    Acsc.val = nullptr;
+    Acsc.col_scan = nullptr;
+    Bcsc.row = nullptr;
+    Bcsc.val = nullptr;
+    Bcsc.col_scan = nullptr;
+
     matmat_memory_free();
 
     return 0;
@@ -1578,13 +1585,23 @@ int saena_object::matmat_memory_free(){
     delete []mempool5;
     delete []mempool6;
 
+    mempool3 = nullptr;
+    mempool4 = nullptr;
+    mempool5 = nullptr;
+    mempool6 = nullptr;
+
     if(zfp_thrshld > 1e-8) {
         delete[]mempool7;
+        mempool7 = nullptr;
     }
 
     delete []Cmkl_r;
     delete []Cmkl_v;
     delete []Cmkl_c_scan;
+
+    Cmkl_r = nullptr;
+    Cmkl_v = nullptr;
+    Cmkl_c_scan = nullptr;
 
     return 0;
 }
@@ -1878,13 +1895,13 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
         nnz_t recv_nnz  = 0, recv_size = 0;
         index_t row_comp_sz = 0, col_comp_sz = 0, current_comp_sz = 0;
         index_t mat_recv_M = 0, mat_current_M = 0;
-        auto mat_recv = &mempool6[mempool6_sz / 2];
+        auto *mat_recv = &mempool6[mempool6_sz / 2];
 
-        auto mat_current = &mempool3[0];
+        auto *mat_current = &mempool3[0];
         index_t *mat_current_r = nullptr, *mat_current_cscan = nullptr;
         value_t *mat_current_v = nullptr;
 
-        auto mat_temp = mat_send;
+        auto *mat_temp = mat_send;
         int  owner = 0, next_owner = 0;
         auto *requests = new MPI_Request[2];
         auto *statuses = new MPI_Status[2];

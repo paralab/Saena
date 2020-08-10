@@ -38,7 +38,6 @@ int saena_matrix::allocate_zfp(){
 int saena_matrix::deallocate_zfp(){
 
     if(free_zfp_buff){
-
         zfp_field_free(send_field);
         zfp_stream_close(send_zfp);
         stream_close(send_stream);
@@ -51,8 +50,13 @@ int saena_matrix::deallocate_zfp(){
         delete []zfp_send_buff2;
         delete []zfp_recv_buff;
         delete []zfp_recv_buff2;
-        free_zfp_buff = false;
 
+        zfp_send_buff  = nullptr;
+        zfp_send_buff2 = nullptr;
+        zfp_recv_buff  = nullptr;
+        zfp_recv_buff2 = nullptr;
+
+        free_zfp_buff = false;
     }
 
     return 0;

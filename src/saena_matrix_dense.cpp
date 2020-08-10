@@ -50,11 +50,7 @@ saena_matrix_dense::saena_matrix_dense(const saena_matrix_dense &B){
 
 
 saena_matrix_dense::~saena_matrix_dense() {
-    if(allocated){
-        for(index_t i = 0; i < M; i++)
-            delete [] entry[i];
-        delete [] entry;
-    }
+    erase();
 }
 
 
@@ -98,13 +94,14 @@ int saena_matrix_dense::assemble() {
 
 
 int saena_matrix_dense::erase(){
-
     if(allocated){
-        for(index_t i = 0; i < M; i++)
-            delete [] entry[i];
-        delete [] entry;
-
         allocated = false;
+        for(index_t i = 0; i < M; ++i){
+            delete [] entry[i];
+            entry[i] = nullptr;
+        }
+        delete [] entry;
+        entry = nullptr;
     }
 
     split.clear();

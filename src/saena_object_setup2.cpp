@@ -569,9 +569,17 @@ int saena_object::triple_mat_mult(Grid *grid){
     delete []Rcsc.val;
     delete []Rcsc.col_scan;
 
+    Rcsc.row = nullptr;
+    Rcsc.val = nullptr;
+    Rcsc.col_scan = nullptr;
+
     delete []Acsc.row;
     delete []Acsc.val;
     delete []Acsc.col_scan;
+
+    Acsc.row = nullptr;
+    Acsc.val = nullptr;
+    Acsc.col_scan = nullptr;
 
     matmat_memory_free();
 
@@ -603,10 +611,10 @@ int saena_object::triple_mat_mult(Grid *grid){
     RAcsc.col_scan[0] = 1;
 
     index_t *RAc_tmp = &RAcsc.col_scan[1];
-    for(nnz_t i = 0; i < RAcsc.nnz; i++){
+    for(nnz_t i = 0; i < RAcsc.nnz; ++i){
         RAcsc.row[i] = RA.entry[i].row - R->splitNew[rank] + 1; // make the rows start from 1. when done with multiply, add this to the result.
         RAcsc.val[i] = RA.entry[i].val;
-        RAc_tmp[RA.entry[i].col]++;
+        ++RAc_tmp[RA.entry[i].col];
     }
 
     if(RAcsc.nnz != 0) {
@@ -681,7 +689,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     for(nnz_t i = 0; i < Pcsc.nnz; ++i){
         Pcsc.row[i] = P_ent[i].col + 1;
         Pcsc.val[i] = P_ent[i].val;
-        Pc_tmp[P_ent[i].row]++;
+        ++Pc_tmp[P_ent[i].row];
 //        if(rank==1) std::cout << Pcsc.row[i] << "\t" << P_ent[i].row << std::endl;
     }
 
@@ -774,9 +782,17 @@ int saena_object::triple_mat_mult(Grid *grid){
     delete []RAcsc.val;
     delete []RAcsc.col_scan;
 
+    RAcsc.row = nullptr;
+    RAcsc.val = nullptr;
+    RAcsc.col_scan = nullptr;
+
     delete []Pcsc.row;
     delete []Pcsc.val;
     delete []Pcsc.col_scan;
+
+    Pcsc.row = nullptr;
+    Pcsc.val = nullptr;
+    Pcsc.col_scan = nullptr;
 
     matmat_memory_free();
 
@@ -1050,6 +1066,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     // if A1 does not have any nonzero, then free A2's memory and make A2.col_scan point to A.col_scan and return.
     if(A1.nnz == 0){
         delete []A2.col_scan;
+        A2.col_scan = nullptr;
         A2.free_c = false;
         A2.col_scan = A1.col_scan;
         A2.r = &A.r[0];
@@ -1067,6 +1084,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     // if A2 does not have any nonzero, then free its memory and return.
     if(A2.nnz == 0){
         delete []A2.col_scan;
+        A2.col_scan = nullptr;
         A2.free_c = false;
         goto reorder_split_end;
     }
