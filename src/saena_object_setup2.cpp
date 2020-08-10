@@ -343,7 +343,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     saena_matrix    *Ac = &grid->Ac;
 
     MPI_Comm comm = A->comm;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -610,9 +610,12 @@ int saena_object::triple_mat_mult(Grid *grid){
     std::fill(&RAcsc.col_scan[0], &RAcsc.col_scan[RAcsc.col_sz + 1], 0);
     RAcsc.col_scan[0] = 1;
 
+    // make the rows start from 1. when done with multiply, add this to the result.
+    const index_t OFST = R->splitNew[rank] - 1;
+
     index_t *RAc_tmp = &RAcsc.col_scan[1];
     for(nnz_t i = 0; i < RAcsc.nnz; ++i){
-        RAcsc.row[i] = RA.entry[i].row - R->splitNew[rank] + 1; // make the rows start from 1. when done with multiply, add this to the result.
+        RAcsc.row[i] = RA.entry[i].row - OFST;
         RAcsc.val[i] = RA.entry[i].val;
         ++RAc_tmp[RA.entry[i].col];
     }
@@ -623,21 +626,22 @@ int saena_object::triple_mat_mult(Grid *grid){
         }
     }
 
-    RAcsc.split = R->splitNew;        //TODO: check if this is correct or "split" should be used.
+    RAcsc.split = R->splitNew;
 
     // compute nnz_list
     RAcsc.nnz_list.resize(nprocs);
     MPI_Allgather(&RAcsc.nnz, 1, par::Mpi_datatype<nnz_t>::value(), &RAcsc.nnz_list[0], 1, par::Mpi_datatype<nnz_t>::value(), comm);
 
 #ifdef __DEBUG1__
-    if (verbose_triple_mat_mult) {
-        MPI_Barrier(comm);
-        if (rank == 0) printf("triple_mat_mult: step 7\n");
-        MPI_Barrier(comm);
-        printf("RA: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: not needed for lhs of matmat\n",
-                rank, RAcsc.nnz, RAcsc.max_nnz, RAcsc.col_sz);
-        MPI_Barrier(comm);
-    }
+    {
+        if (verbose_triple_mat_mult) {
+            MPI_Barrier(comm);
+            if (rank == 0) printf("triple_mat_mult: step 7\n");
+            MPI_Barrier(comm);
+            printf("RA: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: not needed for lhs of matmat\n",
+                   rank, RAcsc.nnz, RAcsc.max_nnz, RAcsc.col_sz);
+            MPI_Barrier(comm);
+        }
 
 //    RA.print_entry(0);
 //    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", RA->nnz_l, RA.nnz_g, RA.M, RA.Mbig);
@@ -655,6 +659,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 //            }
 //        }
 //    }
+    }
 #endif
 
     // =======================================
@@ -665,7 +670,6 @@ int saena_object::triple_mat_mult(Grid *grid){
 
     // make a copy of R entries, then change their order to row-major
     std::vector<cooEntry> P_ent(R->entry);
-//    print_vector(P_ent, 1, "P_ent", comm);
     std::sort(P_ent.begin(), P_ent.end(), row_major);
 
     CSCMat Pcsc;
@@ -681,11 +685,9 @@ int saena_object::triple_mat_mult(Grid *grid){
     std::fill(&Pcsc.col_scan[0], &Pcsc.col_scan[Pcsc.col_sz + 1], 0);
     Pcsc.col_scan[0] = 1;
 
-    Pcsc.split = R->splitNew;           //TODO: check if this is correct or "split" should be used.
+    Pcsc.split = R->splitNew;
 
     index_t *Pc_tmp = &Pcsc.col_scan[1];
-//    index_t *Pc_tmp_p = &Pc_tmp[0] - Pcsc.split[rank]; // use this to avoid subtracting a fixed number
-
     for(nnz_t i = 0; i < Pcsc.nnz; ++i){
         Pcsc.row[i] = P_ent[i].col + 1;
         Pcsc.val[i] = P_ent[i].val;
@@ -702,15 +704,16 @@ int saena_object::triple_mat_mult(Grid *grid){
     Pcsc.use_trans = true;
 
 #ifdef __DEBUG1__
-    if (verbose_triple_mat_mult) {
-        MPI_Barrier(comm);
-        if (rank == 0) printf("triple_mat_mult: step 8\n");
-        MPI_Barrier(comm);
+    {
+        if (verbose_triple_mat_mult) {
+            MPI_Barrier(comm);
+            if (rank == 0) printf("triple_mat_mult: step 8\n");
+            MPI_Barrier(comm);
 //        printf("P: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: %u\n",
 //                rank, Pcsc.nnz, Pcsc.max_nnz, Pcsc.col_sz, Pcsc.max_M);
 //        MPI_Barrier(comm);
 //        print_array(Pcsc.col_scan, Pcsc.col_sz+1, 1, "Pcsc.col_scan", comm);
-    }
+        }
 
 //    R->print_entry(0);
 //    printf("R: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", R->nnz_l, R->nnz_g, R->M, R->Mbig);
@@ -723,6 +726,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 //            }
 //        }
 //    }
+    }
 #endif
 
     // =======================================
