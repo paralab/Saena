@@ -26,11 +26,13 @@ int find_eig_ietl(Matrix& A){
     MPI_Comm_rank(comm, &rank);
     bool verbose_eig = false;
 
-    if(verbose_eig) {
-        MPI_Barrier(comm);
-        if(rank==0) printf("\nfind_eig: start\n");
-        MPI_Barrier(comm);
-    }
+#ifdef __DEBUG1__
+    {
+        if(verbose_eig) {
+            MPI_Barrier(comm);
+            if(rank==0) printf("\nfind_eig: start\n");
+            MPI_Barrier(comm);
+        }
 
 //    A.print_entry(-1);
 //    A.print_info(-1);
@@ -48,6 +50,8 @@ int find_eig_ietl(Matrix& A){
 //        A.values_remote[i] *= A.inv_diag[A.row_remote[i]];
 //    }
 //    MPI_Barrier(A.comm);
+    }
+#endif
 
     typedef ietl::vectorspace<Vector> Vecspace;
     typedef boost::lagged_fibonacci607 Gen;
@@ -57,11 +61,13 @@ int find_eig_ietl(Matrix& A){
     Gen mygen;
     ietl::lanczos<Matrix,Vecspace> lanczos(A,vec);
 
+#ifdef __DEBUG1__
     if(verbose_eig) {
         MPI_Barrier(comm);
         if(rank==0) printf("find_eig: after lanczos\n");
         MPI_Barrier(comm);
     }
+#endif
 
     // Creation of an iteration object:
     int max_iter = 20; // default was 10*N
@@ -71,6 +77,7 @@ int find_eig_ietl(Matrix& A){
     ietl::lanczos_iteration_nhighest<double>
             iter(max_iter, n_highest_eigenval, rel_tol, abs_tol);
 
+#ifdef __DEBUG1__
 //    if(rank==0) std::cout << "-----------------------------------\n\n";
 //    if(rank==0) std::cout << "\nComputation of " << n_highest_eigenval << " highest converged eigenvalues\n\n";
 
@@ -79,6 +86,7 @@ int find_eig_ietl(Matrix& A){
         if(rank==0) printf("find_eig: after lanczos_iteration_nhighest \n");
         MPI_Barrier(comm);
     }
+#endif
 
     std::vector<double> eigen;
     std::vector<double> err;
@@ -89,16 +97,21 @@ int find_eig_ietl(Matrix& A){
         eigen = lanczos.eigenvalues();
         err = lanczos.errors();
         multiplicity = lanczos.multiplicities();
+
+#ifdef __DEBUG1__
         if(verbose_eig) {
             MPI_Barrier(comm);
             if(rank==0) std::cout<<"\nnumber of iterations to compute the biggest eigenvalue: "<<iter.iterations()<<"\n";
             MPI_Barrier(comm);
         }
+#endif
+
     }
     catch (std::runtime_error& e) {
         std::cout << e.what() << "\n";
     }
 
+#ifdef __DEBUG1__
     // Printing eigenvalues with error & multiplicities:
     // -------------------------------------------------
 //    if(rank==0) std::cout << "\n#        eigenvalue            error         multiplicity\n";
@@ -119,8 +132,11 @@ int find_eig_ietl(Matrix& A){
     }
 
 //    if(rank==0) printf("the biggest eigenvalue of A is %f (IETL) \n", eigen.back());
+#endif
+
     A.eig_max_of_invdiagXA = eigen.back();
 
+#ifdef __DEBUG1__
 //    A.eig_max_of_invdiagXA = eigen.back() * A.highest_diag_val;
 //    if(rank==0) printf("the biggest eigenvalue of D^{-1}*A is %f (IETL) \n", A.eig_max_of_invdiagXA);
 
@@ -135,6 +151,7 @@ int find_eig_ietl(Matrix& A){
         if(rank==0) printf("find_eig: end\n");
         MPI_Barrier(comm);
     }
+#endif
 
     return 0;
 }
