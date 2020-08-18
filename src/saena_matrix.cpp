@@ -1187,41 +1187,51 @@ int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>
 }
 
 
-int saena_matrix::chebyshev(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res, std::vector<value_t>& d){
+int saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res, std::vector<value_t>& d){
 
+#ifdef __DEBUG1__
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
+    for(auto &i : inv_diag){
+        assert(i == 1);     // the matrix is scaled to have diagonal 1.
+    }
+#endif
 
-    const double alpha = 0.25 * eig_max_of_invdiagXA; // homg: 0.25 * eig_max
-    const double beta = eig_max_of_invdiagXA;
+    const double alpha = 0.14 * eig_max_of_invdiagXA; // homg: 0.25 * eig_max
+    const double beta  = eig_max_of_invdiagXA;
     const double delta = (beta - alpha) / 2;
     const double theta = (beta + alpha) / 2;
-    const double s1 = theta / delta;
-    const double twos1 = 2 * s1;     // to avoid the multiplication in the "for loop.
-    double       rhok = 1 / s1;
-    double       rhokp1 = 0.0, two_rhokp1 = 0.0, d1 = 0.0, d2 = 0.0;
+    const double s1    = theta / delta;
+    const double twos1 = 2 * s1;     // to avoid the multiplication in the "for" loop.
+          double rhok  = 1 / s1;
+          double rhokp1 = 0.0, two_rhokp1 = 0.0, d1 = 0.0, d2 = 0.0;
 
     // first loop
-    residual(u, rhs, res);
+    residual_negative(u, rhs, res);
+
     #pragma omp parallel for
-    for(index_t i = 0; i < u.size(); i++){
-        d[i] = (-res[i] * inv_diag[i]) / theta;
+    for(index_t i = 0; i < u.size(); ++i){
+//        d[i] = (res[i] * inv_diag[i]) / theta;    // the matrix is scaled to have diagonal 1. use this for a non-scaled matrix.
+        d[i] = res[i] / theta;
         u[i] += d[i];
 //        if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                           i, inv_diag[i], i, res[i], i, d[i], i, u[i]);
     }
 
-    for(int i = 1; i < iter; i++){
+    for(int i = 1; i < iter; ++i){
         rhokp1 = 1 / (twos1 - rhok);
         two_rhokp1 = 2 * rhokp1;
         d1     = rhokp1 * rhok;
         d2     = two_rhokp1 / delta;
         rhok   = rhokp1;
-        residual(u, rhs, res);
+
+        residual_negative(u, rhs, res);
 
         #pragma omp parallel for
-        for(index_t j = 0; j < u.size(); j++){
-            d[j] = ( d1 * d[j] ) + ( d2 * (-res[j] * inv_diag[j]));
+        for(index_t j = 0; j < u.size(); ++j){
+            // the matrix is scaled to have diagonal 1. use this for a non-scaled matrix.
+//            d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag[j]);
+            d[j] = ( d1 * d[j] ) + ( d2 * res[j] );
             u[j] += d[j];
 //            if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                               j, inv_diag[j], j, res[j], j, d[j], j, u[j]);
