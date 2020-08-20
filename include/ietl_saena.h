@@ -129,7 +129,7 @@ int find_eig_ietl(Matrix& A){
         MPI_Barrier(comm);
     }
 
-    if(rank==0) printf("the biggest eigenvalue of A is %f (IETL) \n", eigen.back());
+//    if(rank==0) printf("the biggest eigenvalue of A is %f (IETL) \n", eigen.back());
 #endif
 
     // The number of max_iter for Lanzcos is set low for performance reasons, so there may be error for the largest
