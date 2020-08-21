@@ -4,9 +4,7 @@
 #include "prolong_matrix.h"
 #include "restrict_matrix.h"
 #include "grid.h"
-#include "aux_functions.h"
 #include "parUtils.h"
-#include "superlu_ddefs.h"
 
 
 int saena_object::compute_coarsen(Grid *grid) {
@@ -82,7 +80,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     A->cpu_shrink_thre2_next_level = -1;
     A->enable_shrink_next_level = false;
 
-    Ac->comm_old  = Ac->comm;
+    Ac->comm_old = Ac->comm;
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
@@ -241,7 +239,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     if(Ac->active_minor) {
 
         comm = Ac->comm;
-        int rank_new;
+        int rank_new = 0;
         MPI_Comm_rank(Ac->comm, &rank_new);
 
         // ********** decide about shrinking **********
@@ -855,7 +853,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
 #ifdef __DEBUG1__
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int verbose_rank = 0;
@@ -904,9 +902,8 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     // ========================================================
     // IMPORTANT: An offset should be used to access Ar and Av.
     // ========================================================
-    nnz_t offset = A.col_scan[0] - 1;
 
-    int i, j;
+    nnz_t offset = A.col_scan[0] - 1;
 
     index_t *A1r = &A.r[offset];
     value_t *A1v = &A.v[offset];
@@ -921,7 +918,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     A2.free_c   = true;
     std::fill(&A2.col_scan[0], &A2.col_scan[A2.col_sz+1], 0);
 //    A2.col_scan[0] = 1;
-    auto Ac2_p = &A2.col_scan[1]; // to do scan on it at the end.
+    auto *Ac2_p = &A2.col_scan[1]; // to do scan on it at the end.
 
     // ========================================================
     // form A1 and A2
@@ -941,6 +938,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     }*/
 #endif
 
+    int i = 0, j = 0;
     A1.nnz = 0, A2.nnz = 0;
     for(j = 0; j < A.col_sz; ++j){
 //        if(rank==verbose_rank) std::cout << std::endl;
@@ -1281,9 +1279,8 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
 
     index_t *Ac = A1.col_scan; // Will add A2.col_scan to A1.col_scan for each column to have Ac.
 
-    int i;
-    nnz_t iter0 = offset, iter1 = 0, iter2 = A1.col_scan[A.col_sz] - offset - 1;
-    nnz_t nnz_col;
+    int i = 0;
+    nnz_t nnz_col = 0, iter0 = offset, iter1 = 0, iter2 = A1.col_scan[A.col_sz] - offset - 1;
     for(int j = 0; j < A.col_sz; ++j){
         nnz_col = A1.col_scan[j+1] - A1.col_scan[j];
         if(nnz_col != 0){
