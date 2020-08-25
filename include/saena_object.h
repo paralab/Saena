@@ -231,7 +231,7 @@ public:
 
 //    int reorder_split(vecEntry *arr, index_t low, index_t high, index_t pivot);
     void reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);
-    int reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);
+    void reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2);
     int reorder_counter = 0; // use this to make sure the same number of calls to reorder_split() and reorder_back_split()
 
     // for fast_mm experiments
@@ -349,9 +349,9 @@ public:
 
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
     int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
-    int transpose_locally(cooEntry *A, nnz_t size);
-    int transpose_locally(cooEntry *A, nnz_t size, cooEntry *B);
-    int transpose_locally(cooEntry *A, nnz_t size, index_t row_offset, cooEntry *B);
+    void transpose_locally(cooEntry *A, nnz_t size);
+    void transpose_locally(cooEntry *A, nnz_t size, cooEntry *B);
+    void transpose_locally(cooEntry *A, nnz_t size, const index_t &row_offset, cooEntry *B);
 
     int change_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew);
 

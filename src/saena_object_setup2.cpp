@@ -1219,7 +1219,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 
 }
 
-int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
+void saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
 #ifdef __DEBUG1__
 //    int rank;
@@ -1234,14 +1234,23 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
     assert(A.nnz == (A1.nnz + A2.nnz));
 #endif
 
+    const int THRSHLD = A1.row_sz;
+
     // if A1.nnz==0 it means A2 was the whole A, so we only need to return row indices to their original values.
     if(A1.nnz == 0) {
-        for (int j = 0; j < A2.col_sz; ++j) {
-            for (int i = A2.col_scan[j] - 1; i < A2.col_scan[j + 1] - 1; ++i) {
-                A2.r[i] += A1.row_sz;
-            }
+
+#pragma simd
+        for (int i = A2.col_scan[0] - 1; i < A2.col_scan[A2.col_sz] - 1; ++i) {
+            A2.r[i] += THRSHLD;
         }
-        return 0;
+
+//        for (int j = 0; j < A2.col_sz; ++j) {
+//            for (int i = A2.col_scan[j] - 1; i < A2.col_scan[j + 1] - 1; ++i) {
+//                A2.r[i] += THRSHLD;
+//            }
+//        }
+
+        return;
     }
 
     // ========================================================
@@ -1251,9 +1260,6 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
 
     auto *Ar_temp = &mempool4[0];
     auto *Av_temp = &mempool5[0];
-
-//    auto *Ar_temp = new index_t[A.nnz];
-//    auto *Av_temp = new value_t[A.nnz];
 
     memcpy(&Ar_temp[0], &A.r[offset], sizeof(index_t) * A.nnz);
     memcpy(&Av_temp[0], &A.v[offset], sizeof(value_t) * A.nnz);
@@ -1308,15 +1314,16 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
         nnz_col = A2.col_scan[j+1] - A2.col_scan[j];
         if(nnz_col != 0){
 
+            #pragma simd
             for(i = 0; i < nnz_col; ++i){
 //                A.r[iter0 + i] = Ar_temp[iter2 + i];
-                A.r[iter0 + i] = Ar_temp[iter2 + i] + A1.row_sz;
-                A.v[iter0 + i] = Av_temp[iter2 + i];
+                A.r[iter0 + i] = Ar_temp[iter2 + i] + THRSHLD;
+//                A.v[iter0 + i] = Av_temp[iter2 + i];
 //                std::cout << Ar_temp[iter2 + i] << "\t" << j+1 << "\t" << Av_temp[iter2 + i] << std::endl;
             }
 
 //            memcpy(&Ar[iter0],  &Ar_temp[iter2], sizeof(index_t) * nnz_col);
-//            memcpy(&A.v[iter0], &Av_temp[iter2], sizeof(value_t) * nnz_col);
+            memcpy(&A.v[iter0], &Av_temp[iter2], sizeof(value_t) * nnz_col);
             iter2 += nnz_col;
             iter0 += nnz_col;
         }
@@ -1368,32 +1375,20 @@ int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2)
 
     // ========================================================
 #endif
-
-    return 0;
 }
 
 
-int saena_object::transpose_locally(cooEntry *A, nnz_t size){
-
+void saena_object::transpose_locally(cooEntry *A, nnz_t size){
     transpose_locally(A, size, 0, A);
-
-    return 0;
 }
 
-int saena_object::transpose_locally(cooEntry *A, nnz_t size, cooEntry *B){
-
+void saena_object::transpose_locally(cooEntry *A, nnz_t size, cooEntry *B){
     transpose_locally(A, size, 0, B);
-
-    return 0;
 }
 
-int saena_object::transpose_locally(cooEntry *A, nnz_t size, index_t row_offset, cooEntry *B){
-
+void saena_object::transpose_locally(cooEntry *A, nnz_t size, const index_t &row_offset, cooEntry *B){
     for(nnz_t i = 0; i < size; i++){
-        B[i] = cooEntry(A[i].col, A[i].row+row_offset, A[i].val);
+        B[i] = cooEntry(A[i].col, A[i].row + row_offset, A[i].val);
     }
-
     std::sort(&B[0], &B[size]);
-
-    return 0;
 }
