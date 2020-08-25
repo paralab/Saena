@@ -850,7 +850,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 */
 
 // This version moves entries of A1 to the begining and A2 to the end of the input array.
-    int saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
+    void saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
 #ifdef __DEBUG1__
     int rank = 0, nprocs = 0;
@@ -869,7 +869,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
         for (index_t i = A.col_scan[j] - 1; i < A.col_scan[j + 1] - 1; ++i) {
             assert( A.r[i] > 0 );
             assert( A.r[i] <= A.row_sz );
-            ASSERT(fabs(A.v[i]) > ALMOST_ZERO, "rank: " << rank << ", A.v[i]: " << A.v[i]);
+//            ASSERT(fabs(A.v[i]) > ALMOST_ZERO, "rank: " << rank << ", A.v[i]: " << A.v[i]);
 //            std::cout << std::setprecision(4) << i << "\t" << A.r[i] << "\t" << j+A.col_offset+1 << "\t" << A.v[i] << std::endl;
         }
     }
@@ -925,6 +925,9 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     // ========================================================
 
 #ifdef __DEBUG1__
+    // check memory allocation
+    assert(A2.col_scan);
+
     // print A in top and bottom split
 /*    for(index_t j = 0; j < A.col_sz; ++j) {
         if(rank==verbose_rank) std::cout << std::endl;
@@ -938,27 +941,24 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     }*/
 #endif
 
+    const int THRSHLD = A1.row_sz;
     int i = 0, j = 0;
     A1.nnz = 0, A2.nnz = 0;
     for(j = 0; j < A.col_sz; ++j){
-//        if(rank==verbose_rank) std::cout << std::endl;
 //        if(rank==verbose_rank) std::cout << "\n" << A.col_scan[j]-1 << "\t" << A.col_scan[j+1]-1 << std::endl;
         for(i = A.col_scan[j] - 1; i < A.col_scan[j+1] - 1; ++i){
 //            std::cout << i << "\t" << A.r[i] << "\t" << j << "\t" << A.v[i] << std::endl;
 
-            if(A.r[i] <= A1.row_sz){
+            if(A.r[i] <= THRSHLD){
                 A1r[A1.nnz] = A.r[i];
                 A1v[A1.nnz] = A.v[i];
                 ++A1.nnz;
-//                ++it1;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] << "\t" << j+1 << "\t" << A.v[i] << "\ttop half: " << std::endl;
             }else{
-                A2r[A2.nnz] = A.r[i] - A1.row_sz;
-//                A2r[A2.nnz] = A.r[i];
+                A2r[A2.nnz] = A.r[i] - THRSHLD;
                 A2v[A2.nnz] = A.v[i];
                 ++A2.nnz;
                 ++Ac2_p[j];
-//                ++it2;
 //                if(rank==verbose_rank) std::cout << std::setprecision(4) << A.r[i] - A1.row_sz << "\t" << j+1 << "\t" << A.v[i] << "\tbottom half: " << std::endl;
             }
 
@@ -1067,33 +1067,49 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 
     // if A1 does not have any nonzero, then free A2's memory and make A2.col_scan point to A.col_scan and return.
     if(A1.nnz == 0){
-        delete []A2.col_scan;
+        delete [] A2.col_scan;
         A2.col_scan = nullptr;
-        A2.free_c = false;
+        A2.free_c   = false;
         A2.col_scan = A1.col_scan;
         A2.r = &A.r[0];
         A2.v = &A.v[0];
 
-        for (j = 0; j < A2.col_sz; ++j) {
-            for (i = A2.col_scan[j] - 1; i < A2.col_scan[j + 1] - 1; ++i) {
-                A2.r[i] -= A1.row_sz;
-            }
+#pragma simd
+        for (i = A2.col_scan[0] - 1; i < A2.col_scan[A2.col_sz] - 1; ++i) {
+            A2.r[i] -= THRSHLD;
         }
 
+//        for (j = 0; j < A2.col_sz; ++j) {
+//            for (i = A2.col_scan[j] - 1; i < A2.col_scan[j + 1] - 1; ++i) {
+//                A2.r[i] -= A1.row_sz;
+//            }
+//        }
+
+#ifdef __DEBUG1__
         goto reorder_split_end;
+#endif
+        return;
     }
 
     // if A2 does not have any nonzero, then free its memory and return.
     if(A2.nnz == 0){
-        delete []A2.col_scan;
+        delete [] A2.col_scan;
         A2.col_scan = nullptr;
-        A2.free_c = false;
+        A2.free_c   = false;
+
+#ifdef __DEBUG1__
         goto reorder_split_end;
+#endif
+        return;
     }
 
     A2.col_scan[0] += 1;
     for(i = 1; i <= A.col_sz; ++i){
         A2.col_scan[i] += A2.col_scan[i-1]; // scan on A2.col_scan
+    }
+
+#pragma simd
+    for(i = 1; i <= A.col_sz; ++i){
         A1.col_scan[i] -= A2.col_scan[i] - 1; // subtract A2.col_scan from A1.col_scan to have the correct scan for A1
     }
 
@@ -1104,8 +1120,8 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 
     // First put A1 at the beginning of A, then put A2 at the end A.
     // A1 points to A, so no need to copy A1 into A.
-//    memcpy(&A.r[offset],          &A1r[0], A1.nnz * sizeof(index_t));
-//    memcpy(&A.v[offset],          &A1v[0], A1.nnz * sizeof(value_t));
+//    memcpy(&A.r[offset], &A1r[0], A1.nnz * sizeof(index_t));
+//    memcpy(&A.v[offset], &A1v[0], A1.nnz * sizeof(value_t));
 
     memcpy(&A.r[offset + A1.nnz], &A2r[0], A2.nnz * sizeof(index_t));
     memcpy(&A.v[offset + A1.nnz], &A2v[0], A2.nnz * sizeof(value_t));
@@ -1139,9 +1155,9 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     }
 #endif
 
+#ifdef __DEBUG1__
     reorder_split_end:
 
-#ifdef __DEBUG1__
     {
         // assert A1
 //        std::cout << "\nA1: nnz: " << A1.nnz << std::endl;
@@ -1201,7 +1217,6 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
     }
 #endif
 
-    return 0;
 }
 
 int saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
