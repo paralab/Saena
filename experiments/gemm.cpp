@@ -33,9 +33,9 @@ int main(int argc, char* argv[]){
     // set the number of OpenMP threads at run-time
     omp_set_num_threads(1);
 
-#pragma omp parallel default(none) shared(rank, nprocs)
-    if(!rank && omp_get_thread_num()==0)
-        printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
+//#pragma omp parallel default(none) shared(rank, nprocs)
+//    if(!rank && omp_get_thread_num()==0)
+//        printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
 
     // *************************** initialize the matrix ****************************
 
@@ -103,15 +103,15 @@ int main(int argc, char* argv[]){
 
         saena::amg solver;
 
-        if (!rank) {
-            printf("\nA.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n",
-                   A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g,
-                   B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
-            printf("threshold1 = %u, threshold2 = %u\n\n", solver.get_object()->matmat_thre1, solver.get_object()->matmat_thre2);
-        }
+//        if (!rank) {
+//            printf("\nA.Mbig = %u,\tA.nnz = %ld\nB.Mbig = %u,\tB.nnz = %ld\n",
+//                   A.get_internal_matrix()->Mbig, A.get_internal_matrix()->nnz_g,
+//                   B.get_internal_matrix()->Mbig, B.get_internal_matrix()->nnz_g);
+//            printf("threshold1 = %u, threshold2 = %u\n\n", solver.get_object()->matmat_thre1, solver.get_object()->matmat_thre2);
+//        }
 
         // *************************** checking the correctness of matrix-matrix product ****************************
-
+#if 0
         {
 //            saena::amg solver;
             saena::matrix C(comm);
@@ -130,10 +130,10 @@ int main(int argc, char* argv[]){
 
 //            if(!rank) printf("=====================\n\n");
         }
-
+#endif
         // *************************** Saena matmat experiment ****************************
 
-//        solver.matmat(&A, &B, nullptr, false, true);
+        solver.matmat(&A, &B, nullptr, false, true);
 
         // *************************** PETSc matmat experiment ****************************
 

@@ -1388,7 +1388,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
         //===============
         // print timings
         //===============
-/*
+
+#if 0
         if(nprocs > 1 && !rank) {
             if(zfp_perform) {
                 std::cout << "zfp: orig sz (rank0) = " << zfp_orig_sz << ", comp sz (rank0) = " << zfp_comp_sz
@@ -1398,28 +1399,33 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
             }
 //            print_time_ave(zfp_save_loc, "zfp_saving", comm, true, false);
         }
-*/
-        if (!rank) printf("\n");
-        print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
+#endif
 
-        if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\n\nwait\nt_comp_GR\nt_decomp_GR\n\n");
-        print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);
-        print_time_ave((t_mat - t_prep_iter - t_fast_mm) / matmat_iter, "comm", comm, true, false);
-        print_time_ave(t_fast_mm / matmat_iter,                         "t_fast_mm", comm, true, false);
-        print_time_ave(t_sort / matmat_iter,                            "t_sort", comm, true, false);
-        print_time_ave(t_prep_iter / matmat_iter,                       "t_prep_iter", comm, true, false);
+        if(verbose_matmat_timing){
+            if (!rank) printf("\n");
+            print_time_ave(t_matmat_tot, "Saena matmat", comm, true, true);
 
-        if (!rank) printf("\n");
-        print_time_ave(t_wait / matmat_iter,                            "t_wait", comm, true, false);
-        print_time_ave(t_comp_GR / matmat_iter,                         "t_comp_GR", comm, true, false);
-        print_time_ave(t_decomp_GR / matmat_iter,                       "t_decomp_GR", comm, true, false);
-        if (!rank) printf("\n");
+            if (!rank) printf("\ninit prep\ncomm\nfastmm\nsort\nprep_iter\n\nwait\nt_comp_GR\nt_decomp_GR\n\n");
+            print_time_ave(t_init_prep / matmat_iter,                       "t_init_prep", comm, true, false);
+            print_time_ave((t_mat - t_prep_iter - t_fast_mm) / matmat_iter, "comm", comm, true, false);
+            print_time_ave(t_fast_mm / matmat_iter,                         "t_fast_mm", comm, true, false);
+            print_time_ave(t_sort / matmat_iter,                            "t_sort", comm, true, false);
+            print_time_ave(t_prep_iter / matmat_iter,                       "t_prep_iter", comm, true, false);
+
+            if (!rank) printf("\n");
+            print_time_ave(t_wait / matmat_iter,                            "t_wait", comm, true, false);
+            print_time_ave(t_comp_GR / matmat_iter,                         "t_comp_GR", comm, true, false);
+            print_time_ave(t_decomp_GR / matmat_iter,                       "t_decomp_GR", comm, true, false);
+            if (!rank) printf("\n");
 
 //        if (!rank) printf("case1\ncase2\ncase3\n");
-        if (!rank) printf("case1\ncase2\ncase3\n");
-        print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
-        print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
-        print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
+            if (!rank) printf("case1\ncase2\ncase3\n");
+            print_time_ave(case1 / matmat_iter, "case1", comm, true, false);
+            print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
+            print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
+        }else{
+            print_time_ave(t_matmat_tot, "Saena matmat", comm, true, false);
+        }
 
     }
 
