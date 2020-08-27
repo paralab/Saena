@@ -80,10 +80,9 @@ int main(int argc, char* argv[]){
     {
 
         saena::matrix A(comm);
-//        A.read_file(Aname);
-        A.read_file(Aname, "triangle");
+        A.read_file(Aname);
+//        A.read_file(Aname, "triangle");
         A.assemble();
-//        A.assemble_no_scale();
 
         saena::matrix B(A);
 
