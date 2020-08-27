@@ -48,24 +48,27 @@ bool vecCol_col_major (const vecCol& node1, const vecCol& node2) {
 
 void CSCMat::compress_prep(){
 
-#ifdef __DEBUG1__
     int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     int rank_ver = 0;
-#endif
 
     compress_prep_compute(row,      nnz,      comp_row);
     compress_prep_compute(col_scan, col_sz+1, comp_col);
 
-//    unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);
-//    unsigned long comp_sz = comp_row.tot + comp_col.tot;
-//    float comp_rate_loc = 1.0f - (static_cast<float>(comp_sz) / orig_sz);
-//    float comp_rate;
+    // compute the saving percentage by compression
+    unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);
+    unsigned long comp_sz = comp_row.tot + comp_col.tot;
+    float comp_rate_loc = 1.0f - (static_cast<float>(comp_sz) / orig_sz);
+    float comp_rate     = 0.0;
+    MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
 
-//    MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
+    // print the compression stats
 //    if(rank==rank_ver) printf("GR:  orig sz (rank%d) = %lu, comp sz (rank%d) = %lu, saving %.2f (average), row's k = %d, col's k = %d\n",
 //                               rank, orig_sz, rank, comp_sz, 100 * comp_rate / nprocs, comp_row.k, comp_col.k);
+
+    // print only the saving percentage by compression
+    if(rank==rank_ver) printf("%.2f\n", 100 * comp_rate / nprocs);
 
 #ifdef __DEBUG1__
     if(rank==rank_ver && verbose_prep){
@@ -124,9 +127,11 @@ void CSCMat::compress_prep(){
 
 void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz) const{
 
-#ifdef __DEBUG1__
-    int rank = 0, nprocs = 0;
+    int nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
+
+#ifdef __DEBUG1__
+    int rank = 0;
     MPI_Comm_rank(comm, &rank);
     int rank_ver = 0;
 //    unsigned int M;
