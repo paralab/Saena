@@ -13,7 +13,7 @@ int main(int argc, char* argv[]){
 
     MPI_Init(&argc, &argv);
     MPI_Comm comm = MPI_COMM_WORLD;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -153,8 +153,6 @@ int main(int argc, char* argv[]){
     }
 */
     // *************************** finalize ****************************
-
-//    if(rank==0) dollar::text(std::cout);
 
     MPI_Finalize();
     return 0;
