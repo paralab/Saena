@@ -46,12 +46,14 @@ bool vecCol_col_major (const vecCol& node1, const vecCol& node2) {
 }
 
 
-int CSCMat::compress_prep(){
+void CSCMat::compress_prep(){
 
+#ifdef __DEBUG1__
     int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     int rank_ver = 0;
+#endif
 
     compress_prep_compute(row,      nnz,      comp_row);
     compress_prep_compute(col_scan, col_sz+1, comp_col);
@@ -90,7 +92,7 @@ int CSCMat::compress_prep(){
 
     // compute max compress buffer size on all procs.
     // do this for both rows and col_scan, then add them together.
-    nnz_t proc_col_sz, row_buf_sz, col_buf_sz;
+    nnz_t proc_col_sz = 0, row_buf_sz = 0, col_buf_sz = 0;
     comp_row.max_tot = 0;
     comp_col.max_tot = 0;
     max_comp_sz      = 0;
@@ -117,18 +119,15 @@ int CSCMat::compress_prep(){
                 comp_row.max_tot, comp_col.max_tot, max_comp_sz);
     }
 #endif
-
-    return 0;
 }
 
 
-int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz){
+void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz) const{
 
+#ifdef __DEBUG1__
     int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-
-#ifdef __DEBUG1__
     int rank_ver = 0;
 //    unsigned int M;
 #endif
@@ -158,7 +157,7 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
 
             skip = false;
 
-//        M = 1U << k;
+//            M = 1U << k;
             r_sz = rem_sz(v_sz, k);
 
             // first v element
@@ -176,13 +175,6 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
 
                 // check if dif is larger than the maximum value for that many bits, move to higher number of bits.
                 dif = v[i] - v[i - 1];
-
-
-//            if(rank == 0){
-                dif = INT32_MAX;
-//            }
-
-
 
                 if (dif > dif_range_max) {
                     skip = true;
@@ -269,11 +261,9 @@ int CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz
 //        print_vector(comp_sz.qs, rank_ver, "qs", comm);
     }
 #endif
-
-    return 0;
 }
 
-int CSCMat::compress_prep_compute2(const index_t *v, index_t v_sz, GR_sz &comp_sz){
+void CSCMat::compress_prep_compute2(const index_t *v, index_t v_sz, GR_sz &comp_sz){
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
@@ -371,6 +361,4 @@ int CSCMat::compress_prep_compute2(const index_t *v, index_t v_sz, GR_sz &comp_s
 //        print_vector(comp_sz.qs, rank_ver, "qs", comm);
     }
 #endif
-
-    return 0;
 }

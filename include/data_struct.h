@@ -554,9 +554,9 @@ public:
     // =======================
 
     CSCMat() = default;
-    int compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz);
-    int compress_prep_compute2(const index_t *v, index_t v_sz, GR_sz &comp_sz);
-    int compress_prep();
+    void compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_sz) const;
+    void compress_prep_compute2(const index_t *v, index_t v_sz, GR_sz &comp_sz);
+    void compress_prep();
 };
 
 
