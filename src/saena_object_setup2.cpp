@@ -1074,7 +1074,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
         A2.r = &A.r[0];
         A2.v = &A.v[0];
 
-#pragma simd
+#pragma omp simd
         for (i = A2.col_scan[0] - 1; i < A2.col_scan[A2.col_sz] - 1; ++i) {
             A2.r[i] -= THRSHLD;
         }
@@ -1108,7 +1108,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
         A2.col_scan[i] += A2.col_scan[i-1]; // scan on A2.col_scan
     }
 
-#pragma simd
+#pragma omp simd
     for(i = 1; i <= A.col_sz; ++i){
         A1.col_scan[i] -= A2.col_scan[i] - 1; // subtract A2.col_scan from A1.col_scan to have the correct scan for A1
     }
@@ -1239,7 +1239,7 @@ void saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2
     // if A1.nnz==0 it means A2 was the whole A, so we only need to return row indices to their original values.
     if(A1.nnz == 0) {
 
-#pragma simd
+#pragma omp simd
         for (int i = A2.col_scan[0] - 1; i < A2.col_scan[A2.col_sz] - 1; ++i) {
             A2.r[i] += THRSHLD;
         }
@@ -1314,7 +1314,7 @@ void saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2
         nnz_col = A2.col_scan[j+1] - A2.col_scan[j];
         if(nnz_col != 0){
 
-            #pragma simd
+            #pragma omp simd
             for(i = 0; i < nnz_col; ++i){
 //                A.r[iter0 + i] = Ar_temp[iter2 + i];
                 A.r[iter0 + i] = Ar_temp[iter2 + i] + THRSHLD;
