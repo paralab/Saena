@@ -1354,6 +1354,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     // =======================================
 
     matmat_memory_alloc(Acsc, Bcsc);
+    C_temp.reserve(10 * std::max(A->nnz_l, B->nnz_l));
+    C->entry.reserve(std::max(A->nnz_l, B->nnz_l));
 
     if(print_timing){
         t_temp = omp_get_wtime() - t_temp;
@@ -1378,8 +1380,10 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
             case1_iter = 0;
             case2_iter = 0;
             case3_iter = 0;
-            saena_matrix C_tmp(A->comm);
-            matmat_CSC(Acsc, Bcsc, C_tmp);
+            matmat_CSC(Acsc, Bcsc, *C);
+
+            // clear C for the next call
+            C->entry.clear();
         }
 
         case1 = 0, case2 = 0, case3 = 0;
@@ -1389,12 +1393,14 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
             case1_iter = 0;
             case2_iter = 0;
             case3_iter = 0;
-            saena_matrix C_tmp(A->comm);
 
             MPI_Barrier(comm);
             t_temp = omp_get_wtime();
 
-            matmat_CSC(Acsc, Bcsc, C_tmp);
+            matmat_CSC(Acsc, Bcsc, *C);
+
+            // clear C for the next call
+            C->entry.clear();
 
             t_temp = omp_get_wtime() - t_temp;
             t_matmat += t_temp;
@@ -1753,8 +1759,6 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
     index_t Acsc_M = Acsc.split[rank+1] - Acsc.split[rank];
     CSCMat_mm A(Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Acsc.nnz, Acsc.row, Acsc.val, Acsc.col_scan);
-
-    std::vector<cooEntry> AB_temp;
 
     if(nprocs > 1){
         // set the mat_send data
@@ -2139,7 +2143,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 t_temp = omp_get_wtime();
 #endif
 
-                fast_mm(A, S, AB_temp, comm);
+                fast_mm(A, S, C_temp, comm);
 
 #ifdef MATMAT_TIME
                 t_temp = omp_get_wtime() - t_temp;
@@ -2153,22 +2157,22 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 // =======================================
                 // sort and remove duplicates
                 // =======================================
-                if(!AB_temp.empty()) {
+                if(!C_temp.empty()) {
 
                     t_temp = omp_get_wtime();
 
-                    std::sort(AB_temp.begin(), AB_temp.end());
+                    std::sort(C_temp.begin(), C_temp.end());
 
-                    nnz_t AP_temp_size_minus1 = AB_temp.size() - 1;
-                    for (nnz_t i = 0; i < AB_temp.size(); i++) {
-                        C.entry.emplace_back(AB_temp[i]);
-                        while (i < AP_temp_size_minus1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+                    nnz_t AP_temp_size_minus1 = C_temp.size() - 1;
+                    for (nnz_t i = 0; i < C_temp.size(); i++) {
+                        C.entry.emplace_back(C_temp[i]);
+                        while (i < AP_temp_size_minus1 && C_temp[i] == C_temp[i + 1]) { // values of entries with the same row and col should be added.
 //                            std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-                            C.entry.back().val += AB_temp[++i].val;
+                            C.entry.back().val += C_temp[++i].val;
                         }
                     }
 
-                    AB_temp.clear();
+                    C_temp.clear();
                     t_temp = omp_get_wtime() - t_temp;
                     t_sort_dup += t_temp;
 
@@ -2354,7 +2358,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
         if(Acsc.nnz != 0 && Bcsc.nnz != 0){
             CSCMat_mm B(Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank], Bcsc.nnz, Bcsc.row, Bcsc.val, Bcsc.col_scan);
-            fast_mm(A, B, AB_temp, comm);
+            fast_mm(A, B, C_temp, comm);
         }
     }
 
@@ -2382,19 +2386,19 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 #endif
 
 //#if 0
-    if(!AB_temp.empty()) {
+    if(!C_temp.empty()) {
         auto  tmp = cooEntry(0, 0, 0.0);
-        const nnz_t SZ_M1 = AB_temp.size() - 1;
+        const nnz_t SZ_M1 = C_temp.size() - 1;
 
         if(trans){
-            std::sort(AB_temp.begin(), AB_temp.end(), row_major);
+            std::sort(C_temp.begin(), C_temp.end(), row_major);
 
-            for (long i = 0; i < AB_temp.size(); ++i) {
-                tmp = cooEntry(AB_temp[i].col, AB_temp[i].row, AB_temp[i].val);
+            for (long i = 0; i < C_temp.size(); ++i) {
+                tmp = cooEntry(C_temp[i].col, C_temp[i].row, C_temp[i].val);
 //                std::cout << "tmp = " << tmp << std::endl;
-                while (i < SZ_M1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+                while (i < SZ_M1 && C_temp[i] == C_temp[i + 1]) { // values of entries with the same row and col should be added.
 //                    std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-                    tmp.val += AB_temp[++i].val;
+                    tmp.val += C_temp[++i].val;
                 }
 
                 if(fabs(tmp.val) > ALMOST_ZERO){
@@ -2402,13 +2406,13 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 }
             }
         }else{
-            std::sort(AB_temp.begin(), AB_temp.end());
+            std::sort(C_temp.begin(), C_temp.end());
 
-            for (long i = 0; i < AB_temp.size(); ++i) {
-                tmp = AB_temp[i];
-                while (i < SZ_M1 && AB_temp[i] == AB_temp[i + 1]) { // values of entries with the same row and col should be added.
+            for (long i = 0; i < C_temp.size(); ++i) {
+                tmp = C_temp[i];
+                while (i < SZ_M1 && C_temp[i] == C_temp[i + 1]) { // values of entries with the same row and col should be added.
 //                    std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-                    tmp.val += AB_temp[++i].val;
+                    tmp.val += C_temp[++i].val;
                 }
 
                 if(fabs(tmp.val) > ALMOST_ZERO){

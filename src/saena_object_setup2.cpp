@@ -850,7 +850,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 */
 
 // This version moves entries of A1 to the begining and A2 to the end of the input array.
-    void saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
+void saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
 #ifdef __DEBUG1__
     int rank = 0, nprocs = 0;

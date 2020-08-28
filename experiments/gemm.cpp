@@ -133,7 +133,8 @@ int main(int argc, char* argv[]){
 #endif
         // *************************** Saena matmat experiment ****************************
 
-        solver.matmat(&A, &B, nullptr, false, true);
+        saena::matrix C(comm);
+        solver.matmat(&A, &B, &C, false, true);
 
         // *************************** PETSc matmat experiment ****************************
 
