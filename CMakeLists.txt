@@ -174,6 +174,9 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${ZFP_LIB})
 
 option(ENABLE_PETSC OFF)
 
+set(PETSC_DIR $ENV{PETSC_DIR})
+set(PETSC_ARCH $ENV{PETSC_ARCH})
+
 if(ENABLE_PETSC)
     if(NOT DEFINED ENV{PETSC_DIR})
         message( FATAL_ERROR "PETSC_DIR is not set! CMake will exit." )
@@ -183,8 +186,8 @@ if(ENABLE_PETSC)
         message( FATAL_ERROR "PETSC_ARCH is not set! CMake will exit." )
     endif(NOT DEFINED ENV{PETSC_ARCH})
 
-    set(PETSC_DIR $ENV{PETSC_DIR})
-    set(PETSC_ARCH $ENV{PETSC_ARCH})
+#    set(PETSC_DIR $ENV{PETSC_DIR})
+#    set(PETSC_ARCH $ENV{PETSC_ARCH})
     message(--\ PETSC_DIR:\ ${PETSC_DIR})
     message(--\ PETSC_ARCH:\ ${PETSC_ARCH})
 
@@ -306,17 +309,22 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 # -xAVX             for Ivy Bridge and Sandy Bridge
 # -shared-intel     Enable identifying the libm and C runtime calls as system functions and differentiating them
 #                   from the user code when a proper filter mode is applied to the VTune Profiler collection result.
+# fast              This option improves the speed of your application. It sets compiler options -O3, -no-prec-div, and -fp-model fast=2
 
 # Enable Intel Optimization flags
-IF(CMAKE_BUILD_TYPE STREQUAL Release)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -g -parallel-source-info=2 -shared-intel")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -g -parallel-source-info=2 -shared-intel")
-ENDIF()
-
 #IF(CMAKE_BUILD_TYPE STREQUAL Release)
-#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -g -parallel-source-info=2")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -parallel-source-info=2")
+#    set(SAENA_C_FLAGS "-Ofast -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
+#    set(SAENA_C_FLAGS "-Ofast -xCORE-AVX512 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
+#    set(SAENA_CXX_FLAGS SAENA_C_FLAGS)
+
+#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${SAENA_C_FLAGS}")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAENA_CXX_FLAGS}")
 #ENDIF()
+
+IF(CMAKE_BUILD_TYPE STREQUAL Release)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g")
+ENDIF()
 
 # -----------------------------------------------------------------------
 
