@@ -92,11 +92,7 @@ public:
 
     cooEntry() = default;
 
-    cooEntry(index_t i, index_t j, value_t v){
-        row = i;
-        col = j;
-        val = v;
-    }
+    cooEntry(index_t i, index_t j, value_t v) : row(i), col(j), val(v){}
 
     bool operator == (const cooEntry& node2) const {
         return (row == node2.row && col == node2.col);
@@ -220,11 +216,7 @@ public:
 
     cooEntry_row() = default;
 
-    cooEntry_row(index_t i, index_t j, value_t v){
-        row = i;
-        col = j;
-        val = v;
-    }
+    cooEntry_row(index_t i, index_t j, value_t v) : row(i), col(j), val(v){}
 
     bool operator == (const cooEntry_row& node2) const {
         return (row == node2.row && col == node2.col);
