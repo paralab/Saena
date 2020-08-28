@@ -90,7 +90,6 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                             for(int i = 1; i < 4; ++i){
                                 inFile >> mat_type;
                             }
-//                            cout << mat_type << endl;
 
                             if(mat_type != "pattern"){
                                 inFile >> mat_type;
@@ -106,6 +105,8 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                         // reset input file position
                         inFile.seekg(0, ios::beg);
                     }
+
+//                    cout << mat_type << endl;
 
                     // ignore comments
                     while (inFile.peek() == '%') inFile.ignore(2048, '\n');
