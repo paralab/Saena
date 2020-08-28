@@ -315,7 +315,7 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 #IF(CMAKE_BUILD_TYPE STREQUAL Release)
 #    set(SAENA_C_FLAGS "-Ofast -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
 #    set(SAENA_C_FLAGS "-Ofast -xCORE-AVX512 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
-#    set(SAENA_CXX_FLAGS SAENA_C_FLAGS)
+#    set(SAENA_CXX_FLAGS ${SAENA_C_FLAGS})
 
 #    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${SAENA_C_FLAGS}")
 #    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAENA_CXX_FLAGS}")
