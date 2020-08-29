@@ -8,9 +8,6 @@
 
 #include <mkl_spblas.h>
 
-//#include "pstl/algorithm"
-//#include "pstl/execution"
-
 //#define MATMAT_TIME
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm

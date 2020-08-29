@@ -13,8 +13,11 @@
 #include <vector>
 #include <set>
 #include <cmath>
-#include <algorithm>
 #include <random>
+
+//#include <algorithm>
+#include "pstl/algorithm"
+#include "pstl/execution"
 
 #include "mpi.h"
 #include <omp.h>
