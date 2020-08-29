@@ -2385,14 +2385,16 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
     t_temp = omp_get_wtime();
 #endif
 
-//#if 0
     if(!C_temp.empty()) {
         auto  tmp = cooEntry(0, 0, 0.0);
         const nnz_t SZ_M1 = C_temp.size() - 1;
 
         if(trans){
+            #ifdef SANEA_USE_PSTL
+            std::sort(pstl::execution::par, C_temp.begin(), C_temp.end(), row_major);
+            #else
             std::sort(C_temp.begin(), C_temp.end(), row_major);
-//            std::sort(pstl::execution::par, C_temp.begin(), C_temp.end(), row_major);
+            #endif
 
             for (long i = 0; i < C_temp.size(); ++i) {
                 tmp = cooEntry(C_temp[i].col, C_temp[i].row, C_temp[i].val);
@@ -2407,8 +2409,12 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 }
             }
         }else{
+
+            #ifdef SANEA_USE_PSTL
+            std::sort(pstl::execution::par, C_temp.begin(), C_temp.end());
+            #else
             std::sort(C_temp.begin(), C_temp.end());
-//            std::sort(pstl::execution::par, C_temp.begin(), C_temp.end());
+            #endif
 
             for (long i = 0; i < C_temp.size(); ++i) {
                 tmp = C_temp[i];
@@ -2424,8 +2430,6 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
         }
 
     }
-//#endif
-//    std::sort(C.entry.begin(), C.entry.end());
 
 #ifdef MATMAT_TIME
     t_temp = omp_get_wtime() - t_temp;

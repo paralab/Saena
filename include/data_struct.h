@@ -15,9 +15,12 @@
 #include <cmath>
 #include <random>
 
-//#include <algorithm>
+#ifdef SANEA_USE_PSTL
 #include "pstl/algorithm"
 #include "pstl/execution"
+#else
+#include <algorithm>
+#endif
 
 #include "mpi.h"
 #include <omp.h>
