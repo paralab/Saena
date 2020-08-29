@@ -8,6 +8,9 @@
 
 #include <mkl_spblas.h>
 
+//#include "pstl/algorithm"
+//#include "pstl/execution"
+
 //#define MATMAT_TIME
 
 double case1 = 0, case2 = 0, case3 = 0; // for timing case parts of fast_mm
@@ -2392,6 +2395,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
         if(trans){
             std::sort(C_temp.begin(), C_temp.end(), row_major);
+//            std::sort(pstl::execution::par, C_temp.begin(), C_temp.end(), row_major);
 
             for (long i = 0; i < C_temp.size(); ++i) {
                 tmp = cooEntry(C_temp[i].col, C_temp[i].row, C_temp[i].val);
@@ -2407,6 +2411,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
             }
         }else{
             std::sort(C_temp.begin(), C_temp.end());
+//            std::sort(pstl::execution::par, C_temp.begin(), C_temp.end());
 
             for (long i = 0; i < C_temp.size(); ++i) {
                 tmp = C_temp[i];
