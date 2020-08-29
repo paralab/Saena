@@ -312,19 +312,18 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 # fast              This option improves the speed of your application. It sets compiler options -O3, -no-prec-div, and -fp-model fast=2
 
 # Enable Intel Optimization flags
-#IF(CMAKE_BUILD_TYPE STREQUAL Release)
-#    set(SAENA_C_FLAGS "-Ofast -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
-#    set(SAENA_C_FLAGS "-Ofast -xCORE-AVX512 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
-#    set(SAENA_CXX_FLAGS ${SAENA_C_FLAGS})
-
-#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${SAENA_C_FLAGS}")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAENA_CXX_FLAGS}")
-#ENDIF()
-
 IF(CMAKE_BUILD_TYPE STREQUAL Release)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -g")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g")
+#    set(SAENA_C_FLAGS "-Ofast -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
+    set(SAENA_C_FLAGS "-Ofast -xCORE-AVX512 -qopenmp-simd -tbb -g -parallel-source-info=2 -shared-intel")
+    set(SAENA_CXX_FLAGS ${SAENA_C_FLAGS})
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${SAENA_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAENA_CXX_FLAGS}")
 ENDIF()
+
+#IF(CMAKE_BUILD_TYPE STREQUAL Release)
+#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -g")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g")
+#ENDIF()
 
 # -----------------------------------------------------------------------
 

@@ -1183,7 +1183,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     // use this parameter to time matmat, and print it if (print_timing = true)
     double t_temp = 0, t_matmat_prep = 0, t_matmat = 0, t_matmat_tot = 0;
     // perform matmat multiple times and take the average of them.
-    int matmat_iter_warmup = 2, matmat_iter = 3;
+    int matmat_iter_warmup = 0, matmat_iter = 1;
 
     // =======================================
     // Convert A to CSC
