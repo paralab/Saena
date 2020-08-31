@@ -91,6 +91,8 @@ public:
     value_t *Cmkl_v      = nullptr;
     bool    use_dcsrmultcsr = true;
 
+    std::vector<cooEntry> C_temp;
+
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
     double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
 

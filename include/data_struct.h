@@ -13,8 +13,14 @@
 #include <vector>
 #include <set>
 #include <cmath>
-#include <algorithm>
 #include <random>
+
+#ifdef SANEA_USE_PSTL
+#include "pstl/algorithm"
+#include "pstl/execution"
+#else
+#include <algorithm>
+#endif
 
 #include "mpi.h"
 #include <omp.h>

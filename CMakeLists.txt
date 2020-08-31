@@ -58,7 +58,7 @@ set(SuperLU_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SuperLU_DIST_5.4.0)
 set(SuperLU_DIST_LIB ${CMAKE_BINARY_DIR}/build_superlu/lib/libsuperlu_dist.a)
 include_directories(
         ${CMAKE_BINARY_DIR}/build_superlu/include
-#        ${SuperLU_DIST_DIR}/SRC
+        #        ${SuperLU_DIST_DIR}/SRC
 )
 
 SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${SuperLU_DIST_LIB})
@@ -251,6 +251,18 @@ include_directories(
 #)
 
 # -----------------------------------------------------------------------
+# Intel Parallel STL (PSTL)
+# Part of Intel TBB (Threading Building Blocks)
+
+option(SANEA_USE_PSTL OFF)
+
+if(SANEA_USE_PSTL)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -tbb")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -tbb")
+    add_definitions(-DSANEA_USE_PSTL)
+endif()
+
+# -----------------------------------------------------------------------
 # Main Files
 
 include_directories(include)
@@ -311,20 +323,29 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 #                   from the user code when a proper filter mode is applied to the VTune Profiler collection result.
 # fast              This option improves the speed of your application. It sets compiler options -O3, -no-prec-div, and -fp-model fast=2
 
-# Enable Intel Optimization flags
-#IF(CMAKE_BUILD_TYPE STREQUAL Release)
-#    set(SAENA_C_FLAGS "-Ofast -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
-#    set(SAENA_C_FLAGS "-Ofast -xCORE-AVX512 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
-#    set(SAENA_CXX_FLAGS ${SAENA_C_FLAGS})
-
-#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${SAENA_C_FLAGS}")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAENA_CXX_FLAGS}")
-#ENDIF()
-
-IF(CMAKE_BUILD_TYPE STREQUAL Release)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -g")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g")
+IF(CMAKE_BUILD_TYPE STREQUAL Debug)
+    add_definitions(-D__DEBUG1__)
+    set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -g")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    # sanitize flags for memory leak checks
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer") #for gcc and clang
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer") #for gcc and clang
+    set(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} -fsanitize=address)
 ENDIF()
+
+# Enable Intel Optimization flags
+IF(CMAKE_BUILD_TYPE STREQUAL Release)
+#    set(SAENA_C_FLAGS "-Ofast -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
+    set(SAENA_C_FLAGS   "-Ofast -xCORE-AVX512 -qopenmp-simd -tbb -g -parallel-source-info=2 -shared-intel")
+    set(SAENA_CXX_FLAGS "${SAENA_C_FLAGS}")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${SAENA_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAENA_CXX_FLAGS}")
+ENDIF()
+
+#IF(CMAKE_BUILD_TYPE STREQUAL Release)
+#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -g")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g")
+#ENDIF()
 
 # -----------------------------------------------------------------------
 

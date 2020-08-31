@@ -850,7 +850,7 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 */
 
 // This version moves entries of A1 to the begining and A2 to the end of the input array.
-    void saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
+void saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
 #ifdef __DEBUG1__
     int rank = 0, nprocs = 0;
@@ -916,9 +916,13 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 
     A2.col_scan = new index_t[A2.col_sz + 1];
     A2.free_c   = true;
-    std::fill(&A2.col_scan[0], &A2.col_scan[A2.col_sz+1], 0);
-//    A2.col_scan[0] = 1;
     auto *Ac2_p = &A2.col_scan[1]; // to do scan on it at the end.
+
+#ifdef SANEA_USE_PSTL
+    std::fill(pstl::execution::par_unseq, &A2.col_scan[0], &A2.col_scan[A2.col_sz+1], 0);
+#else
+    std::fill(&A2.col_scan[0], &A2.col_scan[A2.col_sz+1], 0);
+#endif
 
     // ========================================================
     // form A1 and A2
@@ -1123,8 +1127,14 @@ int saena_object::reorder_split(vecEntry *arr, index_t left, index_t right, inde
 //    memcpy(&A.r[offset], &A1r[0], A1.nnz * sizeof(index_t));
 //    memcpy(&A.v[offset], &A1v[0], A1.nnz * sizeof(value_t));
 
+#ifdef SANEA_USE_PSTL
+    const int ST = offset + A1.nnz;
+    std::copy(pstl::execution::par_unseq, &A.r[ST], &A.r[ST + A2.nnz], &A2r[0]);
+    std::copy(pstl::execution::par_unseq, &A.v[ST], &A.v[ST + A2.nnz], &A2v[0]);
+#else
     memcpy(&A.r[offset + A1.nnz], &A2r[0], A2.nnz * sizeof(index_t));
     memcpy(&A.v[offset + A1.nnz], &A2v[0], A2.nnz * sizeof(value_t));
+#endif
 
     // set r and v for A2
     A2.r = &A.r[A1.col_scan[A.col_sz] - 1];
@@ -1261,8 +1271,13 @@ void saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2
     auto *Ar_temp = &mempool4[0];
     auto *Av_temp = &mempool5[0];
 
+#ifdef SANEA_USE_PSTL
+    std::copy(pstl::execution::par_unseq, &Ar_temp[0], &Ar_temp[0 + A.nnz], &A.r[offset]);
+    std::copy(pstl::execution::par_unseq, &Av_temp[0], &Av_temp[0 + A.nnz], &A.v[offset]);
+#else
     memcpy(&Ar_temp[0], &A.r[offset], sizeof(index_t) * A.nnz);
     memcpy(&Av_temp[0], &A.v[offset], sizeof(value_t) * A.nnz);
+#endif
 
 #ifdef __DEBUG1__
 //    for(index_t i = offset; i < offset + nnz; i++){
@@ -1305,8 +1320,13 @@ void saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2
     for(int j = 0; j < A.col_sz; ++j){
         nnz_col = A1.col_scan[j+1] - A1.col_scan[j];
         if(nnz_col != 0){
+#ifdef SANEA_USE_PSTL
+            std::copy(pstl::execution::par_unseq, &A.r[iter0], &A.r[iter0 + nnz_col], &Ar_temp[iter1]);
+            std::copy(pstl::execution::par_unseq, &A.v[iter0], &A.v[iter0 + nnz_col], &Av_temp[iter1]);
+#else
             memcpy(&A.r[iter0], &Ar_temp[iter1], sizeof(index_t) * nnz_col);
             memcpy(&A.v[iter0], &Av_temp[iter1], sizeof(value_t) * nnz_col);
+#endif
             iter1 += nnz_col;
             iter0 += nnz_col;
         }
@@ -1323,7 +1343,12 @@ void saena_object::reorder_back_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2
             }
 
 //            memcpy(&Ar[iter0],  &Ar_temp[iter2], sizeof(index_t) * nnz_col);
+
+#ifdef SANEA_USE_PSTL
+            std::copy(pstl::execution::par_unseq, &A.v[iter0], &A.v[iter0 + nnz_col], &Av_temp[iter2]);
+#else
             memcpy(&A.v[iter0], &Av_temp[iter2], sizeof(value_t) * nnz_col);
+#endif
             iter2 += nnz_col;
             iter0 += nnz_col;
         }

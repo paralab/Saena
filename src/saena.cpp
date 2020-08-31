@@ -682,15 +682,8 @@ int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
 }
 
 
-int saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble /*=true*/, const bool print_timing /*=false*/){
-
-    if(C != nullptr){
-        m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix(), assemble, print_timing);
-    }else{
-        m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), nullptr, assemble, print_timing);
-    }
-
-    return 0;
+void saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble /*=true*/, const bool print_timing /*=false*/){
+    m_pImpl->matmat(A->get_internal_matrix(), B->get_internal_matrix(), C->get_internal_matrix(), assemble, print_timing);
 }
 
 
