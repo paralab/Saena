@@ -1380,10 +1380,8 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
             case1_iter = 0;
             case2_iter = 0;
             case3_iter = 0;
-            matmat_CSC(Acsc, Bcsc, *C);
-
-            // clear C for the next call
             C->entry.clear();
+            matmat_CSC(Acsc, Bcsc, *C);
         }
 
         case1 = 0, case2 = 0, case3 = 0;
@@ -1393,14 +1391,12 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
             case1_iter = 0;
             case2_iter = 0;
             case3_iter = 0;
+            C->entry.clear();
 
             MPI_Barrier(comm);
             t_temp = omp_get_wtime();
 
             matmat_CSC(Acsc, Bcsc, *C);
-
-            // clear C for the next call
-            C->entry.clear();
 
             t_temp = omp_get_wtime() - t_temp;
             t_matmat += t_temp;
