@@ -90,7 +90,7 @@ int main(int argc, char* argv[]){
 
         double t2 = MPI_Wtime();
         if (verbose) print_time(t1, t2, "Matrix Assemble:", comm);
-    //    print_time(t1, t2, "Matrix Assemble:", comm);
+//        print_time(t1, t2, "Matrix Assemble:", comm);
 
 //        A.print(0);
 //        A.get_internal_matrix()->print_info(2);
@@ -135,6 +135,15 @@ int main(int argc, char* argv[]){
 
         saena::matrix C(comm);
         solver.matmat(&A, &B, &C, false, true);
+
+        // *************************** Write the result to file ****************************
+
+//        saena_matrix *AA = A.get_internal_matrix();
+//        saena_matrix *CC = C.get_internal_matrix();
+//        CC->Mbig = AA->Mbig;
+//        CC->nnz_g = CC->entry.size();
+//        AA->writeMatrixToFile("matrix_folder/matlab");    // original matrix
+//        CC->writeMatrixToFile("matrix_folder");           // result
 
         // *************************** PETSc matmat experiment ****************************
 
