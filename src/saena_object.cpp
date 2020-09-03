@@ -296,12 +296,15 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 #endif
 
     std::vector< std::vector< std::vector<int> > > map_all;
-    if(!m_l2g.empty())
+    if(!m_l2g.empty()){
         map_all.emplace_back(std::move(m_l2g));
+    }
 
     std::vector< std::vector<int> > g2u_all;
-    if(!m_g2u.empty())
-        g2u_all.emplace_back(std::move(m_g2u));
+    if(!m_g2u.empty()){
+//        g2u_all.emplace_back(std::move(m_g2u));
+        g2u_all.emplace_back(m_g2u);
+    }
 
     bdydof = m_bdydof;
 
