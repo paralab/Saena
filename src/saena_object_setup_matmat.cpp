@@ -1864,12 +1864,23 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 #endif
 
         // copy B.val at the end of the compressed array
-        auto mat_send_v = reinterpret_cast<value_t*>(&mat_send[Bcsc.comp_row.tot + Bcsc.comp_col.tot]);
-//        if(zfp_perform){
-//            memcpy(mat_send_v, zfp_buffer, zfpsize);
-//        }else{
-            memcpy(mat_send_v, Bcsc.val, Bcsc.nnz * sizeof(value_t));
-//        }
+        auto *mat_send_v = reinterpret_cast<value_t*>(&mat_send[Bcsc.comp_row.tot + Bcsc.comp_col.tot]);
+
+#if 0 // zfp
+        {
+            if(zfp_perform){
+                memcpy(mat_send_v, zfp_buffer, zfpsize);
+            }else{
+                memcpy(mat_send_v, Bcsc.val, Bcsc.nnz * sizeof(value_t));
+            }
+        }
+#endif
+
+#ifdef SANEA_USE_PSTL
+        std::copy(pstl::execution::par_unseq, &Bcsc.val[0], &Bcsc.val[Bcsc.nnz], &mat_send_v[0]);
+#else
+        memcpy(mat_send_v, Bcsc.val, Bcsc.nnz * sizeof(value_t));
+#endif
 
         nnz_t send_nnz   = Bcsc.nnz;
         nnz_t row_buf_sz = tot_sz(send_nnz,        Bcsc.comp_row.k, Bcsc.comp_row.q);
@@ -2068,7 +2079,12 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 }
 #endif
 
+#ifdef SANEA_USE_PSTL
+                std::copy(pstl::execution::par_unseq, &mat_send[current_comp_sz],
+                          &mat_send[current_comp_sz + Bcsc.nnz_list[owner]], &mat_current_v[0]);
+#else
                 memcpy(mat_current_v, &mat_send[current_comp_sz], Bcsc.nnz_list[owner] * sizeof(value_t));
+#endif
 
 #ifdef __DEBUG1__
                 {
