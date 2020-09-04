@@ -1756,6 +1756,8 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
     index_t Acsc_M = Acsc.split[rank+1] - Acsc.split[rank];
     CSCMat_mm A(Acsc_M, Acsc.split[rank], Acsc.col_sz, 0, Acsc.nnz, Acsc.row, Acsc.val, Acsc.col_scan);
 
+    C_temp.clear();
+
     if(nprocs > 1){
         // set the mat_send data
         // structure of mat_send:
@@ -2155,7 +2157,6 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 t_temp = omp_get_wtime();
 #endif
 
-                C_temp.clear();
                 fast_mm(A, S, C_temp, comm);
 
 #ifdef MATMAT_TIME
@@ -2346,7 +2347,6 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 #endif
 
         if(Acsc.nnz != 0 && Bcsc.nnz != 0){
-            C_temp.clear();
             CSCMat_mm B(Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank], Bcsc.nnz, Bcsc.row, Bcsc.val, Bcsc.col_scan);
             fast_mm(A, B, C_temp, comm);
         }
