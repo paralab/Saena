@@ -2166,31 +2166,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 #ifdef __DEBUG1__
                 assert(S.nnz == (S.col_scan[S.col_sz] - S.col_scan[0]));
 #endif
-#if 0
-                // =======================================
-                // sort and remove duplicates
-                // =======================================
-                if(!C_temp.empty()) {
 
-                    t_temp = omp_get_wtime();
-
-                    std::sort(C_temp.begin(), C_temp.end());
-
-                    nnz_t AP_temp_size_minus1 = C_temp.size() - 1;
-                    for (nnz_t i = 0; i < C_temp.size(); i++) {
-                        C.entry.emplace_back(C_temp[i]);
-                        while (i < AP_temp_size_minus1 && C_temp[i] == C_temp[i + 1]) { // values of entries with the same row and col should be added.
-//                            std::cout << AB_temp[i] << "\t" << AB_temp[i+1] << std::endl;
-                            C.entry.back().val += C_temp[++i].val;
-                        }
-                    }
-
-                    C_temp.clear();
-                    t_temp = omp_get_wtime() - t_temp;
-                    t_sort_dup += t_temp;
-
-                }
-#endif
             }
 
             if(k != rank+nprocs-1) {

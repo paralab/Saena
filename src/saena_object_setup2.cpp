@@ -532,6 +532,10 @@ int saena_object::triple_mat_mult(Grid *grid){
     // =======================================
 
     matmat_memory_alloc(Rcsc, Acsc);
+    C_temp.reserve(10 * std::max(Acsc.nnz, Rcsc.nnz));
+
+    saena_matrix RA(comm);
+    RA.entry.reserve(std::max(Acsc.nnz, Rcsc.nnz));
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
@@ -545,7 +549,6 @@ int saena_object::triple_mat_mult(Grid *grid){
     // perform the multiplication R * A
     // =======================================
 
-    saena_matrix RA(comm);
     matmat_CSC(Rcsc, Acsc, RA);
 
 #ifdef __DEBUG1__
@@ -748,6 +751,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     // =======================================
 
     matmat_memory_alloc(RAcsc, Pcsc);
+    Ac->entry.reserve(std::max(RAcsc.nnz, Pcsc.nnz));
 
 #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
