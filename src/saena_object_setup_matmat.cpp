@@ -2155,6 +2155,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 t_temp = omp_get_wtime();
 #endif
 
+                C_temp.clear();
                 fast_mm(A, S, C_temp, comm);
 
 #ifdef MATMAT_TIME
@@ -2369,6 +2370,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 #endif
 
         if(Acsc.nnz != 0 && Bcsc.nnz != 0){
+            C_temp.clear();
             CSCMat_mm B(Acsc.col_sz, 0, Bcsc.col_sz, Bcsc.split[rank], Bcsc.nnz, Bcsc.row, Bcsc.val, Bcsc.col_scan);
             fast_mm(A, B, C_temp, comm);
         }
