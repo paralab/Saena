@@ -228,8 +228,6 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 //                    std::cout << "\nFirst a binary file with name \"" << outFileName
 //                              << "\" will be created in the same directory. \n\n";
 
-                    std::string outFileName = filename.substr(0, extIndex) + ".bin";
-
                     std::ifstream inFile(filename.c_str());
 
                     if (!inFile.is_open()) {
