@@ -56,6 +56,8 @@ void CSCMat::compress_prep(){
     compress_prep_compute(row,      nnz,      comp_row);
     compress_prep_compute(col_scan, col_sz+1, comp_col);
 
+    // compute and print the compression rate
+#if 0
     // compute the saving percentage by compression
     unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);     // only int arrays
     unsigned long comp_sz = comp_row.tot + comp_col.tot;            // only int arrays
@@ -79,6 +81,7 @@ void CSCMat::compress_prep(){
 
     // print only the saving percentage by compression
     if(rank==rank_ver) printf("%.2f, %.2f\n", save_int, save_t);
+#endif
 
 #ifdef __DEBUG1__
     if(rank==rank_ver && verbose_prep){
