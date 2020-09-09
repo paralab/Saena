@@ -57,18 +57,28 @@ void CSCMat::compress_prep(){
     compress_prep_compute(col_scan, col_sz+1, comp_col);
 
     // compute the saving percentage by compression
-    unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);
-    unsigned long comp_sz = comp_row.tot + comp_col.tot;
+    unsigned long orig_sz = (nnz + col_sz+1) * sizeof(index_t);     // only int arrays
+    unsigned long comp_sz = comp_row.tot + comp_col.tot;            // only int arrays
     float comp_rate_loc = 1.0f - (static_cast<float>(comp_sz) / orig_sz);
     float comp_rate     = 0.0;
     MPI_Reduce(&comp_rate_loc, &comp_rate, 1, MPI_FLOAT, MPI_SUM, 0, comm);
 
+    unsigned long orig_sz_t = orig_sz + nnz * sizeof(value_t);   // whole matrix
+    unsigned long comp_sz_t = comp_sz + nnz * sizeof(value_t);   // whole matrix
+    float comp_rate_loc_t = 1.0f - (static_cast<float>(comp_sz_t) / orig_sz_t);
+    float comp_rate_t     = 0.0;
+    MPI_Reduce(&comp_rate_loc_t, &comp_rate_t, 1, MPI_FLOAT, MPI_SUM, 0, comm);
+
+    float save_int = 100 * comp_rate / nprocs;
+    float save_t   = 100 * comp_rate_t / nprocs;
+
     // print the compression stats
-//    if(rank==rank_ver) printf("GR:  orig sz (rank%d) = %lu, comp sz (rank%d) = %lu, saving %.2f (average), row's k = %d, col's k = %d\n",
-//                               rank, orig_sz, rank, comp_sz, 100 * comp_rate / nprocs, comp_row.k, comp_col.k);
+//    if(rank==rank_ver) printf("GR (rank%d): int orig sz = %lu, int comp sz = %lu, average saving %.2f,"
+//                              "tot orig sz = %lu, tot comp sz = %lu, average saving %.2f\n",
+//                              rank, orig_sz, comp_sz, save_int, orig_sz_t, comp_sz_t, save_t);
 
     // print only the saving percentage by compression
-    if(rank==rank_ver) printf("%.2f\n", 100 * comp_rate / nprocs);
+    if(rank==rank_ver) printf("%.2f, %.2f\n", save_int, save_t);
 
 #ifdef __DEBUG1__
     if(rank==rank_ver && verbose_prep){
@@ -141,24 +151,24 @@ void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_s
 
     if(v_sz != 0) {
         bool skip = false;
-        int k_start = 7, k_end = 16;
-        int dif = 0, dif_range_max = INT8_MAX;
+        const int k_start = 7, k_end = 16;
+        int dif = 0;
 
-        // compute the compressed sized for different k values, choose the one for which total size is the least.
-        // Also, by setting the initial total value (comp_sz.tot) to INT32_MAX, make sure the compressed size is smaller
-        // than the original size.
-        comp_sz.tot = INT32_MAX;
+        // compute the compressed size for different k values, choose the one for which total size is the least.
+        // Also, by setting the initial total value (comp_sz.tot) to v_sz * sizeof(index_t), make sure the compressed
+        // size is smaller than the original size.
+        comp_sz.tot = v_sz * sizeof(index_t);
 
-        for (int k = k_start; k < k_end; k += 8) {
+        for (int kiter = k_start; kiter < k_end; kiter += 8) {
 
-            if (k == 7) {
-                dif_range_max = INT8_MAX; // 7 bits -> 2 ^ 7 (this is signed int)
-            } else if (k == 15) {
-                dif_range_max = INT16_MAX;
-            } else {
+            const int k = kiter;
+
+#ifdef __DEBUG1__
+            if (k != 7 && k != 15) {
                 std::cout << "dif_range_max is not set correctly in " << __func__ << std::endl;
                 exit(EXIT_FAILURE);
             }
+#endif
 
             skip = false;
 
@@ -174,64 +184,42 @@ void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_s
             // the rest of v
             int i = 1;
             for (; i < v_sz; ++i) {
-//            int diff = static_cast<int>(v[i] - v[i - 1]);
-//            int q = diff >> k;
-//            if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: " << diff << ", M: " << (1U << k) << ", q: " << q << std::endl;
+//                int diff = static_cast<int>(v[i] - v[i - 1]);
+//                int q = diff >> k;
+//                if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: " << diff
+//                                             << ", M: " << (1U << k) << ", q: " << q << std::endl;
 
                 // check if dif is larger than the maximum value for that many bits, move to higher number of bits.
                 dif = v[i] - v[i - 1];
 
-                if (dif > dif_range_max) {
-                    skip = true;
-                    break;
-                }
-
                 if ((dif >> k) != 0) {
-//            if(q != 0){
-//                if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: " << (int)(v[i] - v[i - 1]) << ", M: " << (1U << k) << ", q: " << q << std::endl;
+//                if(q != 0){
+//                    if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: "
+//                    << (int)(v[i] - v[i - 1]) << ", M: " << (1U << k) << ", q: " << q << std::endl;}
                     ++q_sz;
                 }
             }
 
-            if (!skip) {
-                tot = tot_sz(v_sz, k, q_sz);
-                if (tot < comp_sz.tot) {
-                    comp_sz.k = k;
-                    comp_sz.r = r_sz; // in bytes
-                    comp_sz.q = q_sz; // number of short numbers
-                    comp_sz.tot = tot;  // in bytes
-                }
-
-#ifdef __DEBUG1__
-                if (verbose_prep_compute && rank == rank_ver) {
-                    std::cout << "k: " << std::setw(2) << k << ", M: " << std::setw(5) << (1U << k)
-                              << ", v_sz: " << std::setw(5) << v_sz << " (" << std::setw(5) << v_sz * sizeof(index_t)
-                              << ")"
-                              << ", r_sz: " << std::setw(5) << r_sz
-                              << ", q_sz: " << std::setw(5) << q_sz << " (" << std::setw(5) << q_sz * sizeof(short)
-                              << ")"
-                              << ", tot: " << std::setw(5) << tot << std::endl;
-                }
-#endif
-            } else {
-#ifdef __DEBUG1__
-                if (verbose_prep_compute && rank == rank_ver) {
-                    std::stringstream buf;
-                    buf << "compression: skipped for k: " << k << "\nv[i]: " << v[i] << ", v[i-1]: " << v[i - 1]
-                        << ", dif: " << dif
-                        << ", dif_range_max: " << dif_range_max;
-                    std::cout << buf.str() << "\n\n";
-                }
-#endif
+            tot = tot_sz(v_sz, k, q_sz);
+            if (tot < comp_sz.tot) {
+                comp_sz.k = k;
+                comp_sz.r = r_sz;   // in bytes
+                comp_sz.q = q_sz;   // number of short numbers
+                comp_sz.tot = tot;  // in bytes
             }
 
-        }
-
-        // if comp_sz.k == 0, it means compression will be disabled for this vector.
-        // So, set the total compresion to the original vector size.
-        if (comp_sz.k == 0) {
-            comp_sz.tot = v_sz * sizeof(index_t);
-        }
+#ifdef __DEBUG1__
+            if (verbose_prep_compute && rank == rank_ver) {
+                std::cout << "k: " << std::setw(2) << k << ", M: " << std::setw(5) << (1U << k)
+                          << ", v_sz: " << std::setw(5) << v_sz << " (" << std::setw(5) << v_sz * sizeof(index_t)
+                          << ")"
+                          << ", r_sz: " << std::setw(5) << r_sz
+                          << ", q_sz: " << std::setw(5) << q_sz << " (" << std::setw(5) << q_sz * sizeof(short)
+                          << ")"
+                          << ", tot: " << std::setw(5) << tot << std::endl;
+            }
+#endif
+        } // for kiter
     } // if(v_sz != 0)
 
 #ifdef __DEBUG1__
