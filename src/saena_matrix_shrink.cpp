@@ -433,7 +433,8 @@ int saena_matrix::shrink_cpu_c(){
 
 int saena_matrix::compute_matvec_dummy_time(){
 
-    int rank;
+    int rank = -1, nprocs = -1;
+    MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
     int matvec_iter_warmup = 5;
@@ -448,6 +449,8 @@ int saena_matrix::compute_matvec_dummy_time(){
         MPI_Barrier(comm);
     }
 #endif
+
+    matvec_dummy_time.resize(4);
 
     // warm-up
     for (int i = 0; i < matvec_iter_warmup; ++i) {
@@ -483,6 +486,14 @@ int saena_matrix::compute_matvec_dummy_time(){
 
     matvec_dummy_time[3] += matvec_dummy_time[0]; // total matvec time
     matvec_dummy_time[0] = matvec_dummy_time[3] - matvec_dummy_time[1] - matvec_dummy_time[2]; // communication including vSet
+
+    std::vector<double> tempt(4);
+    tempt[0] = matvec_dummy_time[0] / nprocs;
+    tempt[1] = matvec_dummy_time[1] / nprocs;
+    tempt[2] = matvec_dummy_time[2] / nprocs;
+    tempt[3] = matvec_dummy_time[3] / nprocs;
+
+    MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
 
 //    if (rank == 0) {
 //        std::cout << std::endl << "decide_shrinking:" << std::endl;
@@ -689,10 +700,6 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
 
 //    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
 
-    // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
-    // put the values of thoss indices in vSend to send to other procs.
-    double t0_start = omp_get_wtime();
-
 #ifdef __DEBUG1__
     if(verbose_matvec_dummy){
         MPI_Barrier(comm);
@@ -700,6 +707,10 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
         MPI_Barrier(comm);
     }
 #endif
+
+    // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
+    // put the values of thoss indices in vSend to send to other procs.
+    double t0_start = omp_get_wtime();
 
 #pragma omp parallel for
     for(index_t i=0;i<vIndexSize;i++)
@@ -710,11 +721,6 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
 //    if (rank==1) std::cout << "\nvIndexSize=" << vIndexSize << std::endl;
 //    print_vector(vSend, 0, "vSend", comm);
 
-    double t3_start = omp_get_wtime();
-
-    MPI_Request* requests;
-    MPI_Status* statuses;
-
 #ifdef __DEBUG1__
     if(verbose_matvec_dummy) {
         MPI_Barrier(comm);
@@ -722,6 +728,11 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
         MPI_Barrier(comm);
     }
 #endif
+
+    double t3_start = omp_get_wtime();
+
+    MPI_Request* requests = nullptr;
+    MPI_Status*  statuses = nullptr;
 
     if(nprocs > 1){
         requests = new MPI_Request[numSendProc+numRecvProc];
@@ -806,33 +817,22 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
         }
 
         t2_end = omp_get_wtime();
-        MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
-    }
 
-#ifdef __DEBUG1__
-    if(verbose_matvec_dummy) {
-        MPI_Barrier(comm);
-        printf("rank %d: matvec_dummy: step1\n", rank);
-        MPI_Barrier(comm);
+        MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
+        delete [] requests;
+        delete [] statuses;
     }
-#endif
 
     double t3_end = omp_get_wtime();
 
-    delete [] requests;
-    delete [] statuses;
-
-    matvec_dummy_time.resize(4);
-    std::vector<double> tempt(4);
-
-    tempt[0] = (t0_end - t0_start) / nprocs;
-    tempt[1] = (t1_end - t1_start) / nprocs;
-    tempt[2] = (t2_end - t2_start) / nprocs;
-    tempt[3] = (t3_end - t3_start) / nprocs;
-
-    MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
+    matvec_dummy_time[0] += t0_end - t0_start;  // set vsend
+    matvec_dummy_time[1] += t1_end - t1_start;  // local loop
+    matvec_dummy_time[2] += t2_end - t2_start;  // remote loop
+    matvec_dummy_time[3] += t3_end - t3_start;  // communication + local loop + remote loop
 
 //    print_vector(matvec_dummy_time, 0, "matvec_dummy_time", comm);
+
+//    MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
 
 #if 0
     // set vsend
@@ -858,6 +858,14 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
     double time3;
     MPI_Allreduce(&time3_local, &time3, 1, MPI_DOUBLE, MPI_SUM, comm);
     matvec_dummy_time[3] += time3/nprocs;
+#endif
+
+#ifdef __DEBUG1__
+    if(verbose_matvec_dummy) {
+        MPI_Barrier(comm);
+        printf("rank %d: matvec_dummy: done\n", rank);
+        MPI_Barrier(comm);
+    }
 #endif
 
     return 0;

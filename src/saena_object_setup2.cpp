@@ -245,14 +245,16 @@ int saena_object::compute_coarsen(Grid *grid) {
         // ********** decide about shrinking **********
         //---------------------------------------------
 
-        if(Ac->enable_shrink_c && !dynamic_levels && grid->level + 1 == max_level){ // coarsest level
-            Ac->decide_shrinking_c();
-        }else if (Ac->enable_shrink && Ac->enable_dummy_matvec && nprocs > 1) {
-//            MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
-            Ac->matrix_setup_dummy();
-            Ac->compute_matvec_dummy_time();
-            Ac->decide_shrinking(A->matvec_dummy_time);
-            Ac->erase_after_decide_shrinking();
+        if(nprocs > 1){
+            if(Ac->enable_shrink_c && !dynamic_levels && grid->level + 1 == max_level){ // coarsest level
+                Ac->decide_shrinking_c();
+            }else if (Ac->enable_shrink) {
+//                MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
+                Ac->matrix_setup_dummy();
+                Ac->compute_matvec_dummy_time();
+                Ac->decide_shrinking(A->matvec_dummy_time);
+                Ac->erase_after_decide_shrinking();
+            }
         }
 
 #ifdef __DEBUG1__
@@ -300,8 +302,8 @@ int saena_object::compute_coarsen(Grid *grid) {
         if (Ac->active) {
             Ac->matrix_setup(scale);
 
-            if (Ac->shrinked && Ac->enable_dummy_matvec)
-                Ac->compute_matvec_dummy_time();
+//            if (Ac->shrinked && Ac->enable_dummy_matvec)
+//                Ac->compute_matvec_dummy_time();
 
             if (switch_to_dense && Ac->density > dense_threshold) {
 #ifdef __DEBUG1__
