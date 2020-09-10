@@ -172,7 +172,7 @@ int saena_matrix::repartition_nnz_initial(){
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
-    print_vector(split, 0, "split before", comm);
+//    print_vector(split, 0, "split before", comm);
 //    MPI_Barrier(comm);
 
     // todo: return split to its original form
