@@ -1227,7 +1227,6 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         MPI_Barrier(comm);}
 #endif
 
-    uCorr.resize(grid->A->M);
     grid->P.matvec(uCorrCoarse, uCorr);
 
 #ifdef __DEBUG1__
