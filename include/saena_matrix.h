@@ -111,7 +111,8 @@ public:
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
 
-    unsigned int num_threads = 1;
+    int num_threads   = 1;
+    int matvec_levels = 1;
     std::vector<nnz_t> iter_local_array;
     std::vector<nnz_t> iter_remote_array;
 //    std::vector<nnz_t> iter_local_array2;

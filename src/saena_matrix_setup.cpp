@@ -788,6 +788,8 @@ int saena_matrix::openmp_setup() {
             num_threads = omp_get_num_threads();
         }
 
+        matvec_levels = static_cast<int>( ceil( log2(num_threads) ) );
+
         iter_local_array.resize(num_threads+1);
         iter_remote_array.resize(num_threads+1);
 

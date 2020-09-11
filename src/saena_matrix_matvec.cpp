@@ -138,8 +138,7 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
             }
 
             int thread_partner;
-            int levels = (int)ceil(log2(num_threads));
-            for (l = 0; l < levels; l++) {
+            for (l = 0; l < matvec_levels; l++) {
                 if (thread_id % int(pow(2, l+1)) == 0) {
                     thread_partner = thread_id + int(pow(2, l));
 //                    printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
@@ -322,7 +321,7 @@ int saena_matrix::matvec_sparse_array(value_t *v, value_t *w) {
 
 
 // different implementations of matvec
-/*
+#if 0
 int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time) {
 
     int nprocs, rank;
@@ -399,8 +398,7 @@ int saena_matrix::matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& 
         }
 
         int thread_partner;
-        int levels = (int)ceil(log2(num_threads));
-        for (l = 0; l < levels; l++) {
+        for (l = 0; l < matvec_levels; l++) {
             if (thread_id % int(pow(2, l+1)) == 0) {
                 thread_partner = thread_id + int(pow(2, l));
 //                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
@@ -537,8 +535,7 @@ int saena_matrix::matvec_timing2(std::vector<value_t>& v, std::vector<value_t>& 
         }
 
         int thread_partner;
-        int levels = (int)ceil(log2(num_threads));
-        for (l = 0; l < levels; l++) {
+        for (l = 0; l < matvec_levels; l++) {
             if (thread_id % int(pow(2, l+1)) == 0) {
                 thread_partner = thread_id + int(pow(2, l));
 //                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
@@ -685,8 +682,7 @@ int saena_matrix::matvec_timing3(std::vector<value_t>& v, std::vector<value_t>& 
         }
 
         int thread_partner;
-        int levels = (int)ceil(log2(num_threads));
-        for (l = 0; l < levels; l++) {
+        for (l = 0; l < matvec_levels; l++) {
             if (thread_id % int(pow(2, l+1)) == 0) {
                 thread_partner = thread_id + int(pow(2, l));
 //                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
@@ -798,8 +794,7 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
             w_local[row_local[i]] += values_local[i] * v_p[col_local[i]];
 
         int thread_partner;
-        int levels = (int)ceil(log2(num_threads));
-        for (l = 0; l < levels; l++) {
+        for (l = 0; l < matvec_levels; l++) {
             if (thread_id % int(pow(2, l+1)) == 0) {
                 thread_partner = thread_id + int(pow(2, l));
 //                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
@@ -863,8 +858,7 @@ int saena_matrix::matvec_timing4(std::vector<value_t>& v, std::vector<value_t>& 
         }
 
         int thread_partner;
-        int levels = (int)ceil(log2(num_threads));
-        for (l = 0; l < levels; l++) {
+        for (l = 0; l < matvec_levels; l++) {
             if (thread_id % int(pow(2, l+1)) == 0) {
                 thread_partner = thread_id + int(pow(2, l));
 //                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
@@ -966,8 +960,7 @@ int saena_matrix::matvec_timing4_alltoall(std::vector<value_t>& v, std::vector<v
             w_local[row_local[i]] += values_local[i] * v_p[col_local[i]];
 
         int thread_partner;
-        int levels = (int)ceil(log2(num_threads));
-        for (l = 0; l < levels; l++) {
+        for (l = 0; l < matvec_levels; l++) {
             if (thread_id % int(pow(2, l+1)) == 0) {
                 thread_partner = thread_id + int(pow(2, l));
 //                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
@@ -1314,4 +1307,4 @@ int saena_matrix::matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<v
 
     return 0;
 }
-*/
+#endif
