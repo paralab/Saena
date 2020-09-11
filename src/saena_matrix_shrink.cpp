@@ -495,12 +495,18 @@ int saena_matrix::compute_matvec_dummy_time(){
 
     MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
 
+//    print_vector(matvec_dummy_time, 0, "matvec_dummy_time final", comm);
+
 //    if (rank == 0) {
 //        std::cout << std::endl << "decide_shrinking:" << std::endl;
-//        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter << std::endl; // comm including "set vSend"
-//        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter << std::endl; // local loop
-//        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter << std::endl; // remote loop
-//        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter << std::endl; // total time
+//        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter_dummy << std::endl; // comm including "set vSend"
+//        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter_dummy << std::endl; // local loop
+//        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter_dummy << std::endl; // remote loop
+//        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter_dummy << std::endl; // total time
+//    }
+
+//    if (!rank) {
+//        printf("matvec time: %f\n", matvec_dummy_time[3] / matvec_iter_dummy);
 //    }
 
     return 0;
@@ -830,10 +836,6 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
     matvec_dummy_time[2] += t2_end - t2_start;  // remote loop
     matvec_dummy_time[3] += t3_end - t3_start;  // communication + local loop + remote loop
 
-//    print_vector(matvec_dummy_time, 0, "matvec_dummy_time", comm);
-
-//    MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
-
 #if 0
     // set vsend
     double time0_local = t0_end - t0_start;
@@ -861,6 +863,7 @@ int saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w)
 #endif
 
 #ifdef __DEBUG1__
+//    print_vector(matvec_dummy_time, 0, "matvec_dummy_time", comm);
     if(verbose_matvec_dummy) {
         MPI_Barrier(comm);
         printf("rank %d: matvec_dummy: done\n", rank);
