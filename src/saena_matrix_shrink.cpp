@@ -506,7 +506,7 @@ int saena_matrix::compute_matvec_dummy_time(){
 //    }
 
 //    if (!rank) {
-//        printf("matvec time: %f\n", matvec_dummy_time[3] / matvec_iter_dummy);
+//        printf("next level matvec time: %f\n", matvec_dummy_time[3] / matvec_iter_dummy);
 //    }
 
     return 0;
