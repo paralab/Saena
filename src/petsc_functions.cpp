@@ -604,7 +604,7 @@ int petsc_matmat_ave(saena_matrix *A, saena_matrix *B, int matmat_iter){
     }
 
     t1 = MPI_Wtime() - t1;
-    print_time_ave(t1 / matmat_iter, "PETSc MatMatMult", comm);
+    print_time_ave(t1 / matmat_iter, "\nPETSc MatMatMult", comm, true, false);
 
 //    petsc_viewer(AB);
 
