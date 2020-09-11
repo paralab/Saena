@@ -1335,7 +1335,7 @@ int saena_object::solve(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-//    u.assign(A->M, 0);
+    u.assign(A->M, 0);
 
     // ************** allocate memory for vcycle **************
 
@@ -1448,7 +1448,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-//    u.assign(A->M, 0);
+    u.assign(A->M, 0);
 
     // ************** solve **************
 
@@ -1568,7 +1568,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-//    u.assign(A->M, 0);
+    u.assign(A->M, 0);
 
     // ************** solve **************
 
@@ -1818,7 +1818,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-//    u.assign(A->M, 0);
+    u.assign(A->M, 0);
 
     // ************** allocate memory for vcycle **************
 
@@ -2266,7 +2266,7 @@ int saena_object::GMRES(std::vector<double> &u){
 //    std::vector<double> r = M.solve(rhs - A * u);
 
     std::vector<double> res(size), r(size);
-//    u.assign(size, 0); // initial guess // todo: decide where to do this.
+    u.assign(size, 0); // initial guess // todo: decide where to do this.
     A->residual_negative(u, rhs, res);
 //    vcycle(&grids[0], r, res); //todo: M should be used here.
     r = res;
@@ -2536,7 +2536,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     setup_vcycle_memory();
 
     std::vector<double> res(size), r(size);
-//    u.assign(size, 0); // initial guess // todo: decide where to do this.
+    u.assign(size, 0); // initial guess // todo: decide where to do this.
     A->residual_negative(u, rhs, res);
     vcycle(&grids[0], r, res); //todo: M should be used here.
 
