@@ -16,8 +16,8 @@
 #include <random>
 
 #ifdef SANEA_USE_PSTL
-#include "pstl/algorithm"
 #include "pstl/execution"
+#include "pstl/algorithm"
 #else
 #include <algorithm>
 #endif
