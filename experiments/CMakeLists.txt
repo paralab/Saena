@@ -9,6 +9,7 @@
 #add_executable(zfp_dense  zfp_dense.cpp  ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
 add_executable(gemm       gemm.cpp       ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
 #add_executable(gemm_2file gemm_2file.cpp ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
+add_executable(gemm_MG    gemm_MG.cpp     ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
 
 #target_link_libraries(basic      ${SAENA_LIB_DEPENDENCIES})
 #target_link_libraries(file       ${SAENA_LIB_DEPENDENCIES})
@@ -19,3 +20,4 @@ add_executable(gemm       gemm.cpp       ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FI
 #target_link_libraries(zfp_dense  ${SAENA_LIB_DEPENDENCIES})
 target_link_libraries(gemm       ${SAENA_LIB_DEPENDENCIES})
 #target_link_libraries(gemm_2file ${SAENA_LIB_DEPENDENCIES})
+target_link_libraries(gemm_MG    ${SAENA_LIB_DEPENDENCIES})
