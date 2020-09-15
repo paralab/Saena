@@ -1443,7 +1443,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
             print_time_ave(case2 / matmat_iter, "case2", comm, true, false);
             print_time_ave(case3 / matmat_iter, "case3", comm, true, false);
         }else{
-            print_time_ave(t_matmat_tot, "Saena matmat", comm, true, false);
+            print_time_ave2(t_matmat_tot, "Saena matmat", comm, true, false);
         }
 
     }
