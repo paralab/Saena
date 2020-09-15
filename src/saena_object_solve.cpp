@@ -2546,7 +2546,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     std::vector<std::vector<value_t>> v(m + 1, std::vector<value_t>(size)); // todo: decide how to allocate for v.
 
 //    double normb = norm(M.solve(rhs));
-    double normb = pnorm(rhs, comm); // todo: this is different from the above line
+    double normb = pnorm(res, comm); // todo: this is different from the above line
 
     if (normb == 0.0){
         normb = 1;
