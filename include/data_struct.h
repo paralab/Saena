@@ -73,7 +73,7 @@ typedef unsigned char uchar;
 
 void inline print_sep(){
     std::stringstream buf;
-    buf << MAGENTA << "\n******************************************************\n" << COLORRESET;
+    buf << "\n******************************************************\n";
     std::cout << buf.str();
 }
 

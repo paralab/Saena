@@ -195,7 +195,7 @@ int saena_object::setup(saena_matrix* A) {
         if(!rank){
             std::stringstream buf;
             buf << "_____________________________\n\n"
-                << "number of levels = << " << BLUE << max_level << COLORRESET << " >> (the finest level is 0)\n";
+                << "number of levels = << " << max_level << " >> (the finest level is 0)\n";
             std::cout << buf.str();
             if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
             print_sep();
