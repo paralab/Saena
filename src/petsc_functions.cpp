@@ -453,8 +453,9 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
 
     // Note: saena_matrix Ac should be scaled back for comparison.
 
-    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     int rank;
     MPI_Comm_rank(comm, &rank);
 
@@ -542,8 +543,9 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
 
 int petsc_matmat(saena_matrix *A, saena_matrix *B){
 
-    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
 
     Mat A2, B2, AB;
     petsc_saena_matrix(A, A2);
@@ -581,8 +583,9 @@ int petsc_matmat(saena_matrix *A, saena_matrix *B){
 
 int petsc_matmat_ave(saena_matrix *A, saena_matrix *B, int matmat_iter){
 
-    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
 
     Mat A2, B2, AB;
     petsc_saena_matrix(A, A2);
@@ -616,10 +619,44 @@ int petsc_matmat_ave(saena_matrix *A, saena_matrix *B, int matmat_iter){
 }
 
 
+int petsc_matmat_ave2(saena_matrix *A, saena_matrix *B, int matmat_iter){
+
+    MPI_Comm comm = A->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+
+    Mat A2, B2, AB;
+    petsc_saena_matrix(A, A2);
+    petsc_saena_matrix(B, B2);
+
+    double t1 = 0.0, tmp = 0.0;
+
+    MPI_Barrier(comm);
+    for(int i = 0; i < matmat_iter; i++){
+        tmp = MPI_Wtime();
+        MatMatMult(A2, B2, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &AB);
+        tmp = MPI_Wtime() - tmp;
+        t1 += tmp;
+        MatDestroy(&AB);
+    }
+
+    print_time_ave(t1 / matmat_iter, "\nPETSc MatMatMult", comm, true, false);
+
+//    petsc_viewer(AB);
+
+    MatDestroy(&A2);
+    MatDestroy(&B2);
+//    MatDestroy(&AB);
+    PetscFinalize();
+    return 0;
+}
+
+
 int petsc_check_matmat(saena_matrix *A, saena_matrix *B, saena_matrix *AB){
 
-    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     MPI_Comm comm = A->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
     int rank;
     MPI_Comm_rank(comm, &rank);
 
