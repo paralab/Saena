@@ -818,9 +818,19 @@ int saena_matrix::repartition_nnz(){
     // determine number of rows on each proc based on having almost the same number of nonzeros per proc.
 
     split_old = split;
-    long procNum = 0;
-    for (index_t i = 1; i < n_buckets; i++){
+    int procNum = 0;
+    for (index_t i = 1; i < n_buckets; ++i){
+        // allocate at least 1 row to the remaining processors
+        if(Mbig - firstSplit[i + 1] < nprocs - (procNum + 1)){
+            for(; i < n_buckets; ++i){
+                procNum++;
+                split[procNum] = firstSplit[i];
+            }
+            break;
+        }
+
         if (H_g_scan[i] > (procNum+1)*nnz_g/nprocs){
+//            if(!rank) printf("%d, %d, %ld, %d, %d\n", i, H_g_scan[i], (procNum+1)*nnz_g/nprocs, procNum, firstSplit[i]);
             procNum++;
             split[procNum] = firstSplit[i];
         }
@@ -836,6 +846,8 @@ int saena_matrix::repartition_nnz(){
 
     // set the number of rows for each process
     M = split[rank+1] - split[rank];
+
+    assert(M != 0);
 
     if(verbose_repartition && rank==0) printf("repartition_nnz - step 4!\n");
 
