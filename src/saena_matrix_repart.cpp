@@ -710,6 +710,8 @@ int saena_matrix::repartition_nnz(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    assert(!entry.empty());
+
     if(verbose_repartition){
         MPI_Barrier(comm);
         printf("repartition_nnz - step1! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",

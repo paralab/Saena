@@ -773,6 +773,8 @@ int saena_object::triple_mat_mult(Grid *grid){
     matmat_CSC(RAcsc, Pcsc, *Ac, true);
     Ac->comm = comm_temp;
 
+    assert(!Ac->entry.empty());
+
 #ifdef __DEBUG1__
 //    print_vector(Ac->entry, -1, "Ac->entry", comm);
     if (verbose_triple_mat_mult) {
