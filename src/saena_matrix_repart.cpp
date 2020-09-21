@@ -97,8 +97,8 @@ int saena_matrix::repartition_nnz_initial(){
 #endif
 
         index_t least_bucket = 0, last_bucket = 0;
-        least_bucket = (index_t) lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[0].row);
-        last_bucket = (index_t) lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data.back().row);
+        least_bucket = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data[0].row);
+        last_bucket  = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], data.back().row);
         last_bucket++;
 
 #ifdef __DEBUG1__
@@ -145,25 +145,41 @@ int saena_matrix::repartition_nnz_initial(){
         if (verbose_repartition && rank == 0) printf("repartition - step 3!\n");
 #endif
 
+        // -------------------------------------------
+        // determine number of rows on each proc based on having almost the same number of nonzeros per proc.
+
         const nnz_t NNZ_PROC = nnz_g / nprocs;
 
         index_t procNum = 0;
         split[0] = 0;
         for (index_t i = 1; i < n_buckets; ++i) {
-//        if (rank==0) std::cout << "(procNum+1)*NNZ_PROC = " << (procNum+1)*NNZ_PROC << ", procNum = " << procNum << std::endl;
+            // allocate at least 1 row to the remaining processors
+            if(Mbig - firstSplit[i + 1] < nprocs - (procNum + 1)){
+                for(; i < n_buckets; ++i){
+                    procNum++;
+                    split[procNum] = firstSplit[i];
+                }
+                break;
+            }
+
+//            if (rank==0) std::cout << "(procNum+1)*NNZ_PROC = " << (procNum+1)*NNZ_PROC << ", procNum = " << procNum << std::endl;
             if (H_g_scan[i] > ((procNum + 1) * NNZ_PROC)) {
                 ++procNum;
                 split[procNum] = firstSplit[i];
             }
         }
+        split[nprocs] = Mbig;
+
+//        if(!rank) printf("procNum = %d, n_buckets = %d\n", procNum, n_buckets);
+        assert((procNum+1 == nprocs) || (procNum == nprocs));
 
         // if there are dense rows in the matrix, the above loop may not allocate rows for the matrices (which is done in
         // split). If that happens then assign one row to the matrices without any row.
-        int it = 0;
-        for (int i = nprocs; i >= procNum; --i) {
-            split[i] = Mbig - it;
-            ++it;
-        }
+//        int it = 0;
+//        for (int i = nprocs; i >= procNum; --i) {
+//            split[i] = Mbig - it;
+//            ++it;
+//        }
 
         H_g_scan.clear();
         H_g_scan.shrink_to_fit();
@@ -191,6 +207,7 @@ int saena_matrix::repartition_nnz_initial(){
 
         // set the number of rows for each process
         M = split[rank + 1] - split[rank];
+        assert(M != 0);
 
 #ifdef __DEBUG1__
 //    M_old = M;
@@ -208,7 +225,7 @@ int saena_matrix::repartition_nnz_initial(){
 
         // *************************** exchange data ****************************
 
-        index_t least_proc, last_proc;
+        index_t least_proc = 0, last_proc = 0;
         least_proc = (index_t) lower_bound2(&split[0], &split[nprocs], data[0].row);
         last_proc  = (index_t) lower_bound2(&split[0], &split[nprocs], data.back().row);
         last_proc++;
@@ -228,7 +245,7 @@ int saena_matrix::repartition_nnz_initial(){
                 least_proc += lower_bound2(&split[least_proc], &split[last_proc], data[i].row);
             }
 //            if(rank==2) printf("row = %u, %u \n", data[i].row, least_proc);
-            send_size_array[least_proc]++;
+            ++send_size_array[least_proc];
         }
 
 #ifdef __DEBUG1__
@@ -710,7 +727,7 @@ int saena_matrix::repartition_nnz(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    assert(!entry.empty());
+//    assert(!entry.empty());
 
     if(verbose_repartition){
         MPI_Barrier(comm);
@@ -769,19 +786,23 @@ int saena_matrix::repartition_nnz(){
         firstSplit[i] = firstSplit[i-1] + splitOffset[i];
     firstSplit[n_buckets] = Mbig;
 
+#ifdef __DEBUG1__
 //    print_vector(firstSplit, 0, "firstSplit", comm);;
+#endif
 
     splitOffset.clear();
     splitOffset.shrink_to_fit();
 
     std::sort(entry.begin(), entry.end(), row_major);
 
-    long least_bucket, last_bucket;
+    index_t least_bucket = 0, last_bucket = 0;
     least_bucket = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], entry[0].row);
     last_bucket  = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], entry.back().row);
     last_bucket++;
 
+#ifdef __DEBUG1__
 //    if (rank==0) std::cout << "least_bucket:" << least_bucket << ", last_bucket = " << last_bucket << std::endl;
+#endif
 
     // H_l is the histogram of (local) nnz of buckets
     std::vector<index_t > H_l(n_buckets, 0);
