@@ -1083,8 +1083,18 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     t1 = omp_get_wtime();
 #endif
 
+    double time_smooth_pre1 = 0.0, time_smooth_pre2 = 0.0;
+    if (grid->level == 0) {
+        time_smooth_pre1 = omp_get_wtime();
+    }
+
     if (preSmooth) {
         smooth(grid, u, rhs, preSmooth);
+    }
+
+    if (grid->level == 0) {
+        time_smooth_pre2 = omp_get_wtime();
+        vcycle_smooth_time += time_smooth_pre2 - time_smooth_pre1;
     }
 
 #ifdef __DEBUG1__
@@ -1274,8 +1284,18 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     t1 = omp_get_wtime();
 #endif
 
+    double time_smooth_post1 = 0.0, time_smooth_post2 = 0.0;
+    if (grid->level == 0) {
+        time_smooth_post1 = omp_get_wtime();
+    }
+
     if(postSmooth){
         smooth(grid, u, rhs, postSmooth);
+    }
+
+    if (grid->level == 0) {
+        time_smooth_post2 = omp_get_wtime();
+        vcycle_smooth_time += time_smooth_post2 - time_smooth_post1;
     }
 
 #ifdef __DEBUG1__
@@ -1366,7 +1386,7 @@ int saena_object::solve(std::vector<value_t>& u){
     }
 
     int i = 0;
-    for(i = 0; i < solver_max_iter; ++i){
+    for(; i < solver_max_iter; ++i){
         vcycle(&grids[0], u, rhs);
         A->residual(u, rhs, r);
         dotProduct(r, r, &current_dot, comm);
@@ -1897,8 +1917,18 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     current_dot = init_dot;
 //    previous_dot = init_dot;
 
+    double vcycle_time = 0;
+    superlu_time = 0;
+    vcycle_smooth_time = 0;
+    double matvec_time1 = 0;
+    double t_pcg1 = omp_get_wtime();
+
     for(i = 0; i < solver_max_iter; i++){
+        double time_matvec1 = omp_get_wtime();
         A->matvec(p, h);
+        double time_matvec2 = omp_get_wtime();
+        matvec_time1 += time_matvec2 - time_matvec1;
+
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h,   &pdoth,   comm);
         alpha = rho_res / pdoth;
@@ -1960,9 +1990,15 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //    print_time(t_dif, "solve_pcg", comm);
 
     if(rank==0){
+        double t_pcg2 = omp_get_wtime();
         print_sep();
         printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
                        "\nrelative residual       = %e \n\n", i+1, sqrt(current_dot), sqrt(current_dot / init_dot));
+        printf("total   time per iteration = %e \n", (t_pcg2 - t_pcg1)/(i+1));
+        printf("vcycle  time per iteration = %e \n", vcycle_time/(i+1));
+        printf("superlu time per iteration = %e \n", superlu_time/(i+1));
+        printf("matvec1 time per iteration = %e \n", matvec_time1/(i+1));
+        printf("smooth  time per iteration = %e \n", vcycle_smooth_time/(i+1));
         print_sep();
     }
 
