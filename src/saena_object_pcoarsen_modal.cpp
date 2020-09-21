@@ -578,6 +578,10 @@ inline int saena_object::mesh_info(int order, vector< vector< vector<int> > > &m
             }
         }
 
+        if (map_all.size() > 2) {
+            map_all.erase(map_all.begin());
+            map_all.shrink_to_fit();
+        }
 
 #ifdef __DEBUG1__
         if(verbose_pcoarsen) {
@@ -744,6 +748,11 @@ void saena_object::g2umap(int order, vector< vector<int> > &g2u_all, vector< vec
         g2u_all[g2u_all.size()-1].emplace_back(g2u_next_coarse_node[i]);
     }
     //std::cout << map_all.size() << " " << map_all.at(map_all.size()-1).size() << " " << map_all.at(map_all.size()-1).at(0).size() << std::endl;
+
+    if (g2u_all.size() > 2) {
+        g2u_all.erase(g2u_all.begin());
+        g2u_all.shrink_to_fit();
+    }
 
 #ifdef __DEBUG1__
     if(verbose_pcoarsen) {
