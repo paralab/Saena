@@ -2280,7 +2280,7 @@ int saena_object::GMRES(std::vector<double> &u){
     }
 #endif
 
-    int     m        = 200; // when to restart.
+    int     m        = 500; // when to restart.
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
@@ -2547,7 +2547,7 @@ int saena_object::pGMRES(std::vector<double> &u){
     }
 #endif
 
-    int     m        = 200; // when to restart.
+    int     m        = 500; // when to restart.
     index_t size     = A->M;
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
