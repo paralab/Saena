@@ -70,7 +70,7 @@ int find_eig_ietl(Matrix& A){
 #endif
 
     // Creation of an iteration object:
-    int    max_iter       = 12;         // default was 10 * N
+    int    max_iter       = 16;         // default was 10 * N
     int    n_highest_eigv = 1;
     double rel_tol        = 500 * std::numeric_limits<double>::epsilon();          // default: 500 * epsilon
     double abs_tol        = std::pow(std::numeric_limits<double>::epsilon(), 2. / 3);
@@ -135,7 +135,7 @@ int find_eig_ietl(Matrix& A){
     // The number of max_iter for Lanzcos is set low for performance reasons, so there may be error for the largest
     // eigenvalue. Since we need an upper bound for the largest eigenvalue in Chebyshev, multiply it to slightly
     // up-scale it.
-    A.eig_max_of_invdiagXA = 1.05 * eigen.back();
+    A.eig_max_of_invdiagXA = eigen.back();
 
 #ifdef __DEBUG1__
     if(verbose_eig) {
