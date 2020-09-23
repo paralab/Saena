@@ -159,6 +159,12 @@ int saena_object::setup(saena_matrix* A) {
                            grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
                 }
             }
+
+            // write matrix to file
+//            if(i == 2){
+//                grids[i + 1].A->writeMatrixToFile("saena");
+//            }
+
         }else{
 #ifdef __DEBUG1__
             if(verbose_setup_steps){printf("rank %d is not active for grids[%d].Ac.\n", rank, i);}
@@ -380,6 +386,11 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
                            grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
                 }
             }
+
+            // write matrix to file
+//            if(i == 2){
+//                grids[i + 1].A->writeMatrixToFile("saena");
+//            }
         }else{
 #ifdef __DEBUG1__
             if(verbose_setup_steps){printf("rank %d is not active for grids[%d].Ac.\n", rank, i);}
