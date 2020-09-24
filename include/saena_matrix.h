@@ -270,7 +270,21 @@ public:
     int shrink_cpu_minor();
     int shrink_cpu_c(); // for the coarsest level
 
-    int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+    inline void matvec(std::vector<value_t>& v, std::vector<value_t>& w){
+        if(switch_to_dense && density >= dense_threshold){
+            std::cout << "dense matvec is commented out!" << std::endl;
+            // uncomment to enable DENSE
+//            if(!dense_matrix_generated){
+//                generate_dense_matrix();
+//            }
+//            dense_matrix.matvec(v, w);
+
+        }else{
+            matvec_sparse(v,w);
+//            matvec_sparse_zfp(v,w);
+        }
+    }
+
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
 
