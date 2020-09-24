@@ -84,22 +84,27 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
                     // then set mat_type to "triangle".
 
                     string mat_type(input_type);
+                    string tmp;
+
                     if(mat_type.empty()){
-                        inFile >> mat_type;
-                        if(mat_type == "%%MatrixMarket"){ // check if there is metadata at the first line of the file.
+                        inFile >> tmp;
+                        if(tmp == "%%MatrixMarket"){ // check if there is metadata at the first line of the file.
                             for(int i = 1; i < 4; ++i){
-                                inFile >> mat_type;
+                                inFile >> tmp;
                             }
 
-                            if(mat_type != "pattern"){
-                                inFile >> mat_type;
-                                if(mat_type == "symmetric"){
+                            if(tmp != "pattern"){
+                                inFile >> tmp;
+                                if(tmp == "symmetric"){
                                     mat_type = "triangle";
-                                }else{
-                                    std::cerr << "the input type is not valid!" << std::endl;
-                                    MPI_Finalize();
-                                    exit(EXIT_FAILURE);
                                 }
+//                                else{
+//                                    std::cerr << "the input type is not valid!" << std::endl;
+//                                    MPI_Finalize();
+//                                    exit(EXIT_FAILURE);
+//                                }
+                            }else{
+                                mat_type = tmp;
                             }
                         }
                         // reset input file position
