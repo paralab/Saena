@@ -1947,8 +1947,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //        previous_dot = current_dot;
 
         // print the "absolute residual" and the "convergence factor":
-//        if(rank==0) printf("Vcycle %d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
-//        if(rank==0) printf("Vcycle %lu: aboslute residual = %.10f \n", i+1, sqrt(current_dot));
+//        if(rank==0) printf("%d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
+//        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
 #endif
 
         if(current_dot < THRSHLD)
