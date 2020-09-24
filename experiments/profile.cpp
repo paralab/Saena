@@ -16,10 +16,10 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(argc != 2) {
+    if(argc != 4) {
         if(rank == 0) {
-//            cout << "Usage: ./profile mx my mz" << endl;
-            cout << "Usage: ./profile mx" << endl;
+            cout << "Usage: ./profile mx my mz" << endl;
+//            cout << "Usage: ./profile mx" << endl;
         }
         MPI_Finalize();
         return -1;
@@ -35,11 +35,8 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
 
     int mx(std::stoi(argv[1]));
-//    int my(std::stoi(argv[2]));
-//    int mz(std::stoi(argv[3]));
-
-    int my = mx;
-    int mz = mx;
+    int my(std::stoi(argv[2]));
+    int mz(std::stoi(argv[3]));
 
 //    if(verbose){
         MPI_Barrier(comm);
@@ -53,8 +50,7 @@ int main(int argc, char* argv[]){
     saena::matrix A(comm);
 //    saena::laplacian2D_old(&A, mx);
 //    saena::laplacian3D_old(&A, mx);
-//    saena::laplacian3D(&A, mx, my, mz);
-    saena::laplacian3D(&A, mx, mx, mx);
+    saena::laplacian3D(&A, mx, my, mz);
 
     double t2 = omp_get_wtime();
 //    print_time(t1, t2, "Matrix Assemble:", comm);
