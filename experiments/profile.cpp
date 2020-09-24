@@ -136,7 +136,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-    print_time(t1, t2, "Solve:", comm);
+//    print_time(t1, t2, "Solve:", comm);
 
     // *************************** print or write the solution ****************************
 

@@ -1005,6 +1005,8 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         if (verbose) t1 = omp_get_wtime();
 #endif
 
+        double slu1 = omp_get_wtime();
+
         if (direct_solver == "CG") {
             solve_coarsest_CG(grid->A, u, rhs);
         } else if (direct_solver == "SuperLU") {
@@ -1013,6 +1015,9 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
             if (!rank) printf("Error: Unknown direct solver! \n");
             exit(EXIT_FAILURE);
         }
+
+        double slu2 = omp_get_wtime();
+        superlu_time += slu2 - slu1;
 
 #ifdef __DEBUG1__
         {
@@ -1084,18 +1089,18 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 #endif
 
     double time_smooth_pre1 = 0.0, time_smooth_pre2 = 0.0;
-    if (grid->level == 0) {
+//    if (grid->level == 0) {
         time_smooth_pre1 = omp_get_wtime();
-    }
+//    }
 
     if (preSmooth) {
         smooth(grid, u, rhs, preSmooth);
     }
 
-    if (grid->level == 0) {
+//    if (grid->level == 0) {
         time_smooth_pre2 = omp_get_wtime();
         vcycle_smooth_time += time_smooth_pre2 - time_smooth_pre1;
-    }
+//    }
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
@@ -1141,7 +1146,12 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     t1 = omp_get_wtime();
 #endif
 
+    double t_trans1 = omp_get_wtime();
+
     grid->R.matvec(res, res_coarse);
+
+    double t_trans2 = omp_get_wtime();
+    transfer_time += t_trans2 - t_trans1;
 
 #ifdef __DEBUG1__
 //    grid->R.print_entry(-1);
@@ -1237,7 +1247,12 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
         MPI_Barrier(comm);}
 #endif
 
+    t_trans1 = omp_get_wtime();
+
     grid->P.matvec(uCorrCoarse, uCorr);
+
+    t_trans2 = omp_get_wtime();
+    transfer_time += t_trans2 - t_trans1;
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
@@ -1285,18 +1300,18 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 #endif
 
     double time_smooth_post1 = 0.0, time_smooth_post2 = 0.0;
-    if (grid->level == 0) {
+//    if (grid->level == 0) {
         time_smooth_post1 = omp_get_wtime();
-    }
+//    }
 
     if(postSmooth){
         smooth(grid, u, rhs, postSmooth);
     }
 
-    if (grid->level == 0) {
+//    if (grid->level == 0) {
         time_smooth_post2 = omp_get_wtime();
         vcycle_smooth_time += time_smooth_post2 - time_smooth_post1;
-    }
+//    }
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
@@ -1798,6 +1813,12 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     }
 #endif
 
+    transfer_time = 0;
+    superlu_time = 0;
+    vcycle_smooth_time = 0;
+    double matvec_time1 = 0;
+    double t_pcg1 = omp_get_wtime();
+
     // ************** check u size **************
 /*
     index_t u_size_local = u.size();
@@ -1917,12 +1938,6 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     current_dot = init_dot;
 //    previous_dot = init_dot;
 
-    double vcycle_time = 0;
-    superlu_time = 0;
-    vcycle_smooth_time = 0;
-    double matvec_time1 = 0;
-    double t_pcg1 = omp_get_wtime();
-
     for(i = 0; i < solver_max_iter; i++){
         double time_matvec1 = omp_get_wtime();
         A->matvec(p, h);
@@ -1990,15 +2005,15 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //    print_time(t_dif, "solve_pcg", comm);
 
     if(rank==0){
-        double t_pcg2 = omp_get_wtime();
+//        double t_pcg2 = omp_get_wtime();
         print_sep();
         printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
                        "\nrelative residual       = %e \n\n", i+1, sqrt(current_dot), sqrt(current_dot / init_dot));
-        printf("total   time per iteration = %e \n", (t_pcg2 - t_pcg1)/(i+1));
-        printf("vcycle  time per iteration = %e \n", vcycle_time/(i+1));
-        printf("superlu time per iteration = %e \n", superlu_time/(i+1));
-        printf("matvec1 time per iteration = %e \n", matvec_time1/(i+1));
-        printf("smooth  time per iteration = %e \n", vcycle_smooth_time/(i+1));
+//        printf("total   time per iteration = %e \n", (t_pcg2 - t_pcg1)/(i+1));
+//        printf("vcycle  time per iteration = %e \n", vcycle_time/(i+1));
+//        printf("superlu time per iteration = %e \n", superlu_time/(i+1));
+//        printf("matvec1 time per iteration = %e \n", matvec_time1/(i+1));
+//        printf("smooth  time per iteration = %e \n", vcycle_smooth_time/(i+1));
         print_sep();
     }
 
@@ -2045,7 +2060,16 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     }
 #endif
 
-//    if(rank==0) dollar::text(std::cout);
+    double t_pcg2 = omp_get_wtime();
+
+    if(rank==0) {
+        printf("pCG total\ntransfer\nsmooth\nsuperlu\n\n");
+    }
+
+    print_time_ave((t_pcg2 - t_pcg1) / (i+1),  "total",    comm, true, false);
+    print_time_ave(transfer_time / (i+1),      "transfer", comm, true, false);
+    print_time_ave(vcycle_smooth_time / (i+1), "smooth",   comm, true, false);
+    print_time_ave(superlu_time / (i+1),       "superlu",  comm, true, false);
 
     return 0;
 }
