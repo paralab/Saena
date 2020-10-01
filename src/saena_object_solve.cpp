@@ -2076,6 +2076,19 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     print_time_ave(vcycle_smooth_time / (i+1), "smooth",    comm, true, false);
     print_time_ave(superlu_time / (i+1),       "superlu",   comm, true, false);
 
+    if(!rank) printf("\nP matvec:\n");
+    if(!rank) printf("loc\ncomm\nrem\ntot\n");
+    for(int l = 0; l < max_level; ++l){
+        if(grids[l].active) {
+            if(!rank) printf("\nlevel %d: \n", l);
+            print_time_ave(grids[l].P.tloc / (i+1),  "Ploc",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.tcomm / (i+1), "Pcomm", grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.trem / (i+1),  "Prem",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.ttot / (i+1),  "Ptot",  grids[l].A->comm, true, false);
+        }
+    }
+
+
     if(!rank) printf("\nR matvec:\n");
     if(!rank) printf("loc\ncomm\nrem\ntot\n");
     for(int l = 0; l < max_level; ++l){

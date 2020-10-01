@@ -91,6 +91,8 @@ public:
 
     bool verbose_prolong_setup = false;
 
+    double tloc = 0, trem = 0, tcomm = 0, ttot = 0;       // for timing matvec
+
     prolong_matrix();
     prolong_matrix(MPI_Comm com);
     ~prolong_matrix();
