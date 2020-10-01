@@ -2071,8 +2071,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     }
 
     print_time_ave((t_pcg2 - t_pcg1) / (i+1),  "total",     comm, true, false);
-    print_time_ave(Ptransfer_time / (i+1),     "Rtransfer", comm, true, false);
-    print_time_ave(Rtransfer_time / (i+1),     "Ptransfer", comm, true, false);
+    print_time_ave(Rtransfer_time / (i+1),     "Rtransfer", comm, true, false);
+    print_time_ave(Ptransfer_time / (i+1),     "Ptransfer", comm, true, false);
     print_time_ave(vcycle_smooth_time / (i+1), "smooth",    comm, true, false);
     print_time_ave(superlu_time / (i+1),       "superlu",   comm, true, false);
 
