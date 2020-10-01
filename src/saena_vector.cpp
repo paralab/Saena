@@ -271,140 +271,144 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         // for the remote ones, save info for the communication
         // ----------------------------------
 
-        long procNum;
-        recvCount.assign(nprocs, 0);
-        std::fill(u2.begin(), u2.end(), 0);
-        for (index_t i = 0; i < orig_order.size(); i++) {
+        if(!return_vec_prep) {
+            return_vec_prep = true;
+            long procNum;
+            recvCount.assign(nprocs, 0);
+            std::fill(u2.begin(), u2.end(), 0);
+
+            for (index_t i = 0; i < orig_order.size(); i++) {
 //            if(rank==1) printf("%u \t%u\n", i, orig_order[i]);
-            if (orig_order[i] >= split[rank] && orig_order[i] < split[rank + 1]) {
+                if (orig_order[i] >= split[rank] && orig_order[i] < split[rank + 1]) {
 //                if(rank==1) printf("%u \t%u \t%f\n", i, orig_order[i], u1[orig_order[i]]);
-                u2[i] = u1[orig_order[i] - split[rank]];
-            } else { // elements that should be received from other procs
-                remote_idx_tuple.emplace_back(i, orig_order[i]);
-//                recv_idx.emplace_back(orig_order[i]);
-//                remote_idx.emplace_back(i);
-                procNum = lower_bound2(&split[0], &split[nprocs], orig_order[i]);
-                recvCount[procNum]++;
+                    u2[i] = u1[orig_order[i] - split[rank]];
+                } else { // elements that should be received from other procs
+                    remote_idx_tuple.emplace_back(i, orig_order[i]);
+//                    recv_idx.emplace_back(orig_order[i]);
+//                    remote_idx.emplace_back(i);
+                    procNum = lower_bound2(&split[0], &split[nprocs], orig_order[i]);
+                    ++recvCount[procNum];
+                }
             }
-        }
 
-//        print_vector(remote_idx_tuple, -1, "remote_idx_tuple", comm);
-        std::sort(remote_idx_tuple.begin(), remote_idx_tuple.end());
-//        print_vector(remote_idx_tuple, -1, "remote_idx_tuple", comm);
+            std::sort(remote_idx_tuple.begin(), remote_idx_tuple.end());
+//            print_vector(remote_idx_tuple, -1, "remote_idx_tuple", comm);
 
-        recv_idx.resize(remote_idx_tuple.size());
-        for(index_t i = 0; i < remote_idx_tuple.size(); i++){
-            recv_idx[i] = remote_idx_tuple[i].idx2;
-        }
+            recv_idx.resize(remote_idx_tuple.size());
+            for (index_t i = 0; i < remote_idx_tuple.size(); i++) {
+                recv_idx[i] = remote_idx_tuple[i].idx2;
+            }
 
-        // after sorting recv_idx, the order of remote_idx should be changed the same way. The new order is saved
-        // in idx_order, so remote_idx[idx_order[i]] has the new order.
-//        std::vector<index_t> idx_order(remote_idx.size());
-//#pragma omp parallel for
-//        for (index_t i = 0; i < remote_idx.size(); i++)
-//            idx_order[i] = i;
-//        std::sort(idx_order.begin(), idx_order.end(), sort_indices(&recv_idx[0]));
-//        std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
+             // after sorting recv_idx, the order of remote_idx should be changed the same way. The new order is saved
+             // in idx_order, so remote_idx[idx_order[i]] has the new order.
+//            std::vector<index_t> idx_order(remote_idx.size());
+//            #pragma omp parallel for
+//            for (index_t i = 0; i < remote_idx.size(); i++)
+//                idx_order[i] = i;
+//            std::sort(idx_order.begin(), idx_order.end(), sort_indices(&recv_idx[0]));
+//            std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
+//
+//            std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
+//            std::sort(recv_idx.begin(), recv_idx.end());
+//
+//
+//            if(rank==1){
+//                for(int i = 0; i < remote_idx.size(); i++)
+//                    std::cout << remote_idx[i] << "\t"<< remote_idx[idx_order[i]] << "\t" << recv_idx[i] << std::endl;
+//            }
 
-//        std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
-//        std::sort(recv_idx.begin(), recv_idx.end());
+            if (verbose_return_vec) {
+                MPI_Barrier(comm);
+                printf("return_vec: rank = %d, step 2 \n", rank);
+                MPI_Barrier(comm);
+            }
+//            print_vector(u2, -1, "u2 local", comm);
+//            print_vector(recvCount, -1, "recvCount", comm);
+//            print_vector(remote_idx, -1, "remote_idx", comm);
+//            print_vector(recv_idx, -1, "recv_idx", comm);
 
+            // compute the variables for communication
+            // ---------------------------------------
 
-//        if(rank==1){
-//            for(int i = 0; i < remote_idx.size(); i++)
-//                std::cout << remote_idx[i] << "\t"<< remote_idx[idx_order[i]] << "\t" << recv_idx[i] << std::endl;
-//        }
-        if (verbose_return_vec) {
-            MPI_Barrier(comm);
-            printf("return_vec: rank = %d, step 2 \n", rank);
-            MPI_Barrier(comm);
-        }
-//        print_vector(u2, -1, "u2 local", comm);
-//        print_vector(recvCount, -1, "recvCount", comm);
-//        print_vector(remote_idx, -1, "remote_idx", comm);
-//        print_vector(recv_idx, -1, "recv_idx", comm);
-
-        // compute the variables for communication
-        // ---------------------------------------
-
-        sendCount.resize(nprocs);
-        MPI_Alltoall(&recvCount[0], 1, MPI_INT, &sendCount[0], 1, MPI_INT, comm);
+            sendCount.resize(nprocs);
+            MPI_Alltoall(&recvCount[0], 1, MPI_INT, &sendCount[0], 1, MPI_INT, comm);
 
 //        print_vector(sendCount, 0, "sendCount", comm);
 
-        recvCountScan.resize(nprocs);
-        sendCountScan.resize(nprocs);
-        recvCountScan[0] = 0;
-        sendCountScan[0] = 0;
-        for (index_t i = 1; i < nprocs; i++) {
-            recvCountScan[i] = recvCountScan[i - 1] + recvCount[i - 1];
-            sendCountScan[i] = sendCountScan[i - 1] + sendCount[i - 1];
-        }
-
-        numRecvProc = 0;
-        numSendProc = 0;
-        for (int i = 0; i < nprocs; i++) {
-            if (recvCount[i] != 0) {
-                numRecvProc++;
-                recvProcRank.emplace_back(i);
-                recvProcCount.emplace_back(recvCount[i]);
+            recvCountScan.resize(nprocs);
+            sendCountScan.resize(nprocs);
+            recvCountScan[0] = 0;
+            sendCountScan[0] = 0;
+            for (index_t i = 1; i < nprocs; i++) {
+                recvCountScan[i] = recvCountScan[i - 1] + recvCount[i - 1];
+                sendCountScan[i] = sendCountScan[i - 1] + sendCount[i - 1];
             }
-            if (sendCount[i] != 0) {
-                numSendProc++;
-                sendProcRank.emplace_back(i);
-                sendProcCount.emplace_back(sendCount[i]);
-            }
-        }
 
-        if (verbose_return_vec) {
+            numRecvProc = 0;
+            numSendProc = 0;
+            for (int i = 0; i < nprocs; i++) {
+                if (recvCount[i] != 0) {
+                    numRecvProc++;
+                    recvProcRank.emplace_back(i);
+                    recvProcCount.emplace_back(recvCount[i]);
+                }
+                if (sendCount[i] != 0) {
+                    numSendProc++;
+                    sendProcRank.emplace_back(i);
+                    sendProcCount.emplace_back(sendCount[i]);
+                }
+            }
+
+            if (verbose_return_vec) {
 //            if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc <<
 //                                      ", numSendProc=" << numSendProc << std::endl;
-            MPI_Barrier(comm);
-            printf("return_vec: rank = %d, step 3 \n", rank);
-            MPI_Barrier(comm);
-        }
+                MPI_Barrier(comm);
+                printf("return_vec: rank = %d, step 3 \n", rank);
+                MPI_Barrier(comm);
+            }
 
-        vdispls.resize(nprocs);
-        rdispls.resize(nprocs);
-        vdispls[0] = 0;
-        rdispls[0] = 0;
+            vdispls.resize(nprocs);
+            rdispls.resize(nprocs);
+            vdispls[0] = 0;
+            rdispls[0] = 0;
 
-        for (int i = 1; i < nprocs; i++) {
-            vdispls[i] = vdispls[i - 1] + sendCount[i - 1];
-            rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
-        }
-        send_sz = vdispls[nprocs - 1] + sendCount[nprocs - 1];
-        recv_sz = rdispls[nprocs - 1] + recvCount[nprocs - 1];
+            for (int i = 1; i < nprocs; i++) {
+                vdispls[i] = vdispls[i - 1] + sendCount[i - 1];
+                rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
+            }
+            send_sz = vdispls[nprocs - 1] + sendCount[nprocs - 1];
+            recv_sz = rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
-        // send_idx: elements that should be sent to other procs.
-        send_idx.resize(send_sz);
-        MPI_Alltoallv(&recv_idx[0], &recvCount[0], &rdispls[0], par::Mpi_datatype<index_t>::value(),
-                      &send_idx[0], &sendCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
+            // send_idx: elements that should be sent to other procs.
+            send_idx.resize(send_sz);
+            MPI_Alltoallv(&recv_idx[0], &recvCount[0], &rdispls[0], par::Mpi_datatype<index_t>::value(),
+                          &send_idx[0], &sendCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
 
-        if (verbose_return_vec) {
+            if (verbose_return_vec) {
 //            print_vector(send_idx, -1, "send_idx", comm);
-            MPI_Barrier(comm);
-            printf("return_vec: rank = %d, step 4 \n", rank);
-            MPI_Barrier(comm);
-        }
+                MPI_Barrier(comm);
+                printf("return_vec: rank = %d, step 4 \n", rank);
+                MPI_Barrier(comm);
+            }
 
-        // change the indices from global to local
+            // change the indices from global to local
 #pragma omp parallel for
-        for (index_t i = 0; i < send_sz; i++) {
-            send_idx[i] -= split[rank];
-        }
+            for (index_t i = 0; i < send_sz; i++) {
+                send_idx[i] -= split[rank];
+            }
 
-        // send_vals     = vector values to send to other procs
-        // recv_vals = vector values to be received from other procs
-        // These will be used in return_vec and they are set here to reduce the time of return_vec.
-        send_vals.resize(send_sz);
-        recv_vals.resize(recv_sz);
+            // send_vals = vector values to be sent to other procs
+            // recv_vals = vector values to be received from other procs
+            // These will be used in return_vec and they are set here to reduce the time of return_vec.
+            send_vals.resize(send_sz);
+            recv_vals.resize(recv_sz);
 
-        if (verbose_return_vec) {
+            if (verbose_return_vec) {
 //            print_vector(send_idx, 1, "send_idx", comm);
-            MPI_Barrier(comm);
-            printf("return_vec: rank = %d, step 5 \n", rank);
-            MPI_Barrier(comm);
+                MPI_Barrier(comm);
+                printf("return_vec: rank = %d, step 5 \n", rank);
+                MPI_Barrier(comm);
+            }
         }
 
         // perform the communication
@@ -414,22 +418,22 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 
 #pragma omp parallel for
         for (index_t i = 0; i < send_sz; i++)
-            send_vals[i] = u1[(send_idx[i])];
+            send_vals[i] = u1[send_idx[i]];
 
 //        print_vector(send_vals, -1, "send_vals", comm);
 
-        auto requests = new MPI_Request[numSendProc + numRecvProc];
-        auto statuses = new MPI_Status[numSendProc + numRecvProc];
+        auto *requests = new MPI_Request[numSendProc + numRecvProc];
+        auto *statuses = new MPI_Status[numSendProc + numRecvProc];
 
         // receive and put the remote parts of v in recv_vals.
         // they are received in order: first put the values from the lowest rank matrix, and so on.
         for (int i = 0; i < numRecvProc; i++)
-            MPI_Irecv(&recv_vals[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm,
-                      &(requests[i]));
+            MPI_Irecv(&recv_vals[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(),
+                      recvProcRank[i], 1, comm, &(requests[i]));
 
         for (int i = 0; i < numSendProc; i++)
-            MPI_Isend(&send_vals[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm,
-                      &(requests[numRecvProc + i]));
+            MPI_Isend(&send_vals[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(),
+                      sendProcRank[i], 1, comm, &(requests[numRecvProc + i]));
 
         MPI_Waitall(numRecvProc, requests, statuses);
 

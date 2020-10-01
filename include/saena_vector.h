@@ -63,6 +63,8 @@ public:
     std::vector<value_t> send_vals;
     std::vector<value_t> recv_vals;
 
+    bool return_vec_prep    = false;        // to track if the parameters needed in return_vec() are computed.
+
     bool verbose_return_vec = false;
 
     saena_vector();
