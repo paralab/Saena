@@ -394,7 +394,7 @@ int prolong_matrix::openmp_setup() {
 }
 
 
-int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
+void prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
 //    int nprocs;
 //    MPI_Comm_size(comm, &nprocs);
@@ -447,9 +447,8 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
             for (index_t i = 0; i < M; ++i) {
                 w[i] = 0;
                 for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
-//                    if(rank==0 && i==1) printf("%u \t%.18f \t%.18f \t%.18f \n",
+//                    if(rank==0) printf("%u \t%.18f \t%.18f \t%.18f \n",
 //                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);
-//                    w[i] += entry_local[indicesP_local[iter]].val * v[entry_local[indicesP_local[iter]].col - splitNew[rank]];
 //                    w[i] += entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col];
                     w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
                 }
@@ -541,8 +540,6 @@ int prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //    time[2] += (t22-t12);
 //    double t23 = MPI_Wtime();
 //    time[3] += (t23-t13);
-
-    return 0;
 }
 
 

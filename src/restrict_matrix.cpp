@@ -554,7 +554,7 @@ int restrict_matrix::openmp_setup() {
 restrict_matrix::~restrict_matrix(){}
 
 
-int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
+void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
 //    printf("R matvec: start\n");
 
@@ -687,8 +687,6 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     delete [] statuses;
 
     ttot = tloc + tcomm + trem;
-
-    return 0;
 }
 
 

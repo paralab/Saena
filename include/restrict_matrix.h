@@ -82,7 +82,7 @@ public:
 
     int transposeP(prolong_matrix* P);
     int openmp_setup();
-    int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec(std::vector<value_t>& v, std::vector<value_t>& w);
 
     int print_entry(int ran);
     int print_info(int ran);
