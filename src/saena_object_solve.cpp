@@ -6,8 +6,9 @@
 #include "grid.h"
 #include "aux_functions.h"
 
+// uncomment to print info for the lazy update feature
 // use this to store number of iterations for the lazy-update experiment.
-std::vector<int> iter_num_lazy;
+//std::vector<int> iter_num_lazy;
 
 
 int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs){
@@ -2019,10 +2020,11 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         print_sep();
     }
 
-    iter_num_lazy.emplace_back(i+1);
-    if(iter_num_lazy.size() == ITER_LAZY){
-        print_vector(iter_num_lazy, 0, "iter_num_lazy", comm);
-    }
+    // uncomment to print info for the lazy update feature
+//    iter_num_lazy.emplace_back(i+1);
+//    if(iter_num_lazy.size() == ITER_LAZY){
+//        print_vector(iter_num_lazy, 0, "iter_num_lazy", comm);
+//    }
 
 #ifdef __DEBUG1__
     if(verbose_solve){
