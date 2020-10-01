@@ -1751,10 +1751,11 @@ int saena_object::solve_CG(std::vector<value_t>& u){
         print_sep();
     }
 
-    iter_num_lazy.emplace_back(i+1);
-    if(iter_num_lazy.size() == ITER_LAZY){
-        print_vector(iter_num_lazy, 0, "iter_num_lazy", comm);
-    }
+    // uncomment to print info for the lazy update feature
+//    iter_num_lazy.emplace_back(i+1);
+//    if(iter_num_lazy.size() == ITER_LAZY){
+//        print_vector(iter_num_lazy, 0, "iter_num_lazy", comm);
+//    }
 
 #ifdef __DEBUG1__
     if(verbose_solve){
