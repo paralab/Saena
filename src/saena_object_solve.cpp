@@ -1822,6 +1822,19 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double matvec_time1 = 0;
     double t_pcg1 = omp_get_wtime();
 
+    for(int l = 0; l < max_level; ++l){
+        if(grids[l].active) {
+            grids[l].P.tloc  = 0;
+            grids[l].P.tcomm = 0;
+            grids[l].P.trem  = 0;
+            grids[l].P.ttot  = 0;
+            grids[l].R.tloc  = 0;
+            grids[l].R.tcomm = 0;
+            grids[l].R.trem  = 0;
+            grids[l].R.ttot  = 0;
+        }
+    }
+
     // ************** check u size **************
 /*
     index_t u_size_local = u.size();
@@ -2087,7 +2100,6 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
             print_time_ave(grids[l].P.ttot / (i+1),  "Ptot",  grids[l].A->comm, true, false);
         }
     }
-
 
     if(!rank) printf("\nR matvec:\n");
     if(!rank) printf("loc\ncomm\nrem\ntot\n");
