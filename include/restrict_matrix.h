@@ -73,7 +73,9 @@ public:
 //    bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
 
     bool verbose_restrict_setup = false;
-    bool verbose_transposeP = false;
+    bool verbose_transposeP     = false;
+
+    double tloc = 0, trem = 0, tcomm = 0, ttot = 0;       // for timing matvec
 
     restrict_matrix();
     ~restrict_matrix();

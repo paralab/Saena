@@ -576,19 +576,9 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     auto *requests = new MPI_Request[numSendProc + numRecvProc];
     auto *statuses = new MPI_Status[numSendProc + numRecvProc];
 
-    for(int i = 0; i < numRecvProc; i++){
-        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
-        MPI_Test(&requests[i], &flag, &statuses[i]);
-    }
-
-    for(int i = 0; i < numSendProc; i++){
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
-    }
-
     // local loop
     // ----------
-//    double t11 = MPI_Wtime();
+    double t1 = omp_get_wtime();
     value_t* v_p = &v[0] - split[rank];
 
     std::fill(w.begin(), w.end(), 0);
@@ -605,16 +595,27 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
             }
     }
 
-//    double t21 = MPI_Wtime();
-//    time[1] += (t21-t11);
+    double t2 = omp_get_wtime();
+    tloc += (t2 - t1);
+
+    t1 = omp_get_wtime();
+
+    for(int i = 0; i < numRecvProc; i++){
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &flag, &statuses[i]);
+    }
+
+    for(int i = 0; i < numSendProc; i++){
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+        MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
+    }
 
     // Wait for comm to finish.
     MPI_Waitall(numRecvProc, requests, statuses);
+    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
 
-//    if (rank==1){
-//        cout << "recvSize=" << recvSize << ", vecValues: rank=" << rank << endl;
-//        for(int i=0; i<recvSize; i++)
-//            cout << vecValues[i] << endl;}
+    t2 = omp_get_wtime();
+    tcomm += (t2 - t1);
 
     // remote loop
     // -----------
@@ -637,6 +638,8 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     }
 //    }
 */
+
+    t1 = omp_get_wtime();
 
     #pragma omp parallel
     {
@@ -676,14 +679,14 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
         }
     }
 
-    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
+    t2 = omp_get_wtime();
+    trem += (t2 - t1);
+
+//    MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     delete [] requests;
     delete [] statuses;
 
-//    double t22 = MPI_Wtime();
-//    time[2] += (t22-t12);
-//    double t23 = MPI_Wtime();
-//    time[3] += (t23-t13);
+    ttot = tloc + tcomm + trem;
 
     return 0;
 }
