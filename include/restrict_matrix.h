@@ -25,11 +25,14 @@ public:
     index_t M_max        = 0;
 
     std::vector<cooEntry> entry; // local row indices (not global)
-    std::vector<cooEntry> entry_local;
-    std::vector<cooEntry> entry_remote;
-    std::vector<index_t>  row_local;  // needed for finding sorting
-    std::vector<index_t>  row_remote; // needed for finding sorting
-    std::vector<index_t>  col_remote; // index starting from 0, instead of the original column index
+//    std::vector<cooEntry> entry_local;
+//    std::vector<cooEntry> entry_remote;
+    std::vector<index_t>  row_local;
+    std::vector<index_t>  col_local;
+    std::vector<value_t>  val_local;
+    std::vector<index_t>  row_remote;
+    std::vector<value_t>  val_remote;
+//    std::vector<index_t>  col_remote; // index starting from 0, instead of the original column index
 
     std::vector<index_t> split;
     std::vector<index_t> splitNew;
@@ -57,7 +60,9 @@ public:
     int numRecvProc = 0;
     int numSendProc = 0;
 
-    unsigned int num_threads = 1;
+    int num_threads   = 1;
+    int matvec_levels = 1;
+
     std::vector<nnz_t> iter_local_array;
     std::vector<nnz_t> iter_remote_array;
     std::vector<value_t> w_buff; // for matvec

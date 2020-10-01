@@ -214,11 +214,14 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     sendProcCount.clear();
     indicesP_local.clear();
 //    indicesP_remote.clear();
-    entry_local.clear();
-    entry_remote.clear();
+//    entry_local.clear();
+//    entry_remote.clear();
     row_local.clear();
+    col_local.clear();
+    val_local.clear();
     row_remote.clear();
-    col_remote.clear();
+//    col_remote.clear();
+    val_remote.clear();
 
     if(!entry.empty()){
 
@@ -226,21 +229,21 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         // local
         if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
             nnzPerRow_local[entry[0].row]++;
-            entry_local.emplace_back(entry[0]);
-            row_local.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
-//          col_local.emplace_back(entry[0].col);
-//          values_local.emplace_back(entry[0].val);
+//            entry_local.emplace_back(entry[0]);
+            row_local.emplace_back(entry[0].row);
+            col_local.emplace_back(entry[0].col);
+            val_local.emplace_back(entry[0].val);
             //vElement_local.emplace_back(col[0]);
             vElementRep_local.emplace_back(1);
 
             // remote
         } else{
-            entry_remote.emplace_back(entry[0]);
-            row_remote.emplace_back(entry[0].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
+//            entry_remote.emplace_back(entry[0]);
+            row_remote.emplace_back(entry[0].row);
 //            col_remote2.emplace_back(entry[0].col);
-//            values_remote.emplace_back(entry[0].val);
+            val_remote.emplace_back(entry[0].val);
             col_remote_size++; // number of remote columns
-            col_remote.emplace_back(col_remote_size-1);
+//            col_remote.emplace_back(col_remote_size-1);
 //            nnzPerCol_remote[col_remote_size-1]++;
             nnzPerCol_remote.emplace_back(1);
             vElement_remote.emplace_back(entry[0].col);
@@ -260,10 +263,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
             // local
             if (entry[i].col >= split[rank] && entry[i].col < split[rank+1]) {
                 nnzPerRow_local[entry[i].row]++;
-                entry_local.emplace_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
-                row_local.emplace_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then erase. // todo: clear does not free memory. find a solution.
-//                col_local.emplace_back(entry[i].col);
-//                values_local.emplace_back(entry[i].val);
+//                entry_local.emplace_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
+                row_local.emplace_back(entry[i].row);
+                col_local.emplace_back(entry[i].col);
+                val_local.emplace_back(entry[i].val);
                 if (entry[i].col != entry[i-1].col)
                     vElementRep_local.emplace_back(1);
                 else
@@ -271,11 +274,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
                 // remote
             } else {
-                entry_remote.emplace_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
-                row_remote.emplace_back(entry[i].row); // only for sorting at the end of prolongMatrix::findLocalRemote. then clear the vector. // todo: clear does not free memory. find a solution.
+//                entry_remote.emplace_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
+                row_remote.emplace_back(entry[i].row);
                 // col_remote2 is the original col value. col_remote starts from 0.
 //                col_remote2.emplace_back(entry[i].col);
-//                values_remote.emplace_back(entry[i].val);
+                val_remote.emplace_back(entry[i].val);
 
                 if (entry[i].col != entry[i-1].col) {
                     col_remote_size++;
@@ -289,13 +292,13 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
                     nnzPerCol_remote.back()++;
                 }
                 // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-                col_remote.emplace_back(col_remote_size-1);
+//                col_remote.emplace_back(col_remote_size-1);
 //                nnzPerCol_remote[col_remote_size-1]++;
             }
         } // for i
 
-        nnz_l_local  = entry_local.size();
-        nnz_l_remote = entry_remote.size();
+        nnz_l_local  = row_local.size();
+        nnz_l_remote = row_remote.size();
 //        MPI_Barrier(comm); printf("rank=%d, nnz_l=%lu, nnz_l_local=%lu, nnz_l_remote=%lu \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
 
         for(index_t i = 0; i < M; i++){
@@ -304,6 +307,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         }
 
     } // end of if(entry.size()) != 0
+
+//    print_vector(val_local, 1, "val_local", comm);
 
 #ifdef __DEBUG1__
     if(verbose_transposeP){
@@ -390,7 +395,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     for(nnz_t i = 0; i < nnz_l_local; ++i)
         indicesP_local[i] = i;
     index_t *row_localP = &*row_local.begin();
-    std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
+    std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // NOTE: this is ordered only row-wise, not row-major.
 
 //    long start;
 //    for(i = 0; i < M; ++i) {
@@ -459,6 +464,8 @@ int restrict_matrix::openmp_setup() {
     {
         num_threads = omp_get_num_threads();
     }
+
+    matvec_levels = static_cast<int>( ceil( log2(num_threads) ) );
 
     iter_local_array.resize(num_threads+1);
     iter_remote_array.resize(num_threads+1);
@@ -551,14 +558,15 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
 //    printf("R matvec: start\n");
 
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
+//    int nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+    int rank;
     MPI_Comm_rank(comm, &rank);
 
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
-    for(index_t i=0;i<vIndexSize;i++)
-        vSend[i] = v[( vIndex[i] )];
+    for(index_t i = 0; i < vIndexSize; ++i)
+        vSend[i] = v[vIndex[i]];
 
 //    double t20 = MPI_Wtime();
 //    time[0] += (t20-t10);
@@ -569,12 +577,12 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     auto *statuses = new MPI_Status[numSendProc + numRecvProc];
 
     for(int i = 0; i < numRecvProc; i++){
-        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
         MPI_Test(&requests[i], &flag, &statuses[i]);
     }
 
     for(int i = 0; i < numSendProc; i++){
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
         MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
     }
 
@@ -592,7 +600,7 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
             for (index_t i = 0; i < M; ++i) {
                 for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
 //                    if(rank==1) cout << entry_local[indicesP_local[iter]].col - split[rank] << "\t" << v[entry_local[indicesP_local[iter]].col - split[rank]] << endl;
-                    w[i] += entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col];
+                    w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
                 }
             }
     }
@@ -644,7 +652,7 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
         #pragma omp for
         for (index_t j = 0; j < col_remote_size; ++j) {
             for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-                w_local[row_remote[iter]] += entry_remote[iter].val * vecValues[j];
+                w_local[row_remote[iter]] += val_remote[iter] * vecValues[j];
 
 //                if(rank==0 && thread_id==0){
 //                    printf("thread = %d\n", thread_id);
@@ -655,8 +663,7 @@ int restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
         }
 
         int thread_partner;
-        int levels = (int)ceil(log2(num_threads));
-        for (l = 0; l < levels; l++) {
+        for (l = 0; l < matvec_levels; l++) {
             if (thread_id % int(pow(2, l+1)) == 0) {
                 thread_partner = thread_id + int(pow(2, l));
 //                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
