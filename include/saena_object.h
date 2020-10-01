@@ -421,7 +421,8 @@ public:
     int prodim;
 
     double superlu_time;
-    double transfer_time;
+    double Rtransfer_time;
+    double Ptransfer_time;
     double vcycle_smooth_time;
 
     // for debugging

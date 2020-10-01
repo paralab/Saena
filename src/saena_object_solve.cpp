@@ -1151,7 +1151,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     grid->R.matvec(res, res_coarse);
 
     double t_trans2 = omp_get_wtime();
-    transfer_time += t_trans2 - t_trans1;
+    Rtransfer_time += t_trans2 - t_trans1;
 
 #ifdef __DEBUG1__
 //    grid->R.print_entry(-1);
@@ -1252,7 +1252,7 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
     grid->P.matvec(uCorrCoarse, uCorr);
 
     t_trans2 = omp_get_wtime();
-    transfer_time += t_trans2 - t_trans1;
+    Ptransfer_time += t_trans2 - t_trans1;
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
@@ -1813,7 +1813,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     }
 #endif
 
-    transfer_time = 0;
+    Rtransfer_time = 0;
+    Ptransfer_time = 0;
     superlu_time = 0;
     vcycle_smooth_time = 0;
     double matvec_time1 = 0;
@@ -2063,13 +2064,14 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double t_pcg2 = omp_get_wtime();
 
     if(rank==0) {
-        printf("pCG total\ntransfer\nsmooth\nsuperlu\n\n");
+        printf("pCG total\nRtransfer\nPtransfer\nsmooth\nsuperlu\n\n");
     }
 
-    print_time_ave((t_pcg2 - t_pcg1) / (i+1),  "total",    comm, true, false);
-    print_time_ave(transfer_time / (i+1),      "transfer", comm, true, false);
-    print_time_ave(vcycle_smooth_time / (i+1), "smooth",   comm, true, false);
-    print_time_ave(superlu_time / (i+1),       "superlu",  comm, true, false);
+    print_time_ave((t_pcg2 - t_pcg1) / (i+1),  "total",     comm, true, false);
+    print_time_ave(Ptransfer_time / (i+1),     "Rtransfer", comm, true, false);
+    print_time_ave(Rtransfer_time / (i+1),     "Ptransfer", comm, true, false);
+    print_time_ave(vcycle_smooth_time / (i+1), "smooth",    comm, true, false);
+    print_time_ave(superlu_time / (i+1),       "superlu",   comm, true, false);
 
     return 0;
 }
