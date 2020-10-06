@@ -370,6 +370,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         MPI_Alltoallv(&vElement_remote[0], &recvCount[0],   &rdispls[0], par::Mpi_datatype<index_t>::value(),
                       &vIndex[0],          &vIndexCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
 
+        int vIndexSizeAvg = 0;
+        MPI_Reduce(&vIndexSize, &vIndexSizeAvg, 1, MPI_INT, MPI_SUM, 0, comm);
+        vIndexSizeAvg /= nprocs;
+        if(!rank) printf("R: ave comm sz = %d\n", vIndexSizeAvg);
+
 #ifdef __DEBUG1__
         if (verbose_transposeP) {
             MPI_Barrier(comm);
