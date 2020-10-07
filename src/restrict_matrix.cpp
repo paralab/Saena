@@ -562,7 +562,7 @@ restrict_matrix::~restrict_matrix(){}
 
 void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
-//    printf("R matvec: start\n");
+    MPI_Barrier(comm);
 
 //    int nprocs;
 //    MPI_Comm_size(comm, &nprocs);
@@ -593,7 +593,7 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
         MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
     }
-
+#if 0
     // local loop
     // ----------
     double t1loc = omp_get_wtime();
@@ -615,13 +615,13 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     double t2loc = omp_get_wtime();
     tloc += (t2loc - t1loc);
-
+#endif
     // Wait for comm to finish.
     MPI_Waitall(numRecvProc, requests, statuses);
 
     // remote loop
     // -----------
-
+#if 0
     double t1rem = omp_get_wtime();
 
 /*
@@ -674,7 +674,7 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     double t2rem = omp_get_wtime();
     trem += (t2rem - t1rem);
-
+#endif
     MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
     delete [] requests;
     delete [] statuses;
@@ -682,7 +682,7 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     double t2comm = omp_get_wtime();
 
     ttot  += (t2comm - t1comm);
-    tcomm += (t2comm - t1comm) - (t2loc - t1loc) - (t2rem - t1rem);
+//    tcomm += (t2comm - t1comm) - (t2loc - t1loc) - (t2rem - t1rem);
 }
 
 

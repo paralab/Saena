@@ -87,7 +87,7 @@ int main(int argc, char* argv[]){
     // There are 3 ways to set options:
 
     // 1- set them manually
-    int    solver_max_iter    = 1000;
+    int    solver_max_iter    = 1;
     double relative_tolerance = 1e-8;
     std::string smoother      = "chebyshev";
     int    preSmooth          = 2;
