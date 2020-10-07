@@ -32,12 +32,11 @@ int prolong_matrix::findLocalRemote(){
     nnzPerRow_local.assign(M, 0);
     nnzPerRowScan_local.assign(M + 1, 0);
 
-    entry_remote.clear();
     row_local.clear();
     col_local.clear();
     val_local.clear();
     row_remote.clear();
-//    col_remote.clear();
+    col_remote.clear();
     val_remote.clear();
     vElementRep_local.clear();
     vElement_remote.clear();
@@ -57,9 +56,8 @@ int prolong_matrix::findLocalRemote(){
             val_local.emplace_back(entry[0].val);
             vElementRep_local.emplace_back(1);
         } else { // remote
-            entry_remote.emplace_back(entry[0]);
             row_remote.emplace_back(entry[0].row);
-//            col_remote.emplace_back(entry[i].col);
+            col_remote.emplace_back(entry[0].col);
             val_remote.emplace_back(entry[0].val);
             nnzPerCol_remote.emplace_back(1);
 
@@ -71,10 +69,9 @@ int prolong_matrix::findLocalRemote(){
             vIndexCount_t[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
         }
 
-        for (nnz_t i = 1; i < nnz_l; i++) {
+        for (nnz_t i = 1; i < nnz_l; ++i) {
 
-            // local
-            if (entry[i].col >= splitNew[rank] && entry[i].col < splitNew[rank + 1]) {
+            if (entry[i].col >= splitNew[rank] && entry[i].col < splitNew[rank + 1]) { // local
                 nnzPerRow_local[entry[i].row]++;
                 row_local.emplace_back(entry[i].row);
                 col_local.emplace_back(entry[i].col);
@@ -84,12 +81,10 @@ int prolong_matrix::findLocalRemote(){
                 else
                     (*(vElementRep_local.end() - 1))++;
 
-                // remote
-            } else {
+            } else { // remote
 //                if(rank==2) printf("entry[i].row = %lu\n", entry[i].row+split[rank]);
-                entry_remote.emplace_back(entry[i]);
                 row_remote.emplace_back(entry[i].row);
-//                col_remote.emplace_back(entry[i].col);
+                col_remote.emplace_back(entry[i].col);
                 val_remote.emplace_back(entry[i].val);
                 procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
                 vIndexCount_t[procNum]++;
@@ -112,7 +107,7 @@ int prolong_matrix::findLocalRemote(){
         nnz_l_remote    = row_remote.size();
         col_remote_size = vElement_remote.size(); // number of remote columns
 
-//    MPI_Barrier(comm); printf("rank=%d, P.nnz_l=%lu, P.nnz_l_local=%u, P.nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
+//        MPI_Barrier(comm); printf("rank=%d, P.nnz_l=%lu, P.nnz_l_local=%u, P.nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
 
         for (index_t i = 0; i < M; ++i) {
             nnzPerRowScan_local[i + 1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];

@@ -55,12 +55,16 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //    if(rank==1) cout << "\nvSend_t: P->nnz_l_remote = " << P->nnz_l_remote << endl;
 #endif
 
-        for (nnz_t i = 0; i < P->nnz_l_remote; i++) { // all remote entries should be sent.
-            P->vSend_t[i] = cooEntry(P->entry_remote[i].row + split[rank],
-                                     P->entry_remote[i].col,
-                                     P->entry_remote[i].val);
-//            if(rank==1) printf("%lu\t %lu\t %f \tP_remote\n", P->entry_remote[i].row, P->entry_remote[i].col, P->entry_remote[i].val);
+        // all remote entries should be sent.
+        for (nnz_t i = 0; i < P->nnz_l_remote; i++) {
+            P->vSend_t[i] = cooEntry(P->row_remote[i] + split[rank],
+                                     P->col_remote[i],
+                                     P->val_remote[i]);
         }
+
+        // col_remote won't be used after this point
+        P->col_remote.clear();
+        P->col_remote.shrink_to_fit();
 
 #ifdef __DEBUG1__
 //        if(rank==0) printf("numRecvProc_t = %u \tnumSendProc_t = %u \n", P->numRecvProc_t, P->numSendProc_t);

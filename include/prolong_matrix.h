@@ -30,13 +30,12 @@ public:
     std::vector<index_t> splitNew;
 
     std::vector<cooEntry> entry;
-    std::vector<cooEntry> entry_remote;
     std::vector<index_t> row_local;
     std::vector<index_t> col_local;
     std::vector<value_t> val_local;
     std::vector<index_t> row_remote;
+    std::vector<index_t> col_remote;
     std::vector<value_t> val_remote;
-//    std::vector<index_t> col_remote; // index starting from 0, instead of the original column index
 //    std::vector<unsigned long> col_remote2; //original col index
 //    std::vector<unsigned long> col_local;
 
