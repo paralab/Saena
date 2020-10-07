@@ -1822,6 +1822,19 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double matvec_time1 = 0;
     double t_pcg1 = omp_get_wtime();
 
+    for(int l = 0; l < max_level; ++l){
+        if(grids[l].active) {
+            grids[l].P.tloc  = 0;
+            grids[l].P.tcomm = 0;
+            grids[l].P.trem  = 0;
+            grids[l].P.ttot  = 0;
+            grids[l].R.tloc  = 0;
+            grids[l].R.tcomm = 0;
+            grids[l].R.trem  = 0;
+            grids[l].R.ttot  = 0;
+        }
+    }
+
     // ************** check u size **************
 /*
     index_t u_size_local = u.size();
@@ -2067,20 +2080,22 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double t_pcg2 = omp_get_wtime();
 
     if(rank==0) {
-        printf("pCG total\nRtransfer\nPtransfer\nsmooth\nsuperlu\n\n");
+        printf("Rtransfer\nPtransfer\nsmooth\nsuperlu\npCG total\n\n");
     }
 
-    print_time_ave((t_pcg2 - t_pcg1) / (i+1),  "total",     comm, true, false);
     print_time_ave(Rtransfer_time / (i+1),     "Rtransfer", comm, true, false);
     print_time_ave(Ptransfer_time / (i+1),     "Ptransfer", comm, true, false);
     print_time_ave(vcycle_smooth_time / (i+1), "smooth",    comm, true, false);
     print_time_ave(superlu_time / (i+1),       "superlu",   comm, true, false);
+    print_time_ave((t_pcg2 - t_pcg1) / (i+1),  "total",     comm, true, false);
 
     if(!rank) printf("\nP matvec:\n");
     if(!rank) printf("loc\ncomm\nrem\ntot\n");
     for(int l = 0; l < max_level; ++l){
+//    for(int l = 0; l < 1; ++l){
         if(grids[l].active) {
             if(!rank) printf("\nlevel %d: \n", l);
+            if(!rank) printf("matvec_comm_sz: %d\n", grids[l].P.matvec_comm_sz);
             print_time_ave(grids[l].P.tloc / (i+1),  "Ploc",  grids[l].A->comm, true, false);
             print_time_ave(grids[l].P.tcomm / (i+1), "Pcomm", grids[l].A->comm, true, false);
             print_time_ave(grids[l].P.trem / (i+1),  "Prem",  grids[l].A->comm, true, false);
@@ -2088,12 +2103,13 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         }
     }
 
-
     if(!rank) printf("\nR matvec:\n");
     if(!rank) printf("loc\ncomm\nrem\ntot\n");
     for(int l = 0; l < max_level; ++l){
+//    for(int l = 0; l < 1; ++l){
         if(grids[l].active) {
             if(!rank) printf("\nlevel %d: \n", l);
+            if(!rank) printf("matvec_comm_sz: %d\n", grids[l].R.matvec_comm_sz);
             print_time_ave(grids[l].R.tloc / (i+1),  "Rloc",  grids[l].A->comm, true, false);
             print_time_ave(grids[l].R.tcomm / (i+1), "Rcomm", grids[l].A->comm, true, false);
             print_time_ave(grids[l].R.trem / (i+1),  "Rrem",  grids[l].A->comm, true, false);

@@ -75,7 +75,8 @@ public:
     bool verbose_restrict_setup = false;
     bool verbose_transposeP     = false;
 
-    double tloc = 0, trem = 0, tcomm = 0, ttot = 0;       // for timing matvec
+    double tloc = 0, trem = 0, tcomm = 0, ttot = 0;    // for timing matvec
+    index_t matvec_comm_sz = 0;                        // for profiling matvec communication size (average on all procs)
 
     restrict_matrix();
     ~restrict_matrix();
