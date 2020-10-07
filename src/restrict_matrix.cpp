@@ -97,15 +97,13 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     entry.clear();
 
+    const index_t OFST = split[rank], OFSTNEW = splitNew[rank];
     nnz_t iter = 0;
     for (index_t i = 0; i < P->M; ++i) {
         for (index_t j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter) {
-//            if(rank==1) cout << P->entry_local[P->indicesP_local[iter]].col << "\t" << P->entry_local[P->indicesP_local[iter]].col - P->splitNew[rank]
-//                             << "\t" << P->entry_local[P->indicesP_local[iter]].row << "\t" << P->entry_local[P->indicesP_local[iter]].row + P->split[rank]
-//                             << "\t" << P->entry_local[P->indicesP_local[iter]].val << endl;
-            entry.emplace_back(cooEntry(P->entry_local[P->indicesP_local[iter]].col - splitNew[rank],    // make row index local
-                                        P->entry_local[P->indicesP_local[iter]].row + split[rank], // make col index global
-                                        P->entry_local[P->indicesP_local[iter]].val));
+            entry.emplace_back(cooEntry(P->col_local[P->indicesP_local[iter]] - OFSTNEW, // make row index local
+                                        P->row_local[P->indicesP_local[iter]] + OFST,    // make col index global
+                                        P->val_local[P->indicesP_local[iter]]));
         }
     }
 

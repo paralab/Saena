@@ -29,12 +29,7 @@ public:
     std::vector<index_t> split;
     std::vector<index_t> splitNew;
 
-//    std::vector<unsigned long> row;
-//    std::vector<unsigned long> col;
-//    std::vector<double> values;
-
     std::vector<cooEntry> entry;
-    std::vector<cooEntry> entry_local;
     std::vector<cooEntry> entry_remote;
     std::vector<index_t> row_local;
     std::vector<index_t> col_local;

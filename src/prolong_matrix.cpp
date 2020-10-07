@@ -32,7 +32,6 @@ int prolong_matrix::findLocalRemote(){
     nnzPerRow_local.assign(M, 0);
     nnzPerRowScan_local.assign(M + 1, 0);
 
-    entry_local.clear();
     entry_remote.clear();
     row_local.clear();
     col_local.clear();
@@ -53,7 +52,6 @@ int prolong_matrix::findLocalRemote(){
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
         if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) { // local
             nnzPerRow_local[entry[0].row]++;
-            entry_local.emplace_back(entry[0]);
             row_local.emplace_back(entry[0].row);
             col_local.emplace_back(entry[0].col);
             val_local.emplace_back(entry[0].val);
@@ -78,7 +76,6 @@ int prolong_matrix::findLocalRemote(){
             // local
             if (entry[i].col >= splitNew[rank] && entry[i].col < splitNew[rank + 1]) {
                 nnzPerRow_local[entry[i].row]++;
-                entry_local.emplace_back(entry[i]);
                 row_local.emplace_back(entry[i].row);
                 col_local.emplace_back(entry[i].col);
                 val_local.emplace_back(entry[i].val);

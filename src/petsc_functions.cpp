@@ -213,54 +213,56 @@ int petsc_viewer(saena_matrix *A){
 
 int petsc_prolong_matrix(prolong_matrix *P, Mat &B){
 
-//    PetscInitialize(0, nullptr, nullptr, nullptr);
-
     MPI_Comm comm = P->comm;
     PETSC_COMM_WORLD = comm;
-    int rank;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+
+    int rank = -1;
     MPI_Comm_rank(comm, &rank);
 
     std::vector<int> nnz_per_row_diag(P->M, 0);
-    for(nnz_t i = 0; i < P->entry_local.size(); i++){
-        nnz_per_row_diag[P->entry_local[i].row]++;
+    for(nnz_t i = 0; i < P->nnz_l_local; ++i){
+        ++nnz_per_row_diag[P->row_local[i]];
     }
 
     std::vector<int> nnz_per_row_off_diag(P->M, 0);
-    for(nnz_t i = 0; i < P->entry_remote.size(); i++){
-        nnz_per_row_off_diag[P->entry_remote[i].row]++;
+    for(nnz_t i = 0; i < P->nnz_l_remote; ++i){
+        ++nnz_per_row_off_diag[P->row_remote[i]];
     }
 
     MatCreate(comm, &B);
     MatSetSizes(B, P->M, P->splitNew[rank+1] - P->splitNew[rank], P->Mbig, P->Nbig);
 
     // for serial
-//    MatSetType(B,MATSEQAIJ);
+//    MatSetType(B, MATSEQAIJ);
 //    MatSeqAIJSetPreallocation(B, 7, NULL);
 
     MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
     MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
-    for(unsigned long i = 0; i < P->nnz_l; i++){
+    for(nnz_t i = 0; i < P->nnz_l; i++){
         MatSetValue(B, P->entry[i].row + P->split[rank], P->entry[i].col, P->entry[i].val, INSERT_VALUES);
     }
 
     MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(B,   MAT_FINAL_ASSEMBLY);
 
-//    MatInfo info;
-//    MatGetInfo(B, MAT_GLOBAL_SUM,&info);
-//    if(!rank){
-//        std::cout << "\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
-//                  << ", block size = " << info.block_size << std::endl;
-//
-//        PetscInt m, n;
-//        MatGetSize(B, &m,&n);
-//        printf("\nm = %d, n = %d\n", m, n);
-//    }
+/*
+    MatInfo info;
+    MatGetInfo(B, MAT_GLOBAL_SUM,&info);
+    if(!rank){
+        std::cout << "\nmalloc = " << info.mallocs << ", nz_a = " << info.nz_allocated << ", nz_u = " << info.nz_used
+                  << ", block size = " << info.block_size << std::endl;
+
+        PetscInt m, n;
+        MatGetSize(B, &m,&n);
+        printf("\nm = %d, n = %d\n", m, n);
+    }
+*/
 
 //    petsc_viewer(B);
 
-//    PetscFinalize();
+    PetscFinalize();
     return 0;
 }
 
