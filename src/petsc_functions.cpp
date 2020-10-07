@@ -144,8 +144,29 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
 
 int petsc_viewer(Mat &A){
 
+    int sz = 1800;
+
+    int m, n;
+    MatGetSize(A, &m, &n);
+
+    // set the window size
+    int w = 0, h = 0;   // width and height
+    if(m == n){
+        sz = 1000;
+        w = sz;
+        h = sz;
+    }else if(m > n){
+        w = (static_cast<double>(n) / m) * sz;
+        h = sz;
+    }else{
+        h = (static_cast<double>(m) / n) * sz;
+        w = sz;
+    }
+
+//    printf("m = %d, n = %d, w = %d, h = %d\n", m, n, w, h);
+
     PetscViewer viewer;
-    PetscViewerDrawOpen(PETSC_COMM_WORLD, 0, "", 300, 0, 1000, 1000, &viewer);
+    PetscViewerDrawOpen(PETSC_COMM_WORLD, nullptr, "", 300, 0, w, h, &viewer);
     PetscViewerDrawSetPause(viewer, -1);
     MatView(A, viewer);
     PetscViewerDestroy(&viewer);
@@ -160,49 +181,9 @@ int petsc_viewer(saena_matrix *A){
         MPI_Comm comm = A->comm;
         PETSC_COMM_WORLD = comm;
         PetscInitialize(nullptr, nullptr, nullptr, nullptr);
-
-//        int rank = -1;
-//        MPI_Comm_rank(comm, &rank);
-
-        std::vector<int> nnz_per_row_diag(A->M, 0);
-        for (nnz_t i = 0; i < A->nnz_l_local; i++) {
-//            if(rank == 1) printf("%6d\t(loc)\n", A->row_local[i]);
-            ++nnz_per_row_diag[A->row_local[i]];
-        }
-
-        std::vector<int> nnz_per_row_off_diag(A->M, 0);
-        for (nnz_t i = 0; i < A->nnz_l_remote; i++) {
-//            if(rank == 1) printf("%6d\t(rem)\n", A->row_remote[i]);
-            ++nnz_per_row_off_diag[A->row_remote[i]];
-        }
-
         Mat B;
-        MatCreate(comm, &B);
-        MatSetSizes(B, A->M, A->M, A->Mbig, A->Mbig);
-
-        // for serial
-//        MatSetType(B, MATSEQAIJ);
-//        MatSeqAIJSetPreallocation(B, 7, NULL);
-
-        MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
-        MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
-
-        for (unsigned long i = 0; i < A->nnz_l; i++) {
-//            if(rank == 1) printf("%6d\t%6d\t%6f\n", A->entry[i].row, A->entry[i].col, A->entry[i].val);
-//            assert(A->entry[i].row >= A->split[rank] && A->entry[i].row < A->split[rank + 1]);
-//            assert(A->entry[i].col >= 0 && A->entry[i].col < A->Mbig);
-            MatSetValue(B, A->entry[i].row, A->entry[i].col, A->entry[i].val, INSERT_VALUES);
-        }
-
-        MatAssemblyBegin(B, MAT_FINAL_ASSEMBLY);
-        MatAssemblyEnd(B, MAT_FINAL_ASSEMBLY);
-
-        PetscViewer viewer;
-        PetscViewerDrawOpen(PETSC_COMM_WORLD, nullptr, "", 300, 0, 1000, 1000, &viewer);
-        PetscViewerDrawSetPause(viewer, -1);
-        MatView(B, viewer);
-        PetscViewerDestroy(&viewer);
-
+        petsc_saena_matrix(A, B);
+        petsc_viewer(B);
         MatDestroy(&B);
         PetscFinalize();
     }
@@ -392,13 +373,16 @@ int petsc_saena_matrix(saena_matrix *A, Mat &B){
     MatSetSizes(B, A->M, A->M, A->Mbig, A->Mbig);
 
     // for serial
-//    MatSetType(B,MATSEQAIJ);
+//    MatSetType(B, MATSEQAIJ);
 //    MatSeqAIJSetPreallocation(B, 7, NULL);
 
     MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
     MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
-    for(unsigned long i = 0; i < A->nnz_l; i++){
+    for (nnz_t i = 0; i < A->nnz_l; ++i) {
+//        if(rank == 1) printf("%6d\t%6d\t%6f\n", A->entry[i].row, A->entry[i].col, A->entry[i].val);
+//        assert(A->entry[i].row >= A->split[rank] && A->entry[i].row < A->split[rank + 1]);
+//        assert(A->entry[i].col >= 0 && A->entry[i].col < A->Mbig);
         MatSetValue(B, A->entry[i].row, A->entry[i].col, A->entry[i].val, INSERT_VALUES);
     }
 
