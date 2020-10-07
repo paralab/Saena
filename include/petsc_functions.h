@@ -14,6 +14,8 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx);
 
 int petsc_viewer(Mat &A);
 int petsc_viewer(saena_matrix *A);
+int petsc_viewer(prolong_matrix *P);
+int petsc_viewer(restrict_matrix *R);
 int petsc_prolong_matrix(prolong_matrix *P, Mat &B);
 int petsc_restrict_matrix(restrict_matrix *R, Mat &B);
 int petsc_saena_matrix(saena_matrix *A, Mat &B);

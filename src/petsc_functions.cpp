@@ -213,9 +213,18 @@ int petsc_viewer(saena_matrix *A){
 
 int petsc_prolong_matrix(prolong_matrix *P, Mat &B){
 
+    PetscBool petsc_init;
+    PetscInitialized(&petsc_init);
+
     MPI_Comm comm = P->comm;
     PETSC_COMM_WORLD = comm;
-    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+
+    bool fin_petsc = true;
+    if(!petsc_init) {
+        PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    }else{
+        fin_petsc = false; // if PETSc is initialized in another function, that function should call PetscFinalize().
+    }
 
     int rank = -1;
     MPI_Comm_rank(comm, &rank);
@@ -262,10 +271,64 @@ int petsc_prolong_matrix(prolong_matrix *P, Mat &B){
 
 //    petsc_viewer(B);
 
-    PetscFinalize();
+    if(fin_petsc){
+        PetscFinalize();
+    }
+
     return 0;
 }
 
+int petsc_viewer(prolong_matrix *P){
+
+    PetscBool petsc_init;
+    PetscInitialized(&petsc_init);
+
+    MPI_Comm comm = P->comm;
+    PETSC_COMM_WORLD = comm;
+
+    bool fin_petsc = true;
+    if(!petsc_init){
+        PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    }else{
+        fin_petsc = false; // if PETSc is initialized in another function, that function should call PetscFinalize().
+    }
+
+    Mat B;
+    petsc_prolong_matrix(P, B);
+    petsc_viewer(B);
+
+    if(fin_petsc){
+        PetscFinalize();
+    }
+
+    return 0;
+}
+
+int petsc_viewer(restrict_matrix *R){
+
+    PetscBool petsc_init;
+    PetscInitialized(&petsc_init);
+
+    MPI_Comm comm = R->comm;
+    PETSC_COMM_WORLD = comm;
+
+    bool fin_petsc = true;
+    if(!petsc_init){
+        PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    }else{
+        fin_petsc = false; // if PETSc is initialized in another function, that function should call PetscFinalize().
+    }
+
+    Mat B;
+    petsc_restrict_matrix(R, B);
+    petsc_viewer(B);
+
+    if(fin_petsc){
+        PetscFinalize();
+    }
+
+    return 0;
+}
 
 int petsc_restrict_matrix(restrict_matrix *R, Mat &B){
 
