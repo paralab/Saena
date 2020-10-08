@@ -17,7 +17,7 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
 
 //    if(rank==0)
 //        printf("\nlocal  = %e \nremote = %e \ncomm   = %e \ntotal division = %f \nlocal division = %f \ncomm division = %f \n",
-//               matvec_dummy_time[0], matvec_dummy_time[1], matvec_dummy_time[2],
+//               matvec_dummy_time[1], matvec_dummy_time[2], matvec_dummy_time[0],
 //               matvec_dummy_time[3]/prev_time[3], prev_time[1]/matvec_dummy_time[1],
 //               matvec_dummy_time[0]/prev_time[0]);
 
