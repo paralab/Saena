@@ -723,6 +723,10 @@ int saena_matrix::set_off_on_diagonal(){
         nnz_list.resize(nprocs);
         MPI_Allgather(&nnz_l, 1, par::Mpi_datatype<nnz_t>::value(), &nnz_list[0], 1, par::Mpi_datatype<nnz_t>::value(), comm);
 //        print_vector(nnz_list, 1, "nnz_list", comm);
+
+        // to be used in smoothers
+        temp1.resize(M);
+        temp2.resize(M);
     }
 
     return 0;

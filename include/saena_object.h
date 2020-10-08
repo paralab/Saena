@@ -302,13 +302,10 @@ public:
 //    int smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
 
     void inline smooth(Grid *grid, std::vector<value_t> &u, std::vector<value_t> &rhs, int iter) const{
-        std::vector<value_t> temp1(u.size());
-        std::vector<value_t> temp2(u.size());
-
         if(smoother == "jacobi"){
-            grid->A->jacobi(iter, u, rhs, temp1);
+            grid->A->jacobi(iter, u, rhs);
         }else if(smoother == "chebyshev"){
-            grid->A->chebyshev(iter, u, rhs, temp1, temp2);
+            grid->A->chebyshev(iter, u, rhs);
         }
 //        else{
 //            printf("Error: Unknown smoother");

@@ -1093,7 +1093,7 @@ int saena_matrix::set_zero(){
 }
 
 
-int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp) {
+void saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Au - rhs)
@@ -1106,21 +1106,19 @@ int saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>
 //    MPI_Comm_rank(comm, &rank);
 
     for(int j = 0; j < iter; j++){
-        matvec(u, temp);
+        matvec(u, temp1);
 
         #pragma omp parallel for
         for(index_t i = 0; i < M; i++){
-            temp[i] -= rhs[i];
-            temp[i] *= inv_diag[i] * jacobi_omega;
-            u[i]    -= temp[i];
+            temp1[i] -= rhs[i];
+            temp1[i] *= inv_diag[i] * jacobi_omega;
+            u[i]    -= temp1[i];
         }
     }
-
-    return 0;
 }
 
 
-int saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res, std::vector<value_t>& d){
+void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vector<value_t>& rhs){
 
 #ifdef __DEBUG1__
 //    int rank;
@@ -1138,6 +1136,9 @@ int saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vecto
     const double twos1 = 2 * s1;     // to avoid the multiplication in the "for" loop.
           double rhok  = 1 / s1;
           double rhokp1 = 0.0, two_rhokp1 = 0.0, d1 = 0.0, d2 = 0.0;
+
+    std::vector<value_t>& res = temp1;
+    std::vector<value_t>& d   = temp2;
 
     // first loop
     residual_negative(u, rhs, res);
@@ -1170,8 +1171,6 @@ int saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vecto
 //                               j, inv_diag[j], j, res[j], j, d[j], j, u[j]);
         }
     }
-
-    return 0;
 }
 
 

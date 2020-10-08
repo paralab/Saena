@@ -120,6 +120,9 @@ public:
     std::vector<index_t> vElement_remote;           // indices that should be received during matvec
     std::vector<value_t> w_buff; // for matvec3()
 
+    std::vector<value_t> temp1;      // to be used in smoothers
+    std::vector<value_t> temp2;      // to be used in smoothers
+
     bool add_duplicates = true;
     bool assembled = false; // use this parameter to determine which matrix.set() function to use.
 
@@ -330,8 +333,8 @@ public:
     int inverse_diag();
 
     // smoothers
-    int jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp);
-    int chebyshev(const int &iter, std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& temp, std::vector<value_t>& temp2);
+    void jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    void chebyshev(const int &iter, std::vector<value_t>& u, std::vector<value_t>& rhs);
 
     // I/O functions
     int print_entry(int ran, std::string name = "");
