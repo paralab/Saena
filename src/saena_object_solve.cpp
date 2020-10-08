@@ -3,7 +3,6 @@
 
 #include "saena_object.h"
 #include "saena_matrix.h"
-#include "grid.h"
 #include "aux_functions.h"
 
 // uncomment to print info for the lazy update feature
@@ -928,25 +927,6 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
         MPI_Barrier(comm);
     }
 #endif
-
-    return 0;
-}
-
-
-int saena_object::smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter){
-    std::vector<value_t> temp1(u.size());
-    std::vector<value_t> temp2(u.size());
-
-    if(smoother == "jacobi"){
-        grid->A->jacobi(iter, u, rhs, temp1);
-    }else if(smoother == "chebyshev"){
-        grid->A->chebyshev(iter, u, rhs, temp1, temp2);
-    }else{
-        printf("Error: Unknown smoother");
-        MPI_Finalize();
-        exit(EXIT_FAILURE);
-//        return -1;
-    }
 
     return 0;
 }
