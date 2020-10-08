@@ -418,9 +418,8 @@ void saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
 
     int nprocs;
     MPI_Comm_size(comm, &nprocs);
-
-//    int rank;
-//    MPI_Comm_rank(comm, &rank);
+    int rank;
+    MPI_Comm_rank(comm, &rank);
 
     std::vector<value_t> u_old(std::move(u));
     u.resize(grid.Ac.M);
@@ -428,26 +427,31 @@ void saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
 //    MPI_Alltoallv(&u_old[0], &grid.scount2[0], &grid.sdispls2[0], par::Mpi_datatype<value_t>::value(),
 //                  &u[0],     &grid.rcount2[0], &grid.rdispls2[0], par::Mpi_datatype<value_t>::value(), comm);
 
-    int flag = 0;
-    auto *requests = new MPI_Request[2 * nprocs];
-    auto *statuses = new MPI_Status[2 * nprocs];
+//    int flag = 0;
+//    auto *requests = new MPI_Request[2 * nprocs];
+    auto *statuses = new MPI_Status[nprocs];
 
     int reqs = 0;
     for(int i = 0; i < nprocs; ++i){
-        if(grid.rcount2[i] != 0){
-            MPI_Irecv(&u[grid.rdispls2[i]],     grid.rcount2[i], par::Mpi_datatype<value_t>::value(), i, 1, comm, &requests[reqs]);
-//            MPI_Test(&requests[reqs], &flag, &statuses[i]);
-            ++reqs;
+        if(grid.rcount2[i] != 0 || grid.scount2[i] != 0) {
+            MPI_Sendrecv(&u_old[grid.sdispls2[i]], grid.scount2[i], par::Mpi_datatype<value_t>::value(), i, i,
+                         &u[grid.rdispls2[i]],     grid.rcount2[i], par::Mpi_datatype<value_t>::value(), i, rank, comm, &statuses[reqs]);
         }
-        if(grid.scount2[i] != 0) {
-            MPI_Isend(&u_old[grid.sdispls2[i]], grid.scount2[i], par::Mpi_datatype<value_t>::value(), i, 1, comm, &requests[reqs]);
+
+//        if(grid.rcount2[i] != 0){
+//            MPI_Irecv(&u[grid.rdispls2[i]],     grid.rcount2[i], par::Mpi_datatype<value_t>::value(), i, rank, comm, &requests[reqs]);
 //            MPI_Test(&requests[reqs], &flag, &statuses[i]);
-            ++reqs;
-        }
+//            ++reqs;
+//        }
+//        if(grid.scount2[i] != 0) {
+//            MPI_Isend(&u_old[grid.sdispls2[i]], grid.scount2[i], par::Mpi_datatype<value_t>::value(), i, i, comm, &requests[reqs]);
+//            MPI_Test(&requests[reqs], &flag, &statuses[i]);
+//            ++reqs;
+//        }
     }
 
-    MPI_Waitall(reqs, requests, statuses);
-    delete [] requests;
+//    MPI_Waitall(reqs, requests, statuses);
+//    delete [] requests;
     delete [] statuses;
 
 //    print_vector(u, -1, "u", comm);
@@ -463,9 +467,8 @@ void saena_object::repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid
 
     int nprocs;
     MPI_Comm_size(comm, &nprocs);
-
-//    int rank;
-//    MPI_Comm_rank(comm, &rank);
+    int rank;
+    MPI_Comm_rank(comm, &rank);
 
     std::vector<value_t> u_old(std::move(u));
     u.resize(grid.Ac.M_old);
@@ -473,26 +476,31 @@ void saena_object::repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid
 //    MPI_Alltoallv(&u_old[0], &grid.rcount2[0], &grid.rdispls2[0], par::Mpi_datatype<value_t>::value(),
 //                  &u[0],     &grid.scount2[0], &grid.sdispls2[0], par::Mpi_datatype<value_t>::value(), comm);
 
-    int flag = 0;
-    auto *requests = new MPI_Request[2 * nprocs];
-    auto *statuses = new MPI_Status[2 * nprocs];
+//    int flag = 0;
+//    auto *requests = new MPI_Request[2 * nprocs];
+    auto *statuses = new MPI_Status[nprocs];
 
     int reqs = 0;
     for(int i = 0; i < nprocs; ++i){
-        if(grid.scount2[i] != 0){
-            MPI_Irecv(&u[grid.sdispls2[i]],     grid.scount2[i], par::Mpi_datatype<value_t>::value(), i, 1, comm, &requests[reqs]);
-            MPI_Test(&requests[reqs], &flag, &statuses[i]);
-            ++reqs;
+        if(grid.rcount2[i] != 0 || grid.scount2[i] != 0) {
+            MPI_Sendrecv(&u[grid.rdispls2[i]],     grid.rcount2[i], par::Mpi_datatype<value_t>::value(), i, rank,
+                         &u_old[grid.sdispls2[i]], grid.scount2[i], par::Mpi_datatype<value_t>::value(), i, i, comm, &statuses[reqs]);
         }
-        if(grid.rcount2[i] != 0) {
-            MPI_Isend(&u_old[grid.rdispls2[i]], grid.rcount2[i], par::Mpi_datatype<value_t>::value(), i, 1, comm, &requests[reqs]);
-            MPI_Test(&requests[reqs], &flag, &statuses[i]);
-            ++reqs;
-        }
+
+//        if(grid.scount2[i] != 0){
+//            MPI_Irecv(&u[grid.sdispls2[i]],     grid.scount2[i], par::Mpi_datatype<value_t>::value(), i, 1, comm, &requests[reqs]);
+//            MPI_Test(&requests[reqs], &flag, &statuses[i]);
+//            ++reqs;
+//        }
+//        if(grid.rcount2[i] != 0) {
+//            MPI_Isend(&u_old[grid.rdispls2[i]], grid.rcount2[i], par::Mpi_datatype<value_t>::value(), i, 1, comm, &requests[reqs]);
+//            MPI_Test(&requests[reqs], &flag, &statuses[i]);
+//            ++reqs;
+//        }
     }
 
-    MPI_Waitall(reqs, requests, statuses);
-    delete [] requests;
+//    MPI_Waitall(reqs, requests, statuses);
+//    delete [] requests;
     delete [] statuses;
 
 //    print_vector(u, -1, "u", comm);
