@@ -1991,7 +1991,11 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
         // **************************************************************
 
+        dot1 = omp_get_wtime();
         dotProduct(r, rho, &beta, comm);
+        dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
+        
         beta /= rho_res;
 
 //#pragma omp parallel for default(none) shared(u, p, rho, beta)
