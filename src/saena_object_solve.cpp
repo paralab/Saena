@@ -1800,6 +1800,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     superlu_time = 0;
     vcycle_smooth_time = 0;
     double matvec_time1 = 0;
+    double dots = 0;
     double t_pcg1 = omp_get_wtime();
 
     for(int l = 0; l < max_level; ++l){
@@ -1940,8 +1941,12 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         double time_matvec2 = omp_get_wtime();
         matvec_time1 += time_matvec2 - time_matvec1;
 
+        double dot1 = omp_get_wtime();
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h,   &pdoth,   comm);
+        double dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
+
         alpha = rho_res / pdoth;
 
 #pragma omp parallel for default(none) shared(u, r, p, h, alpha)
@@ -1950,7 +1955,10 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
             r[j] -= alpha * h[j];
         }
 
+        dot1 = omp_get_wtime();
         dotProduct(r, r, &current_dot, comm);
+        dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
 
 #ifdef __DEBUG1__
 //        printf("rho_res = %e, pdoth = %e, alpha = %f \n", rho_res, pdoth, alpha);
@@ -2060,9 +2068,11 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double t_pcg2 = omp_get_wtime();
 
     if(rank==0) {
-        printf("Rtransfer\nPtransfer\nsmooth\nsuperlu\npCG total\n\n");
+        printf("L0matvec\ndots\nRtransfer\nPtransfer\nsmooth\nsuperlu\npCG total\n\n");
     }
 
+    print_time_ave(matvec_time1 / (i+1),       "L0matvec",  comm, true, false);
+    print_time_ave(dots / (i+1),               "dots",      comm, true, false);
     print_time_ave(Rtransfer_time / (i+1),     "Rtransfer", comm, true, false);
     print_time_ave(Ptransfer_time / (i+1),     "Ptransfer", comm, true, false);
     print_time_ave(vcycle_smooth_time / (i+1), "smooth",    comm, true, false);
