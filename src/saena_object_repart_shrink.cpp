@@ -436,12 +436,12 @@ void saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
     for(int i = 0; i < nprocs; ++i){
         if(grid.rcount2[i] != 0){
             MPI_Irecv(&u[grid.rdispls2[i]],     grid.rcount2[i], par::Mpi_datatype<value_t>::value(), i, 1, comm, &requests[reqs]);
-            MPI_Test(&requests[reqs], &flag, &statuses[i]);
+//            MPI_Test(&requests[reqs], &flag, &statuses[i]);
             ++reqs;
         }
         if(grid.scount2[i] != 0) {
             MPI_Isend(&u_old[grid.sdispls2[i]], grid.scount2[i], par::Mpi_datatype<value_t>::value(), i, 1, comm, &requests[reqs]);
-            MPI_Test(&requests[reqs], &flag, &statuses[i]);
+//            MPI_Test(&requests[reqs], &flag, &statuses[i]);
             ++reqs;
         }
     }

@@ -586,12 +586,12 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     for(int i = 0; i < numRecvProc; i++){
         MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
-        MPI_Test(&requests[i], &flag, &statuses[i]);
+//        MPI_Test(&requests[i], &flag, &statuses[i]);
     }
 
     for(int i = 0; i < numSendProc; i++){
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
+//        MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
     }
 
     // local loop
