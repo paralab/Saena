@@ -409,7 +409,7 @@ int saena_object::repartition_u_shrink_prepare(Grid *grid){
 }
 
 
-int saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
+void saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
     // this is used in vcycle
 
 //    MPI_Comm comm = grid.Ac.comm;
@@ -425,16 +425,14 @@ int saena_object::repartition_u_shrink(std::vector<value_t> &u, Grid &grid){
 //    MPI_Barrier(grid.A->comm);
 //    print_vector(u, 1, "u inside repartition_u_shrink", comm);
 
-    std::vector<value_t> u_old = u;
+    std::vector<value_t> u_old(std::move(u));
     u.resize(grid.Ac.M);
     MPI_Alltoallv(&u_old[0], &grid.scount2[0], &grid.sdispls2[0], par::Mpi_datatype<value_t>::value(),
                   &u[0],     &grid.rcount2[0], &grid.rdispls2[0], par::Mpi_datatype<value_t>::value(), comm);
-
-    return 0;
 }
 
 
-int saena_object::repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid){
+void saena_object::repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid){
     // this is used in vcycle
 
 //    MPI_Comm comm = grid.Ac.comm;
@@ -448,12 +446,10 @@ int saena_object::repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid)
 //    print_vector(grid.rcount2, -1, "grid.rcount2", comm);
 //    print_vector(grid.scount2, -1, "grid.scount2", comm);
 
-    std::vector<value_t> u_old = u;
+    std::vector<value_t> u_old(std::move(u));
     u.resize(grid.Ac.M_old);
     MPI_Alltoallv(&u_old[0], &grid.rcount2[0], &grid.rdispls2[0], par::Mpi_datatype<value_t>::value(),
                   &u[0],     &grid.scount2[0], &grid.sdispls2[0], par::Mpi_datatype<value_t>::value(), comm);
-
-    return 0;
 }
 
 

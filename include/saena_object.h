@@ -259,8 +259,8 @@ public:
 
     // if shrinking happens, u and rhs should be shrunk too.
     int repartition_u_shrink_prepare(Grid *grid);
-    int repartition_u_shrink(std::vector<value_t> &u, Grid &grid);
-    int repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid);
+    void repartition_u_shrink(std::vector<value_t> &u, Grid &grid);
+    void repartition_back_u_shrink(std::vector<value_t> &u, Grid &grid);
 
     // if minor shrinking happens, u and rhs should be shrunk too.
 //    int repartition_u_shrink_minor_prepare(Grid *grid);
