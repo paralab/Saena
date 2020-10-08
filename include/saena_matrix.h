@@ -90,11 +90,11 @@ public:
 
     index_t vIndexSize = 0;
     index_t recvSize   = 0;
-    std::vector<index_t> vIndex;
+    std::vector<index_t> vIndex;        // indices that should be sent during matvec
     std::vector<value_t> vSend;
     std::vector<value_t> vSend2;
     std::vector<value_t> vecValues;
-    std::vector<value_t> vecValues2; // for compressed matvec
+    std::vector<value_t> vecValues2;    // for compressed matvec
 
     std::vector<nnz_t> indicesP_local;
 
@@ -117,7 +117,7 @@ public:
     std::vector<nnz_t> iter_remote_array;
 //    std::vector<nnz_t> iter_local_array2;
     std::vector<nnz_t> iter_remote_array2;
-    std::vector<index_t> vElement_remote;
+    std::vector<index_t> vElement_remote;           // indices that should be received during matvec
     std::vector<value_t> w_buff; // for matvec3()
 
     bool add_duplicates = true;
