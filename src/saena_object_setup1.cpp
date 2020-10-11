@@ -43,8 +43,6 @@ int saena_object::SA(Grid *grid){
 #endif
 
     nnz_t i = 0, j = 0;
-    double omega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
-
     std::vector<index_t> aggregate(grid->A->M);
     int ret_val = find_aggregation(grid->A, aggregate, grid->P.splitNew);
 
@@ -96,30 +94,67 @@ int saena_object::SA(Grid *grid){
 
     std::vector<cooEntry> PEntryTemp;
 
-    // P = (I - 4/(3*rhoDA) * DA) * P_t
-    // aggreagte is used as P_t in the following "for" loop.
+    // P = (I - w * Q * A) * P_t
+    // P = (I - 4 / (3 * rhoDA) * DA) * P_t
+    // aggregate is used as P_t in the following "for" loop.
+
     // local
     // -----
 
-    // use these to avoid subtracting A->split[rank] from each case
+    // use these to avoid subtracting A->split[rank] from each aggregate[i]
     auto *aggregate_p = &aggregate[0] - A->split[rank];
+
+    value_t *Q = nullptr;
+    if(PSmoother == "jacobi"){
+        Q = &A->inv_diag[0];
+        Pomega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
+    }else if(PSmoother == "SPAI"){
+        Q = new value_t[A->M];
+        assert(Q);
+        fill(&Q[0], &Q[A->M], 0);
+
+        std::vector<value_t> QA(A->M, 0);
+
+        value_t *Qp  = &Q[0] - A->split[rank];
+        value_t *QAp = &QA[0] - A->split[rank];
+        for(i = 0; i < A->nnz_l; ++i){
+            Qp[A->entry[i].row]  += A->entry[i].val * A->entry[i].val;
+            QAp[A->entry[i].row] += abs(A->entry[i].val);
+//            if(rank == 1) printf("%4d: %2.5f, %2.5f\n", A->entry[i].row, Qp[A->entry[i].row], QAp[A->entry[i].row]);
+        }
+
+        value_t rhoQA_l = 0;
+        for(i = 0; i < A->M; ++i){
+            Q[i]   = 1.0 / (A->inv_diag[i] * Q[i]);
+            assert(Q[i]);
+            rhoQA_l = max(rhoQA_l, QA[i]);
+//            if(rank == 1) printf("Q[i] = %f, A->inv_diag[i] = %f\n", Q[i], A->inv_diag[i]);
+        }
+
+        value_t rhoQA = 0;
+        MPI_Allreduce(&rhoQA_l, &rhoQA, 1, par::Mpi_datatype<value_t>::value(), MPI_MAX, comm);
+        Pomega = 4 / (3 * rhoQA);   // for symmetric matrices
+//        Pomega = 5 / (4 * rhoQA);   // for asymmetric matrices
+
+        assert(rhoQA);
+//        if(!rank) printf("rhoQA = %f, Pomega = %f\n", rhoQA, Pomega);
+    }
 
     // go through A row-wise using indicesP_local (there is no order for the columns, only rows are ordered.)
     value_t vtmp = 0;
-    const double ONE_M_OMEGA = 1 - omega;
     long iter = 0;
     for (i = 0; i < A->M; ++i) {
-        const auto r_idx     = i + A->split[rank];      // row index
-        const auto ninv_diag = -A->inv_diag[i];     // negative inverse of the diagonal element
+        const auto r_idx = i + A->split[rank];      // row index
+
         for (j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
             const auto idx = A->indicesP_local[iter];
 
+            vtmp = -Pomega * Q[i] * A->values_local[idx];
             if(r_idx == A->col_local[idx]){ // diagonal element
-                vtmp = ONE_M_OMEGA;
-            }else{
-                vtmp = omega * A->values_local[idx] * ninv_diag;
+                vtmp += 1;    // extra step for diagonal elements because of I in P = (I - wQA) * P_t
             }
 
+//            if(rank == 1) printf("(%4ld, %4d) = %f\n", i, aggregate_p[A->col_local[idx]], vtmp);
             PEntryTemp.emplace_back(cooEntry(i, aggregate_p[A->col_local[idx]], vtmp));
 
 //            if(rank==1) std::cout << i + A->split[rank] << "\t" << A->col_local[idx] << "\t" <<
@@ -142,7 +177,7 @@ int saena_object::SA(Grid *grid){
         for (j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
             PEntryTemp.emplace_back(cooEntry(A->row_remote[iter],
                                              c_idx,
-                                             -omega * A->values_remote[iter] * A->inv_diag[A->row_remote[iter]]));
+                                             -Pomega * Q[A->row_remote[iter]] * A->values_remote[iter]));
 //            if(rank==3) std::cout << A->row_remote[iter] + A->split[rank] << "\t" << vecValuesAgg[A->col_remote[iter]] << "\t"
 //                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << "\t" << A->col_remote[iter] << std::endl;
         }
@@ -155,6 +190,10 @@ int saena_object::SA(Grid *grid){
         MPI_Barrier(comm); if (!rank) printf("SA: step 4\n"); MPI_Barrier(comm);
     }
 #endif
+
+    if(PSmoother == "SPAI"){
+        delete [] Q;
+    }
 
     // add duplicates.
     // values of entries with the same row and col should be added together.
