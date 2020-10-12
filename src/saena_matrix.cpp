@@ -33,29 +33,34 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
     read_from_file = true;
 
+    // check if file exists
+    // ====================
     std::string filename(Aname);
-    size_t      extIndex       = filename.find_last_of('.');
-    std::string file_extension = filename.substr(extIndex+1, 3);
-//    if(rank==0) std::cout << "file_extension: " << file_extension << std::endl;
+    std::ifstream inFile_check(filename.c_str());
+    if (!inFile_check.is_open()) {
+        if (!rank) std::cout << "\nCould not open the matrix file <" << filename << ">" << std::endl;
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+    }
+    inFile_check.close();
 
+    // find extension of the file
+    // ==========================
+    size_t extIndex = filename.find_last_of('.');
+    if(extIndex == string::npos || extIndex == filename.size() - 1){
+        if (!rank) cout << "The matrix file name does not have an extension!" << endl;
+        MPI_Abort(comm, 1);
+    }
+
+    std::string file_extension = filename.substr(extIndex+1, string::npos); // string::npos -> the end of the string
     std::string outFileName = filename.substr(0, extIndex) + ".bin";
+
+//    if(rank==0) std::cout << "file_extension: " << file_extension << std::endl;
 //    if(rank==0) std::cout << "outFileName: " << outFileName << std::endl;
 
+    // if the file is not binary, generate its binary file
+    // ===================================================
     if(file_extension != "bin") {
-
-        // check if file exists
-        // ====================
-
-        std::ifstream inFile_check(filename.c_str());
-        if (!inFile_check.is_open()) {
-            if (!rank) std::cout << "\nCould not open file <" << filename << ">" << std::endl;
-            MPI_Finalize();
-            exit(EXIT_FAILURE);
-        }
-        inFile_check.close();
-
-        // ====================
-
         if (file_extension == "mtx") {
 
             std::ifstream inFile_check_bin(outFileName.c_str());
