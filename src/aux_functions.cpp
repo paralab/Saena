@@ -323,6 +323,17 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
     MPI_File fh;
     MPI_Offset offset;
 
+    // check if file exists
+    // ====================
+    std::string filename(file);
+    std::ifstream inFile_check(filename.c_str());
+    if (!inFile_check.is_open()) {
+        if (!rank) std::cout << "\nCould not open the rhs file <" << filename << ">" << std::endl;
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+    }
+    inFile_check.close();
+
     int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
     if(mpiopen){
         if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
@@ -330,10 +341,86 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
         return -1;
     }
 
+    size_t extIndex = filename.find_last_of('.');
+    if(extIndex == string::npos || extIndex == filename.size() - 1){
+        if (!rank) cout << "The rhs file name does not have an extension!" << endl;
+        MPI_Abort(comm, 1);
+    }
+
+    std::string file_extension = filename.substr(extIndex+1, string::npos); // string::npos -> the end of the string
+    std::string outFileName = filename.substr(0, extIndex) + ".bin";
+
+//    if(rank==0) std::cout << "file_extension: " << file_extension << std::endl;
+//    if(rank==0) std::cout << "outFileName: " << outFileName << std::endl;
+
+    if(file_extension != "bin") {
+
+        std::ifstream inFile_check_bin(outFileName.c_str());
+
+        if (inFile_check_bin.is_open()) {
+//            if (rank == 0)
+//                std::cout <<"A binary file with the same name exists. Using that file instead of the txt file.\n\n";
+            inFile_check_bin.close();
+        } else {
+
+            // write the file in binary by proc 0.
+            if (!rank) {
+
+//                std::cout << "First a binary file with name \"" << outFileName
+//                          << "\" will be created in the same directory. \n\n";
+
+                std::ifstream inFile(filename.c_str());
+
+                // ignore comments
+                while (inFile.peek() == '%') inFile.ignore(2048, '\n');
+
+                // M and N are the size of the matrix with sz entries
+                nnz_t M_in = 0, N_in = 0, sz = 0;
+                inFile >> M_in >> N_in >> sz;
+                assert(M_in == sz);
+                assert(N_in == 1);
+
+//                printf("M = %ld, N = %ld, nnz = %ld \n", M_in, N_in, sz);
+
+                std::ofstream outFile;
+                outFile.open(outFileName.c_str(), std::ios::out | std::ios::binary);
+
+                std::vector<cooEntry> entry_temp1;
+
+                index_t a = 0, b = 0, i = 0;
+                value_t c = 0.0;
+
+                entry_temp1.resize(sz);
+                while (inFile >> a >> b >> c) {
+//                 for mtx format, rows and columns start from 1, instead of 0.
+//                        std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
+                    entry_temp1[i++] = cooEntry(a - 1, b - 1, c);
+//                    cout << entry_temp1[i] << endl;
+                }
+
+                std::sort(entry_temp1.begin(), entry_temp1.end());
+
+                for (i = 0; i < sz; ++i) {
+//                    std::cout << entry_temp1[i] << std::endl;
+//                    outFile.write((char *) &entry_temp1[i].row, sizeof(index_t));
+//                    outFile.write((char *) &entry_temp1[i].col, sizeof(index_t));
+                    outFile.write((char *) &entry_temp1[i].val, sizeof(value_t));
+                }
+
+                inFile.close();
+                outFile.close();
+            }
+
+        }
+
+        // wait until the binary file being written by proc 0 is ready.
+        MPI_Barrier(comm);
+    }
+
     // check if the size of rhs match the number of rows of A
     struct stat st;
-    stat(file, &st);
-    index_t rhs_size = st.st_size / sizeof(double);
+    stat(outFileName.c_str(), &st);
+    index_t rhs_size = st.st_size / sizeof(value_t);
     if(rhs_size != A->Mbig){
         if(!rank){
             printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
