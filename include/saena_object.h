@@ -351,14 +351,13 @@ public:
 
 //    to write saena matrix to a file use related function from saena_matrix class.
 //    int writeMatrixToFileA(saena_matrix* A, std::string name);
-    int writeMatrixToFile(std::vector<cooEntry>& A, const std::string &folder_name, MPI_Comm comm);
+    int writeMatrixToFile(std::vector<cooEntry>& A, const std::string &name, MPI_Comm comm);
     int writeMatrixToFileP(prolong_matrix* P, std::string name);
     int writeMatrixToFileR(restrict_matrix* R, std::string name);
-    int writeVectorToFileul(std::vector<unsigned long>& v, std::string name, MPI_Comm comm);
-    int writeVectorToFileul2(std::vector<unsigned long>& v, std::string name, MPI_Comm comm);
-    int writeVectorToFileui(std::vector<unsigned int>& v, std::string name, MPI_Comm comm);
-//    template <class T>
-//    int writeVectorToFile(std::vector<T>& v, unsigned long vSize, std::string name, MPI_Comm comm);
+
+    template <class T>
+    int writeVectorToFile(std::vector<T>& v, const std::string &name, MPI_Comm comm = MPI_COMM_WORLD,
+                          bool mat_market = false, index_t OFST = 0);
 
     // *****************
     // Misc functions
@@ -451,5 +450,7 @@ public:
     inline int mesh_info(int order, std::vector< std::vector< std::vector<int> > > &map_all, MPI_Comm comm);
     void g2umap(int order, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector< std::vector<int> > > &map, MPI_Comm comm);
 };
+
+#include <saena_object.tpp>
 
 #endif //SAENA_SAENA_OBJECT_H

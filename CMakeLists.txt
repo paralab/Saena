@@ -265,6 +265,7 @@ set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
         ${SAENA_INCLUDE_DIR}/saena_matrix.h
         ${SAENA_INCLUDE_DIR}/saena_matrix_dense.h
         ${SAENA_INCLUDE_DIR}/saena_object.h
+        ${SAENA_INCLUDE_DIR}/saena_object.tpp
         ${SAENA_INCLUDE_DIR}/strength_matrix.h
         ${SAENA_INCLUDE_DIR}/prolong_matrix.h
         ${SAENA_INCLUDE_DIR}/restrict_matrix.h
