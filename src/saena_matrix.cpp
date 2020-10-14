@@ -1128,12 +1128,12 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vect
 #ifdef __DEBUG1__
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
-    for(auto &i : inv_diag){
-        assert(i == 1);     // the matrix is scaled to have diagonal 1.
-    }
+//    for(auto &i : inv_diag){
+//        assert(i == 1);     // the matrix is scaled to have diagonal 1.
+//    }
 #endif
 
-    const double alpha = 0.14 * eig_max_of_invdiagXA; // homg: 0.25 * eig_max
+    const double alpha = 0.13 * eig_max_of_invdiagXA; // homg: 0.25 * eig_max
     const double beta  = eig_max_of_invdiagXA;
     const double delta = (beta - alpha) / 2;
     const double theta = (beta + alpha) / 2;
@@ -1150,7 +1150,7 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vect
 
     #pragma omp parallel for
     for(index_t i = 0; i < u.size(); ++i){
-//        d[i] = (res[i] * inv_diag[i]) / theta;    // the matrix is scaled to have diagonal 1. use this for a non-scaled matrix.
+//        d[i] = (res[i] * inv_diag[i]) / theta;    // todo: Use this for a non-scaled matrix.
         d[i] = res[i] / theta;
         u[i] += d[i];
 //        if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
