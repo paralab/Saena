@@ -1179,7 +1179,7 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vect
 }
 
 
-int saena_matrix::print_entry(int ran, const std::string name){
+int saena_matrix::print_entry(int ran, const std::string &name) const{
 
     // if ran >= 0 print_entry the matrix entries on proc with rank = ran
     // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
@@ -1220,7 +1220,7 @@ int saena_matrix::print_entry(int ran, const std::string name){
 }
 
 
-int saena_matrix::print_info(int ran, const std::string name) {
+int saena_matrix::print_info(int ran, const std::string &name) const{
 
     // if ran >= 0 print the matrix info on proc with rank = ran
     // otherwise print the matrix info on all processors in order. (first on proc 0, then proc 1 and so on.)
@@ -1250,18 +1250,20 @@ int saena_matrix::print_info(int ran, const std::string name) {
 }
 
 
-int saena_matrix::writeMatrixToFile(){
-    // the matrix file will be written in the HOME directory.
+int saena_matrix::writeMatrixToFile() const{
+    // the matrix file will be written in the current directory, mat-ri.mtx on rank i.
 
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
-    if(rank==0) printf("The matrix file will be written in the HOME directory. \n");
-    writeMatrixToFile("");
+    if(rank==0) printf("The matrix file will be written in the current directory. \n");
+    writeMatrixToFile("mat");
     return 0;
 }
 
 
-int saena_matrix::writeMatrixToFile(const char *folder_name){
+int saena_matrix::writeMatrixToFile(const std::string &name) const{
+    // name: pass the name of the file. The file will be saved in the working directory. To save the file in another
+    //       directory, pass that path.
     // Create txt files with name mat-r0.txt for processor 0, mat-r1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat mat-r0.mtx mat-r1.mtx > mat.mtx
     // row and column indices of txt files should start from 1, not 0.
@@ -1272,16 +1274,8 @@ int saena_matrix::writeMatrixToFile(const char *folder_name){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    const char* homeDir = getenv("HOME");
-
-    std::ofstream outFileTxt;
-    std::string outFileNameTxt = homeDir;
-    outFileNameTxt += "/";
-    outFileNameTxt += folder_name;
-    outFileNameTxt += "/mat-r";
-    outFileNameTxt += std::to_string(rank);
-    outFileNameTxt += ".mtx";
-    outFileTxt.open(outFileNameTxt);
+    std::string outFileNameTxt = name + "-r" + std::to_string(rank) + ".mtx";
+    std::ofstream outFileTxt(outFileNameTxt);
 
     if(rank==0) std::cout << "\nWriting the matrix in: " << outFileNameTxt << std::endl;
 
