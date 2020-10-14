@@ -1182,14 +1182,18 @@ int saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_
 #endif
 
             // scale rhs of the next level
-            scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag);
+            if(scale) {
+                scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag);
+            }
 
 //            uCorrCoarse.assign(grid->Ac.M, 0);
             fill(uCorrCoarse.begin(), uCorrCoarse.end(), 0);
             vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
 
-            // scale u
-            scale_vector(uCorrCoarse, grid->coarseGrid->A->inv_sq_diag);
+            // scale uCorrCoarse
+            if(scale) {
+                scale_vector(uCorrCoarse, grid->coarseGrid->A->inv_sq_diag);
+            }
 
 #ifdef __DEBUG1__
 //            print_vector(uCorrCoarse, -1, "uCorrCoarse", grid->A->comm);
@@ -1897,7 +1901,9 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         }
 
         // scale the solution u
-        scale_vector(u, A->inv_sq_diag);
+        if(scale) {
+            scale_vector(u, A->inv_sq_diag);
+        }
 
         // repartition u back
 //        if(repartition){
@@ -2563,7 +2569,9 @@ int saena_object::GMRES(std::vector<double> &u){
 
     // ************** scale u **************
 
-    scale_vector(u, A->inv_sq_diag);
+    if(scale) {
+        scale_vector(u, A->inv_sq_diag);
+    }
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2830,7 +2838,9 @@ int saena_object::pGMRES(std::vector<double> &u){
 
     // ************** scale u **************
 
-    scale_vector(u, A->inv_sq_diag);
+    if(scale) {
+        scale_vector(u, A->inv_sq_diag);
+    }
 
 #ifdef __DEBUG1__
     if(verbose_solve){
