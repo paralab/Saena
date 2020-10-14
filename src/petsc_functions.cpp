@@ -890,5 +890,140 @@ int petsc_mat_diff(Mat &A, Mat &B, saena_matrix *B_saena){
     return 0;
 }
 
+// from petsc-3.13.5/src/vec/vec/tutorials/ex9.c
+int petsc_std_vector(std::vector<value_t> &v1, Vec &x, const int &OFST, MPI_Comm comm){
+
+    PetscErrorCode ierr;
+    PetscMPIInt    rank;
+    PetscInt       i,istart,iend,nlocal, iglobal;
+    PetscScalar    *array;
+    PetscViewer    viewer;
+
+    const int SZ = v1.size();
+
+    PETSC_COMM_WORLD = comm;
+//    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank); CHKERRQ(ierr);
+
+    /*
+       Create a vector, specifying only its global dimension.
+       When using VecCreate(), VecSetSizes() and VecSetFromOptions(),
+       the vector format (currently parallel or sequential) is
+       determined at runtime.  Also, the parallel partitioning of
+       the vector is determined by PETSc at runtime.
+    */
+    ierr = VecCreate(PETSC_COMM_WORLD,&x);CHKERRQ(ierr);
+    ierr = VecSetType(x, VECMPI);CHKERRQ(ierr);
+    ierr = VecSetSizes(x, SZ, PETSC_DECIDE);CHKERRQ(ierr);
+//    VecMPISetGhost(x, nghost,ifrom);
+//    ierr = VecSetFromOptions(x);CHKERRQ(ierr);
+
+    /*
+       PETSc parallel vectors are partitioned by
+       contiguous chunks of rows across the processors.  Determine
+       which vector are locally owned.
+    */
+//    ierr = VecGetOwnershipRange(x,&istart,&iend);CHKERRQ(ierr);
+
+    /* --------------------------------------------------------------------
+       Set the vector elements.
+        - Always specify global locations of vector entries.
+        - Each processor can insert into any location, even ones it does not own
+        - In this case each processor adds values to all the entries,
+           this is not practical, but is merely done as an example
+     */
+    for (i=0; i<SZ; i++) {
+        iglobal = i + OFST;
+        ierr = VecSetValues(x, 1, &iglobal, &v1[i], INSERT_VALUES);CHKERRQ(ierr);
+    }
+
+    /*
+       Assemble vector, using the 2-step process:
+         VecAssemblyBegin(), VecAssemblyEnd()
+       Computations can be done while messages are in transition
+       by placing code between these two statements.
+    */
+    ierr = VecAssemblyBegin(x);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(x);CHKERRQ(ierr);
+
+//    VecView(x, PETSC_VIEWER_STDOUT_WORLD);
+
+//    ierr = PetscFinalize();
+    return 0;
+}
+
+int petsc_saena_vector(saena_vector *v, Vec &w){
+    // NOTE: not tested
+    int rank = 0;
+    MPI_Comm_rank(v->comm, &rank);
+    std::vector<value_t> vstd;
+    v->get_vec(vstd);
+    petsc_std_vector(vstd, w, v->split[rank], v->comm);
+    return 0;
+}
+
+
+int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, const double &rel_tol){
+
+    Vec            x,b;      /* approx solution, RHS */
+    Mat            A;        /* linear system matrix */
+    KSP            ksp;      /* linear solver context */
+    PetscReal      norm;     /* norm of solution error */
+    PetscInt       its;
+    PetscScalar    *array;
+    PC             pc;
+
+    MPI_Comm comm = A1->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+
+    int rank = 0;
+    MPI_Comm_rank(comm, &rank);
+
+    petsc_saena_matrix(A1, A);
+    petsc_std_vector(b1, b, A1->split[rank], comm);
+    MatCreateVecs(A, &x, NULL);
+//    VecSet(x, 0.0);
+
+//    VecView(b, PETSC_VIEWER_STDOUT_WORLD);
+
+    KSPCreate(PETSC_COMM_WORLD, &ksp);
+    KSPSetOperators(ksp, A, A);
+    KSPSetTolerances(ksp, rel_tol, 1.e-50, PETSC_DEFAULT, 1000);
+
+//    KSPGetPC(ksp, &pc);
+//    PCSetType(pc, PCHMG);
+//    PCHMGSetInnerPCType(pc, PCGAMG);
+//    PCHMGSetReuseInterpolation(pc,PETSC_TRUE);
+//    PCHMGSetUseSubspaceCoarsening(pc,PETSC_TRUE);
+//    PCHMGUseMatMAIJ(pc,PETSC_FALSE);
+//    PCHMGSetCoarseningComponent(pc,0);
+
+    KSPGetPC(ksp, &pc);
+    PCSetType(pc, PCGAMG);
+
+    KSPSetFromOptions(ksp);
+    KSPSolve(ksp,b,x);
+
+//    VecView(x, PETSC_VIEWER_STDOUT_WORLD);
+
+    VecGetArray(x, &array);
+    for (int i = 0; i < x1.size(); i++)
+        x1[i] = array[i];
+    VecRestoreArray(x, &array);
+
+//    VecAXPY(x,-1.0,u);
+//    VecNorm(x,NORM_2,&norm);
+//    KSPGetIterationNumber(ksp,&its);
+//    PetscPrintf(PETSC_COMM_WORLD,"Norm of error %g iterations %D\n",(double)norm,its);
+
+    KSPDestroy(&ksp);
+    VecDestroy(&x);
+    VecDestroy(&b);
+    MatDestroy(&A);
+
+    PetscFinalize();
+    return 0;
+}
 
 #endif //_USE_PETSC_
