@@ -5,6 +5,8 @@
 #include "grid.h"
 #include "saena.hpp"
 #include "data_struct.h"
+//#include "saena_object.h"
+//#include "petsc_functions.h"
 
 using namespace std;
 
@@ -95,6 +97,7 @@ int main(int argc, char* argv[]){
     char* Vname(argv[2]);
     read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
 
+//    print_vector(rhs_std, -1, "rhs_std", comm);
 //    write_to_file_vec(rhs_std, "rhs_std", comm);
 
     // set rhs_std
@@ -131,7 +134,7 @@ int main(int argc, char* argv[]){
 //    saena::options opts;
 
     saena::amg solver;
-    solver.set_multigrid_max_level(5);
+    solver.set_multigrid_max_level(3);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -160,7 +163,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-    print_time(t1, t2, "Solve:", comm);
+//    print_time(t1, t2, "Solve:", comm);
 
     // *************************** print or write the solution ****************************
 
@@ -171,7 +174,45 @@ int main(int argc, char* argv[]){
     // *************************** check correctness of the solution 1 ****************************
 
     // A is scaled. read it from the file and don't scale.
+#if 0
+    saena::matrix AA (comm);
+    AA.read_file(file_name);
+    AA.assemble(false);
+    saena_matrix *AAA = AA.get_internal_matrix();
 
+    std::vector<double> u_petsc(num_local_row);
+    petsc_solve(AAA, rhs_std, u_petsc, relative_tolerance);
+
+    bool bool_correct = true;
+    if(rank==0){
+        std::stringstream buf;
+        print_sep();
+        printf("Checking the correctness of the solution:\n");
+//        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
+        for(index_t i = 0; i < num_local_row; ++i){
+            if(fabs(u[i] - u_petsc[i]) > 1e-5){
+                bool_correct = false;
+//                break;
+                printf("%.12f \t%.12f \t%.12f \n", u[i], u_petsc[i], u[i] - u_petsc[i]);
+            }
+        }
+        if(bool_correct){
+            buf << "\nThe solution is correct!\n";
+            std::cout << buf.str();
+            print_sep();
+        }
+        else{
+            buf << "\nThe solution is " << RED << "NOT" << COLORRESET << " correct!\n";
+            std::cout << buf.str();
+            print_sep();
+        }
+    }
+#endif
+
+    // *************************** check correctness of the solution 2 ****************************
+
+    // A is scaled. read it from the file and don't scale.
+#if 0
     saena::matrix AA (comm);
     AA.read_file(file_name);
     AA.assemble(false);
@@ -189,7 +230,7 @@ int main(int argc, char* argv[]){
         printf("Checking the correctness of the solution:\n");
 //        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
         for(index_t i = 0; i < num_local_row; ++i){
-            if(fabs(Au[i] - rhs_std[i]) > 1e-8){
+            if(fabs(Au[i] - rhs_std[i]) > 1e-5){
                 bool_correct = false;
                 break;
 //                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
@@ -206,7 +247,7 @@ int main(int argc, char* argv[]){
             print_sep();
         }
     }
-
+#endif
 /*
     std::vector<double> res(num_local_row,0);
     for(index_t i = 0; i < num_local_row; ++i){
@@ -217,7 +258,7 @@ int main(int argc, char* argv[]){
     float norm1 = pnorm(res, comm);
     if(!rank) std::cout << "norm(Au-b)     = " << norm1 << "\n";
 */
-    // *************************** check correctness of the solution 2 ****************************
+    // *************************** check correctness of the solution 3 ****************************
 
 /*
     bool_correct = true;
