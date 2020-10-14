@@ -334,13 +334,6 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
     }
     inFile_check.close();
 
-    int mpiopen = MPI_File_open(comm, file, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    if(mpiopen){
-        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
-        MPI_Finalize();
-        return -1;
-    }
-
     size_t extIndex = filename.find_last_of('.');
     if(extIndex == string::npos || extIndex == filename.size() - 1){
         if (!rank) cout << "The rhs file name does not have an extension!" << endl;
@@ -415,6 +408,13 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
 
         // wait until the binary file being written by proc 0 is ready.
         MPI_Barrier(comm);
+    }
+
+    int mpiopen = MPI_File_open(comm, outFileName.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+    if(mpiopen){
+        if (rank==0) std::cout << "Unable to open the rhs vector file!" << std::endl;
+        MPI_Finalize();
+        return -1;
     }
 
     // check if the size of rhs match the number of rows of A
