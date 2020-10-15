@@ -1865,7 +1865,7 @@ namespace par {
       
       //--
       
-      assert(arr.size());
+//      assert(arr.size());
 
       if (npes == 1) {
 //          std::cout <<" have to use seq. sort"
