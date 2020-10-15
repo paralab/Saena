@@ -760,7 +760,7 @@ int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local){
 }
 
 
-int saena::laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz){
+int saena::laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale /*= true*/){
 
     MPI_Comm comm = A->get_comm();
     int rank = 0, nprocs = 0;
@@ -925,7 +925,7 @@ int saena::laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz){
         }
     }
 
-    A->assemble();
+    A->assemble(scale);
 
     return 0;
 }

@@ -30,7 +30,7 @@ int main(int argc, char* argv[]){
 
     // *************************** set the scaling factor ****************************
 
-    bool scale = true;
+    bool scale = false;
 
     // *************************** initialize the matrix ****************************
 
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]){
     saena::matrix A(comm);
 //    saena::laplacian2D_old(&A, mx);
 //    saena::laplacian3D_old(&A, mx);
-    saena::laplacian3D(&A, mx, my, mz);
+    saena::laplacian3D(&A, mx, my, mz, scale);
 
     double t2 = omp_get_wtime();
 //    print_time(t1, t2, "Matrix Assemble:", comm);
