@@ -26,29 +26,32 @@ int saena_matrix::setup_initial_data(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    std::cout << rank << " : " << __func__ << initial_nnz_l << std::endl;
+//    printf("rank %d %s: data_coo.size = %ld\n", rank, __func__, data_coo.size());
 
     std::set<cooEntry_row>::iterator it;
     cooEntry_row temp;
     nnz_t iter = 0;
     index_t Mbig_local = 0;
 
-    // read this: https://stackoverflow.com/questions/5034211/c-copy-set-to-vector
-    data_unsorted.resize(data_coo.size());
-    for(it = data_coo.begin(); it != data_coo.end(); ++it){
-        data_unsorted[iter++] = *it;
+    if(data_coo.size() != 0) {
+        // read this: https://stackoverflow.com/questions/5034211/c-copy-set-to-vector
+        data_unsorted.resize(data_coo.size());
+        for (it = data_coo.begin(); it != data_coo.end(); ++it) {
+            data_unsorted[iter++] = *it;
 
-        temp = *it;
-        if(temp.col > Mbig_local)
-            Mbig_local = temp.col;
+            temp = *it;
+            if (temp.col > Mbig_local)
+                Mbig_local = temp.col;
+        }
+
+        // Mbig is the size of the matrix, which is the maximum of rows and columns.
+        // Up to here Mbig_local is the maximum of cols.
+        // last element's row is the maximum of rows, since data_coo is sorted row-major.
+
+        if (data_unsorted.back().row > Mbig_local)
+            Mbig_local = data_unsorted[iter].row;
+
     }
-
-    // Mbig is the size of the matrix, which is the maximum of rows and columns.
-    // Up to here Mbig_local is the maximum of cols.
-    // last element's row is the maximum of rows, since data_coo is sorted row-major.
-
-    if(data_unsorted.back().row > Mbig_local)
-        Mbig_local = data_unsorted[iter].row;
 
     MPI_Allreduce(&Mbig_local, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.

@@ -760,158 +760,170 @@ int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local){
 }
 
 
-int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsigned int mz){
+int saena::laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz){
 
     MPI_Comm comm = A->get_comm();
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if(nprocs > mz){
-//        printf("ERROR: nprocs > z axis size \n");
-//        MPI_Finalize();
-//        return -1;
-//    }
+//    printf("rank %d: mx = %d, my = %d, mz = %d\n", rank, mx, my, mz);
 
-    int     i,j,k,xm,ym,zm,xs,ys,zs,num, numi, numj, numk;
-    value_t v[7],Hx,Hy,Hz,HyHzdHx,HxHzdHy,HxHydHz;
-    index_t col_index[7];
-    index_t node;
+    if(rank < mz) {
 
-    Hx      = 1.0 / (value_t)(mx);
-    Hy      = 1.0 / (value_t)(my);
-    Hz      = 1.0 / (value_t)(mz);
-//    printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+        int i, j, k, xm, ym, zm, xs, ys, zs, num, numi, numj, numk;
+        value_t v[7], Hx, Hy, Hz, HyHzdHx, HxHzdHy, HxHydHz;
+        index_t col_index[7];
+        index_t node;
 
-    HyHzdHx = Hy*Hz/Hx;
-    HxHzdHy = Hx*Hz/Hy;
-    HxHydHz = Hx*Hy/Hz;
+        Hx = 1.0 / mx;
+        Hy = 1.0 / my;
+        Hz = 1.0 / mz;
 
-    // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
-    xs = 0;
-    xm = mx;
-    ys = 0;
-    ym = my;
-    zm = (int)floor(mz / nprocs);
-    zs = rank * zm;
-    if(rank == nprocs - 1)
-        zm = mz - ( (nprocs - 1) * zm);
-//    printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+//        printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
 
-    for (k=zs; k<zs+zm; k++) {
-        for (j=ys; j<ys+ym; j++) {
-            for (i=xs; i<xs+xm; i++) {
-                node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
-//                if(rank==0) printf("node = %u\n", node);
+        HyHzdHx = Hy * Hz / Hx;
+        HxHzdHy = Hx * Hz / Hy;
+        HxHydHz = Hx * Hy / Hz;
 
-                if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+        // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+        xs = 0;
+        xm = mx;
+        ys = 0;
+        ym = my;
+        if(mz > nprocs){
+            zm = (int) floor(mz / nprocs);
+            zs = rank * zm;
+            if (rank == nprocs - 1)
+                zm = mz - ((nprocs - 1) * zm);
+        }else{ // the first mz processors generate one 2D x,y-grid on themselves.
+            zm = 1;
+            zs = rank * zm;
+        }
+
+//        printf("rank %d: xs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+
+        for (k = zs; k < zs + zm; k++) {
+            for (j = ys; j < ys + ym; j++) {
+                for (i = xs; i < xs + xm; i++) {
+                    node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
+//                    if(rank==0) printf("node = %u\n", node);
+
+                    if (i == 0 || j == 0 || k == 0 || i == mx - 1 || j == my - 1 || k == mz - 1) {
 //                    if(rank==0) printf("boundary!\n");
-                    num = 0; numi=0; numj=0; numk=0;
-                    if (k!=0) {
-                        v[num]     = -HxHydHz;
+                        num = 0;
+                        numi = 0;
+                        numj = 0;
+                        numk = 0;
+                        if (k != 0) {
+                            v[num] = -HxHydHz;
 //                        col[num].i = i;
 //                        col[num].j = j;
 //                        col[num].k = k-1;
-                        col_index[num] = node - (mx * my);
-                        num++; numk++;
-                    }
-                    if (j!=0) {
-                        v[num]     = -HxHzdHy;
+                            col_index[num] = node - (mx * my);
+                            num++;
+                            numk++;
+                        }
+                        if (j != 0) {
+                            v[num] = -HxHzdHy;
 //                        col[num].i = i;
 //                        col[num].j = j-1;
 //                        col[num].k = k;
-                        col_index[num] = node - mx;
-                        num++; numj++;
-                    }
-                    if (i!=0) {
-                        v[num]     = -HyHzdHx;
+                            col_index[num] = node - mx;
+                            num++;
+                            numj++;
+                        }
+                        if (i != 0) {
+                            v[num] = -HyHzdHx;
 //                        col[num].i = i-1;
 //                        col[num].j = j;
 //                        col[num].k = k;
-                        col_index[num] = node - 1;
-                        num++; numi++;
-                    }
-                    if (i!=mx-1) {
-                        v[num]     = -HyHzdHx;
+                            col_index[num] = node - 1;
+                            num++;
+                            numi++;
+                        }
+                        if (i != mx - 1) {
+                            v[num] = -HyHzdHx;
 //                        col[num].i = i+1;
 //                        col[num].j = j;
 //                        col[num].k = k;
-                        col_index[num] = node + 1;
-                        num++; numi++;
-                    }
-                    if (j!=my-1) {
-                        v[num]     = -HxHzdHy;
+                            col_index[num] = node + 1;
+                            num++;
+                            numi++;
+                        }
+                        if (j != my - 1) {
+                            v[num] = -HxHzdHy;
 //                        col[num].i = i;
 //                        col[num].j = j+1;
 //                        col[num].k = k;
-                        col_index[num] = node + mx;
-                        num++; numj++;
-                    }
-                    if (k!=mz-1) {
-                        v[num]     = -HxHydHz;
+                            col_index[num] = node + mx;
+                            num++;
+                            numj++;
+                        }
+                        if (k != mz - 1) {
+                            v[num] = -HxHydHz;
 //                        col[num].i = i;
 //                        col[num].j = j;
 //                        col[num].k = k+1;
-                        col_index[num] = node + (mx * my);
-                        num++; numk++;
-                    }
-                    v[num]     = (value_t)(numk)*HxHydHz + (value_t)(numj)*HxHzdHy + (value_t)(numi)*HyHzdHx;
+                            col_index[num] = node + (mx * my);
+                            num++;
+                            numk++;
+                        }
+                        v[num] = (value_t) (numk) * HxHydHz + (value_t) (numj) * HxHzdHy + (value_t) (numi) * HyHzdHx;
 //                    col[num].i = i;   col[num].j = j;   col[num].k = k;
-                    col_index[num] = node;
-                    num++;
-                    for(int l = 0; l < num; l++){
-//                        printf("%d \t%u \t%u \t%f \n", l, node, col_index[l], v[l]);
-                        A->set(node, col_index[l], v[l]);
-                    }
+                        col_index[num] = node;
+                        num++;
+                        for (int l = 0; l < num; l++) {
+//                            if(!rank) printf("%d \t%u \t%u \t%f \n", l, node, col_index[l], v[l]);
+                            A->set(node, col_index[l], v[l]);
+                        }
 
-                } else {
+                    } else {
 //                    if(rank==0) printf("not boundary!\n");
 
 //                    col[0].i = i;   col[0].j = j;   col[0].k = k-1;
-                    v[0] = -HxHydHz;
-                    col_index[0] = node - (mx * my);
-                    A->set(node, col_index[0], v[0]);
+                        v[0] = -HxHydHz;
+                        col_index[0] = node - (mx * my);
+                        A->set(node, col_index[0], v[0]);
 
 //                    col[1].i = i;   col[1].j = j-1; col[1].k = k;
-                    v[1] = -HxHzdHy;
-                    col_index[1] = node - mx;
-                    A->set(node, col_index[1], v[1]);
+                        v[1] = -HxHzdHy;
+                        col_index[1] = node - mx;
+                        A->set(node, col_index[1], v[1]);
 
 //                    col[2].i = i-1; col[2].j = j;   col[2].k = k;
-                    v[2] = -HyHzdHx;
-                    col_index[2] = node - 1;
-                    A->set(node, col_index[2], v[2]);
+                        v[2] = -HyHzdHx;
+                        col_index[2] = node - 1;
+                        A->set(node, col_index[2], v[2]);
 
 //                    col[3].i = i;   col[3].j = j;   col[3].k = k;
-                    v[3] = 2.0*(HyHzdHx + HxHzdHy + HxHydHz);
-                    col_index[3] = node;
-                    A->set(node, col_index[3], v[3]);
+                        v[3] = 2.0 * (HyHzdHx + HxHzdHy + HxHydHz);
+                        col_index[3] = node;
+                        A->set(node, col_index[3], v[3]);
 
 //                    col[4].i = i+1; col[4].j = j;   col[4].k = k;
-                    v[4] = -HyHzdHx;
-                    col_index[4] = node + 1;
-                    A->set(node, col_index[4], v[4]);
+                        v[4] = -HyHzdHx;
+                        col_index[4] = node + 1;
+                        A->set(node, col_index[4], v[4]);
 
 //                    col[5].i = i;   col[5].j = j+1; col[5].k = k;
-                    v[5] = -HxHzdHy;
-                    col_index[5] = node + mx;
-                    A->set(node, col_index[5], v[5]);
+                        v[5] = -HxHzdHy;
+                        col_index[5] = node + mx;
+                        A->set(node, col_index[5], v[5]);
 
 //                    col[6].i = i;   col[6].j = j;   col[6].k = k+1;
-                    v[6] = -HxHydHz;
-                    col_index[6] = node + (mx * my);
-                    A->set(node, col_index[6], v[6]);
+                        v[6] = -HxHydHz;
+                        col_index[6] = node + (mx * my);
+                        A->set(node, col_index[6], v[6]);
 
-//                    for(int l = 0; l < 7; l++)
-//                        printf("%d \t%u \t%u \t%f \n", l, node, col_index[l], v[l]);
+//                        if(!rank)
+//                            for(int l = 0; l < 7; l++)
+//                                printf("%d \t%u \t%u \t%f \n", l, node, col_index[l], v[l]);
+                    }
                 }
             }
         }
     }
-
-    // todo: this was for having at least one entry on each proc, if the number of proc is less than z axis size.
-    // todo: find a better way to do this.
-    A->set(0, 0, 0);
 
     A->assemble();
 
@@ -919,48 +931,56 @@ int saena::laplacian3D(saena::matrix* A, unsigned int mx, unsigned int my, unsig
 }
 
 
-int saena::laplacian3D_set_rhs(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm){
+int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm){
     // set rhs entries using the cos() function.
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    int     i,j,k,xm,ym,zm,xs,ys,zs;
-    value_t Hx,Hy,Hz;
-    index_t node;
+    if(rank < mz) {
 
-    Hx      = 1.0 / (value_t)(mx);
-    Hy      = 1.0 / (value_t)(my);
-    Hz      = 1.0 / (value_t)(mz);
-//    printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+        int i, j, k, xm, ym, zm, xs, ys, zs;
+        value_t Hx, Hy, Hz;
+        index_t node;
 
-    // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
-    xs = 0;
-    xm = mx;
-    ys = 0;
-    ym = my;
-    zm = (int)floor(mz / nprocs);
-    zs = rank * zm;
-    if(rank == nprocs - 1)
-        zm = mz - ( (nprocs - 1) * zm);
+        Hx = 1.0 / mx;
+        Hy = 1.0 / my;
+        Hz = 1.0 / mz;
+//        printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
 
-//    printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+        // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+        xs = 0;
+        xm = mx;
+        ys = 0;
+        ym = my;
+        if(mz > nprocs){
+            zm = (int) floor(mz / nprocs);
+            zs = rank * zm;
+            if (rank == nprocs - 1)
+                zm = mz - ((nprocs - 1) * zm);
+        }else{ // the first mz processors generate one 2D x,y-grid on themselves.
+            zm = 1;
+            zs = rank * zm;
+        }
 
-    rhs.resize(mx * my * zm);
+//        printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
 
-    index_t iter = 0;
-    for (k=zs; k<zs+zm; k++) {
-        for (j=ys; j<ys+ym; j++) {
-            for (i=xs; i<xs+xm; i++) {
-                node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
-                rhs[iter] = 12 * PETSC_PI * PETSC_PI
-                                 * cos(2*PETSC_PI*(((value_t)i+0.5)*Hx))
-                                 * cos(2*PETSC_PI*(((value_t)j+0.5)*Hy))
-                                 * cos(2*PETSC_PI*(((value_t)k+0.5)*Hz))
-                                 * Hx * Hy * Hz;
-//                if(rank==1) printf("node = %d, rhs[node] = %f \n", node, rhs[node]);
-                iter++;
+        rhs.resize(mx * my * zm);
+
+        index_t iter = 0;
+        for (k = zs; k < zs + zm; k++) {
+            for (j = ys; j < ys + ym; j++) {
+                for (i = xs; i < xs + xm; i++) {
+                    node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
+                    rhs[iter] = 12 * PETSC_PI * PETSC_PI
+                                * cos(2 * PETSC_PI * (((value_t) i + 0.5) * Hx))
+                                * cos(2 * PETSC_PI * (((value_t) j + 0.5) * Hy))
+                                * cos(2 * PETSC_PI * (((value_t) k + 0.5) * Hz))
+                                * Hx * Hy * Hz;
+//                    if(rank==1) printf("node = %d, rhs[node] = %f \n", node, rhs[node]);
+                    iter++;
+                }
             }
         }
     }
