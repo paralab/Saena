@@ -119,7 +119,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //            if(rank==0) std::cout << "B.col_scan[i] - 1: " << B.col_scan[i]-1 << ", B.col_scan[i+1] - 1: " << B.col_scan[i+1]-1 << "\n";
             for (nnz_t j = B.col_scan[i] - 1; j < B.col_scan[i + 1] - 1; j++) {
 //                if(rank==0) std::cout << j << "\t" << B.r[j] << "\t" << col_idx << "\t" << B.v[j] << "\n";
-                assert((B.r[j] >= 0) && (B.r[j] <= B.row_sz));
+                ASSERT((B.r[j] >= 0) && (B.r[j] <= B.row_sz), "rank: " << rank << ", B.r[j]: " << B.r[j] << ", B.row_sz: " << B.row_sz);
                 assert(i < B.col_sz);
 //                ASSERT(fabs(B.v[j]) > ALMOST_ZERO, "rank " << rank << ": B(" << B.r[j] << ", " << col_idx << ") = " << B.v[j]);
             }
