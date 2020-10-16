@@ -1150,8 +1150,7 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vect
 
     #pragma omp parallel for
     for(index_t i = 0; i < u.size(); ++i){
-//        d[i] = (res[i] * inv_diag[i]) / theta;    // todo: Use this for a non-scaled matrix.
-        d[i] = res[i] / theta;
+        d[i] = (res[i] * inv_diag[i]) / theta;
         u[i] += d[i];
 //        if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                           i, inv_diag[i], i, res[i], i, d[i], i, u[i]);
@@ -1168,9 +1167,7 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vect
 
         #pragma omp parallel for
         for(index_t j = 0; j < u.size(); ++j){
-            // the matrix is scaled to have diagonal 1. use this for a non-scaled matrix.
-//            d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag[j]);
-            d[j] = ( d1 * d[j] ) + ( d2 * res[j] );
+            d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag[j]);
             u[j] += d[j];
 //            if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                               j, inv_diag[j], j, res[j], j, d[j], j, u[j]);
