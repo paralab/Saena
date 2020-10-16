@@ -211,6 +211,11 @@ int saena_object::SA(Grid *grid){
         if(fabs(tmp.val) > ALMOST_ZERO){
             P->entry.emplace_back(tmp);
         }
+
+#ifdef __DEBUG1__
+        ASSERT(tmp.row >= 0, "rank " << rank << ": row = " << tmp.row);
+        ASSERT(tmp.col >= 0, "rank " << rank << ": col = " << tmp.col);
+#endif
     }
 
     P->nnz_l = P->entry.size();

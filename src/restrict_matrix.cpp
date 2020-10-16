@@ -99,6 +99,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     // *********************** assign local part of restriction ************************
 
+//    print_vector(splitNew, 0, "splitNew", comm);
+
     entry.clear();
 
     const index_t OFST = split[rank], OFSTNEW = splitNew[rank];
@@ -108,6 +110,12 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
             entry.emplace_back(cooEntry(P->col_local[P->indicesP_local[iter]] - OFSTNEW, // make row index local
                                         P->row_local[P->indicesP_local[iter]] + OFST,    // make col index global
                                         P->val_local[P->indicesP_local[iter]]));
+
+#ifdef __DEBUG1__
+            ASSERT(P->col_local[P->indicesP_local[iter]] - OFSTNEW >= 0, "rank " << rank << ": row = " << P->col_local[P->indicesP_local[iter]] << ", OFSTNEW = " << OFSTNEW);
+            ASSERT(P->row_local[P->indicesP_local[iter]] + OFST >= 0, "rank " << rank << ": col = " << P->row_local[P->indicesP_local[iter]] + OFST << ", OFST = " << OFST);
+            ASSERT(P->row_local[P->indicesP_local[iter]] + OFST < Nbig, "rank " << rank << ": col = " << P->row_local[P->indicesP_local[iter]] + OFST << ", OFST = " << OFST << ", Nbig = " << Nbig);
+#endif
         }
     }
 
