@@ -609,6 +609,9 @@ int saena_object::scale_vector(std::vector<value_t>& v, std::vector<value_t>& w)
 
 int saena_object::find_eig(saena_matrix& A){
 
+    // for preconditioned Chebyshev (smoother) we need to estimate the max eigenvalue of D^{-1} * A,
+    // A.values_local and A.values_remote are being used in A.matvec which is used in ietl to compute the max
+    // eigenvalue, so update A values, compute the eigenvalue, then return A values to their original ones.
     for(index_t i = 0; i < A.values_local.size(); ++i){
         A.values_local[i] *= A.inv_diag[A.row_local[i]];
     }
