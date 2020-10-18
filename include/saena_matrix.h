@@ -86,6 +86,8 @@ public:
 
     std::vector<value_t> inv_diag;
     std::vector<value_t> inv_sq_diag;
+    std::vector<value_t> inv_diag_before_scale;
+    std::vector<value_t> inv_sq_diag_before_scale;
 //    double norm1, normInf, rhoDA;
 
     index_t vIndexSize = 0;

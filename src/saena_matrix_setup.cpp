@@ -938,9 +938,6 @@ int saena_matrix::scale_matrix(){
 
 //    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
-//    print_vector(inv_diag, -1, "inv_diag", comm);
-    std::fill(inv_diag.begin(), inv_diag.end(), 1);
-
     MPI_Request* requests = nullptr;
     MPI_Status*  statuses = nullptr;
 
@@ -949,7 +946,7 @@ int saena_matrix::scale_matrix(){
         // put the values of thoss indices in vSend to send to other procs.
 #pragma omp parallel for
         for(index_t i=0;i<vIndexSize;i++)
-            vSend[i] = inv_sq_diag[(vIndex[i])];
+            vSend[i] = inv_sq_diag[vIndex[i]];
 
 //        print_vector(vSend, -1, "vSend", comm);
 
@@ -960,12 +957,12 @@ int saena_matrix::scale_matrix(){
         // receive and put the remote parts of v in vecValues.
         // they are received in order: first put the values from the lowest rank matrix, and so on.
         for(int i = 0; i < numRecvProc; ++i){
-            MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
+            MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
             MPI_Test(&requests[i], &flag, &statuses[i]);
         }
 
         for(int i = 0; i < numSendProc; ++i){
-            MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+            MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
             MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
         }
     }
@@ -976,11 +973,15 @@ int saena_matrix::scale_matrix(){
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
     // use these to avoid subtracting split[rank] from each case
-    auto *inv_sq_diag_p = &inv_sq_diag[0] - split[rank];
+//    auto *inv_sq_diag_p = &inv_sq_diag[0] - split[rank];
+
+    cout << std::setprecision(10);
 
 #pragma omp parallel for
     for(nnz_t i = 0; i < nnz_l_local; i++) {
-        values_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]]; //D^{-1/2} * A * D^{-1/2}
+//        cout << i << "\t" << std::setprecision(16) << values_local[i] << "\t" << std::setprecision(16) << inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]] << endl;
+//        values_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]]; //D^{-1/2} * A * D^{-1/2}
+        values_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]]; //D^{-1/2} * A * D^{-1/2}
     }
 
 //    print_vector(values_local, -1, "values_local", comm);
@@ -1011,7 +1012,7 @@ int saena_matrix::scale_matrix(){
     }
 
     // update the entry vector
-//    entry.clear();
+    entry.clear();
 //    entry.resize(nnz_l);
 
     // todo: change the local and remote parameters to cooEntry class to be able to use memcpy here.
@@ -1019,14 +1020,18 @@ int saena_matrix::scale_matrix(){
 
     // copy local entries
 #pragma omp parallel for
-    for(nnz_t i = 0; i < nnz_l_local; i++)
-        entry[i] = cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]);
+    for(nnz_t i = 0; i < nnz_l_local; ++i){
+//        entry[i] = cooEntry(row_local[i]+split[rank], col_local[i], values_local[i]);
+        entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]));
+    }
 
     if(nprocs > 1){
         // copy remote entries
 #pragma omp parallel for
-        for(nnz_t i = 0; i < nnz_l_remote; i++)
-            entry[nnz_l_local + i] = cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]);
+        for(nnz_t i = 0; i < nnz_l_remote; ++i){
+//            entry[nnz_l_local + i] = cooEntry(row_remote[i]+split[rank], col_remote2[i], values_remote[i]);
+            entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]));
+        }
     }
 
     std::sort(entry.begin(), entry.end());
@@ -1036,6 +1041,14 @@ int saena_matrix::scale_matrix(){
         delete [] requests;
         delete [] statuses;
     }
+
+//    print_vector(inv_diag, -1, "inv_diag", comm);
+
+    inv_diag_before_scale    = inv_diag;
+    inv_sq_diag_before_scale = inv_sq_diag;
+
+    std::fill(inv_diag.begin(), inv_diag.end(), 1);
+    std::fill(inv_sq_diag.begin(), inv_sq_diag.end(), 1);
 
 //    MPI_Barrier(comm); if(rank==0) printf("end of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
@@ -1057,8 +1070,11 @@ int saena_matrix::scale_back_matrix(){
 
 //    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
-//    print_vector(inv_diag, -1, "inv_diag", comm);
-//    std::fill(inv_diag.begin(), inv_diag.end(), 1); // todo: this is not the original inv_diag.
+    inv_diag    = inv_diag_before_scale;
+    inv_sq_diag = inv_sq_diag_before_scale;
+    // todo: clear  inv_diag_before_scale and inv_sq_diag_before_scale
+    inv_diag_before_scale.clear();
+    inv_sq_diag_before_scale.clear();
 
     MPI_Request* requests = nullptr;
     MPI_Status* statuses  = nullptr;
@@ -1067,32 +1083,39 @@ int saena_matrix::scale_back_matrix(){
         // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
         // put the values of thoss indices in vSend to send to other procs.
 #pragma omp parallel for
-        for(index_t i=0;i<vIndexSize;i++)
-            vSend[i] = inv_sq_diag[(vIndex[i])];
+        for(index_t i = 0; i < vIndexSize; ++i)
+            vSend[i] = inv_sq_diag[vIndex[i]];
 
 //        print_vector(vSend, -1, "vSend", comm);
 
-        requests = new MPI_Request[numSendProc+numRecvProc];
-        statuses = new MPI_Status[numSendProc+numRecvProc];
+        int flag = 0;
+        requests = new MPI_Request[numSendProc + numRecvProc];
+        statuses = new MPI_Status[numSendProc + numRecvProc];
 
         // receive and put the remote parts of v in vecValues.
         // they are received in order: first put the values from the lowest rank matrix, and so on.
-        for(int i = 0; i < numRecvProc; i++)
-            MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &(requests[i]));
+        for(int i = 0; i < numRecvProc; ++i){
+            MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
+            MPI_Test(&requests[i], &flag, &statuses[i]);
+        }
 
-        for(int i = 0; i < numSendProc; i++)
-            MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &(requests[numRecvProc+i]));
+        for(int i = 0; i < numSendProc; ++i){
+            MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+            MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
+        }
     }
 
     // local loop
     // ----------
+    // D^{-1/2} * A * D^{-1/2}
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
 //    index_t* col_p = &col_local[0] - split[rank];
 #pragma omp parallel for
     for(nnz_t i = 0; i < nnz_l_local; i++) {
-        values_local[i] /= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]];//D^{-1/2} * A * D^{-1/2}
+        values_local[i] /= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]];
+//        cout << i << "\t"  << std::setprecision(16) << values_local[i] << "\t"  << std::setprecision(16) << inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]] << endl;
     }
 
 //    print_vector(values_local, -1, "values_local", comm);
@@ -1105,6 +1128,7 @@ int saena_matrix::scale_back_matrix(){
 
         // remote loop
         // -----------
+        // D^{-1/2} * A * D^{-1/2}
         // the col_index of the matrix entry does not matter. do the matvec on the first non-zero col// D^{-1/2} * A * D^{-1/2}umn (j=0).
         // the corresponding vector element is saved in vecValues[0]. and so on.
 
@@ -1116,7 +1140,7 @@ int saena_matrix::scale_back_matrix(){
 #pragma omp for
             for (index_t j = 0; j < col_remote_size; ++j) {
                 for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-                    values_remote[iter] /= inv_sq_diag[row_remote[iter]] * vecValues[j]; // D^{-1/2} * A * D^{-1/2}
+                    values_remote[iter] /= inv_sq_diag[row_remote[iter]] * vecValues[j];
                 }
             }
         }
@@ -1124,21 +1148,23 @@ int saena_matrix::scale_back_matrix(){
 
     // update the entry vector
     entry.clear();
-    entry.resize(nnz_l);
+//    entry.resize(nnz_l);
 
     // todo: change the local and remote parameters to cooEntry class to be able to use memcpy here.
 //    memcpy(&*entry.begin(), );
 
     // copy local entries
 #pragma omp parallel for
-    for(nnz_t i = 0; i < nnz_l_local; i++)
-        entry[i] = cooEntry(row_local[i]+split[rank], col_local[i], values_local[i]);
+    for(nnz_t i = 0; i < nnz_l_local; ++i){
+        entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]));
+    }
 
     if(nprocs > 1){
         // copy remote entries
 #pragma omp parallel for
-        for(nnz_t i = 0; i < nnz_l_remote; i++)
-            entry[nnz_l_local + i] = cooEntry(row_remote[i]+split[rank], col_remote2[i], values_remote[i]);
+        for(nnz_t i = 0; i < nnz_l_remote; ++i){
+            entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]));
+        }
     }
 
     std::sort(entry.begin(), entry.end());
@@ -1195,6 +1221,10 @@ int saena_matrix::inverse_diag() {
                 }
             }
         }
+    }
+
+    for(auto &d : inv_diag){
+        assert(d != 0);
     }
 
 #ifdef __DEBUG1__
