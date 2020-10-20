@@ -922,25 +922,25 @@ int saena_matrix::repartition_nnz(){
         for (int i = 1; i < nprocs; i++)
             recv_offset[i] = recv_size_array[i - 1] + recv_offset[i - 1];
 
-//    print_vector(recv_offset, 0, "recv_offset", comm);
+//        print_vector(recv_offset, 0, "recv_offset", comm);
 
         if (verbose_repartition && rank == 0) printf("repartition_nnz - step 5!\n");
 
         nnz_l = recv_offset[nprocs - 1] + recv_size_array[nprocs - 1];
-//    printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
+//        printf("rank=%d \t A.nnz_l=%u \t A.nnz_g=%u \n", rank, nnz_l, nnz_g);
 
         if (verbose_repartition && rank == 0) printf("repartition_nnz - step 6!\n");
 
-        std::vector<cooEntry> entry_old = entry;
+        std::vector<cooEntry> entry_old(std::move(entry));
         entry.resize(nnz_l);
         entry.shrink_to_fit();
 
         MPI_Alltoallv(&entry_old[0], &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
-                      &entry[0], &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
+                      &entry[0],     &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
 
-        std::sort(entry.begin(), entry.end());
     }
 
+    std::sort(entry.begin(), entry.end());
 //    print_vector(entry, -1, "entry", comm);
 
     if(verbose_repartition) {
