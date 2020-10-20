@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
 
     // *************************** set the scaling factor ****************************
 
-    bool scale = true;
+    bool scale = false;
 
     // *************************** initialize the matrix ****************************
     // there are two ways to create a matrix:

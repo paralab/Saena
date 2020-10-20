@@ -257,8 +257,8 @@ public:
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();
-    int scale_matrix();
-    int scale_back_matrix();
+    int scale_matrix(bool scale_entries = false);
+    int scale_back_matrix(bool scale_entries = false);
 
     // dummy functions to decide if shrinking should happen
     int set_off_on_diagonal_dummy();

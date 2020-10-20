@@ -924,7 +924,7 @@ int saena_matrix::openmp_setup() {
 }
 
 
-int saena_matrix::scale_matrix(){
+int saena_matrix::scale_matrix(bool scale_entries/* = false*/){
 
     // scale matrix: A = D^{-1/2} * A * D^{-1/2}
     // values_local, values_remote and entry are being updated.
@@ -945,7 +945,7 @@ int saena_matrix::scale_matrix(){
         // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
         // put the values of thoss indices in vSend to send to other procs.
 #pragma omp parallel for
-        for(index_t i=0;i<vIndexSize;i++)
+        for(index_t i = 0; i < vIndexSize; ++i)
             vSend[i] = inv_sq_diag[vIndex[i]];
 
 //        print_vector(vSend, -1, "vSend", comm);
@@ -974,8 +974,6 @@ int saena_matrix::scale_matrix(){
 
     // use these to avoid subtracting split[rank] from each case
 //    auto *inv_sq_diag_p = &inv_sq_diag[0] - split[rank];
-
-    cout << std::setprecision(10);
 
 #pragma omp parallel for
     for(nnz_t i = 0; i < nnz_l_local; i++) {
@@ -1011,30 +1009,29 @@ int saena_matrix::scale_matrix(){
         }
     }
 
-    // update the entry vector
-    entry.clear();
-//    entry.resize(nnz_l);
+    if(scale_entries) {
+        // update the entry vector
+        entry.clear();
+//        entry.resize(nnz_l);
 
-    // todo: change the local and remote parameters to cooEntry class to be able to use memcpy here.
-//    memcpy(&*entry.begin(), );
-
-    // copy local entries
+        // copy local entries
 #pragma omp parallel for
-    for(nnz_t i = 0; i < nnz_l_local; ++i){
-//        entry[i] = cooEntry(row_local[i]+split[rank], col_local[i], values_local[i]);
-        entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]));
-    }
-
-    if(nprocs > 1){
-        // copy remote entries
-#pragma omp parallel for
-        for(nnz_t i = 0; i < nnz_l_remote; ++i){
-//            entry[nnz_l_local + i] = cooEntry(row_remote[i]+split[rank], col_remote2[i], values_remote[i]);
-            entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]));
+        for (nnz_t i = 0; i < nnz_l_local; ++i) {
+//            entry[i] = cooEntry(row_local[i]+split[rank], col_local[i], values_local[i]);
+            entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]));
         }
-    }
 
-    std::sort(entry.begin(), entry.end());
+        if (nprocs > 1) {
+            // copy remote entries
+#pragma omp parallel for
+            for (nnz_t i = 0; i < nnz_l_remote; ++i) {
+//                entry[nnz_l_local + i] = cooEntry(row_remote[i]+split[rank], col_remote2[i], values_remote[i]);
+                entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]));
+            }
+        }
+
+        std::sort(entry.begin(), entry.end());
+    }
 
     if(nprocs > 1){
         MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
@@ -1056,7 +1053,7 @@ int saena_matrix::scale_matrix(){
 }
 
 
-int saena_matrix::scale_back_matrix(){
+int saena_matrix::scale_back_matrix(bool scale_entries/* = false*/){
 
     // scale back matrix: A = D^{1/2} * A * D^{1/2}
     // values_local, values_remote and entry are being updated.
@@ -1146,28 +1143,27 @@ int saena_matrix::scale_back_matrix(){
         }
     }
 
-    // update the entry vector
-    entry.clear();
-//    entry.resize(nnz_l);
+    if(scale_entries) {
+        // update the entry vector
+        entry.clear();
+//        entry.resize(nnz_l);
 
-    // todo: change the local and remote parameters to cooEntry class to be able to use memcpy here.
-//    memcpy(&*entry.begin(), );
-
-    // copy local entries
+        // copy local entries
 #pragma omp parallel for
-    for(nnz_t i = 0; i < nnz_l_local; ++i){
-        entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]));
-    }
-
-    if(nprocs > 1){
-        // copy remote entries
-#pragma omp parallel for
-        for(nnz_t i = 0; i < nnz_l_remote; ++i){
-            entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]));
+        for (nnz_t i = 0; i < nnz_l_local; ++i) {
+            entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]));
         }
-    }
 
-    std::sort(entry.begin(), entry.end());
+        if (nprocs > 1) {
+            // copy remote entries
+#pragma omp parallel for
+            for (nnz_t i = 0; i < nnz_l_remote; ++i) {
+                entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]));
+            }
+        }
+
+        std::sort(entry.begin(), entry.end());
+    }
 
     if(nprocs > 1){
         MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
