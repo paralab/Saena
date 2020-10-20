@@ -70,7 +70,7 @@ int find_eig_ietl(Matrix& A){
 #endif
 
     // Creation of an iteration object:
-    int    max_iter       = 16;         // default was 10 * N
+    int    max_iter       = 50;         // default was 10 * N
     int    n_highest_eigv = 1;
     double rel_tol        = 500 * std::numeric_limits<double>::epsilon();          // default: 500 * epsilon
     double abs_tol        = std::pow(std::numeric_limits<double>::epsilon(), 2. / 3);
