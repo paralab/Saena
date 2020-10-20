@@ -556,7 +556,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 //    int rank1;
 //    MPI_Comm_rank(grid->A->comm, &rank1);
 //    printf("Mbig = %u, M = %u, nnz_l = %lu, nnz_g = %lu \n", grid->Ac.Mbig, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
-//    print_vector(grid->Ac.entry, 0, "grid->Ac.entry", grid->Ac.comm);
+//    if(grid->Ac.active) print_vector(grid->Ac.entry, -1, "grid->Ac.entry", grid->Ac.comm);
 
     if(verbose_setup_steps){
         MPI_Barrier(grid->A->comm); if(!rank) printf("coarsen: end\n"); MPI_Barrier(grid->A->comm);
