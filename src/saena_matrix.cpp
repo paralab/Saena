@@ -1247,17 +1247,6 @@ int saena_matrix::print_info(int ran, const std::string &name) const{
 }
 
 
-int saena_matrix::writeMatrixToFile() const{
-    // the matrix file will be written in the current directory, mat-ri.mtx on rank i.
-
-    int rank = 0;
-    MPI_Comm_rank(comm, &rank);
-    if(rank==0) printf("The matrix file will be written in the current directory. \n");
-    writeMatrixToFile("mat");
-    return 0;
-}
-
-
 int saena_matrix::writeMatrixToFile(const std::string &name) const{
     // name: pass the name of the file. The file will be saved in the working directory. To save the file in another
     //       directory, pass that path.

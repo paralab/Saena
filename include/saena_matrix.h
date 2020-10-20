@@ -339,10 +339,9 @@ public:
     void chebyshev(const int &iter, std::vector<value_t>& u, std::vector<value_t>& rhs);
 
     // I/O functions
-    int print_entry(int ran, const std::string &name) const;
-    int print_info(int ran, const std::string &name) const;
-    int writeMatrixToFile() const;
-    int writeMatrixToFile(const std::string &name) const;
+    int print_entry(int ran, const std::string &name = "") const;
+    int print_info(int ran, const std::string &name = "") const;
+    int writeMatrixToFile(const std::string &name = "") const;
 
     // erase and destroy
     int set_zero();
