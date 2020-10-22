@@ -324,7 +324,7 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
     // scale rhs
     // ---------
     if(scale){
-        scale_vector(rhs, A->inv_sq_diag);
+        scale_vector(rhs, A->inv_sq_diag_orig);
     }
 
 #ifdef __DEBUG1__

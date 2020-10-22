@@ -924,7 +924,7 @@ int saena_matrix::openmp_setup() {
 }
 
 
-int saena_matrix::scale_matrix(bool scale_entries/* = false*/){
+int saena_matrix::scale_matrix(bool full_scale/* = true*/){
 
     // scale matrix: A = D^{-1/2} * A * D^{-1/2}
     // values_local, values_remote and entry are being updated.
@@ -1009,7 +1009,7 @@ int saena_matrix::scale_matrix(bool scale_entries/* = false*/){
         }
     }
 
-    if(scale_entries) {
+    if(full_scale) {
         // update the entry vector
         entry.clear();
 //        entry.resize(nnz_l);
@@ -1031,6 +1031,15 @@ int saena_matrix::scale_matrix(bool scale_entries/* = false*/){
         }
 
         std::sort(entry.begin(), entry.end());
+
+//        print_vector(inv_diag, -1, "inv_diag", comm);
+
+        inv_diag_orig    = std::move(inv_diag);
+        inv_sq_diag_orig = std::move(inv_sq_diag);
+
+        inv_diag.assign(inv_diag_orig.size(), 1);
+        inv_sq_diag.assign(inv_sq_diag_orig.size(), 1);
+//        inv_sq_diag = inv_sq_diag_orig;
     }
 
     if(nprocs > 1){
@@ -1039,13 +1048,6 @@ int saena_matrix::scale_matrix(bool scale_entries/* = false*/){
         delete [] statuses;
     }
 
-//    print_vector(inv_diag, -1, "inv_diag", comm);
-
-    inv_diag_before_scale    = std::move(inv_diag);
-    inv_sq_diag_before_scale = std::move(inv_sq_diag);
-
-    inv_diag.assign(inv_diag_before_scale.size(), 1);
-    inv_sq_diag.assign(inv_sq_diag_before_scale.size(), 1);
 
 //    MPI_Barrier(comm); if(rank==0) printf("end of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
@@ -1053,7 +1055,7 @@ int saena_matrix::scale_matrix(bool scale_entries/* = false*/){
 }
 
 
-int saena_matrix::scale_back_matrix(bool scale_entries/* = false*/){
+int saena_matrix::scale_back_matrix(bool full_scale/* = true*/){
 
     // scale back matrix: A = D^{1/2} * A * D^{1/2}
     // values_local, values_remote and entry are being updated.
@@ -1066,8 +1068,10 @@ int saena_matrix::scale_back_matrix(bool scale_entries/* = false*/){
 //    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
 //    MPI_Barrier(comm); if(rank==1) printf("start of saena_matrix::scale()\n"); MPI_Barrier(comm);
 
-    inv_diag    = std::move(inv_diag_before_scale);
-    inv_sq_diag = std::move(inv_sq_diag_before_scale);
+    if(full_scale) {
+        inv_diag = std::move(inv_diag_orig);
+        inv_sq_diag = std::move(inv_sq_diag_orig);
+    }
 
     MPI_Request* requests = nullptr;
     MPI_Status* statuses  = nullptr;
@@ -1139,7 +1143,7 @@ int saena_matrix::scale_back_matrix(bool scale_entries/* = false*/){
         }
     }
 
-    if(scale_entries) {
+    if(full_scale) {
         // update the entry vector
         entry.clear();
 //        entry.resize(nnz_l);

@@ -86,8 +86,8 @@ public:
 
     std::vector<value_t> inv_diag;
     std::vector<value_t> inv_sq_diag;
-    std::vector<value_t> inv_diag_before_scale;
-    std::vector<value_t> inv_sq_diag_before_scale;
+    std::vector<value_t> inv_diag_orig;
+    std::vector<value_t> inv_sq_diag_orig;
 //    double norm1, normInf, rhoDA;
 
     index_t vIndexSize = 0;
@@ -257,8 +257,8 @@ public:
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();
-    int scale_matrix(bool scale_entries = false);
-    int scale_back_matrix(bool scale_entries = false);
+    int scale_matrix(bool full_scale = true);
+    int scale_back_matrix(bool full_scale = true);
 
     // dummy functions to decide if shrinking should happen
     int set_off_on_diagonal_dummy();
