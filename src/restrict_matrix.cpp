@@ -104,20 +104,31 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     entry.clear();
 
     const index_t OFST = split[rank], OFSTNEW = splitNew[rank];
-    nnz_t iter = 0;
-    for (index_t i = 0; i < P->M; ++i) {
-        for (index_t j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter) {
-            entry.emplace_back(cooEntry(P->col_local[P->indicesP_local[iter]] - OFSTNEW, // make row index local
-                                        P->row_local[P->indicesP_local[iter]] + OFST,    // make col index global
-                                        P->val_local[P->indicesP_local[iter]]));
-
+    for (index_t i = 0; i < P->nnz_l_local; ++i) {
+        entry.emplace_back(cooEntry(P->col_local[i] - OFSTNEW, // make row index local
+                                    P->row_local[i] + OFST,    // make col index global
+                                    P->val_local[i]));
 #ifdef __DEBUG1__
-            ASSERT(P->col_local[P->indicesP_local[iter]] - OFSTNEW >= 0, "rank " << rank << ": row = " << P->col_local[P->indicesP_local[iter]] << ", OFSTNEW = " << OFSTNEW);
-            ASSERT(P->row_local[P->indicesP_local[iter]] + OFST >= 0, "rank " << rank << ": col = " << P->row_local[P->indicesP_local[iter]] + OFST << ", OFST = " << OFST);
-            ASSERT(P->row_local[P->indicesP_local[iter]] + OFST < Nbig, "rank " << rank << ": col = " << P->row_local[P->indicesP_local[iter]] + OFST << ", OFST = " << OFST << ", Nbig = " << Nbig);
+        ASSERT(P->col_local[i] - OFSTNEW >= 0, "rank " << rank << ": row = " << P->col_local[i] << ", OFSTNEW = " << OFSTNEW);
+        ASSERT(P->row_local[i] + OFST >= 0,    "rank " << rank << ": col = " << P->row_local[i] + OFST << ", OFST = " << OFST);
+        ASSERT(P->row_local[i] + OFST < Nbig,  "rank " << rank << ": col = " << P->row_local[i] + OFST << ", OFST = " << OFST << ", Nbig = " << Nbig);
 #endif
-        }
     }
+
+//    nnz_t iter = 0;
+//    for (index_t i = 0; i < P->M; ++i) {
+//        for (index_t j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter) {
+//            entry.emplace_back(cooEntry(P->col_local[P->indicesP_local[iter]] - OFSTNEW, // make row index local
+//                                        P->row_local[P->indicesP_local[iter]] + OFST,    // make col index global
+//                                        P->val_local[P->indicesP_local[iter]]));
+//
+//#ifdef __DEBUG1__
+//            ASSERT(P->col_local[P->indicesP_local[iter]] - OFSTNEW >= 0, "rank " << rank << ": row = " << P->col_local[P->indicesP_local[iter]] << ", OFSTNEW = " << OFSTNEW);
+//            ASSERT(P->row_local[P->indicesP_local[iter]] + OFST >= 0, "rank " << rank << ": col = " << P->row_local[P->indicesP_local[iter]] + OFST << ", OFST = " << OFST);
+//            ASSERT(P->row_local[P->indicesP_local[iter]] + OFST < Nbig, "rank " << rank << ": col = " << P->row_local[P->indicesP_local[iter]] + OFST << ", OFST = " << OFST << ", Nbig = " << Nbig);
+//#endif
+//        }
+//    }
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
@@ -152,7 +163,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
         for (nnz_t i = 0; i < P->recvSize_t; i++) {
 //            if(rank==2) printf("%u \t%u \t%f \n", P->vecValues_t[i].row, P->vecValues_t[i].col, P->vecValues_t[i].val);
-            entry.emplace_back(cooEntry(P->vecValues_t[i].col - splitNew[rank], // make row index local
+            entry.emplace_back(cooEntry(P->vecValues_t[i].col - OFSTNEW, // make row index local
                                         P->vecValues_t[i].row,
                                         P->vecValues_t[i].val));
         }
