@@ -5,6 +5,7 @@
 #include "grid.h"
 #include "saena.hpp"
 #include "data_struct.h"
+#include "petsc_functions.h"
 
 using namespace std;
 
@@ -58,6 +59,9 @@ int main(int argc, char* argv[]){
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
 //    A.print(0);
+
+    // write matrix to a file. pass the name as the argument.
+//    A.writeMatrixToFile("mat");
 
     // *************************** set rhs: read from file ****************************
 
@@ -144,10 +148,45 @@ int main(int argc, char* argv[]){
     // *************************** check correctness of the solution 1 ****************************
 
     // A is scaled. read it from the file and don't scale.
-/*
-    saena::matrix AA (comm);
-    AA.read_file(file_name);
-    AA.assemble(false);
+#if 0
+    saena::matrix Ap(comm);
+    saena::laplacian3D(&Ap, mx, my, mz, false);
+
+    std::vector<double> u_petsc(num_local_row);
+    petsc_solve(Ap.get_internal_matrix(), rhs_std, u_petsc, relative_tolerance);
+
+    bool bool_correct = true;
+    if(rank==0){
+        std::stringstream buf;
+        print_sep();
+        printf("Checking the correctness of the solution:\n");
+//        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
+        for(index_t i = 0; i < num_local_row; ++i){
+            if(fabs(u[i] - u_petsc[i]) > 1e-5){
+                bool_correct = false;
+//                break;
+                printf("%.16f \t%.16f \t%.16f \n", u[i], u_petsc[i], u[i] - u_petsc[i]);
+            }
+        }
+        if(bool_correct){
+            buf << "\nThe solution is correct!\n";
+            std::cout << buf.str();
+            print_sep();
+        }
+        else{
+            buf << "\nThe solution is " << RED << "NOT" << COLORRESET << " correct!\n";
+            std::cout << buf.str();
+            print_sep();
+        }
+    }
+#endif
+
+    // *************************** check correctness of the solution 2 ****************************
+
+    // A is scaled. read it from the file and don't scale.
+#if 0
+    saena::matrix AA(comm);
+    saena::laplacian3D(&AA, mx, my, mz, false);
 
     saena_matrix *AAA = AA.get_internal_matrix();
     std::vector<double> Au(num_local_row, 0);
@@ -179,7 +218,7 @@ int main(int argc, char* argv[]){
             print_sep();
         }
     }
-*/
+#endif
 
 /*
     std::vector<double> res(num_local_row,0);
@@ -191,7 +230,7 @@ int main(int argc, char* argv[]){
     float norm1 = pnorm(res, comm);
     if(!rank) std::cout << "norm(Au-b)     = " << norm1 << "\n";
 */
-    // *************************** check correctness of the solution 2 ****************************
+    // *************************** check correctness of the solution 3 ****************************
 
 /*
     bool_correct = true;

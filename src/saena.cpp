@@ -127,14 +127,13 @@ int saena::matrix::assemble(bool scale /*= true*/) {
     return 0;
 }
 
-
-int saena::matrix::assemble_writeToFile(){
-    assemble_writeToFile("");
+int saena::matrix::assemble_band_matrix(){
+    m_pImpl->matrix_setup();
     return 0;
 }
 
 
-int saena::matrix::assemble_writeToFile(const char *folder_name){
+int saena::matrix::assemble_writeToFile(const char *folder_name/* = ""*/){
 
     if(!m_pImpl->assembled){
         m_pImpl->repartition_nnz_initial();
@@ -150,9 +149,8 @@ int saena::matrix::assemble_writeToFile(const char *folder_name){
     return 0;
 }
 
-
-int saena::matrix::assemble_band_matrix(){
-    m_pImpl->matrix_setup();
+int saena::matrix::writeMatrixToFile(const std::string &name/* = ""*/) const{
+    m_pImpl->writeMatrixToFile(name);
     return 0;
 }
 

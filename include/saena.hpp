@@ -36,9 +36,10 @@ namespace saena {
         int add_duplicates(bool add);
 
         int assemble(bool scale = true);
-        int assemble_writeToFile();
-        int assemble_writeToFile(const char *folder_name);
         int assemble_band_matrix();
+
+        int assemble_writeToFile(const char *folder_name = "");
+        int writeMatrixToFile(const std::string &name = "") const;
 
         saena_matrix* get_internal_matrix();
         MPI_Comm get_comm();

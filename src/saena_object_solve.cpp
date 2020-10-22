@@ -2055,6 +2055,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     // ************** scale u **************
 
+//    writeVectorToFile(u, "sol", comm);
+
     if(scale){
         scale_vector(u, A->inv_sq_diag_orig);
     }
