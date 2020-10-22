@@ -104,10 +104,10 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
         // assert A entries
         index_t col_idx = 0;
         for (nnz_t i = 0; i < A.col_sz; i++) {
-//            col_idx = i + A.col_offset;
+//            col_idx = i + A.col_offset + 1;
             for (nnz_t j = A.col_scan[i] - 1; j < A.col_scan[i + 1] - 1; j++) {
 //                std::cout << j << "\t" << A.r[j] << "\t" << col_idx << "\t" << A.v[j] << "\n";
-                ASSERT((A.r[j] >= 0) && (A.r[j] <= A.row_sz), "rank: " << rank << ", A.r[j]: " << A.r[j] << ", A.row_sz: " << A.row_sz);
+                ASSERT((A.r[j] >= 1) && (A.r[j] <= A.row_sz), "rank: " << rank << ", A.r[j]: " << A.r[j] << ", A.row_sz: " << A.row_sz);
                 assert(i < A.col_sz);
 //                ASSERT(fabs(A.v[j]) > ALMOST_ZERO, "rank: " << rank << ", A.v[j]: " << A.v[j]);
             }
@@ -115,11 +115,11 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 
         // assert B entries
         for (nnz_t i = 0; i < B.col_sz; i++) {
-//        col_idx = i + B.col_offset;
+//        col_idx = i + B.col_offset + 1;
 //            if(rank==0) std::cout << "B.col_scan[i] - 1: " << B.col_scan[i]-1 << ", B.col_scan[i+1] - 1: " << B.col_scan[i+1]-1 << "\n";
             for (nnz_t j = B.col_scan[i] - 1; j < B.col_scan[i + 1] - 1; j++) {
 //                if(rank==0) std::cout << j << "\t" << B.r[j] << "\t" << col_idx << "\t" << B.v[j] << "\n";
-                ASSERT((B.r[j] >= 0) && (B.r[j] <= B.row_sz), "rank: " << rank << ", B.r[j]: " << B.r[j] << ", B.row_sz: " << B.row_sz);
+                ASSERT((B.r[j] >= 1) && (B.r[j] <= B.row_sz), "rank: " << rank << ", B.r[j]: " << B.r[j] << ", B.row_sz: " << B.row_sz);
                 assert(i < B.col_sz);
 //                ASSERT(fabs(B.v[j]) > ALMOST_ZERO, "rank " << rank << ": B(" << B.r[j] << ", " << col_idx << ") = " << B.v[j]);
             }
@@ -242,7 +242,7 @@ void saena_object::fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C,
 //                if(rank == 0) printf("col %3d: (%3d , %3d)\n", j, Cmkl_c_scan[j], Cmkl_c_scan[j+1]);
                 for (i = Cmkl_c_scan[j]; i < Cmkl_c_scan[j+1]; ++i, ++ii) {
                     C.emplace_back(Cmkl_r[ii] + ATHRSHLD, j + BTHRSHLD, Cmkl_v[ii]);
-//                    if(rank==0) printf("%3d: (%3d , %3d) = %8f\n", ii, Cmkl_r[ii] + 1, j + B.col_offset, Cmkl_v[ii]);
+//                    if(rank==0) printf("%3d: (%3d , %3d) = %.12f\n", ii, Cmkl_r[ii] - 1, j + B.col_offset, Cmkl_v[ii]);
                 }
             }
 
@@ -2353,7 +2353,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
     }
 
 #ifdef __DEBUG1__
-//    print_vector(AB_temp, -1, "AB_temp", comm);
+//    print_vector(C_temp, -1, "C_temp", comm);
 #endif
 
     // =======================================

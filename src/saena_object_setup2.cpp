@@ -396,7 +396,7 @@ int saena_object::triple_mat_mult(Grid *grid){
     Rcsc.col_scan = new index_t[Rcsc.col_sz + 1];
 
     std::fill(&Rcsc.col_scan[0], &Rcsc.col_scan[Rcsc.col_sz + 1], 0);
-    Rcsc.col_scan[0] = 1;
+    Rcsc.col_scan[0] = 1; // starts from 1, not 0, because the mkl function indexing starts from 1.
 
     index_t *Rc_tmp = &Rcsc.col_scan[1];
     for(nnz_t i = 0; i < Rcsc.nnz; i++){
@@ -433,7 +433,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 
 //    std::cout << "\nR: nnz: " << Rcsc.nnz << std::endl ;
 //    for(index_t j = 0; j < Rcsc.col_sz; j++){
-//        for(index_t i = Rcsc.col_scan[j]; i < Rcsc.col_scan[j+1]; i++){
+//        for(index_t i = Rcsc.col_scan[j] - 1; i < Rcsc.col_scan[j+1] - 1; i++){ // indexing starts from 1, not 0.
 //            std::cout << std::setprecision(4) << Rcsc.row[i] << "\t" << j << "\t" << Rcsc.val[i] << std::endl;
 //        }
 //    }
@@ -493,9 +493,9 @@ int saena_object::triple_mat_mult(Grid *grid){
             MPI_Barrier(comm);
             if (rank == 0) printf("triple_mat_mult: step 2\n");
             MPI_Barrier(comm);
-//        printf("A: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: %u\n",
-//               rank, Acsc.nnz, Acsc.max_nnz, Acsc.col_sz, Acsc.max_M);
-//        MPI_Barrier(comm);
+//            printf("A: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: %u\n",
+//                   rank, Acsc.nnz, Acsc.max_nnz, Acsc.col_sz, Acsc.max_M);
+//            MPI_Barrier(comm);
         }
 
 //    A->print_entry(0);
@@ -506,7 +506,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 
 //    std::cout << "\nA: nnz: " << Acsc.nnz << std::endl ;
 //    for(index_t j = 0; j < Acsc.col_sz; j++){
-//        for(index_t i = Acsc.col_scan[j]; i < Acsc.col_scan[j+1]; i++){
+//        for(index_t i = Acsc.col_scan[j] - 1; i < Acsc.col_scan[j+1] - 1; i++){
 //            std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
 //        }
 //    }
