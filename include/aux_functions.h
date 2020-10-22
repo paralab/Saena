@@ -317,6 +317,8 @@ int write_to_file_vec(std::vector<T>& v, const std::string &name, MPI_Comm comm)
         outFileTxt << v.size() << std::endl;
     }
 
+    outFileTxt << std::setprecision(std::numeric_limits<long double>::digits10 + 1);
+
     // write the vector values
     for (auto i:v) {
         outFileTxt << i << std::endl;
