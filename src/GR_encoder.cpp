@@ -100,7 +100,7 @@ void GR_encoder::compress(index_t *v, index_t v_sz, index_t k, uint8_t *buf){
     }else if(k == 7){
         compress_1byte(v, v_sz, k, buf);
     }else if(k == 15){
-        auto buf2 = reinterpret_cast<uint16_t*>(buf);
+        auto *buf2 = reinterpret_cast<uint16_t*>(buf);
         compress_2bytes(v, v_sz, k, buf2);
     }else{
         printf("compress(): GR compression is only suppoerted for k = 7 or 15! k is %d\n", k);
@@ -127,17 +127,15 @@ void GR_encoder::compress_1byte(index_t *v, index_t v_sz, index_t k, uint8_t *bu
         return;
     }
 
-    short q;
-    int i;
-    int diff;
-    int qiter = 0;
+    short q = 0;
+    int i = 0, diff = 0, qiter = 0;
     buf_iter  = 0;
 
-    uint8_t x;
+    uint8_t x    = 0;
     index_t k_1s = (1u << k) - 1;
 
     auto r_sz = rem_sz(v_sz, k);
-    auto qs   = reinterpret_cast<short*>(&buf[r_sz]);
+    auto *qs  = reinterpret_cast<short*>(&buf[r_sz]);
 
 #ifdef __DEBUG1__
     if(verbose_comp && rank==rank_ver){
@@ -169,7 +167,6 @@ void GR_encoder::compress_1byte(index_t *v, index_t v_sz, index_t k, uint8_t *bu
     }
 
     buf[buf_iter++] = x | (diff & k_1s);
-
 
 #ifdef __DEBUG1__
     if(verbose_comp && rank==rank_ver){
@@ -237,24 +234,21 @@ void GR_encoder::compress_2bytes(index_t *v, index_t v_sz, index_t k, uint16_t *
         return;
     }
 
-    short q;
-    int i;
-    int diff;
-    int qiter = 0;
+    short q = 0;
+    int i = 0, diff  = 0, qiter = 0;
     buf_iter  = 0;
 
-    uint16_t x;
+    uint16_t x   = 0;
     index_t k_1s = (1u << k) - 1;
 
     auto r_sz = rem_sz(v_sz, k);
-    auto qs   = reinterpret_cast<short*>(&buf[r_sz/2]); // each buf value is 2 bytes, but r_sz is the size of remainder in bytes, so devide by 2.
+    auto *qs  = reinterpret_cast<short*>(&buf[r_sz / 2]); // each buf value is 2 bytes, but r_sz is the size of remainder in bytes, so devide by 2.
 
 #ifdef __DEBUG1__
     if(verbose_comp && rank==rank_ver){
         std::cout << "\nrank " << rank << ": compress:   k: " << k << ", M: " << (1U << k) << ", r_sz: " << r_sz << ", v_sz: " << v_sz << std::endl;
     }
 #endif
-
     // ======================================
     // encode rows
     // ======================================
@@ -279,7 +273,6 @@ void GR_encoder::compress_2bytes(index_t *v, index_t v_sz, index_t k, uint16_t *
     }
 
     buf[buf_iter++] = x | (diff & k_1s);
-
 
 #ifdef __DEBUG1__
     if(verbose_comp && rank==rank_ver){
@@ -340,7 +333,7 @@ void GR_encoder::decompress(index_t *v, int v_sz, index_t k, int q_sz, uint8_t *
     }else if(k == 7){
         decompress_1byte(v, v_sz, k, q_sz, buf);
     }else if(k == 15){
-        auto buf2 = reinterpret_cast<uint16_t*>(buf);
+        auto *buf2 = reinterpret_cast<uint16_t*>(buf);
         decompress_2bytes(v, v_sz, k, q_sz, buf2);
     }else{
         printf("decompress(): GR decompression is only suppoerted for k = 7 or 15! k is %d\n", k);
@@ -363,7 +356,7 @@ void GR_encoder::decompress_1byte(index_t *v, int v_sz, index_t k, int q_sz, uin
 #endif
 
     auto r_sz = rem_sz(v_sz, k);
-    auto qs   = reinterpret_cast<short*>(&buf[r_sz]);
+    auto *qs  = reinterpret_cast<short*>(&buf[r_sz]);
 
 #ifdef __DEBUG1__
 //    print_array(qs, q_sz, 0, "qs after", comm);
@@ -665,7 +658,7 @@ void GR_encoder::decompress2(index_t *v, index_t v_sz, index_t k, int q_sz, uint
 #endif
 
     auto r_sz = rem_sz(v_sz, k);
-    auto qs   = reinterpret_cast<short*>(&buf[r_sz]);
+    auto *qs  = reinterpret_cast<short*>(&buf[r_sz]);
 
 #ifdef __DEBUG1__
 //    print_array(qs, q_sz, 0, "qs after", comm);

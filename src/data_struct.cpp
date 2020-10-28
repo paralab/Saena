@@ -147,55 +147,62 @@ void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_s
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
     int rank_ver = 0;
-//    unsigned int M;
 #endif
+
+    if(v_sz == 0)
+        return;
 
     int q_sz = 0, r_sz = 0, tot = 0;
 
-    if(v_sz != 0) {
-        bool skip = false;
-        const int k_start = 7, k_end = 16;
-        int dif = 0;
+    bool skip = false;
+    const int k_start = 7, k_end = 16;
+    int dif = 0;
 
-        // compute the compressed size for different k values, choose the one for which total size is the least.
-        // Also, by setting the initial total value (comp_sz.tot) to v_sz * sizeof(index_t), make sure the compressed
-        // size is smaller than the original size.
-        comp_sz.tot = v_sz * sizeof(index_t);
+    // compute the compressed size for different k values, choose the one for which total size is the least.
+    // Also, by setting the initial total value (comp_sz.tot) to v_sz * sizeof(index_t), make sure the compressed
+    // size is smaller than the original size.
+    comp_sz.tot = v_sz * sizeof(index_t);
 
-        for (int kiter = k_start; kiter < k_end; kiter += 8) {
+    for (int kiter = k_start; kiter < k_end; kiter += 8) {
 
-            const int k = kiter;
+        const int k = kiter;
 
 #ifdef __DEBUG1__
-            if (k != 7 && k != 15) {
-                std::cout << "dif_range_max is not set correctly in " << __func__ << std::endl;
-                exit(EXIT_FAILURE);
-            }
+        if (k != 7 && k != 15) {
+            std::cout << "dif_range_max is not set correctly in " << __func__ << std::endl;
+            exit(EXIT_FAILURE);
+        }
 #endif
+//        M = 1U << k;
+        r_sz = rem_sz(v_sz, k);
 
-            skip = false;
+        // first v element
+        q_sz = 0;
+        dif = (v[0] >> k);
+        skip = false;
+        if(dif >= numeric_limits<short>::max()){
+            skip = true;
+        }else if (dif != 0) {
+            ++q_sz;
+        }
 
-//            M = 1U << k;
-            r_sz = rem_sz(v_sz, k);
-
-            // first v element
-            q_sz = 0;
-            if ((v[0] >> k) != 0) {
-                ++q_sz;
-            }
-
-            // the rest of v
-            int i = 1;
-            for (; i < v_sz; ++i) {
+        // the rest of v
+        if(!skip) {
+            for (int i = 1; i < v_sz; ++i) {
 //                int diff = static_cast<int>(v[i] - v[i - 1]);
 //                int q = diff >> k;
 //                if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: " << diff
 //                                             << ", M: " << (1U << k) << ", q: " << q << std::endl;
 
                 // check if dif is larger than the maximum value for that many bits, move to higher number of bits.
-                dif = v[i] - v[i - 1];
+                dif = (v[i] - v[i - 1]) >> k;
 
-                if ((dif >> k) != 0) {
+                if(dif >= numeric_limits<short>::max()){
+                    skip = true;
+                    continue;
+                }
+
+                if (dif != 0) {
 //                if(q != 0){
 //                    if(rank==rank_ver) std::cout << "v[i]: " << v[i] << ", v[i-1]: " << v[i-1] << ", diff: "
 //                    << (int)(v[i] - v[i - 1]) << ", M: " << (1U << k) << ", q: " << q << std::endl;}
@@ -203,27 +210,29 @@ void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_s
                 }
             }
 
-            tot = tot_sz(v_sz, k, q_sz);
-            if (tot < comp_sz.tot) {
-                comp_sz.k = k;
-                comp_sz.r = r_sz;   // in bytes
-                comp_sz.q = q_sz;   // number of short numbers
-                comp_sz.tot = tot;  // in bytes
-            }
+            if(!skip) {
+                tot = tot_sz(v_sz, k, q_sz);
+                if (tot < comp_sz.tot) {
+                    comp_sz.k = k;
+                    comp_sz.r = r_sz;   // in bytes
+                    comp_sz.q = q_sz;   // number of short numbers
+                    comp_sz.tot = tot;  // in bytes
+                }
 
 #ifdef __DEBUG1__
-            if (verbose_prep_compute && rank == rank_ver) {
-                std::cout << "k: " << std::setw(2) << k << ", M: " << std::setw(5) << (1U << k)
-                          << ", v_sz: " << std::setw(5) << v_sz << " (" << std::setw(5) << v_sz * sizeof(index_t)
-                          << ")"
-                          << ", r_sz: " << std::setw(5) << r_sz
-                          << ", q_sz: " << std::setw(5) << q_sz << " (" << std::setw(5) << q_sz * sizeof(short)
-                          << ")"
-                          << ", tot: " << std::setw(5) << tot << std::endl;
-            }
+                if (verbose_prep_compute && rank == rank_ver) {
+                    std::cout << "k: " << std::setw(2) << k << ", M: " << std::setw(5) << (1U << k)
+                              << ", v_sz: " << std::setw(5) << v_sz << " (" << std::setw(5) << v_sz * sizeof(index_t)
+                              << ")"
+                              << ", r_sz: " << std::setw(5) << r_sz
+                              << ", q_sz: " << std::setw(5) << q_sz << " (" << std::setw(5) << q_sz * sizeof(short)
+                              << ")"
+                              << ", tot: " << std::setw(5) << tot << std::endl;
+                }
 #endif
-        } // for kiter
-    } // if(v_sz != 0)
+            } // if(!skip)
+        } // if(!skip)
+    } // for kiter
 
 #ifdef __DEBUG1__
     if(verbose_prep_compute && rank==rank_ver){
