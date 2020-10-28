@@ -439,7 +439,7 @@ void GR_encoder::decompress_2bytes(index_t *v, int v_sz, index_t k, int q_sz, ui
 #endif
 
     auto r_sz = rem_sz(v_sz, k);
-    auto qs   = reinterpret_cast<short*>(&buf[r_sz/2]); // each buf value is 2 bytes, but r_sz is the size of remainder in bytes, so devide by 2.
+    auto *qs  = reinterpret_cast<short*>(&buf[r_sz/2]); // each buf value is 2 bytes, but r_sz is the size of remainder in bytes, so devide by 2.
 
 #ifdef __DEBUG1__
 //    print_array(qs, q_sz, 0, "qs after", comm);
