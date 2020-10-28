@@ -44,14 +44,18 @@ int saena_object::compute_coarsen(Grid *grid) {
         MPI_Barrier(comm);
         if (rank == 0) printf("start of compute_coarsen nprocs: %d \n", nprocs);
         MPI_Barrier(comm);
-        printf("rank %d: A.Mbig = %u, \tA.M = %u, \tA.nnz_g = %lu, \tA.nnz_l = %lu \n", rank, A->Mbig, A->M, A->nnz_g,
-               A->nnz_l);
+    }
+
+    if (verbose_compute_coarsen2) {
         MPI_Barrier(comm);
-        printf("rank %d: P.Mbig = %u, \tP.M = %u, \tP.nnz_g = %lu, \tP.nnz_l = %lu \n", rank, P->Mbig, P->M, P->nnz_g,
-               P->nnz_l);
+        printf("rank %d: A.Mbig = %u, \tA.M = %u, \tA.nnz_g = %lu, \tA.nnz_l = %lu \n",
+                rank, A->Mbig, A->M, A->nnz_g, A->nnz_l);
         MPI_Barrier(comm);
-        printf("rank %d: R.Mbig = %u, \tR.M = %u, \tR.nnz_g = %lu, \tR.nnz_l = %lu \n", rank, R->Mbig, R->M, R->nnz_g,
-               R->nnz_l);
+        printf("rank %d: P.Mbig = %u, \tP.M = %u, \tP.nnz_g = %lu, \tP.nnz_l = %lu \n",
+                rank, P->Mbig, P->M, P->nnz_g, P->nnz_l);
+        MPI_Barrier(comm);
+        printf("rank %d: R.Mbig = %u, \tR.M = %u, \tR.nnz_g = %lu, \tR.nnz_l = %lu \n",
+                rank, R->Mbig, R->M, R->nnz_g, R->nnz_l);
         MPI_Barrier(comm);
     }
 #endif
@@ -93,7 +97,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 //    print_vector(Ac->split, 0, "Ac->split", Ac->comm);
     if(verbose_compute_coarsen){
-        MPI_Barrier(comm); printf("compute_coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
+        MPI_Barrier(comm); if(!rank) printf("compute_coarsen: step 2: rank = %d\n", rank); MPI_Barrier(comm);}
 #endif
 
     // minor shrinking
@@ -111,7 +115,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
     if(verbose_compute_coarsen){
-        MPI_Barrier(comm); printf("compute_coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); if(!rank) printf("compute_coarsen: step 3: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
@@ -144,7 +148,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
     if (verbose_compute_coarsen) {
-        MPI_Barrier(comm); printf("compute_coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); if(!rank) printf("compute_coarsen: step 4: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
@@ -214,7 +218,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 #ifdef __DEBUG1__
 //    print_vector(Ac->entry, -1, "Ac->entry", A->comm);
     if (verbose_compute_coarsen) {
-        MPI_Barrier(comm); printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); if(!rank) printf("compute_coarsen: step 5: rank = %d\n", rank); MPI_Barrier(comm);
     }
 #endif
 
@@ -230,7 +234,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
     if (verbose_compute_coarsen) {
-        MPI_Barrier(comm); printf("compute_coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); if(!rank) printf("compute_coarsen: step 6: rank = %d\n", rank); MPI_Barrier(comm);
     }
 //    Ac->print_info(-1);
 //    Ac->print_entry(-1);
@@ -259,7 +263,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
         if (verbose_compute_coarsen) {
-            MPI_Barrier(comm); printf("compute_coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);
+            MPI_Barrier(comm); if(!rank) printf("compute_coarsen: step 7: rank = %d\n", rank); MPI_Barrier(comm);
         }
 #endif
 
@@ -276,7 +280,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
         if (verbose_compute_coarsen) {
-            MPI_Barrier(comm); printf("compute_coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);
+            MPI_Barrier(comm); if(!rank) printf("compute_coarsen: step 8: rank = %d\n", rank); MPI_Barrier(comm);
         }
 #endif
 
@@ -295,7 +299,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
         if (verbose_compute_coarsen) {
-            MPI_Barrier(comm); printf("compute_coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);
+            MPI_Barrier(comm); if(!rank) printf("compute_coarsen: step 9: rank = %d\n", rank); MPI_Barrier(comm);
         }
 #endif
 
@@ -323,7 +327,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 
 #ifdef __DEBUG1__
     if(verbose_compute_coarsen){
-        MPI_Barrier(comm); printf("compute_coarsen: done! rank = %d\n", rank); MPI_Barrier(comm);
+        MPI_Barrier(comm); if(!rank) printf("compute_coarsen: done! rank = %d\n", rank); MPI_Barrier(comm);
     }
 
     // view matrix Ac
@@ -498,18 +502,19 @@ int saena_object::triple_mat_mult(Grid *grid){
 //            MPI_Barrier(comm);
         }
 
-//    A->print_entry(0);
-//    printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
-//    print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
-//    print_array(Acsc.val, Acsc.nnz, 0, "Acsc.val", comm);
-//    print_array(Acsc.col_scan, Acsc.col_sz + 1, 0, "Acsc.col_scan", comm);
+//        A->print_entry(0);
+//        printf("A: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", A->nnz_l, A->nnz_g, A->M, A->Mbig);
+//        print_array(Acsc.row, Acsc.nnz, 0, "Acsc.row", comm);
+//        print_array(Acsc.val, Acsc.nnz, 0, "Acsc.val", comm);
+//        print_array(Acsc.col_scan, Acsc.col_sz + 1, 0, "Acsc.col_scan", comm);
 
-//    std::cout << "\nA: nnz: " << Acsc.nnz << std::endl ;
-//    for(index_t j = 0; j < Acsc.col_sz; j++){
-//        for(index_t i = Acsc.col_scan[j] - 1; i < Acsc.col_scan[j+1] - 1; i++){
-//            std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
-//        }
-//    }
+//        std::cout << "\nA: nnz: " << Acsc.nnz << std::endl ;
+        for(index_t j = 0; j < Acsc.col_sz; j++){
+            for(index_t i = Acsc.col_scan[j] - 1; i < Acsc.col_scan[j+1] - 1; i++){
+                ASSERT(Acsc.row[i] >= 0, Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i]);
+//                std::cout << std::setprecision(4) << Acsc.row[i] << "\t" << j << "\t" << Acsc.val[i] << std::endl;
+            }
+        }
     }
 #endif
 
@@ -641,9 +646,9 @@ int saena_object::triple_mat_mult(Grid *grid){
             MPI_Barrier(comm);
             if (rank == 0) printf("triple_mat_mult: step 7\n");
             MPI_Barrier(comm);
-            printf("RA: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: not needed for lhs of matmat\n",
-                   rank, RAcsc.nnz, RAcsc.max_nnz, RAcsc.col_sz);
-            MPI_Barrier(comm);
+//            printf("RA: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: not needed for lhs of matmat\n",
+//                   rank, RAcsc.nnz, RAcsc.max_nnz, RAcsc.col_sz);
+//            MPI_Barrier(comm);
         }
 
 //    RA.print_entry(0);
@@ -712,22 +717,23 @@ int saena_object::triple_mat_mult(Grid *grid){
             MPI_Barrier(comm);
             if (rank == 0) printf("triple_mat_mult: step 8\n");
             MPI_Barrier(comm);
-//        printf("P: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: %u\n",
-//                rank, Pcsc.nnz, Pcsc.max_nnz, Pcsc.col_sz, Pcsc.max_M);
-//        MPI_Barrier(comm);
-//        print_array(Pcsc.col_scan, Pcsc.col_sz+1, 1, "Pcsc.col_scan", comm);
+//            printf("P: rank %d: nnz: %lu, \tmax_nnz: %lu, \tcol_sz: %u, \tmax_M: %u\n",
+//                    rank, Pcsc.nnz, Pcsc.max_nnz, Pcsc.col_sz, Pcsc.max_M);
+//            MPI_Barrier(comm);
+//            print_array(Pcsc.col_scan, Pcsc.col_sz+1, 1, "Pcsc.col_scan", comm);
         }
 
-//    R->print_entry(0);
-//    printf("R: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", R->nnz_l, R->nnz_g, R->M, R->Mbig);
+//        R->print_entry(0);
+//        printf("R: nnz_l: %ld\tnnz_g: %ld\tM: %d\tM_big: %d\n", R->nnz_l, R->nnz_g, R->M, R->Mbig);
 
 //    if (rank == 1) {
 //        std::cout << "\nP transpose: nnz: " << R->nnz_l << std::endl;
-//        for (index_t j = 0; j < R->M; j++) {
-//            for (index_t i = Pcsc.col_scan[j]; i < Pcsc.col_scan[j + 1]; i++) {
+        for (index_t j = 0; j < R->M; j++) {
+            for (index_t i = Pcsc.col_scan[j] - 1; i < Pcsc.col_scan[j + 1] - 1; ++i) {
+                ASSERT(Pcsc.row[i] >= 0, Pcsc.row[i] << "\t" << j + Pcsc.split[rank] << "\t" << Pcsc.val[i]);
 //                std::cout << std::setprecision(4) << Pcsc.row[i] << "\t" << j + Pcsc.split[rank] << "\t" << Pcsc.val[i] << std::endl;
-//            }
-//        }
+            }
+        }
 //    }
     }
 #endif

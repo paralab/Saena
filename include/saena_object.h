@@ -185,6 +185,7 @@ public:
     bool verbose_coarsen          = false;
     bool verbose_pcoarsen         = false;
     bool verbose_compute_coarsen  = false;
+    bool verbose_compute_coarsen2 = false;
     bool verbose_triple_mat_mult  = false;
     bool verbose_matmat           = false;
     bool verbose_fastmm           = false;

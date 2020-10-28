@@ -1534,6 +1534,8 @@ int saena_object::matmat_memory_alloc(CSCMat &A, CSCMat &B){
         }
 
         mempool3_sz = v_buffer_sz_max + r_cscan_buffer_sz_max;
+//        if(rank==56) printf("v_buffer_sz_max = %ld, r_cscan_buffer_sz_max = %ld, mempool3_sz = %ld\n",
+//                             v_buffer_sz_max, r_cscan_buffer_sz_max, mempool3_sz);
 
         try {
             mempool3 = new index_t[mempool3_sz]; // used to store mat_current in matmat()
@@ -1702,6 +1704,10 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
     MPI_Comm_rank(comm, &rank);
 
     int verbose_rank = 0;
+    case1_iter = 0;
+    case2_iter = 0;
+    case3_iter = 0;
+
 #ifdef __DEBUG1__
     if (verbose_matmat) {
         MPI_Barrier(comm);
@@ -2008,9 +2014,9 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
                 if (verbose_matmat) {
                     MPI_Barrier(comm);
-                    if (rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
+                    if(rank == verbose_rank) printf("matmat: step 4 - in for loop\n");
                     MPI_Barrier(comm);
-                    printf("rank %d: next_owner: %4d, recv_nnz: %4lu, recv_size: %4lu, send_nnz = %4lu, send_size: %4lu, mat_recv_M: %4u\n",
+                    if(rank == verbose_rank) printf("rank %d: next_owner: %4d, recv_nnz: %4lu, recv_size: %4lu, send_nnz = %4lu, send_size: %4lu, mat_recv_M: %4u\n",
                            rank, next_owner, recv_nnz, recv_size, send_nnz, send_size, mat_recv_M);
                     MPI_Barrier(comm);
                 }
@@ -2086,13 +2092,21 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
 #ifdef __DEBUG1__
                 {
+                    // check the local row indices after compression and decompression.
+                    if(rank==owner){
+//                        std::cout << "Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner] << std::endl;
+                        for(int i = 0; i < Bcsc.nnz_list[owner]; ++i){
+                            ASSERT(Bcsc.row[i] == mat_current_r[i], Bcsc.row[i] << "\t" << mat_current_r[i]);
+                        }
+                    }
+
 //                    if(rank==verbose_rank) printf("row_comp_sz: %d, col_comp_sz: %d, current_comp_sz: %d\n", row_comp_sz, col_comp_sz, current_comp_sz);
 //                    MPI_Barrier(comm);
-//                    auto mat_send_vv = reinterpret_cast<value_t*>(&mat_send[current_comp_sz]);
+//                    auto *mat_send_vv = reinterpret_cast<value_t*>(&mat_send[current_comp_sz]);
 //                    if(rank==verbose_rank){
 //                        std::cout << "Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner] << std::endl;
 //                        for(int i = 0; i < Bcsc.nnz_list[owner]; ++i){
-//                            std::cout << i << "\t" << mat_current_r[i] << "\t" << mat_current_v[i] << "\t" << mat_send_vv[i] << std::endl;
+//                            std::cout << i << "\t" << Bcsc.row[i] << "\t" << mat_current_r[i] << "\t" << mat_current_v[i] << "\t" << mat_send_vv[i] << std::endl;
 //                        }
 //                        std::cout << std::endl;
 //                    }
