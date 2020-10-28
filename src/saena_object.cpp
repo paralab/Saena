@@ -34,11 +34,13 @@ int saena_object::setup(saena_matrix* A) {
 
 #pragma omp parallel default(none) shared(rank, nprocs)
     if(!rank && omp_get_thread_num()==0)
-        printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
+        printf("\nnumber of processes: %d\nnumber of threads:   %d\n", nprocs, omp_get_num_threads());
 
     if(verbose_setup){
         MPI_Barrier(A->comm);
         if(!rank){
+            printf("Operator smoother:   %s\n", PSmoother.c_str());
+            printf("connStrength:        %.2f\n", connStrength);
             printf("_____________________________\n\n");
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
                    nprocs, A->Mbig, A->nnz_g, A->density);
@@ -244,11 +246,17 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 
     #pragma omp parallel default(none) shared(rank, nprocs)
     if(!rank && omp_get_thread_num()==0)
-        printf("\nnumber of processes = %d\nnumber of threads   = %d\n\n", nprocs, omp_get_num_threads());
+        printf("\nnumber of processes: %d\nnumber of threads:   %d\n", nprocs, omp_get_num_threads());
+
+    if(smoother=="chebyshev"){
+        find_eig(*A);
+    }
 
     if(verbose_setup){
         MPI_Barrier(A->comm);
         if(!rank){
+            printf("Operator smoother:   %s\n", PSmoother.c_str());
+            printf("connStrength:        %.2f\n", connStrength);
             printf("_____________________________\n\n");
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
                    nprocs, A->Mbig, A->nnz_g, A->density);
@@ -274,10 +282,6 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
         MPI_Barrier(A->comm);
     }
 #endif
-
-    if(smoother=="chebyshev"){
-        find_eig(*A);
-    }
 
     if(fabs(sample_sz_percent - 1) < 1e-4)
         doSparsify = false;
