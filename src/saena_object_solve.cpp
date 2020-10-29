@@ -1992,6 +1992,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     for(i = 0; i < solver_max_iter; i++){
 #ifdef PROFILE_PCG
+        MPI_Barrier(comm);
         double time_matvec1 = omp_get_wtime();
 #endif
 
@@ -2000,6 +2001,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 #ifdef PROFILE_PCG
         double time_matvec2 = omp_get_wtime();
         matvec_time1 += time_matvec2 - time_matvec1;
+        MPI_Barrier(comm);
         double dot1 = omp_get_wtime();
 #endif
 
@@ -2020,6 +2022,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         }
 
 #ifdef PROFILE_PCG
+        MPI_Barrier(comm);
         dot1 = omp_get_wtime();
 #endif
 
@@ -2040,7 +2043,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
 #endif
 
-        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
+//        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
 
         if(current_dot < THRSHLD)
             break;
@@ -2064,6 +2067,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         // **************************************************************
 
 #ifdef PROFILE_PCG
+        MPI_Barrier(comm);
         dot1 = omp_get_wtime();
 #endif
 
