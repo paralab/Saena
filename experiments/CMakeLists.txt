@@ -10,7 +10,8 @@
 #add_executable(gemm       gemm.cpp       ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
 #add_executable(gemm_2file gemm_2file.cpp ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
 #add_executable(gemm_MG    gemm_MG.cpp     ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
-add_executable(profile    profile.cpp     ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
+#add_executable(profile    profile.cpp     ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
+add_executable(profile_f  profile_file.cpp     ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
 
 #target_link_libraries(basic      ${SAENA_LIB_DEPENDENCIES})
 #target_link_libraries(file       ${SAENA_LIB_DEPENDENCIES})
@@ -22,4 +23,5 @@ add_executable(profile    profile.cpp     ${SAENA_SOURCE_FILES} ${SAENA_HEADER_F
 #target_link_libraries(gemm       ${SAENA_LIB_DEPENDENCIES})
 #target_link_libraries(gemm_2file ${SAENA_LIB_DEPENDENCIES})
 #target_link_libraries(gemm_MG    ${SAENA_LIB_DEPENDENCIES})
-target_link_libraries(profile    ${SAENA_LIB_DEPENDENCIES})
+#target_link_libraries(profile    ${SAENA_LIB_DEPENDENCIES})
+target_link_libraries(profile_f    ${SAENA_LIB_DEPENDENCIES})
