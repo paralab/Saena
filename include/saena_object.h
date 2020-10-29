@@ -19,6 +19,11 @@
 // number of update steps for lazy-update
 #define ITER_LAZY 20
 
+// uncomment to enable timing
+#define PROFILE_PCG
+#define PROFILE_TOTAL_PCG
+#define PROFILE_VCYCLE
+
 class strength_matrix;
 class saena_matrix;
 class prolong_matrix;
@@ -301,7 +306,7 @@ public:
     int solve_CG(std::vector<value_t>& u);
     int solve_pCG(std::vector<value_t>& u);
     int setup_vcycle_memory();
-    int vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    void vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
 //    int smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
 
     void inline smooth(Grid *grid, std::vector<value_t> &u, std::vector<value_t> &rhs, int iter) const{
@@ -440,6 +445,7 @@ public:
     double Rtransfer_time;
     double Ptransfer_time;
     double vcycle_smooth_time;
+    double vcycle_other_time;
 
     // for debugging
     int rank_v = 0;
