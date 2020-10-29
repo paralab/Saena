@@ -1043,7 +1043,6 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
         return;
     }
 
-
     std::vector<value_t> &res         = grid->res;
     std::vector<value_t> &uCorr       = grid->uCorr;
 //    std::vector<value_t> &res_coarse  = grid->res_coarse;
@@ -1175,7 +1174,6 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
 
     if (grid->Ac.active_minor) {
 
-
         if (nprocs > 1) {
             repartition_u_shrink(res_coarse, *grid);
         }
@@ -1183,10 +1181,10 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
         if (grid->Ac.active) {
 
             comm = grid->Ac.comm;
+            MPI_Comm_rank(comm, &rank);
             MPI_Comm_size(comm, &nprocs);
 
 #ifdef __DEBUG1__
-            MPI_Comm_rank(comm, &rank);
 
             {
 //                MPI_Barrier(comm);
@@ -1210,10 +1208,6 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
             }
 #endif
 
-#ifdef PROFILE_VCYCLE
-            MPI_Barrier(comm);
-            time_other1 = omp_get_wtime();
-#endif
             // scale rhs of the next level
             if(scale) {
                 scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag_orig);
@@ -1221,28 +1215,12 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
 
 //            uCorrCoarse.assign(grid->Ac.M, 0);
             fill(uCorrCoarse.begin(), uCorrCoarse.end(), 0);
-
-#ifdef PROFILE_VCYCLE
-            time_other2 = omp_get_wtime();
-            vcycle_other_time += time_other2 - time_other1;
-#endif
-
             vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
-
-#ifdef PROFILE_VCYCLE
-            MPI_Barrier(comm);
-            time_other1 = omp_get_wtime();
-#endif
 
             // scale uCorrCoarse
             if(scale) {
                 scale_vector(uCorrCoarse, grid->coarseGrid->A->inv_sq_diag_orig);
             }
-
-#ifdef PROFILE_VCYCLE
-            time_other2 = omp_get_wtime();
-            vcycle_other_time += time_other2 - time_other1;
-#endif
 
 #ifdef __DEBUG1__
 //            print_vector(uCorrCoarse, -1, "uCorrCoarse", grid->A->comm);
@@ -1254,10 +1232,10 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
     // **************************************** 5. prolong ****************************************
 
     comm = grid->A->comm;
-
-#ifdef __DEBUG1__
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
     t1 = omp_get_wtime();
 
     if (verbose_vcycle) {
