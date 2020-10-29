@@ -1853,6 +1853,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double dots = 0;
 
 #ifdef PROFILE_TOTAL_PCG
+    MPI_Barrier(comm);
     double t_pcg1 = omp_get_wtime();
 #endif
 
