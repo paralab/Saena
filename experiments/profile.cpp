@@ -17,9 +17,9 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(argc != 4) {
+    if(argc != 5) {
         if(rank == 0) {
-            cout << "Usage: ./profile mx my mz" << endl;
+            cout << "Usage: ./profile mx my mz max_level" << endl;
 //            cout << "Usage: ./profile mx" << endl;
         }
         MPI_Finalize();
@@ -106,8 +106,10 @@ int main(int argc, char* argv[]){
 
     t1 = omp_get_wtime();
 
+    int max_level(std::stoi(argv[4]));
+
     saena::amg solver;
-    solver.set_multigrid_max_level(4);
+    solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -127,7 +129,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_CG(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-    for(int i = 0; i < 5; ++i)
+    for(int i = 0; i < 3; ++i)
         solver.solve_pCG(u, &opts);
 
     // solve the system, using pure GMRES.
