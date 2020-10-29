@@ -757,6 +757,190 @@ int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local){
     return 0;
 }
 
+int saena::laplacian3D_old2(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale /*= true*/){
+// from petsc-3.13.5/src/ksp/ksp/tutorials/ex45.c
+/*
+Laplacian in 3D. Modeled by the partial differential equation
+   - Laplacian u = 1,0 < x,y,z < 1,
+
+with boundary conditions
+   u = 1 for x = 0, x = 1, y = 0, y = 1, z = 0, z = 1.
+*/
+
+    MPI_Comm comm = A->get_comm();
+    int rank = 0, nprocs = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    printf("rank %d: mx = %d, my = %d, mz = %d\n", rank, mx, my, mz);
+
+    if(rank < mz) {
+
+        int i, j, k, xm, ym, zm, xs, ys, zs, num, numi, numj, numk;
+        value_t v[7], Hx, Hy, Hz, HyHzdHx, HxHzdHy, HxHydHz;
+        index_t col_index[7];
+        index_t node;
+
+        Hx = 1.0 / (value_t)(mx - 1);
+        Hy = 1.0 / (value_t)(my - 1);
+        Hz = 1.0 / (value_t)(mz - 1);
+
+//        printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+
+        HyHzdHx = Hy * Hz / Hx;
+        HxHzdHy = Hx * Hz / Hy;
+        HxHydHz = Hx * Hy / Hz;
+
+        // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+        xs = 0;
+        xm = mx;
+        ys = 0;
+        ym = my;
+        if(mz > nprocs){
+            zm = (int) floor(mz / nprocs);
+            zs = rank * zm;
+            if (rank == nprocs - 1)
+                zm = mz - ((nprocs - 1) * zm);
+        }else{ // the first mz processors generate one 2D x,y-grid on themselves.
+            zm = 1;
+            zs = rank * zm;
+        }
+
+//        printf("rank %d: xs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+
+        for (k=zs; k<zs+zm; k++) {
+            for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                    node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
+
+//                    row.i = i; row.j = j; row.k = k;
+                    if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+//                        v[0] = 2.0*(HxHydHz + HxHzdHy + HyHzdHx);
+//                        MatSetValuesStencil(B,1,&row,1,&row,v,INSERT_VALUES);
+                        A->set(node, node, 2.0*(HxHydHz + HxHzdHy + HyHzdHx));
+                    } else {
+//                        v[0] = -HxHydHz;col[0].i = i; col[0].j = j; col[0].k = k-1;
+//                        v[1] = -HxHzdHy;col[1].i = i; col[1].j = j-1; col[1].k = k;
+//                        v[2] = -HyHzdHx;col[2].i = i-1; col[2].j = j; col[2].k = k;
+//                        v[3] = 2.0*(HxHydHz + HxHzdHy + HyHzdHx);col[3].i = row.i; col[3].j = row.j; col[3].k = row.k;
+//                        v[4] = -HyHzdHx;col[4].i = i+1; col[4].j = j; col[4].k = k;
+//                        v[5] = -HxHzdHy;col[5].i = i; col[5].j = j+1; col[5].k = k;
+//                        v[6] = -HxHydHz;col[6].i = i; col[6].j = j; col[6].k = k+1;
+//                        ierr = MatSetValuesStencil(B,1,&row,7,col,v,INSERT_VALUES);CHKERRQ(ierr);
+
+                        A->set(node, node - (mx * my), -HxHydHz);
+                        A->set(node, node - mx,        -HxHzdHy);
+                        A->set(node, node - 1,         -HyHzdHx);
+                        A->set(node, node,             2.0*(HxHydHz + HxHzdHy + HyHzdHx));
+                        A->set(node, node + 1,         -HyHzdHx);
+                        A->set(node, node + mx ,       -HxHzdHy);
+                        A->set(node, node + (mx * my), -HxHydHz);
+                    }
+                }
+            }
+        }
+    }
+
+    A->assemble(scale);
+
+    return 0;
+}
+
+int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local){
+
+    MPI_Comm comm = A->get_comm();
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    index_t n_matrix = nprocs * n_matrix_local;
+    index_t n_grid = cbrt(n_matrix); // number of rows (or columns) of the matrix
+//    if(rank==0) std::cout << "n_matrix = " << n_matrix << ", n_grid = " << n_grid << std::endl;
+
+    if(n_matrix != n_grid * n_grid * n_grid){
+        if(rank==0) printf("\nerror: (dof_local * nprocs) should be a cubed number (of power 3!)\n\n");
+        MPI_Finalize();
+        return -1;
+    }
+
+    index_t node, node_start, node_end; // node = global node index
+//    auto offset = (unsigned int)floor(n_matrix / nprocs);
+
+    node_start = rank * n_matrix_local;
+    node_end   = node_start + n_matrix_local;
+//    printf("rank = %d, node_start = %u, node_end = %u \n", rank, node_start, node_end);
+
+//    if(rank == nprocs -1)
+//        node_end = node_start + ( n_matrix - ((nprocs-1) * offset) );
+
+    unsigned int modulo, division, division_sq;
+    for(node = node_start; node < node_end; node++) {
+        modulo = node % n_grid;
+        division = (unsigned int)floor(node / n_grid);
+        division_sq = (unsigned int)floor(node / (n_grid*n_grid));
+
+        if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) ){ // k is not a boundary node
+            A->set(node, node, 6);
+
+//            A->set(node, node+1, -1);
+//            A->set(node, node-1, -1);
+//            A->set(node, node-n_grid, -1);
+//            A->set(node, node+n_grid, -1);
+//            A->set(node, node - (n_grid * n_grid), -1);
+//            A->set(node, node + (n_grid * n_grid), -1);
+
+            modulo = (node+1) % n_grid;
+            division = (unsigned int)floor( (node+1) / n_grid);
+            division_sq = (unsigned int)floor( (node+1) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k+1 is not a boundary node
+                A->set(node, node+1, -1);
+
+            modulo = (node-1) % n_grid;
+            division = (unsigned int)floor( (node-1) / n_grid);
+            division_sq = (unsigned int)floor( (node-1) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k-1 is not a boundary node
+                A->set(node, node-1, -1);
+
+            modulo = (node-n_grid) % n_grid;
+            division = (unsigned int)floor( (node-n_grid) / n_grid);
+            division_sq = (unsigned int)floor( (node-n_grid) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k-n_grid is not a boundary node
+                A->set(node, node-n_grid, -1);
+
+            modulo = (node+n_grid) % n_grid;
+            division = (unsigned int)floor( (node+n_grid) / n_grid);
+            division_sq = (unsigned int)floor( (node+n_grid) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k+n_grid is not a boundary node
+                A->set(node, node+n_grid, -1);
+
+            modulo = (node - (n_grid * n_grid)) % n_grid;
+            division = (unsigned int)floor( (node - (n_grid * n_grid)) / n_grid);
+            division_sq = (unsigned int)floor( (node - (n_grid * n_grid)) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k - (n_grid * n_grid) is not a boundary node
+                A->set(node, node - (n_grid * n_grid), -1);
+
+            modulo = (node + (n_grid * n_grid)) % n_grid;
+            division = (unsigned int)floor( (node + (n_grid * n_grid)) / n_grid);
+            division_sq = (unsigned int)floor( (node + (n_grid * n_grid)) / (n_grid*n_grid));
+            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k + (n_grid * n_grid) is not a boundary node
+                A->set(node, node + (n_grid * n_grid), -1);
+        }
+    }
+
+    // A.set overwrites the value in case of a duplicate.
+    // boundary values are being overwritten by 1.
+    for(node = node_start; node < node_end; node++) {
+        modulo = node % n_grid;
+        division = (unsigned int)floor(node / n_grid);
+        division_sq = (unsigned int)floor(node / (n_grid*n_grid));
+
+        // boundary node
+        if(modulo == 0 || modulo == (n_grid-1) || division == 0 || division == (n_grid-1) || division_sq == 0 || division_sq == (n_grid-1)  )
+            A->set(node, node, 1);
+    }
+
+    return 0;
+}
 
 int saena::laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale /*= true*/){
 
@@ -929,6 +1113,74 @@ int saena::laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz, boo
 }
 
 
+int saena::laplacian3D_set_rhs_old2(std::vector<double> &rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm){
+    // set rhs entries using the cos() function.
+
+    int rank, nprocs;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    if(rank < mz) {
+
+        int i, j, k, xm, ym, zm, xs, ys, zs;
+        value_t Hx, Hy, Hz, HxHydHz, HyHzdHx, HxHzdHy;
+        index_t node;
+
+        Hx = 1.0 / (value_t)(mx - 1);
+        Hy = 1.0 / (value_t)(my - 1);
+        Hz = 1.0 / (value_t)(mz - 1);
+
+//        printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+
+        HxHydHz = Hx*Hy/Hz;
+        HxHzdHy = Hx*Hz/Hy;
+        HyHzdHx = Hy*Hz/Hx;
+
+        // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+        xs = 0;
+        xm = mx - 1;
+        ys = 0;
+        ym = my - 1;
+        if((mz - 1) > nprocs){
+            zm = (int) floor( (mz - 1) / nprocs);
+            zs = rank * zm;
+            if (rank == nprocs - 1)
+                zm = (mz - 1) - ((nprocs - 1) * zm);
+        }else{ // the first (mz - 1) processors generate one 2D x,y-grid on themselves.
+            zm = 1;
+            zs = rank * zm;
+        }
+
+//        printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+
+        rhs.resize((mx - 1) * (my - 1) * (zm - 1));
+
+        index_t iter = 0;
+        for (k=zs; k<zs+zm; k++) {
+            for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                    if (i==0 || j==0 || k==0 || i==mx-1 || j==my-1 || k==mz-1) {
+//                        barray[k][j][i] = 2.0*(HxHydHz + HxHzdHy + HyHzdHx);
+                        rhs[iter] = 2.0*(HxHydHz + HxHzdHy + HyHzdHx);
+                    } else {
+//                        barray[k][j][i] = Hx*Hy*Hz;
+                        rhs[iter] = Hx*Hy*Hz;
+                    }
+                }
+            }
+        }
+    }
+
+//    rhs[iter] = 12 * PETSC_PI * PETSC_PI
+//                * sin(2 * PETSC_PI * (((value_t) i + 0.5) * Hx))
+//                * sin(2 * PETSC_PI * (((value_t) j + 0.5) * Hy))
+//                * sin(2 * PETSC_PI * (((value_t) k + 0.5) * Hz))
+//                * Hx * Hy * Hz;
+    // sin(2 * PETSC_PI * i) * sin(2 * PETSC_PI * j)  * sin(2 * PETSC_PI * k)
+
+    return 0;
+}
+
 int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm){
     // set rhs entries using the cos() function.
 
@@ -986,7 +1238,6 @@ int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
     return 0;
 }
 
-
 int saena::laplacian3D_set_rhs_zero(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm){
     // set rhs entries corresponding to boundary points to zero.
 
@@ -1028,103 +1279,6 @@ int saena::laplacian3D_set_rhs_zero(std::vector<double> &rhs, unsigned int mx, u
                 }
             }
         }
-    }
-
-    return 0;
-}
-
-
-int saena::laplacian3D_old(saena::matrix* A, index_t n_matrix_local){
-
-    MPI_Comm comm = A->get_comm();
-    int rank, nprocs;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    index_t n_matrix = nprocs * n_matrix_local;
-    index_t n_grid = cbrt(n_matrix); // number of rows (or columns) of the matrix
-//    if(rank==0) std::cout << "n_matrix = " << n_matrix << ", n_grid = " << n_grid << std::endl;
-
-    if(n_matrix != n_grid * n_grid * n_grid){
-        if(rank==0) printf("\nerror: (dof_local * nprocs) should be a cubed number (of power 3!)\n\n");
-        MPI_Finalize();
-        return -1;
-    }
-
-    index_t node, node_start, node_end; // node = global node index
-//    auto offset = (unsigned int)floor(n_matrix / nprocs);
-
-    node_start = rank * n_matrix_local;
-    node_end   = node_start + n_matrix_local;
-//    printf("rank = %d, node_start = %u, node_end = %u \n", rank, node_start, node_end);
-
-//    if(rank == nprocs -1)
-//        node_end = node_start + ( n_matrix - ((nprocs-1) * offset) );
-
-    unsigned int modulo, division, division_sq;
-    for(node = node_start; node < node_end; node++) {
-        modulo = node % n_grid;
-        division = (unsigned int)floor(node / n_grid);
-        division_sq = (unsigned int)floor(node / (n_grid*n_grid));
-
-        if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) ){ // k is not a boundary node
-            A->set(node, node, 6);
-
-//            A->set(node, node+1, -1);
-//            A->set(node, node-1, -1);
-//            A->set(node, node-n_grid, -1);
-//            A->set(node, node+n_grid, -1);
-//            A->set(node, node - (n_grid * n_grid), -1);
-//            A->set(node, node + (n_grid * n_grid), -1);
-
-            modulo = (node+1) % n_grid;
-            division = (unsigned int)floor( (node+1) / n_grid);
-            division_sq = (unsigned int)floor( (node+1) / (n_grid*n_grid));
-            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k+1 is not a boundary node
-                A->set(node, node+1, -1);
-
-            modulo = (node-1) % n_grid;
-            division = (unsigned int)floor( (node-1) / n_grid);
-            division_sq = (unsigned int)floor( (node-1) / (n_grid*n_grid));
-            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k-1 is not a boundary node
-                A->set(node, node-1, -1);
-
-            modulo = (node-n_grid) % n_grid;
-            division = (unsigned int)floor( (node-n_grid) / n_grid);
-            division_sq = (unsigned int)floor( (node-n_grid) / (n_grid*n_grid));
-            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k-n_grid is not a boundary node
-                A->set(node, node-n_grid, -1);
-
-            modulo = (node+n_grid) % n_grid;
-            division = (unsigned int)floor( (node+n_grid) / n_grid);
-            division_sq = (unsigned int)floor( (node+n_grid) / (n_grid*n_grid));
-            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k+n_grid is not a boundary node
-                A->set(node, node+n_grid, -1);
-
-            modulo = (node - (n_grid * n_grid)) % n_grid;
-            division = (unsigned int)floor( (node - (n_grid * n_grid)) / n_grid);
-            division_sq = (unsigned int)floor( (node - (n_grid * n_grid)) / (n_grid*n_grid));
-            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k - (n_grid * n_grid) is not a boundary node
-                A->set(node, node - (n_grid * n_grid), -1);
-
-            modulo = (node + (n_grid * n_grid)) % n_grid;
-            division = (unsigned int)floor( (node + (n_grid * n_grid)) / n_grid);
-            division_sq = (unsigned int)floor( (node + (n_grid * n_grid)) / (n_grid*n_grid));
-            if(modulo != 0 && modulo != (n_grid-1) && division != 0 && division != (n_grid-1) && division_sq != 0 && division_sq != (n_grid-1) )// k + (n_grid * n_grid) is not a boundary node
-                A->set(node, node + (n_grid * n_grid), -1);
-        }
-    }
-
-    // A.set overwrites the value in case of a duplicate.
-    // boundary values are being overwritten by 1.
-    for(node = node_start; node < node_end; node++) {
-        modulo = node % n_grid;
-        division = (unsigned int)floor(node / n_grid);
-        division_sq = (unsigned int)floor(node / (n_grid*n_grid));
-
-        // boundary node
-        if(modulo == 0 || modulo == (n_grid-1) || division == 0 || division == (n_grid-1) || division_sq == 0 || division_sq == (n_grid-1)  )
-            A->set(node, node, 1);
     }
 
     return 0;
