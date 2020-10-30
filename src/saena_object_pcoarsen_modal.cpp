@@ -369,7 +369,7 @@ void saena_object::set_P_from_mesh(int order, vector<cooEntry_row> &P_temp, MPI_
 
     // get universal number of dof
     // any other better way?
-    int g2u_f_univ_size = 0;
+/*    int g2u_f_univ_size = 0;
     int g2u_f_size = g2u_f.size();
 
     MPI_Allreduce(&g2u_f_size, &g2u_f_univ_size, 1, MPI_INT, MPI_SUM, comm);
@@ -443,6 +443,7 @@ void saena_object::set_P_from_mesh(int order, vector<cooEntry_row> &P_temp, MPI_
     //cout << map.size() << " " << map.at(0).size() << "\n";
     //skip bdy node
     //vector<int> skip;
+*/
 
     // loop over all elements
     // elemno is the local element number
