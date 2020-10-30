@@ -20,9 +20,9 @@
 #define ITER_LAZY 20
 
 // uncomment to enable timing
-#define PROFILE_PCG
-#define PROFILE_TOTAL_PCG
-#define PROFILE_VCYCLE
+//#define PROFILE_PCG
+//#define PROFILE_TOTAL_PCG
+//#define PROFILE_VCYCLE
 
 class strength_matrix;
 class saena_matrix;
@@ -140,8 +140,8 @@ public:
     // AMG parameters
     // ****************
 
-    int         preSmooth     = 3;
-    int         postSmooth    = 3;
+    int         preSmooth     = 2;
+    int         postSmooth    = 2;
     std::string smoother      = "chebyshev";    // choices: "jacobi", "chebyshev"
     std::string direct_solver = "SuperLU";      // choices: "CG", "SuperLU"
     float       connStrength  = 0.3;            // connection strength parameter: control coarsening aggressiveness
