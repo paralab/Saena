@@ -2216,7 +2216,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     // call petsc solver
 //    std::vector<double> u_petsc(rhs.size());
-//    petsc_solve(A, rhs, u_petsc, 1e-6);
+//    petsc_solve(A, rhs, u_petsc, solver_tol);
 
     return 0;
 }
