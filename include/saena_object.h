@@ -20,6 +20,8 @@
 #define ITER_LAZY 20
 
 // uncomment to enable timing
+// to have a more accurate timing for PROFILE_TOTAL_PCG, comment out PROFILE_PCG and PROFILE_VCYCLE, since they
+// have barriers and are inside PROFILE_TOTAL_PCG.
 //#define PROFILE_PCG
 //#define PROFILE_TOTAL_PCG
 //#define PROFILE_VCYCLE
