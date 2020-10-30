@@ -1837,7 +1837,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     MPI_Comm_rank(comm, &rank);
 
 #ifdef __DEBUG1__
-//        print_vector(u, -1, "u", comm);
+//    print_vector(u, -1, "u", comm);
     if(verbose_solve){
         MPI_Barrier(comm);
         if(rank == 0) printf("solve_pcg: start!\n");
@@ -1850,6 +1850,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     superlu_time = 0;
     vcycle_smooth_time = 0;
     vcycle_other_time = 0;
+    double vcycle_time = 0;
     double matvec_time1 = 0;
     double dots = 0;
 
@@ -2053,7 +2054,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 #ifdef __DEBUG1__
         if(verbose){
             MPI_Barrier(comm);
-            if(!rank) printf("_______________________________ \n\n***** Vcycle %u *****\n", i+1);
+            if(!rank) printf("_______________________________\n\n***** Vcycle %u *****\n", i+1);
             MPI_Barrier(comm);
         }
 #endif
@@ -2063,8 +2064,17 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         // solve A * rho = r, in which rho is initialized to the 0 vector.
         // **************************************************************
 
+#ifdef PROFILE_PCG
+        double time_vcycle1 = omp_get_wtime();
+#endif
+
         std::fill(rho.begin(), rho.end(), 0);
         vcycle(&grids[0], rho, r);
+
+#ifdef PROFILE_PCG
+        double time_vcycle2 = omp_get_wtime();
+        vcycle_time += time_vcycle2 - time_vcycle1;
+#endif
 
         // **************************************************************
 
@@ -2123,12 +2133,6 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     }
 #endif
 
-    // ************** destroy data from SuperLU **************
-
-//    if(grids.back().active) {
-//        destroy_SuperLU();
-//    }
-
     // ************** scale u **************
 
 //    writeVectorToFile(u, "sol", comm);
@@ -2159,35 +2163,25 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double t_pcg2 = omp_get_wtime();
 #endif
 
-    if(rank==0) {
-#ifdef PROFILE_PCG
-        printf("\nL0matvec\ndots\n");
-#endif
-
 #ifdef PROFILE_VCYCLE
-        printf("Rtransfer\nPtransfer\nsmooth\nsuperlu\nvcycle other\n");
-#endif
-
-#ifdef PROFILE_TOTAL_PCG
-        printf("pCG total\n\n");
-#endif
-    }
-
-#ifdef PROFILE_PCG
-    print_time_ave(matvec_time1 / (i+1),       "L0matvec",     comm, true, false);
-    print_time_ave(dots / (i+1),               "dots",         comm, true, false);
-#endif
-
-#ifdef PROFILE_VCYCLE
+    if(!rank) printf("\nRtransfer\nPtransfer\nsmooth\nsuperlu\nvcycle_other\n\n");
     print_time_ave(Rtransfer_time / (i+1),     "Rtransfer",    comm, true, false);
     print_time_ave(Ptransfer_time / (i+1),     "Ptransfer",    comm, true, false);
     print_time_ave(vcycle_smooth_time / (i+1), "smooth",       comm, true, false);
     print_time_ave(superlu_time / (i+1),       "superlu",      comm, true, false);
-    print_time_ave(vcycle_other_time / (i+1),  "vcycle other", comm, true, false);
+    print_time_ave(vcycle_other_time / (i+1),  "vcycle_other", comm, true, false);
+#endif
+
+#ifdef PROFILE_PCG
+    if(!rank) printf("\nvcycle_pCG\nL0matvec\ndots\n\n");
+    print_time_ave(vcycle_time / (i+1),        "vcycle_pCG",   comm, true, false);
+    print_time_ave(matvec_time1 / (i+1),       "L0matvec",     comm, true, false);
+    print_time_ave(dots / (i+1),               "dots",         comm, true, false);
 #endif
 
 #ifdef PROFILE_TOTAL_PCG
-    print_time_ave((t_pcg2 - t_pcg1) / (i+1),  "total",     comm, true, false);
+    if(!rank) printf("\npCG_total\n");
+    print_time_ave((t_pcg2 - t_pcg1) / (i+1),  "pCG_total",    comm, true, false);
 #endif
 
 #if 0
