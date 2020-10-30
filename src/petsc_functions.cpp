@@ -983,8 +983,10 @@ int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, cons
     petsc_saena_matrix(A1, A);
     petsc_std_vector(b1, b, A1->split[rank], comm);
     MatCreateVecs(A, &x, NULL);
-//    VecSet(x, 0.0);
+    VecSet(x, 0.0);
 
+//    petsc_viewer(A);
+//    MatView(A, PETSC_VIEWER_STDOUT_WORLD);
 //    VecView(b, PETSC_VIEWER_STDOUT_WORLD);
 
     KSPCreate(PETSC_COMM_WORLD, &ksp);
@@ -1012,10 +1014,10 @@ int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, cons
         x1[i] = array[i];
     VecRestoreArray(x, &array);
 
-//    VecAXPY(x,-1.0,u);
-//    VecNorm(x,NORM_2,&norm);
-//    KSPGetIterationNumber(ksp,&its);
-//    PetscPrintf(PETSC_COMM_WORLD,"Norm of error %g iterations %D\n",(double)norm,its);
+    VecAXPY(x,-1.0,b);
+    VecNorm(x,NORM_2,&norm);
+    KSPGetIterationNumber(ksp,&its);
+    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Norm of error %g, iterations %D\n",(double)norm,its);
 
     KSPDestroy(&ksp);
     VecDestroy(&x);
