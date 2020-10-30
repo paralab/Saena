@@ -4,6 +4,7 @@
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "aux_functions.h"
+#include "petsc_functions.h"
 
 // uncomment to print info for the lazy update feature
 // use this to store number of iterations for the lazy-update experiment.
@@ -2218,6 +2219,11 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         }
     }
 #endif
+
+    // call petsc solver
+//    std::vector<double> u_petsc(rhs.size());
+//    petsc_solve(A, rhs, u_petsc, 1e-6);
+
     return 0;
 }
 
