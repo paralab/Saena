@@ -606,39 +606,19 @@ int prolong_matrix::print_info(int ran){
 }
 
 
-int prolong_matrix::writeMatrixToFile(){
-    // the matrix file will be written in the HOME directory.
-
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
-
-    if(rank==0) printf("The matrix file will be written in the HOME directory. \n");
-    writeMatrixToFile("");
-}
-
-
-int prolong_matrix::writeMatrixToFile(const char *folder_name){
+int prolong_matrix::writeMatrixToFile(const std::string &name) const{
     // Create txt files with name P-r0.txt for processor 0, P-r1.txt for processor 1, etc.
     // Then, concatenate them in terminal: cat P-r0.mtx P-r1.mtx > P.mtx
     // row and column indices of txt files should start from 1, not 0.
     // write the files inside ${HOME}/folder_name
     // this is the default case for the sorting which is column-major.
 
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    const char* homeDir = getenv("HOME");
-
-    std::ofstream outFileTxt;
-    std::string outFileNameTxt = homeDir;
-    outFileNameTxt += "/";
-    outFileNameTxt += folder_name;
-    outFileNameTxt += "/P-r";
-    outFileNameTxt += std::to_string(rank);
-    outFileNameTxt += ".mtx";
-    outFileTxt.open(outFileNameTxt);
+    std::string outFileNameTxt = name + "P-r" + std::to_string(rank) + ".mtx";
+    std::ofstream outFileTxt(outFileNameTxt);
 
     if(rank==0) std::cout << "\nWriting the prolongation matrix in: " << outFileNameTxt << std::endl;
 
@@ -659,12 +639,13 @@ int prolong_matrix::writeMatrixToFile(const char *folder_name){
 
     // first line of the file: row_size col_size nnz
     if(rank==0) {
-        outFileTxt << Mbig << "\t" << Mbig << "\t" << nnz_g << std::endl;
+        outFileTxt << Mbig << "\t" << Nbig << "\t" << nnz_g << std::endl;
     }
 
     for (nnz_t i = 0; i < entry_temp2.size(); i++) {
 //        if(rank==0) std::cout  << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
-        outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t" << entry_temp2[i].val << std::endl;
+        outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t" << std::setprecision(12)
+                   << entry_temp2[i].val << std::endl;
     }
 
     outFileTxt.clear();

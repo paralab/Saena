@@ -89,7 +89,7 @@ public:
     index_t matvec_comm_sz = 0;                        // for profiling matvec communication size (average on all procs)
 
     prolong_matrix();
-    prolong_matrix(MPI_Comm com);
+    explicit prolong_matrix(MPI_Comm com);
     ~prolong_matrix();
 
     int findLocalRemote();
@@ -99,8 +99,7 @@ public:
     int print_entry(int ran);
     int print_info(int ran);
 
-    int writeMatrixToFile();
-    int writeMatrixToFile(const char *folder_name);
+    int writeMatrixToFile(const std::string &name = "") const;
 };
 
 #endif //SAENA_PROLONG_MATRIX_H
