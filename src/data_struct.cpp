@@ -179,7 +179,7 @@ void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_s
             q_sz = 0;
             dif = (v[0] >> k);
             skip = false;
-            if (dif >= numeric_limits<short>::max()) {
+            if (abs(dif) >= numeric_limits<short>::max()) {
                 skip = true;
             } else if (dif != 0) {
                 ++q_sz;
@@ -196,9 +196,9 @@ void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_s
                     // check if dif is larger than the maximum value for that many bits, move to higher number of bits.
                     dif = (v[i] - v[i - 1]) >> k;
 
-                    if (dif >= numeric_limits<short>::max()) {
+                    if (abs(dif) >= numeric_limits<short>::max()) {
                         skip = true;
-                        continue;
+                        break;
                     }
 
                     if (dif != 0) {
