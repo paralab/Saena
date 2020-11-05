@@ -2096,7 +2096,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                     if(rank==owner){
 //                        std::cout << "Bcsc.nnz_list[owner]: " << Bcsc.nnz_list[owner] << std::endl;
                         for(int i = 0; i < Bcsc.nnz_list[owner]; ++i){
-                            ASSERT(Bcsc.row[i] == mat_current_r[i], Bcsc.row[i] << "\t" << mat_current_r[i]);
+                            ASSERT(Bcsc.row[i] == mat_current_r[i], "rank " << rank << ": " << Bcsc.row[i] << "\t" << mat_current_r[i]);
                         }
                     }
 
