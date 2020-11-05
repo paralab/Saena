@@ -2163,30 +2163,30 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     }
 #endif
 
-    for(i = 0; i < 3; ++i){
+    for(int k = 0; k < 3; ++k){
         // i = 0: average time
         // i = 1: min time
         // i = 2: max time
 
 #ifdef PROFILE_VCYCLE
         if(!rank) printf("\nRtransfer\nPtransfer\nsmooth\nsuperlu\nvcycle_other\n");
-        print_time(Rtransfer_time / (i+1),     "Rtransfer",    comm, true, false, i);
-        print_time(Ptransfer_time / (i+1),     "Ptransfer",    comm, true, false, i);
-        print_time(vcycle_smooth_time / (i+1), "smooth",       comm, true, false, i);
-        print_time(superlu_time / (i+1),       "superlu",      comm, true, false, i);
-        print_time(vcycle_other_time / (i+1),  "vcycle_other", comm, true, false, i);
+        print_time(Rtransfer_time / (i+1),     "Rtransfer",    comm, true, false, k);
+        print_time(Ptransfer_time / (i+1),     "Ptransfer",    comm, true, false, k);
+        print_time(vcycle_smooth_time / (i+1), "smooth",       comm, true, false, k);
+        print_time(superlu_time / (i+1),       "superlu",      comm, true, false, k);
+        print_time(vcycle_other_time / (i+1),  "vcycle_other", comm, true, false, k);
 #endif
 
 #ifdef PROFILE_PCG
         if(!rank) printf("\nvcycle_pCG\nL0matvec\ndots\n");
-        print_time(vcycle_time / (i+1),        "vcycle_pCG",   comm, true, false, i);
-        print_time(matvec_time1 / (i+1),       "L0matvec",     comm, true, false, i);
-        print_time(dots / (i+1),               "dots",         comm, true, false, i);
+        print_time(vcycle_time / (i+1),        "vcycle_pCG",   comm, true, false, k);
+        print_time(matvec_time1 / (i+1),       "L0matvec",     comm, true, false, k);
+        print_time(dots / (i+1),               "dots",         comm, true, false, k);
 #endif
 
 #ifdef PROFILE_TOTAL_PCG
         if(!rank) printf("\npCG_total\n");
-        print_time((t_pcg2 - t_pcg1) / (i+1),  "pCG_total",    comm, true, false, i);
+        print_time((t_pcg2 - t_pcg1) / (i+1),  "pCG_total",    comm, true, false, k);
         if(!rank) print_sep();
 #endif
 
