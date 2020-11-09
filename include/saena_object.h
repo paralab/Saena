@@ -282,7 +282,7 @@ public:
 //    int shrink_u_rhs(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
 //    int unshrink_u(Grid* grid, std::vector<value_t>& u);
 
-    int find_eig(saena_matrix& A);
+    int find_eig(saena_matrix& A) const;
 //    int find_eig_Elemental(saena_matrix& A);
 
     // *****************
@@ -387,6 +387,8 @@ public:
     double Ptransfer_time     = 0.0;
     double vcycle_smooth_time = 0.0;
     double vcycle_other_time  = 0.0;
+
+    void profile_matvecs();
 
     // *****************
     // pcoarsen functions

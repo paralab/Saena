@@ -498,7 +498,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
-    if(verbose_coarsen) print_time(t1, t2, "Prolongation: level "+std::to_string(grid->level), grid->A->comm);
+    if(verbose_coarsen) print_time(t2 - t1, "Prolongation: level "+std::to_string(grid->level), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after create_prolongation!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->P.split, 0, "grid->P.split", grid->A->comm);
@@ -521,7 +521,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
-    if(verbose_coarsen) print_time(t1, t2, "Restriction: level "+std::to_string(grid->level), grid->A->comm);
+    if(verbose_coarsen) print_time(t2 - t1, "Restriction: level "+std::to_string(grid->level), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after transposeP!!! \n", rank); MPI_Barrier(grid->A->comm);
 //    print_vector(grid->R.entry_local, -1, "grid->R.entry_local", grid->A->comm);
@@ -547,7 +547,7 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 #ifdef __DEBUG1__
     t2 = omp_get_wtime();
 //    double t22 = MPI_Wtime();
-    if(verbose_coarsen) print_time(t1, t2, "compute_coarsen: level "+std::to_string(grid->level), grid->A->comm);
+    if(verbose_coarsen) print_time(t2 - t1, "compute_coarsen: level "+std::to_string(grid->level), grid->A->comm);
 //    print_time_ave(t22-t11, "compute_coarsen: level "+std::to_string(grid->level), grid->A->comm);
 
 //    MPI_Barrier(grid->A->comm); printf("rank %d: here after compute_coarsen!!! \n", rank); MPI_Barrier(grid->A->comm);
@@ -611,7 +611,7 @@ int saena_object::scale_vector(std::vector<value_t>& v, std::vector<value_t>& w)
 }
 
 
-int saena_object::find_eig(saena_matrix& A){
+int saena_object::find_eig(saena_matrix& A) const{
 
     // if the linear system is not scaled, scale the matrix only for computing the eigenvalue that is
     // being used in chebyshev, since chebyshev uses the preconditioned matrix.
@@ -628,4 +628,27 @@ int saena_object::find_eig(saena_matrix& A){
 //    A.print_entry(-1, "A");
 
     return 0;
+}
+
+
+void saena_object::profile_matvecs(){
+    const int iter = 5;
+    double t = 0, t1 = 0, t2 = 0;
+
+    for(int l = 0; l < max_level; ++l){
+        if(grids[l].active) {
+            t = 0;
+            vector<value_t> v(grids[l].A->M, 1);
+            vector<value_t> w(grids[l].A->M);
+            MPI_Barrier(grids[l].A->comm);
+            for(int i = 0; i < iter; ++i){
+                t1 = omp_get_wtime();
+                grids[l].A->matvec(v, w);
+                t2 = omp_get_wtime();
+                t += t2 - t1;
+                swap(v, w);
+            }
+            print_time_all(t / iter, "matvec level " + to_string(l), grids[l].A->comm);
+        }
+    }
 }

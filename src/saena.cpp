@@ -685,6 +685,11 @@ void saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bo
 }
 
 
+void saena::amg::profile_matvecs(){
+    m_pImpl->profile_matvecs();
+}
+
+
 int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local){
 
     MPI_Comm comm = A->get_comm();

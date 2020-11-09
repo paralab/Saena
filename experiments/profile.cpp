@@ -115,7 +115,7 @@ int main(int argc, char* argv[]){
     solver.set_rhs(rhs);
 
     t2 = omp_get_wtime();
-    print_time(t1, t2, "Setup:", comm);
+    print_time(t2 - t1, "Setup:", comm);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
@@ -139,13 +139,17 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-//    print_time(t1, t2, "Solve:", comm);
+//    print_time(t2 - t1, "Solve:", comm);
 
     // *************************** print or write the solution ****************************
 
 //    print_vector(u, -1, "solution", comm);
 //    print_vector(u_direct, -1, "solution", comm);
 //    write_to_file_vec(u, "solution", comm);
+
+    // *************************** profile matvecs ****************************
+    // profile matvec times on all multigrid levels
+    solver.profile_matvecs();
 
     // *************************** check correctness of the solution 1 ****************************
 

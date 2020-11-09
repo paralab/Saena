@@ -125,15 +125,12 @@ inline void dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, value_t
 int pnorm(std::vector<value_t>& r, value_t &norm, MPI_Comm comm);
 value_t pnorm(std::vector<value_t>& r, MPI_Comm comm);
 
-double print_time(double t_start, double t_end, std::string function_name, MPI_Comm comm);
-double print_time(double t_diff, std::string function_name, MPI_Comm comm);
-double print_time(double t_diff, const std::string &function_name, MPI_Comm comm, bool print_time = false, bool print_name = true, int optype = 0);
-double print_time_ave(double t_diff, const std::string &function_name, MPI_Comm comm, bool print_time = false, bool print_name = true);
-double print_time_ave2(double t_diff, std::string function_name, MPI_Comm comm, bool print_time = false, bool print_name = true);
-
+double print_time(double t_start, double t_end, const std::string &function_name, MPI_Comm comm);
+double print_time(double t_diff,      const std::string &function_name, MPI_Comm comm, bool print_time = false, bool print_name = true, int optype = 0);
+double print_time_all(double t_diff,  const std::string &function_name, MPI_Comm comm);
+double print_time_ave(double t_diff,  const std::string &function_name, MPI_Comm comm, bool print_time = false, bool print_name = true);
+double print_time_ave2(double t_diff, const std::string &function_name, MPI_Comm comm, bool print_time = false, bool print_name = true);
 double print_time_ave_consecutive(double t_diff, MPI_Comm comm);
-
-double average_time(double t_diff, MPI_Comm comm);
 
 double average_iter(index_t iter, MPI_Comm comm);
 

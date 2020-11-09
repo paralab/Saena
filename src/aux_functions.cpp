@@ -71,7 +71,8 @@ value_t pnorm(std::vector<value_t>& r, MPI_Comm comm){
     return std::sqrt(norm);
 }
 
-double print_time(double t_start, double t_end, std::string function_name, MPI_Comm comm){
+
+double print_time(double t_start, double t_end, const std::string &function_name, MPI_Comm comm){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -79,26 +80,6 @@ double print_time(double t_start, double t_end, std::string function_name, MPI_C
 
     double min, max, average;
     double t_dif = t_end - t_start;
-
-    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
-    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-    average /= nprocs;
-
-    if (rank==0)
-        std::cout << std::endl << function_name << "\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
-
-    return average;
-}
-
-double print_time(double t_dif, std::string function_name, MPI_Comm comm){
-
-    int rank = 0, nprocs = 0;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &nprocs);
-
-    double min = 0.0, max = 0.0, average = 0.0;
-//    double t_dif = t2 - t1;
 
     MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
     MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
@@ -152,6 +133,25 @@ double print_time(double t_dif, const std::string &function_name, MPI_Comm comm,
     return timeval;
 }
 
+double print_time_all(double t_dif, const std::string &function_name, MPI_Comm comm){
+
+    int rank = 0, nprocs = 0;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    double min = 0.0, max = 0.0, average = 0.0;
+
+    MPI_Reduce(&t_dif, &min, 1, MPI_DOUBLE, MPI_MIN, 0, comm);
+    MPI_Reduce(&t_dif, &max, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+    MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    average /= nprocs;
+
+    if (rank==0)
+        std::cout << std::endl << function_name << "\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+
+    return average;
+}
+
 double print_time_ave(double t_dif, const std::string &function_name, MPI_Comm comm, bool print_time /*= false*/, bool print_name /*= true*/){
 
     int rank = 0, nprocs = 0;
@@ -175,7 +175,7 @@ double print_time_ave(double t_dif, const std::string &function_name, MPI_Comm c
     return average;
 }
 
-double print_time_ave2(double t_dif, std::string function_name, MPI_Comm comm, bool print_time /*= false*/, bool print_name /*= true*/){
+double print_time_ave2(double t_dif, const std::string &function_name, MPI_Comm comm, bool print_time /*= false*/, bool print_name /*= true*/){
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -196,14 +196,13 @@ double print_time_ave2(double t_dif, std::string function_name, MPI_Comm comm, b
     return average;
 }
 
-
 double print_time_ave_consecutive(double t_dif, MPI_Comm comm){
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
 
-    double average;
+    double average = 0.0;
     MPI_Reduce(&t_dif, &average, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
     average /= nprocs;
 
@@ -231,8 +230,6 @@ double average_iter(index_t iter, MPI_Comm comm){
     MPI_Reduce(&iter, &average, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, 0, comm);
     return static_cast<double>(average)/nprocs;
 }
-
-
 
 
 int write_agg(std::vector<unsigned long>& v, std::string name, int level, MPI_Comm comm) {
