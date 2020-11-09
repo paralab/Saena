@@ -1,5 +1,18 @@
 #include <saena_object.h>
 
+void inline saena_object::smooth(Grid *grid, std::vector<value_t> &u, std::vector<value_t> &rhs, int iter) const{
+    if(smoother == "jacobi"){
+        grid->A->jacobi(iter, u, rhs);
+    }else if(smoother == "chebyshev"){
+        grid->A->chebyshev(iter, u, rhs);
+    }
+//        else{
+//            printf("Error: Unknown smoother");
+//            MPI_Finalize();
+//            exit(EXIT_FAILURE);
+//        }
+}
+
 template <class T>
 int saena_object::writeVectorToFile(std::vector<T>& v, const std::string &name, MPI_Comm comm /*= MPI_COMM_WORLD*/,
         bool mat_market /*= false*/, index_t OFST /*= 0*/) {
@@ -38,6 +51,51 @@ int saena_object::writeVectorToFile(std::vector<T>& v, const std::string &name, 
 
     outFileTxt.clear();
     outFileTxt.close();
+
+    return 0;
+}
+
+template <class T>
+int saena_object::scale_vector_scalar(std::vector<T> &v, T a, std::vector<T> &w, bool add /*= false*/){
+    // if(add)
+    //   w += a * v
+    // else
+    //   w = a * v
+    // ************
+
+//        MPI_Comm comm = MPI_COMM_WORLD;
+//        int nprocs, rank;
+//        MPI_Comm_size(comm, &nprocs);
+//        MPI_Comm_rank(comm, &rank);
+
+//        MPI_Barrier(comm);
+//        if(!rank) std::cout << __func__ << ", scalar: " << a << std::endl;
+//        MPI_Barrier(comm);
+
+    if(v == w){
+#pragma omp parallel for
+        for(index_t i = 0; i < v.size(); i++){
+            v[i] *= a;
+        }
+    }else{
+
+        if(add){
+#pragma omp parallel for
+            for(index_t i = 0; i < v.size(); i++){
+                w[i] += v[i] * a;
+            }
+        }else{
+#pragma omp parallel for
+            for(index_t i = 0; i < v.size(); i++){
+                w[i] = v[i] * a;
+            }
+        }
+
+    }
+
+//        MPI_Barrier(comm);
+//        if(!rank) std::cout << __func__ << ": end" << std::endl;
+//        MPI_Barrier(comm);
 
     return 0;
 }

@@ -309,20 +309,7 @@ public:
     int solve_pCG(std::vector<value_t>& u);
     int setup_vcycle_memory();
     void vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
-//    int smooth(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs, int iter);
-
-    void inline smooth(Grid *grid, std::vector<value_t> &u, std::vector<value_t> &rhs, int iter) const{
-        if(smoother == "jacobi"){
-            grid->A->jacobi(iter, u, rhs);
-        }else if(smoother == "chebyshev"){
-            grid->A->chebyshev(iter, u, rhs);
-        }
-//        else{
-//            printf("Error: Unknown smoother");
-//            MPI_Finalize();
-//            exit(EXIT_FAILURE);
-//        }
-    }
+    void inline smooth(Grid *grid, std::vector<value_t> &u, std::vector<value_t> &rhs, int iter) const;
 
     // *****************
     // GMRES functions
@@ -387,49 +374,19 @@ public:
 //    int solve_coarsest_CG_d(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
 
     template <class T>
-    int scale_vector_scalar(std::vector<T> &v, T a, std::vector<T> &w, bool add = false){
-        // if(add)
-        //   w += a * v
-        // else
-        //   w = a * v
-        // ************
+    int scale_vector_scalar(std::vector<T> &v, T a, std::vector<T> &w, bool add = false);
 
-//        MPI_Comm comm = MPI_COMM_WORLD;
-//        int nprocs, rank;
-//        MPI_Comm_size(comm, &nprocs);
-//        MPI_Comm_rank(comm, &rank);
+    // *****************
+    // profiling parameters
+    // **********************************************
 
-//        MPI_Barrier(comm);
-//        if(!rank) std::cout << __func__ << ", scalar: " << a << std::endl;
-//        MPI_Barrier(comm);
+    int rank_v = 0;
 
-        if(v == w){
-            #pragma omp parallel for
-            for(index_t i = 0; i < v.size(); i++){
-                v[i] *= a;
-            }
-        }else{
-
-            if(add){
-                #pragma omp parallel for
-                for(index_t i = 0; i < v.size(); i++){
-                    w[i] += v[i] * a;
-                }
-            }else{
-                #pragma omp parallel for
-                for(index_t i = 0; i < v.size(); i++){
-                    w[i] = v[i] * a;
-                }
-            }
-
-        }
-
-//        MPI_Barrier(comm);
-//        if(!rank) std::cout << __func__ << ": end" << std::endl;
-//        MPI_Barrier(comm);
-
-        return 0;
-    }
+    double superlu_time       = 0.0;
+    double Rtransfer_time     = 0.0;
+    double Ptransfer_time     = 0.0;
+    double vcycle_smooth_time = 0.0;
+    double vcycle_other_time  = 0.0;
 
     // *****************
     // pcoarsen functions
@@ -443,16 +400,7 @@ public:
     int next_order;
     int prodim;
 
-    double superlu_time;
-    double Rtransfer_time;
-    double Ptransfer_time;
-    double vcycle_smooth_time;
-    double vcycle_other_time;
-
-    // for debugging
-    int rank_v = 0;
-
-    int  next_p_level_random(const std::vector<int>& ind_fine, int order, vector<int> &ind, int *type = NULL);
+    int  next_p_level_random(const std::vector<int>& ind_fine, int order, vector<int> &ind, int *type = nullptr);
     void set_P_from_mesh(int order, std::vector<cooEntry_row> &P_temp, MPI_Comm comm, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector< std::vector<int> > > &map_all);
     int  coarse_p_node_arr(std::vector< std::vector<int> > &map, int order, vector<int> &ind);
     inline int findloc(std::vector<int> &arr, int a);
