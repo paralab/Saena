@@ -156,6 +156,10 @@ int main(int argc, char* argv[]){
 //    print_vector(u_direct, -1, "solution", comm);
 //    write_to_file_vec(u, "solution", comm);
 
+    // *************************** profile matvecs ****************************
+    // profile matvec times on all multigrid levels
+    solver.profile_matvecs();
+
     // *************************** check correctness of the solution 1 ****************************
 
     // A is scaled. read it from the file and don't scale.
