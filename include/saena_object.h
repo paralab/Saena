@@ -40,15 +40,15 @@ public:
     // **********************************************
 
     int          max_level                  = 10; // fine grid is level 0.
-    // coarsening will stop if the number of rows on one processor goes below this parameter.
-    unsigned int least_row_threshold        = 20;
-    // coarsening will stop if the number of rows of last level divided by previous level is higher than this parameter,
-    // which means the number of rows was not reduced much.
+    // if dynamic_levels == true: coarsening will stop if the total number of rows goes below this parameter.
+    unsigned int least_row_threshold        = 2000;
+    // if dynamic_levels == true: coarsening will stop if the number of rows of last level divided by previous level is
+    // higher than this parameter, which means the number of rows was not reduced much.
     double       row_reduction_up_thrshld   = 0.90;
-    double       row_reduction_down_thrshld = 0.10;
+//    double       row_reduction_down_thrshld = 0.10;
 
     bool repartition         = false; // this parameter will be set to true if the partition of input matrix changed. it will be decided in set_repartition_rhs().
-    bool dynamic_levels      = false;
+    bool dynamic_levels      = true;
     bool adaptive_coarsening = false;
 
     bool scale = true;

@@ -363,6 +363,10 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     // threshold to set maximum multigrid level
     int ret_val = 0;
     if(dynamic_levels){
+        if (new_size <= least_row_threshold){
+            ret_val = 1; // this will be the last level.
+        }
+
 //        MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
 //        total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
         float row_reduc_min = static_cast<float>(new_size) / A->Mbig;
@@ -381,17 +385,11 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
             MPI_Barrier(comm);
         }
 #endif
-
-        if ( (new_size < least_row_threshold) ||
-             (row_reduc_min > row_reduction_up_thrshld) ||
-             (row_reduc_min < row_reduction_down_thrshld) ) {
-
-            if(new_size < least_row_threshold) {
-                ret_val = 1; // this will be the last level.
-            }else{
+        // if the new size is very close to the previous level size,
+        // it means creating next level is not helpful, so stop coarsening.
+        if (row_reduc_min > row_reduction_up_thrshld) {
+//        if ( (row_reduc_min > row_reduction_up_thrshld) || (row_reduc_min < row_reduction_down_thrshld) ) {
                 return 2; // stop the coarsening. the previous level will be set as the last level.
-            }
-
         }
     }
 
