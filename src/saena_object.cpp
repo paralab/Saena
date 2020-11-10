@@ -26,6 +26,10 @@ MPI_Comm saena_object::get_orig_comm(){
     return grids[0].A->comm;
 }
 
+void saena_object::set_dynamic_levels(const bool &dl /*= true*/){
+    dynamic_levels = dl;
+}
+
 
 int saena_object::setup(saena_matrix* A) {
     int nprocs = -1, rank = -1;

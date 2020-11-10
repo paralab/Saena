@@ -109,6 +109,7 @@ int main(int argc, char* argv[]){
     int max_level(std::stoi(argv[4]));
 
     saena::amg solver;
+//    solver.set_dynamic_levels(true);
     solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);

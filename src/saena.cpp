@@ -438,6 +438,10 @@ saena::amg::~amg(){
     delete m_pImpl;
 }
 
+void saena::amg::set_dynamic_levels(const bool &dl) {
+    m_pImpl->set_dynamic_levels(dl);
+}
+
 int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
     m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());

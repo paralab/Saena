@@ -43,7 +43,7 @@ public:
     // if dynamic_levels == true: coarsening will stop if the total number of rows goes below this parameter.
     unsigned int least_row_threshold        = 2000;
     // if dynamic_levels == true: coarsening will stop if the number of rows of last level divided by previous level is
-    // higher than this parameter, which means the number of rows was not reduced much.
+    // higher than this parameter, which means the number of rows was not reduced much through coarsening.
     double       row_reduction_up_thrshld   = 0.90;
 //    double       row_reduction_down_thrshld = 0.10;
 
@@ -54,6 +54,11 @@ public:
     bool scale = true;
 
     saena_matrix *A_coarsest = nullptr;
+
+    // enable deciding the number of levels in the multigrid hierarchy automatically.
+    // if new_size <= least_row_threshold, then stop coarsening.
+    // Also, if new_size / prev_size > row_reduction_up_thrshld, the number of rows was not reduced much through coarsening.
+    void set_dynamic_levels(const bool &dl = true);
 
     // *****************
     // matmat
