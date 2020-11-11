@@ -17,7 +17,7 @@ If you don't already have `Intel MKL` on your machine, it can be installed in a 
 
 `https://software.intel.com/en-us/get-started-with-mkl-for-linux`
 
-The easiest way may be installing the standalone version:
+The easiest way may be using the newer intel compilers, which includes mkl; Or just installing the standalone version:
 
 `https://software.seek.intel.com/performance-libraries`
 
