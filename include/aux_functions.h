@@ -7,9 +7,9 @@ class strength_matrix;
 class saena_matrix;
 
 
-// returns true if val is less than the machine precision for data type T, which means it is almost zero.
+// returns true if val is less than the threshold for data type T, which means it is almost zero.
 template<class T>
-bool almost_zero(T val){
+bool inline almost_zero(const T &val){
 //    return (fabs(val) < std::numeric_limits<T>::min());
     return (fabs(val) < 1e-12);
 }
