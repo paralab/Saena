@@ -259,6 +259,11 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     }
 #endif
 
+    if(dynamic_levels) {
+        if(A->Mbig < least_row_threshold)
+            return 2; // stop the coarsening. The matrix size is already less than the threshold.
+    }
+
     strength_matrix S;
     create_strength_matrix(A, &S);
 
