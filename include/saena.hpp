@@ -32,6 +32,8 @@ namespace saena {
         void set_p_order(int _p_order);
         void set_prodim(int _prodim);
 
+        void set_num_threads(const int &nth);
+
         bool add_dup = true; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
 
@@ -151,6 +153,8 @@ namespace saena {
         int set_matrix(saena::matrix* A, saena::options* opts, std::vector<std::vector<int>> &l2g, std::vector<int> &g2u, int m_bdydof, std::vector<int> &order_dif); // for Nektar++
 //        int set_rhs(std::vector<value_t> rhs); // note: this function copies the rhs.
         int set_rhs(saena::vector &rhs); // note: this function copies the rhs.
+
+        void set_num_threads(const int &nth);
 
         saena_object* get_object();
         int set_shrink_levels(std::vector<bool> sh_lev_vec);

@@ -122,6 +122,11 @@ void saena::matrix::set_prodim(int _prodim){
 }
 
 
+void saena::matrix::set_num_threads(const int &nth){
+    omp_set_num_threads(nth);
+}
+
+
 int saena::matrix::assemble(bool scale /*= true*/) {
     m_pImpl->assemble(scale);
     return 0;
@@ -459,6 +464,11 @@ int saena::amg::set_matrix(saena::matrix* A, saena::options* opts, std::vector<s
 int saena::amg::set_rhs(saena::vector &rhs){
     m_pImpl->set_repartition_rhs(rhs.get_internal_vector());
     return 0;
+}
+
+
+void saena::amg::set_num_threads(const int &nth){
+    omp_set_num_threads(nth);
 }
 
 
