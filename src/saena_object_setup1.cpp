@@ -370,31 +370,33 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     if(dynamic_levels){
         if (new_size <= least_row_threshold){
             ret_val = 1; // this will be the last level.
-        }
+        }else{
 
-//        MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
-//        total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
-        float row_reduc_min = static_cast<float>(new_size) / A->Mbig;
+//            MPI_Allreduce(&grids[i].Ac.M, &M_current, 1, MPI_UNSIGNED, MPI_MIN, grids[i].Ac.comm);
+//            total_row_reduction = (float) grids[0].A->Mbig / grids[i].Ac.Mbig;
+            float row_reduc_min = static_cast<float>(new_size) / A->Mbig;
 
-//        if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold); MPI_Barrier(grids[i].Ac.comm);}
-//        if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
-//        row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
-//        MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
-//        if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f \n", row_reduction_min, row_reduction_up_thrshld);
+//            if(grids[i].Ac.active){ MPI_Barrier(grids[i].Ac.comm); printf("row_reduction_min = %f, row_reduction_up_thrshld = %f, least_row_threshold = %u \n", grids[i+1].row_reduction_min, row_reduction_up_thrshld, least_row_threshold); MPI_Barrier(grids[i].Ac.comm);}
+//            if(rank==0) if(row_reduction_min < 0.1) printf("\nWarning: Coarsening is too aggressive! Increase connStrength in saena_object.h\n");
+//            row_reduction_local = (float) grids[i].Ac.M / grids[i].A->M;
+//            MPI_Allreduce(&row_reduction_local, &row_reduction_min, 1, MPI_FLOAT, MPI_MIN, grids[i].Ac.comm);
+//            if(rank==0) printf("row_reduction_min = %f, row_reduction_up_thrshld = %f \n", row_reduction_min, row_reduction_up_thrshld);
 
 #ifdef __DEBUG1__
-        if(verbose_setup_steps) {
-            MPI_Barrier(comm);
-            if (!rank) printf("find_agg: dynamic levels: next level's size / current size = %d / %d = %f\n",
-                               new_size, A->Mbig, row_reduc_min);
-            MPI_Barrier(comm);
-        }
+            if (verbose_setup_steps) {
+                MPI_Barrier(comm);
+                if (!rank)
+                    printf("find_agg: dynamic levels: next level's size / current size = %d / %d = %f\n",
+                           new_size, A->Mbig, row_reduc_min);
+                MPI_Barrier(comm);
+            }
 #endif
-        // if the new size is very close to the previous level size,
-        // it means creating next level is not helpful, so stop coarsening.
-        if (row_reduc_min > row_reduction_up_thrshld) {
-//        if ( (row_reduc_min > row_reduction_up_thrshld) || (row_reduc_min < row_reduction_down_thrshld) ) {
+            // if the new size is very close to the previous level size,
+            // it means creating next level is not helpful, so stop coarsening.
+            if (row_reduc_min > row_reduction_up_thrshld) {
+//            if ( (row_reduc_min > row_reduction_up_thrshld) || (row_reduc_min < row_reduction_down_thrshld) ) {
                 return 2; // stop the coarsening. the previous level will be set as the last level.
+            }
         }
     }
 

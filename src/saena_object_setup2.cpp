@@ -250,7 +250,9 @@ int saena_object::compute_coarsen(Grid *grid) {
         //---------------------------------------------
 
         if(nprocs > 1){
-            if(Ac->enable_shrink_c && !dynamic_levels && grid->level + 1 == max_level){ // coarsest level
+            if(Ac->enable_shrink_c &&
+               (!dynamic_levels && grid->level + 1 == max_level) ||
+               (dynamic_levels && Ac->Mbig <= least_row_threshold)){ // coarsest level
                 Ac->decide_shrinking_c();
             }else if (Ac->enable_shrink) {
 //                MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
