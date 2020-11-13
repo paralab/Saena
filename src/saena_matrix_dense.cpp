@@ -83,9 +83,11 @@ int saena_matrix_dense::assemble() {
         split[i] += split[i-1];
     }
 
+#ifdef SAENA_USE_ZFP
     if(use_zfp){
         allocate_zfp();
     }
+#endif
 
 //    print_vector(split, -1, "split", comm);
 
@@ -315,6 +317,7 @@ int saena_matrix_dense::matvec_test(std::vector<value_t>& v, std::vector<value_t
     return 0;
 }
 
+#ifdef SAENA_USE_ZFP
 int saena_matrix_dense::matvec_comp(std::vector<value_t>& v, std::vector<value_t>& w){
 
     int nprocs = 0, rank = 0;
@@ -463,7 +466,6 @@ int saena_matrix_dense::matvec_comp(std::vector<value_t>& v, std::vector<value_t
     return 0;
 }
 
-
 int saena_matrix_dense::allocate_zfp(){
 
     free_zfp_buff = true;
@@ -517,7 +519,7 @@ int saena_matrix_dense::deallocate_zfp(){
 
     return 0;
 }
-
+#endif
 
 void saena_matrix_dense::matvec_time_init(){
     matvec_iter = 0;

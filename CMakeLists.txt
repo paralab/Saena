@@ -150,15 +150,19 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 
 include(GNUInstallDirs)
 
-set(ZFP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/zfp)
-set(ZFP_LIB ${CMAKE_CURRENT_BINARY_DIR}/build_zfp/${CMAKE_INSTALL_LIBDIR}/libzfp.so)
-include_directories(
-        ${ZFP_DIR}/array
-        ${ZFP_DIR}/array/zfp
-        ${ZFP_DIR}/include
-)
+option(ENABLE_ZFP OFF)
 
-SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${ZFP_LIB})
+if(ENABLE_ZFP)
+    set(ZFP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/zfp)
+    set(ZFP_LIB ${CMAKE_CURRENT_BINARY_DIR}/build_zfp/${CMAKE_INSTALL_LIBDIR}/libzfp.so)
+    include_directories(
+            ${ZFP_DIR}/array
+            ${ZFP_DIR}/array/zfp
+            ${ZFP_DIR}/include
+    )
+    SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${ZFP_LIB})
+    add_definitions(-DSAENA_USE_ZFP)
+endif(ENABLE_ZFP)
 
 # -----------------------------------------------------------------------
 #PETSc

@@ -2,7 +2,10 @@
 #define SAENA_MATRIX_DENSE_H
 
 #include "data_struct.h"
+
+#ifdef SAENA_USE_ZFP
 #include "zfparray1.h"
+#endif
 
 class saena_matrix;
 
@@ -61,7 +64,7 @@ public:
 
     // zfp parameters and functions
     // ***********************************************************
-
+#ifdef SAENA_USE_ZFP
     zfp_type    zfptype = zfp_type_double;
 
     zfp_field*  send_field;  // array meta data
@@ -86,12 +89,12 @@ public:
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
 
-    int matvec_test(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_comp(std::vector<value_t>& v, std::vector<value_t>& w);
-
     int allocate_zfp();
     int deallocate_zfp();
+#endif
 
+    int matvec_test(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_time_init();
     void matvec_time_print() const;
     unsigned long matvec_iter = 0;

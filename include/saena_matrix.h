@@ -9,9 +9,11 @@
 
 #include "saena_matrix_dense.h"
 #include "aux_functions.h"
-#include "zfparray1.h"
 #include "parUtils.h"
 
+#ifdef SAENA_USE_ZFP
+#include "zfparray1.h"
+#endif
 
 class saena_matrix {
 
@@ -173,7 +175,7 @@ public:
     // ***********************************************************
     // zfp parameters
     // ***********************************************************
-
+#ifdef SAENA_USE_ZFP
     zfp_type    zfptype = zfp_type_double;
 
     zfp_field*  send_field;  // array meta data
@@ -204,6 +206,12 @@ public:
 
     int allocate_zfp();
     int deallocate_zfp();
+
+    int matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<value_t>& w);
+#endif
 
     // for the compression paper
     void matvec_time_init();
@@ -293,17 +301,12 @@ public:
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
 
-    // for the compression paper
+    // for profiling
     int matvec_sparse_test(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_test3(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_test4(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value_t>& w);
-    // openmp versions
-    int matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<value_t>& w);
+    int matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w); // openmp version
 
     // matvec timing functions for the matvec paper
 //    int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);

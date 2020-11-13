@@ -381,9 +381,11 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
 
 saena_matrix::~saena_matrix(){
+#ifdef SAENA_USE_ZFP
     if(free_zfp_buff){
         deallocate_zfp();
     }
+#endif
 };
 
 
@@ -647,9 +649,11 @@ int saena_matrix::erase(){
     sendProcCount.shrink_to_fit();
     sendProcCount.shrink_to_fit();
 
+#ifdef SAENA_USE_ZFP
     if(free_zfp_buff){
         deallocate_zfp();
     }
+#endif
 
     M = 0;
     Mbig = 0;
@@ -743,9 +747,11 @@ int saena_matrix::erase2(){
     vElement_remote.shrink_to_fit();
     w_buff.shrink_to_fit();
 
+#ifdef SAENA_USE_ZFP
     if(free_zfp_buff){
         deallocate_zfp();
     }
+#endif
 
 //    M = 0;
 //    Mbig = 0;
@@ -1065,9 +1071,11 @@ int saena_matrix::erase_no_shrink_to_fit(){
 //    vElementRep_local.shrink_to_fit();
 //    vElementRep_remote.shrink_to_fit();
 
+#ifdef SAENA_USE_ZFP
     if(free_zfp_buff){
         deallocate_zfp();
     }
+#endif
 
     M = 0;
     Mbig = 0;

@@ -707,9 +707,11 @@ int saena_matrix::set_off_on_diagonal(){
 //            printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
 //               rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);
 
+#ifdef SAENA_USE_ZFP
             if(use_zfp){
                 allocate_zfp();
             }
+#endif
         }
 
         // compute M_max
