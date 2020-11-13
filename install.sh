@@ -17,12 +17,6 @@ make -j$(nproc)
 make -j$(nproc) install
 cd ..
 
-#zfp
-mkdir build_zfp && cd build_zfp
-cmake ../../external/zfp
-cmake --build . --config Release
-cd ..
-
 # SuperLU
 mkdir build_superlu && cd build_superlu
 cmake ../../external/SuperLU_DIST_5.4.0 \
@@ -31,6 +25,12 @@ cmake ../../external/SuperLU_DIST_5.4.0 \
 make -j$(nproc)
 make -j$(nproc) install
 cd ..
+
+#zfp
+#mkdir build_zfp && cd build_zfp
+#cmake ../../external/zfp
+#cmake --build . --config Release
+#cd ..
 
 # Saena
 cmake ..
