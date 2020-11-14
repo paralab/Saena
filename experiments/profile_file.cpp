@@ -17,9 +17,9 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(argc != 3) {
+    if(argc != 4) {
         if(rank == 0) {
-            cout << "Usage: ./profile file_name max_level" << endl;
+            cout << "Usage: ./profile matrix_file rhs_file max_level" << endl;
 //            cout << "Usage: ./profile mx my mz max_level" << endl;
 //            cout << "Usage: ./profile mx" << endl;
         }
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
     }
 
     // set the number of OpenMP threads at run-time
-    omp_set_num_threads(1);
+//    omp_set_num_threads(1);
 
     // *************************** set the scaling factor ****************************
 
@@ -36,26 +36,10 @@ int main(int argc, char* argv[]){
 
     // *************************** initialize the matrix ****************************
 
-//    int mx(std::stoi(argv[1]));
-//    int my(std::stoi(argv[2]));
-//    int mz(std::stoi(argv[3]));
-
-    int max_level(std::stoi(argv[2]));
-
-//    if(verbose){
-//        MPI_Barrier(comm);
-//        if(rank==0) printf("3D Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
-//        MPI_Barrier(comm);
-//    }
-
     // timing the matrix setup phase
     double t1 = omp_get_wtime();
 
     saena::matrix A(comm);
-//    saena::laplacian2D_old(&A, mx);
-//    saena::laplacian3D_old(&A, mx);
-//    saena::laplacian3D(&A, mx, my, mz, scale);
-
     char* file_name(argv[1]);
     A.read_file(file_name);
     A.assemble(scale);
@@ -80,9 +64,13 @@ int main(int argc, char* argv[]){
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
 
-//    saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
-    rhs_std.resize(num_local_row);
-    generate_rhs_old(rhs_std);
+    // read rhs from file
+    char* Vname(argv[2]);
+    read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
+
+    // generate random rhs
+//    rhs_std.resize(num_local_row);
+//    generate_rhs_old(rhs_std);
 
     index_t my_split = 0;
     saena::find_split((index_t)rhs_std.size(), my_split, comm);
@@ -115,9 +103,12 @@ int main(int argc, char* argv[]){
     // 3- use the default options
 //    saena::options opts;
 
+    int max_level(std::stoi(argv[3]));
+
     t1 = omp_get_wtime();
 
     saena::amg solver;
+    solver.set_dynamic_levels(false);
     solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
@@ -138,7 +129,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_CG(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-    for(int i = 0; i < 3; ++i)
+//    for(int i = 0; i < 3; ++i)
         solver.solve_pCG(u, &opts);
 
     // solve the system, using pure GMRES.
@@ -158,7 +149,7 @@ int main(int argc, char* argv[]){
 
     // *************************** profile matvecs ****************************
     // profile matvec times on all multigrid levels
-    solver.profile_matvecs();
+//    solver.profile_matvecs();
 
     // *************************** check correctness of the solution 1 ****************************
 
