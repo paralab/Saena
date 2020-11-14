@@ -283,21 +283,7 @@ public:
     int shrink_cpu_minor();
     int shrink_cpu_c(); // for the coarsest level
 
-    inline void matvec(std::vector<value_t>& v, std::vector<value_t>& w){
-        if(switch_to_dense && density >= dense_threshold){
-            std::cout << "dense matvec is commented out!" << std::endl;
-            // uncomment to enable DENSE
-//            if(!dense_matrix_generated){
-//                generate_dense_matrix();
-//            }
-//            dense_matrix.matvec(v, w);
-
-        }else{
-            matvec_sparse(v,w);
-//            matvec_sparse_zfp(v,w);
-        }
-    }
-
+    inline void matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
     int matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
 
@@ -318,22 +304,9 @@ public:
 //    int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
 
     // Vector res = A * u - rhs;
-    inline void residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
-        matvec(u, res);
-        #pragma omp parallel for
-        for(index_t i = 0; i < M; ++i){
-            res[i] -= rhs[i];
-        }
-    }
-
+    inline void residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res);
     // Vector res = rhs - A * u
-    inline void residual_negative(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
-        matvec(u, res);
-        #pragma omp parallel for
-        for(index_t i = 0; i < M; i++){
-            res[i] = rhs[i] - res[i];
-        }
-    }
+    inline void residual_negative(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res);
 
     int inverse_diag();
 
@@ -358,6 +331,8 @@ public:
     int erase_no_shrink_to_fit();
     int destroy();
 };
+
+#include <saena_matrix.tpp>
 
 #endif //SAENA_SAENA_MATRIX_H
 

@@ -267,6 +267,7 @@ set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
         ${SAENA_INCLUDE_DIR}/aux_functions.h
         ${SAENA_INCLUDE_DIR}/data_struct.h
         ${SAENA_INCLUDE_DIR}/saena_matrix.h
+        ${SAENA_INCLUDE_DIR}/saena_matrix.tpp
         ${SAENA_INCLUDE_DIR}/saena_matrix_dense.h
         ${SAENA_INCLUDE_DIR}/saena_object.h
         ${SAENA_INCLUDE_DIR}/saena_object.tpp
