@@ -17,9 +17,10 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(argc != 5) {
+    if(argc != 4) {
         if(rank == 0) {
-            cout << "Usage: ./profile mx my mz max_level" << endl;
+//            cout << "Usage: ./profile mx my mz max_level" << endl;
+            cout << "Usage: ./profile mx my mz" << endl;
 //            cout << "Usage: ./profile mx" << endl;
         }
         MPI_Finalize();
@@ -106,11 +107,10 @@ int main(int argc, char* argv[]){
 
     t1 = omp_get_wtime();
 
-    int max_level(std::stoi(argv[4]));
-
     saena::amg solver;
-//    solver.set_dynamic_levels(true);
-    solver.set_multigrid_max_level(max_level);
+    solver.set_dynamic_levels(true);
+//    int max_level(std::stoi(argv[4]));
+//    solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);

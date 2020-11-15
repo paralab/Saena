@@ -39,9 +39,9 @@ public:
     // setup
     // **********************************************
 
-    int          max_level                  = 10; // fine grid is level 0.
+    int          max_level                  = 25; // fine grid is level 0.
     // if dynamic_levels == true: coarsening will stop if the total number of rows goes below this parameter.
-    unsigned int least_row_threshold        = 2000;
+    unsigned int least_row_threshold        = 1000;
     // if dynamic_levels == true: coarsening will stop if the number of rows of last level divided by previous level is
     // higher than this parameter, which means the number of rows was not reduced much through coarsening.
     double       row_reduction_up_thrshld   = 0.90;
@@ -151,7 +151,7 @@ public:
     int         postSmooth    = 2;
     std::string smoother      = "chebyshev";    // choices: "jacobi", "chebyshev"
     std::string direct_solver = "SuperLU";      // choices: "CG", "SuperLU"
-    float       connStrength  = 0.3;            // connection strength parameter: control coarsening aggressiveness
+    float       connStrength  = 0.1;            // connection strength parameter: control coarsening aggressiveness
     std::string PSmoother     = "SPAI";         // "jacobi", "SPAI"
     double      Pomega        = 2.0 / 3;
 
