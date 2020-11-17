@@ -71,7 +71,7 @@ public:
     // matmat_thre3 is for when we want to have an exact number of splits. (case2_iter + case3_iter == matmat_thre3)
 
     std::string          coarsen_method  = "recursive"; // 1-basic, 2-recursive, 3-no_overlap
-    const int            matmat_thre1    = 100000000;
+    const int            matmat_thre1    = 20000000;
     index_t              matmat_thre2    = 0;
     static const index_t matmat_thre3    = 40;
     const index_t        matmat_nnz_thre = 200; //default 200
@@ -151,7 +151,7 @@ public:
     int         postSmooth    = 2;
     std::string smoother      = "chebyshev";    // choices: "jacobi", "chebyshev"
     std::string direct_solver = "SuperLU";      // choices: "CG", "SuperLU"
-    float       connStrength  = 0.1;            // connection strength parameter: control coarsening aggressiveness
+    float       connStrength  = 0.3;            // connection strength parameter: control coarsening aggressiveness
     std::string PSmoother     = "SPAI";         // "jacobi", "SPAI"
     double      Pomega        = 2.0 / 3;
 
