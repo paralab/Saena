@@ -75,30 +75,18 @@ int saena_vector::set(const index_t idx_, const value_t val){
     return 0;
 }
 
-int saena_vector::set(const index_t* idx, const value_t* val, const index_t size){
-
+void saena_vector::set(const index_t* idx, const value_t* val, const index_t size){
     for(index_t i = 0; i < size; i++){
         set(idx[i], val[i]);
     }
-
-    return 0;
 }
 
-int saena_vector::set(const value_t* val, const index_t size, const index_t offset){
-
+void saena_vector::set(const value_t* val, const index_t size, const index_t offset /* = 0*/){
     for(index_t i = 0; i < size; i++){
         set(i + offset, val[i]);
     }
-
-    return 0;
 }
 
-int saena_vector::set(const value_t* val, const index_t size){
-
-    set(val, size, 0);
-
-    return 0;
-}
 
 int saena_vector::remove_duplicates() {
     // parameters needed for this function:

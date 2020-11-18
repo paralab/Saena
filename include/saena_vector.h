@@ -77,9 +77,9 @@ public:
 //    int set_rep_dup(index_t row, value_t val); // replace duplicates
 //    int set_add_dup(index_t row, value_t val); // add duplicates
 //    int set(index_t *row, value_t *val, index_t size);
-    int set(const index_t* idx, const value_t* val, index_t size);
-    int set(const value_t* val, index_t size, index_t offset);
-    int set(const value_t* val, index_t size);
+    void set(const index_t* idx, const value_t* val, index_t size);
+    void set(const value_t* val, index_t size, index_t offset = 0);
+
     int remove_duplicates();
     int assemble();
 
