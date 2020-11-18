@@ -250,10 +250,25 @@ int saena_object::compute_coarsen(Grid *grid) {
         //---------------------------------------------
 
         if(nprocs > 1){
-            if(Ac->enable_shrink_c &&
-               (!dynamic_levels && grid->level + 1 == max_level) ||
-               (dynamic_levels && Ac->Mbig <= least_row_threshold) ||
-               (dynamic_levels && static_cast<float>(Ac->Mbig) / A->Mbig > row_reduction_up_thrshld)){ //coarsest level
+            // decide if this is the last level, then execute decide_shrinking_c(), otherwise check for a normal shrink.
+            bool shrink_c = false;
+
+            if(Ac->enable_shrink_c){
+                if(!dynamic_levels){
+                    if(grid->level + 1 == max_level){
+                        shrink_c = true;
+                    }
+                }else{
+                    if(Ac->p_order == 1){
+                        if((Ac->Mbig <= least_row_threshold) ||
+                           (static_cast<float>(Ac->Mbig) / A->Mbig > row_reduction_up_thrshld)){
+                            shrink_c = true;
+                        }
+                    }
+                }
+            }
+
+            if(shrink_c){ //coarsest level
                 Ac->decide_shrinking_c();
             }else if (Ac->enable_shrink) {
 //                MPI_Barrier(Ac->comm); if(rank_new==0) printf("start decide shrinking\n"); MPI_Barrier(Ac->comm);
