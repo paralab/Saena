@@ -553,40 +553,51 @@ int saena_object::coarsen(Grid *grid, std::vector< std::vector< std::vector<int>
 //    double t22 = MPI_Wtime();
     if(verbose_coarsen) print_time(t2 - t1, "compute_coarsen: level "+std::to_string(grid->level), grid->A->comm);
 //    print_time_ave(t22-t11, "compute_coarsen: level "+std::to_string(grid->level), grid->A->comm);
+    {
 
-//    MPI_Barrier(grid->A->comm); printf("rank %d: here after compute_coarsen!!! \n", rank); MPI_Barrier(grid->A->comm);
-//    if(grid->Ac.active) print_vector(grid->Ac.split, 1, "grid->Ac.split", grid->Ac.comm);
-//    if(grid->Ac.active) print_vector(grid->Ac.entry, 1, "grid->Ac.entry", grid->A->comm);
+//        MPI_Barrier(grid->A->comm); printf("rank %d: here after compute_coarsen!!! \n", rank); MPI_Barrier(grid->A->comm);
+//        if(grid->Ac.active) print_vector(grid->Ac.split, 1, "grid->Ac.split", grid->Ac.comm);
+//        if(grid->Ac.active) print_vector(grid->Ac.entry, 1, "grid->Ac.entry", grid->A->comm);
+//
+//        printf("rank = %d, M = %u, nnz_l = %lu, nnz_g = %lu, Ac.M = %u, Ac.nnz_l = %lu, Ac.nnz_g = %lu\n",
+//               rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
+//
+//        int rank1;
+//        MPI_Comm_rank(grid->A->comm, &rank1);
+//        printf("Mbig = %u, M = %u, nnz_l = %lu, nnz_g = %lu \n", grid->Ac.Mbig, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
+//        if(grid->Ac.active) print_vector(grid->Ac.entry, -1, "grid->Ac.entry", grid->Ac.comm);
 
-//    printf("rank = %d, M = %u, nnz_l = %lu, nnz_g = %lu, Ac.M = %u, Ac.nnz_l = %lu, Ac.nnz_g = %lu\n",
-//           rank, grid->A->M, grid->A->nnz_l, grid->A->nnz_g, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
+        if (verbose_setup_steps) {
+            MPI_Barrier(grid->A->comm);
+            if (!rank) printf("coarsen: end\n");
+            MPI_Barrier(grid->A->comm);
+        }
 
-//    int rank1;
-//    MPI_Comm_rank(grid->A->comm, &rank1);
-//    printf("Mbig = %u, M = %u, nnz_l = %lu, nnz_g = %lu \n", grid->Ac.Mbig, grid->Ac.M, grid->Ac.nnz_l, grid->Ac.nnz_g);
-//    if(grid->Ac.active) print_vector(grid->Ac.entry, -1, "grid->Ac.entry", grid->Ac.comm);
+        // **************************** write matrices to files ****************************
 
-    if(verbose_setup_steps){
-        MPI_Barrier(grid->A->comm); if(!rank) printf("coarsen: end\n"); MPI_Barrier(grid->A->comm);
+//        grid->A->writeMatrixToFile("A0");
+//        grid->P.writeMatrixToFile();
+//        grid->R.writeMatrixToFile();
+//        grid->Ac.writeMatrixToFile("A1");
+
+        // **************************** Visualize using PETSc ****************************
+
+//        petsc_viewer(grid->A);
+//        petsc_viewer(&grid->P);
+//        petsc_viewer(&grid->R);
+//        petsc_viewer(&grid->Ac);
+
+        // **************************** compute_coarsen in PETSc ****************************
+
+        // this part is only for experiments.
+//        petsc_coarsen(&grid->R, grid->A, &grid->P);
+//        petsc_coarsen_PtAP(&grid->R, grid->A, &grid->P);
+//        petsc_coarsen_2matmult(&grid->R, grid->A, &grid->P);
+//        petsc_check_matmatmat(&grid->R, grid->A, &grid->P, &grid->Ac);
+
+//        map_matmat.clear();
     }
 #endif
-
-    // **************************** Visualize using PETSc ****************************
-
-//    petsc_viewer(grid->A);
-//    petsc_viewer(&grid->P);
-//    petsc_viewer(&grid->R);
-//    petsc_viewer(&grid->Ac);
-
-    // **************************** compute_coarsen in PETSc ****************************
-
-    // this part is only for experiments.
-//    petsc_coarsen(&grid->R, grid->A, &grid->P);
-//    petsc_coarsen_PtAP(&grid->R, grid->A, &grid->P);
-//    petsc_coarsen_2matmult(&grid->R, grid->A, &grid->P);
-//    petsc_check_matmatmat(&grid->R, grid->A, &grid->P, &grid->Ac);
-
-//    map_matmat.clear();
 
     return ret_val;
 }
