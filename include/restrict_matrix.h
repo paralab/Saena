@@ -88,8 +88,7 @@ public:
     int print_entry(int ran);
     int print_info(int ran);
 
-    int writeMatrixToFile();
-    int writeMatrixToFile(const char *folder_name);
+    int writeMatrixToFile(const std::string &name = "") const;
 };
 
 #endif //SAENA_RESTRICT_MATRIX_H
