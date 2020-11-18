@@ -121,39 +121,49 @@ int saena_vector::remove_duplicates() {
     data_unsorted.clear();
     data_unsorted.shrink_to_fit();
 
+#ifdef __DEBUG1__
+    for(int i = 0; i < data_sorted_dup.size() - 1; ++i){
+        assert((data_sorted_dup[i].row == data_sorted_dup[i+1].row) ||
+               (data_sorted_dup[i].row == data_sorted_dup[i+1].row - 1) );
+    }
+#endif
+
     if(data_sorted_dup.empty()) {
         printf("error: data_sorted_dup of the vector has no element on process %d! \n", rank);
         MPI_Finalize();
-        return -1;}
+        return -1;
+    }
 
+/*
     // size of data may be smaller because of duplicates. In that case its size will be reduced after finding the exact size.
-//    data.resize(data_sorted_dup.size());
-//    nnz_t data_size = 0;
-//    if(!data_sorted_dup.empty()){
-//        data[0] = data_sorted_dup[0];
-//        data_size++;
-//    }
-//    if(add_duplicates){
-//        for(nnz_t i = 1; i < data_sorted_dup.size(); i++) {
-//            if (data_sorted_dup[i] == data_sorted_dup[i - 1]) {
-//                data[data_size - 1].val += data_sorted_dup[i].val;
-//            } else {
-//                data[data_size] = data_sorted_dup[i];
-//                data_size++;
-//            }
-//        }
-//    } else {
-//        for(nnz_t i = 1; i < data_sorted_dup.size(); i++){
-//            if(data_sorted_dup[i] == data_sorted_dup[i - 1]){
-//                data[data_size - 1] = data_sorted_dup[i];
-//            }else{
-//                data[data_size] = data_sorted_dup[i];
-//                data_size++;
-//            }
-//        }
-//    }
-//    data.resize(data_size);
-//    data.shrink_to_fit();
+    data.resize(data_sorted_dup.size());
+    nnz_t data_size = 0;
+    if(!data_sorted_dup.empty()){
+        data[0] = data_sorted_dup[0];
+        data_size++;
+    }
+    if(add_duplicates){
+        for(nnz_t i = 1; i < data_sorted_dup.size(); i++) {
+            if (data_sorted_dup[i] == data_sorted_dup[i - 1]) {
+                data[data_size - 1].val += data_sorted_dup[i].val;
+            } else {
+                data[data_size] = data_sorted_dup[i];
+                data_size++;
+            }
+        }
+    } else {
+        for(nnz_t i = 1; i < data_sorted_dup.size(); i++){
+            if(data_sorted_dup[i] == data_sorted_dup[i - 1]){
+                data[data_size - 1] = data_sorted_dup[i];
+            }else{
+                data[data_size] = data_sorted_dup[i];
+                data_size++;
+            }
+        }
+    }
+    data.resize(data_size);
+    data.shrink_to_fit();
+*/
 
     // remove duplicates
     // -----------------------
@@ -212,6 +222,13 @@ int saena_vector::remove_duplicates() {
 
         data[0].val += left_neighbor_last_val;
     }
+
+#ifdef __DEBUG1__
+    int rhs_loc_sz = data.size(), rhs_tot_sz = 0;
+    MPI_Reduce(&rhs_loc_sz, &rhs_tot_sz, 1, MPI_INT, MPI_SUM, nprocs - 1, comm);
+    if(rank == nprocs - 1)
+        assert(rhs_tot_sz - 1 == data_sorted_dup.back().row);
+#endif
 
 //    print_vector(data, -1, "final data", comm);
 
