@@ -12,17 +12,17 @@
 PetscErrorCode ComputeMatrix(KSP ksp, Mat J, Mat jac, void *ctx);
 PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx);
 
-int petsc_viewer(Mat &A);
-int petsc_viewer(saena_matrix *A);
-int petsc_viewer(prolong_matrix *P);
-int petsc_viewer(restrict_matrix *R);
+int petsc_viewer(const Mat &A);
+int petsc_viewer(const saena_matrix *A);
+int petsc_viewer(const prolong_matrix *P);
+int petsc_viewer(const restrict_matrix *R);
 
-int petsc_prolong_matrix(prolong_matrix *P, Mat &B);
-int petsc_restrict_matrix(restrict_matrix *R, Mat &B);
-int petsc_saena_matrix(saena_matrix *A, Mat &B);
+int petsc_prolong_matrix(const prolong_matrix *P, Mat &B);
+int petsc_restrict_matrix(const restrict_matrix *R, Mat &B);
+int petsc_saena_matrix(const saena_matrix *A, Mat &B);
 
-int petsc_std_vector(std::vector<value_t> &v, Vec &w, const int &OFST, MPI_Comm comm);
-int petsc_saena_vector(saena_vector *v, Vec &w);        // NOTE: not tested
+int petsc_std_vector(const std::vector<value_t> &v, Vec &w, const int &OFST, MPI_Comm comm);
+int petsc_saena_vector(const saena_vector *v, Vec &w);        // NOTE: not tested
 
 int petsc_matmat(saena_matrix *A, saena_matrix *B);
 int petsc_matmat_ave(saena_matrix *A, saena_matrix *B, int matmat_iter);
@@ -35,7 +35,7 @@ int petsc_coarsen_PtAP(restrict_matrix *R, saena_matrix *A, prolong_matrix *P);
 int petsc_coarsen_2matmult(restrict_matrix *R, saena_matrix *A, prolong_matrix *P);
 int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P, saena_matrix *Ac);
 
-int petsc_solve(saena_matrix *A, vector<value_t> &rhs, vector<value_t> &u, const double &rel_tol);
+int petsc_solve(const saena_matrix *A, const vector<value_t> &rhs, vector<value_t> &u, const double &rel_tol);
 
 #endif //SAENA_PETSC_FUNCTIONS_H
 

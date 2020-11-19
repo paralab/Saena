@@ -142,7 +142,7 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
 }
 
 
-int petsc_viewer(Mat &A){
+int petsc_viewer(const Mat &A){
 
     int sz = 1800;
 
@@ -175,7 +175,7 @@ int petsc_viewer(Mat &A){
 }
 
 
-int petsc_viewer(saena_matrix *A){
+int petsc_viewer(const saena_matrix *A){
 
     if(A->active) {
         MPI_Comm comm = A->comm;
@@ -192,7 +192,7 @@ int petsc_viewer(saena_matrix *A){
 }
 
 
-int petsc_prolong_matrix(prolong_matrix *P, Mat &B){
+int petsc_prolong_matrix(const prolong_matrix *P, Mat &B){
 
     PetscBool petsc_init;
     PetscInitialized(&petsc_init);
@@ -259,7 +259,7 @@ int petsc_prolong_matrix(prolong_matrix *P, Mat &B){
     return 0;
 }
 
-int petsc_viewer(prolong_matrix *P){
+int petsc_viewer(const prolong_matrix *P){
 
     PetscBool petsc_init;
     PetscInitialized(&petsc_init);
@@ -285,7 +285,7 @@ int petsc_viewer(prolong_matrix *P){
     return 0;
 }
 
-int petsc_viewer(restrict_matrix *R){
+int petsc_viewer(const restrict_matrix *R){
 
     PetscBool petsc_init;
     PetscInitialized(&petsc_init);
@@ -311,7 +311,7 @@ int petsc_viewer(restrict_matrix *R){
     return 0;
 }
 
-int petsc_restrict_matrix(restrict_matrix *R, Mat &B){
+int petsc_restrict_matrix(const restrict_matrix *R, Mat &B){
 
 //    PetscInitialize(0, nullptr, nullptr, nullptr);
 
@@ -352,7 +352,7 @@ int petsc_restrict_matrix(restrict_matrix *R, Mat &B){
 }
 
 
-int petsc_saena_matrix(saena_matrix *A, Mat &B){
+int petsc_saena_matrix(const saena_matrix *A, Mat &B){
 
 //    PetscInitialize(0, nullptr, nullptr, nullptr);
 
@@ -891,7 +891,7 @@ int petsc_mat_diff(Mat &A, Mat &B, saena_matrix *B_saena){
 }
 
 // from petsc-3.13.5/src/vec/vec/tutorials/ex9.c
-int petsc_std_vector(std::vector<value_t> &v1, Vec &x, const int &OFST, MPI_Comm comm){
+int petsc_std_vector(const std::vector<value_t> &v1, Vec &x, const int &OFST, MPI_Comm comm){
 
     PetscErrorCode ierr;
     PetscMPIInt    rank;
@@ -963,7 +963,7 @@ int petsc_saena_vector(saena_vector *v, Vec &w){
 }
 
 
-int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, const double &rel_tol){
+int petsc_solve(const saena_matrix *A1, const vector<value_t> &b1, vector<value_t> &x1, const double &rel_tol){
 
     Vec            x,b;      /* approx solution, RHS */
     Mat            A;        /* linear system matrix */
@@ -1014,10 +1014,10 @@ int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, cons
         x1[i] = array[i];
     VecRestoreArray(x, &array);
 
-    VecAXPY(x,-1.0,b);
-    VecNorm(x,NORM_2,&norm);
-    KSPGetIterationNumber(ksp,&its);
-    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Norm of error %g, iterations %D\n",(double)norm,its);
+//    VecAXPY(x,-1.0,b); // should we do norm(A * x - b)?
+//    VecNorm(b,NORM_2,&norm);
+//    KSPGetIterationNumber(ksp,&its);
+//    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Norm of error %g, iterations %D\n",(double)norm,its);
 
     KSPDestroy(&ksp);
     VecDestroy(&x);
