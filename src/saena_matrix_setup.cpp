@@ -1223,8 +1223,8 @@ int saena_matrix::inverse_diag() {
         }
     }
 
-    for(auto &d : inv_diag){
-        assert(d != 0);
+    for(int i = 0; i < inv_diag.size(); ++i){
+        ASSERT(inv_diag[i] != 0, i << "\t" << inv_diag[i]);
     }
 
 #ifdef __DEBUG1__

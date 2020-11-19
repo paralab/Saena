@@ -92,20 +92,16 @@ int saena_object::SA(Grid *grid){
         MPI_Test(&requests[A->numRecvProc + i], &flag, &statuses[A->numRecvProc + i]);
     }
 
-    std::vector<cooEntry> PEntryTemp;
-
     // P = (I - w * Q * A) * P_t
-    // P = (I - 4 / (3 * rhoDA) * DA) * P_t
-    // aggregate is used as P_t in the following "for" loop.
 
-    // local
-    // -----
+    std::vector<cooEntry> PEntryTemp;
 
     // use these to avoid subtracting A->split[rank] from each aggregate[i]
     auto *aggregate_p = &aggregate[0] - A->split[rank];
 
     value_t *Q = nullptr;
     if(PSmoother == "jacobi"){
+        // P = (I - 4 / (3 * rhoDA) * DA) * P_t
         Q = &A->inv_diag[0];
         Pomega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
     }else if(PSmoother == "SPAI"){
@@ -140,6 +136,10 @@ int saena_object::SA(Grid *grid){
 //        if(!rank) printf("rhoQA = %f, Pomega = %f\n", rhoQA, Pomega);
     }
 
+    // local
+    // --------------------------
+
+    // aggregate is used as P_t in the following "for" loop.
     // go through A row-wise using indicesP_local (there is no order for the columns, only rows are ordered.)
     value_t vtmp = 0;
     long iter = 0;
@@ -171,6 +171,8 @@ int saena_object::SA(Grid *grid){
 #endif
 
     // remote
+    // --------------------------
+
     iter = 0;
     for (i = 0; i < A->col_remote_size; ++i) {
         const index_t c_idx = vecValuesAgg[A->col_remote[iter]];
@@ -403,6 +405,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     }
 
 #ifdef __DEBUG1__
+//    if(!rank) printf("ret_val = %d\n", ret_val);
     if(verbose_setup_steps) {
         MPI_Barrier(comm); if (!rank) printf("find_agg: step 4\n"); MPI_Barrier(comm);
     }
