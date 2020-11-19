@@ -41,17 +41,16 @@ int main(int argc, char* argv[]){
     int mz(std::stoi(argv[3]));
 
 //    if(verbose){
-        MPI_Barrier(comm);
-        if(rank==0) printf("3D Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
-        MPI_Barrier(comm);
+//        MPI_Barrier(comm);
+        if(rank==0) printf("Laplacian: grid size: x = %d, y = %d, z = %d \n", mx, my, mz);
+//        MPI_Barrier(comm);
 //    }
 
     // timing the matrix setup phase
     double t1 = omp_get_wtime();
 
     saena::matrix A(comm);
-//    saena::laplacian2D_old(&A, mx);
-//    saena::laplacian3D_old(&A, mx);
+//    saena::laplacian2D(&A, mx, my, scale);
     saena::laplacian3D(&A, mx, my, mz, scale);
 
     double t2 = omp_get_wtime();
@@ -64,6 +63,8 @@ int main(int argc, char* argv[]){
     // write matrix to a file. pass the name as the argument.
 //    A.writeMatrixToFile("mat");
 
+//    petsc_viewer(A.get_internal_matrix());
+
     // *************************** set rhs: read from file ****************************
 
     // vector should have the following format:
@@ -74,6 +75,7 @@ int main(int argc, char* argv[]){
     unsigned int num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
 
+//    saena::laplacian2D_set_rhs(rhs_std, mx, my, comm);
     saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
 
     index_t my_split = 0;
@@ -110,7 +112,7 @@ int main(int argc, char* argv[]){
     saena::amg solver;
     solver.set_dynamic_levels(true);
 //    int max_level(std::stoi(argv[4]));
-//    solver.set_multigrid_max_level(max_level);
+//    solver.set_multigrid_max_level(1);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -142,6 +144,9 @@ int main(int argc, char* argv[]){
     t2 = omp_get_wtime();
 //    print_time(t2 - t1, "Solve:", comm);
 
+//    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
+//    saena::laplacian2D_check_solution(u, mx, my, comm);
+
     // *************************** print or write the solution ****************************
 
 //    print_vector(u, -1, "solution", comm);
@@ -150,29 +155,34 @@ int main(int argc, char* argv[]){
 
     // *************************** profile matvecs ****************************
     // profile matvec times on all multigrid levels
-    solver.profile_matvecs();
+//    solver.profile_matvecs();
 
     // *************************** check correctness of the solution 1 ****************************
 
     // A is scaled. read it from the file and don't scale.
 #if 0
     saena::matrix Ap(comm);
+//    saena::laplacian2D(&Ap, mx, my, false);
     saena::laplacian3D(&Ap, mx, my, mz, false);
 
     std::vector<double> u_petsc(num_local_row);
     petsc_solve(Ap.get_internal_matrix(), rhs_std, u_petsc, relative_tolerance);
 
+    double normb = pnorm(rhs_std, comm);
+    const double THRSHLD = relative_tolerance * normb;
+
     bool bool_correct = true;
     if(rank==0){
         std::stringstream buf;
         print_sep();
-        printf("Checking the correctness of the solution:\n");
+        printf("\nChecking the correctness of the solution: (method1: PETSc)\n");
+        printf("relative_tolerance: %e, THRSHLD: %e\n", relative_tolerance, THRSHLD);
 //        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
         for(index_t i = 0; i < num_local_row; ++i){
-            if(fabs(u[i] - u_petsc[i]) > 1e-5){
+            if(fabs(u[i] - u_petsc[i]) > THRSHLD){
                 bool_correct = false;
-//                break;
-                printf("%.16f \t%.16f \t%.16f \n", u[i], u_petsc[i], u[i] - u_petsc[i]);
+                break;
+//                printf("%.16f \t%.16f \t%.16f \n", u[i], u_petsc[i], u[i] - u_petsc[i]);
             }
         }
         if(bool_correct){
@@ -194,27 +204,30 @@ int main(int argc, char* argv[]){
 #if 0
     saena::matrix AA(comm);
     saena::laplacian3D(&AA, mx, my, mz, false);
+//    saena::laplacian2D(&AA, mx, my, false);
 
     saena_matrix *AAA = AA.get_internal_matrix();
     std::vector<double> Au(num_local_row, 0);
     std::vector<double> sol = u;
-//	std::vector<double> sol = u_direct; // the SuperLU solution
     AAA->matvec(sol, Au);
 
-    bool bool_correct = true;
+    const double THRSHLD2 = relative_tolerance * pnorm(rhs_std, comm);
+
+    bool bool_correct2 = true;
     if(rank==0){
         std::stringstream buf;
         print_sep();
-        printf("Checking the correctness of the solution:\n");
+        printf("\nChecking the correctness of the solution (method2: A * x - b):\n");
+        printf("relative_tolerance: %e, THRSHLD: %e\n", relative_tolerance, THRSHLD);
 //        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
         for(index_t i = 0; i < num_local_row; ++i){
-            if(fabs(Au[i] - rhs_std[i]) > 1e-8){
-                bool_correct = false;
+            if(fabs(Au[i] - rhs_std[i]) > THRSHLD2){
+                bool_correct2 = false;
                 break;
 //                printf("%.12f \t%.12f \t%.12f \n", Au[i], rhs_std[i], Au[i] - rhs_std[i]);
             }
         }
-        if(bool_correct){
+        if(bool_correct2){
             buf << "\nThe solution is correct!\n";
             std::cout << buf.str();
             print_sep();
@@ -239,7 +252,8 @@ int main(int argc, char* argv[]){
 */
     // *************************** check correctness of the solution 3 ****************************
 
-/*
+#if 0
+  	std::vector<double> sol = u_direct; // the SuperLU solution
     bool_correct = true;
     if(rank==0){
         printf("Checking the correctness of GMRES with SuperLU:\n");
@@ -259,7 +273,7 @@ int main(int argc, char* argv[]){
             printf("\n******************************************************\n");
         }
     }
-*/
+#endif
 
     // *************************** Destroy ****************************
 
