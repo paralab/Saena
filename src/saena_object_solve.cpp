@@ -278,9 +278,9 @@ int saena_object::setup_SuperLU() {
     fst_row = A_coarsest->split[rank_coarsest]; // the offset for the first row
 
     // these will be freed when calling Destroy_CompRowLoc_Matrix_dist on the matrix.
-    auto *rowptr    = (int_t *) intMalloc_dist(m_loc + 1);      // scan on nonzeros per row
-    auto *nzval_loc = (double *) doubleMalloc_dist(nnz_loc);    // values
-    auto *colind    = (int_t *) intMalloc_dist(nnz_loc);        // column indices
+    auto *rowptr    = (index_t *) intMalloc_dist(m_loc + 1);     // scan on nonzeros per row
+    auto *nzval_loc = (value_t *) doubleMalloc_dist(nnz_loc);    // values
+    auto *colind    = (index_t *) intMalloc_dist(nnz_loc);       // column indices
 
     assert(rowptr    != nullptr);
     assert(nzval_loc != nullptr);
@@ -289,7 +289,7 @@ int saena_object::setup_SuperLU() {
     std::fill(&rowptr[0], &rowptr[m_loc + 1], 0);
 
     // Do this line to avoid this subtraction for each entry in the next "for" loop.
-    int *rowptr_p = &rowptr[1] - fst_row;
+    auto *rowptr_p = &rowptr[1] - fst_row;
 
     for (nnz_t i = 0; i < nnz_loc; ++i) {
         ++rowptr_p[entry_temp[i].row];
@@ -302,6 +302,19 @@ int saena_object::setup_SuperLU() {
     }
 
     assert(rowptr[m_loc] == nnz_loc);
+
+//    for(nnz_t i = 0; i < m_loc; i++){
+//        for(nnz_t j = rowptr[i]; j < rowptr[i+1] - 1; j++){
+//            assert(colind[j] <= colind[j + 1]);
+//            std::cout << i + fst_row << "\t" << colind[j] << "\t" << nzval_loc[j] << std::endl;
+//        }
+//    }
+
+    for(nnz_t i = 0; i < entry_temp.size() - 1; i++){
+        assert(entry_temp[i].row <= entry_temp[i+1].row);
+        if(entry_temp[i].row == entry_temp[i+1].row)
+            assert(entry_temp[i].col <= entry_temp[i+1].col);
+    }
 
 #ifdef __DEBUG1__
 /*
@@ -792,15 +805,23 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
         if(rank==0) printf("\nsolve_coarsest_SuperLU(): start\n");
         MPI_Barrier(comm);
     }
-//        A->print_info(-1);
-//        A->print_entry(-1);
-//        print_vector(rhs, -1, "rhs passed to superlu", comm);
-//        print_vector(u, -1, "u passed to superlu", comm);
+//    A->print_info(-1);
+//    A->print_entry(-1);
+//    print_vector(rhs, -1, "rhs passed to superlu", comm);
+//    print_vector(u, -1, "u passed to superlu", comm);
+
+    int u_sz = u.size(), u_tot_sz = 0;
+    MPI_Allreduce(&u_sz, &u_tot_sz, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+    assert(A->Mbig == u_tot_sz);
+
+    int rhs_sz = rhs.size(), rhs_tot_sz = 0;
+    MPI_Allreduce(&rhs_sz, &rhs_tot_sz, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+    assert(A->Mbig == rhs_tot_sz);
 #endif
 
     SuperLUStat_t stat;
     double   *berr = nullptr;
-    double   *b    = nullptr;
+    value_t  *b    = nullptr;
     int      m = 0, n = 0, m_loc = 0, nnz_loc = 0;
     int      nprow = 0, npcol = 0;
     int      iam = 0, info = 0, ldb = 0, nrhs = 0;
