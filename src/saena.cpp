@@ -1205,14 +1205,9 @@ int saena::laplacian3D_check_solution(std::vector<double> &u, index_t mx, index_
         }
     }
 
-    cout << "\nnorm of diff = " << sqrt(dif / (mx*my*mz)) << endl;
-
-//    rhs[iter] = 12 * PETSC_PI * PETSC_PI
-//                * sin(2 * PETSC_PI * (((value_t) i + 0.5) * Hx))
-//                * sin(2 * PETSC_PI * (((value_t) j + 0.5) * Hy))
-//                * sin(2 * PETSC_PI * (((value_t) k + 0.5) * Hz))
-//                * Hx * Hy * Hz;
-    // sin(2 * PETSC_PI * i) * sin(2 * PETSC_PI * j)  * sin(2 * PETSC_PI * k)
+    double dif_tot = 0.0;
+    MPI_Reduce(&dif, &dif_tot, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+    if(!rank) cout << "\nnorm of diff = " << sqrt(dif / (mx*my*mz)) << endl;
 
     return 0;
 }
