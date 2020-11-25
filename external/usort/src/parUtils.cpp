@@ -119,7 +119,7 @@ namespace par {
   }//end function
 
   //create Comm groups and remove empty processors...
-  int splitComm2way(bool iAmEmpty, MPI_Comm * new_comm, MPI_Comm comm) {
+  void splitComm2way(bool iAmEmpty, MPI_Comm * new_comm, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
     MPI_Barrier(comm);
 #endif
@@ -179,7 +179,7 @@ namespace par {
 
   }//end function
 
-  int splitCommUsingSplittingRank(int splittingRank, MPI_Comm* new_comm,
+  void splitCommUsingSplittingRank(int splittingRank, MPI_Comm* new_comm,
       MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
     MPI_Barrier(comm);
@@ -571,6 +571,7 @@ namespace par {
 //      sort(SortedElem.begin(), SortedElem.end());
         omp_par::merge_sort(&SortedElem[0], &SortedElem[nsorted]);
 
+        return 0;
     }//end function
 
 
