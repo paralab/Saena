@@ -51,7 +51,8 @@ int main(int argc, char* argv[]){
 
     saena::matrix A(comm);
 //    saena::laplacian2D(&A, mx, my, scale);
-    saena::laplacian3D(&A, mx, my, mz, scale);
+      saena::laplacian3D(&A, mx, my, mz, scale);
+//    saena::laplacian3D_old2(&A, mx, my, mz, scale);
 
     double t2 = omp_get_wtime();
 //    print_time(t1, t2, "Matrix Assemble:", comm);
@@ -77,6 +78,7 @@ int main(int argc, char* argv[]){
 
 //    saena::laplacian2D_set_rhs(rhs_std, mx, my, comm);
     saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
+    //saena::laplacian3D_set_rhs_old2(rhs_std, mx, my, mz, comm);
 
     index_t my_split = 0;
     saena::find_split((index_t)rhs_std.size(), my_split, comm);
@@ -129,11 +131,11 @@ int main(int argc, char* argv[]){
 //    solver.solve(u, &opts);
 
     // solve the system, using pure CG.
-//    solver.solve_CG(u, &opts);
+    solver.solve_CG(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    for(int i = 0; i < 3; ++i)
-        solver.solve_pCG(u, &opts);
+//        solver.solve_pCG(u, &opts);
 
     // solve the system, using pure GMRES.
 //    solver.solve_GMRES(u, &opts);
@@ -144,7 +146,7 @@ int main(int argc, char* argv[]){
     t2 = omp_get_wtime();
 //    print_time(t2 - t1, "Solve:", comm);
 
-//    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
+    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
 //    saena::laplacian2D_check_solution(u, mx, my, comm);
 
     // *************************** print or write the solution ****************************
