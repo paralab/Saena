@@ -24,7 +24,7 @@
 // have barriers and are inside PROFILE_TOTAL_PCG.
 //#define PROFILE_PCG
 //#define PROFILE_TOTAL_PCG
-//#define PROFILE_VCYCLE
+#define PROFILE_VCYCLE
 
 class strength_matrix;
 class saena_matrix;
@@ -391,7 +391,9 @@ public:
     double Rtransfer_time     = 0.0;
     double Ptransfer_time     = 0.0;
     double vcycle_smooth_time = 0.0;
-    double vcycle_other_time  = 0.0;
+    double vcycle_other       = 0.0;
+    double vcycle_resid       = 0.0;
+    double vcycle_repart      = 0.0;
 
     void profile_matvecs();
 
