@@ -1962,7 +1962,7 @@ int saena::read_vector_file(std::vector<value_t>& v, saena::matrix &A, char *fil
 
 index_t saena::find_split(index_t loc_size, index_t &my_split, MPI_Comm comm){
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -1971,14 +1971,10 @@ index_t saena::find_split(index_t loc_size, index_t &my_split, MPI_Comm comm){
     MPI_Allgather(&loc_size,      1, par::Mpi_datatype<index_t>::value(),
                   &split_temp[0], 1, par::Mpi_datatype<index_t>::value(), comm);
 
-    std::vector<index_t> split_vec(nprocs+1);
-    split_vec[0] = 0;
-    for(index_t i = 1; i < nprocs + 1; i++){
-        split_vec[i] = split_vec[i-1] + split_temp[i-1];
+    my_split = 0;
+    for(index_t i = 0; i < rank; i++){
+        my_split += split_temp[i];
     }
 
-//    print_vector(split_vec, 0, "split_vec", comm);
-
-    my_split = split_vec[rank];
     return 0;
 }
