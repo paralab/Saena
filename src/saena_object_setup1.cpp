@@ -2,9 +2,6 @@
 #include "saena_matrix.h"
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
-#include "grid.h"
-#include "aux_functions.h"
-#include "parUtils.h"
 
 
 int saena_object::SA(Grid *grid){

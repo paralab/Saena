@@ -1,9 +1,5 @@
 #include "saena_object.h"
 #include "saena_matrix.h"
-#include "grid.h"
-#include "aux_functions.h"
-#include "parUtils.h"
-
 #include "saena_vector.h"
 
 

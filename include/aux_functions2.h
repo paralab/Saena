@@ -1,8 +1,8 @@
 #pragma once
 
 #include "saena.hpp"
-#include "data_struct.h"
-#include "petsc_functions.h"
+//#include "data_struct.h"
+#include "saena_matrix.h"
 
 namespace saena {
     // ==========================

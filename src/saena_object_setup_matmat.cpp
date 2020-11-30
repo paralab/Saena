@@ -1,10 +1,7 @@
 #include "saena_object.h"
 #include "saena_matrix.h"
 #include "strength_matrix.h"
-#include "grid.h"
 #include "GR_encoder.h"
-#include "aux_functions.h"
-#include "parUtils.h"
 
 #include <mkl_spblas.h>
 

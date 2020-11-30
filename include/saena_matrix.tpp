@@ -1,6 +1,6 @@
 #pragma once
 
-#include <saena_matrix.h>
+#include "saena_matrix.h"
 
 inline void saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
     if(switch_to_dense && density >= dense_threshold){

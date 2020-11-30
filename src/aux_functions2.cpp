@@ -89,8 +89,8 @@ with Dirichlet boundary conditions f(x) defined on the boundary
 
 int saena::laplacian2D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my, MPI_Comm comm){
 
-//    u = sin(2 * PETSC_PI * x) * sin(2 * PETSC_PI * y)
-//    rhs = 8 * PETSC_PI * PETSC_PI * sin(2 * PETSC_PI * x) * sin(2 * PETSC_PI * y)
+//    u = sin(2 * SAENA_PI * x) * sin(2 * SAENA_PI * y)
+//    rhs = 8 * SAENA_PI * SAENA_PI * sin(2 * SAENA_PI * x) * sin(2 * SAENA_PI * y)
 
     int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
@@ -124,7 +124,7 @@ int saena::laplacian2D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
     index_t iter = 0;
     for (j=ys; j<ys+ym; j++) {
         for (i=xs; i<xs+xm; i++) {
-            rhs[iter++] = 8 * PETSC_PI * PETSC_PI * sin(2 * PETSC_PI * i * Hx) * sin(2 * PETSC_PI * j * Hy);
+            rhs[iter++] = 8 * SAENA_PI * SAENA_PI * sin(2 * SAENA_PI * i * Hx) * sin(2 * SAENA_PI * j * Hy);
         }
     }
 
@@ -159,7 +159,7 @@ int saena::laplacian2D_check_solution(std::vector<double> &u, index_t mx, index_
 
     const int XMAX = mx - 1;
     const int YMAX = my - 1;
-    const double TWOPI = 2 * PETSC_PI;
+    const double TWOPI = 2 * SAENA_PI;
 
     double dif = 0, tmp = 0;
     index_t iter = 0;
@@ -371,8 +371,8 @@ with Dirichlet boundary conditions f(x) defined on the boundary
 }
 
 int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm){
-//    u = sin(2 * PETSC_PI * x) * sin(2 * PETSC_PI * y) * sin(2 * PETSC_PI * z)
-//    rhs = 12 * PETSC_PI * PETSC_PI * sin(2 * PETSC_PI * x) * sin(2 * PETSC_PI * y) * sin(2 * PETSC_PI * z)
+//    u = sin(2 * SAENA_PI * x) * sin(2 * SAENA_PI * y) * sin(2 * SAENA_PI * z)
+//    rhs = 12 * SAENA_PI * SAENA_PI * sin(2 * SAENA_PI * x) * sin(2 * SAENA_PI * y) * sin(2 * SAENA_PI * z)
 
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
@@ -415,8 +415,8 @@ int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
         const int YMAX = my - 1;
         const int ZMAX = mz - 1;
 
-        const double TWOPI       = 2 * PETSC_PI;
-        const double TWOELVEPISQ = 12 * PETSC_PI * PETSC_PI;
+        const double TWOPI       = 2 * SAENA_PI;
+        const double TWOELVEPISQ = 12 * SAENA_PI * SAENA_PI;
 
         rhs.resize(xm * ym * zm);
 //        printf("rank %d: rhs.sz = %lu\n", rank, rhs.size());
@@ -431,10 +431,10 @@ int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
                     //std::cout << sin(TWOPI * i * Hx) << " " << sin(TWOPI * j * Hx) << " " << sin(TWOPI * k * Hx) << std::endl;
                     //std::cout << TWOELVEPISQ * sin(TWOPI * i * Hx) * sin(TWOPI * j * Hy) * sin(TWOPI * k * Hz) << " " << rhs[iter] << "\n";
                     //iter ++;
-/*                    rhs[iter] = 12 * PETSC_PI * PETSC_PI
-                                * sin(2 * PETSC_PI * (((value_t) i ) * Hx))
-                                * sin(2 * PETSC_PI * (((value_t) j ) * Hy))
-                                * sin(2 * PETSC_PI * (((value_t) k ) * Hz))
+/*                    rhs[iter] = 12 * SAENA_PI * SAENA_PI
+                                * sin(2 * SAENA_PI * (((value_t) i ) * Hx))
+                                * sin(2 * SAENA_PI * (((value_t) j ) * Hy))
+                                * sin(2 * SAENA_PI * (((value_t) k ) * Hz))
                                 * Hx * Hy * Hz;
 					iter ++;*/
                 }
@@ -494,7 +494,7 @@ int saena::laplacian3D_check_solution(std::vector<double> &u, index_t mx, index_
         for (k=zs; k<zs+zm; k++) {
             for (j=ys; j<ys+ym; j++) {
                 for (i=xs; i<xs+xm; i++) {
-                    tmp = u[iter++] - sin(2 * PETSC_PI * i * Hx) * sin(2 * PETSC_PI * j * Hy)  * sin(2 * PETSC_PI * k * Hz);
+                    tmp = u[iter++] - sin(2 * SAENA_PI * i * Hx) * sin(2 * SAENA_PI * j * Hy)  * sin(2 * SAENA_PI * k * Hz);
                     dif += tmp * tmp;
                 }
             }
@@ -818,10 +818,10 @@ int saena::laplacian3D_set_rhs_old2(std::vector<double> &rhs, index_t mx, index_
             for (j = ys; j < ys + ym; j++) {
                 for (i = xs; i < xs + xm; i++) {
                     node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
-                    rhs[iter] = 12 * PETSC_PI * PETSC_PI
-                                * cos(2 * PETSC_PI * (((value_t) i + 0.5) * Hx))
-                                * cos(2 * PETSC_PI * (((value_t) j + 0.5) * Hy))
-                                * cos(2 * PETSC_PI * (((value_t) k + 0.5) * Hz))
+                    rhs[iter] = 12 * SAENA_PI * SAENA_PI
+                                * cos(2 * SAENA_PI * (((value_t) i + 0.5) * Hx))
+                                * cos(2 * SAENA_PI * (((value_t) j + 0.5) * Hy))
+                                * cos(2 * SAENA_PI * (((value_t) k + 0.5) * Hz))
                                 * Hx * Hy * Hz;
 //                    if(rank==1) printf("node = %d, rhs[node] = %f \n", node, rhs[node]);
                     iter++;
@@ -981,12 +981,12 @@ int saena::laplacian3D_set_rhs_old3(std::vector<double> &rhs, index_t mx, index_
         }
     }
 
-//    rhs[iter] = 12 * PETSC_PI * PETSC_PI
-//                * sin(2 * PETSC_PI * (((value_t) i + 0.5) * Hx))
-//                * sin(2 * PETSC_PI * (((value_t) j + 0.5) * Hy))
-//                * sin(2 * PETSC_PI * (((value_t) k + 0.5) * Hz))
+//    rhs[iter] = 12 * SAENA_PI * SAENA_PI
+//                * sin(2 * SAENA_PI * (((value_t) i + 0.5) * Hx))
+//                * sin(2 * SAENA_PI * (((value_t) j + 0.5) * Hy))
+//                * sin(2 * SAENA_PI * (((value_t) k + 0.5) * Hz))
 //                * Hx * Hy * Hz;
-    // sin(2 * PETSC_PI * i) * sin(2 * PETSC_PI * j)  * sin(2 * PETSC_PI * k)
+    // sin(2 * SAENA_PI * i) * sin(2 * SAENA_PI * j)  * sin(2 * SAENA_PI * k)
 
     return 0;
 }

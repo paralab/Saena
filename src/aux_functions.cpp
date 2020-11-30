@@ -1,8 +1,5 @@
 #include "aux_functions.h"
 #include "saena_matrix.h"
-#include "parUtils.h"
-
-#define PETSC_PI 3.14159265358979323846
 
 class saena_matrix;
 
@@ -310,10 +307,10 @@ int generate_rhs(std::vector<value_t>& rhs, index_t mx, index_t my, index_t mz, 
             for (i=xs; i<xs+xm; i++) {
                 node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
                 if(rank==0) printf("node = %u\n", node);
-                val = 12 * PETSC_PI * PETSC_PI
-                      * cos(2*PETSC_PI*(((double)i+0.5)*Hx))
-                      * cos(2*PETSC_PI*(((double)j+0.5)*Hy))
-                      * cos(2*PETSC_PI*(((double)k+0.5)*Hz))
+                val = 12 * SAENA_PI * SAENA_PI
+                      * cos(2*SAENA_PI*(((double)i+0.5)*Hx))
+                      * cos(2*SAENA_PI*(((double)j+0.5)*Hy))
+                      * cos(2*SAENA_PI*(((double)k+0.5)*Hz))
                       * Hx * Hy * Hz;
                 rhs.emplace_back(val);
             }

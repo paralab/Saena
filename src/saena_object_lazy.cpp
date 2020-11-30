@@ -1,8 +1,5 @@
 #include "saena_object.h"
 #include "saena_matrix.h"
-#include "grid.h"
-#include "aux_functions.h"
-#include "parUtils.h"
 
 
 int saena_object::update1(saena_matrix* A_new){

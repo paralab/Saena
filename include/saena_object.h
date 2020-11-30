@@ -3,7 +3,6 @@
 
 #include "data_struct.h"
 #include "superlu_ddefs.h"
-#include "aux_functions.h"
 #include "saena_vector.h"
 #include "saena_matrix_dense.h"
 #include "grid.h"

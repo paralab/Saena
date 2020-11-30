@@ -3,11 +3,8 @@
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
 //#include "restrict_matrix.h"
-#include "grid.h"
 #include "aux_functions.h"
-#include "parUtils.h"
 
-#include <numeric>
 #include <map>
 
 // Assume the mesh info is the connectivity

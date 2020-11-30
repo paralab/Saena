@@ -4,8 +4,8 @@
 #define SAENA_PETSC_FUNCTIONS_H
 
 #include <petsc.h>
-#include <saena_matrix.h>
-#include <saena_vector.h>
+#include "saena_matrix.h"
+#include "saena_vector.h"
 #include "restrict_matrix.h"
 #include "prolong_matrix.h"
 

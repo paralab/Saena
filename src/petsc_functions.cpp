@@ -1,7 +1,7 @@
 #ifdef _USE_PETSC_
 
 #include <petsc_functions.h>
-#include <assert.h>
+#include <cassert>
 
 
 // Read this about MPI communicators in PETSc
@@ -120,10 +120,10 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
     for (k=zs; k<zs+zm; k++) {
         for (j=ys; j<ys+ym; j++) {
             for (i=xs; i<xs+xm; i++) {
-                array[k][j][i] = 12 * PETSC_PI * PETSC_PI
-                                 * PetscCosScalar(2*PETSC_PI*(((PetscReal)i+0.5)*Hx))
-                                 * PetscCosScalar(2*PETSC_PI*(((PetscReal)j+0.5)*Hy))
-                                 * PetscCosScalar(2*PETSC_PI*(((PetscReal)k+0.5)*Hz))
+                array[k][j][i] = 12 * SAENA_PI * SAENA_PI
+                                 * PetscCosScalar(2*SAENA_PI*(((PetscReal)i+0.5)*Hx))
+                                 * PetscCosScalar(2*SAENA_PI*(((PetscReal)j+0.5)*Hy))
+                                 * PetscCosScalar(2*SAENA_PI*(((PetscReal)k+0.5)*Hz))
                                  * Hx * Hy * Hz;
             }
         }
