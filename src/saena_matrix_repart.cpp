@@ -1115,6 +1115,9 @@ int saena_matrix::repartition_nnz_update_Ac(){
 
     density = (nnz_g / double(Mbig)) / (Mbig);
 
+    if(!rank) printf("entry_temp should be set before calling repartition_nnz_update_Ac()\n");
+    MPI_Abort(comm, 1);
+
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
 //    printf("repartition5 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu, entry_temp.size before repart = %lu \n",
@@ -1126,7 +1129,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
 #endif
 
     // *************************** exchange data ****************************
-
+#if 0
     std::sort(entry_temp.begin(), entry_temp.end(), row_major);
 
     long least_proc = 0, last_proc = nprocs-1;
@@ -1272,6 +1275,6 @@ int saena_matrix::repartition_nnz_update_Ac(){
 //    printf("repartition5 - end! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
 //           rank, Mbig, M, nnz_g, nnz_l);
 //    MPI_Barrier(comm);
-
+#endif
     return 0;
 }
