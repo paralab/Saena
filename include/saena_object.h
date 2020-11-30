@@ -24,7 +24,7 @@
 // have barriers and are inside PROFILE_TOTAL_PCG.
 //#define PROFILE_PCG
 //#define PROFILE_TOTAL_PCG
-#define PROFILE_VCYCLE
+//#define PROFILE_VCYCLE
 
 class strength_matrix;
 class saena_matrix;
@@ -260,8 +260,8 @@ public:
     void fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C, MPI_Comm comm);
 
     int find_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew);
-    int create_strength_matrix(saena_matrix* A, strength_matrix* S);
-    int aggregation_1_dist(strength_matrix *S, std::vector<index_t> &aggregate, std::vector<index_t> &aggArray);
+    int create_strength_matrix(saena_matrix* A, strength_matrix* S) const;
+    int aggregation_1_dist(strength_matrix *S, std::vector<index_t> &aggregate, std::vector<index_t> &aggArray) const;
 //    int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<index_t>& aggregate, std::vector<index_t>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
@@ -417,6 +417,6 @@ public:
     void g2umap(int order, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector< std::vector<int> > > &map, MPI_Comm comm);
 };
 
-#include <saena_object.tpp>
-
 #endif //SAENA_SAENA_OBJECT_H
+
+#include <saena_object.tpp>
