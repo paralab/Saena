@@ -25,9 +25,11 @@ saena::matrix::matrix(const saena::matrix &B){
 }
 
 saena::matrix& saena::matrix::operator=(const saena::matrix &B){
-    delete m_pImpl;
-    m_pImpl = new saena_matrix(*B.m_pImpl);
-    add_dup = B.add_dup;
+    if(this != &B) {
+        delete m_pImpl;
+        m_pImpl = new saena_matrix(*B.m_pImpl);
+        add_dup = B.add_dup;
+    }
     return *this;
 }
 
@@ -1791,6 +1793,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
         }
     }
 
+#if 0
     saena_matrix *B = A.get_internal_matrix();
 
 //    B->print_entry(-1);
@@ -1799,7 +1802,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 
     B->entry.resize(B->data_coo.size());
     nnz_t iter = 0;
-    for(auto i:B->data_coo){
+    for(const auto &i:B->data_coo){
         B->entry[iter] = cooEntry(i.row, i.col, i.val);
         iter++;
     }
@@ -1817,6 +1820,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
     }
 
 //    B->print_entry(-1);
+#endif
 
 //    A.assemble();
     A.assemble_band_matrix();
@@ -1832,7 +1836,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 int saena::random_symm_matrix(saena::matrix &A, index_t M, float density){
     // generates a random matrix with density of size "density".
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(A.get_comm(), &nprocs);
     MPI_Comm_rank(A.get_comm(), &rank);
 
@@ -1875,8 +1879,8 @@ int saena::random_symm_matrix(saena::matrix &A, index_t M, float density){
         A.set(i , i, dist(rng));
     }
 
-    index_t ii, jj;
-    value_t vv;
+    index_t ii = 0, jj = 0;
+    value_t vv = 0.0;
 
     // The diagonal entries are added. Also, to keep the matrix symmetric, for each generated entry (i, j, v),
     // the entry (j, i, v) is added.
