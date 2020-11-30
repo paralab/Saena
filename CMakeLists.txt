@@ -269,6 +269,7 @@ include_directories(include)
 set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
         ${SAENA_INCLUDE_DIR}/saena.hpp
         ${SAENA_INCLUDE_DIR}/aux_functions.h
+        ${SAENA_INCLUDE_DIR}/aux_functions2.h
         ${SAENA_INCLUDE_DIR}/data_struct.h
         ${SAENA_INCLUDE_DIR}/saena_matrix.h
         ${SAENA_INCLUDE_DIR}/saena_matrix.tpp
@@ -286,6 +287,7 @@ set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
 set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
         ${SAENA_SRC_DIR}/saena.cpp
         ${SAENA_SRC_DIR}/aux_functions.cpp
+        ${SAENA_SRC_DIR}/aux_functions2.cpp
         ${SAENA_SRC_DIR}/data_struct.cpp
         ${SAENA_SRC_DIR}/strength_matrix.cpp
         ${SAENA_SRC_DIR}/prolong_matrix.cpp

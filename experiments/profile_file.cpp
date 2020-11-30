@@ -6,6 +6,7 @@
 #include "saena.hpp"
 #include "data_struct.h"
 #include "petsc_functions.h"
+#include "aux_functions2.h"
 
 using namespace std;
 
