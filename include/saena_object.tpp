@@ -1,3 +1,5 @@
+#pragma once
+
 #include <saena_object.h>
 
 void inline saena_object::smooth(Grid *grid, std::vector<value_t> &u, std::vector<value_t> &rhs, int iter) const{

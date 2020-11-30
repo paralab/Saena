@@ -1,3 +1,5 @@
+#pragma once
+
 #include <saena_matrix.h>
 
 inline void saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
