@@ -272,7 +272,7 @@ int saena_matrix::remove_boundary_nodes() {
 #ifdef __DEBUG1__
     int rank_v = 1;
 //    data = data_with_bound;
-    print_vector(data_with_bound, rank_v, "data_with_bound", comm);
+//    print_vector(data_with_bound, rank_v, "data_with_bound", comm);
 #endif
 
     // update column indices after removing the boundary nodes using this map.
@@ -289,15 +289,15 @@ int saena_matrix::remove_boundary_nodes() {
     for(; i < SZ - 1; ++i){
         if(i + 1 < SZ && data_with_bound[i].row != data_with_bound[i + 1].row){ // boundary
 #ifdef __DEBUG1__
-            if(rank == rank_v) std::cout << "boundry: " << data_with_bound[i] << std::endl;
+//            if(rank == rank_v) std::cout << "boundry: " << data_with_bound[i] << std::endl;
 #endif
             bound_row.emplace_back(data_with_bound[i].row - ofst);
             bound_val.emplace_back(data_with_bound[i].val);
             ASSERT(data_with_bound[i].row == data_with_bound[i].col, data_with_bound[i].row << " != " << data_with_bound[i].col);
         }else{
 #ifdef __DEBUG1__
-            if(rank == rank_v) std::cout << "interior: " << data_with_bound[i] << std::endl;
-            if(rank == rank_v) std::cout << data_with_bound[i].row << " -> " << data_with_bound[i].row - bound_row.size() << std::endl;
+//            if(rank == rank_v) std::cout << "interior: " << data_with_bound[i] << std::endl;
+//            if(rank == rank_v) std::cout << data_with_bound[i].row << " -> " << data_with_bound[i].row - bound_row.size() << std::endl;
 #endif
             m[data_with_bound[i].row] = data_with_bound[i].row - bound_row.size();
             data.emplace_back(data_with_bound[i].row - bound_row.size(), data_with_bound[i].col, data_with_bound[i].val);
@@ -319,12 +319,12 @@ int saena_matrix::remove_boundary_nodes() {
 
     // update the column indices to the new indices after removing the boundary nodes
     for(auto &d : data){
-        if(rank == rank_v) cout << d.col << "\t" << m[d.col] << endl;
+//        if(rank == rank_v) cout << d.col << "\t" << m[d.col] << endl;
         d.col = m[d.col];
     }
 
 #ifdef __DEBUG1__
-    print_vector(data, rank_v, "data after removing boundary nodes", comm);
+//    print_vector(data, rank_v, "data after removing boundary nodes", comm);
 //    print_vector(bound_row, rank_v, "bound_row", comm);
 //    print_vector(bound_val, rank_v, "bound_val", comm);
 #endif

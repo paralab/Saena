@@ -264,7 +264,6 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     }
 
     if(A->remove_boundary){
-        cout << "remove" << endl;
         remove_boundary = A->remove_boundary;
         std::swap(bound_row, A->bound_row);
         std::swap(bound_val, A->bound_val);
