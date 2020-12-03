@@ -53,11 +53,14 @@ int saena_matrix::setup_initial_data(){
 
     }
 
+    // clear data_coo
+    // since there is no function similar to shrink_to_fit for std::set, I am not sure if clear() would free memory,
+    // so I use std::move on a tmp variable that gets deleted after this function returns.
+    std::set<cooEntry_row> tmp(std::move(data_coo));
+
     MPI_Allreduce(&Mbig_local, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
-//    std::cout << "Mbig = " << Mbig << std::endl;
-
-    Nbig = Mbig; // todo: is the matrix always square?
+    Nbig = Mbig; // the matrix is implemented as square
 
     remove_duplicates();
 
@@ -83,6 +86,10 @@ int saena_matrix::setup_initial_data2(){
     MPI_Comm_rank(comm, &rank);
 
 //    std::cout << rank << " : " << __func__ << initial_nnz_l << std::endl;
+
+    if(!rank) cout << "The matrix assemble function is being called for the second time."
+                      "If the update part is required, enable it before calling the matrix update functions." << endl;
+    MPI_Abort(comm, 1);
 
     std::set<cooEntry_row>::iterator it;
     nnz_t iter = 0;

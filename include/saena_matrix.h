@@ -31,7 +31,7 @@ class saena_matrix {
 private:
     std::vector<cooEntry_row> data_unsorted;
     std::vector<cooEntry>     data;
-    std::set<cooEntry_row>    data_coo;
+    std::set<cooEntry_row>    data_coo; // is set in set() functions. gets erased in setup_initial_data().
 //    std::vector<cooEntry>     entry_temp;      // for updating the matrix
 
     nnz_t initial_nnz_l = 0;
