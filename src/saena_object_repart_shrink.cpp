@@ -170,8 +170,14 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
     grids[0].rhs_orig = rhs1; // use this for returning solution to the original order, based on the input rhs.
 //    rhs1->split = &grids[0].A->split[0];
     rhs1->split = A->split;
-    std::vector<double> rhs0;
-    rhs1->get_vec(rhs0);
+    std::vector<value_t> rhs_large, rhs0;
+
+    if(remove_boundary){
+        rhs1->get_vec(rhs_large);
+        remove_boundary_rhs(rhs_large, rhs0);
+    }else{
+        rhs1->get_vec(rhs0);
+    }
 
 //    print_vector(A->split, 0, "split", comm);
 //    print_vector(rhs0, -1, "rhs0", comm);
@@ -182,9 +188,8 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
     index_t rhs_size_total = 0;
     MPI_Allreduce(&rhs_size_local, &rhs_size_total, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
     if(A->Mbig != rhs_size_total){
-        if(rank==0) printf("Error: size of LHS (=%u) and RHS (=%u) are not equal!\n", A->Mbig,rhs_size_total);
-        MPI_Finalize();
-        return -1;
+        if(rank==0) printf("Error: size of LHS (=%u) and RHS (=%u) are not equal!\n", A->Mbig, rhs_size_total);
+        MPI_Abort(comm, 1);
     }
 
     // ************** repartition rhs, based on A.split **************
@@ -194,7 +199,7 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 #endif
 
     std::vector<index_t> rhs_init_partition(nprocs);
-    rhs_init_partition[rank] = (index_t)rhs0.size();
+    rhs_init_partition[rank] = (index_t) rhs0.size();
     auto temp = (index_t) rhs0.size();
 
     MPI_Allgather(&temp, 1, par::Mpi_datatype<index_t>::value(), &*rhs_init_partition.begin(), 1, par::Mpi_datatype<index_t>::value(), comm);
@@ -212,7 +217,7 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
     if(verbose_set_rhs){MPI_Barrier(A->comm); if(!rank) printf("set_repartition_rhs: step 2\n"); MPI_Barrier(A->comm);}
 #endif
 
-    index_t start, end, start_proc, end_proc;
+    index_t start = 0, end = 0, start_proc = 0, end_proc = 0;
     start = A->split[rank];
     end   = A->split[rank+1];
     start_proc = lower_bound2(&*init_partition_scan.begin(), &*init_partition_scan.end(), start);

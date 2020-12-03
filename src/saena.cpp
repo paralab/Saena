@@ -557,8 +557,14 @@ int saena::amg::solve_pCG(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
                             opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
     m_pImpl->solve_pCG(u);
+
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
+
+    if(m_pImpl->remove_boundary){
+        m_pImpl->add_boundary_sol(u);
+    }
+
     return 0;
 }
 

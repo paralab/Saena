@@ -1,4 +1,5 @@
 #include "saena_matrix.h"
+#include <unordered_map>
 
 int saena_matrix::assemble(bool scale /*= true*/) {
 
@@ -31,26 +32,11 @@ int saena_matrix::setup_initial_data(){
     std::set<cooEntry_row>::iterator it;
     cooEntry_row temp;
     nnz_t iter = 0;
-    index_t Mbig_local = 0;
 
-    if(data_coo.size() != 0) {
-        // read this: https://stackoverflow.com/questions/5034211/c-copy-set-to-vector
-        data_unsorted.resize(data_coo.size());
-        for (it = data_coo.begin(); it != data_coo.end(); ++it) {
-            data_unsorted[iter++] = *it;
-
-            temp = *it;
-            if (temp.col > Mbig_local)
-                Mbig_local = temp.col;
-        }
-
-        // Mbig is the size of the matrix, which is the maximum of rows and columns.
-        // Up to here Mbig_local is the maximum of cols.
-        // last element's row is the maximum of rows, since data_coo is sorted row-major.
-
-        if (data_unsorted.back().row > Mbig_local)
-            Mbig_local = data_unsorted[iter].row;
-
+    // read this: https://stackoverflow.com/questions/5034211/c-copy-set-to-vector
+    data_unsorted.resize(data_coo.size());
+    for (it = data_coo.begin(); it != data_coo.end(); ++it) {
+        data_unsorted[iter++] = *it;
     }
 
     // clear data_coo
@@ -58,18 +44,25 @@ int saena_matrix::setup_initial_data(){
     // so I use std::move on a tmp variable that gets deleted after this function returns.
     std::set<cooEntry_row> tmp(std::move(data_coo));
 
+    remove_duplicates();
+
+    if(remove_boundary){
+        remove_boundary_nodes();
+    }else{
+        data = std::move(data_with_bound);
+    }
+
+//    print_vector(data, -1, "data", comm);
+
+    index_t Mbig_local = data.back().row;
     MPI_Allreduce(&Mbig_local, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
     Nbig = Mbig; // the matrix is implemented as square
 
-    remove_duplicates();
-
     initial_nnz_l = data.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 
-//    MPI_Barrier(comm);
 //    printf("rank = %d, Mbig = %u, nnz_g = %ld, initial_nnz_l = %ld \n", rank, Mbig, nnz_g, initial_nnz_l);
-//    MPI_Barrier(comm);
 
     return 0;
 }
@@ -91,6 +84,7 @@ int saena_matrix::setup_initial_data2(){
                       "If the update part is required, enable it before calling the matrix update functions." << endl;
     MPI_Abort(comm, 1);
 
+#if 0
     std::set<cooEntry_row>::iterator it;
     nnz_t iter = 0;
 
@@ -109,7 +103,7 @@ int saena_matrix::setup_initial_data2(){
         MPI_Finalize();
         return -1;
     }
-
+#endif
     return 0;
 }
 
@@ -140,10 +134,23 @@ int saena_matrix::remove_duplicates() {
 //    for(int i=0; i<data_unsorted.size(); i++)
 //        if(rank==0) std::cout << data_unsorted[i] << std::endl;
 
-//    par::sampleSort(data_unsorted, comm);
+    // initial Mbig. it will get updated later
+    if(rank == nprocs - 1)
+        Mbig = data_unsorted.back().row;
+
+    MPI_Bcast(&Mbig, 1, par::Mpi_datatype<index_t>::value(), nprocs -1, comm);
+    index_t ofst = Mbig / nprocs;
+    vector<index_t> split_init(nprocs + 1);
+    for(int i = 0; i < nprocs; ++i){
+        split_init[i] = i * ofst;
+    }
+    split_init[nprocs] = Mbig;
 
     std::vector<cooEntry_row> data_sorted_row;
-    par::sampleSort(data_unsorted, data_sorted_row, comm);
+//    par::sampleSort(data_unsorted, data_sorted_row, comm);
+    par::sampleSort(data_unsorted, data_sorted_row, split_init, comm);
+
+//    print_vector(data_sorted_row, -1, "data_sorted_row", comm);
 
     // clear data_unsorted and free memory.
     data_unsorted.clear();
@@ -155,11 +162,10 @@ int saena_matrix::remove_duplicates() {
     }
 
     // switch from cooEntry_row to cooEntry.
-    std::vector<cooEntry> data_sorted(data_sorted_row.size());
-    memcpy(&data_sorted[0], &data_sorted_row[0], data_sorted_row.size() * sizeof(cooEntry));
+//    std::vector<cooEntry> data_sorted(data_sorted_row.size());
+//    memcpy(&data_sorted[0], &data_sorted_row[0], data_sorted_row.size() * sizeof(cooEntry));
 
 //    printf("rank = %d \t\t\t after  sort: data_sorted size = %lu\n", rank, data_sorted.size());
-//    print_vector(data_sorted, -1, "data_sorted", comm);
 
     // remove duplicates
     // -----------------------
@@ -167,27 +173,27 @@ int saena_matrix::remove_duplicates() {
     // put the first element of data_unsorted to data.
     value_t tmp     = 0.0;
     nnz_t data_size = 0;
-    nnz_t sz        = data_sorted.size();
+    const nnz_t sz  = data_sorted_row.size();
 
     if(add_duplicates){
         for(nnz_t i = 0; i < sz; ++i) {
-//            cout << data_sorted[i] << endl;
-            tmp = data_sorted[i].val;
-            while(i + 1 < sz && data_sorted[i + 1] == data_sorted[i]){
-                tmp += data_sorted[++i].val;
+//            if(rank==1) cout << data_sorted_row[i] << endl;
+            tmp = data_sorted_row[i].val;
+            while(i + 1 < sz && data_sorted_row[i + 1] == data_sorted_row[i]){
+                tmp += data_sorted_row[++i].val;
             }
 
             if (fabs(tmp) > ALMOST_ZERO) {
-                data.emplace_back( cooEntry(data_sorted[i].row, data_sorted[i].col, tmp) );
+                data_with_bound.emplace_back( cooEntry(data_sorted_row[i].row, data_sorted_row[i].col, tmp) );
             }
         }
     } else {
         for(nnz_t i = 0; i < sz; ++i) {
-            while(i + 1 < sz && data_sorted[i + 1] == data_sorted[i]){
+            while(i + 1 < sz && data_sorted_row[i + 1] == data_sorted_row[i]){
                 ++i;
             }
-            if (fabs(data_sorted[i].val) > ALMOST_ZERO) {
-                data.emplace_back(data_sorted[i]);
+            if (fabs(data_sorted_row[i].val) > ALMOST_ZERO) {
+                data_with_bound.emplace_back(data_sorted_row[i].row, data_sorted_row[i].col, data_sorted_row[i].val);
             }
         }
     }
@@ -213,6 +219,7 @@ int saena_matrix::remove_duplicates() {
     }
 #endif
 
+#if 0
     // check for dupliactes on boundary points of the processors
     // ---------------------------------------------------------
     // receive first element of your left neighbor and check if it is equal to your last element.
@@ -221,12 +228,12 @@ int saena_matrix::remove_duplicates() {
         MPI_Recv(&first_element_neighbor, 1, cooEntry::mpi_datatype(), rank+1, 0, comm, MPI_STATUS_IGNORE);
 
     if(rank!= 0)
-        MPI_Send(&data[0], 1, cooEntry::mpi_datatype(), rank-1, 0, comm);
+        MPI_Send(&data_with_bound[0], 1, cooEntry::mpi_datatype(), rank-1, 0, comm);
 
-    cooEntry last_element = data.back();
+    cooEntry last_element = data_with_bound.back();
     if(rank != nprocs-1){
         if(last_element == first_element_neighbor) {
-            data.pop_back();
+            data_with_bound.pop_back();
         }
     }
 
@@ -246,12 +253,87 @@ int saena_matrix::remove_duplicates() {
         if(rank!= nprocs-1)
             MPI_Send(&my_last_element_val, 1, MPI_DOUBLE, rank+1, 0, comm);
 
-        data[0].val += left_neighbor_last_val;
+        data_with_bound[0].val += left_neighbor_last_val;
     }
+#endif
+
+//    print_vector(data_with_bound, -1, "data_with_bound", comm);
 
     return 0;
 }
 
+
+int saena_matrix::remove_boundary_nodes() {
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    int rank_v = 1;
+//    data = data_with_bound;
+    print_vector(data_with_bound, rank_v, "data_with_bound", comm);
+#endif
+
+    // update column indices after removing the boundary nodes using this map.
+    // m[old_index] = new_index
+    // only the interior nodes need to be mapped
+    unordered_map<index_t, index_t> m;
+
+    index_t ofst;
+    if(!data_with_bound.empty())
+        ofst = data_with_bound[0].row;
+
+    const int SZ = data_with_bound.size();
+    index_t i = 0;
+    for(; i < SZ - 1; ++i){
+        if(i + 1 < SZ && data_with_bound[i].row != data_with_bound[i + 1].row){ // boundary
+#ifdef __DEBUG1__
+            if(rank == rank_v) std::cout << "boundry: " << data_with_bound[i] << std::endl;
+#endif
+            bound_row.emplace_back(data_with_bound[i].row - ofst);
+            bound_val.emplace_back(data_with_bound[i].val);
+            ASSERT(data_with_bound[i].row == data_with_bound[i].col, data_with_bound[i].row << " != " << data_with_bound[i].col);
+        }else{
+#ifdef __DEBUG1__
+            if(rank == rank_v) std::cout << "interior: " << data_with_bound[i] << std::endl;
+            if(rank == rank_v) std::cout << data_with_bound[i].row << " -> " << data_with_bound[i].row - bound_row.size() << std::endl;
+#endif
+            m[data_with_bound[i].row] = data_with_bound[i].row - bound_row.size();
+            data.emplace_back(data_with_bound[i].row - bound_row.size(), data_with_bound[i].col, data_with_bound[i].val);
+            while(i + 1 < SZ && data_with_bound[i].row == data_with_bound[i + 1].row){
+                ++i;
+                data.emplace_back(data_with_bound[i].row - bound_row.size(), data_with_bound[i].col, data_with_bound[i].val);
+//                data.emplace_back(data_with_bound[++i]);
+            }
+        }
+    }
+
+    // if the last nonzero is left, it means the last row of the matrix had only one nozero, otherwise the whole row
+    // would have been added in the previous while loop
+    if(i == SZ - 1){
+//        if(rank == rank_v) std::cout << "bound: " << data_with_bound[i] << std::endl;
+        bound_row.emplace_back(data_with_bound[i].row - ofst);
+        bound_val.emplace_back(data_with_bound[i].val);
+    }
+
+    // update the column indices to the new indices after removing the boundary nodes
+    for(auto &d : data){
+        if(rank == rank_v) cout << d.col << "\t" << m[d.col] << endl;
+        d.col = m[d.col];
+    }
+
+#ifdef __DEBUG1__
+    print_vector(data, rank_v, "data after removing boundary nodes", comm);
+//    print_vector(bound_row, rank_v, "bound_row", comm);
+//    print_vector(bound_val, rank_v, "bound_val", comm);
+#endif
+
+    data_with_bound.clear();
+    data_with_bound.shrink_to_fit();
+
+    return 0;
+}
 
 int saena_matrix::matrix_setup(bool scale /*= true*/) {
     // before using this function the following parameters of saena_matrix should be set:

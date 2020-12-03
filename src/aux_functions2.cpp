@@ -307,7 +307,7 @@ with Dirichlet boundary conditions f(x) defined on the boundary
             zs = rank * zm;
         }
 
-        printf("rank %d: xs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+//        printf("rank %d: xs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
 
         const int XMAX = mx - 1;
         const int YMAX = my - 1;

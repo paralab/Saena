@@ -59,6 +59,13 @@ public:
     // Also, if new_size / prev_size > row_reduction_up_thrshld, the number of rows was not reduced much through coarsening.
     void set_dynamic_levels(const bool &dl = true);
 
+    bool remove_boundary = false;
+    std::vector<index_t> bound_row; // boundary node row index
+    std::vector<value_t> bound_val; // boundary node value
+    std::vector<value_t> bound_sol; // solution corresponding to boundary nodes
+    void remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0);
+    void add_boundary_sol(std::vector<value_t> &u);
+
     // *****************
     // matmat
     // *****************

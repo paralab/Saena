@@ -29,10 +29,11 @@ class saena_matrix {
 //    data		        std::vector<cooEntry>		remove duplicates
 
 private:
+    std::vector<cooEntry>     data;             // entries after removing boundary nodes
+    std::vector<cooEntry>     data_with_bound;  // entries including boundary nodes
     std::vector<cooEntry_row> data_unsorted;
-    std::vector<cooEntry>     data;
-    std::set<cooEntry_row>    data_coo; // is set in set() functions. gets erased in setup_initial_data().
-//    std::vector<cooEntry>     entry_temp;      // for updating the matrix
+    std::set<cooEntry_row>    data_coo;         // is set in set() functions. gets erased in setup_initial_data().
+//    std::vector<cooEntry>     entry_temp;     // for updating the matrix
 
     nnz_t initial_nnz_l = 0;
     bool read_from_file = false;
@@ -86,6 +87,10 @@ public:
     std::vector<index_t> split_old;
     std::vector<nnz_t>   nnz_list;          // number of nonzeros on each process.
                                             // todo: Since it is local to each processor, int is enough. nnz_l should be changed too.
+
+    bool remove_boundary = false;
+    std::vector<index_t> bound_row; // boundary node row index
+    std::vector<value_t> bound_val; // boundary node value
 
     nnz_t   nnz_l_local     = 0;
     nnz_t   nnz_l_remote    = 0;
@@ -246,6 +251,7 @@ public:
     int assemble(bool scale = true);
     int setup_initial_data();
     int remove_duplicates();
+    int remove_boundary_nodes();
     int repartition_nnz_initial(); // based on nnz.
     int matrix_setup(bool scale = true);
 
