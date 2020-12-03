@@ -164,9 +164,6 @@ int saena_matrix::remove_duplicates() {
     // remove duplicates
     // -----------------------
 
-    // size of data may be smaller because of duplicates. In that case its size will be reduced after finding the exact size.
-    data.resize(data_sorted.size());
-
     // put the first element of data_unsorted to data.
     value_t tmp     = 0.0;
     nnz_t data_size = 0;
@@ -181,7 +178,7 @@ int saena_matrix::remove_duplicates() {
             }
 
             if (fabs(tmp) > ALMOST_ZERO) {
-                data[data_size++] = cooEntry(data_sorted[i].row, data_sorted[i].col, tmp);
+                data.emplace_back( cooEntry(data_sorted[i].row, data_sorted[i].col, tmp) );
             }
         }
     } else {
@@ -190,14 +187,9 @@ int saena_matrix::remove_duplicates() {
                 ++i;
             }
             if (fabs(data_sorted[i].val) > ALMOST_ZERO) {
-                data[data_size++] = data_sorted[i];
+                data.emplace_back(data_sorted[i]);
             }
         }
-    }
-
-    if(data_size != data_sorted.size()){
-        data.resize(data_size);
-        data.shrink_to_fit();
     }
 
     // todo: replace the previous part with this
