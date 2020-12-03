@@ -106,6 +106,10 @@ public:
         return (row == node2.row && col == node2.col);
     }
 
+    bool operator != (const cooEntry& node2) const {
+        return !(*this == node2);
+    }
+
     bool operator < (const cooEntry& node2) const {
         if(col == node2.col){
             return row < node2.row;
