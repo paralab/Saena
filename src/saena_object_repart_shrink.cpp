@@ -170,9 +170,10 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
     grids[0].rhs_orig = rhs1; // use this for returning solution to the original order, based on the input rhs.
 //    rhs1->split = &grids[0].A->split[0];
     rhs1->split = A->split;
-    std::vector<value_t> rhs_large, rhs0;
+    std::vector<value_t> rhs0;
 
     if(remove_boundary){
+        std::vector<value_t> rhs_large;
         rhs1->get_vec(rhs_large);
         remove_boundary_rhs(rhs_large, rhs0);
     }else{
@@ -198,19 +199,14 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
     if(verbose_set_rhs){MPI_Barrier(A->comm); if(!rank) printf("set_repartition_rhs: step 1\n"); MPI_Barrier(A->comm);}
 #endif
 
-    std::vector<index_t> rhs_init_partition(nprocs);
-    rhs_init_partition[rank] = (index_t) rhs0.size();
+    std::vector<index_t> init_partition_scan(nprocs + 1);
     auto temp = (index_t) rhs0.size();
-
-    MPI_Allgather(&temp, 1, par::Mpi_datatype<index_t>::value(), &*rhs_init_partition.begin(), 1, par::Mpi_datatype<index_t>::value(), comm);
+    MPI_Allgather(&temp, 1, par::Mpi_datatype<index_t>::value(), &init_partition_scan[1], 1, par::Mpi_datatype<index_t>::value(), comm);
 //    MPI_Alltoall(&*grids[0].rhs_init_partition.begin(), 1, MPI_INT, &*grids[0].rhs_init_partition.begin(), 1, MPI_INT, grids[0].comm);
 
-//    print_vector(rhs_init_partition, 1, "rhs_init_partition", comm);
-
-    std::vector<index_t> init_partition_scan(nprocs+1);
     init_partition_scan[0] = 0;
     for(int i = 1; i < nprocs+1; i++)
-        init_partition_scan[i] = init_partition_scan[i-1] + rhs_init_partition[i-1];
+        init_partition_scan[i] += init_partition_scan[i-1];
 
 #ifdef __DEBUG1__
 //    print_vector(init_partition_scan, 1, "init_partition_scan", comm);
@@ -314,7 +310,7 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
         MPI_Alltoallv(&rhs0[0],         &grids[0].scount[0], &grids[0].sdispls[0], par::Mpi_datatype<value_t>::value(),
                       &rhs[0], &grids[0].rcount[0], &grids[0].rdispls[0], par::Mpi_datatype<value_t>::value(), comm);
     } else{
-        rhs = rhs0;
+        std::swap(rhs, rhs0);
     }
 
 #ifdef __DEBUG1__
