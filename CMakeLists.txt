@@ -310,8 +310,8 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
         ${SAENA_SRC_DIR}/saena_object_lazy.cpp
         ${SAENA_SRC_DIR}/saena_object_repart_shrink.cpp
         ${SAENA_SRC_DIR}/saena_object_sparsify.cpp
-        ${SAENA_SRC_DIR}/saena_object_elemental.cpp
         ${SAENA_SRC_DIR}/saena_object_write2file.cpp
+#        ${SAENA_SRC_DIR}/saena_object_elemental.cpp
         )
 
 # -----------------------------------------------------------------------
