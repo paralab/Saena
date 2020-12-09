@@ -303,6 +303,7 @@ int saena_object::setup_SuperLU() {
 
     assert(rowptr[m_loc] == nnz_loc);
 
+#ifdef __DEBUG1__
 //    for(nnz_t i = 0; i < m_loc; i++){
 //        for(nnz_t j = rowptr[i]; j < rowptr[i+1] - 1; j++){
 //            assert(colind[j] <= colind[j + 1]);
@@ -315,6 +316,7 @@ int saena_object::setup_SuperLU() {
         if(entry_temp[i].row == entry_temp[i+1].row)
             assert(entry_temp[i].col <= entry_temp[i+1].col);
     }
+#endif
 
 #ifdef __DEBUG1__
 /*
