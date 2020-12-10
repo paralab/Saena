@@ -22,7 +22,7 @@
 #include <algorithm>
 #endif
 
-#include "mpi.h"
+#include <mpi.h>
 #include <omp.h>
 
 //#include "dollar.hpp"
@@ -36,6 +36,8 @@ typedef double        value_t; // Saena value type
 typedef unsigned char uchar;
 
 #define ALMOST_ZERO 1e-14
+
+#define SAENA_PI 3.1415926535897932384626433832795029
 
 //the following are UBUNTU/LINUX, and MacOS ONLY terminal color codes.
 #define COLORRESET  "\033[0m"
@@ -102,6 +104,10 @@ public:
 
     bool operator == (const cooEntry& node2) const {
         return (row == node2.row && col == node2.col);
+    }
+
+    bool operator != (const cooEntry& node2) const {
+        return !(*this == node2);
     }
 
     bool operator < (const cooEntry& node2) const {

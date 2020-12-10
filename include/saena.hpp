@@ -7,7 +7,6 @@ class saena_vector;
 class saena_matrix_dense;
 class saena_object;
 
-
 namespace saena {
 
     class matrix {
@@ -214,7 +213,7 @@ namespace saena {
     // ==========================
     // Matrix Generator Functions
     // ==========================
-
+/*
     int laplacian2D(saena::matrix* A, index_t mx, index_t my, bool scale = true);
     int laplacian2D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my, MPI_Comm comm);
     int laplacian2D_check_solution(std::vector<double> &u, index_t mx, index_t my, MPI_Comm comm);
@@ -245,4 +244,5 @@ namespace saena {
     int read_vector_file(std::vector<value_t>& v, saena::matrix &A, char *file, MPI_Comm comm);
 
     index_t find_split(index_t loc_size, index_t &my_split, MPI_Comm comm);
+*/
 }

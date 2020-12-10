@@ -3,9 +3,6 @@
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
 #include "restrict_matrix.h"
-#include "grid.h"
-#include "aux_functions.h"
-#include "parUtils.h"
 
 
 // to write saena matrix to a file use the related function from the saena_matrix class.

@@ -87,7 +87,7 @@ namespace par {
     }
 
   template <typename T, typename S>
-    inline int Mpi_Sendrecv( T* sendBuf, int sendCount, int dest, int sendTag,
+    inline void Mpi_Sendrecv( T* sendBuf, int sendCount, int dest, int sendTag,
         S* recvBuf, int recvCount, int source, int recvTag,
         MPI_Comm comm, MPI_Status* status) {
 
@@ -97,7 +97,7 @@ namespace par {
     }
 
   template <typename T>
-    inline int Mpi_Scan( T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm comm) {
+    inline void Mpi_Scan( T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -105,7 +105,7 @@ namespace par {
     }
 
   template <typename T>
-    inline int Mpi_Allreduce(T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm comm) {
+    inline void Mpi_Allreduce(T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -114,7 +114,7 @@ namespace par {
     }
 
   template <typename T>
-    inline int Mpi_Alltoall(T* sendbuf, T* recvbuf, int count, MPI_Comm comm) {
+    inline void Mpi_Alltoall(T* sendbuf, T* recvbuf, int count, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -140,7 +140,7 @@ namespace par {
     }
 
   template <typename T>
-    inline int Mpi_Gather( T* sendBuffer, T* recvBuffer, int count, int root, MPI_Comm comm) {
+    inline void Mpi_Gather( T* sendBuffer, T* recvBuffer, int count, int root, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -151,7 +151,7 @@ namespace par {
     }
 
   template <typename T>
-    inline int Mpi_Bcast(T* buffer, int count, int root, MPI_Comm comm) {
+    inline void Mpi_Bcast(T* buffer, int count, int root, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -161,7 +161,7 @@ namespace par {
     }
 
   template <typename T>
-    inline int Mpi_Reduce(T* sendbuf, T* recvbuf, int count, MPI_Op op, int root, MPI_Comm comm) {
+    inline void Mpi_Reduce(T* sendbuf, T* recvbuf, int count, MPI_Op op, int root, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -171,7 +171,7 @@ namespace par {
     }
 
   template <typename T>
-    int Mpi_Allgatherv(T* sendBuf, int sendCount, T* recvBuf, 
+  void Mpi_Allgatherv(T* sendBuf, int sendCount, T* recvBuf,
         int* recvCounts, int* displs, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
@@ -222,7 +222,7 @@ namespace par {
     }
 
   template <typename T>
-    int Mpi_Allgather(T* sendBuf, T* recvBuf, int count, MPI_Comm comm) {
+  void Mpi_Allgather(T* sendBuf, T* recvBuf, int count, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -252,7 +252,7 @@ namespace par {
     }
 
   template <typename T>
-    int Mpi_Alltoallv_sparse(T* sendbuf, int* sendcnts, int* sdispls, 
+  void Mpi_Alltoallv_sparse(T* sendbuf, int* sendcnts, int* sdispls,
         T* recvbuf, int* recvcnts, int* rdispls, MPI_Comm comm) {
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
@@ -351,7 +351,7 @@ namespace par {
 
 //*
   template <typename T>
-    int Mpi_Alltoallv_dense(T* sbuff_, int* s_cnt_, int* sdisp_,
+    void Mpi_Alltoallv_dense(T* sbuff_, int* s_cnt_, int* sdisp_,
         T* rbuff_, int* r_cnt_, int* rdisp_, MPI_Comm c){
 
 #ifdef __PROFILE_WITH_BARRIER__
@@ -538,7 +538,7 @@ namespace par {
     }	
 		
   template<typename T>
-    int partitionW(std::vector<T>& nodeList, unsigned int (*getWeight)(const T *), MPI_Comm comm){
+    void partitionW(std::vector<T>& nodeList, unsigned int (*getWeight)(const T *), MPI_Comm comm){
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -1592,7 +1592,7 @@ namespace par {
 
   /// ----------- low mem verison - sc13 -----------------------------------
   template<typename T>
-    int sampleSort(std::vector<T>& arr, MPI_Comm comm){
+    void sampleSort(std::vector<T>& arr, MPI_Comm comm){
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -1852,7 +1852,7 @@ namespace par {
   //------------------------------------------------------------------------
 
     template<typename T>
-    int sampleSort(std::vector<T>& arr, std::vector<T> & SortedElem, MPI_Comm comm){ 
+    int sampleSort(std::vector<T>& arr, std::vector<T> & SortedElem, MPI_Comm comm){
 
       int npes;
       MPI_Comm_size(comm, &npes);
@@ -2105,6 +2105,7 @@ namespace par {
 //      sort(SortedElem.begin(), SortedElem.end());
       omp_par::merge_sort(&SortedElem[0], &SortedElem[nsorted]);
 
+        return 0;
     }//end function
 
     /********************************************************************/

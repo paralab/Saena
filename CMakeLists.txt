@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(Saena)
+project(Saena CXX)
 
 set(CMAKE_CXX_STANDARD 14) #CombBLAS requires 14
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,7 +24,7 @@ set(SAENA_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # -----------------------------------------------------------------------
 # OpenMP
 
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 if(OPENMP_FOUND)
     set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -48,7 +48,7 @@ set(SuperLU_DIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SuperLU_DIST_5.4.0)
 set(SuperLU_DIST_LIB ${CMAKE_BINARY_DIR}/build_superlu/lib/libsuperlu_dist.a)
 include_directories(
         ${CMAKE_BINARY_DIR}/build_superlu/include
-        #        ${SuperLU_DIST_DIR}/SRC
+#        ${SuperLU_DIST_DIR}/SRC
 )
 
 SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${SuperLU_DIST_LIB})
@@ -101,18 +101,23 @@ SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${LAPACK_LIBRARIES})
 set(MKLROOT $ENV{MKLROOT})
 include_directories(${MKLROOT}/include)
 
-set(MKL_LIB_DIR    "${MKLROOT}/lib/intel64_lin")
+set(MKL_LIB_DIR  "${MKLROOT}/lib/intel64_lin")
+set(MKL_LIB_CORE "${MKL_LIB_DIR}/libmkl_core.so")
+set(MKL_LIB_LP64 "${MKL_LIB_DIR}/libmkl_intel_lp64.so")
 
-set(MKL_LIB_CORE   "${MKL_LIB_DIR}/libmkl_core.so")
-set(MKL_LIB_LP64   "${MKL_LIB_DIR}/libmkl_intel_lp64.so")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(MKL_LIB_THREAD "${MKL_LIB_DIR}/libmkl_gnu_thread.so")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    set(MKL_LIB_THREAD "${MKL_LIB_DIR}/libmkl_intel_thread.so")
+    #elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # using Clang
+    #elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # using Visual Studio C++
+endif()
 
-#set(MKL_LIB_THREAD "${MKL_LIB_DIR}/libmkl_gnu_thread.so")
 #set(MKL_LIB_THREAD "${MKL_LIB_DIR}/libmkl_tbb_thread.so")
-set(MKL_LIB_THREAD "${MKL_LIB_DIR}/libmkl_intel_thread.so")
-
-#set(MKL_LIB_BLACS "${MKL_LIB_DIR}/libmkl_blacs_intelmpi_lp64.so")
-#set(MKL_LIB_BLACS "${MKL_LIB_DIR}/libmkl_blacs_openmpi_lp64.so")
-
+#set(MKL_LIB_BLACS  "${MKL_LIB_DIR}/libmkl_blacs_intelmpi_lp64.so")
+#set(MKL_LIB_BLACS  "${MKL_LIB_DIR}/libmkl_blacs_openmpi_lp64.so")
 #set(MKL_OMP "/opt/intel/compilers_and_libraries_2020.0.166/linux/compiler/lib/intel64_lin/libiomp5.so")
 
 SET(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} ${MKL_LIB_CORE} ${MKL_LIB_LP64} ${MKL_LIB_THREAD})
@@ -199,7 +204,6 @@ if(ENABLE_PETSC)
 
 #    add_compile_definitions(_USE_PETSC_) // requires newer cmake versions
     add_definitions(-D_USE_PETSC_)
-
 endif(ENABLE_PETSC)
 
 # -----------------------------------------------------------------------
@@ -265,6 +269,7 @@ include_directories(include)
 set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
         ${SAENA_INCLUDE_DIR}/saena.hpp
         ${SAENA_INCLUDE_DIR}/aux_functions.h
+        ${SAENA_INCLUDE_DIR}/aux_functions2.h
         ${SAENA_INCLUDE_DIR}/data_struct.h
         ${SAENA_INCLUDE_DIR}/saena_matrix.h
         ${SAENA_INCLUDE_DIR}/saena_matrix.tpp
@@ -282,6 +287,7 @@ set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
 set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
         ${SAENA_SRC_DIR}/saena.cpp
         ${SAENA_SRC_DIR}/aux_functions.cpp
+        ${SAENA_SRC_DIR}/aux_functions2.cpp
         ${SAENA_SRC_DIR}/data_struct.cpp
         ${SAENA_SRC_DIR}/strength_matrix.cpp
         ${SAENA_SRC_DIR}/prolong_matrix.cpp

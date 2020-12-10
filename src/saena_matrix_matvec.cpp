@@ -1,5 +1,4 @@
 #include "saena_matrix.h"
-#include "parUtils.h"
 
 // the following defines the reduction operation on a vector in OpenMP.
 // this is used in one of the matvec implementations (matvec_timing1).

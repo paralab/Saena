@@ -3,8 +3,6 @@
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
 #include "restrict_matrix.h"
-#include "grid.h"
-#include "parUtils.h"
 
 
 int saena_object::compute_coarsen(Grid *grid) {

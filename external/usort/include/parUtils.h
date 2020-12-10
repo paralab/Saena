@@ -50,41 +50,41 @@ namespace par {
     int Mpi_Irecv(T* buf, int count, int source, int tag, MPI_Comm comm, MPI_Request* request);
 
   template <typename T>
-    int Mpi_Gather( T* sendBuffer, T* recvBuffer, int count, int root, MPI_Comm comm);
+  void Mpi_Gather( T* sendBuffer, T* recvBuffer, int count, int root, MPI_Comm comm);
 
   template <typename T, typename S>
-    int Mpi_Sendrecv( T* sendBuf, int sendCount, int dest, int sendTag,
+    void Mpi_Sendrecv( T* sendBuf, int sendCount, int dest, int sendTag,
         S* recvBuf, int recvCount, int source, int recvTag,
         MPI_Comm comm, MPI_Status* status);
 
   template <typename T>
-    int Mpi_Bcast( T* buffer, int count, int root, MPI_Comm comm);
+  void Mpi_Bcast( T* buffer, int count, int root, MPI_Comm comm);
 
   template <typename T>
-    int Mpi_Scan( T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm comm);
+  void Mpi_Scan( T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm comm);
 
   template <typename T>
-    int Mpi_Reduce( T* sendbuf, T* recvbuf, int count, MPI_Op op, int root, MPI_Comm comm);
-
-  template <typename T> 
-    int Mpi_Allreduce( T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm comm);
+  void Mpi_Reduce( T* sendbuf, T* recvbuf, int count, MPI_Op op, int root, MPI_Comm comm);
 
   template <typename T>
-    int Mpi_Alltoall(T* sendbuf, T* recvbuf, int count, MPI_Comm comm); 
+  void Mpi_Allreduce( T* sendbuf, T* recvbuf, int count, MPI_Op op, MPI_Comm comm);
 
   template <typename T>
-    int Mpi_Allgatherv(T* sendbuf, int sendcount, T* recvbuf,
+  void Mpi_Alltoall(T* sendbuf, T* recvbuf, int count, MPI_Comm comm);
+
+  template <typename T>
+  void Mpi_Allgatherv(T* sendbuf, int sendcount, T* recvbuf,
         int* recvcounts, int* displs, MPI_Comm comm);
 
   template <typename T>
-    int Mpi_Allgather(T* sendbuf, T* recvbuf, int count, MPI_Comm comm);
+  void Mpi_Allgather(T* sendbuf, T* recvbuf, int count, MPI_Comm comm);
 
   template <typename T>
-    int Mpi_Alltoallv_sparse(T* sendbuf, int* sendcnts, int* sdispls, 
+  void Mpi_Alltoallv_sparse(T* sendbuf, int* sendcnts, int* sdispls,
         T* recvbuf, int* recvcnts, int* rdispls, MPI_Comm comm);
 
   template <typename T>
-    int Mpi_Alltoallv_dense(T* sendbuf, int* sendcnts, int* sdispls, 
+  void Mpi_Alltoallv_dense(T* sendbuf, int* sendcnts, int* sdispls,
         T* recvbuf, int* recvcnts, int* rdispls, MPI_Comm comm);
   
 	
@@ -103,7 +103,7 @@ namespace par {
     @param comm the communicator
     */
   template<typename T>
-    int partitionW(std::vector<T>& vec,
+    void partitionW(std::vector<T>& vec,
         unsigned int (*getWeight)(const T *), MPI_Comm comm);
 
 
@@ -174,10 +174,10 @@ namespace par {
     @param comm the communicator
     */
   template<typename T>
-    int sampleSort(std::vector<T>& in, std::vector<T> & out, MPI_Comm comm); 
+    int sampleSort(std::vector<T>& in, std::vector<T> & out, MPI_Comm comm);
 
   template<typename T>
-    int sampleSort(std::vector<T>& in, MPI_Comm comm);
+    void sampleSort(std::vector<T>& in, MPI_Comm comm);
 
 
     int sampleSort(std::vector<cooEntry_row>& arr, std::vector<cooEntry_row> & SortedElem, std::vector<index_t> &split, MPI_Comm comm);
@@ -191,7 +191,7 @@ namespace par {
     @param orig_comm    The comm group that needs to be split.
     @param new_comm     The new comm group.
     */
-  int splitComm2way(bool iAmEmpty, MPI_Comm* new_comm, MPI_Comm orig_comm);
+  void splitComm2way(bool iAmEmpty, MPI_Comm* new_comm, MPI_Comm orig_comm);
 
   /**
     @brief Splits a communication group into two depending on the values in isEmptyList.
@@ -214,7 +214,7 @@ namespace par {
      @param orig_comm    The comm group that needs to be split.
      @param new_comm     The new comm group.
      */
-  int splitCommUsingSplittingRank(int splittingRank, MPI_Comm* new_comm, MPI_Comm orig_comm);
+  void splitCommUsingSplittingRank(int splittingRank, MPI_Comm* new_comm, MPI_Comm orig_comm);
 
   /** 
    * @brief Splits a communication group into two, the first having a power of 2

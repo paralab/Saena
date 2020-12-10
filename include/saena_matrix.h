@@ -29,12 +29,32 @@ class saena_matrix {
 //    data		        std::vector<cooEntry>		remove duplicates
 
 private:
+    std::vector<cooEntry>     data;             // entries after removing boundary nodes
+    std::vector<cooEntry>     data_with_bound;  // entries including boundary nodes
     std::vector<cooEntry_row> data_unsorted;
-    std::vector<cooEntry>     data;
+    std::set<cooEntry_row>    data_coo;         // is set in set() functions. gets erased in setup_initial_data().
+//    std::vector<cooEntry>     entry_temp;     // for updating the matrix
 
     nnz_t initial_nnz_l = 0;
     bool read_from_file = false;
     bool freeBoolean = false; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
+
+    std::vector<int> recvCount;
+    std::vector<int> sendCount;
+    std::vector<int> recvCountScan;
+    std::vector<int> sendCountScan;
+
+    std::vector<value_t> temp1;      // to be used in smoothers
+    std::vector<value_t> temp2;      // to be used in smoothers
+
+    int num_threads   = 1;
+    int matvec_levels = 1;
+    std::vector<nnz_t> iter_local_array;
+    std::vector<nnz_t> iter_remote_array;
+//    std::vector<nnz_t> iter_local_array2;
+    std::vector<nnz_t> iter_remote_array2;
+    std::vector<index_t> vElement_remote;           // indices that should be received during matvec
+    std::vector<value_t> w_buff; // for matvec3()
 
     bool verbose_saena_matrix       = false;
     bool verbose_repartition        = false;
@@ -61,14 +81,16 @@ public:
     int p_order = 1;
     int prodim = 2;
 
-    std::set<cooEntry_row> data_coo;
     std::vector<cooEntry>  entry;
-    std::vector<cooEntry>  entry_temp;      // is used for updating the matrix
 
     std::vector<index_t> split;             // (row-wise) partition of the matrix between processes
     std::vector<index_t> split_old;
     std::vector<nnz_t>   nnz_list;          // number of nonzeros on each process.
                                             // todo: Since it is local to each processor, int is enough. nnz_l should be changed too.
+
+    bool remove_boundary = false;
+    std::vector<index_t> bound_row; // boundary node row index
+    std::vector<value_t> bound_val; // boundary node value
 
     nnz_t   nnz_l_local     = 0;
     nnz_t   nnz_l_remote    = 0;
@@ -106,29 +128,13 @@ public:
     int numSendProc = 0;
     std::vector<int> vdispls;
     std::vector<int> rdispls;
-    std::vector<int> recvCount;
-    std::vector<int> recvCountScan;
-    std::vector<int> sendCount;
-    std::vector<int> sendCountScan;
     std::vector<int> recvProcRank;
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
 
-    int num_threads   = 1;
-    int matvec_levels = 1;
-    std::vector<nnz_t> iter_local_array;
-    std::vector<nnz_t> iter_remote_array;
-//    std::vector<nnz_t> iter_local_array2;
-    std::vector<nnz_t> iter_remote_array2;
-    std::vector<index_t> vElement_remote;           // indices that should be received during matvec
-    std::vector<value_t> w_buff; // for matvec3()
-
-    std::vector<value_t> temp1;      // to be used in smoothers
-    std::vector<value_t> temp2;      // to be used in smoothers
-
     bool add_duplicates = true;
-    bool assembled = false; // use this parameter to determine which matrix.set() function to use.
+    bool assembled      = false; // use this parameter to determine which matrix.set() function to use.
 
     bool active = false;
 
@@ -245,6 +251,7 @@ public:
     int assemble(bool scale = true);
     int setup_initial_data();
     int remove_duplicates();
+    int remove_boundary_nodes();
     int repartition_nnz_initial(); // based on nnz.
     int matrix_setup(bool scale = true);
 
@@ -332,7 +339,6 @@ public:
     int destroy();
 };
 
-#include <saena_matrix.tpp>
-
 #endif //SAENA_SAENA_MATRIX_H
 
+#include <saena_matrix.tpp>

@@ -40,11 +40,22 @@ int saena_object::setup(saena_matrix* A) {
     if(!rank && omp_get_thread_num()==0)
         printf("\nnumber of processes: %d\nnumber of threads:   %d\n", nprocs, omp_get_num_threads());
 
+    if(smoother=="chebyshev"){
+        find_eig(*A);
+    }
+
+    if(A->remove_boundary){
+        remove_boundary = A->remove_boundary;
+        std::swap(bound_row, A->bound_row);
+        std::swap(bound_val, A->bound_val);
+    }
+
     if(verbose_setup){
         MPI_Barrier(A->comm);
         if(!rank){
-            printf("Operator smoother:   %s\n", PSmoother.c_str());
+            printf("Operator Smoother:   %s\n", PSmoother.c_str());
             printf("connStrength:        %.2f\n", connStrength);
+            printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
             printf("_____________________________\n\n");
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
                    nprocs, A->Mbig, A->nnz_g, A->density);
@@ -70,10 +81,6 @@ int saena_object::setup(saena_matrix* A) {
         MPI_Barrier(A->comm);
     }
 #endif
-
-    if(smoother=="chebyshev"){
-        find_eig(*A);
-    }
 
     if(fabs(sample_sz_percent - 1) < 1e-4)
         doSparsify = false;
@@ -256,11 +263,19 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
         find_eig(*A);
     }
 
+    if(A->remove_boundary){
+        cout << "remove" << endl;
+        remove_boundary = A->remove_boundary;
+        std::swap(bound_row, A->bound_row);
+        std::swap(bound_val, A->bound_val);
+    }
+
     if(verbose_setup){
         MPI_Barrier(A->comm);
         if(!rank){
             printf("Operator smoother:   %s\n", PSmoother.c_str());
             printf("connStrength:        %.2f\n", connStrength);
+            printf("Remove Boundary:     %i\n", remove_boundary);
             printf("_____________________________\n\n");
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
                    nprocs, A->Mbig, A->nnz_g, A->density);
@@ -664,6 +679,37 @@ void saena_object::profile_matvecs(){
                 swap(v, w);
             }
             print_time_all(t / iter, "matvec level " + to_string(l), grids[l].A->comm);
+        }
+    }
+}
+
+void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0){
+    rhs0.resize(rhs_large.size() - bound_row.size());
+    bound_sol.resize(bound_row.size());
+
+    index_t it1 = 0, it2 = 0;
+    for(index_t i = 0; i < rhs_large.size(); ++i){
+        if(bound_row[it1] == i){
+            it1++;
+            bound_sol[it1] = rhs_large[i] / bound_val[it1];
+            continue;
+        }
+        rhs0[it2++] = rhs_large[i];
+    }
+}
+
+void saena_object::add_boundary_sol(std::vector<value_t> &u){
+    std::vector<value_t> u_small;
+    std::swap(u, u_small);
+    const index_t SZ = u_small.size() + bound_sol.size();
+    u.resize(SZ);
+
+    index_t it1 = 0, it2 = 0;
+    for(int i = 0; i < SZ; ++i){
+        if(i != bound_row[it1]){
+            u[i] = u_small[it2++];
+        }else{
+            u[i] = bound_sol[it1++];
         }
     }
 }

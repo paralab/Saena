@@ -15,7 +15,7 @@ int saena_matrix::repartition_nnz_initial(){
     if(!read_from_file)
         setup_initial_data();
 
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -58,12 +58,12 @@ int saena_matrix::repartition_nnz_initial(){
             MPI_Finalize();
         }
 
-//    if (rank==0) std::cout << "n_buckets = " << n_buckets << ", Mbig = " << Mbig << std::endl;
+//        if (rank==0) std::cout << "n_buckets = " << n_buckets << ", Mbig = " << Mbig << std::endl;
 
         std::vector<index_t> splitOffset(n_buckets);
         auto baseOffset = index_t(floor(1.0 * Mbig / n_buckets));
         float offsetRes = float(1.0 * Mbig / n_buckets) - baseOffset;
-//    if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
+//        if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
         float offsetResSum = 0;
         splitOffset[0] = 0;
         for (index_t i = 1; i < n_buckets; ++i) {
@@ -187,6 +187,7 @@ int saena_matrix::repartition_nnz_initial(){
         firstSplit.shrink_to_fit();
 
 #ifdef __DEBUG1__
+        {
 //    MPI_Barrier(comm);
 //    print_vector(split, 0, "split before", comm);
 //    MPI_Barrier(comm);
@@ -203,6 +204,7 @@ int saena_matrix::repartition_nnz_initial(){
 //    MPI_Barrier(comm);
 //    print_vector(split, 0, "split", comm);
 //    MPI_Barrier(comm);
+        }
 #endif
 
         // set the number of rows for each process
@@ -336,6 +338,11 @@ int saena_matrix::repartition_nnz_update(){
 
     // *************************** setup_initial_data2 ****************************
 
+    if(!rank) cout << "The matrix assemble function is being called for the second time."
+                      "If the update part is required, enable it before calling the matrix update functions." << endl;
+    MPI_Abort(comm, 1);
+
+#if 0
     setup_initial_data2();
 
     // *************************** exchange data ****************************
@@ -410,7 +417,7 @@ int saena_matrix::repartition_nnz_update(){
 //    MPI_Barrier(comm); printf("repartition: rank = %d, Mbig = %u, M = %u, nnz_g = %u, nnz_l = %u \n", rank, Mbig, M, nnz_g, nnz_l); MPI_Barrier(comm);
 
     if(verbose_repartition_update && rank==0) printf("repartition - step 4!\n");
-
+#endif
     return 0;
 }
 
@@ -1115,6 +1122,9 @@ int saena_matrix::repartition_nnz_update_Ac(){
 
     density = (nnz_g / double(Mbig)) / (Mbig);
 
+    if(!rank) printf("entry_temp should be set before calling repartition_nnz_update_Ac()\n");
+    MPI_Abort(comm, 1);
+
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
 //    printf("repartition5 - start! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu, entry_temp.size before repart = %lu \n",
@@ -1126,7 +1136,7 @@ int saena_matrix::repartition_nnz_update_Ac(){
 #endif
 
     // *************************** exchange data ****************************
-
+#if 0
     std::sort(entry_temp.begin(), entry_temp.end(), row_major);
 
     long least_proc = 0, last_proc = nprocs-1;
@@ -1272,6 +1282,6 @@ int saena_matrix::repartition_nnz_update_Ac(){
 //    printf("repartition5 - end! rank = %d, Mbig = %u, M = %u, nnz_g = %lu, nnz_l = %lu \n",
 //           rank, Mbig, M, nnz_g, nnz_l);
 //    MPI_Barrier(comm);
-
+#endif
     return 0;
 }

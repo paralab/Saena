@@ -3,7 +3,6 @@
 
 #include "data_struct.h"
 #include "superlu_ddefs.h"
-#include "aux_functions.h"
 #include "saena_vector.h"
 #include "saena_matrix_dense.h"
 #include "grid.h"
@@ -59,6 +58,13 @@ public:
     // if new_size <= least_row_threshold, then stop coarsening.
     // Also, if new_size / prev_size > row_reduction_up_thrshld, the number of rows was not reduced much through coarsening.
     void set_dynamic_levels(const bool &dl = true);
+
+    bool remove_boundary = false;
+    std::vector<index_t> bound_row; // boundary node row index
+    std::vector<value_t> bound_val; // boundary node value
+    std::vector<value_t> bound_sol; // solution corresponding to boundary nodes
+    void remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0);
+    void add_boundary_sol(std::vector<value_t> &u);
 
     // *****************
     // matmat
@@ -260,8 +266,8 @@ public:
     void fast_mm(CSCMat_mm &A, CSCMat_mm &B, std::vector<cooEntry> &C, MPI_Comm comm);
 
     int find_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew);
-    int create_strength_matrix(saena_matrix* A, strength_matrix* S);
-    int aggregation_1_dist(strength_matrix *S, std::vector<index_t> &aggregate, std::vector<index_t> &aggArray);
+    int create_strength_matrix(saena_matrix* A, strength_matrix* S) const;
+    int aggregation_1_dist(strength_matrix *S, std::vector<index_t> &aggregate, std::vector<index_t> &aggArray) const;
 //    int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<index_t>& aggregate, std::vector<index_t>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
@@ -392,7 +398,9 @@ public:
     double Rtransfer_time     = 0.0;
     double Ptransfer_time     = 0.0;
     double vcycle_smooth_time = 0.0;
-    double vcycle_other_time  = 0.0;
+    double vcycle_other       = 0.0;
+    double vcycle_resid       = 0.0;
+    double vcycle_repart      = 0.0;
 
     void profile_matvecs();
 
@@ -416,6 +424,6 @@ public:
     void g2umap(int order, std::vector< std::vector<int> > &g2u_all, std::vector< std::vector< std::vector<int> > > &map, MPI_Comm comm);
 };
 
-#include <saena_object.tpp>
-
 #endif //SAENA_SAENA_OBJECT_H
+
+#include <saena_object.tpp>

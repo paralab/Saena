@@ -2,9 +2,6 @@
 #include "saena_matrix.h"
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
-#include "grid.h"
-#include "aux_functions.h"
-#include "parUtils.h"
 
 
 int saena_object::SA(Grid *grid){
@@ -428,7 +425,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 } // end of SaenaObject::findAggregation
 
 
-int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
+int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) const{
 
     // based on the following paper by Irad Yavneh:
     // Non-Galerkin Multigrid Based on Sparsified Smoothed Aggregation - page: A51
@@ -452,9 +449,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 
     for(nnz_t i = 0; i < A->nnz_l; ++i){
         if( A->entry[i].row != A->entry[i].col ){
-            if(maxPerRow_p[A->entry[i].row] == 0 ||
-              (maxPerRow_p[A->entry[i].row] < -A->entry[i].val))
-
+            if(maxPerRow_p[A->entry[i].row] == 0 || (maxPerRow_p[A->entry[i].row] < -A->entry[i].val))
                 maxPerRow_p[A->entry[i].row] = -A->entry[i].val;
         }
     }
@@ -629,7 +624,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S){
 // Using MIS(1) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
 int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &aggregate,
-                                     std::vector<index_t> &aggArray) {
+                                     std::vector<index_t> &aggArray) const{
     // aggregate: of size dof. at the end it will show to what root node (aggregate) each node is assigned.
     // aggArray: the root nodes of the coarse matrix.
 
