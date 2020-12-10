@@ -46,6 +46,8 @@ int saena_matrix::setup_initial_data(){
 
     remove_duplicates();
 
+//    print_vector(data_with_bound, -1, "data_with_bound", comm);
+
     if(remove_boundary){
         remove_boundary_nodes();
     }else{
@@ -54,7 +56,10 @@ int saena_matrix::setup_initial_data(){
 
 //    print_vector(data, -1, "data", comm);
 
-    index_t Mbig_local = data.back().row;
+    index_t Mbig_local = 0;
+    if(!data.empty())
+        Mbig_local = data.back().row;
+
     MPI_Allreduce(&Mbig_local, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
     Nbig = Mbig; // the matrix is implemented as square
@@ -135,20 +140,25 @@ int saena_matrix::remove_duplicates() {
 //        if(rank==0) std::cout << data_unsorted[i] << std::endl;
 
     // initial Mbig. it will get updated later
-    if(rank == nprocs - 1)
-        Mbig = data_unsorted.back().row;
-
-    MPI_Bcast(&Mbig, 1, par::Mpi_datatype<index_t>::value(), nprocs -1, comm);
-    index_t ofst = Mbig / nprocs;
-    vector<index_t> split_init(nprocs + 1);
-    for(int i = 0; i < nprocs; ++i){
-        split_init[i] = i * ofst;
+    if(rank == nprocs - 1){
+        Mbig = data_unsorted.back().row + 1; // add 1, since indices start from 0
     }
-    split_init[nprocs] = Mbig;
+
+    MPI_Bcast(&Mbig, 1, par::Mpi_datatype<index_t>::value(), nprocs - 1, comm);
+    index_t ofst = Mbig / nprocs;
+
+    // initial split. it will get updated later
+    split.resize(nprocs + 1);
+    for(int i = 0; i < nprocs; ++i){
+        split[i] = i * ofst;
+    }
+    split[nprocs] = Mbig;
+
+//    print_vector(split, 0, "split", comm);
 
     std::vector<cooEntry_row> data_sorted_row;
 //    par::sampleSort(data_unsorted, data_sorted_row, comm);
-    par::sampleSort(data_unsorted, data_sorted_row, split_init, comm);
+    par::sampleSort(data_unsorted, data_sorted_row, split, comm);
 
 //    print_vector(data_sorted_row, -1, "data_sorted_row", comm);
 
@@ -271,43 +281,61 @@ int saena_matrix::remove_boundary_nodes() {
 
 #ifdef __DEBUG1__
     int rank_v = 1;
+//    print_vector(split, rank_v, "split", comm);
 //    data = data_with_bound;
-    print_vector(data_with_bound, rank_v, "data_with_bound", comm);
+//    print_vector(data_with_bound, rank_v, "data_with_bound", comm);
 #endif
 
     // update column indices after removing the boundary nodes using this map.
     // m[old_index] = new_index
     // only the interior nodes need to be mapped
-    unordered_map<index_t, index_t> m;
+//    unordered_map<index_t, index_t> m;
 
-    index_t ofst;
-    if(!data_with_bound.empty())
-        ofst = data_with_bound[0].row;
+    // M will be updated later
+    M = split[rank + 1] - split[rank];
+    auto *new_idx = new index_t[M];
+    assert(new_idx);
+    for(int i = 0; i < M; ++i){
+        new_idx[i] = -1;
+    }
+//    std::fill(&new_idx[0], &new_idx[M], -1);
+//    vector<index_t> new_idx(M, -1);
+//    print_array(new_idx, M, rank_v, "send_idx", comm);
 
-    const int SZ = data_with_bound.size();
+    const index_t ofst = split[rank];
+    const nnz_t   SZ   = data_with_bound.size();
+
     index_t i = 0;
     for(; i < SZ - 1; ++i){
         if(i + 1 < SZ && data_with_bound[i].row != data_with_bound[i + 1].row){ // boundary
 #ifdef __DEBUG1__
-            if(rank == rank_v) std::cout << "boundry: " << data_with_bound[i] << std::endl;
+//            if(rank == rank_v) std::cout << "boundry: " << data_with_bound[i] << std::endl;
+//            if(rank == rank_v) std::cout << "new row idx: " << data_with_bound[i].row - ofst - bound_row.size() << std::endl;
 #endif
             bound_row.emplace_back(data_with_bound[i].row - ofst);
             bound_val.emplace_back(data_with_bound[i].val);
             ASSERT(data_with_bound[i].row == data_with_bound[i].col, data_with_bound[i].row << " != " << data_with_bound[i].col);
         }else{
 #ifdef __DEBUG1__
-            if(rank == rank_v) std::cout << "interior: " << data_with_bound[i] << std::endl;
-            if(rank == rank_v) std::cout << data_with_bound[i].row << " -> " << data_with_bound[i].row - bound_row.size() << std::endl;
+//            if(rank == rank_v) std::cout << "interior: " << data_with_bound[i] << std::endl;
+//            if(rank == rank_v) std::cout << data_with_bound[i].row << " -> " << data_with_bound[i].row - bound_row.size() << std::endl;
+//            if(rank == rank_v) std::cout << "new row idx: " << data_with_bound[i].row - ofst - bound_row.size() << std::endl;
 #endif
-            m[data_with_bound[i].row] = data_with_bound[i].row - bound_row.size();
-            data.emplace_back(data_with_bound[i].row - bound_row.size(), data_with_bound[i].col, data_with_bound[i].val);
+            new_idx[data_with_bound[i].row - ofst] = data_with_bound[i].row - bound_row.size() - ofst;
+            data.emplace_back(data_with_bound[i].row - bound_row.size() - ofst , data_with_bound[i].col, data_with_bound[i].val);
             while(i + 1 < SZ && data_with_bound[i].row == data_with_bound[i + 1].row){
                 ++i;
-                data.emplace_back(data_with_bound[i].row - bound_row.size(), data_with_bound[i].col, data_with_bound[i].val);
-//                data.emplace_back(data_with_bound[++i]);
+                data.emplace_back(data_with_bound[i].row - bound_row.size() - ofst,
+                                  data_with_bound[i].col,
+                                  data_with_bound[i].val);
             }
         }
     }
+
+//    print_array(new_idx, M, rank_v, "new_idx", comm);
+//    print_vector(data, -1, "data", comm);
+//    print_vector(bound_row, -1, "bound_row", comm);
+//    print_vector(bound_val, -1, "bound_val", comm);
 
     // if the last nonzero is left, it means the last row of the matrix had only one nozero, otherwise the whole row
     // would have been added in the previous while loop
@@ -317,18 +345,141 @@ int saena_matrix::remove_boundary_nodes() {
         bound_val.emplace_back(data_with_bound[i].val);
     }
 
-    // update the column indices to the new indices after removing the boundary nodes
-    for(auto &d : data){
-        if(rank == rank_v) cout << d.col << "\t" << m[d.col] << endl;
-        d.col = m[d.col];
+    if(bound_row.empty()){ // there is no diagonal boundary point
+        remove_boundary = false;
+    }else{
+        // update the column indices to the new indices after removing the boundary nodes
+        if(nprocs == 1){
+            for(auto &d : data){
+//                if(rank == rank_v) cout << d.col << "\t" << new_idx[d.col] << endl;
+                d.col = new_idx[d.col];
+            }
+        } else {
+            index_t max_sz = 0;
+            for (i = 1; i < split.size(); ++i) {
+                max_sz = max(max_sz, split[i] - split[i - 1]);
+            }
+
+//            if(rank == rank_v) cout << "max size = " << max_sz << endl;
+
+            // M will be updated later
+            const index_t M_tmp = M - bound_row.size();
+            vector<index_t> split_tmp(nprocs + 1);
+            MPI_Allgather(&M_tmp, 1, par::Mpi_datatype<index_t>::value(), &split_tmp[1], 1,
+                          par::Mpi_datatype<index_t>::value(), comm);
+
+            split_tmp[0] = 0;
+            for (i = 1; i < nprocs + 1; ++i) {
+                split_tmp[i] += split_tmp[i - 1];
+            }
+
+//            print_vector(split_tmp, rank_v, "split_tmp", comm);
+
+            for (i = 0; i < M; ++i) {
+                if (new_idx[i] != -1)
+                    new_idx[i] += split_tmp[rank];
+            }
+
+//            print_array(new_idx, M, rank_v, "new_idx", comm);
+
+            for (auto &d : data) {
+                d.row += split_tmp[rank];
+            }
+
+            sort(data.begin(), data.end());
+
+//            print_vector(data, rank_v, "data", comm);
+
+            int right_neighbor = (rank + 1) % nprocs;
+            int left_neighbor = rank - 1;
+            if (left_neighbor < 0) {
+                left_neighbor += nprocs;
+            }
+
+            int owner = 0, next_owner = 0;
+            nnz_t send_sz = M;
+            nnz_t recv_sz = 0;
+
+            index_t *send_idx = new index_t[max_sz];
+            memcpy(send_idx, new_idx, M * sizeof(index_t));
+            index_t *send_idx_p = nullptr;
+
+            index_t *recv_idx = new index_t[max_sz];
+            memcpy(recv_idx, send_idx, send_sz * sizeof(index_t));
+
+//            print_array(send_idx, send_sz, rank_v, "send_idx", comm);
+
+            int flag = 0;
+            MPI_Request requests[2];
+//            MPI_Status  statuses[2];
+
+            nnz_t it = 0;
+            if(!data.empty()){
+                while (data[it].col < split[rank]) {
+                    ++it;
+                }
+            }
+
+            nnz_t it2 = 0;
+            const nnz_t SZ2 = data.size();
+
+            for (int k = rank; k < rank + nprocs; ++k) {
+//                MPI_Barrier(comm);
+//                if(rank==rank_v) printf("rank %d: k = %d, it2 = %ld, SZ2 = %ld\n", rank, k, it2, SZ2);
+//                print_array(send_idx, send_sz, rank_v, "send_idx", comm);
+
+                owner      = k % nprocs;
+                next_owner = (k + 1) % nprocs;
+                recv_sz    = split[next_owner + 1] - split[next_owner];
+
+                MPI_Irecv(recv_idx, recv_sz, par::Mpi_datatype<index_t>::value(), right_neighbor, 0, comm, requests);
+                MPI_Isend(send_idx, send_sz, par::Mpi_datatype<index_t>::value(), left_neighbor, 0, comm, requests + 1);
+
+//                MPI_Test(requests,   &flag, statuses);
+//                MPI_Test(requests+1, &flag, statuses+1);
+
+                // update column indices
+                send_idx_p = &send_idx[0] - split[owner];
+//                if(rank==rank_v) cout << endl;
+                if(it2 < SZ2 && split[owner] <= data[it].col) {
+                    while (it2 < SZ2 && data[it].col < split[owner + 1]) {
+//                        if (rank == rank_v) cout << it << "\t" << data[it] << "\t" << split[owner] << "\t" <<
+//                                 data[it].col - split[owner] << "\t" << send_idx[data[it].col - split[owner]] << endl;
+
+                        ASSERT(send_idx_p[data[it].col] >= 0,
+                               "rank " << rank << ": " << send_idx_p[data[it].col] << ", owner: " << owner);
+                        data[it].col = send_idx_p[data[it].col];
+                        ++it;
+                        ++it2;
+                        if (it >= SZ2) {
+                            it = 0;
+                            break;
+                        }
+                    }
+                }
+
+                MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
+                send_sz = recv_sz;
+                std::swap(send_idx, recv_idx);
+
+//                print_vector(data, rank_v, "data", comm);
+//                print_array(send_idx, send_sz, rank_v, "send_idx", comm);
+            }
+
+            delete[] send_idx;
+            delete[] recv_idx;
+
+            sort(data.begin(), data.end(), row_major);
+        }
     }
 
 #ifdef __DEBUG1__
-    print_vector(data, rank_v, "data after removing boundary nodes", comm);
+//    print_vector(data, -1, "data after removing boundary nodes", comm);
 //    print_vector(bound_row, rank_v, "bound_row", comm);
 //    print_vector(bound_val, rank_v, "bound_val", comm);
 #endif
 
+    delete [] new_idx;
     data_with_bound.clear();
     data_with_bound.shrink_to_fit();
 
@@ -631,6 +782,7 @@ int saena_matrix::set_off_on_diagonal(){
             printf("matrix_setup: rank = %d, local remote1 \n", rank);
             MPI_Barrier(comm);
 //            print_entry(-1);
+//            print_vector(split, 0, "split", comm);
         }
 
         nnz_l_local     = 0;
@@ -648,6 +800,8 @@ int saena_matrix::set_off_on_diagonal(){
         nnzPerProcScan.assign(nprocs + 1, 0);
         auto *nnzProc_p = &nnzPerProcScan[1];
 
+        assert(nnz_l == entry.size());
+
         nnz_t i = 0;
         while(i < nnz_l) {
             procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
@@ -655,6 +809,8 @@ int saena_matrix::set_off_on_diagonal(){
 
             if(procNum == rank){ // local
                 while(i < nnz_l && entry[i].col < split[procNum + 1]) {
+//                    if(!rank) printf("entry[i].row = %d, split[rank] = %d, dif = %d\n", entry[i].row, split[rank], entry[i].row - split[rank]);
+//                    if(!rank) cout << entry[i] << endl;
                     ++nnzPerRow_local[entry[i].row - split[rank]];
                     row_local.emplace_back(entry[i].row - split[rank]);
                     col_local.emplace_back(entry[i].col);
