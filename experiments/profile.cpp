@@ -147,7 +147,7 @@ int main(int argc, char* argv[]){
     t2 = omp_get_wtime();
 //    print_time(t2 - t1, "Solve:", comm);
 
-    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
+//    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
 //    saena::laplacian2D_check_solution(u, mx, my, comm);
 
     // *************************** print or write the solution ****************************
@@ -221,7 +221,7 @@ int main(int argc, char* argv[]){
         std::stringstream buf;
         print_sep();
         printf("\nChecking the correctness of the solution (method2: A * x - b):\n");
-        printf("relative_tolerance: %e, THRSHLD: %e\n", relative_tolerance, THRSHLD);
+//        printf("relative_tolerance: %e, THRSHLD: %e\n", relative_tolerance, THRSHLD);
 //        printf("Au \t\trhs_std \t\tAu - rhs_std \n");
         for(index_t i = 0; i < num_local_row; ++i){
             if(fabs(Au[i] - rhs_std[i]) > THRSHLD2){
