@@ -682,19 +682,55 @@ void saena_object::profile_matvecs(){
     }
 }
 
-void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0){
+void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0, MPI_Comm comm){
+    int rank = 0, nprocs = 0;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+    rank_v = 1;
+
+//    int ii = 0;
+//    if(rank == 1)
+//        ii = 17;
+//    for(auto &r : rhs_large){
+//        r = ii++;
+//    }
+
+//    print_vector(rhs_large, -1, "rhs_large", comm);
+
+    index_t Mbig_l = rhs_large.size(), Mbig = 0;
+    MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+    index_t ofst = Mbig / nprocs;
+
+    // initial split. it will get updated later
+    vector<index_t> split(nprocs + 1);
+    for(int i = 0; i < nprocs; ++i){
+        split[i] = i * ofst;
+    }
+    split[nprocs] = Mbig;
+
+//    vector<value_t> rhs_large_s; // sorted
+//    par::sampleSort(rhs_large, rhs_large_s, split, comm);
+
+//    if(rank == rank_v) cout << "bound_row.size(): " << bound_row.size() << ", rhs_large.size(): " << rhs_large.size() << endl;
+//    print_vector(bound_row, rank_v, "bound_row", comm);
+//    print_vector(bound_val, rank_v, "bound_val", comm);
+
     rhs0.resize(rhs_large.size() - bound_row.size());
     bound_sol.resize(bound_row.size());
 
     index_t it1 = 0, it2 = 0;
     for(index_t i = 0; i < rhs_large.size(); ++i){
+//        if(rank==rank_v) cout << i << "\t" << it1 << "\t" << bound_row[it1] << endl;
         if(bound_row[it1] == i){
-            it1++;
             bound_sol[it1] = rhs_large[i] / bound_val[it1];
-            continue;
+            it1++;
+        }else{
+            rhs0[it2++] = rhs_large[i];
         }
-        rhs0[it2++] = rhs_large[i];
     }
+
+//    print_vector(bound_sol, rank_v, "bound_sol", comm);
+//    if(rank==rank_v) cout << "here" << endl;
 }
 
 void saena_object::add_boundary_sol(std::vector<value_t> &u){
@@ -711,4 +747,6 @@ void saena_object::add_boundary_sol(std::vector<value_t> &u){
             u[i] = bound_sol[it1++];
         }
     }
+//    ASSERT(it1 - 1 < bound_row.size(), it1 - 1 << "\t" << bound_row.size());
+//    ASSERT(it2 - 1 < u_small.size(),   it2 - 1 << "\t" << u_small.size());
 }

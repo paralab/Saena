@@ -73,7 +73,7 @@ public:
 
     void set_comm(MPI_Comm com);
     int set_idx_offset(index_t offset);
-    int set(index_t idx, value_t val); // set one entry
+    void set(index_t idx, value_t val); // set one entry
 //    int set_rep_dup(index_t row, value_t val); // replace duplicates
 //    int set_add_dup(index_t row, value_t val); // add duplicates
 //    int set(index_t *row, value_t *val, index_t size);

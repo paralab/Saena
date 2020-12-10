@@ -40,7 +40,7 @@ public:
 
     int          max_level                  = 25; // fine grid is level 0.
     // if dynamic_levels == true: coarsening will stop if the total number of rows goes below this parameter.
-    unsigned int least_row_threshold        = 1000;
+    unsigned int least_row_threshold        = 100;
     // if dynamic_levels == true: coarsening will stop if the number of rows of last level divided by previous level is
     // higher than this parameter, which means the number of rows was not reduced much through coarsening.
     double       row_reduction_up_thrshld   = 0.90;
@@ -63,7 +63,7 @@ public:
     std::vector<index_t> bound_row; // boundary node row index
     std::vector<value_t> bound_val; // boundary node value
     std::vector<value_t> bound_sol; // solution corresponding to boundary nodes
-    void remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0);
+    void remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0, MPI_Comm comm);
     void add_boundary_sol(std::vector<value_t> &u);
 
     // *****************
@@ -214,6 +214,7 @@ public:
     bool verbose_matmat_timing    = false;
     bool verbose_setup_coarse     = false;
     bool verbose_set_rhs          = false;
+    bool verbose_repart_vec       = false;
 
     bool verbose_solve            = false;
     bool verbose_vcycle           = false;
@@ -273,6 +274,7 @@ public:
     int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
 
     int set_repartition_rhs(saena_vector *rhs);
+    int repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_Comm comm);
 
     // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
     // then, repartition_back_u() at the end of the solve function to convert the solution to the initial partition.

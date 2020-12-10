@@ -27,7 +27,7 @@ int saena_vector::set_dup_flag(bool add){
 }
 
 
-int saena_vector::set(const index_t idx_, const value_t val){
+void saena_vector::set(const index_t idx_, const value_t val){
 
 //    if(fabs(val) > 1e-14){
 //        entry.emplace_back(row, val);
@@ -37,27 +37,20 @@ int saena_vector::set(const index_t idx_, const value_t val){
     orig_order.emplace_back(idx);
 
     if(add_duplicates){
-
         vecEntry temp_old;
         vecEntry temp_new = vecEntry(idx, val);
         std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
-
         if (!p.second){
             temp_old = *(p.first);
             temp_new.val += temp_old.val;
-
-//            std::set<cooEntry_row>::iterator hint = p.first;
             auto hint = p.first;
             hint++;
             data_set.erase(p.first);
             data_set.insert(hint, temp_new);
         }
-
     } else {
-
         vecEntry temp_new = vecEntry(idx, val);
         std::pair<std::set<vecEntry>::iterator, bool> p = data_set.insert(temp_new);
-
         if (!p.second){
             auto hint = p.first; // hint is std::set<cooEntry>::iterator
             hint++;
@@ -65,14 +58,10 @@ int saena_vector::set(const index_t idx_, const value_t val){
 //            if(!almost_zero(val))
             data_set.insert(hint, temp_new);
         }
-
         // if the entry is zero and it was not a duplicate, just erase it.
 //        if(p.second && almost_zero(val))
 //            data_set.erase(p.first);
-
     }
-
-    return 0;
 }
 
 void saena_vector::set(const index_t* idx, const value_t* val, const index_t size){
@@ -92,7 +81,7 @@ int saena_vector::remove_duplicates() {
     // parameters needed for this function:
     // parameters being set in this function:
 
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -249,18 +238,20 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
     // todo: check where is the best to compute some of these variables, especially if this function is being called multiple times.
     // todo: check which variables here are not required later and can be freed at the end of this function.
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+#ifdef __DEBUG1__
     if (verbose_return_vec) {
         MPI_Barrier(comm);
         printf("return_vec: rank = %d, step 1 \n", rank);
         MPI_Barrier(comm);
     }
 //    print_vector(u1, -1, "u1", comm);
-//    print_vector(split, 0, "split", comm);
+//    print_vector(split, 0, "rhs split", comm);
 //    print_vector(orig_order, -1, "orig_order", comm);
+#endif
 
     u2.resize(orig_order.size());
 
@@ -278,7 +269,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 
         if(!return_vec_prep) {
             return_vec_prep = true;
-            long procNum;
+            long procNum = 0;
             recvCount.assign(nprocs, 0);
             std::fill(u2.begin(), u2.end(), 0);
 
@@ -304,8 +295,10 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
                 recv_idx[i] = remote_idx_tuple[i].idx2;
             }
 
-             // after sorting recv_idx, the order of remote_idx should be changed the same way. The new order is saved
-             // in idx_order, so remote_idx[idx_order[i]] has the new order.
+#ifdef __DEBUG1__
+            {
+                // after sorting recv_idx, the order of remote_idx should be changed the same way. The new order is saved
+                // in idx_order, so remote_idx[idx_order[i]] has the new order.
 //            std::vector<index_t> idx_order(remote_idx.size());
 //            #pragma omp parallel for
 //            for (index_t i = 0; i < remote_idx.size(); i++)
@@ -316,21 +309,22 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 //            std::sort(remote_idx.begin(), remote_idx.end(), sort_indices(&recv_idx[0]));
 //            std::sort(recv_idx.begin(), recv_idx.end());
 //
-//
 //            if(rank==1){
 //                for(int i = 0; i < remote_idx.size(); i++)
 //                    std::cout << remote_idx[i] << "\t"<< remote_idx[idx_order[i]] << "\t" << recv_idx[i] << std::endl;
 //            }
 
+//            print_vector(u2, -1, "u2 local", comm);
+//            print_vector(recvCount, -1, "recvCount", comm);
+//            print_vector(remote_idx, -1, "remote_idx", comm);
+//            print_vector(recv_idx, -1, "recv_idx", comm);
+            }
             if (verbose_return_vec) {
                 MPI_Barrier(comm);
                 printf("return_vec: rank = %d, step 2 \n", rank);
                 MPI_Barrier(comm);
             }
-//            print_vector(u2, -1, "u2 local", comm);
-//            print_vector(recvCount, -1, "recvCount", comm);
-//            print_vector(remote_idx, -1, "remote_idx", comm);
-//            print_vector(recv_idx, -1, "recv_idx", comm);
+#endif
 
             // compute the variables for communication
             // ---------------------------------------
@@ -338,7 +332,9 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             sendCount.resize(nprocs);
             MPI_Alltoall(&recvCount[0], 1, MPI_INT, &sendCount[0], 1, MPI_INT, comm);
 
-//        print_vector(sendCount, 0, "sendCount", comm);
+#ifdef __DEBUG1__
+//            print_vector(sendCount, 0, "sendCount", comm);
+#endif
 
             recvCountScan.resize(nprocs);
             sendCountScan.resize(nprocs);
@@ -364,6 +360,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
                 }
             }
 
+#ifdef __DEBUG1__
             if (verbose_return_vec) {
 //            if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc <<
 //                                      ", numSendProc=" << numSendProc << std::endl;
@@ -371,6 +368,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
                 printf("return_vec: rank = %d, step 3 \n", rank);
                 MPI_Barrier(comm);
             }
+#endif
 
             vdispls.resize(nprocs);
             rdispls.resize(nprocs);
@@ -389,12 +387,14 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             MPI_Alltoallv(&recv_idx[0], &recvCount[0], &rdispls[0], par::Mpi_datatype<index_t>::value(),
                           &send_idx[0], &sendCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
 
+#ifdef __DEBUG1__
             if (verbose_return_vec) {
 //            print_vector(send_idx, -1, "send_idx", comm);
                 MPI_Barrier(comm);
                 printf("return_vec: rank = %d, step 4 \n", rank);
                 MPI_Barrier(comm);
             }
+#endif
 
             // change the indices from global to local
 #pragma omp parallel for
@@ -408,12 +408,14 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             send_vals.resize(send_sz);
             recv_vals.resize(recv_sz);
 
+#ifdef __DEBUG1__
             if (verbose_return_vec) {
-//            print_vector(send_idx, 1, "send_idx", comm);
+//                print_vector(send_idx, 1, "send_idx", comm);
                 MPI_Barrier(comm);
                 printf("return_vec: rank = %d, step 5 \n", rank);
                 MPI_Barrier(comm);
             }
+#endif
         }
 
         // perform the communication
@@ -421,7 +423,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         // the indices of the v on this proc that should be sent to other procs are saved in send_idx.
         // put the values of thoss indices in send_vals to send to other procs.
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (index_t i = 0; i < send_sz; i++)
             send_vals[i] = u1[send_idx[i]];
 
@@ -434,24 +436,26 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         // they are received in order: first put the values from the lowest rank matrix, and so on.
         for (int i = 0; i < numRecvProc; i++)
             MPI_Irecv(&recv_vals[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(),
-                      recvProcRank[i], 1, comm, &(requests[i]));
+                      recvProcRank[i], 1, comm, &requests[i]);
 
         for (int i = 0; i < numSendProc; i++)
             MPI_Isend(&send_vals[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(),
-                      sendProcRank[i], 1, comm, &(requests[numRecvProc + i]));
+                      sendProcRank[i], 1, comm, &requests[numRecvProc + i]);
 
         MPI_Waitall(numRecvProc, requests, statuses);
 
+#ifdef __DEBUG1__
         if (verbose_return_vec) {
             MPI_Barrier(comm);
             printf("return_vec: rank = %d, step 6 \n", rank);
             MPI_Barrier(comm);
         }
+#endif
 
         // put the remote values in the output vector
         // ------------------------------------------
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (index_t i = 0; i < remote_idx_tuple.size(); i++) {
             u2[remote_idx_tuple[i].idx1] = recv_vals[i];
         }
@@ -460,12 +464,13 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
         delete[] requests;
         delete[] statuses;
 
+#ifdef __DEBUG1__
         if (verbose_return_vec) {
             MPI_Barrier(comm);
             printf("return_vec: rank = %d, end \n", rank);
             MPI_Barrier(comm);
         }
-
+#endif
     }
 
     return 0;
