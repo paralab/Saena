@@ -151,7 +151,7 @@ public:
     int         postSmooth    = 2;
     std::string smoother      = "chebyshev";    // choices: "jacobi", "chebyshev"
     std::string direct_solver = "SuperLU";      // choices: "CG", "SuperLU"
-    float       connStrength  = 0.3;            // connection strength parameter: control coarsening aggressiveness
+    float       connStrength  = 0.1;            // connection strength parameter: control coarsening aggressiveness
     std::string PSmoother     = "SPAI";         // "jacobi", "SPAI"
     double      Pomega        = 2.0 / 3;
 
@@ -311,6 +311,7 @@ public:
     int solve(std::vector<value_t>& u);
     int solve_smoother(std::vector<value_t>& u);
     int solve_CG(std::vector<value_t>& u);
+	int solve_petsc(std::vector<value_t>& u);
     int solve_pCG(std::vector<value_t>& u);
     int setup_vcycle_memory();
     void vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
