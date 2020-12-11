@@ -1096,14 +1096,14 @@ int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, cons
     KSPSetFromOptions(ksp);
 
 	// for nano case	
-	if (pc_type == "gamg")
+	/*if (pc_type == "gamg")
 	{
     	KSPGetPC(ksp, &pc);
 		if (!rank) cout << "set for additional gamg option" << endl;
 		PCGAMGSetNlevels(pc, 6);
 		double v[5] = {0.03, 0.03, 0.03, 0.03, 0.03};
 		PCGAMGSetThreshold(pc, v, 5);
-	}
+	}*/
 
 	//PetscInt nn;
 	//PCMGSetLevels(pc, 3, &comm);

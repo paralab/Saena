@@ -1467,17 +1467,18 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
 			std::cout << "using GAMG solver" << std::endl;
     	//u_petsc.clear();
 		// option for nano
-		petsc_option =  "-ksp_type cg -pc_type gamg"
+/*		petsc_option =  "-ksp_type cg -pc_type gamg"
 						" -pc_gamg_type agg -pc_gamg_agg_nsmooths 1"
 					    " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 2"
 						" -pc_gamg_threshold 0.015 -pc_gamg_sym_graph false -pc_gamg_square_graph 0"
 						" -pc_gamg_coarse_eq_limit 500 -pc_gamg_sym_graph false -pc_gamg_square_graph 2"
 						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 2000 -ksp_rtol 1e-6 -ksp_converged_reason -ksp_view -log_view";
-		// option for helmholtz
-/*		petsc_option = 	"-ksp_type cg -pc_type gamg -pc_gamg_type agg -pc_gamg_agg_nsmooths 1"
+*/
+		// option for poisson
+		petsc_option = 	"-ksp_type cg -pc_type gamg -pc_gamg_type agg -pc_gamg_agg_nsmooths 1"
 						" -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
-						" -pc_gamg_threshold 0.015 -pc_gamg_sym_graph false -pc_gamg_square_graph 0"
-						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view -log_view";*/
+						" -pc_gamg_threshold 0.01 -pc_gamg_sym_graph false -pc_gamg_square_graph 0 -pc_gamg_coarse_eq_limit 200"
+						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view -log_view";
 	
 	}
 	else if (line == "ml")
@@ -1487,16 +1488,17 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
 			std::cout << "using ML solver" << std::endl;
 		//u_petsc.clear();
 		// nano
-		petsc_option =  "-ksp_type cg -pc_type ml"
+/*		petsc_option =  "-ksp_type cg -pc_type ml"
 						" -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 2"
 						" -pc_ml_maxNlevels 7"
 						" -pc_ml_Threshold 0.125 -pc_ml_CoarsenScheme MIS -pc_ml_maxCoarseSize 1000"
 						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 2000 -ksp_rtol 1e-6 -ksp_converged_reason -ksp_view -log_view";
-		// helmholtz
-/*		petsc_option =	"-ksp_type cg -pc_type ml"
+*/
+		// poisson
+		petsc_option =	"-ksp_type cg -pc_type ml"
 						" -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
-						" -pc_ml_maxNlevels 4 -pc_ml_Threshold 0.19 -pc_ml_CoarsenScheme Uncoupled"
-						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view -log_view";*/
+						" -pc_ml_maxNlevels 10 -pc_ml_Threshold 0.0 -pc_ml_CoarsenScheme Uncoupled -pc_ml_maxCoarseSize 100"
+						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view -log_view";
 	}
 	else if (line == "boomerAMG")
 	{
@@ -1505,19 +1507,20 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
 			std::cout << "using HYPRE solver" << std::endl;
 		//u_petsc.clear();
 		// nano
-		petsc_option = 	"-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg" 
+/*		petsc_option = 	"-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg" 
 						" -pc_hypre_boomeramg_max_levels 7 -pc_hypre_boomeramg_relax_type_all Chebyshev -pc_hypre_boomeramg_grid_sweeps_all 2"
 						" -pc_hypre_boomeramg_strong_threshold 0.11 -pc_hypre_boomeramg_coarsen_type Falgout"
 						" -pc_hypre_boomeramg_agg_nl 3 -pc_hypre_boomeramg_agg_num_paths 3 -pc_hypre_boomeramg_truncfactor 0"
 						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 2000 -ksp_rtol 1e-6 -ksp_converged_reason -ksp_view"
 						" -pc_hypre_boomeramg_print_statistics -log_view";
 						//" -pc_hypre_boomeramg_print_debug";// -log_view";
-		// helmholtz
-/*		petsc_option =  "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg -pc_hypre_boomeramg_max_levels 4"
+*/
+		// poisson
+		petsc_option =  "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg -pc_hypre_boomeramg_max_levels 6"
 						" -pc_hypre_boomeramg_relax_type_all Chebyshev -pc_hypre_boomeramg_grid_sweeps_all 3"
-						" -pc_hypre_boomeramg_strong_threshold 0.28 -pc_hypre_boomeramg_coarsen_type HMIS" 
-						" -pc_hypre_boomeramg_agg_nl 2 -pc_hypre_boomeramg_agg_num_paths 3"
-						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view  -log_view";// -pc_hypre_boomeramg_print_statistics";*/
+						" -pc_hypre_boomeramg_strong_threshold 0.0 -pc_hypre_boomeramg_coarsen_type Falgout" 
+						" -pc_hypre_boomeramg_agg_nl 3 -pc_hypre_boomeramg_agg_num_paths 4"
+						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view  -log_view";// -pc_hypre_boomeramg_print_statistics";
 	}
 	else if (line == "dcg")
 	{
@@ -2221,6 +2224,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //        if(rank==0) printf("%d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
 //        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
 #endif
+        if(rank==0) printf("%6d: aboslute = %.14f, relative = %.14f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
 
 //        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
 

@@ -97,7 +97,7 @@ int main(int argc, char* argv[]){
     // There are 3 ways to set options:
     // 1- set them manually
     int    solver_max_iter    = 1000;
-    double relative_tolerance = 1e-8;
+    double relative_tolerance = 1e-10;
     std::string smoother      = "chebyshev";
     int    preSmooth          = 2;
     int    postSmooth         = 2;
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]){
     saena::amg solver;
 	if (!if_petsc) {
     	solver.set_dynamic_levels(false);
-		solver.set_multigrid_max_level(8);	
+		solver.set_multigrid_max_level(5);	
 	}
 //    int max_level(std::stoi(argv[4]));
 	else {
