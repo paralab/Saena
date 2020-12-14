@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
     // *************************** set the scaling factor ****************************
 
     bool scale = false;
-
+	bool if_petsc = false;
     // *************************** initialize the matrix ****************************
 
     int mx(std::stoi(argv[1]));
@@ -95,10 +95,9 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Setup ****************************
     // There are 3 ways to set options:
-
     // 1- set them manually
     int    solver_max_iter    = 1000;
-    double relative_tolerance = 1e-8;
+    double relative_tolerance = 1e-10;
     std::string smoother      = "chebyshev";
     int    preSmooth          = 2;
     int    postSmooth         = 2;
@@ -113,9 +112,15 @@ int main(int argc, char* argv[]){
     t1 = omp_get_wtime();
 
     saena::amg solver;
-    solver.set_dynamic_levels(true);
+	if (!if_petsc) {
+    	solver.set_dynamic_levels(false);
+		solver.set_multigrid_max_level(5);	
+	}
 //    int max_level(std::stoi(argv[4]));
-//    solver.set_multigrid_max_level(1);
+	else {
+    	solver.set_dynamic_levels(false);
+	    solver.set_multigrid_max_level(0);
+	}
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -133,7 +138,9 @@ int main(int argc, char* argv[]){
 
     // solve the system, using pure CG.
 //    solver.solve_CG(u, &opts);
-
+	if (if_petsc)
+	 	solver.solve_petsc(u);
+	else
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    for(int i = 0; i < 3; ++i)
         solver.solve_pCG(u, &opts);

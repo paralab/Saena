@@ -1028,4 +1028,119 @@ int petsc_solve(const saena_matrix *A1, const vector<value_t> &b1, vector<value_
     return 0;
 }
 
+int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, const double &rel_tol, const char in_str[], string pc_type){
+
+    Vec            x,b;      /* approx solution, RHS */
+    Mat            A;        /* linear system matrix */
+    KSP            ksp;      /* linear solver context */
+    PetscReal      norm;     /* norm of solution error */
+    PetscInt       its;
+    PetscScalar    *array;
+    PC             pc;
+
+    MPI_Comm comm = A1->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+	PetscLogDefaultBegin();
+	CHKERRQ(PetscOptionsInsertString(nullptr, in_str));
+	//CHKERRQ(PetscOptionsInsertString(nullptr,"-ksp_type cg -pc_type gamg -pc_gamg_type agg -pc_gamg_agg_nsmooths 3 -pc_gamg_threshold 0.01 0.01 0.01 -pc_gamg_square_graph 0 -ksp_monitor_true_residual -ksp_max_it 500 -ksp_rtol 1e-6 -ksp_converged_reason"));
+	//CHKERRQ(PetscOptionsInsertString(nullptr,"-ksp_type cg -pc_type gamg -pc_gamg_type agg -pc_gamg_agg_nsmooths 3 -pc_gamg_threshold 0.01 0.01 0.01  -ksp_monitor_true_residual -ksp_max_it 500 -ksp_rtol 1e-6"));
+	//CHKERRQ(PetscOptionsInsertString(nullptr,"-ksp_type gmres -pc_type ml -pc_ml_Threshold 0.01 -pc_ml_CoarsenScheme MIS -pc_ml_maxCoarseSize 1000 -ksp_monitor_true_residual -ksp_max_it 500 -ksp_rtol 1e-6"));
+	//CHKERRQ(PetscOptionsInsertString(nullptr,"-ksp_type gmres -pc_type hypre -pc_hypre_type boomeramg -ksp_monitor_true_residual -ksp_max_it 500 -ksp_rtol 1e-6"));
+	
+    int rank = 0;
+    MPI_Comm_rank(comm, &rank);
+
+    petsc_saena_matrix(A1, A);
+    petsc_std_vector(b1, b, A1->split[rank], comm);
+	A1->erase();
+	if (!rank) std::cout << "destroy saena matrix" << std::endl;
+    MatCreateVecs(A, &x, NULL);
+    VecSet(x, 0.0);
+
+//    petsc_viewer(A);
+//    MatView(A, PETSC_VIEWER_STDOUT_WORLD);
+//    VecView(b, PETSC_VIEWER_STDOUT_WORLD);
+
+    KSPCreate(PETSC_COMM_WORLD, &ksp);
+    KSPSetOperators(ksp, A, A);
+    //KSPSetTolerances(ksp, rel_tol, 1.e-6, PETSC_DEFAULT, 1000);
+
+	// set ksp monitor
+	/*PetscViewerAndFormat *vf;
+	PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_DEFAULT,&vf);	
+	KSPMonitorSet(ksp,(PetscErrorCode (*)(KSP,PetscInt,PetscReal,void*))KSPMonitorDefault,vf,(PetscErrorCode (*)(void**))PetscViewerAndFormatDestroy);
+	KSPMonitorSet(ksp,(PetscErrorCode (*)(KSP,PetscInt,PetscReal,void*))KSPMonitorTrueResidualNorm,vf,(PetscErrorCode (*)(void**))PetscViewerAndFormatDestroy);*/
+
+	// set ksp and pc type
+	//KSPSetType(ksp, KSPGMRES);
+    //KSPGetPC(ksp, &pc);
+
+	// using petsc AMG
+    /*PCSetType(pc, PCGAMG);
+	PCGAMGSetType(pc, PCGAMGAGG);
+	PCGAMGSetNSmooths(pc,3);
+	PetscReal v[3] = {0.01, 0.01, 0.01};
+	PCGAMGSetThreshold(pc, v, 3); 
+	PCGAMGSetSquareGraph(pc,0);*/
+
+	// using hypre
+	//PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
+    //PCSetType(pc, PCHYPRE);
+	//PCHYPRESetType(pc, "boomeramg");
+
+	// using ml
+	//PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
+    //PCSetType(pc, PCML);
+
+    KSPSetFromOptions(ksp);
+
+	// for nano case	
+	/*if (pc_type == "gamg")
+	{
+    	KSPGetPC(ksp, &pc);
+		if (!rank) cout << "set for additional gamg option" << endl;
+		PCGAMGSetNlevels(pc, 6);
+		double v[5] = {0.03, 0.03, 0.03, 0.03, 0.03};
+		PCGAMGSetThreshold(pc, v, 5);
+	}*/
+
+	//PetscInt nn;
+	//PCMGSetLevels(pc, 3, &comm);
+	//std::cout << "levels: " << nn << std::endl;
+    //KSPGetPC(ksp, &pc);
+	//PCFactorSetShiftType(pc, MAT_SHIFT_POSITIVE_DEFINITE);
+	
+	//KSPType ksptype;
+	//KSPGetType(ksp,&ksptype);
+	//PetscPrintf(PETSC_COMM_WORLD,"KSPType: %s\n", ksptype);
+
+	if (!rank) std::cout << "ksp solve" << std::endl;
+	//double ksp_solve_t1 = omp_get_wtime();
+    KSPSolve(ksp,b,x);
+	//double ksp_solve_t2 = omp_get_wtime();
+	//if (!rank) std::cout << "ksp solve time = " << ksp_solve_t2 - ksp_solve_t1 << std::endl;
+	//KSPConvergedReason reason;
+	//KSPGetConvergedReason(ksp,&reason);
+	//PetscPrintf(PETSC_COMM_WORLD,"KSPConvergedReason: %D\n", reason);
+//    VecView(x, PETSC_VIEWER_STDOUT_WORLD);
+
+    VecGetArray(x, &array);
+    for (int i = 0; i < x1.size(); i++)
+        x1[i] = array[i];
+    VecRestoreArray(x, &array);
+
+    VecAXPY(x,-1.0,b);
+    VecNorm(x,NORM_2,&norm);
+    KSPGetIterationNumber(ksp,&its);
+    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Norm of error %g, iterations %D\n",(double)norm,its);
+
+    KSPDestroy(&ksp);
+    VecDestroy(&x);
+    VecDestroy(&b);
+    MatDestroy(&A);
+
+    PetscFinalize();
+    return 0;
+}
 #endif //_USE_PETSC_

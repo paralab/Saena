@@ -552,6 +552,12 @@ int saena::amg::solve_CG(std::vector<value_t>& u, saena::options* opts){
     return 0;
 }
 
+int saena::amg::solve_petsc(std::vector<value_t>& u){
+    m_pImpl->solve_petsc(u);
+    Grid *g = &m_pImpl->grids[0];
+    g->rhs_orig->return_vec(u);
+    return 0;
+}
 
 int saena::amg::solve_pCG(std::vector<value_t>& u, saena::options* opts){
     m_pImpl->set_parameters(opts->get_max_iter(), opts->get_relative_tolerance(),
