@@ -821,7 +821,7 @@ namespace par {
    *
    */ 
   template<typename T>
-    int HyperQuickSort(std::vector<T>& arr, MPI_Comm comm_){ // O( ((N/p)+log(p))*(log(N/p)+log(p)) ) 
+    void HyperQuickSort(std::vector<T>& arr, MPI_Comm comm_){ // O( ((N/p)+log(p))*(log(N/p)+log(p)) )
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -1038,7 +1038,7 @@ namespace par {
 
   //--------------------------------------------------------------------------------
   template<typename T>
-    int HyperQuickSort(std::vector<T>& arr, std::vector<T> & SortedElem, MPI_Comm comm_){ // O( ((N/p)+log(p))*(log(N/p)+log(p)) ) 
+    void HyperQuickSort(std::vector<T>& arr, std::vector<T> & SortedElem, MPI_Comm comm_){ // O( ((N/p)+log(p))*(log(N/p)+log(p)) )
 #ifdef __PROFILE_WITH_BARRIER__
       MPI_Barrier(comm);
 #endif
@@ -1239,7 +1239,7 @@ namespace par {
 // */
 
   template<typename T>
-    int HyperQuickSort_kway(std::vector<T>& arr, std::vector<T> & SortedElem, MPI_Comm comm_) {
+    void HyperQuickSort_kway(std::vector<T>& arr, std::vector<T> & SortedElem, MPI_Comm comm_) {
 #ifdef _PROFILE_SORT
 		total_sort.clear();
       seq_sort.clear();
@@ -1414,7 +1414,7 @@ namespace par {
 		
 	// for sc13 --	mem effecient HykSort
   template<typename T>
-    int HyperQuickSort_kway(std::vector<T>& arr, MPI_Comm comm_) {
+    void HyperQuickSort_kway(std::vector<T>& arr, MPI_Comm comm_) {
 #ifdef _PROFILE_SORT
 		total_sort.clear();
       seq_sort.clear();
