@@ -1444,7 +1444,8 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
-	
+
+#ifdef _USE_PETSC_
 	solver_tol = 1e-6;
 	
 	char *petsc_option;
@@ -1538,7 +1539,9 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
 	}
 
 	petsc_solve(A, rhs, u, solver_tol, petsc_option, line);
-    
+#else
+	if(!rank) cout << "PETSc should be enabled in Saena's cmake to be able to call solve_petsc() function!" << endl;
+#endif
 	return 0;
 }
 
