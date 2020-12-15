@@ -153,12 +153,12 @@ public:
     // AMG parameters
     // ****************
 
-    int         preSmooth     = 3;
-    int         postSmooth    = 3;
+    int         preSmooth     = 2;
+    int         postSmooth    = 2;
     std::string smoother      = "chebyshev";    // choices: "jacobi", "chebyshev"
     std::string direct_solver = "SuperLU";      // choices: "CG", "SuperLU"
-    float       connStrength  = 0.03;            // connection strength parameter: control coarsening aggressiveness
-    std::string PSmoother     = "jacobi";         // "jacobi", "SPAI"
+    float       connStrength  = 0.1;            // connection strength parameter: control coarsening aggressiveness
+    std::string PSmoother     = "SPAI";         // "jacobi", "SPAI"
     double      Pomega        = 2.0 / 3;
 
     // ****************

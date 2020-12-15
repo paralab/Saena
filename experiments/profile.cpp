@@ -97,7 +97,7 @@ int main(int argc, char* argv[]){
     // There are 3 ways to set options:
     // 1- set them manually
     int    solver_max_iter    = 1000;
-    double relative_tolerance = 1e-10;
+    double relative_tolerance = 1e-8;
     std::string smoother      = "chebyshev";
     int    preSmooth          = 2;
     int    postSmooth         = 2;
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]){
     solver.set_rhs(rhs);
 
     t2 = omp_get_wtime();
-    print_time(t2 - t1, "Setup:", comm);
+    print_time(t2 - t1, "Setup:", comm, true, true);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-//    print_time(t2 - t1, "Solve:", comm);
+    print_time(t2 - t1, "Solve:", comm, true, true);
 
 //    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
 //    saena::laplacian2D_check_solution(u, mx, my, comm);
