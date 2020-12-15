@@ -1448,21 +1448,19 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
 #ifdef _USE_PETSC_
 	solver_tol = 1e-6;
 	
-	char *petsc_option;
+	string petsc_option;
     //std::vector<double> u_petsc(rhs.size());
     u.assign(A->M, 0);
 
 	string line;
   	ifstream myfile("petsc_solver.txt");
-  	if (myfile.is_open())
-  	{
+  	if (myfile.is_open()) {
     	getline (myfile,line);
-    //  	if (!rank) cout << "petsc solver: " << line << '\n';
+//  	    if (!rank) cout << "petsc solver: " << line << '\n';
     	myfile.close();
   	}
 
-	if (line == "gamg")
-	{
+	if (line == "gamg")	{
     	// call gamg
 		if (rank == 0)
 			std::cout << "using GAMG solver" << std::endl;
@@ -1481,9 +1479,7 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
 						" -pc_gamg_threshold 0.01 -pc_gamg_sym_graph false -pc_gamg_square_graph 0 -pc_gamg_coarse_eq_limit 200"
 						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view -log_view";
 	
-	}
-	else if (line == "ml")
-	{
+	} else if (line == "ml") {
 		// call ml
 		if (rank == 0)
 			std::cout << "using ML solver" << std::endl;
@@ -1500,9 +1496,7 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
 						" -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
 						" -pc_ml_maxNlevels 10 -pc_ml_Threshold 0.0 -pc_ml_CoarsenScheme Uncoupled -pc_ml_maxCoarseSize 100"
 						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view -log_view";
-	}
-	else if (line == "boomerAMG")
-	{
+	} else if (line == "boomerAMG") {
 		// call hypre
 		if (rank == 0)
 			std::cout << "using HYPRE solver" << std::endl;
@@ -1522,23 +1516,19 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
 						" -pc_hypre_boomeramg_strong_threshold 0.0 -pc_hypre_boomeramg_coarsen_type Falgout" 
 						" -pc_hypre_boomeramg_agg_nl 3 -pc_hypre_boomeramg_agg_num_paths 4"
 						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view  -log_view";// -pc_hypre_boomeramg_print_statistics";
-	}
-	else if (line == "dcg")
-	{
+	} else if (line == "dcg") {
 		// call dcg
 		if (rank == 0)
 			std::cout << "using dcg solver" << std::endl;
 		//u_petsc.clear();
-		petsc_option =  "-ksp_type cg -pc_type jacobi"
+		petsc_option = "-ksp_type cg -pc_type jacobi"
 						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view  -log_view";
-	}
-	else
-	{
+	} else {
 		if (!rank) cout << "petsc solver not specified" << endl;
 		return 0;
 	}
 
-	petsc_solve(A, rhs, u, solver_tol, petsc_option, line);
+	petsc_solve(A, rhs, u, solver_tol, petsc_option.c_str(), line);
 #else
 	if(!rank) cout << "PETSc should be enabled in Saena's cmake to be able to call solve_petsc() function!" << endl;
 #endif

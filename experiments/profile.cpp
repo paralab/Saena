@@ -2,7 +2,7 @@
 // ./Saena ../data/81s4x8o1mu1.bin ../data/vectors/v81.bin
 // ./Saena ../data/289s8x16o1mu1.bin ../data/vectors/v289.bin
 
-#include "grid.h"
+//#include "grid.h"
 #include "saena.hpp"
 #include "data_struct.h"
 #include "petsc_functions.h"
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
     // *************************** set the scaling factor ****************************
 
     bool scale = false;
-	bool if_petsc = false;
+
     // *************************** initialize the matrix ****************************
 
     int mx(std::stoi(argv[1]));
@@ -112,15 +112,9 @@ int main(int argc, char* argv[]){
     t1 = omp_get_wtime();
 
     saena::amg solver;
-	if (!if_petsc) {
-    	solver.set_dynamic_levels(false);
-		solver.set_multigrid_max_level(5);	
-	}
+    solver.set_dynamic_levels(true);
 //    int max_level(std::stoi(argv[4]));
-	else {
-    	solver.set_dynamic_levels(false);
-	    solver.set_multigrid_max_level(0);
-	}
+    solver.set_multigrid_max_level(5);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
@@ -138,9 +132,7 @@ int main(int argc, char* argv[]){
 
     // solve the system, using pure CG.
 //    solver.solve_CG(u, &opts);
-	if (if_petsc)
-	 	solver.solve_petsc(u);
-	else
+
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    for(int i = 0; i < 3; ++i)
         solver.solve_pCG(u, &opts);
