@@ -50,18 +50,18 @@ int saena_matrix::setup_initial_data(){
 
     if(remove_boundary){
         remove_boundary_nodes();
+
+        index_t Mbig_local = 0;
+        if(!data.empty())
+            Mbig_local = data.back().row;
+        MPI_Allreduce(&Mbig_local, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
+        Mbig++; // since indices start from 0, not 1.
     }else{
         data = std::move(data_with_bound);
     }
 
 //    print_vector(data, -1, "data", comm);
 
-    index_t Mbig_local = 0;
-    if(!data.empty())
-        Mbig_local = data.back().row;
-
-    MPI_Allreduce(&Mbig_local, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
-    Mbig++; // since indices start from 0, not 1.
     Nbig = Mbig; // the matrix is implemented as square
 
     initial_nnz_l = data.size();
@@ -139,12 +139,15 @@ int saena_matrix::remove_duplicates() {
 //    for(int i=0; i<data_unsorted.size(); i++)
 //        if(rank==0) std::cout << data_unsorted[i] << std::endl;
 
-    // initial Mbig. it will get updated later
-    if(rank == nprocs - 1){
-        Mbig = data_unsorted.back().row + 1; // add 1, since indices start from 0
-    }
+    // initial Mbig. it will get updated later, if boundary nodes get removed
+    index_t Mbig_l = 0;
+    if(!data_unsorted.empty())
+        Mbig_l = data_unsorted.back().row;
+    MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
+    Mbig++; // since indices start from 0, not 1.
 
-    MPI_Bcast(&Mbig, 1, par::Mpi_datatype<index_t>::value(), nprocs - 1, comm);
+//    printf("rank %d: Mbig_l = %d, Mbig = %d\n", rank, Mbig_l, Mbig);
+
     index_t ofst = Mbig / nprocs;
 
     // initial split. it will get updated later
