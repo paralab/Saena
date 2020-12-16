@@ -15,8 +15,8 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
 
 //    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
 
-    MPI_Request *requests;
-    MPI_Status  *statuses;
+//    MPI_Request *requests;
+//    MPI_Status  *statuses;
 
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
@@ -36,19 +36,19 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
 
 //        double tcomm = MPI_Wtime();
         int flag = 0;
-        requests = new MPI_Request[numSendProc+numRecvProc];
-        statuses = new MPI_Status[numSendProc+numRecvProc];
+//        requests = new MPI_Request[numSendProc+numRecvProc];
+//        statuses = new MPI_Status[numSendProc+numRecvProc];
 
         // receive and put the remote parts of v in vecValues.
         // they are received in order: first put the values from the lowest rank matrix, and so on.
         for(int i = 0; i < numRecvProc; ++i){
             MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
-//            MPI_Test(&requests[i], &flag, &statuses[i]);
+            MPI_Test(&requests[i], &flag, &statuses[i]);
         }
 
         for(int i = 0; i < numSendProc; ++i){
             MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-//            MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
+            MPI_Test(&requests[numRecvProc + i], &flag, &statuses[numRecvProc + i]);
         }
 //    }
 
@@ -78,7 +78,7 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
 
 //    if(nprocs > 1){
         // Wait for the receive communication to finish.
-        MPI_Waitall(numRecvProc, requests, statuses);
+        MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
 
 //        print_vector(vecValues, 1, "vecValues", comm);
 
@@ -139,9 +139,9 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
 //            }
 //        }
 
-        MPI_Waitall(numSendProc, numRecvProc+requests, numRecvProc+statuses);
-        delete [] requests;
-        delete [] statuses;
+        MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
+//        delete [] requests;
+//        delete [] statuses;
 //    }
 
 //    tcomm = MPI_Wtime() - tcomm;

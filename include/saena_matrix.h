@@ -44,6 +44,9 @@ private:
     std::vector<int> recvCountScan;
     std::vector<int> sendCountScan;
 
+    vector<MPI_Request> requests;
+    vector<MPI_Status>  statuses;
+
     std::vector<value_t> temp1;      // to be used in smoothers
     std::vector<value_t> temp2;      // to be used in smoothers
 

@@ -895,6 +895,9 @@ int saena_matrix::set_off_on_diagonal(){
             numRecvProc = recvProcRank.size();
             numSendProc = sendProcRank.size();
 
+            requests.resize(numSendProc+numRecvProc);
+            statuses.resize(numSendProc+numRecvProc);
+
 //            if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << std::endl;
 
             if(verbose_matrix_setup) {
