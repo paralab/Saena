@@ -139,10 +139,6 @@ int saena_matrix::remove_duplicates() {
 //    for(int i=0; i<data_unsorted.size(); i++)
 //        if(rank==0) std::cout << data_unsorted[i] << std::endl;
 
-    MPI_Barrier(comm);
-    printf("rank %d: data_unsorted.size = %ld\n", rank, data_unsorted.size());
-    MPI_Barrier(comm);
-
     // initial Mbig. it will get updated later
     index_t Mbig_l = data_unsorted.size();
     MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
