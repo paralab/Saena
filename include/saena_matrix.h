@@ -44,6 +44,7 @@ private:
     std::vector<int> recvCountScan;
     std::vector<int> sendCountScan;
 
+    int MPI_flag = 0;
     vector<MPI_Request> requests;
     vector<MPI_Status>  statuses;
 
