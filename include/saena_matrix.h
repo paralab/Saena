@@ -176,8 +176,8 @@ public:
     // dense matrix parameters
     // ***********************************************************
     // search for "uncomment to enable DENSE" to enable the dense part
-/*    saena_matrix_dense dense_matrix; */ // uncomment to enable DENSE
-    bool switch_to_dense        = false;
+    saena_matrix_dense dense_matrix;  // uncomment to enable DENSE
+    bool switch_to_dense        = true;
     bool dense_matrix_generated = false;
     float dense_threshold = 0.1; // 0 < dense_threshold <= 1 decide when to also generate dense_matrix for this matrix.
     int generate_dense_matrix();

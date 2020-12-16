@@ -15,13 +15,12 @@ class saena_matrix_dense {
 
 public:
 
-    bool     allocated = false;
+    MPI_Comm comm      = MPI_COMM_WORLD;
     index_t  M         = 0;
     index_t  Nbig      = 0;
-    value_t  **entry   = nullptr;
-    MPI_Comm comm      = MPI_COMM_WORLD;
 
-    std::vector<index_t> split; // (row-wise) partition of the matrix between processes
+    vector<vector<value_t>> entry;
+    std::vector<index_t>    split; // (row-wise) partition of the matrix between processes
 
     saena_matrix_dense();
     saena_matrix_dense(index_t M, index_t Nbig);
@@ -45,7 +44,7 @@ public:
         }
     }
 
-    void set(index_t row, index_t col, value_t val){
+    inline void set(index_t row, index_t col, value_t val){
         if(row >= M || col >= Nbig){
             printf("\ndense matrix set out of range: row = %d, M = %d, col = %d, Nbig = %d\n", row, M, col, Nbig);
             exit(EXIT_FAILURE);

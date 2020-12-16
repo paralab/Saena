@@ -4,16 +4,13 @@
 
 inline void saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
     if(switch_to_dense && density >= dense_threshold){
-        std::cout << "dense matvec is commented out!" << std::endl;
-        // uncomment to enable DENSE
-//            if(!dense_matrix_generated){
-//                generate_dense_matrix();
-//            }
-//            dense_matrix.matvec(v, w);
-
+        if(!dense_matrix_generated){
+            generate_dense_matrix();
+        }
+        dense_matrix.matvec(v, w);
     }else{
         matvec_sparse(v,w);
-//            matvec_sparse_zfp(v,w);
+//        matvec_sparse_zfp(v,w);
     }
 }
 
