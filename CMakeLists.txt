@@ -366,5 +366,6 @@ ENDIF()
 
 # compile and link experiments
 add_subdirectory(experiments)
+#add_subdirectory(tests)
 
 # -----------------------------------------------------------------------
