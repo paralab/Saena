@@ -625,6 +625,8 @@ int saena_matrix::erase(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
+    requests.clear();
+    statuses.clear();
 
     entry.shrink_to_fit();
     split.shrink_to_fit();
@@ -646,6 +648,8 @@ int saena_matrix::erase(){
     sendProcRank.shrink_to_fit();
     sendProcCount.shrink_to_fit();
     sendProcCount.shrink_to_fit();
+    requests.shrink_to_fit();
+    statuses.shrink_to_fit();
 
 #ifdef SAENA_USE_ZFP
     if(free_zfp_buff){
