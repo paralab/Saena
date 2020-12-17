@@ -2217,9 +2217,6 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //        if(rank==0) printf("%d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
 //        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
 #endif
-        if(rank==0) printf("%6d: aboslute = %.14f, relative = %.14f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
-
-//        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
 
         if(current_dot < THRSHLD)
             break;
