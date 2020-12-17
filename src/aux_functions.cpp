@@ -144,7 +144,7 @@ double print_time_all(double t_dif, const std::string &function_name, MPI_Comm c
     average /= nprocs;
 
     if (rank==0)
-        std::cout << std::endl << function_name << "\nmin: " << min << "\nave: " << average << "\nmax: " << max << std::endl << std::endl;
+        cout << endl << function_name << "\nmin: " << min << "\nave: " << average << "\nmax: " << max << endl;
 
     return average;
 }
