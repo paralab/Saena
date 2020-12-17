@@ -59,6 +59,9 @@ int saena_object::setup(saena_matrix* A) {
             printf("_____________________________\n\n");
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
                    nprocs, A->Mbig, A->nnz_g, A->density);
+            if(A->use_dense){
+                printf("dense structure = True\n");
+            }
         }
         MPI_Barrier(A->comm);
     }
@@ -93,9 +96,7 @@ int saena_object::setup(saena_matrix* A) {
     }
 #endif
 
-    A->switch_to_dense = switch_to_dense;
-    A->dense_threshold = dense_threshold;
-    if(switch_to_dense && A->density > dense_threshold) {
+    if(switch_to_dense && A->density > density_thre && A->Mbig <= dense_sz_thre) {
         A->generate_dense_matrix();
     }
 
@@ -173,6 +174,9 @@ int saena_object::setup(saena_matrix* A) {
                            "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
                            grids[i + 1].level, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
                            grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
+                    if(grids[i + 1].A->use_dense){
+                        printf("dense structure = True\n");
+                    }
                 }
             }
 
@@ -278,6 +282,9 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
             printf("_____________________________\n\n");
             printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
                    nprocs, A->Mbig, A->nnz_g, A->density);
+            if(A->use_dense){
+                printf("dense structure = True\n");
+            }
         }
         MPI_Barrier(A->comm);
     }
@@ -312,9 +319,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     }
 #endif
 
-    A->switch_to_dense = switch_to_dense;
-    A->dense_threshold = dense_threshold;
-    if(switch_to_dense && A->density > dense_threshold) {
+    if(switch_to_dense && A->density > density_thre && A->Mbig <= dense_sz_thre) {
         A->generate_dense_matrix();
     }
 
@@ -409,6 +414,9 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
                            "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
                            grids[i + 1].level, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
                            grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
+                    if(grids[i + 1].A->use_dense){
+                        printf("dense structure = True\n");
+                    }
                 }
             }
 

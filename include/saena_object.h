@@ -136,9 +136,10 @@ public:
     // dense
     // *****************
 
-    // dense_threshold should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
-    bool  switch_to_dense = true;
-    float dense_threshold = 0.1; // (0 < dense_threshold <= 1) decide when to switch to the dense structure.
+    // density_thre should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
+    bool    switch_to_dense = true;
+    float   density_thre    = 0.1; // (0 < density_thre <= 1) decide when to switch to the dense structure.
+    index_t dense_sz_thre   = 5000;
 
     // *****************
     // solve parameters

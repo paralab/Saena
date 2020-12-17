@@ -1492,7 +1492,8 @@ int saena_matrix::inverse_diag() {
 
 
 int saena_matrix::generate_dense_matrix() {
+    use_dense = true;
     dense_matrix.convert_saena_matrix(this);
-    dense_matrix_generated = true;
+//    erase();
     return 0;
 }

@@ -1303,7 +1303,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
 //    // set dense parameters
 //    Ac->density = float(Ac->nnz_g) / (Ac->Mbig * Ac->Mbig);
 //    Ac->switch_to_dense = switch_to_dense;
-//    Ac->dense_threshold = dense_threshold;
+//    Ac->density_thre = density_thre;
 //
 //    // set shrink parameters
 //    Ac->last_M_shrink = A->last_M_shrink;
@@ -1796,8 +1796,8 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
 //            if(Ac->shrinked && Ac->enable_dummy_matvec)
 //                Ac->compute_matvec_dummy_time();
 
-//            if(switch_to_dense && Ac->density > dense_threshold){
-//                if(rank==0) printf("Switch to dense: density = %f, dense_threshold = %f \n", Ac->density, dense_threshold);
+//            if(switch_to_dense && Ac->density > density_thre){
+//                if(rank==0) printf("Switch to dense: density = %f, density_thre = %f \n", Ac->density, density_thre);
 //                Ac->generate_dense_matrix();
 //            }
         }

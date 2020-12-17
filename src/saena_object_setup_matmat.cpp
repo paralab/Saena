@@ -1658,9 +1658,7 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
     C->active_minor    = true;
 
     // set dense parameters
-    C->density         = (float)C->nnz_g / C->Mbig / C->Mbig;
-    C->switch_to_dense = switch_to_dense;
-    C->dense_threshold = dense_threshold;
+    C->density = (float)C->nnz_g / C->Mbig / C->Mbig;
 
     // set shrink parameters
     C->last_M_shrink       = A->last_M_shrink;
