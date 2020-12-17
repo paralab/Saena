@@ -296,8 +296,8 @@ public:
     int shrink_cpu_c(); // for the coarsest level
 
     inline void matvec(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
-    int matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
+    void matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
 
     // for profiling
     int matvec_sparse_test(std::vector<value_t>& v, std::vector<value_t>& w);

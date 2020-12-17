@@ -7,17 +7,14 @@
 //                    initializer(omp_priv = omp_orig)
 
 
-int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w) {
+void saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w) {
 
-    int nprocs, rank;
-    MPI_Comm_size(comm, &nprocs);
+    int rank;
     MPI_Comm_rank(comm, &rank);
 
+//    int nprocs;
+//    MPI_Comm_size(comm, &nprocs);
 //    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
-
-//    MPI_Request *requests;
-//    MPI_Status  *statuses;
-
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
 
@@ -141,12 +138,10 @@ int saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w
 
 //    tcomm = MPI_Wtime() - tcomm;
 //    part3 += tcomm;
-
-    return 0;
 }
 
 
-int saena_matrix::matvec_sparse_array(value_t *v, value_t *w) {
+void saena_matrix::matvec_sparse_array(value_t *v, value_t *w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -286,8 +281,6 @@ int saena_matrix::matvec_sparse_array(value_t *v, value_t *w) {
 
 //    tcomm = MPI_Wtime() - tcomm;
 //    part3 += tcomm;
-
-    return 0;
 }
 
 
