@@ -687,8 +687,8 @@ int saena_object::set_shrink_values(std::vector<int> sh_val_vec) {
     return 0;
 }
 
-int saena_object::set_repartition_threshold(float thre) {
-    repartition_threshold = thre;
+int saena_object::set_repart_thre(float thre) {
+    repart_thre = thre;
     return 0;
 }
 

@@ -1759,9 +1759,9 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
 //        }
 
         // decide to partition based on number of rows or nonzeros.
-//    if(switch_repartition && Ac->density >= repartition_threshold)
-//        if(switch_repartition && Ac->density >= repartition_threshold){
-//            if(rank==0) printf("equi-ROW partition for the next level: density = %f, repartition_threshold = %f \n", Ac->density, repartition_threshold);
+//    if(switch_repart && Ac->density >= repart_thre)
+//        if(switch_repart && Ac->density >= repart_thre){
+//            if(rank==0) printf("equi-ROW partition for the next level: density = %f, repart_thre = %f \n", Ac->density, repart_thre);
 //            Ac->repartition_row(); // based on number of rows
 //        }else{
 //            Ac->repartition_nnz(); // based on number of nonzeros
@@ -2033,7 +2033,7 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     // ********** setup matrix **********
 
     // decide to partition based on number of rows or nonzeros.
-//    if(switch_repartition && Ac->density >= repartition_threshold)
+//    if(switch_repart && Ac->density >= repart_thre)
 //        Ac->repartition4(); // based on number of rows
 //    else
     Ac->repartition_nnz_update_Ac(); // based on number of nonzeros
@@ -2281,7 +2281,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     // ********** setup matrix **********
 
     // decide to partition based on number of rows or nonzeros.
-//    if(switch_repartition && Ac->density >= repartition_threshold)
+//    if(switch_repart && Ac->density >= repart_thre)
 //        Ac->repartition4(); // based on number of rows
 //    else
     Ac->repartition_nnz_update_Ac(); // based on number of nonzeros

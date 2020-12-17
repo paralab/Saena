@@ -158,8 +158,8 @@ namespace saena {
         saena_object* get_object();
         int set_shrink_levels(std::vector<bool> sh_lev_vec);
         int set_shrink_values(std::vector<int> sh_val_vec);
-        int switch_repartition(bool val);
-        int set_repartition_threshold(float thre);
+        int switch_repart(bool val);
+        int set_repart_thre(float thre);
         int switch_to_dense(bool val);
         int set_dense_threshold(float thre);
         double get_dense_threshold();

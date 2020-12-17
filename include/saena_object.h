@@ -128,15 +128,15 @@ public:
     // repartition
     // *****************
 
-    bool  switch_repartition    = false;
-    float repartition_threshold = 0.1;
-    int   set_repartition_threshold(float thre);
+    bool  switch_repart = true;
+    float repart_thre   = 0.1;
+    int   set_repart_thre(float thre);
 
     // *****************
     // dense
     // *****************
 
-    // density_thre should be greater than repartition_threshold, since it is more efficient on repartition based on the number of rows.
+    // density_thre should be greater than repart_thre, since it is more efficient on repartition based on the number of rows.
     bool    switch_to_dense = true;
     float   density_thre    = 0.1; // (0 < density_thre <= 1) decide when to switch to the dense structure.
     index_t dense_sz_thre   = 5000;

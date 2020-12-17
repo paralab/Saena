@@ -490,14 +490,14 @@ int saena::amg::set_shrink_values(std::vector<int> sh_val_vec) {
 }
 
 
-int saena::amg::switch_repartition(bool val) {
-    m_pImpl->switch_repartition = val;
+int saena::amg::switch_repart(bool val) {
+    m_pImpl->switch_repart = val;
     return 0;
 }
 
 
-int saena::amg::set_repartition_threshold(float thre){
-    m_pImpl->set_repartition_threshold(thre);
+int saena::amg::set_repart_thre(float thre){
+    m_pImpl->set_repart_thre(thre);
     return 0;
 }
 

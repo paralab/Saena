@@ -60,13 +60,13 @@ private:
     std::vector<index_t> vElement_remote;           // indices that should be received during matvec
     std::vector<value_t> w_buff; // for matvec3()
 
-    bool verbose_saena_matrix       = false;
-    bool verbose_repartition        = false;
-    bool verbose_matrix_setup       = false;
-    bool verbose_repartition_update = false;
-    bool verbose_matvec_dummy       = false;
-    bool verbose_comp_matvec_dummy  = false;
-    bool verbose_shrink             = false;
+    bool verbose_saena_matrix      = false;
+    bool verbose_repart            = false;
+    bool verbose_matrix_setup      = false;
+    bool verbose_repart_update     = false;
+    bool verbose_matvec_dummy      = false;
+    bool verbose_comp_matvec_dummy = false;
+    bool verbose_shrink            = false;
 
 public:
     MPI_Comm comm            = MPI_COMM_WORLD;
@@ -264,8 +264,9 @@ public:
     int repartition_nnz_update(); // based on nnz.
     int matrix_setup_update(bool scale = true);
 
-    int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
-    int repartition_row(); // based on M.   use this for repartitioning A's after they are created.
+    int repart(bool repart_row = false);
+//    int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
+//    int repartition_row(); // based on M.   use this for repartitioning A's after they are created.
 
     int repartition_nnz_update_Ac(); // based on nnz.
 
