@@ -343,6 +343,7 @@ void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
 
+    ++matvec_iter;
     double t = 0, tcomm = 0;
 
 //    if(nprocs > 1){

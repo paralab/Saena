@@ -697,7 +697,7 @@ void saena_object::profile_matvecs_breakdown(){
     for(int l = 0; l <= max_level; ++l){
         if(grids[l].active) {
             t = 0;
-            vector<value_t> v(grids[l].A->M, 1);
+            vector<value_t> v(grids[l].A->M, 0.123);
             vector<value_t> w(grids[l].A->M);
             grids[l].A->matvec_time_init();
             MPI_Barrier(grids[l].A->comm);
