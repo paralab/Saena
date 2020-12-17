@@ -349,8 +349,10 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
         scale_vector(rhs, A->inv_sq_diag_orig);
     }
 
-#ifdef __DEBUG1__
+    // write rhs to a file
 //    writeVectorToFile(rhs, "rhs", comm, true, A->split[rank]);
+
+#ifdef __DEBUG1__
 //    print_vector(grids[0].rhs, -1, "rhs after repartition", comm);
     if(verbose_set_rhs){MPI_Barrier(A->comm); if(!rank) printf("set_repartition_rhs: end\n"); MPI_Barrier(A->comm);}
 #endif
