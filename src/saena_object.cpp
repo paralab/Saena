@@ -672,7 +672,7 @@ void saena_object::profile_matvecs(){
     const int iter = 5;
     double t = 0, t1 = 0, t2 = 0;
 
-    for(int l = 0; l < max_level; ++l){
+    for(int l = 0; l <= max_level; ++l){
         if(grids[l].active) {
             t = 0;
             vector<value_t> v(grids[l].A->M, 1);
