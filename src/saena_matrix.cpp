@@ -354,6 +354,18 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
     remove_duplicates();
 
+    if(remove_boundary){
+        remove_boundary_nodes();
+
+        index_t Mbig_local = 0;
+        if(!data.empty())
+            Mbig_local = data.back().row;
+        MPI_Allreduce(&Mbig_local, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
+        Mbig++; // since indices start from 0, not 1.
+    }else{
+        data = std::move(data_with_bound);
+    }
+
     // after removing duplicates, initial_nnz_l and nnz_g will be smaller, so update them.
     initial_nnz_l = data.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
@@ -362,9 +374,9 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
     // Since data[] has row-major order, the last element on the last process is the number of rows.
     // Broadcast it from the last process to the other processes.
 
-    cooEntry last_element = data.back();
-    Mbig = last_element.row + 1; // since indices start from 0, not 1.
-    MPI_Bcast(&Mbig, 1, par::Mpi_datatype<index_t>::value(), nprocs-1, comm);
+//    cooEntry last_element = data.back();
+//    Mbig = last_element.row + 1; // since indices start from 0, not 1.
+//    MPI_Bcast(&Mbig, 1, par::Mpi_datatype<index_t>::value(), nprocs-1, comm);
 
     if(verbose_saena_matrix){
         MPI_Barrier(comm);

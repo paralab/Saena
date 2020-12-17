@@ -40,7 +40,7 @@ int saena_object::writeVectorToFile(std::vector<T>& v, const std::string &name, 
 
     if(mat_market){
         if(!rank)
-            outFileTxt << sz << "\t" << 1 << "\t" << sz << std::endl;
+            outFileTxt << sz << std::endl;
 
         for (long i = 0; i < sz_loc; i++) {
             outFileTxt << OFST + i + 1 << "\t" << v[i] << std::endl;
