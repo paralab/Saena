@@ -296,6 +296,8 @@ void saena_matrix::matvec_time_init(){
 }
 
 void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
+    // opt: pass 2 for the zfp version (it includes compresssion and decompression times)
+
     int rank;
     MPI_Comm_rank(comm, &rank);
 
@@ -304,19 +306,12 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
         tmp = static_cast<double>(matvec_iter);
     }
 
-//    print_time(part1 / tmp, "send vector", comm);
-//    print_time(part2 / tmp, "compress", comm);
-//    print_time((part3-part4-part5-part6) / tmp, "comm", comm);
-//    print_time(part4 / tmp, "local", comm);
-//    print_time(part5 / tmp, "decompress", comm);
-//    print_time(part6 / tmp, "remote", comm);
-
     double p1ave = print_time_ave(part1 / tmp, "", comm); // send buff
     double p2ave = print_time_ave(part2 / tmp, "", comm); // compress
     double p3ave = 0;                                     // comm
-    if(opt == 1){
+    if(opt == 2){
         p3ave = print_time_ave((part3 - part4 - part5) / tmp, "", comm);
-    }else { // (opt == 2)
+    }else { // (opt == 1)
         p3ave = print_time_ave((part3 - part5) / tmp, "", comm);
     }
     double p4ave = print_time_ave(part4 / tmp, "", comm); // decompress
@@ -325,14 +320,155 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
     double p7ave = print_time_ave(part7 / tmp, "", comm); // wait
     if(!rank){
 //        printf("matvec iteration: %ld", matvec_iter);
-        printf("\naverage time:\nsend buff\ncompress\ncomm\ndecompress\ncompute\nswap\nwait\n\n"
-               "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p2ave, p3ave, p4ave, p5ave, p6ave, p7ave);
+        if(opt == 1) {
+            printf("\naverage time:\nsend buff\ncomm\ncompute\nswap\nwait\n\n"
+                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p3ave, p5ave, p6ave, p7ave);
+        }else{
+            printf("\naverage time:\nsend buff\ncompress\ncomm\ndecompress\ncompute\nswap\nwait\n\n"
+                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p2ave, p3ave, p4ave, p5ave, p6ave,p7ave);
+        }
     }
 
 }
 
 
-int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_t>& w) {
+void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<value_t>& w) {
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+//    int nprocs;
+//    MPI_Comm_size(comm, &nprocs);
+//    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
+//    print_info(-1);
+//    print_vector(v, -1, "v", comm);
+
+    double t = 0, tcomm = 0;
+
+//    if(nprocs > 1){
+    t = omp_get_wtime();
+
+    // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
+    // put the values of thoss indices in vSend to send to other procs.
+#pragma omp parallel for
+    for(index_t i = 0; i < vIndexSize; ++i)
+        vSend[i] = v[vIndex[i]];
+
+    t = omp_get_wtime() - t;
+    part1 += t;
+
+//        print_vector(vSend, 0, "vSend", comm);
+
+    tcomm = omp_get_wtime();
+
+    // receive and put the remote parts of v in vecValues.
+    // they are received in order: first put the values from the lowest rank matrix, and so on.
+    for(int i = 0; i < numRecvProc; ++i){
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &MPI_flag, &statuses[i]);
+    }
+
+    for(int i = 0; i < numSendProc; ++i){
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+        MPI_Test(&requests[numRecvProc + i], &MPI_flag, &statuses[numRecvProc + i]);
+    }
+//    }
+
+    // local loop
+    // ----------
+    // compute the on-diagonal part of matvec on each thread and save it in w_local.
+    // then, do a reduction on w_local on all threads, based on a binary tree.
+
+    t = omp_get_wtime();
+
+    value_t* v_p = &v[0] - split[rank];
+#pragma omp parallel
+    {
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
+#pragma omp for
+        for (index_t i = 0; i < M; ++i) {
+            w[i] = 0;
+            for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+//                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
+                w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+            }
+        }
+    }
+
+    t = omp_get_wtime() - t;
+    part5 += t;
+
+//    if(nprocs > 1){
+    // Wait for the receive communication to finish.
+    MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
+
+//        print_vector(vecValues, 1, "vecValues", comm);
+
+    // remote loop
+    // -----------
+    // the col_index of the matrix entry does not matter. do the matvec on the first non-zero column (j=0).
+    // the corresponding vector element is saved in vecValues[0]. and so on.
+
+    t = omp_get_wtime();
+
+#pragma omp parallel
+    {
+        index_t i, l;
+        int thread_id = omp_get_thread_num();
+        value_t *w_local = &w_buff[0] + (thread_id*M);
+        if(thread_id==0)
+            w_local = &*w.begin();
+        else
+            std::fill(&w_local[0], &w_local[M], 0);
+
+        nnz_t iter = iter_remote_array[thread_id];
+#pragma omp for
+        for (index_t j = 0; j < col_remote_size; ++j) {
+            for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+                w_local[row_remote[iter]] += values_remote[iter] * vecValues[j];
+
+//                if(rank==0 && thread_id==0){
+//                    printf("thread = %d\n", thread_id);
+//                    printf("%u \t%u \tind_rem = %lu, row = %lu \tcol = %lu \tvecVal = %f \n",
+//                           i, j, indicesP_remote[iter], row_remote[indicesP_remote[iter]],
+//                           col_remote[indicesP_remote[iter]], vecValues[col_remote[indicesP_remote[iter]]]);}
+            }
+        }
+
+        int thread_partner;
+        for (l = 0; l < matvec_levels; l++) {
+            if (thread_id % int(pow(2, l+1)) == 0) {
+                thread_partner = thread_id + int(pow(2, l));
+//                    printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    for (i = 0; i < M; i++)
+                        w_local[i] += w_buff[thread_partner * M + i];
+                }
+            }
+#pragma omp barrier
+        }
+    }
+
+    t = omp_get_wtime() - t;
+    part5 += t;
+
+    // basic remote loop without openmp
+//        nnz_t iter = 0;
+//        for (index_t j = 0; j < col_remote_size; ++j) {
+//            for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+//                if(rank) printf("%u \t%u \t%f \t%f \t%f \n", row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j], values_remote[iter] * vecValues[j]);
+//                w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+//            }
+//        }
+
+    MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
+//    }
+
+    tcomm = omp_get_wtime() - tcomm;
+    part3 += tcomm;
+}
+
+void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -424,11 +560,9 @@ int saena_matrix::matvec_sparse_test(std::vector<value_t>& v, std::vector<value_
 
     tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
-
-    return 0;
 }
 
-int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w) {
+void saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     // the size of vSend and vecValues are set too big for this function.
 
@@ -621,11 +755,9 @@ int saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value
     }
 
 //    print_vector(waitt, -1, "wait time", comm);
-
-    return 0;
 }
 
-int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value_t>& w) {
+void saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     // the size of vSend and vecValues are set too big for this function.
     // move "setting the send buffer" part into the overlapped communication
@@ -846,11 +978,9 @@ int saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value
     }
 
 //    print_vector(waitt, -1, "wait time", comm);
-
-    return 0;
 }
 
-int saena_matrix::matvec_sparse_test4(std::vector<value_t>& v, std::vector<value_t>& w) {
+void saena_matrix::matvec_sparse_test4(std::vector<value_t>& v, std::vector<value_t>& w) {
     // this version is similar to matvec_sparse_test2, but vSend is set once at the beginning.
 
     int nprocs, rank;
@@ -1000,11 +1130,9 @@ int saena_matrix::matvec_sparse_test4(std::vector<value_t>& v, std::vector<value
 
     tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
-
-    return 0;
 }
 
-int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w) {
+void saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
@@ -1135,6 +1263,4 @@ int saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<va
 
     tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
-
-    return 0;
 }
