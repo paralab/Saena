@@ -401,27 +401,25 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
                 // ignore comments
                 while (inFile.peek() == '%') inFile.ignore(2048, '\n');
 
-                // M and N are the size of the matrix with sz entries
-                nnz_t M_in = 0, N_in = 0, sz = 0;
-                inFile >> M_in >> N_in >> sz;
-                assert(M_in == sz);
-                assert(N_in == 1);
+                // sz: size of the vector
+                nnz_t sz = 0;
+                inFile >> sz;
 
-//                printf("M = %ld, N = %ld, nnz = %ld \n", M_in, N_in, sz);
+//                printf("sz = %ld \n", sz);
 
                 std::ofstream outFile;
                 outFile.open(outFileName.c_str(), std::ios::out | std::ios::binary);
 
                 std::vector<cooEntry> entry_temp1;
 
-                index_t a = 0, b = 0, i = 0;
+                index_t a = 0, i = 0;
                 value_t c = 0.0;
 
                 entry_temp1.resize(sz);
-                while (inFile >> a >> b >> c) {
+                while (inFile >> a >> c) {
 //                 for mtx format, rows and columns start from 1, instead of 0.
-//                        std::cout << "a = " << a << ", b = " << b << ", value = " << c << std::endl;
-                    entry_temp1[i++] = cooEntry(a - 1, b - 1, c);
+//                        std::cout << "a = " << a << ", value = " << c << std::endl;
+                    entry_temp1[i++] = cooEntry(a - 1, 0, c);
 //                    cout << entry_temp1[i] << endl;
                 }
 
