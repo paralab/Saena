@@ -325,7 +325,7 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
     double p7ave = print_time_ave(part7 / tmp, "", comm); // wait
     if(!rank){
 //        printf("matvec iteration: %ld", matvec_iter);
-        printf("average time:\nsend buff\ncompress\ncomm\ndecompress\ncompute\nswap\nwait\n\n"
+        printf("\naverage time:\nsend buff\ncompress\ncomm\ndecompress\ncompute\nswap\nwait\n\n"
                "%f\n%f\n%f\n%f\n%f\n%f\n%f\n", p1ave, p2ave, p3ave, p4ave, p5ave, p6ave, p7ave);
     }
 

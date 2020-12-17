@@ -158,6 +158,7 @@ int main(int argc, char* argv[]){
     // *************************** profile matvecs ****************************
     // profile matvec times on all multigrid levels
     solver.profile_matvecs();
+    solver.profile_matvecs_breakdown();
 
     // *************************** check correctness of the solution 1 ****************************
 

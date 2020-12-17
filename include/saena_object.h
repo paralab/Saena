@@ -406,6 +406,7 @@ public:
     double vcycle_repart      = 0.0;
 
     void profile_matvecs();
+    void profile_matvecs_breakdown();
 
     // *****************
     // pcoarsen functions

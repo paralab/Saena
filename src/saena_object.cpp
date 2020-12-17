@@ -690,6 +690,24 @@ void saena_object::profile_matvecs(){
     }
 }
 
+void saena_object::profile_matvecs_breakdown(){
+    const int iter = 5;
+
+    for(int l = 0; l <= max_level; ++l){
+        if(grids[l].active) {
+            vector<value_t> v(grids[l].A->M, 1);
+            vector<value_t> w(grids[l].A->M);
+            grids[l].A->matvec_time_init();
+            MPI_Barrier(grids[l].A->comm);
+            for(int i = 0; i < iter; ++i){
+                grids[l].A->matvec_sparse_test(v, w);
+                swap(v, w);
+            }
+            grids[l].A->matvec_time_print();
+        }
+    }
+}
+
 void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0, MPI_Comm comm){
     int rank = 0, nprocs = 0;
     MPI_Comm_rank(comm, &rank);

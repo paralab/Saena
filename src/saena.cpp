@@ -716,3 +716,7 @@ void saena::amg::matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bo
 void saena::amg::profile_matvecs(){
     m_pImpl->profile_matvecs();
 }
+
+void saena::amg::profile_matvecs_breakdown(){
+    m_pImpl->profile_matvecs_breakdown();
+}

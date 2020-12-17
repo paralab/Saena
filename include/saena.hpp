@@ -205,6 +205,7 @@ namespace saena {
         void matmat(saena::matrix *A, saena::matrix *B, saena::matrix *C, bool assemble = true, bool print_timing = false);
 
         void profile_matvecs();
+        void profile_matvecs_breakdown();
 
     protected:
         saena_object* m_pImpl;
