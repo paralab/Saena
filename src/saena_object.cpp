@@ -709,7 +709,7 @@ void saena_object::profile_matvecs_breakdown(){
                 swap(v, w);
             }
             print_time_all(t / iter, "matvec level " + to_string(l), grids[l].A->comm);
-            grids[l].A->matvec_time_print();
+            grids[l].A->matvec_time_print2();
         }
     }
 }

@@ -293,6 +293,7 @@ void saena_matrix::matvec_time_init(){
     part5 = 0;
     part6 = 0;
     part7 = 0;
+    part8 = 0;
 }
 
 void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
@@ -331,6 +332,29 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
 
 }
 
+void saena_matrix::matvec_time_print2(const int &opt /*= 1*/) const{
+    // opt: pass 2 for the zfp version (it includes compresssion and decompression times)
+
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    double tmp = 1;
+    if(matvec_iter != 0){
+        tmp = static_cast<double>(matvec_iter);
+    }
+
+    double p1ave = print_time_ave(part1 / tmp, "", comm);                   // send buff
+    double p3ave = print_time_ave((part3 - part5 - part8) / tmp, "", comm); // comm
+    double p5ave = print_time_ave(part5 / tmp, "", comm);                   // remote
+    double p8ave = print_time_ave(part8 / tmp, "", comm);                   // local
+
+    double tot = p1ave + p3ave + p5ave + p8ave;
+    if(!rank){
+        printf("\naverage time:\ncomm\nlocal\nremote\ntot\n\n"
+               "%.10f\n%.10f\n%.10f\n%.10f\n", p3ave, p8ave, p5ave, tot);
+    }
+
+}
 
 void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<value_t>& w) {
 
@@ -397,7 +421,7 @@ void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<
     }
 
     t = omp_get_wtime() - t;
-    part5 += t;
+    part8 += t;
 
 //    if(nprocs > 1){
     // Wait for the receive communication to finish.

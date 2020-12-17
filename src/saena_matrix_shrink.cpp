@@ -494,7 +494,7 @@ int saena_matrix::compute_matvec_dummy_time(){
 
     MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
 
-//    print_vector(matvec_dummy_time, 0, "matvec_dummy_time final", comm);
+    print_vector(matvec_dummy_time, 0, "matvec_dummy_time final", comm);
 
 //    if (rank == 0) {
 //        std::cout << std::endl << "decide_shrinking:" << std::endl;
