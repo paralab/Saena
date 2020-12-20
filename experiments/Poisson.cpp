@@ -109,6 +109,7 @@ int main(int argc, char* argv[]){
     // 3- use the default options
 //    saena::options opts;
 
+    MPI_Barrier(comm); // for timing the setup phase
     t1 = omp_get_wtime();
 
     saena::amg solver;
@@ -125,6 +126,7 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
+    MPI_Barrier(comm); // for timing the solve phase
     t1 = omp_get_wtime();
 
     // solve the system using AMG as the solver
