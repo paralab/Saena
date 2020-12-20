@@ -23,7 +23,7 @@
 // have barriers and are inside PROFILE_TOTAL_PCG.
 //#define PROFILE_PCG
 //#define PROFILE_TOTAL_PCG
-#define PROFILE_VCYCLE
+//#define PROFILE_VCYCLE
 
 class strength_matrix;
 class saena_matrix;

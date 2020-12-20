@@ -333,8 +333,6 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
 }
 
 void saena_matrix::matvec_time_print2(const int &opt /*= 1*/) const{
-    // opt: pass 2 for the zfp version (it includes compresssion and decompression times)
-
     int rank;
     MPI_Comm_rank(comm, &rank);
 
@@ -353,7 +351,23 @@ void saena_matrix::matvec_time_print2(const int &opt /*= 1*/) const{
         printf("\naverage time:\ncomm\nlocal\nremote\ntot\n\n"
                "%.10f\n%.10f\n%.10f\n%.10f\n", p3ave, p8ave, p5ave, tot);
     }
+}
 
+void saena_matrix::matvec_time_print3(const int &opt /*= 1*/) const{
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    double tmp = 1;
+    if(matvec_iter != 0){
+        tmp = static_cast<double>(matvec_iter);
+    }
+
+//    print_time_all(part1 / tmp, "send buff", comm);            // send buff
+    print_time_all(part8 / tmp, "local", comm);                  // local
+    print_time_all(part5 / tmp, "remote", comm);                 // remote
+    print_time_all((part3 - part5 - part8) / tmp, "comm", comm); // comm
+
+    if(!rank) print_sep();
 }
 
 void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<value_t>& w) {
