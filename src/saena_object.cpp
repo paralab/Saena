@@ -718,7 +718,7 @@ void saena_object::profile_matvecs_breakdown(){
                 t += t2 - t1;
                 swap(v, w);
             }
-            print_time_all(t / iter, "matvec level " + to_string(l), grids[l].A->comm);
+//            print_time_all(t / iter, "matvec level " + to_string(l), grids[l].A->comm);
 //            grids[l].A->matvec_time_print2(); // average
             grids[l].A->matvec_time_print3(); // min, average and max for all parts of matvec
         }
