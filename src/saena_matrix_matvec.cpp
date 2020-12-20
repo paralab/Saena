@@ -362,7 +362,7 @@ void saena_matrix::matvec_time_print3(const int &opt /*= 1*/) const{
         tmp = static_cast<double>(matvec_iter);
     }
 
-//    print_time_all(part1 / tmp, "send buff", comm);            // send buff
+    print_time_all(part1 / tmp, "send buff", comm);              // send buff
     print_time_all(part8 / tmp, "local", comm);                  // local
     print_time_all(part5 / tmp, "remote", comm);                 // remote
     print_time_all((part3 - part5 - part8) / tmp, "comm", comm); // comm
