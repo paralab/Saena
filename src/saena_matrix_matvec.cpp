@@ -366,6 +366,7 @@ void saena_matrix::matvec_time_print3(const int &opt /*= 1*/) const{
     print_time_all(part8 / tmp, "local", comm);                  // local
     print_time_all(part5 / tmp, "remote", comm);                 // remote
     print_time_all((part3 - part5 - part8) / tmp, "comm", comm); // comm
+    print_time_all((part1 + part3) / tmp, "total", comm);        // total
 
     if(!rank) print_sep();
 }
