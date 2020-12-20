@@ -348,8 +348,8 @@ void saena_matrix::matvec_time_print2(const int &opt /*= 1*/) const{
 
     double tot = p1ave + p3ave + p5ave + p8ave;
     if(!rank){
-        printf("\naverage time:\ncomm\nlocal\nremote\ntot\n\n"
-               "%.10f\n%.10f\n%.10f\n%.10f\n", p3ave, p8ave, p5ave, tot);
+        printf("\naverage time:\nsend_buff\nlocal\nremote\ncomm\ntot\n\n"
+               "%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p3ave, p8ave, p5ave, tot);
     }
 }
 
