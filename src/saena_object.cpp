@@ -66,8 +66,6 @@ int saena_object::setup(saena_matrix* A) {
         MPI_Barrier(A->comm);
     }
 
-    print_vector(A->nnz_list, 0, "nnz_list", A->comm);
-
 #ifdef __DEBUG1__
     if(verbose_setup_steps){
         MPI_Barrier(A->comm);
