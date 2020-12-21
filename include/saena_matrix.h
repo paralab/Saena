@@ -123,9 +123,9 @@ public:
     index_t recvSize   = 0;
     std::vector<index_t> vIndex;        // indices that should be sent during matvec
     std::vector<value_t> vSend;
-    std::vector<value_t> vSend2;
     std::vector<value_t> vecValues;
-    std::vector<value_t> vecValues2;    // for compressed matvec
+//    std::vector<value_t> vSend2;
+//    std::vector<value_t> vecValues2;    // for compressed matvec
 
     std::vector<nnz_t> indicesP_local;
 
@@ -146,7 +146,7 @@ public:
     // shrink_minor: if there is no entry for the coarse matrix on this proc, then shrink.
     bool active_minor = false;    // default = false
 
-    bool enable_shrink   = false; // default = true
+    bool enable_shrink   = true; // default = true
     bool enable_shrink_c = true;  // default = true. enables shrinking for the coarsest level.
     bool do_shrink       = false; // default = false
     bool shrinked        = false; // default = false. if shrinking happens for the matrix, set this to true.

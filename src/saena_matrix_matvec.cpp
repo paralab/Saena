@@ -613,13 +613,14 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
 }
 
 void saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w) {
-
     // the size of vSend and vecValues are set too big for this function.
 
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(!rank) printf("To call matvec_sparse_test3(), uncomment allocation for vecValues2 in set_off_on_diagonal()\n");
+#if 0
 //    if( v.size() != M ) printf("A.M != v.size() in matvec!\n");
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
@@ -803,10 +804,10 @@ void saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<valu
         delete[] statuses;
     }
 //    print_vector(waitt, -1, "wait time", comm);
+#endif
 }
 
 void saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<value_t>& w) {
-
     // the size of vSend and vecValues are set too big for this function.
     // move "setting the send buffer" part into the overlapped communication
 
@@ -814,6 +815,8 @@ void saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<valu
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(!rank) printf("To call matvec_sparse_test3(), uncomment allocation for vSend2 and vecValues2 in set_off_on_diagonal()\n");
+#if 0
     assert(v.size() == M);
 
     double t = 0;
@@ -1025,6 +1028,7 @@ void saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<valu
         delete[] statuses;
     }
 //    print_vector(waitt, -1, "wait time", comm);
+#endif
 }
 
 
