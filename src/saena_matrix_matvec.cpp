@@ -579,7 +579,8 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
 
 //    if(nprocs > 1){
     t = omp_get_wtime();
-    MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
+//    MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
+    MPI_Waitall(numRecvProc, &requests[0], MPI_STATUSES_IGNORE);
     t = omp_get_wtime() - t;
     part7 += t;
 
@@ -604,7 +605,8 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
     part5 += t;
 
     t = omp_get_wtime();
-    MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
+//    MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
+    MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
     t = omp_get_wtime() - t;
     part7 += t;
 //    }
