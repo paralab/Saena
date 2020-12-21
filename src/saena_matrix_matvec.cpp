@@ -547,12 +547,12 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
     // they are received in order: first put the values from the lowest rank matrix, and so on.
     for(int i = 0; i < numRecvProc; i++){
         MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
-        MPI_Test(&requests[i], &MPI_flag, &statuses[i]);
+//        MPI_Test(&requests[i], &MPI_flag, &statuses[i]);
     }
 
     for(int i = 0; i < numSendProc; i++){
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &MPI_flag, &statuses[numRecvProc + i]);
+//        MPI_Test(&requests[numRecvProc + i], &MPI_flag, &statuses[numRecvProc + i]);
     }
 
 //    }
