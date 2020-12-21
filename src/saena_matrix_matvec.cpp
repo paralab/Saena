@@ -545,14 +545,14 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
 
     // receive and put the remote parts of v in vecValues.
     // they are received in order: first put the values from the lowest rank matrix, and so on.
-    for(int i = 0; i < numRecvProc; i++){
+    for(int i = 0; i < numRecvProc; ++i){
         MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_DOUBLE, recvProcRank[i], 1, comm, &requests[i]);
-//        MPI_Test(&requests[i], &MPI_flag, &statuses[i]);
+        MPI_Test(&requests[i], &MPI_flag, &statuses[i]);
     }
 
-    for(int i = 0; i < numSendProc; i++){
+    for(int i = 0; i < numSendProc; ++i){
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_DOUBLE, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-//        MPI_Test(&requests[numRecvProc + i], &MPI_flag, &statuses[numRecvProc + i]);
+        MPI_Test(&requests[numRecvProc + i], &MPI_flag, &statuses[numRecvProc + i]);
     }
 
 //    }
@@ -579,8 +579,8 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
 
 //    if(nprocs > 1){
     t = omp_get_wtime();
-//    MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
-    MPI_Waitall(numRecvProc, &requests[0], MPI_STATUSES_IGNORE);
+    MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
+//    MPI_Waitall(numRecvProc, &requests[0], MPI_STATUSES_IGNORE);
     t = omp_get_wtime() - t;
     part7 += t;
 
@@ -605,8 +605,8 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
     part5 += t;
 
     t = omp_get_wtime();
-//    MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
-    MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
+    MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
+//    MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
     t = omp_get_wtime() - t;
     part7 += t;
 //    }
