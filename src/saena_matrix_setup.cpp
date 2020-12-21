@@ -934,7 +934,7 @@ int saena_matrix::set_off_on_diagonal(){
 //                printf("rank %d: vIndexSize = %d, recvSize = %d\n", rank, vIndexSize, recvSize);
 //                printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
 //                   rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);
-
+/*
                 // compute min, average and max send size during matvec
                 int vIndexSize_ave = 0, vIndexSize_min = 0, vIndexSize_max = 0;
                 MPI_Allreduce(&vIndexSize, &vIndexSize_min, 1, MPI_INT, MPI_MIN, comm);
@@ -948,9 +948,10 @@ int saena_matrix::set_off_on_diagonal(){
                 MPI_Allreduce(&recvSize, &recvSize_max, 1, MPI_INT, MPI_MAX, comm);
                 MPI_Allreduce(&recvSize, &recvSize_ave, 1, MPI_INT, MPI_SUM, comm);
                 recvSize_ave /= nprocs;
-                printf("rank %d: send_sz = (%d, %d, %d), recv_sz = (%d, %d, %d) (min, ave, max)\n",
-                       rank, vIndexSize_min, vIndexSize_ave, vIndexSize_max, recvSize_min, recvSize_ave, recvSize_max);
+                if(!rank) printf("\nsend_sz = (%d, %d, %d), recv_sz = (%d, %d, %d) (min, ave, max)\n",
+                       vIndexSize_min, vIndexSize_ave, vIndexSize_max, recvSize_min, recvSize_ave, recvSize_max);
 
+*/
             }
 #endif
 
