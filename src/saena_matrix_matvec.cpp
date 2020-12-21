@@ -320,14 +320,15 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
     double p6ave = print_time_ave(part6 / tmp, "", comm); // swap
     double p7ave = print_time_ave(part7 / tmp, "", comm); // wait
     double p8ave = print_time_ave(part8 / tmp, "", comm); // local
+    double tot = ;
     if(!rank){
 //        printf("matvec iteration: %ld", matvec_iter);
         if(opt == 1) {
-            printf("\naverage time:\nsend buff\ncomm\nlocal\nremote\nswap\nwait\n\n"
-                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p3ave, p8ave, p5ave, p6ave, p7ave);
+            printf("\naverage time:\nsend buff\nlocal\nremote\ncomm\nwait\nswap\n\n"
+                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p8ave, p5ave, p3ave, p7ave, p6ave);
         }else{
-            printf("\naverage time:\nsend buff\ncompress\ncomm\ndecompress\nlocal\nremote\nswap\nwait\n\n"
-                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p2ave, p3ave, p4ave, p8ave, p5ave, p6ave,p7ave);
+            printf("\naverage time:\nsend buff\ncompressndecompress\nlocal\nremote\ncomm\nwait\nswap\n\n"
+                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p2ave, p4ave, p8ave, p5ave, p3ave, p7ave, p5ave);
         }
     }
 }
@@ -439,10 +440,12 @@ void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<
     part8 += t;
 
 //    if(nprocs > 1){
-    // Wait for the receive communication to finish.
+    t = omp_get_wtime();
     MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
+    t = omp_get_wtime() - t;
+    part7 += t;
 
-//        print_vector(vecValues, 1, "vecValues", comm);
+//    print_vector(vecValues, 1, "vecValues", comm);
 
     // remote loop
     // -----------
@@ -501,7 +504,10 @@ void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<
 //            }
 //        }
 
+    t = omp_get_wtime();
     MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
+    t = omp_get_wtime() - t;
+    part7 += t;
 //    }
 
     tcomm = omp_get_wtime() - tcomm;
@@ -572,8 +578,10 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
     part8 += t;
 
 //    if(nprocs > 1){
-    // Wait for the receive communication to finish.
+    t = omp_get_wtime();
     MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
+    t = omp_get_wtime() - t;
+    part7 += t;
 
 //    print_vector(vecValues, 1, "vecValues", comm);
 
@@ -595,7 +603,10 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
     t = omp_get_wtime() - t;
     part5 += t;
 
+    t = omp_get_wtime();
     MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
+    t = omp_get_wtime() - t;
+    part7 += t;
 //    }
 
     tcomm = omp_get_wtime() - tcomm;
@@ -659,7 +670,6 @@ void saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<valu
             MPI_Isend(&vSend[0], sendCount[send_proc], par::Mpi_datatype<value_t>::value(), send_proc, rank, comm, &requests[1]);
             MPI_Test(&requests[1], &MPI_flag, &statuses[1]);
         }
-
     }
 
     // local loop

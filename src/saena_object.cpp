@@ -713,7 +713,7 @@ void saena_object::profile_matvecs_breakdown(){
             MPI_Barrier(grids[l].A->comm);
             for(int i = 0; i < iter; ++i){
                 t1 = omp_get_wtime();
-                grids[l].A->matvec_sparse_test2(v, w);
+                grids[l].A->matvec_sparse_test1(v, w);
                 t2 = omp_get_wtime();
                 t += t2 - t1;
                 swap(v, w);
