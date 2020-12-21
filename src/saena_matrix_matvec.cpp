@@ -320,7 +320,6 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
     double p6ave = print_time_ave(part6 / tmp, "", comm); // swap
     double p7ave = print_time_ave(part7 / tmp, "", comm); // wait
     double p8ave = print_time_ave(part8 / tmp, "", comm); // local
-    double tot = ;
     if(!rank){
 //        printf("matvec iteration: %ld", matvec_iter);
         if(opt == 1) {
