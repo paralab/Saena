@@ -780,6 +780,7 @@ int saena_matrix::set_off_on_diagonal(){
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 
+#ifdef __DEBUG1__
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote1 \n", rank);
@@ -787,6 +788,7 @@ int saena_matrix::set_off_on_diagonal(){
 //            print_entry(-1);
 //            print_vector(split, 0, "split", comm);
         }
+#endif
 
         nnz_l_local     = 0;
         nnz_l_remote    = 0;
@@ -848,11 +850,13 @@ int saena_matrix::set_off_on_diagonal(){
         nnz_l_remote    = row_remote.size();
         col_remote_size = vElement_remote.size();
 
+#ifdef __DEBUG1__
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote2 \n", rank);
             MPI_Barrier(comm);
         }
+#endif
 
         // don't receive anything from yourself
         recvCount[rank] = 0;
@@ -865,12 +869,13 @@ int saena_matrix::set_off_on_diagonal(){
                 nnzPerProcScan[i] += nnzPerProcScan[i - 1];
             }
 
-//            print_vector(nnzPerProcScan, 0, "nnzPerProcScan", comm);
-
             sendCount.resize(nprocs);
             MPI_Alltoall(&recvCount[0], 1, MPI_INT, &sendCount[0], 1, MPI_INT, comm);
 
+#ifdef __DEBUG1__
+//            print_vector(nnzPerProcScan, 0, "nnzPerProcScan", comm);
 //            print_vector(sendCount, 0, "sendCount", comm);
+#endif
 
             recvCountScan.resize(nprocs + 1);
             sendCountScan.resize(nprocs + 1);
@@ -898,13 +903,15 @@ int saena_matrix::set_off_on_diagonal(){
             requests.resize(numSendProc+numRecvProc);
             statuses.resize(numSendProc+numRecvProc);
 
-//            if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << std::endl;
-
+#ifdef __DEBUG1__
+//            if (rank==0) std::cout << "rank=" << rank << ", numRecvProc=" << numRecvProc
+//                                   << ", numSendProc=" << numSendProc << std::endl;
             if(verbose_matrix_setup) {
                 MPI_Barrier(comm);
                 printf("matrix_setup: rank = %d, local remote3 \n", rank);
                 MPI_Barrier(comm);
             }
+#endif
 
             vdispls.resize(nprocs);
             rdispls.resize(nprocs);
@@ -915,23 +922,53 @@ int saena_matrix::set_off_on_diagonal(){
                 vdispls[i] = vdispls[i - 1] + sendCount[i - 1];
                 rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
             }
+
+            // total number of elements that each proc. sends and receives during matvec:
             vIndexSize = vdispls[nprocs - 1] + sendCount[nprocs - 1];
             recvSize   = rdispls[nprocs - 1] + recvCount[nprocs - 1];
+
+#ifdef __DEBUG1__
+            {
+//                print_vector(vdispls, -1, "vdispls", comm);
+//                print_vector(rdispls, -1, "rdispls", comm);
+//                printf("rank %d: vIndexSize = %d, recvSize = %d\n", rank, vIndexSize, recvSize);
+//                printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
+//                   rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);
+/*
+                // compute min, average and max send size during matvec
+                int vIndexSize_ave = 0, vIndexSize_min = 0, vIndexSize_max = 0;
+                MPI_Allreduce(&vIndexSize, &vIndexSize_min, 1, MPI_INT, MPI_MIN, comm);
+                MPI_Allreduce(&vIndexSize, &vIndexSize_max, 1, MPI_INT, MPI_MAX, comm);
+                MPI_Allreduce(&vIndexSize, &vIndexSize_ave, 1, MPI_INT, MPI_SUM, comm);
+                vIndexSize_ave /= nprocs;
+
+                // compute min, average and max receive size during matvec
+                int recvSize_ave = 0, recvSize_min = 0, recvSize_max = 0;
+                MPI_Allreduce(&recvSize, &recvSize_min, 1, MPI_INT, MPI_MIN, comm);
+                MPI_Allreduce(&recvSize, &recvSize_max, 1, MPI_INT, MPI_MAX, comm);
+                MPI_Allreduce(&recvSize, &recvSize_ave, 1, MPI_INT, MPI_SUM, comm);
+                recvSize_ave /= nprocs;
+                printf("rank %d: send_sz = (%d, %d, %d), recv_sz = (%d, %d, %d) (min, ave, max)\n",
+                       rank, vIndexSize_min, vIndexSize_ave, vIndexSize_max, recvSize_min, recvSize_ave, recvSize_max);
+*/
+            }
+#endif
 
             vIndex.resize(vIndexSize);
             MPI_Alltoallv(&vElement_remote[0], &recvCount[0], &rdispls[0], par::Mpi_datatype<index_t>::value(),
                           &vIndex[0],          &sendCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
 
-//            print_vector(vIndex, -1, "vIndex", comm);
-
             vElement_remote.clear();
             vElement_remote.shrink_to_fit();
 
+#ifdef __DEBUG1__
+//            print_vector(vIndex, -1, "vIndex", comm);
             if(verbose_matrix_setup) {
                 MPI_Barrier(comm);
                 printf("matrix_setup: rank = %d, local remote4 \n", rank);
                 MPI_Barrier(comm);
             }
+#endif
 
             // change the indices from global to local
 #pragma omp parallel for
@@ -948,9 +985,6 @@ int saena_matrix::set_off_on_diagonal(){
 //            vSend2.resize(vIndexSize);
 //            vecValues2.resize(recvSize);
 
-//            printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
-//               rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);
-
 #ifdef SAENA_USE_ZFP
             if(use_zfp){
                 allocate_zfp();
@@ -962,9 +996,7 @@ int saena_matrix::set_off_on_diagonal(){
 //        MPI_Allreduce(&M, &M_max, 1, MPI_UNSIGNED, MPI_MAX, comm);
         M_max = 0;
         for(i = 0; i < nprocs; ++i){
-            if(split[i+1] - split[i] > M_max){
-                M_max = split[i+1] - split[i];
-            }
+            M_max = max(M_max, split[i+1] - split[i]);
         }
 
         // compute nnz_max
@@ -973,7 +1005,10 @@ int saena_matrix::set_off_on_diagonal(){
         // compute nnz_list
         nnz_list.resize(nprocs);
         MPI_Allgather(&nnz_l, 1, par::Mpi_datatype<nnz_t>::value(), &nnz_list[0], 1, par::Mpi_datatype<nnz_t>::value(), comm);
+
+#ifdef __DEBUG1__
 //        print_vector(nnz_list, 1, "nnz_list", comm);
+#endif
 
         // to be used in smoothers
         temp1.resize(M);
