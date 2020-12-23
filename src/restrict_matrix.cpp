@@ -213,18 +213,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     // *********************** setup matvec ************************
 
-    long procNum = 0;
-    col_remote_size = 0; // number of remote columns
-    std::vector<int> recvCount(nprocs, 0);
-    nnzPerRow_local.assign(M,0);
-//    nnzPerRowScan_local.assign(M+1, 0);
-    nnz_l_local = 0;
-    nnz_l_remote = 0;
-
 //    nnzPerRow_local.clear();
     vElement_remote.clear();
-    vElementRep_local.clear();
-    vElementRep_remote.clear();
+//    vElementRep_local.clear();
+//    vElementRep_remote.clear();
     nnzPerCol_remote.clear();
 //    nnzPerRowScan_local.clear();
     vdispls.clear();
@@ -244,92 +236,61 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //    col_remote.clear();
     val_remote.clear();
 
-    if(!entry.empty()){
+    recvCount.assign(nprocs, 0);
+    nnzPerRow_local.assign(M, 0);
+//    nnzPerRowScan_local.assign(M+1, 0);
 
-        // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
-        // local
-        if (entry[0].col >= split[rank] && entry[0].col < split[rank + 1]) {
-            nnzPerRow_local[entry[0].row]++;
-//            entry_local.emplace_back(entry[0]);
-            row_local.emplace_back(entry[0].row);
-            col_local.emplace_back(entry[0].col);
-            val_local.emplace_back(entry[0].val);
-            //vElement_local.emplace_back(col[0]);
-            vElementRep_local.emplace_back(1);
+    index_t procNum = 0, procNumTmp = 0;
+    nnz_t tmp = 0;
+    nnzPerProcScan.assign(nprocs + 1, 0);
+    auto *nnzProc_p = &nnzPerProcScan[1];
 
-            // remote
-        } else{
-//            entry_remote.emplace_back(entry[0]);
-            row_remote.emplace_back(entry[0].row);
-//            col_remote2.emplace_back(entry[0].col);
-            val_remote.emplace_back(entry[0].val);
-            col_remote_size++; // number of remote columns
-//            col_remote.emplace_back(col_remote_size-1);
-//            nnzPerCol_remote[col_remote_size-1]++;
-            nnzPerCol_remote.emplace_back(1);
-            vElement_remote.emplace_back(entry[0].col);
-            vElementRep_remote.emplace_back(1);
-            recvCount[lower_bound3(&split[0], &split[nprocs], entry[0].col)] = 1;
-        }
+    assert(nnz_l == entry.size());
 
-#ifdef __DEBUG1__
-        if(verbose_transposeP){
-//            MPI_Barrier(comm);
-            printf("rank %d: transposeP part5\n", rank);
-        }
-#endif
+    nnz_t i = 0;
+    while(i < nnz_l) {
+        procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+//        if(rank==0) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
 
-        for (nnz_t i = 1; i < nnz_l; i++) {
-
-            // local
-            if (entry[i].col >= split[rank] && entry[i].col < split[rank+1]) {
-                nnzPerRow_local[entry[i].row]++;
-//                entry_local.emplace_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
+        if(procNum == rank){ // local
+            while(i < nnz_l && entry[i].col < split[procNum + 1]) {
+//                if(!rank) printf("entry[i].row = %d, split[rank] = %d, dif = %d\n", entry[i].row, split[rank], entry[i].row - split[rank]);
+//                if(!rank) cout << entry[i] << endl;
+                ++nnzPerRow_local[entry[i].row];
                 row_local.emplace_back(entry[i].row);
                 col_local.emplace_back(entry[i].col);
                 val_local.emplace_back(entry[i].val);
-                if (entry[i].col != entry[i-1].col)
-                    vElementRep_local.emplace_back(1);
-                else
-                    vElementRep_local.back()++;
-
-                // remote
-            } else {
-//                entry_remote.emplace_back(cooEntry(entry[i].row, entry[i].col, entry[i].val));
-                row_remote.emplace_back(entry[i].row);
-                // col_remote2 is the original col value. col_remote starts from 0.
-//                col_remote2.emplace_back(entry[i].col);
-                val_remote.emplace_back(entry[i].val);
-
-                if (entry[i].col != entry[i-1].col) {
-                    col_remote_size++;
-                    vElement_remote.emplace_back(entry[i].col);
-                    vElementRep_remote.emplace_back(1);
-                    procNum = lower_bound3(&split[0], &split[nprocs], entry[i].col);
-                    recvCount[procNum]++;
-                    nnzPerCol_remote.emplace_back(1);
-                } else {
-                    vElementRep_remote.back()++;
-                    nnzPerCol_remote.back()++;
-                }
-                // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
-//                col_remote.emplace_back(col_remote_size-1);
-//                nnzPerCol_remote[col_remote_size-1]++;
+                ++i;
             }
-        } // for i
 
-        nnz_l_local  = row_local.size();
-        nnz_l_remote = row_remote.size();
-//        MPI_Barrier(comm); printf("rank=%d, nnz_l=%lu, nnz_l_local=%lu, nnz_l_remote=%lu \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
+        }else{ // remote
+            tmp = i;
+            while(i < nnz_l && entry[i].col < split[procNum + 1]) {
 
-//        for(index_t i = 0; i < M; i++){
-//            nnzPerRowScan_local[i+1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
-//            if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
-//        }
+                vElement_remote.emplace_back(entry[i].col);
+                ++recvCount[procNum];
+                nnzPerCol_remote.emplace_back(0);
 
-    } // end of if(entry.size()) != 0
+                do{
+                    // the original col values are not being used in matvec. the ordering starts from 0, and goes up by 1.
+                    // col_remote2 is the original col value and will be used in making strength matrix.
+//                    col_remote.emplace_back(vElement_remote.size() - 1);
+//                    col_remote2.emplace_back(entry[i].col);
+                    row_remote.emplace_back(entry[i].row);
+                    val_remote.emplace_back(entry[i].val);
+                    ++nnzPerCol_remote.back();
+#ifdef _USE_PETSC_
+                    ++nnzPerRow_remote[entry[i].row - split[rank]];
+#endif
+                }while(++i < nnz_l && entry[i].col == entry[i - 1].col);
+            }
+            nnzProc_p[procNum] = i - tmp;
+        }
+    } // for i
 
-//    print_vector(val_local, 1, "val_local", comm);
+    nnz_l_local     = row_local.size();
+    nnz_l_remote    = row_remote.size();
+    col_remote_size = vElement_remote.size(); // number of remote columns
 
 #ifdef __DEBUG1__
     if(verbose_transposeP){
@@ -341,12 +302,14 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         std::vector<int> vIndexCount(nprocs);
         MPI_Alltoall(&recvCount[0], 1, MPI_INT, &vIndexCount[0], 1, MPI_INT, comm);
 
+#ifdef __DEBUG1__
 //    for(int i=0; i<nprocs; i++){
 //        MPI_Barrier(comm);
 //        if(rank==2) cout << "recieve from proc " << i << "\trecvCount   = " << recvCount[i] << endl;
 //        MPI_Barrier(comm);
 //        if(rank==2) cout << "send to proc      " << i << "\tvIndexCount = " << vIndexCount[i] << endl;
 //    }
+#endif
 
         numRecvProc = 0;
         numSendProc = 0;
@@ -377,14 +340,17 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
             vdispls[i] = vdispls[i - 1] + vIndexCount[i - 1];
             rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
         }
+
         vIndexSize = (index_t)vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
         recvSize   = (index_t)rdispls[nprocs - 1] + recvCount[nprocs - 1];
 
+#ifdef __DEBUG1__
 //        for (int i=0; i<nprocs; i++)
 //            if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
 //        MPI_Barrier(comm);
 //        for (int i=0; i<nprocs; i++)
 //            if(rank==0) cout << "vIndexCount[i] = " << vIndexCount[i] << "\tvdispls[i] = " << vdispls[i] << "\trecvCount[i] = " << recvCount[i] << "\trdispls[i] = " << rdispls[i] << endl;
+#endif
 
         // vIndex is the set of indices of elements that should be sent.
         vIndex.resize(vIndexSize);
@@ -393,9 +359,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
         MPI_Reduce(&vIndexSize, &matvec_comm_sz, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, 0, comm);
         matvec_comm_sz /= nprocs;
-//        if(!rank) printf("R: ave comm sz = %d\n", matvec_comm_sz);
 
 #ifdef __DEBUG1__
+//        if(!rank) printf("R: ave comm sz = %d\n", matvec_comm_sz);
         if (verbose_transposeP) {
             MPI_Barrier(comm);
             printf("rank %d: transposeP part7\n", rank);
@@ -405,7 +371,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
 #pragma omp parallel for
         for (index_t i = 0; i < vIndexSize; ++i) {
-//        if(rank==1) cout << vIndex[i] << "\t" << vIndex[i]-P->split[rank] << endl;
+//            if(rank==1) cout << vIndex[i] << "\t" << vIndex[i]-P->split[rank] << endl;
             vIndex[i] -= split[rank];
         }
 
@@ -422,6 +388,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     index_t *row_localP = &*row_local.begin();
     std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // NOTE: this is ordered only row-wise, not row-major.
 
+#ifdef __DEBUG1__
+    {
 //    long start;
 //    for(i = 0; i < M; ++i) {
 //        start = nnzPerRowScan_local[i];
@@ -445,8 +413,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //    }
 //    if(rank==0) cout << endl;
 //    MPI_Barrier(comm);
-
-#ifdef __DEBUG1__
+    }
     if(verbose_transposeP){
         MPI_Barrier(comm);
         printf("rank %d: transposeP done!\n", rank);
@@ -463,7 +430,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     // compute nnz_list
     nnz_list.resize(nprocs);
     MPI_Allgather(&nnz_l, 1, par::Mpi_datatype<nnz_t>::value(), &nnz_list[0], 1, par::Mpi_datatype<nnz_t>::value(), comm);
+
+#ifdef __DEBUG1__
 //    print_vector(nnz_list, 1, "nnz_list", comm);
+#endif
 
     return 0;
 } //end of restrictMatrix::transposeP
