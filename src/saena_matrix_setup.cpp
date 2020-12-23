@@ -795,9 +795,12 @@ int saena_matrix::set_off_on_diagonal(){
         col_remote_size = 0;
         recvCount.assign(nprocs, 0);
         nnzPerRow_local.assign(M, 0);
+
+#ifdef _USE_PETSC_
         if(nprocs > 1){
             nnzPerRow_remote.assign(M, 0);
         }
+#endif
 
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
         index_t procNum, procNumTmp;
@@ -838,8 +841,10 @@ int saena_matrix::set_off_on_diagonal(){
                         col_remote2.emplace_back(entry[i].col);
                         row_remote.emplace_back(entry[i].row - split[rank]);
                         values_remote.emplace_back(entry[i].val);
-                        ++nnzPerRow_remote[entry[i].row - split[rank]];
                         ++nnzPerCol_remote.back();
+#ifdef _USE_PETSC_
+                        ++nnzPerRow_remote[entry[i].row - split[rank]];
+#endif
                     }while(++i < nnz_l && entry[i].col == entry[i - 1].col);
                 }
                 nnzProc_p[procNum] = i - tmp;
