@@ -125,7 +125,7 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
-#if 0
+//#if 0
     MPI_Barrier(comm); // for timing the solve phase
     t1 = omp_get_wtime();
 
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]){
 
     t2 = omp_get_wtime();
     print_time(t2 - t1, "Solve:", comm, true, true);
-#endif
+//#endif
 //    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
 //    saena::laplacian2D_check_solution(u, mx, my, comm);
 
