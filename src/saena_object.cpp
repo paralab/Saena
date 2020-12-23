@@ -694,7 +694,27 @@ void saena_object::profile_matvecs_breakdown(){
     const int iter = 5;
     double t = 0, t1 = 0, t2 = 0;
 
-    for(int l = 0; l <= max_level; ++l){
+#ifdef __DEBUG1__
+    // for testing the correctness of different matvec implementations
+/*
+    if(grids[0].active) {
+        int rank = 0;
+        MPI_Comm_rank(grids[0].A->comm, &rank);
+        vector<value_t> v(grids[0].A->M);
+        for(int i = 0; i < grids[0].A->M; ++i){
+            v[i] = i + grids[0].A->split[rank];
+        }
+        vector<value_t> w1(grids[0].A->M), w2(grids[0].A->M);
+        grids[0].A->matvec_sparse_test_orig(v, w1);
+        grids[0].A->matvec_sparse_test4(v, w2);
+        for(int i = 0; i < grids[0].A->M; ++i){
+            ASSERT(w1[i] == w2[i], "rank " << rank << ": i = " << i << ": " << w1[i] << " != " << w2[i]);
+        }
+    }
+*/
+#endif
+
+    for(int l = 0; l <= 0; ++l){
         if(grids[l].active) {
             vector<value_t> v(grids[l].A->M, 0.123);
             vector<value_t> w(grids[l].A->M);
