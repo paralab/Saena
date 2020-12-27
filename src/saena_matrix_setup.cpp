@@ -948,8 +948,9 @@ int saena_matrix::set_off_on_diagonal(){
                 MPI_Allreduce(&recvSize, &recvSize_max, 1, MPI_INT, MPI_MAX, comm);
                 MPI_Allreduce(&recvSize, &recvSize_ave, 1, MPI_INT, MPI_SUM, comm);
                 recvSize_ave /= nprocs;
-                printf("rank %d: send_sz = (%d, %d, %d), recv_sz = (%d, %d, %d) (min, ave, max)\n",
-                       rank, vIndexSize_min, vIndexSize_ave, vIndexSize_max, recvSize_min, recvSize_ave, recvSize_max);
+                if(!rank) printf("\nsend_sz = (%d, %d, %d), recv_sz = (%d, %d, %d) (min, ave, max)\n",
+                       vIndexSize_min, vIndexSize_ave, vIndexSize_max, recvSize_min, recvSize_ave, recvSize_max);
+
 */
             }
 #endif
