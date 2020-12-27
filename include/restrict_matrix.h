@@ -49,6 +49,7 @@ public:
     std::vector<index_t> vElementRep_remote;
     std::vector<index_t> nnzPerCol_remote;
 //    std::vector<nnz_t> nnzPerRowScan_local;
+    std::vector<nnz_t>   nnzPerProcScan; // number of remote nonzeros on each proc. used in matvec
 
     std::vector<int> vdispls;
     std::vector<int> rdispls;
@@ -56,6 +57,7 @@ public:
     std::vector<int> recvProcCount;
     std::vector<int> sendProcRank;
     std::vector<int> sendProcCount;
+    std::vector<int> recvCount;
     index_t vIndexSize  = 0;
     index_t recvSize    = 0;
     int numRecvProc = 0;
