@@ -802,8 +802,7 @@ int saena_matrix::set_off_on_diagonal(){
         }
 #endif
 
-        // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
-        index_t procNum, procNumTmp;
+        index_t procNum = 0, procNumTmp = 0;
         nnz_t tmp = 0;
         nnzPerProcScan.assign(nprocs + 1, 0);
         auto *nnzProc_p = &nnzPerProcScan[1];

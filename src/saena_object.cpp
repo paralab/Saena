@@ -714,7 +714,7 @@ void saena_object::profile_matvecs_breakdown(){
 */
 #endif
 
-    for(int l = 0; l <= 0; ++l){
+    for(int l = 0; l <= max_level; ++l){
         if(grids[l].active) {
             vector<value_t> v(grids[l].A->M, 0.123);
             vector<value_t> w(grids[l].A->M);
