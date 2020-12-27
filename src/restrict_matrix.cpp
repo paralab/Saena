@@ -239,12 +239,12 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //    col_remote.clear();
     val_remote.clear();
 
-    recvCount.assign(nprocs, 0);
+    recvCount.resize(nprocs);
     nnzPerRow_local.assign(M, 0);
 //    nnzPerRowScan_local.assign(M+1, 0);
 
     index_t procNum = 0, procNumTmp = 0;
-    nnz_t tmp = 0;
+    nnz_t tmp = 0, tmp2 = 0;
     nnzPerProcScan.assign(nprocs + 1, 0);
     auto *nnzProc_p = &nnzPerProcScan[1];
 
@@ -252,7 +252,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     nnz_t i = 0;
     while(i < nnz_l) {
-        procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
+        procNum = lower_bound3(&split[0], &split[nprocs], entry[i].col);
 //        if(rank==0) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
 
         if(procNum == rank){ // local
@@ -268,10 +268,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
         }else{ // remote
             tmp = i;
+            tmp2 = vElement_remote.size();
             while(i < nnz_l && entry[i].col < split[procNum + 1]) {
-
                 vElement_remote.emplace_back(entry[i].col);
-                ++recvCount[procNum];
                 nnzPerCol_remote.emplace_back(0);
 
                 do{
@@ -287,6 +286,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 #endif
                 }while(++i < nnz_l && entry[i].col == entry[i - 1].col);
             }
+
+            recvCount[procNum] = vElement_remote.size() - tmp2;
             nnzProc_p[procNum] = i - tmp;
         }
     } // for i
