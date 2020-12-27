@@ -24,37 +24,94 @@ int prolong_matrix::findLocalRemote(){
 //    printf("rank=%d \t P.nnz_l=%lu \t P.nnz_g=%lu \n", rank, nnz_l, nnz_g);
 //    print_vector(entry, -1, "entry", comm);
 
-    index_t procNum = 0;
-    nnz_l_local     = 0;
-    nnz_l_remote    = 0;
-    col_remote_size = 0; // number of remote columns
-    std::vector<int> recvCount(nprocs, 0);
-    nnzPerRow_local.assign(M, 0);
-    nnzPerRowScan_local.assign(M + 1, 0);
-
     row_local.clear();
     col_local.clear();
     val_local.clear();
     row_remote.clear();
     col_remote.clear();
     val_remote.clear();
-    vElementRep_local.clear();
-    vElement_remote.clear();
-    vElement_remote_t.clear();
-    vElementRep_remote.clear();
     nnzPerCol_remote.clear();
+    vElement_remote.clear();
+//    vElement_remote_t.clear();
+//    vElementRep_local.clear();
+//    vElementRep_remote.clear();
 
-    std::vector<int> vIndexCount_t(nprocs, 0);
+    recvCount.assign(nprocs, 0);
+    nnzPerRow_local.assign(M, 0);
+//    nnzPerRowScan_local.assign(M + 1, 0);
 
+    std::vector<int> vIndexCount_t(nprocs);
+
+    index_t procNum = 0, procNumTmp = 0;
+    nnz_t tmp = 0;
+    nnzPerProcScan.assign(nprocs + 1, 0);
+    auto *nnzProc_p = &nnzPerProcScan[1];
+
+    assert(nnz_l == entry.size());
+
+    nnz_t i = 0;
+    while(i < nnz_l) {
+        procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
+//        if(rank==0) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
+
+        if(procNum == rank){ // local
+            while(i < nnz_l && entry[i].col < splitNew[procNum + 1]) {
+//                if(!rank) printf("entry[i].row = %d, split[rank] = %d, dif = %d\n", entry[i].row, split[rank], entry[i].row - split[rank]);
+//                if(!rank) cout << entry[i] << endl;
+                ++nnzPerRow_local[entry[i].row];
+                row_local.emplace_back(entry[i].row);
+                col_local.emplace_back(entry[i].col);
+                val_local.emplace_back(entry[i].val);
+                ++i;
+            }
+
+        }else{ // remote
+            tmp = i;
+            while(i < nnz_l && entry[i].col < splitNew[procNum + 1]) {
+
+                vElement_remote.emplace_back(entry[i].col);
+                ++recvCount[procNum];
+                nnzPerCol_remote.emplace_back(0);
+//                vElement_remote_t.emplace_back(row_remote.size() - 1);
+
+                do{
+                    row_remote.emplace_back(entry[i].row);
+                    col_remote.emplace_back(entry[i].col);
+                    val_remote.emplace_back(entry[i].val);
+                    ++nnzPerCol_remote.back();
+                }while(++i < nnz_l && entry[i].col == entry[i - 1].col);
+            }
+
+            vIndexCount_t[procNum] = i - tmp;
+            nnzProc_p[procNum] = i - tmp;
+        }
+    } // for i
+
+    nnz_l_local     = row_local.size();
+    nnz_l_remote    = row_remote.size();
+    col_remote_size = vElement_remote.size(); // number of remote columns
+
+    recvCount[rank] = 0;
+
+//    for (i = 0; i < M; ++i) {
+//        nnzPerRowScan_local[i + 1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
+//        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
+//    }
+
+    for (i = 1; i < nprocs + 1; ++i){
+        nnzPerProcScan[i] += nnzPerProcScan[i - 1];
+    }
+
+/*
+    fill(vIndexCount_t.begin(), vIndexCount_t.end(), 0);
     if(nnz_l != 0) {
-
         // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
         if (entry[0].col >= splitNew[rank] && entry[0].col < splitNew[rank + 1]) { // local
             nnzPerRow_local[entry[0].row]++;
             row_local.emplace_back(entry[0].row);
             col_local.emplace_back(entry[0].col);
             val_local.emplace_back(entry[0].val);
-            vElementRep_local.emplace_back(1);
+//            vElementRep_local.emplace_back(1);
         } else { // remote
             row_remote.emplace_back(entry[0].row);
             col_remote.emplace_back(entry[0].col);
@@ -62,10 +119,10 @@ int prolong_matrix::findLocalRemote(){
             nnzPerCol_remote.emplace_back(1);
 
             vElement_remote.emplace_back(entry[0].col);
-            vElementRep_remote.emplace_back(1);
+//            vElementRep_remote.emplace_back(1);
             recvCount[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
 
-            vElement_remote_t.emplace_back(nnz_l_remote - 1);
+//            vElement_remote_t.emplace_back(nnz_l_remote - 1);
             vIndexCount_t[lower_bound3(&splitNew[0], &splitNew[nprocs], entry[0].col)] = 1;
         }
 
@@ -76,10 +133,10 @@ int prolong_matrix::findLocalRemote(){
                 row_local.emplace_back(entry[i].row);
                 col_local.emplace_back(entry[i].col);
                 val_local.emplace_back(entry[i].val);
-                if (entry[i].col != entry[i - 1].col)
-                    vElementRep_local.emplace_back(1);
-                else
-                    (*(vElementRep_local.end() - 1))++;
+//                if (entry[i].col != entry[i - 1].col)
+//                    vElementRep_local.emplace_back(1);
+//                else
+//                    (*(vElementRep_local.end() - 1))++;
 
             } else { // remote
 //                if(rank==2) printf("entry[i].row = %lu\n", entry[i].row+split[rank]);
@@ -88,16 +145,16 @@ int prolong_matrix::findLocalRemote(){
                 val_remote.emplace_back(entry[i].val);
                 procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
                 vIndexCount_t[procNum]++;
-                vElement_remote_t.emplace_back((index_t) nnz_l_remote - 1);
+//                vElement_remote_t.emplace_back((index_t) nnz_l_remote - 1);
 
                 if (entry[i].col != entry[i - 1].col) {
                     vElement_remote.emplace_back(entry[i].col);
-                    vElementRep_remote.emplace_back(1);
+//                    vElementRep_remote.emplace_back(1);
                     procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
                     recvCount[procNum]++;
                     nnzPerCol_remote.emplace_back(1);
                 } else {
-                    (*(vElementRep_remote.end() - 1))++;
+//                    (*(vElementRep_remote.end() - 1))++;
                     (*(nnzPerCol_remote.end() - 1))++;
                 }
             }
@@ -109,12 +166,13 @@ int prolong_matrix::findLocalRemote(){
 
 //        MPI_Barrier(comm); printf("rank=%d, P.nnz_l=%lu, P.nnz_l_local=%u, P.nnz_l_remote=%u \n", rank, nnz_l, nnz_l_local, nnz_l_remote); MPI_Barrier(comm);
 
-        for (index_t i = 0; i < M; ++i) {
-            nnzPerRowScan_local[i + 1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
+//        for (index_t i = 0; i < M; ++i) {
+//            nnzPerRowScan_local[i + 1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
 //        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
-        }
+//        }
 
     }// if(nnz_l != 0)
+*/
 
     if(nprocs >1) {
 
@@ -144,8 +202,8 @@ int prolong_matrix::findLocalRemote(){
                 numRecvProc++;
                 recvProcRank.emplace_back(i);
                 recvProcCount.emplace_back(recvCount[i]);
-//            sendProcCount_t.emplace_back(vIndexCount_t[i]); // use recvProcRank for it.
-//            if(rank==0) cout << i << "\trecvCount[i] = " << recvCount[i] << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
+//                sendProcCount_t.emplace_back(vIndexCount_t[i]); // use recvProcRank for it.
+//                if(rank==0) cout << i << "\trecvCount[i] = " << recvCount[i] << "\tvIndexCount_t[i] = " << vIndexCount_t[i] << endl;
             }
             if (vIndexCount[i] != 0) {
                 numSendProc++;
@@ -185,6 +243,8 @@ int prolong_matrix::findLocalRemote(){
         matvec_comm_sz /= nprocs;
 //        if(!rank) printf("\nP: ave comm sz = %d\n", vIndexSizeAvg);
 
+        vElement_remote.clear();
+        vElement_remote.shrink_to_fit();
         vIndexCount.clear();
         vIndexCount.shrink_to_fit();
         recvCount.clear();
