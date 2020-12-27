@@ -943,9 +943,10 @@ int saena_matrix::set_off_on_diagonal(){
             // vecValues = vector values to be received from other procs
             // These will be used in matvec and they are set here to reduce the time of matvec.
             vSend.resize(vIndexSize);
-            vSend2.resize(vIndexSize);
             vecValues.resize(recvSize);
-            vecValues2.resize(recvSize);
+
+//            vSend2.resize(vIndexSize);
+//            vecValues2.resize(recvSize);
 
 //            printf("rank %d: vIndexSize = %d, recvSize = %d, send_bufsize = %d, recv_bufsize = %d \n",
 //               rank, vIndexSize, recvSize, send_bufsize, recv_bufsize);

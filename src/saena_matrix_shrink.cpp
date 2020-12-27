@@ -7,7 +7,7 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
     // matvec_dummy_time[1]: local loop
     // matvec_dummy_time[2]: remote loop
     // matvec_dummy_time[3]: total time
-
+#if 0
     int rank, nprocs;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -46,6 +46,10 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
         if(cpu_shrink_thre2 == 1) cpu_shrink_thre2 = 2;
 //        if(rank==0) printf("SHRINK: cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
     }
+#endif
+
+    do_shrink = true;
+    cpu_shrink_thre2 = 2;
 
     return 0;
 }
@@ -494,7 +498,7 @@ int saena_matrix::compute_matvec_dummy_time(){
 
     MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
 
-//    print_vector(matvec_dummy_time, 0, "matvec_dummy_time final", comm);
+    print_vector(matvec_dummy_time, 0, "matvec_dummy_time final", comm);
 
 //    if (rank == 0) {
 //        std::cout << std::endl << "decide_shrinking:" << std::endl;

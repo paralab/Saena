@@ -696,9 +696,19 @@ void saena_object::profile_matvecs_breakdown(){
 
     for(int l = 0; l <= max_level; ++l){
         if(grids[l].active) {
-            t = 0;
             vector<value_t> v(grids[l].A->M, 0.123);
             vector<value_t> w(grids[l].A->M);
+
+            // warm up
+            for(int i = 0; i < iter; ++i){
+                t1 = omp_get_wtime();
+                grids[l].A->matvec_sparse_test_orig(v, w);
+                t2 = omp_get_wtime();
+                t += t2 - t1;
+                swap(v, w);
+            }
+
+            t = 0;
             grids[l].A->matvec_time_init();
             MPI_Barrier(grids[l].A->comm);
             for(int i = 0; i < iter; ++i){
@@ -708,8 +718,10 @@ void saena_object::profile_matvecs_breakdown(){
                 t += t2 - t1;
                 swap(v, w);
             }
-            print_time_all(t / iter, "matvec level " + to_string(l), grids[l].A->comm);
-            grids[l].A->matvec_time_print();
+//            print_time_all(t / iter, "matvec level " + to_string(l), grids[l].A->comm);
+//            grids[l].A->matvec_time_print(); // for matvec test2 and test3
+//            grids[l].A->matvec_time_print2(); // average
+            grids[l].A->matvec_time_print3(); // min, average and max for all parts of matvec
         }
     }
 }

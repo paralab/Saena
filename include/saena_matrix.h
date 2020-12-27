@@ -123,9 +123,9 @@ public:
     index_t recvSize   = 0;
     std::vector<index_t> vIndex;        // indices that should be sent during matvec
     std::vector<value_t> vSend;
-    std::vector<value_t> vSend2;
     std::vector<value_t> vecValues;
-    std::vector<value_t> vecValues2;    // for compressed matvec
+//    std::vector<value_t> vSend2;
+//    std::vector<value_t> vecValues2;    // for compressed matvec
 
     std::vector<nnz_t> indicesP_local;
 
@@ -223,12 +223,6 @@ public:
     int matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<value_t>& w);
 #endif
 
-    // for the compression paper
-    void matvec_time_init();
-    void matvec_time_print(const int &opt = 1) const; // opt: pass 2 for the zfp version
-    unsigned long matvec_iter = 0;
-    double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0, part7 = 0;
-
     // ***********************************************************
 
     saena_matrix();
@@ -300,11 +294,17 @@ public:
     void matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
 
     // for profiling
+    unsigned long matvec_iter = 0;
+    double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0, part7 = 0, part8 = 0;
+    void matvec_time_init();
+    void matvec_time_print(const int &opt = 1) const; // opt: pass 2 for the zfp version
+    void matvec_time_print2() const;
+    void matvec_time_print3() const;
+
     void matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_test1(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_test3(std::vector<value_t>& v, std::vector<value_t>& w);
-    void matvec_sparse_test4(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w); // openmp version
 
     // matvec timing functions for the matvec paper
