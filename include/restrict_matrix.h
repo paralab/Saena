@@ -48,7 +48,8 @@ public:
     std::vector<index_t> vElementRep_local;
     std::vector<index_t> vElementRep_remote;
     std::vector<index_t> nnzPerCol_remote;
-    std::vector<nnz_t> nnzPerRowScan_local;
+//    std::vector<nnz_t> nnzPerRowScan_local;
+
     std::vector<int> vdispls;
     std::vector<int> rdispls;
     std::vector<int> recvProcRank;
