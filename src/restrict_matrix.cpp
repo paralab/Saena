@@ -115,6 +115,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 #endif
     }
 
+#ifdef __DEBUG1__
+    {
 //    nnz_t iter = 0;
 //    for (index_t i = 0; i < P->M; ++i) {
 //        for (index_t j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter) {
@@ -130,7 +132,6 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //        }
 //    }
 
-#ifdef __DEBUG1__
 //    MPI_Barrier(comm);
 //    iter = 0;
 //    if(rank==1){
@@ -139,6 +140,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //            for (j = 0; j < P->nnzPerRow_local[i]; ++j, ++iter)
 //                cout << entry[iter].row << "\t" << entry[iter].col << "\t" << entry[iter].val << endl;}
 //    MPI_Barrier(comm);
+    }
 #endif
 
     // clear() is being called on entry(), so shrink_to_fit() in case it was bigger before.
@@ -190,6 +192,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     std::sort(entry.begin(), entry.end());
 
 #ifdef __DEBUG1__
+//    print_vector(entry, -1, "entry", comm);
 //    MPI_Barrier(comm);
 //    if(rank==2){
 //        cout << endl << "final after sorting:" << " rank = " << rank << "\tP->recvSize_t = " << P->recvSize_t << endl;
@@ -292,6 +295,12 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     nnz_l_remote    = row_remote.size();
     col_remote_size = vElement_remote.size(); // number of remote columns
 
+    recvCount[rank] = 0;
+
+    for (i = 1; i < nprocs + 1; ++i){
+        nnzPerProcScan[i] += nnzPerProcScan[i - 1];
+    }
+
 #ifdef __DEBUG1__
     if(verbose_transposeP){
         MPI_Barrier(comm); printf("rank %d: transposeP part6\n", rank); MPI_Barrier(comm);
@@ -380,6 +389,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         // These will be used in matvec and they are set here to reduce the time of matvec.
         vSend.resize(vIndexSize);
         vecValues.resize(recvSize);
+
+        mv_req.resize(numSendProc + numRecvProc);
+        mv_stat.resize(numSendProc + numRecvProc);
     }
 
     indicesP_local.resize(nnz_l_local);
@@ -550,6 +562,94 @@ restrict_matrix::~restrict_matrix() = default;
 
 
 void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
+
+    int rank = 0;
+    MPI_Comm_rank(comm, &rank);
+    int flag = 0;
+
+    // put the values of the vector in vSend, for sending to other processors
+    for(index_t i = 0; i < vIndexSize; ++i)
+        vSend[i] = v[vIndex[i]];
+
+//    double t20 = MPI_Wtime();
+//    time[0] += (t20-t10);
+
+//    double t13 = MPI_Wtime();
+//    double t1comm = omp_get_wtime();
+
+    for(int i = 0; i < numRecvProc; i++){
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &mv_req[i]);
+//        MPI_Test(&requests[i], &flag, &statuses[i]);
+    }
+
+    for(int i = 0; i < numSendProc; i++){
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &mv_req[numRecvProc+i]);
+        MPI_Test(&mv_req[numRecvProc + i], &flag, &mv_stat[numRecvProc + i]);
+    }
+
+    // local loop
+    // ----------
+//    double t1loc = omp_get_wtime();
+    value_t* v_p = &v[0] - split[rank];
+    std::fill(w.begin(), w.end(), 0);
+
+    nnz_t iter = 0;
+    for (index_t i = 0; i < M; ++i) {
+        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+            w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+        }
+    }
+
+//    double t2loc = omp_get_wtime();
+//    tloc += (t2loc - t1loc);
+
+    // remote loop
+    // -----------
+//    double t1rem = omp_get_wtime();
+
+    int recv_proc = 0, recv_proc_idx = 0, np = 0;;
+    while(np < numRecvProc){
+        MPI_Waitany(numRecvProc, &mv_req[0], &recv_proc_idx, MPI_STATUS_IGNORE);
+        ++np;
+
+        recv_proc = recvProcRank[recv_proc_idx];
+
+//        if(rank==1) printf("recv_proc_idx = %d, recv_proc = %d, np = %d, numRecvProc = %d, recvCount[recv_proc] = %d\n",
+//                              recv_proc_idx, recv_proc, np, numRecvProc, recvCount[recv_proc]);
+
+        iter = nnzPerProcScan[recv_proc];
+        value_t *vecValues_p        = &vecValues[rdispls[recv_proc]];
+        auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
+        for (index_t j = 0; j < recvCount[recv_proc]; ++j) {
+//            if(rank==1) printf("%u\n", nnzPerCol_remote_p[j]);
+            for (index_t i = 0; i < nnzPerCol_remote_p[j]; ++i, ++iter) {
+//                if(rank==1) printf("%ld\t%d\t%f\t%f\n", iter, row_remote[iter], val_remote[iter], vecValues_p[j]);
+                w[row_remote[iter]] += val_remote[iter] * vecValues_p[j];
+            }
+        }
+    }
+
+/*
+    MPI_Waitall(numRecvProc, requests, statuses);
+    iter = 0;
+    for (index_t j = 0; j < col_remote_size; ++j) {
+        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
+            w[row_remote[iter]] += val_remote[iter] * vecValues[j];
+        }
+    }
+*/
+
+//    double t2rem = omp_get_wtime();
+//    trem += (t2rem - t1rem);
+
+    MPI_Waitall(numSendProc, &mv_req[numRecvProc], &mv_stat[numRecvProc]);
+
+//    double t2comm = omp_get_wtime();
+//    ttot  += (t2comm - t1comm);
+//    tcomm += (t2comm - t1comm) - (t2loc - t1loc) - (t2rem - t1rem);
+}
+
+void restrict_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
@@ -733,12 +833,12 @@ void restrict_matrix::matvec_omp(std::vector<value_t>& v, std::vector<value_t>& 
 }
 
 
-int restrict_matrix::print_entry(int ran){
+int restrict_matrix::print_entry(int ran) const{
 
     // if ran >= 0 print the matrix entries on proc with rank = ran
     // otherwise print the matrix entries on all processors in order. (first on proc 0, then proc 1 and so on.)
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -766,12 +866,12 @@ int restrict_matrix::print_entry(int ran){
 }
 
 
-int restrict_matrix::print_info(int ran){
+int restrict_matrix::print_info(int ran) const{
 
     // if ran >= 0 print the matrix info on proc with rank = ran
     // otherwise print the matrix info on all processors in order. (first on proc 0, then proc 1 and so on.)
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 

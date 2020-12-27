@@ -73,6 +73,9 @@ public:
     std::vector<nnz_t> indicesP_local;
 //    std::vector<nnz_t> indicesP_remote;
 
+    vector<MPI_Request> mv_req;
+    vector<MPI_Status>  mv_stat;
+
 //    bool arrays_defined = false; // set to true if transposeP function is called. it will be used for destructor.
 
     bool verbose_restrict_setup = false;
@@ -87,10 +90,11 @@ public:
     int transposeP(prolong_matrix* P);
     int openmp_setup();
     void matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec2(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_omp(std::vector<value_t>& v, std::vector<value_t>& w);
 
-    int print_entry(int ran);
-    int print_info(int ran);
+    int print_entry(int ran) const;
+    int print_info(int ran) const;
 
     int writeMatrixToFile(const std::string &name = "") const;
 };
