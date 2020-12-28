@@ -511,7 +511,6 @@ int saena_matrix::matrix_setup(bool scale /*= true*/) {
 //        print_vector(entry, -1, "entry", comm);
 
         assembled = true;
-        freeBoolean = true; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
         total_active_procs = nprocs;
 
         // *************************** set the inverse of diagonal of A (for smoothers) ****************************

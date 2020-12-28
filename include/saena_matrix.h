@@ -37,7 +37,6 @@ private:
 
     nnz_t initial_nnz_l = 0;
     bool read_from_file = false;
-    bool freeBoolean = false; // use this parameter to know if destructor for saena_matrix class should free the variables or not.
 
     std::vector<int> recvCount;
     std::vector<int> sendCount;
@@ -146,7 +145,7 @@ public:
     // shrink_minor: if there is no entry for the coarse matrix on this proc, then shrink.
     bool active_minor = false;    // default = false
 
-    bool enable_shrink   = false; // default = true
+    bool enable_shrink   = true; // default = true
     bool enable_shrink_c = true;  // default = true. enables shrinking for the coarsest level.
     bool do_shrink       = false; // default = false
     bool shrinked        = false; // default = false. if shrinking happens for the matrix, set this to true.

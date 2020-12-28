@@ -781,7 +781,6 @@ int saena_matrix::erase2(){
 //    shrinked = false;
 //    active = true;
     assembled = false;
-    freeBoolean = false;
 
     return 0;
 }
@@ -896,7 +895,6 @@ int saena_matrix::erase_keep_remote2(){
 //    assembled = false;
 //    shrinked = false;
 //    active = true;
-    freeBoolean = false;
 
     return 0;
 }
