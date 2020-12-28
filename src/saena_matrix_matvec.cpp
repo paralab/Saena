@@ -296,8 +296,6 @@ void saena_matrix::matvec_time_init(){
     part4 = 0;
     part5 = 0;
     part6 = 0;
-    part7 = 0;
-    part8 = 0;
 }
 
 void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
@@ -315,23 +313,21 @@ void saena_matrix::matvec_time_print(const int &opt /*= 1*/) const{
     double p2ave = print_time_ave(part2 / tmp, "", comm); // compress
     double p3ave = 0;                                     // comm
     if(opt == 2){
-        p3ave = print_time_ave((part3 - part4 - part5 - part8) / tmp, "", comm);
+        p3ave = print_time_ave((part3 - part4 - part5 - part6) / tmp, "", comm);
     }else { // (opt == 1)
-        p3ave = print_time_ave((part3 - part5 - part8) / tmp, "", comm);
+        p3ave = print_time_ave((part3 - part5 - part6) / tmp, "", comm);
     }
     double p4ave = print_time_ave(part4 / tmp, "", comm); // decompress
     double p5ave = print_time_ave(part5 / tmp, "", comm); // remote
-    double p6ave = print_time_ave(part6 / tmp, "", comm); // swap
-    double p7ave = print_time_ave(part7 / tmp, "", comm); // wait
-    double p8ave = print_time_ave(part8 / tmp, "", comm); // local
+    double p6ave = print_time_ave(part6 / tmp, "", comm); // local
     if(!rank){
 //        printf("matvec iteration: %ld", matvec_iter);
         if(opt == 1) {
-            printf("\naverage time:\nsend buff\nlocal\nremote\ncomm\nwait\nswap\n\n"
-                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p8ave, p5ave, p3ave, p7ave, p6ave);
+            printf("\naverage time:\nsend_buff\nlocal\nremote\ncomm\n\n"
+                   "%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p6ave, p5ave, p3ave);
         }else{
-            printf("\naverage time:\nsend buff\ncompressndecompress\nlocal\nremote\ncomm\nwait\nswap\n\n"
-                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p2ave, p4ave, p8ave, p5ave, p3ave, p7ave, p5ave);
+            printf("\naverage time:\nsend_buff\ncompressndecompress\nlocal\nremote\ncomm\n\n"
+                   "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p2ave, p4ave, p6ave, p5ave, p3ave);
         }
     }
 }
@@ -346,14 +342,14 @@ void saena_matrix::matvec_time_print2() const{
     }
 
     double p1ave = print_time_ave(part1 / tmp, "", comm);                   // send buff
-    double p3ave = print_time_ave((part3 - part5 - part8) / tmp, "", comm); // comm
+    double p3ave = print_time_ave((part3 - part5 - part6) / tmp, "", comm); // comm
+    double p6ave = print_time_ave(part6 / tmp, "", comm);                   // local
     double p5ave = print_time_ave(part5 / tmp, "", comm);                   // remote
-    double p8ave = print_time_ave(part8 / tmp, "", comm);                   // local
 
-    double tot = p1ave + p3ave + p5ave + p8ave;
+    double tot = p1ave + p3ave + p5ave + p6ave;
     if(!rank){
         printf("\naverage time:\nsend_buff\nlocal\nremote\ncomm\ntot\n\n"
-               "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p3ave, p8ave, p5ave, tot);
+               "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p3ave, p6ave, p5ave, tot);
     }
 }
 
@@ -366,11 +362,10 @@ void saena_matrix::matvec_time_print3() const{
         tmp = static_cast<double>(matvec_iter);
     }
 
-    print_time_all(part1 / tmp, "send buff", comm);              // send buff
-    print_time_all(part8 / tmp, "local", comm);                  // local
+    print_time_all(part1 / tmp, "send_buff", comm);              // send buff
+    print_time_all(part6 / tmp, "local", comm);                  // local
     print_time_all(part5 / tmp, "remote", comm);                 // remote
-    print_time_all((part3 - part5 - part8) / tmp, "comm", comm); // comm
-    print_time_all(part7 / tmp, "wait", comm);                   // wait
+    print_time_all((part3 - part5 - part6) / tmp, "comm", comm); // comm
     print_time_all((part1 + part3) / tmp, "total", comm);        // total
 
     if(!rank) print_sep();
@@ -435,15 +430,12 @@ void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<
     }
 
     t = omp_get_wtime() - t;
-    part8 += t;
+    part6 += t;
 
     int np = 0;
     int recv_proc = 0, recv_proc_idx = 0;
     while(np < numRecvProc){
-        t = omp_get_wtime();
         MPI_Waitany(numRecvProc, &requests[0], &recv_proc_idx, MPI_STATUS_IGNORE);
-        t = omp_get_wtime() - t;
-        part7 += t;
         ++np;
 
         recv_proc = recvProcRank[recv_proc_idx];
@@ -465,11 +457,7 @@ void saena_matrix::matvec_sparse_test_orig(std::vector<value_t>& v, std::vector<
         part5 += t;
     }
 
-    t = omp_get_wtime();
-//    MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
     MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
-    t = omp_get_wtime() - t;
-    part7 += t;
 //    }
 
     tcomm = omp_get_wtime() - tcomm;
@@ -537,14 +525,11 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
     }
 
     t = omp_get_wtime() - t;
-    part8 += t;
+    part6 += t;
 
 //    if(nprocs > 1){
-    t = omp_get_wtime();
     MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
 //    MPI_Waitall(numRecvProc, &requests[0], MPI_STATUSES_IGNORE);
-    t = omp_get_wtime() - t;
-    part7 += t;
 
 //    print_vector(vecValues, 1, "vecValues", comm);
 
@@ -566,11 +551,8 @@ void saena_matrix::matvec_sparse_test1(std::vector<value_t>& v, std::vector<valu
     t = omp_get_wtime() - t;
     part5 += t;
 
-    t = omp_get_wtime();
     MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
 //    MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
-    t = omp_get_wtime() - t;
-    part7 += t;
 //    }
 
     tcomm = omp_get_wtime() - tcomm;
@@ -656,7 +638,7 @@ void saena_matrix::matvec_sparse_test2(std::vector<value_t>& v, std::vector<valu
     }
 
     t = omp_get_wtime() - t;
-    part8 += t;
+    part6 += t;
 
     if(nprocs > 1) {
         t = omp_get_wtime();
@@ -858,7 +840,7 @@ void saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<valu
     }
 
     t = omp_get_wtime() - t;
-    part8 += t;
+    part6 += t;
 
     if(nprocs > 1) {
         ++k;
@@ -1061,13 +1043,10 @@ void saena_matrix::matvec_sparse_test4(std::vector<value_t>& v, std::vector<valu
     }
 
     t = omp_get_wtime() - t;
-    part8 += t;
+    part6 += t;
 
 //    if(nprocs > 1){
-    t = omp_get_wtime();
     MPI_Waitall(numRecvProc, &requests[0], &statuses[0]);
-    t = omp_get_wtime() - t;
-    part7 += t;
 
 //    print_vector(vecValues, 1, "vecValues", comm);
 
@@ -1128,10 +1107,7 @@ void saena_matrix::matvec_sparse_test4(std::vector<value_t>& v, std::vector<valu
 //            }
 //        }
 
-    t = omp_get_wtime();
     MPI_Waitall(numSendProc, &requests[numRecvProc], &statuses[numRecvProc]);
-    t = omp_get_wtime() - t;
-    part7 += t;
 //    }
 
     tcomm = omp_get_wtime() - tcomm;

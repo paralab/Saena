@@ -275,11 +275,11 @@ public:
     int scale_back_matrix(bool full_scale = true);
 
     // dummy functions to decide if shrinking should happen
-    int set_off_on_diagonal_dummy();
+    void set_off_on_diagonal_dummy();
 //    int find_sortings_dummy();
-    int matrix_setup_dummy();
-    int matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w);
-    int compute_matvec_dummy_time();
+    void matrix_setup_dummy();
+    void matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w);
+    void compute_matvec_dummy_time();
 
     // shrinking
     int decide_shrinking(std::vector<double> &prev_time);
@@ -296,7 +296,7 @@ public:
 
     // for profiling
     unsigned long matvec_iter = 0;
-    double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0, part7 = 0, part8 = 0;
+    double part1 = 0, part2 = 0, part3 = 0, part4 = 0, part5 = 0, part6 = 0;
     void matvec_time_init();
     void matvec_time_print(const int &opt = 1) const; // opt: pass 2 for the zfp version
     void matvec_time_print2() const;
