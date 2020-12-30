@@ -902,131 +902,45 @@ int saena_matrix::erase_keep_remote2(){
 
 int saena_matrix::erase_after_shrink() {
 
+    nnz_l_local = 0;
+    nnz_l_remote = 0;
+    numRecvProc = 0;
+    numSendProc = 0;
+    vIndexSize = 0;
+    recvSize = 0;
+
     row_local.clear();
     col_local.clear();
     values_local.clear();
-
     row_remote.clear();
-    col_remote.clear();
-    col_remote2.clear();
+//    col_remote.clear();
+//    col_remote2.clear();
     values_remote.clear();
 
     vElement_remote.clear();
-
-//    nnzPerRow_local.clear();
-//    nnzPerCol_remote.clear();
-//    inv_diag.clear();
-//    vdispls.clear();
-//    rdispls.clear();
-//    recvProcRank.clear();
-//    recvProcCount.clear();
-//    sendProcRank.clear();
-//    sendProcCount.clear();
-//    vIndex.clear();
-//    vSend.clear();
-//    vecValues.clear();
-//    vSendULong.clear();
-//    vecValuesULong.clear();
-//    indicesP_local.clear();
-//    indicesP_remote.clear();
-//    recvCount.clear();
-//    recvCountScan.clear();
-//    sendCount.clear();
-//    sendCountScan.clear();
-//    iter_local_array.clear();
-//    iter_remote_array.clear();
-//    iter_local_array2.clear();
-//    iter_remote_array2.clear();
-//    w_buff.clear();
-
-    return 0;
-}
-
-
-int saena_matrix::erase_after_decide_shrinking() {
-
-//    row_local.clear();
-    col_local.clear();
-    values_local.clear();
-
-    row_remote.clear();
-    col_remote.clear();
-    col_remote2.clear();
-    values_remote.clear();
-
-    vElement_remote.clear();
-
-//    nnzPerRow_local.clear();
+    nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-//    inv_diag.clear();
-//    vdispls.clear();
-//    rdispls.clear();
+    nnzPerProcScan.clear();
+    recvCount.clear();
+    indicesP_local.clear();
+    sendCount.clear();
+    recvCountScan.clear();
+    sendCountScan.clear();
     recvProcRank.clear();
     recvProcCount.clear();
     sendProcRank.clear();
     sendProcCount.clear();
-//    vIndex.clear();
-//    vSend.clear();
-//    vecValues.clear();
-//    vSendULong.clear();
-//    vecValuesULong.clear();
-//    indicesP_local.clear();
-//    indicesP_remote.clear();
-//    recvCount.clear();
-//    recvCountScan.clear();
-//    sendCount.clear();
-//    sendCountScan.clear();
-//    iter_local_array.clear();
-//    iter_remote_array.clear();
-//    iter_local_array2.clear();
-//    iter_remote_array2.clear();
-//    w_buff.clear();
-
+    vdispls.clear();
+    rdispls.clear();
+    vIndex.clear();
+    vSend.clear();
+    vecValues.clear();
     return 0;
 }
 
 
 int saena_matrix::erase_lazy_update(){
-
     data_coo.clear();
-
-    /*
-    entry.clear();
-    values_local.clear();
-    row_local.clear();
-    values_remote.clear();
-    row_remote.clear();
-    col_local.clear();
-    col_remote.clear();
-    col_remote2.clear();
-    nnzPerRow_local.clear();
-    nnzPerCol_remote.clear();
-    inv_diag.clear();
-    vdispls.clear();
-    rdispls.clear();
-    recvProcRank.clear();
-    recvProcCount.clear();
-    sendProcRank.clear();
-    sendProcCount.clear();
-    vElementRep_remote.clear();
-    vIndex.clear();
-    vSend.clear();
-    vecValues.clear();
-    vSendULong.clear();
-    vecValuesULong.clear();
-    indicesP_local.clear();
-    indicesP_remote.clear();
-    recvCount.clear();
-    recvCountScan.clear();
-    sendCount.clear();
-    sendCountScan.clear();
-    iter_local_array.clear();
-    iter_remote_array.clear();
-    iter_local_array2.clear();
-    iter_remote_array2.clear();
-    vElement_remote.clear();
-    w_buff.clear();
-*/
     return 0;
 }
 

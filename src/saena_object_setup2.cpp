@@ -199,8 +199,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 //            printf("\nerror: wrong sparsifier!");
 //        }
 
-        std::vector<cooEntry> Ac_orig(Ac->entry);
-        Ac->entry.clear();
+        std::vector<cooEntry> Ac_orig(std::move(Ac->entry));
         if (Ac->active_minor) {
             if (sparsifier == "majid") {
                 sparsify_majid(Ac_orig, Ac->entry, norm_frob_sq, sample_size, max_val, Ac->comm);
@@ -271,7 +270,7 @@ int saena_object::compute_coarsen(Grid *grid) {
                 Ac->matrix_setup_dummy();
                 Ac->compute_matvec_dummy_time();
                 Ac->decide_shrinking(A->matvec_dummy_time);
-                Ac->erase_after_decide_shrinking();
+                Ac->erase_after_shrink();
             }
         }
 
@@ -755,7 +754,7 @@ int saena_object::triple_mat_mult(Grid *grid){
 #endif
 
     // =======================================
-    // prepare A for compression
+    // prepare P for compression
     // =======================================
 
     if(nprocs > 1) {
@@ -789,10 +788,10 @@ int saena_object::triple_mat_mult(Grid *grid){
     // perform the multiplication RA * P
     // =======================================
 
-//    saena_matrix RAP;
     MPI_Comm comm_temp = Ac->comm;
     Ac->comm = A->comm;
-    matmat_CSC(RAcsc, Pcsc, *Ac, true);
+//    matmat_CSC(RAcsc, Pcsc, *Ac, true);
+    matmat_CSC(RAcsc, Pcsc, *Ac);
     Ac->comm = comm_temp;
 
 //    assert(!Ac->entry.empty());

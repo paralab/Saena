@@ -55,13 +55,14 @@ private:
     std::vector<nnz_t> iter_local_array;
     std::vector<nnz_t> iter_remote_array;
 //    std::vector<nnz_t> iter_local_array2;
-    std::vector<nnz_t> iter_remote_array2;
+//    std::vector<nnz_t> iter_remote_array2;
     std::vector<index_t> vElement_remote;           // indices that should be received during matvec
-    std::vector<value_t> w_buff; // for matvec3()
+    std::vector<value_t> w_buff; // for matvec with openmp support
 
     bool verbose_saena_matrix      = false;
     bool verbose_repart            = false;
     bool verbose_matrix_setup      = false;
+    bool verbose_matrix_setup_sh   = false;      // shrink
     bool verbose_repart_update     = false;
     bool verbose_matvec_dummy      = false;
     bool verbose_comp_matvec_dummy = false;
@@ -275,7 +276,7 @@ public:
 
     // dummy functions to decide if shrinking should happen
     void set_off_on_diagonal_dummy();
-//    int find_sortings_dummy();
+    void find_sortings_dummy();
     void matrix_setup_dummy();
     void matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w);
     void compute_matvec_dummy_time();
