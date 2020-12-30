@@ -881,15 +881,6 @@ int saena_matrix::set_off_on_diagonal(){
 //            print_vector(sendCount, 0, "sendCount", comm);
 #endif
 
-            recvCountScan.resize(nprocs + 1);
-            sendCountScan.resize(nprocs + 1);
-            recvCountScan[0] = 0;
-            sendCountScan[0] = 0;
-            for (i = 1; i < nprocs + 1; ++i){
-                recvCountScan[i] = recvCountScan[i-1] + recvCount[i-1];
-                sendCountScan[i] = sendCountScan[i-1] + sendCount[i-1];
-            }
-
             for (i = 0; i < nprocs; ++i) {
                 if (recvCount[i] != 0) {
                     recvProcRank.emplace_back(i);

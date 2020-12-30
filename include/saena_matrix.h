@@ -40,8 +40,6 @@ private:
 
     std::vector<int> recvCount;
     std::vector<int> sendCount;
-    std::vector<int> recvCountScan;
-    std::vector<int> sendCountScan;
 
     int MPI_flag = 0;
     vector<MPI_Request> requests;
