@@ -244,7 +244,7 @@ public:
     int pcoarsen(Grid *grid, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
     int compute_coarsen(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
-    int triple_mat_mult(Grid *grid);
+    int triple_mat_mult(Grid *grid, bool symm = true);
 
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false, bool B_trans = true);
     int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans = false);

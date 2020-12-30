@@ -354,7 +354,7 @@ int saena_object::compute_coarsen(Grid *grid) {
 } // compute_coarsen()
 
 
-int saena_object::triple_mat_mult(Grid *grid){
+int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
 
     saena_matrix    *A  = grid->A;
     prolong_matrix  *P  = &grid->P;
@@ -790,8 +790,11 @@ int saena_object::triple_mat_mult(Grid *grid){
 
     MPI_Comm comm_temp = Ac->comm;
     Ac->comm = A->comm;
-//    matmat_CSC(RAcsc, Pcsc, *Ac, true);
-    matmat_CSC(RAcsc, Pcsc, *Ac);
+    if(symm){
+        matmat_CSC(RAcsc, Pcsc, *Ac);
+    }else{
+        matmat_CSC(RAcsc, Pcsc, *Ac, true); // transpose the result
+    }
     Ac->comm = comm_temp;
 
 //    assert(!Ac->entry.empty());
