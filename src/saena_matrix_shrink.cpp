@@ -52,7 +52,8 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
     // matvec_dummy_time[3]: comm
     if(matvec_dummy_time[3] > 2 * matvec_dummy_time[0]){
         do_shrink = true;
-        cpu_shrink_thre2 = floor(matvec_dummy_time[3] / matvec_dummy_time[0]);
+        cpu_shrink_thre2 = floor(matvec_dummy_time[3] / matvec_dummy_time[0] / 6);
+        if(cpu_shrink_thre2 <= 1) cpu_shrink_thre2 = 2;
     }
 
     return 0;
