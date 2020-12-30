@@ -6,7 +6,7 @@ int saena_matrix::assemble(bool scale /*= true*/) {
     if(!assembled){
         repartition_nnz_initial();
         matrix_setup(scale);
-        if(enable_shrink) compute_matvec_dummy_time(); // compute the matvec time for the coarsest level,
+//        if(enable_shrink) compute_matvec_dummy_time(); // compute the matvec time for the coarsest level,
                                                        // which will be used when deciding about shrinking for level 1.
     }else{
         repartition_nnz_update();
