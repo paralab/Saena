@@ -59,6 +59,8 @@ private:
     std::vector<index_t> vElement_remote;           // indices that should be received during matvec
     std::vector<value_t> w_buff; // for matvec with openmp support
 
+    int matvec_iter_dummy = 5;
+
     bool verbose_saena_matrix      = false;
     bool verbose_repart            = false;
     bool verbose_matrix_setup      = false;

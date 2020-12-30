@@ -2,15 +2,15 @@
 
 int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
     // set cpu_shrink_thre2 and do_shrink
+#if 0
+    int rank = 0, nprocs = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
 
     // matvec_dummy_time[0]: communication (including "set vSend")
     // matvec_dummy_time[1]: local loop
     // matvec_dummy_time[2]: remote loop
     // matvec_dummy_time[3]: total time
-
-    int rank = 0, nprocs = 0;
-    MPI_Comm_size(comm, &nprocs);
-    MPI_Comm_rank(comm, &rank);
 
     int thre_loc = 0, thre_comm = 0;
 
@@ -46,10 +46,14 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
         if(cpu_shrink_thre2 == 1) cpu_shrink_thre2 = 2;
 //        if(rank==0) printf("SHRINK: cpu_shrink_thre2 = %d \n", cpu_shrink_thre2);
     }
+#endif
 
-//    do_shrink = true;
-//    if(nprocs != 1)
-//        cpu_shrink_thre2 = 2;
+    // matvec_dummy_time[0]: send_buf + local + remote
+    // matvec_dummy_time[3]: comm
+    if(matvec_dummy_time[3] > 2 * matvec_dummy_time[0]){
+        do_shrink = true;
+        cpu_shrink_thre2 = floor(matvec_dummy_time[3] / matvec_dummy_time[0]);
+    }
 
     return 0;
 }
@@ -440,8 +444,6 @@ void saena_matrix::compute_matvec_dummy_time(){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    int matvec_iter_warmup = 5;
-    int matvec_iter_dummy  = 5;
     std::vector<double> v_dummy(M, 1);
     std::vector<double> w_dummy(M);
 //    std::vector<double> time_matvec(4, 0);
@@ -456,7 +458,7 @@ void saena_matrix::compute_matvec_dummy_time(){
     matvec_dummy_time.assign(4, 0);
 
     // warm-up
-    for (int i = 0; i < matvec_iter_warmup; ++i) {
+    for (int i = 0; i < matvec_iter_dummy; ++i) {
         matvec_dummy(v_dummy, w_dummy);
         v_dummy.swap(w_dummy);
     }
@@ -487,25 +489,25 @@ void saena_matrix::compute_matvec_dummy_time(){
 
 //    double t2 = omp_get_wtime();
 
-    matvec_dummy_time[3] += matvec_dummy_time[0]; // total matvec time
-    matvec_dummy_time[0] = matvec_dummy_time[3] - matvec_dummy_time[1] - matvec_dummy_time[2]; // communication including vSet
+    matvec_dummy_time[0] += matvec_dummy_time[1] + matvec_dummy_time[2]; // send_buf + loc + remote
+    matvec_dummy_time[3] -= matvec_dummy_time[1] + matvec_dummy_time[2]; // communication
 
+    // take average between processors
     std::vector<double> tempt(4);
-    tempt[0] = matvec_dummy_time[0] / nprocs;   // comm + send_buff
-    tempt[1] = matvec_dummy_time[1] / nprocs;   // local
-    tempt[2] = matvec_dummy_time[2] / nprocs;   // remote
-    tempt[3] = matvec_dummy_time[3] / nprocs;   // total
-
+    tempt[0] = matvec_dummy_time[0] / nprocs / matvec_iter_dummy;
+    tempt[1] = matvec_dummy_time[1] / nprocs / matvec_iter_dummy;
+    tempt[2] = matvec_dummy_time[2] / nprocs / matvec_iter_dummy;
+    tempt[3] = matvec_dummy_time[3] / nprocs / matvec_iter_dummy;
     MPI_Allreduce(&tempt[0], &matvec_dummy_time[0], matvec_dummy_time.size(), MPI_DOUBLE, MPI_SUM, comm);
 
-    print_vector(matvec_dummy_time, 0, "matvec_dummy_time final", comm);
+    print_vector(matvec_dummy_time, 0, "matvec_dummy_time", comm);
 
 //    if (rank == 0) {
 //        std::cout << std::endl << "decide_shrinking:" << std::endl;
-//        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter_dummy << std::endl; // comm including "set vSend"
-//        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter_dummy << std::endl; // local loop
-//        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter_dummy << std::endl; // remote loop
-//        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter_dummy << std::endl; // total time
+//        std::cout << "comm:   " << matvec_dummy_time[0] / matvec_iter_dummy << std::endl; // send_buf + loc + remote
+//        std::cout << "local:  " << matvec_dummy_time[1] / matvec_iter_dummy << std::endl; // local
+//        std::cout << "remote: " << matvec_dummy_time[2] / matvec_iter_dummy << std::endl; // remote
+//        std::cout << "total:  " << matvec_dummy_time[3] / matvec_iter_dummy << std::endl; // comm
 //    }
 
 //    if (!rank) {
