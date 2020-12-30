@@ -342,14 +342,14 @@ void saena_matrix::matvec_time_print2() const{
     }
 
     double p1ave = print_time_ave(part1 / tmp, "", comm);                   // send buff
-    double p3ave = print_time_ave((part3 - part5 - part6) / tmp, "", comm); // comm
     double p6ave = print_time_ave(part6 / tmp, "", comm);                   // local
     double p5ave = print_time_ave(part5 / tmp, "", comm);                   // remote
+    double p3ave = print_time_ave((part3 - part5 - part6) / tmp, "", comm); // comm
 
     double tot = p1ave + p3ave + p5ave + p6ave;
     if(!rank){
         printf("\naverage time:\nsend_buff\nlocal\nremote\ncomm\ntot\n\n"
-               "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p3ave, p6ave, p5ave, tot);
+               "%.10f\n%.10f\n%.10f\n%.10f\n%.10f\n", p1ave, p6ave, p5ave, p3ave, tot);
     }
 }
 
