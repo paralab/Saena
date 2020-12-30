@@ -716,6 +716,9 @@ void saena_object::profile_matvecs_breakdown(){
 
     for(int l = 0; l <= max_level; ++l){
         if(grids[l].active) {
+            int rank = 0;
+            MPI_Comm_rank(grids[l].A->comm, &rank);
+            if(!rank) printf("\nlevel %d:", l);
             vector<value_t> v(grids[l].A->M, 0.123);
             vector<value_t> w(grids[l].A->M);
 
