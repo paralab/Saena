@@ -282,7 +282,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
                     val_remote.emplace_back(entry[i].val);
                     ++nnzPerCol_remote.back();
 #ifdef _USE_PETSC_
-                    ++nnzPerRow_remote[entry[i].row - split[rank]];
+//                    ++nnzPerRow_remote[entry[i].row - split[rank]];
 #endif
                 }while(++i < nnz_l && entry[i].col == entry[i - 1].col);
             }
