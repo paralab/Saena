@@ -1191,9 +1191,9 @@ int saena_matrix::writeMatrixToFile(const std::string &name) const{
 
     if(rank==0) std::cout << "\nWriting the matrix in: " << outFileNameTxt << std::endl;
 
-    std::vector<cooEntry> entry_temp1 = entry;
-    std::vector<cooEntry> entry_temp2;
-    par::sampleSort(entry_temp1, entry_temp2, comm);
+//    std::vector<cooEntry> entry_temp1 = entry;
+//    std::vector<cooEntry> entry_temp2;
+//    par::sampleSort(entry_temp1, entry_temp2, comm);
 
     // sort row-wise
 //    std::vector<cooEntry_row> entry_temp1(entry.size());
@@ -1206,10 +1206,10 @@ int saena_matrix::writeMatrixToFile(const std::string &name) const{
         outFileTxt << Mbig << "\t" << Mbig << "\t" << nnz_g << std::endl;
     }
 
-    for (nnz_t i = 0; i < entry_temp2.size(); i++) {
+    for (nnz_t i = 0; i < entry.size(); i++) {
 //        if(rank==0) std::cout  << A->entry[i].row + 1 << "\t" << A->entry[i].col + 1 << "\t" << A->entry[i].val << std::endl;
-        outFileTxt << entry_temp2[i].row + 1 << "\t" << entry_temp2[i].col + 1 << "\t"
-                   << std::setprecision(12) << entry_temp2[i].val << std::endl;
+        outFileTxt << entry[i].row + 1 << "\t" << entry[i].col + 1 << "\t"
+                   << std::setprecision(12) << entry[i].val << std::endl;
     }
 
     outFileTxt.clear();
