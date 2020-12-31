@@ -1446,7 +1446,7 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
     MPI_Comm_rank(comm, &rank);
 
 #ifdef _USE_PETSC_
-	solver_tol = 1e-6;
+	solver_tol = 1e-8;
 	
 	string petsc_option;
     //std::vector<double> u_petsc(rhs.size());
@@ -1458,6 +1458,10 @@ int saena_object::solve_petsc(std::vector<value_t>& u) {
     	getline (myfile,line);
 //  	    if (!rank) cout << "petsc solver: " << line << '\n';
     	myfile.close();
+  	}else{
+  	    if (!rank) cout << "cannot open petsc_solver.txt. put a file with that name only including the name of the"
+                          "solver: gamg, ml, boomerAMG, dcg" << '\n';
+  	    return 0;
   	}
 
 	if (line == "gamg")	{
