@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
     // *************************** set the scaling factor ****************************
 
     bool scale = false;
-	bool if_petsc = false;
+	bool if_petsc = true;
 
     // *************************** initialize the matrix ****************************
 
