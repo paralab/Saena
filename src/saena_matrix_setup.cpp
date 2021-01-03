@@ -1499,7 +1499,7 @@ int saena_matrix::inverse_diag() {
     }
 
     for(int i = 0; i < inv_diag.size(); ++i){
-        ASSERT(inv_diag[i] != 0, i << "\t" << inv_diag[i]);
+        ASSERT(inv_diag[i] != 0, "rank " << rank << ": " << i << "\t" << inv_diag[i]);
     }
 
 #ifdef __DEBUG1__
