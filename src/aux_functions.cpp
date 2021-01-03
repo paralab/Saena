@@ -102,6 +102,7 @@ double print_time(double t_dif, const std::string &function_name, MPI_Comm comm,
     double timeval = 0.0;
     switch(optype){
         case 0:
+        default:
             MPI_Reduce(&t_dif, &timeval, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
             timeval /= nprocs;
             break;
@@ -110,10 +111,6 @@ double print_time(double t_dif, const std::string &function_name, MPI_Comm comm,
             break;
         case 2:
             MPI_Reduce(&t_dif, &timeval, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-            break;
-        default:
-            MPI_Reduce(&t_dif, &timeval, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-            timeval /= nprocs;
             break;
     }
 

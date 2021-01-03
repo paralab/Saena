@@ -2343,7 +2343,12 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         // i = 2: max time
 
 #ifdef PROFILE_VCYCLE
-        if(!rank) printf("\nRtransfer\nPtransfer\nsmooth\nsuperlu\nvcycle_resid\nvcycle_repart\nvcycle_other\n");
+        if(!rank){
+            if(k == 0) printf("\naverage time:\n");
+            else if(k == 1) printf("\nmin time:\n");
+            else printf("\nmax time:\n");
+        }
+        if(!rank) printf("Rtransfer\nPtransfer\nsmooth\nsuperlu\nvcycle_resid\nvcycle_repart\nvcycle_other\n");
         print_time(Rtransfer_time / (i+1),     "Rtransfer",    comm, true, false, k);
         print_time(Ptransfer_time / (i+1),     "Ptransfer",    comm, true, false, k);
         print_time(vcycle_smooth_time / (i+1), "smooth",       comm, true, false, k);
