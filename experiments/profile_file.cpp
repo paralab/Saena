@@ -93,8 +93,8 @@ int main(int argc, char* argv[]){
     int    solver_max_iter    = 1000;
     double relative_tolerance = 1e-8;
     std::string smoother      = "chebyshev";
-    int    preSmooth          = 2;
-    int    postSmooth         = 2;
+    int    preSmooth          = 3;
+    int    postSmooth         = 3;
     saena::options opts(solver_max_iter, relative_tolerance, smoother, preSmooth, postSmooth);
 
     // 2- read the options from an xml file
@@ -149,6 +149,7 @@ int main(int argc, char* argv[]){
     // *************************** profile matvecs ****************************
     // profile matvec times on all multigrid levels
 //    solver.profile_matvecs();
+    solver.profile_matvecs_breakdown();
 
     // *************************** check correctness of the solution 1 ****************************
 
