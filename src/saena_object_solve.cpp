@@ -1213,7 +1213,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
     if (grid->Ac.active_minor) {
 
         if (nprocs > 1) {
-            repartition_u_shrink(res_coarse, *grid);
+            grid->repart_u(res_coarse);
         }
 
 #ifdef PROFILE_VCYCLE
@@ -1251,7 +1251,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
 #endif
 
 #ifdef PROFILE_VCYCLE
-//            MPI_Barrier(comm); // barrier is not needed, because there is synchronization at the end of repartition_u_shrink()
+//            MPI_Barrier(comm); // barrier is not needed, because there is synchronization at the end of repart_u()
             time_other1 = omp_get_wtime();
 #endif
 
@@ -1314,7 +1314,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
 #endif
 
     if(nprocs > 1 && grid->Ac.active_minor){
-        repartition_back_u_shrink(uCorrCoarse, *grid);
+        grid->repart_back_u(uCorrCoarse);
     }
 
 #ifdef PROFILE_VCYCLE

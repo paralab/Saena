@@ -1781,7 +1781,7 @@ int saena_object::compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &d
         diff.clear();
         diff.swap(Ac->entry_temp);
 
-//        repartition_u_shrink_prepare(grid);
+//        repart_u_prepare(grid);
 
 #ifdef __DEBUG1__
         if(verbose_triple_mat_mult){
@@ -2045,7 +2045,7 @@ int saena_object::triple_mat_mult_update_Ac(Grid *grid, std::vector<cooEntry> &d
     if(verbose_coarsen2){
         MPI_Barrier(comm); printf("coarsen2: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
 
-//    repartition_u_shrink_prepare(grid);
+//    repart_u_prepare(grid);
 
 //    if(Ac->shrinked)
 //        Ac->shrink_cpu();
@@ -2293,7 +2293,7 @@ int saena_object::coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff){
     if(verbose_coarsen2){
         MPI_Barrier(comm); printf("coarsen2: step 6: rank = %d\n", rank); MPI_Barrier(comm);}
 
-//    repartition_u_shrink_prepare(grid);
+//    repart_u_prepare(grid);
 
 //    if(Ac->shrinked)
 //        Ac->shrink_cpu();

@@ -289,6 +289,7 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
         ${SAENA_SRC_DIR}/aux_functions.cpp
         ${SAENA_SRC_DIR}/aux_functions2.cpp
         ${SAENA_SRC_DIR}/data_struct.cpp
+        ${SAENA_SRC_DIR}/grid.cpp
         ${SAENA_SRC_DIR}/strength_matrix.cpp
         ${SAENA_SRC_DIR}/prolong_matrix.cpp
         ${SAENA_SRC_DIR}/restrict_matrix.cpp
