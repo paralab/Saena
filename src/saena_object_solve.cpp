@@ -2343,6 +2343,10 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         // i = 2: max time
 
 #ifdef PROFILE_VCYCLE
+        // superlu happens only on 1 proc. to make the average timing correct, do the following.
+        double superlu_time_l = superlu_time;
+        MPI_Allreduce(&superlu_time_l, &superlu_time, 1, MPI_DOUBLE, MPI_MAX, comm);
+
         if(!rank){
             if(k == 0) printf("\naverage time:\n");
             else if(k == 1) printf("\nmin time:\n");
