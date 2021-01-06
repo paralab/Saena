@@ -36,6 +36,11 @@ public:
     std::vector<int> rdispls2;
     std::vector<int> sdispls2;
 
+    std::vector<int> rcount3; // store nonzero rcounts2
+    std::vector<int> scount3; // store nonzero scounts2
+    std::vector<int> rproc_id; // store the index of nonzero rcounts2
+    std::vector<int> sproc_id; // store the index of nonzero scounts2
+
     std::vector<value_t> res;
     std::vector<value_t> uCorr;
 //    std::vector<value_t> res_coarse;
