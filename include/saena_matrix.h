@@ -246,17 +246,17 @@ public:
     void set_p_order(int _p_order);
     void set_prodim(int _prodim);
 
-    int assemble(bool scale = true);
+    int assemble(bool scale = false);
     int setup_initial_data();
     int remove_duplicates();
     int remove_boundary_nodes();
     int repartition_nnz_initial(); // based on nnz.
-    int matrix_setup(bool scale = true);
+    int matrix_setup(bool scale = false);
 
     // these versions are used after matrix is assembled and needs to be updated again.
     int setup_initial_data2();
     int repartition_nnz_update(); // based on nnz.
-    int matrix_setup_update(bool scale = true);
+    int matrix_setup_update(bool scale = false);
 
     int repart(bool repart_row = false);
 //    int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
@@ -271,8 +271,8 @@ public:
     int set_off_on_diagonal();
     int find_sortings();
     int openmp_setup();
-    int scale_matrix(bool full_scale = true);
-    int scale_back_matrix(bool full_scale = true);
+    int scale_matrix(bool full_scale = false);
+    int scale_back_matrix(bool full_scale = false);
 
     // dummy functions to decide if shrinking should happen
     void set_off_on_diagonal_dummy();

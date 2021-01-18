@@ -50,7 +50,7 @@ public:
     bool dynamic_levels      = true;
     bool adaptive_coarsening = false;
 
-    bool scale = true;
+    bool scale = false;
 
     saena_matrix *A_coarsest = nullptr;
 
@@ -166,13 +166,13 @@ public:
     // SuperLU
     // ****************
 
-    SuperMatrix             A_SLU2;         // save matrix in SuperLU format to be used in solve_coarsest_SuperLU()
-    gridinfo_t              superlu_grid;
-    index_t                 fst_row;
-    ScalePermstruct_t       ScalePermstruct;
-    LUstruct_t              LUstruct;
-    SOLVEstruct_t           SOLVEstruct;
-    superlu_dist_options_t  options;
+    SuperMatrix            A_SLU2;         // save matrix in SuperLU format to be used in solve_coarsest_SuperLU()
+    gridinfo_t             superlu_grid;
+    index_t                fst_row;
+    ScalePermstruct_t      ScalePermstruct;
+    LUstruct_t             LUstruct;
+    SOLVEstruct_t          SOLVEstruct;
+    superlu_dist_options_t options;
 
     bool first_solve       = true;
     bool superlu_active    = true;
