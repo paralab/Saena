@@ -14,6 +14,8 @@ public:
 
     MPI_Comm comm;
 
+    bool compute_val = true; // store values of strength matrix
+
     nnz_t   nnz_l_local     = 0;
     nnz_t   nnz_l_remote    = 0;
     index_t col_remote_size = 0; // this is the same as vElement_remote.size()
@@ -33,6 +35,7 @@ public:
     std::vector<index_t> col_local;
     std::vector<index_t> col_remote;  // index starting from 0, instead of the original column index
     std::vector<index_t> col_remote2; // original col index
+    std::vector<value_t> val_local;
 //    std::vector<nnz_t>   nnzPerRow;
     std::vector<nnz_t>   nnzPerRow_local;
     std::vector<nnz_t>   nnzPerCol_remote;

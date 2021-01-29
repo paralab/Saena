@@ -31,14 +31,24 @@ int strength_matrix::setup_matrix(float connStrength){
 
     std::vector<index_t> r;
     std::vector<index_t> c;
-//    std::vector<value_t> v;
+    std::vector<value_t> v;
 
-    for(nnz_t i = 0; i < entry.size(); i++){
+    if(compute_val){
+        for(nnz_t i = 0; i < entry.size(); i++){
 //        if(!rank) printf("S(%d, %d) \t= %f, %f\n", entryT[i].row, entryT[i].col, entryT[i].val, entry[i].val);
-        if (entry[i].val > connStrength || entryT[i].val > connStrength){
-            r.emplace_back(entryT[i].row);
-            c.emplace_back(entryT[i].col);
-//            v.emplace_back( 0.5 * (entry[i].val + entryT[i].val) );
+            if (entry[i].val > connStrength || entryT[i].val > connStrength){
+                r.emplace_back(entryT[i].row);
+                c.emplace_back(entryT[i].col);
+                v.emplace_back( 0.5 * (entry[i].val + entryT[i].val) );
+            }
+        }
+    }else{
+        for(nnz_t i = 0; i < entry.size(); i++){
+//        if(!rank) printf("S(%d, %d) \t= %f, %f\n", entryT[i].row, entryT[i].col, entryT[i].val, entry[i].val);
+            if (entry[i].val > connStrength || entryT[i].val > connStrength){
+                r.emplace_back(entryT[i].row);
+                c.emplace_back(entryT[i].col);
+            }
         }
     }
 
@@ -74,9 +84,9 @@ int strength_matrix::setup_matrix(float connStrength){
     nnz_l_local = 0;
     nnz_l_remote = 0;
     std::vector<int> recvCount(nprocs, 0);
-//    nnzPerRow.assign(M,0);
-    nnzPerRow_local.assign(M,0);
+    nnzPerRow_local.assign(M, 0);
     std::vector<index_t> col_loc_tmp;
+    std::vector<value_t> val_loc_tmp;
 
     // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
 //    ++nnzPerRow[r[0]];
@@ -84,6 +94,7 @@ int strength_matrix::setup_matrix(float connStrength){
         nnzPerRow_local[r[0]]++;
         row_local.emplace_back(r[0]);
         col_loc_tmp.emplace_back(c[0]);
+        if(compute_val) val_loc_tmp.emplace_back(v[0]);
         vElementRep_local.emplace_back(1);
     } else{
         row_remote.emplace_back(r[0]);
@@ -102,7 +113,7 @@ int strength_matrix::setup_matrix(float connStrength){
             ++nnzPerRow_local[r[i]];
             row_local.emplace_back(r[i]);
             col_loc_tmp.emplace_back(c[i]);
-
+            if(compute_val) val_loc_tmp.emplace_back(v[i]);
         } else {
             row_remote.emplace_back(r[i]);
             // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
@@ -188,9 +199,17 @@ int strength_matrix::setup_matrix(float connStrength){
     index_t *row_localP = &*row_local.begin();
     std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
 
-    col_local.resize(col_loc_tmp.size());
-    for(i = 0; i < col_loc_tmp.size(); ++i){
-        col_local[i] = col_loc_tmp[indicesP_local[i]];
+    col_local.resize(nnz_l_local);
+    val_local.resize(nnz_l_local);
+    if(compute_val){
+        for(i = 0; i < col_loc_tmp.size(); ++i){
+            col_local[i] = col_loc_tmp[indicesP_local[i]];
+            val_local[i] = val_loc_tmp[indicesP_local[i]];
+        }
+    }else{
+        for(i = 0; i < col_loc_tmp.size(); ++i){
+            col_local[i] = col_loc_tmp[indicesP_local[i]];
+        }
     }
 
     std::sort(&row_local[0], &row_local[nnz_l_local]);
@@ -201,6 +220,12 @@ int strength_matrix::setup_matrix(float connStrength){
 //    print_entry(-1);
 //    print_diagonal_block(-1);
 //    print_off_diagonal(-1);
+//    print_vector(row_local, -1, "row_local", comm);
+//    print_vector(val_local, -1, "val_local", comm);
+//    print_vector(val_loc_tmp, -1, "val_loc_tmp", comm);
+//    for(i = 0; i < nnz_l_local; ++i){
+//        cout << row_local[i] << "\t" << col_local[i] << "\t" << val_local[i] << endl;
+//    }
 #endif
 
     return 0;
