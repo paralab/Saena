@@ -3,6 +3,7 @@
 #include "strength_matrix.h"
 #include "prolong_matrix.h"
 
+#include <cfloat>
 
 int saena_object::SA(Grid *grid){
     // Smoothed Aggregation (SA)
@@ -444,13 +445,14 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
 
     // ******************************** compute max per row ********************************
 
-    std::vector<value_t> maxPerRow(A->M, 0);
+    std::vector<value_t> maxPerRow(A->M, -DBL_MAX);
     value_t *maxPerRow_p = &maxPerRow[0] - A->split[rank]; // use split to convert the index from global to local.
 
     for(nnz_t i = 0; i < A->nnz_l; ++i){
         if( A->entry[i].row != A->entry[i].col ){
-            if(maxPerRow_p[A->entry[i].row] == 0 || (maxPerRow_p[A->entry[i].row] < -A->entry[i].val))
-                maxPerRow_p[A->entry[i].row] = -A->entry[i].val;
+            maxPerRow_p[A->entry[i].row] = max(maxPerRow_p[A->entry[i].row], -A->entry[i].val);
+//            if(maxPerRow_p[A->entry[i].row] == 0 || (maxPerRow_p[A->entry[i].row] < -A->entry[i].val))
+//                maxPerRow_p[A->entry[i].row] = -A->entry[i].val;
         }
     }
 
@@ -471,6 +473,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
     assert(maxPerRow_p[A->entry[i].row] != 0);
 #endif
             val_temp = -A->entry[i].val / (maxPerRow_p[A->entry[i].row]);
+//            cout << A->entry[i].val << "\t" << maxPerRow_p[A->entry[i].row] << endl;
         }
 
         S->entry[i] = cooEntry(A->entry[i].row, A->entry[i].col, val_temp);
@@ -564,7 +567,6 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
     }
 */
 
-    // TODO: iter2 is not being used later.
     // local ST values
     S->entryT.resize(A->nnz_l);
     for (nnz_t i = 0; i < A->nnz_l_local; ++i) {
@@ -688,17 +690,17 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
     }
 #endif
 
+    // use these to avoid subtracting S->split[rank] from each case
+    auto *aggregate_p = &aggregate[0] - S->split[rank];
+    auto *is_root_p   = &is_root[0] - S->split[rank];
+    auto *decided_p   = &decided[0] - S->split[rank];
+
     while(continueAgg) {
         // local part
         // ==========
         // aggregate2 is used instead of aggregate, because the assigning a node to an aggregate happens at the end of
         // the while loop.
         // local entries are sorted in row-major order, but columns are not ordered.
-
-        // use these to avoid subtracting S->split[rank] from each case
-        auto *aggregate_p = &aggregate[0] - S->split[rank];
-        auto *is_root_p   = &is_root[0] - S->split[rank];
-        auto *decided_p   = &decided[0] - S->split[rank];
 
         it = 0;
         for (i = 0; i < size; ++i) {
@@ -707,7 +709,6 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
                 dec_nei[i]     = true;
                 is_root_nei[i] = false;
                 for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++it) {
-//                    col_idx = S->col_local[it] - S->split[rank];
                     col_idx = S->col_local[it];
 #ifdef __DEBUG1__
 //                    if(rank==1) printf("%d:\taggregate[i] = %3d,\taggregate2[i] = %3d,\taggregate[col_idx] = %3d,"
@@ -715,7 +716,8 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 //                                       i, aggregate[i], aggregate2[i], aggregate_p[col_idx], decided_p[col_idx], is_root_p[col_idx], col_idx);
 #endif
 
-                        if( (aggregate_p[col_idx] < aggregate2[i]) &&
+                    if( (S->val_local[aggregate_p[col_idx]] < S->val_local[aggregate2[i]]) &&
+//                    if( (aggregate_p[col_idx] < aggregate2[i]) &&
                         (!decided_p[col_idx] || is_root_p[col_idx])){ // equivalent: if(dec_nei && !is_root) skip;
 
 #ifdef __DEBUG1__
@@ -881,6 +883,264 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
     return 0;
 }
 
+
+int saena_object::aggregation_1_dist_orig(strength_matrix *S, std::vector<index_t> &aggregate,
+                                     std::vector<index_t> &aggArray) const{
+    // aggregate: of size dof. at the end it will show to what root node (aggregate) each node is assigned.
+    // aggArray: the root nodes of the coarse matrix.
+
+    // For each node, first assign it to a 1-distance root.
+    // If there is not any root in distance-1, that node will become a root.
+
+    MPI_Comm comm = S->comm;
+    int nprocs = -1, rank = -1;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+        MPI_Barrier(comm); if(!rank) printf("aggregation_1_dist: start\n"); MPI_Barrier(comm);
+    }
+//    S->print_entry(-1);
+#endif
+
+    index_t size = S->M;
+    std::vector<index_t> aggregate2(size);
+
+    auto *decided = new bool[size];
+    assert(decided != nullptr);
+    fill(&decided[0], &decided[size], false);
+
+    auto *dec_nei = new bool[size]; // decided_neighbor
+    assert(dec_nei != nullptr);
+
+    auto *is_root = new bool[size];
+    assert(is_root != nullptr);
+    fill(&is_root[0], &is_root[size], false);
+
+    auto *is_root_nei = new bool[size];
+    assert(is_root_nei != nullptr);
+
+    auto *vSend = new bool[2 * S->vIndexSize];
+    assert(vSend != nullptr);
+
+    auto *vecValues = new bool[2 * S->recvSize];
+    assert(vecValues != nullptr);
+
+    bool continueAggLocal = true, continueAgg = true;
+    index_t i = 0, j = 0, i_remote = 0, j_remote = 0, it = 0, col_idx = 0;
+
+    auto *requests = new MPI_Request[S->numSendProc + S->numRecvProc];
+    auto *statuses = new MPI_Status[S->numSendProc + S->numRecvProc];
+
+    // initialization -> this part is merged to the first "for" loop in the following "while".
+    for(i = 0; i < size; ++i) {
+        aggregate[i] = i + S->split[rank];
+    }
+
+#ifdef __DEBUG1__
+    {
+//    int whileiter = 0;
+//    S->print_entry(-1);
+//    S->print_diagonal_block(-1);
+//    S->print_off_diagonal(-1);
+//    print_vector(S->split, 0, "split", comm);
+//    print_vector(S->nnzPerCol_remote, 0, "nnzPerCol_remote", comm);
+    }
+#endif
+
+    while(continueAgg) {
+        // local part
+        // ==========
+        // aggregate2 is used instead of aggregate, because the assigning a node to an aggregate happens at the end of
+        // the while loop.
+        // local entries are sorted in row-major order, but columns are not ordered.
+
+        // use these to avoid subtracting S->split[rank] from each case
+        auto *aggregate_p = &aggregate[0] - S->split[rank];
+        auto *is_root_p   = &is_root[0] - S->split[rank];
+        auto *decided_p   = &decided[0] - S->split[rank];
+
+        it = 0;
+        for (i = 0; i < size; ++i) {
+            if(!decided[i]) {
+                aggregate2[i]  = aggregate[i];
+                dec_nei[i]     = true;
+                is_root_nei[i] = false;
+                for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++it) {
+//                    col_idx = S->col_local[it] - S->split[rank];
+                    col_idx = S->col_local[it];
+#ifdef __DEBUG1__
+//                    if(rank==1) printf("%d:\taggregate[i] = %3d,\taggregate2[i] = %3d,\taggregate[col_idx] = %3d,"
+//                                       "\tdecided[col_idx] = %d,\tis_root[col_idx] = %d,\tcol_idx = %d \n",
+//                                       i, aggregate[i], aggregate2[i], aggregate_p[col_idx], decided_p[col_idx], is_root_p[col_idx], col_idx);
+#endif
+
+                    if( (aggregate_p[col_idx] < aggregate2[i]) &&
+                        (!decided_p[col_idx] || is_root_p[col_idx])){ // equivalent: if(dec_nei && !is_root) skip;
+
+#ifdef __DEBUG1__
+//                        if(rank==1) printf("%d:\taggregate[i] = %d,\taggregate2[i] = %d,\tdec_nei[i] = %d,\tis_root_nei[i] = %d,\tcol_idx = %d \n",
+//                                i, aggregate[i], aggregate2[i], dec_nei[i], is_root_nei[i], col_idx);
+#endif
+
+                        aggregate2[i]  = aggregate_p[col_idx];
+                        dec_nei[i]     = decided_p[col_idx];
+                        is_root_nei[i] = is_root_p[col_idx];
+                    }
+                }
+#ifdef __DEBUG1__
+//                if(rank==1) printf("%d:\taggregate[i] = %d,\taggregate2[i] = %d,\tdec_nei[i] = %d,\tis_root_nei[i] = %d\n",
+//                        i, aggregate[i], aggregate2[i], dec_nei[i], is_root_nei[i]);
+#endif
+
+            }else{
+                it += S->nnzPerRow_local[i];
+            }
+        }
+
+        // remote part
+        // ===========
+        if(nprocs > 1){
+            for (i = 0; i < S->vIndexSize; ++i){
+                vSend[2 * i]     = decided[S->vIndex[i]];
+                vSend[2 * i + 1] = is_root[S->vIndex[i]];
+            }
+
+            for (i = 0; i < S->numRecvProc; ++i)
+                MPI_Irecv(&vecValues[S->rdispls[S->recvProcRank[i]]], S->recvProcCount[i], MPI_CXX_BOOL,
+                          S->recvProcRank[i], 1, comm, &requests[i]);
+
+            for (i = 0; i < S->numSendProc; ++i)
+                MPI_Isend(&vSend[S->vdispls[S->sendProcRank[i]]], S->sendProcCount[i], MPI_CXX_BOOL,
+                          S->sendProcRank[i], 1, comm, &requests[S->numRecvProc + i]);
+
+            MPI_Waitall(S->numRecvProc, requests, statuses);
+
+            it = 0;
+            for (i = 0; i < S->col_remote_size; ++i) {
+                for (j = 0; j < S->nnzPerCol_remote[i]; ++j, ++it) {
+                    i_remote = S->row_remote[it];
+                    j_remote = S->col_remote[it];
+//                    if(rank==1) printf("%d:\trow_remote = %4d,\tcol_remote2 = %4d,\tvecValues[2*it] = %4d,\tvecValues[2*it+1] = %4d\n",
+//                                       it, S->row_remote[it], S->col_remote2[it], vecValues[2 * j_remote], vecValues[2 * j_remote + 1]);
+
+                    if (!decided[i_remote] &&
+                        (S->col_remote2[it] < aggregate2[i_remote]) &&
+                        (!vecValues[2 * j_remote] || vecValues[2 * j_remote + 1]) ){ // vecValues[2 * it]:     decided
+                        // vecValues[2 * it + 1]: is_root
+                        // equivalent: if(dec_nei && !is_root) skip
+                        aggregate2[i_remote]  = S->col_remote2[it];
+                        dec_nei[i_remote]     = vecValues[2 * j_remote];
+                        is_root_nei[i_remote] = vecValues[2 * j_remote + 1];
+                    }
+                }
+            }
+
+            MPI_Waitall(S->numSendProc, S->numRecvProc+requests, S->numRecvProc+statuses);
+        }
+
+        // put weight2 in weight and aggregate2 in aggregate.
+        // if a row does not have a remote element then (weight2[i]&weightMax) == (weight[i]&weightMax)
+        // update aggStatus of remote elements at the same time
+        for(i = 0; i < size; ++i){
+//            if(rank==1) printf("%d:\taggregate[i] = %d,\taggregate2[i] = %d,\tdec_nei[i] = %d,\tis_root_nei[i] = %d\n",
+//                    i, aggregate[i], aggregate2[i], dec_nei[i], is_root_nei[i]);
+
+            if(!decided[i] && dec_nei[i]){
+                decided[i] = true;
+                if(aggregate[i] == aggregate2[i]){
+                    is_root[i] = true;
+                    aggArray.emplace_back(aggregate[i]);
+                }else if(is_root_nei[i]){
+                    aggregate[i] = aggregate2[i];
+                }
+            }
+        }
+
+        continueAggLocal = false;
+        for (i = 0; i < size; ++i) {
+            // if any un-assigned node is available, continue aggregating.
+            if(!decided[i]) {
+                continueAggLocal = true;
+                break;
+            }
+        }
+
+        // check if every processor does not have any non-assigned node, otherwise all the processors should continue aggregating.
+        if(nprocs > 1){
+            MPI_Allreduce(&continueAggLocal, &continueAgg, 1, MPI_CXX_BOOL, MPI_LOR, comm);
+        }else{
+            continueAgg = continueAggLocal;
+        }
+
+#ifdef __DEBUG1__
+        {
+//            ++whileiter;
+//            if(rank==0) printf("\nwhileiter = %d\n", whileiter);
+//            print_vector(aggregate, -1, "aggregate", comm);
+//            print_vector(aggArray, -1, "aggArray", comm);
+        }
+#endif
+    } //while(continueAgg)
+
+    delete [] requests;
+    delete [] statuses;
+    delete [] decided;
+    delete [] dec_nei;
+    delete [] is_root;
+    delete [] is_root_nei;
+    delete [] vSend;
+    delete [] vecValues;
+
+#ifdef __DEBUG1__
+    {
+//    for(i = 0; i < size; ++i)
+//        if(rank==0) std::cout << "V[" << i+S->split[rank] << "] = " << initialWeight[i] << ";" << std::endl;
+
+        // *************************** update aggregate to new indices ****************************
+//    if(rank==0)
+//        std::cout << std::endl << "S.M = " << S->M << ", S.nnz_l = " << S->nnz_l << ", S.nnz_l_local = " << S->nnz_l_local
+//             << ", S.nnz_l_remote = " << S->nnz_l_remote << std::endl << std::endl;
+
+//    if(rank==1){
+//        std::cout << "aggregate:" << std::endl;
+//        for(i=0; i<size; i++)
+//            std::cout << i+S->split[rank] << "\t" << aggregate[i] << std::endl;
+//        std::cout << std::endl;}
+    }
+#endif
+
+    // aggArray is the set of root nodes.
+    if(!aggArray.empty())
+        std::sort(aggArray.begin(), aggArray.end());
+
+#ifdef __DEBUG1__
+    {
+//        print_vector(aggArray, -1, "aggArray", comm);
+//        print_vector(aggregate, -1, "aggregate", comm);
+        if(verbose_setup_steps) {
+            MPI_Barrier(comm); if(!rank) printf("aggregation_1_dist: end\n"); MPI_Barrier(comm);
+        }
+
+        // ************* write the aggregate nodes to a file *************
+
+        // use this command to concatenate the output files:
+        // cat aggArraySaena0.txt aggArraySaena1.txt > aggArraySaena.txt
+//    unsigned long aggArray_size, aggArray_size_total;
+//    aggArray_size = aggArray.size();
+//    MPI_Allreduce(&aggArray_size, &aggArray_size_total, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
+//    if(rank==1) std::cout << "total aggArray size = " << aggArray_size_total << std::endl << std::endl;
+//    for(i=0; i<aggArray.size(); i++)
+//        aggArray[i]++;
+//    writeVectorToFileul(aggArray, aggArray_size_total, "aggArraySaena", comm);
+//    for(i=0; i<aggArray.size(); i++)
+//        aggArray[i]--;
+    }
+#endif
+
+    return 0;
+}
 
 // Using MIS(2) from the following paper by Luke Olson:
 // EXPOSING FINE-GRAINED PARALLELISM IN ALGEBRAIC MULTIGRID METHODS
