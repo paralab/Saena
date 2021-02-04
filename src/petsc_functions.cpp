@@ -142,6 +142,25 @@ PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx)
 }
 
 
+int petsc_write_mat_file(const saena_matrix *A1){
+    // write matrix A to file in Matrix Market format
+    Mat A;
+    MPI_Comm comm = A1->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    petsc_saena_matrix(A1, A);
+    PetscViewer viewer;
+    PetscViewerASCIIOpen(comm, "Amat.mtx", &viewer);
+    PetscViewerPushFormat(viewer, PETSC_VIEWER_ASCII_MATRIXMARKET);
+    MatView(A, viewer);
+    PetscViewerPopFormat(viewer);
+    PetscViewerDestroy(&viewer);
+    MatDestroy(&A);
+    PetscFinalize();
+    return 0;
+}
+
+
 int petsc_viewer(const Mat &A){
 
     int sz = 1800;

@@ -12,6 +12,7 @@
 PetscErrorCode ComputeMatrix(KSP ksp, Mat J, Mat jac, void *ctx);
 PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx);
 
+int petsc_write_mat_file(const saena_matrix *A1);
 int petsc_viewer(const Mat &A);
 int petsc_viewer(const saena_matrix *A);
 int petsc_viewer(const prolong_matrix *P);
