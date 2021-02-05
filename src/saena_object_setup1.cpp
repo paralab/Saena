@@ -101,7 +101,7 @@ int saena_object::SA(Grid *grid){
     if(PSmoother == "jacobi"){
         // P = (I - 4 / (3 * rhoDA) * DA) * P_t
         Q = &A->inv_diag[0];
-        Pomega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2d and 6/7 for 3d.
+        Pomega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2D and 6/7 for 3D.
     }else if(PSmoother == "SPAI"){
         Q = new value_t[A->M];
         assert(Q);
@@ -426,6 +426,82 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
 } // end of SaenaObject::findAggregation
 
 
+int saena_object::create_strength_matrix_test(saena_matrix* A, strength_matrix* S) const{
+
+    // based on the following paper by Irad Yavneh:
+    // Non-Galerkin Multigrid Based on Sparsified Smoothed Aggregation - page: A51
+
+    // todo: add openmp to this function.
+
+    MPI_Comm comm = A->comm;
+    int nprocs = 0, rank = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+//    printf("create_strength_matrix: start: rank %d: A->M = %d \tA->nnz_l = %d \n", rank, A->M, A->nnz_l);
+//    A->print_entry(-1);
+#endif
+
+    // ******************************** compute S - local ********************************
+
+    S->entry.resize(A->nnz_l);
+    for(nnz_t i = 0; i < A->nnz_l_local; i++){
+//        if(rank==1) std::cout << A->entry[i] << "\t maxPerRow = " << maxPerRow_p[A->entry[i].row] << std::endl;
+        S->entry[i] = cooEntry(A->row_local[i],
+                               A->col_local[i],
+                    fabs(A->values_local[i]) / sqrt(fabs(A->inv_diag[A->row_local[i]] * A->inv_diag[A->col_local[i]])));
+    }
+
+    // ******************************** compute S - remote ********************************
+
+    // vSend is inv_diag for remote elements that should be sent to other processes.
+    for(nnz_t i = 0; i < A->vIndexSize; ++i)
+        A->vSend[i] = A->inv_diag[i];
+
+    int flag = 0;
+    auto *requests = new MPI_Request[A->numSendProc + A->numRecvProc];
+    auto *statuses = new MPI_Status[A->numSendProc + A->numRecvProc];
+
+    // vecValues are inv_diag for remote elements that are received from other processes.
+    for(nnz_t i = 0; i < A->numRecvProc; ++i){
+        MPI_Irecv(&A->vecValues[A->rdispls[A->recvProcRank[i]]], A->recvProcCount[i], par::Mpi_datatype<value_t>::value(), A->recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &flag, &statuses[i]);
+    }
+
+    for(nnz_t i = 0; i < A->numSendProc; ++i){
+        MPI_Isend(&A->vSend[A->vdispls[A->sendProcRank[i]]], A->sendProcCount[i], par::Mpi_datatype<value_t>::value(), A->sendProcRank[i], 1, comm, &(requests[A->numRecvProc+i]));
+        MPI_Test(&requests[A->numRecvProc + i], &flag, &statuses[A->numRecvProc + i]);
+    }
+
+    MPI_Waitall(A->numRecvProc, requests, statuses);
+
+    nnz_t iter = 0;
+    for (index_t i = 0; i < A->col_remote_size; ++i) {
+        for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
+//            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->values_remote[iter] / A->vecValues[i]);
+            S->entry[iter + A->nnz_l_local] = cooEntry(A->row_remote[iter],
+                                                       A->col_remote2[iter],
+                             fabs(A->values_remote[iter]) / sqrt(fabs(A->inv_diag[A->row_local[i]] * A->vecValues[i])));
+        }
+    }
+
+//    print_vector(S->entry, -1, "S->entry", comm);
+
+    // ******************************** setup the matrix S ********************************
+
+    // S indices are local on each process, which means it starts from 0 on each process.
+    S->set_parameters(A->M, A->Mbig, A->split, comm);
+    S->setup_matrix(connStrength);
+
+    MPI_Waitall(A->numSendProc, A->numRecvProc+requests, A->numRecvProc+statuses);
+    delete [] requests;
+    delete [] statuses;
+
+//    MPI_Barrier(comm); printf("rank %d: end of saena_object::create_strength_matrix \n", rank); MPI_Barrier(comm);
+    return 0;
+} // end of saena_object::create_strength_matrix
+
 int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) const{
 
     // based on the following paper by Irad Yavneh:
@@ -448,8 +524,11 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
     std::vector<value_t> maxPerRow(A->M, -DBL_MAX);
     value_t *maxPerRow_p = &maxPerRow[0] - A->split[rank]; // use split to convert the index from global to local.
 
+    // max of each row, but skip the diagonal entry
+    // put the diagonal entry of S euqal to 1 in S.setup_matrix()
     for(nnz_t i = 0; i < A->nnz_l; ++i){
         if( A->entry[i].row != A->entry[i].col ){
+//            cout << A->entry[i].row << "\t" << maxPerRow_p[A->entry[i].row] << "\t" << -A->entry[i].val << "\t" << max(maxPerRow_p[A->entry[i].row], -A->entry[i].val) << endl;
             maxPerRow_p[A->entry[i].row] = max(maxPerRow_p[A->entry[i].row], -A->entry[i].val);
 //            if(maxPerRow_p[A->entry[i].row] == 0 || (maxPerRow_p[A->entry[i].row] < -A->entry[i].val))
 //                maxPerRow_p[A->entry[i].row] = -A->entry[i].val;
@@ -470,10 +549,10 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
             val_temp = 1;
         } else {
 #ifdef __DEBUG1__
-    assert(maxPerRow_p[A->entry[i].row] != 0);
+            assert(maxPerRow_p[A->entry[i].row] != 0);
 #endif
             val_temp = -A->entry[i].val / (maxPerRow_p[A->entry[i].row]);
-//            cout << A->entry[i].val << "\t" << maxPerRow_p[A->entry[i].row] << endl;
+//            cout << A->entry[i] << "\t" << maxPerRow_p[A->entry[i].row] << endl;
         }
 
         S->entry[i] = cooEntry(A->entry[i].row, A->entry[i].col, val_temp);
@@ -647,6 +726,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 
     index_t size = S->M;
     std::vector<index_t> aggregate2(size);
+    std::vector<value_t> aggval(size);
 
     auto *decided = new bool[size];
     assert(decided != nullptr);
@@ -706,25 +786,30 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
         for (i = 0; i < size; ++i) {
             if(!decided[i]) {
                 aggregate2[i]  = aggregate[i];
+//                aggval[i]      = -DBL_MAX;
                 dec_nei[i]     = true;
                 is_root_nei[i] = false;
                 for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++it) {
                     col_idx = S->col_local[it];
 #ifdef __DEBUG1__
-//                    if(rank==1) printf("%d:\taggregate[i] = %3d,\taggregate2[i] = %3d,\taggregate[col_idx] = %3d,"
-//                                       "\tdecided[col_idx] = %d,\tis_root[col_idx] = %d,\tcol_idx = %d \n",
-//                                       i, aggregate[i], aggregate2[i], aggregate_p[col_idx], decided_p[col_idx], is_root_p[col_idx], col_idx);
+//                    if(rank==0) printf("%d:\taggregate[i] = %3d,\taggregate2[i] = %3d,\taggregate[col_idx] = %3d,"
+//                                       "\tdecided[col_idx] = %d,\tis_root[col_idx] = %d,\tcol_idx = %d"
+//                                       "\tS->val_local[aggregate_p[col_idx]] = %f\tS->val_local[aggregate2[i]] = %f\n",
+//                                       i, aggregate[i], aggregate2[i], aggregate_p[col_idx], decided_p[col_idx],
+//                                       is_root_p[col_idx], col_idx, S->val_local[aggregate_p[col_idx]], S->val_local[aggregate2[i]]);
 #endif
 
-                    if( (S->val_local[aggregate_p[col_idx]] < S->val_local[aggregate2[i]]) &&
-//                    if( (aggregate_p[col_idx] < aggregate2[i]) &&
+//                    if( (S->val_local[it] > aggval[aggregate2[i]]) &&
+//                    if( (S->val_local[aggregate_p[col_idx]] < S->val_local[aggregate2[i]]) &&
+                    if( (aggregate_p[col_idx] < aggregate2[i]) &&
                         (!decided_p[col_idx] || is_root_p[col_idx])){ // equivalent: if(dec_nei && !is_root) skip;
 
 #ifdef __DEBUG1__
-//                        if(rank==1) printf("%d:\taggregate[i] = %d,\taggregate2[i] = %d,\tdec_nei[i] = %d,\tis_root_nei[i] = %d,\tcol_idx = %d \n",
+//                        if(rank==0) printf("%d:\taggregate[i] = %d,\taggregate2[i] = %d,\tdec_nei[i] = %d,"
+//                                           "\tis_root_nei[i] = %d,\tcol_idx = %d\n",
 //                                i, aggregate[i], aggregate2[i], dec_nei[i], is_root_nei[i], col_idx);
 #endif
-
+//                            aggval[i]      = S->val_local[it];
                             aggregate2[i]  = aggregate_p[col_idx];
                             dec_nei[i]     = decided_p[col_idx];
                             is_root_nei[i] = is_root_p[col_idx];
@@ -880,6 +965,123 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
     }
 #endif
 
+    return 0;
+}
+
+int saena_object::aggregation_1_dist_new(strength_matrix *Scoo, std::vector<index_t> &aggregates,
+                                     std::vector<index_t> &aggArray) const{
+    // aggregate: of size dof. at the end it will show to what root node (aggregate) each node is assigned.
+    // aggArray: the root nodes of the coarse matrix.
+
+    // For each node, first assign it to a 1-distance root.
+    // If there is not any root in distance-1, that node will become a root.
+
+    MPI_Comm comm = Scoo->comm;
+    int nprocs = -1, rank = -1;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    if(verbose_setup_steps){
+        MPI_Barrier(comm); if(!rank) printf("aggregation_1_dist: start\n"); MPI_Barrier(comm);
+    }
+    Scoo->print_entry(-1);
+#endif
+
+    CSRMat S(comm);
+
+    std::vector<cooEntry> entry(Scoo->nnz_l);
+    for(index_t i = 0; i < Scoo->nnz_l_local; i++){
+        // values of the strength matrix do not matter after forming its structure. set 1 just for printing nonzeros.
+        entry[i] = cooEntry(Scoo->row_local[i] + Scoo->split[rank], Scoo->col_local[i], 1);
+    }
+
+    for(index_t i = 0; i < Scoo->nnz_l_remote; i++){
+        entry[Scoo->nnz_l_local + i] = cooEntry(Scoo->row_remote[i] + Scoo->split[rank], Scoo->col_remote2[i], 1);
+    }
+
+#if 0
+    // Set random values
+    std::vector<double> r(A->n_rows, 0);
+    if (rand_vals)
+    {
+        for (int i = 0; i < A->n_rows; i++)
+        {
+            r[i] = rand_vals[i];
+        }
+    }
+
+    // Initialize Variables
+    aggregates.resize(S->n_rows);
+    for (int i = 0; i < S->n_rows; i++)
+    {
+        aggregates[i] = -1;
+    }
+    int n_aggs = 0;
+    int start, end, col;
+    int ctr, max_agg;
+    double max_val, val;
+
+    // Label aggregates as 0 - n_aggs
+    for (int i = 0; i < S->n_rows; i++)
+    {
+        if (states[i] > 0)
+            aggregates[i] = n_aggs++;
+    }
+
+    // Pass 1 : add each row to neighboring aggregate (if exists)
+    for (int i = 0; i < S->n_rows; i++)
+    {
+        if (states[i] > 0) continue;
+
+        start = S->idx1[i];
+        end = S->idx1[i+1];
+        for (int j = start; j < end; j++)
+        {
+            col = S->idx2[j];
+            if (states[col] > 0)
+            {
+                aggregates[i] = aggregates[col];
+                break;
+            }
+        }
+    }
+
+    // Pass 2 : add remaining aggregate to that of strongest neighbor
+    // TODO - How should this be determined? Currently Sij with largest Aij
+    //      - Could be largest number of Sij entries with same agg?
+    //      - Or, largest neighboring aggregate?
+    for (int i = 0; i < S->n_rows; i++)
+    {
+        if (aggregates[i] >= 0) continue;
+
+        start = S->idx1[i];
+        end = S->idx1[i+1];
+        ctr = A->idx1[i];
+        max_val = 0.0;
+        max_agg = -1;
+        for (int j = start; j < end; j++)
+        {
+            col = S->idx2[j];
+            while (A->idx2[ctr] != col)
+                ctr++;
+
+            val = fabs(A->vals[ctr]) + r[col];
+            if (val > max_val && aggregates[col] >= 0)
+            {
+                max_val = val;
+                max_agg = aggregates[col];
+            }
+        }
+        aggregates[i] = -(max_agg+1);
+    }
+
+    for (int i = 0; i < S->n_rows; i++)
+    {
+        if (aggregates[i] < 0)
+            aggregates[i] = - (aggregates[i]+1);
+    }
+#endif
     return 0;
 }
 

@@ -55,6 +55,7 @@ public:
 
     int set_parameters(index_t M, index_t Mbig, std::vector<index_t> &split, MPI_Comm com);
     int setup_matrix(float connStrength);
+    int setup_matrix_test(float connStrength);
     ~strength_matrix() = default;
     int erase();
     int erase_update(); // only erase the parameters needed to update the matrix

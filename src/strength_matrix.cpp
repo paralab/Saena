@@ -13,7 +13,7 @@ int strength_matrix::set_parameters(index_t m1, index_t m2, std::vector<index_t>
 }
 
 
-int strength_matrix::setup_matrix(float connStrength){
+int strength_matrix::setup_matrix_test(float connStrength){
     // values of the strength matrix do not matter after forming its structure.
     // also clear entry and entryT, again after forming its structure..
 
@@ -24,7 +24,6 @@ int strength_matrix::setup_matrix(float connStrength){
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm); if(!rank) printf("strength_matrix.setup_matrix: start\n"); MPI_Barrier(comm);
 //    print_vector(entry, -1, "entry", comm);
-//    print_vector(entryT, -1, "entryT", comm);
 #endif
 
     // *************************** make S symmetric and apply the connection strength parameter ****************************
@@ -36,18 +35,18 @@ int strength_matrix::setup_matrix(float connStrength){
     if(compute_val){
         for(nnz_t i = 0; i < entry.size(); i++){
 //        if(!rank) printf("S(%d, %d) \t= %f, %f\n", entryT[i].row, entryT[i].col, entryT[i].val, entry[i].val);
-            if (entry[i].val > connStrength || entryT[i].val > connStrength){
-                r.emplace_back(entryT[i].row);
-                c.emplace_back(entryT[i].col);
-                v.emplace_back( 0.5 * (entry[i].val + entryT[i].val) );
+            if (entry[i].val > connStrength){
+                r.emplace_back(entry[i].row);
+                c.emplace_back(entry[i].col);
+                v.emplace_back(entry[i].val);
             }
         }
     }else{
         for(nnz_t i = 0; i < entry.size(); i++){
 //        if(!rank) printf("S(%d, %d) \t= %f, %f\n", entryT[i].row, entryT[i].col, entryT[i].val, entry[i].val);
-            if (entry[i].val > connStrength || entryT[i].val > connStrength){
-                r.emplace_back(entryT[i].row);
-                c.emplace_back(entryT[i].col);
+            if (entry[i].val > connStrength){
+                r.emplace_back(entry[i].row);
+                c.emplace_back(entry[i].col);
             }
         }
     }
@@ -55,8 +54,6 @@ int strength_matrix::setup_matrix(float connStrength){
     // entry and entryT are not needed anymore.
     entry.clear();
     entry.shrink_to_fit();
-    entryT.clear();
-    entryT.shrink_to_fit();
 
     nnz_l = r.size();
     MPI_Allreduce(&nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
@@ -191,6 +188,224 @@ int strength_matrix::setup_matrix(float connStrength){
     }
 
      // sort local entries to be sorted in row-major order, but columns are not ordered.
+    std::vector<index_t> indicesP_local(nnz_l_local);
+//    indicesP_local.resize(nnz_l_local);
+    for(nnz_t j = 0; j < nnz_l_local; j++)
+        indicesP_local[j] = j;
+
+    index_t *row_localP = &*row_local.begin();
+    std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
+
+    col_local.resize(nnz_l_local);
+    val_local.resize(nnz_l_local);
+    if(compute_val){
+        for(i = 0; i < col_loc_tmp.size(); ++i){
+            col_local[i] = col_loc_tmp[indicesP_local[i]];
+            val_local[i] = val_loc_tmp[indicesP_local[i]];
+        }
+    }else{
+        for(i = 0; i < col_loc_tmp.size(); ++i){
+            col_local[i] = col_loc_tmp[indicesP_local[i]];
+        }
+    }
+
+    std::sort(&row_local[0], &row_local[nnz_l_local]);
+
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm); if(!rank) printf("strength_matrix.setup_matrix: end\n"); MPI_Barrier(comm);
+//    print_info(-1);
+//    print_entry(-1);
+//    print_diagonal_block(-1);
+//    print_off_diagonal(-1);
+//    print_vector(row_local, -1, "row_local", comm);
+//    print_vector(val_local, -1, "val_local", comm);
+//    print_vector(val_loc_tmp, -1, "val_loc_tmp", comm);
+//    for(i = 0; i < nnz_l_local; ++i){
+//        cout << row_local[i] << "\t" << col_local[i] << "\t" << val_local[i] << endl;
+//    }
+#endif
+
+    return 0;
+}
+
+int strength_matrix::setup_matrix(float connStrength){
+    // values of the strength matrix do not matter after forming its structure.
+    // also clear entry and entryT, again after forming its structure..
+
+    int nprocs = 0, rank = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm); if(!rank) printf("strength_matrix.setup_matrix: start\n"); MPI_Barrier(comm);
+//    print_vector(entry, -1, "entry", comm);
+//    print_vector(entryT, -1, "entryT", comm);
+#endif
+
+    // *************************** make S symmetric and apply the connection strength parameter ****************************
+
+    std::vector<index_t> r;
+    std::vector<index_t> c;
+    std::vector<value_t> v;
+
+    if(compute_val){
+        for(nnz_t i = 0; i < entry.size(); i++){
+//        if(!rank) printf("S(%d, %d) \t= %f, %f\n", entryT[i].row, entryT[i].col, entryT[i].val, entry[i].val);
+            if (entry[i].val > connStrength || entryT[i].val > connStrength){
+                r.emplace_back(entryT[i].row);
+                c.emplace_back(entryT[i].col);
+                v.emplace_back( 0.5 * (entry[i].val + entryT[i].val) );
+            }
+        }
+    }else{
+        for(nnz_t i = 0; i < entry.size(); i++){
+//        if(!rank) printf("S(%d, %d) \t= %f, %f\n", entryT[i].row, entryT[i].col, entryT[i].val, entry[i].val);
+            if (entry[i].val > connStrength || entryT[i].val > connStrength){
+                r.emplace_back(entryT[i].row);
+                c.emplace_back(entryT[i].col);
+            }
+        }
+    }
+
+    // entry and entryT are not needed anymore.
+    entry.clear();
+    entry.shrink_to_fit();
+    entryT.clear();
+    entryT.shrink_to_fit();
+
+    nnz_l = r.size();
+    MPI_Allreduce(&nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
+
+#ifdef __DEBUG1__
+    {
+//    if(rank==0) printf("S.nnz_l = %lu, S.nnz_g = %lu \n", nnz_l, nnz_g);
+//    print_vector(r, -1, "row vector", comm);
+//    print_vector(c, -1, "col vector", comm);
+//    print_vector(v, -1, "val vector", comm);
+//    if(rank==1){
+//        for(index_t i = 0; i < r.size(); i++){
+//            printf("%u \t%u \t%u \t%lf \n", i, r[i], c[i], v[i]);
+//        }
+//    }
+//    MPI_Barrier(comm); if(!rank) printf("strength_matrix.setup_matrix: step 1\n"); MPI_Barrier(comm);
+    }
+#endif
+
+    // *************************** setup the matrix ****************************
+
+    long procNum = 0;
+    nnz_t i = 0;
+    col_remote_size = 0; // number of remote columns
+    nnz_l_local = 0;
+    nnz_l_remote = 0;
+    std::vector<int> recvCount(nprocs, 0);
+    nnzPerRow_local.assign(M, 0);
+    std::vector<index_t> col_loc_tmp;
+    std::vector<value_t> val_loc_tmp;
+
+    // take care of the first element here, since there is "col[i-1]" in the for loop below, so "i" cannot start from 0.
+//    ++nnzPerRow[r[0]];
+    if (c[0] >= split[rank] && c[0] < split[rank + 1]) {
+        nnzPerRow_local[r[0]]++;
+        row_local.emplace_back(r[0]);
+        col_loc_tmp.emplace_back(c[0]);
+        if(compute_val) val_loc_tmp.emplace_back(v[0]);
+        vElementRep_local.emplace_back(1);
+    } else{
+        row_remote.emplace_back(r[0]);
+        col_remote_size++; // number of remote columns
+        col_remote.emplace_back(col_remote_size-1);
+        col_remote2.emplace_back(c[0]);
+        nnzPerCol_remote.emplace_back(1);
+        vElement_remote.emplace_back(c[0]);
+        recvCount[lower_bound2(&split[0], &split[nprocs], c[0])] = 1;
+    }
+
+    for (i = 1; i < nnz_l; ++i) {
+//        ++nnzPerRow[r[i]];
+
+        if (c[i] >= split[rank] && c[i] < split[rank+1]) {
+            ++nnzPerRow_local[r[i]];
+            row_local.emplace_back(r[i]);
+            col_loc_tmp.emplace_back(c[i]);
+            if(compute_val) val_loc_tmp.emplace_back(v[i]);
+        } else {
+            row_remote.emplace_back(r[i]);
+            // col_remote2 is the original col value and will be used in making strength matrix. col_remote will be used for matevec.
+            col_remote2.emplace_back(c[i]);
+
+            if (c[i] != c[i - 1]) {
+                ++col_remote_size;
+                vElement_remote.emplace_back(c[i]);
+                procNum = lower_bound2(&split[0], &split[nprocs], c[i]);
+                ++recvCount[procNum];
+                nnzPerCol_remote.emplace_back(1);
+            } else {
+                ++nnzPerCol_remote.back();
+            }
+            // the original col values are not being used for matvec. the ordering starts from 0, and goes up by 1.
+            col_remote.emplace_back(col_remote_size - 1);
+        }
+    } // for i
+
+    nnz_l_local  = row_local.size();
+    nnz_l_remote = row_remote.size();
+
+    if(nprocs > 1){
+        std::vector<int> vIndexCount(nprocs);
+        MPI_Alltoall(&recvCount[0], 1, par::Mpi_datatype<index_t>::value(), &vIndexCount[0], 1, par::Mpi_datatype<index_t>::value(), comm);
+
+        numRecvProc = 0;
+        numSendProc = 0;
+        for(int j = 0; j < nprocs; j++){
+            if(recvCount[j] != 0){
+                numRecvProc++;
+                recvProcRank.emplace_back(j);
+                recvProcCount.emplace_back(2 * recvCount[j]); // make them double size for prolongation the communication in the aggregation_1_dist function.
+            }
+            if(vIndexCount[j] != 0){
+                numSendProc++;
+                sendProcRank.emplace_back(j);
+                sendProcCount.emplace_back(2 * vIndexCount[j]); // make them double size for prolongation the communication in the aggregation_1_dist function.
+            }
+        }
+
+//        if (rank==0) cout << "rank=" << rank << ", numRecvProc=" << numRecvProc << ", numSendProc=" << numSendProc << endl;
+
+        vdispls.resize(nprocs);
+        rdispls.resize(nprocs);
+        vdispls[0] = 0;
+        rdispls[0] = 0;
+
+        for (int j = 1; j < nprocs; j++){
+            vdispls[j] = vdispls[j-1] + vIndexCount[j-1];
+            rdispls[j] = rdispls[j-1] + recvCount[j-1];
+        }
+
+        vIndexSize = vdispls[nprocs-1] + vIndexCount[nprocs-1];
+        recvSize   = rdispls[nprocs-1] + recvCount[nprocs-1];
+
+        vIndex.resize(vIndexSize);
+        MPI_Alltoallv(&vElement_remote[0], &recvCount[0],   &rdispls[0], par::Mpi_datatype<index_t>::value(),
+                      &vIndex[0],          &vIndexCount[0], &vdispls[0], par::Mpi_datatype<index_t>::value(), comm);
+
+        // make them double size for prolongation the communication in the aggregation_1_dist function.
+        for (int j = 1; j < nprocs; j++){
+            vdispls[j] = 2 * vdispls[j];
+            rdispls[j] = 2 * rdispls[j];
+        }
+
+#ifdef __DEBUG1__
+//         print_vector(vIndex, -1, "vIndex", comm);
+#endif
+
+        // change the indices from global to local
+#pragma omp parallel for
+        for (index_t j = 0; j < vIndexSize; j++)
+            vIndex[j] -= split[rank];
+    }
+
+    // sort local entries to be sorted in row-major order, but columns are not ordered.
     std::vector<index_t> indicesP_local(nnz_l_local);
 //    indicesP_local.resize(nnz_l_local);
     for(nnz_t j = 0; j < nnz_l_local; j++)
