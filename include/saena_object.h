@@ -159,8 +159,8 @@ public:
     std::string smoother      = "chebyshev";    // choices: "jacobi", "chebyshev"
     std::string direct_solver = "SuperLU";      // choices: "CG", "SuperLU"
     float       connStrength  = 0.3;            // connection strength parameter: control coarsening aggressiveness
-    std::string PSmoother     = "SPAI";         // "jacobi", "SPAI"
-    double      Pomega        = 2.0 / 3;
+    std::string PSmoother     = "jacobi";       // "jacobi", "SPAI"
+    double      Pomega        = 2.0 / 3;        // For jacobi it is usually 2/3 for 2D and 6/7 for 3D.
 
     // ****************
     // SuperLU
@@ -269,8 +269,10 @@ public:
 
     int find_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew);
     int create_strength_matrix(saena_matrix* A, strength_matrix* S) const;
+    int create_strength_matrix_test(saena_matrix* A, strength_matrix* S) const;
     int aggregation_1_dist(strength_matrix *S, std::vector<index_t> &aggregate, std::vector<index_t> &aggArray) const;
     int aggregation_1_dist_orig(strength_matrix *S, std::vector<index_t> &aggregate, std::vector<index_t> &aggArray) const;
+    int aggregation_1_dist_new(strength_matrix *S, std::vector<index_t> &aggregates, std::vector<index_t> &aggArray) const;
 //    int aggregation_2_dist(strength_matrix *S, std::vector<unsigned long> &aggregate, std::vector<unsigned long> &aggArray);
     int aggregate_index_update(strength_matrix* S, std::vector<index_t>& aggregate, std::vector<index_t>& aggArray, std::vector<index_t>& splitNew);
     int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
