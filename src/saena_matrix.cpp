@@ -1203,6 +1203,7 @@ int saena_matrix::writeMatrixToFile(const std::string &name) const{
 
     // first line of the file: row_size col_size nnz
     if(rank==0) {
+        outFileTxt << "%%MatrixMarket matrix coordinate real general" << std::endl;
         outFileTxt << Mbig << "\t" << Mbig << "\t" << nnz_g << std::endl;
     }
 
