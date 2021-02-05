@@ -116,15 +116,15 @@ int saena::laplacian2D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
 
 //    printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
 
-    const int XMAX = mx - 1;
-    const int YMAX = my - 1;
+    const double TWOPI     = 2 * SAENA_PI;
+    const double EIGHTPISQ = 8 * SAENA_PI * SAENA_PI;
 
     rhs.resize(xm * ym);
 
     index_t iter = 0;
     for (j=ys; j<ys+ym; j++) {
         for (i=xs; i<xs+xm; i++) {
-            rhs[iter++] = 8 * SAENA_PI * SAENA_PI * sin(2 * SAENA_PI * i * Hx) * sin(2 * SAENA_PI * j * Hy);
+            rhs[iter++] = EIGHTPISQ * sin(TWOPI * i * Hx) * sin(TWOPI * j * Hy);
         }
     }
 
@@ -292,6 +292,10 @@ with Dirichlet boundary conditions f(x) defined on the boundary
         HxHzdHy = 1.0 / (Hy*Hy);
         HxHydHz = 1.0 / (Hz*Hz);
 
+//        HyHzdHx = 1.0;
+//        HxHzdHy = 1.0;
+//        HxHydHz = 1.0;
+
         // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
         xs = 0;
         xm = mx;
@@ -370,6 +374,260 @@ with Dirichlet boundary conditions f(x) defined on the boundary
     return 0;
 }
 
+int saena::laplacian3D_no_boundary(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale /*= true*/){
+// NOTE: this info should be updated!
+// changed the function in: petsc-3.13.5/src/ksp/ksp/tutorials/ex45.c
+/*
+Laplacian in 3D. Modeled by the partial differential equation
+   - Laplacian u = f,    0 < x,y,z < 1,
+
+with Dirichlet boundary conditions f(x) defined on the boundary
+   x = 0, x = 1, y = 0, y = 1, z = 0, z = 1.
+*/
+
+// NOTE: mx is the node number
+// node index = 0,1,2,...,mx-1
+    MPI_Comm comm = A->get_comm();
+    int rank = 0, nprocs = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    printf("rank %d: mx = %d, my = %d, mz = %d\n", rank, mx, my, mz);
+
+    if(rank < mz) {
+
+        int i, j, k, xm, ym, zm, xs, ys, zs, num, numi, numj, numk;
+        value_t v[7], Hx, Hy, Hz, HyHzdHx, HxHzdHy, HxHydHz;
+        index_t col_index[7];
+        index_t node;
+
+        Hx = 1.0 / (mx - 1);
+        Hy = 1.0 / (my - 1);
+        Hz = 1.0 / (mz - 1);
+
+//        printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+
+//        HyHzdHx =  (Hy * Hz / Hx);
+//        HxHzdHy =  (Hx * Hz / Hy);
+//        HxHydHz =  (Hx * Hy / Hz);
+
+        HyHzdHx = 1.0 / (Hx*Hx);
+        HxHzdHy = 1.0 / (Hy*Hy);
+        HxHydHz = 1.0 / (Hz*Hz);
+
+//        HyHzdHx = 1.0;
+//        HxHzdHy = 1.0;
+//        HxHydHz = 1.0;
+
+        // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+        xs = 0;
+        xm = mx;
+        ys = 0;
+        ym = my;
+        if(mz > nprocs){
+            zm = (int) floor(mz / nprocs);
+            zs = rank * zm;
+            if (rank == nprocs - 1)
+                zm = mz - ((nprocs - 1) * zm);
+        }else{ // the first mz processors each generates one 2D x,y-grid.
+            zm = 1;
+            zs = rank * zm;
+        }
+
+//        printf("rank %d: xs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+
+        const int XMAX = mx - 1;
+        const int YMAX = my - 1;
+        const int ZMAX = mz - 1;
+        const int SZMAX = XMAX * YMAX * ZMAX;
+
+        for (k=zs; k<zs+zm; k++) {
+            for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                    node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
+
+//                    row.i = i; row.j = j; row.k = k;
+//                    if (i==0 || j==0 || k==0 || i==XMAX || j==YMAX || k==ZMAX) {
+//                        v[0] = 2.0*(HxHydHz + HxHzdHy + HyHzdHx);
+//                        MatSetValuesStencil(B,1,&row,1,&row,v,INSERT_VALUES);
+//                        A->set(node, node, 1.0);//2.0*(HxHydHz + HxHzdHy + HyHzdHx));
+//                        cout << node << "\t" << 2.0*(HxHydHz + HxHzdHy + HyHzdHx) << endl;
+//                    } else {
+//                        v[0] = -HxHydHz;col[0].i = i; col[0].j = j; col[0].k = k-1;
+//                        v[1] = -HxHzdHy;col[1].i = i; col[1].j = j-1; col[1].k = k;
+//                        v[2] = -HyHzdHx;col[2].i = i-1; col[2].j = j; col[2].k = k;
+//                        v[3] = 2.0*(HxHydHz + HxHzdHy + HyHzdHx);col[3].i = row.i; col[3].j = row.j; col[3].k = row.k;
+//                        v[4] = -HyHzdHx;col[4].i = i+1; col[4].j = j; col[4].k = k;
+//                        v[5] = -HxHzdHy;col[5].i = i; col[5].j = j+1; col[5].k = k;
+//                        v[6] = -HxHydHz;col[6].i = i; col[6].j = j; col[6].k = k+1;
+//                        ierr = MatSetValuesStencil(B,1,&row,7,col,v,INSERT_VALUES);CHKERRQ(ierr);
+
+                    if(k != zs){
+//                        cout << "node - (mx * my) = " << node - (mx * my) << endl;
+                        A->set(node, node - (mx * my), -HxHydHz);
+                    }
+
+                    if(j != ys) {
+//                        cout << "node - mx = " << node - mx << endl;
+                        A->set(node, node - mx, -HxHzdHy);
+                    }
+
+                    if(i != xs) {
+//                        cout << "node - 1 = " << node - 1 << endl;
+                        A->set(node, node - 1, -HyHzdHx);
+                    }
+
+                    A->set(node, node, 2.0*(HxHydHz + HxHzdHy + HyHzdHx));
+
+                    if(i != xs+xm - 1) {
+//                        cout << "node + 1 = " << node + 1 << endl;
+                        A->set(node, node + 1, -HyHzdHx);
+                    }
+
+                    if(j != ys+ym - 1) {
+//                        cout << "node + mx = " << node + mx << endl;
+                        A->set(node, node + mx, -HxHzdHy);
+                    }
+
+                    if(k != zs+zm - 1) {
+//                        cout << "node + (mx * my) = " << node + (mx * my) << endl;
+                        A->set(node, node + (mx * my), -HxHydHz);
+                    }
+//                    }
+                }
+            }
+        }
+    }
+
+    A->assemble(scale);
+
+    return 0;
+}
+
+int saena::laplacian3D_no_boundary_lower(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale /*= true*/){
+// NOTE: this info should be updated!
+// changed the function in: petsc-3.13.5/src/ksp/ksp/tutorials/ex45.c
+/*
+Laplacian in 3D. Modeled by the partial differential equation
+   - Laplacian u = f,    0 < x,y,z < 1,
+
+with Dirichlet boundary conditions f(x) defined on the boundary
+   x = 0, x = 1, y = 0, y = 1, z = 0, z = 1.
+*/
+
+// NOTE: mx is the node number
+// node index = 0,1,2,...,mx-1
+    MPI_Comm comm = A->get_comm();
+    int rank = 0, nprocs = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+//    printf("rank %d: mx = %d, my = %d, mz = %d\n", rank, mx, my, mz);
+
+    if(rank < mz) {
+
+        int i, j, k, xm, ym, zm, xs, ys, zs, num, numi, numj, numk;
+        value_t v[7], Hx, Hy, Hz, HyHzdHx, HxHzdHy, HxHydHz;
+        index_t col_index[7];
+        index_t node;
+
+        Hx = 1.0 / (mx - 1);
+        Hy = 1.0 / (my - 1);
+        Hz = 1.0 / (mz - 1);
+
+//        printf("\nrank %d: mx = %d, my = %d, mz = %d, Hx = %f, Hy = %f, Hz = %f\n", rank, mx, my, mz, Hx, Hy, Hz);
+
+//        HyHzdHx =  (Hy * Hz / Hx);
+//        HxHzdHy =  (Hx * Hz / Hy);
+//        HxHydHz =  (Hx * Hy / Hz);
+
+        HyHzdHx = 1.0 / (Hx*Hx);
+        HxHzdHy = 1.0 / (Hy*Hy);
+        HxHydHz = 1.0 / (Hz*Hz);
+
+//        HyHzdHx = 1.0;
+//        HxHzdHy = 1.0;
+//        HxHydHz = 1.0;
+
+        // split the 3D grid by only the z axis. So put the whole x and y grids on processors, but split z by the number of processors.
+        xs = 0;
+        xm = mx;
+        ys = 0;
+        ym = my;
+        if(mz > nprocs){
+            zm = (int) floor(mz / nprocs);
+            zs = rank * zm;
+            if (rank == nprocs - 1)
+                zm = mz - ((nprocs - 1) * zm);
+        }else{ // the first mz processors each generates one 2D x,y-grid.
+            zm = 1;
+            zs = rank * zm;
+        }
+
+//        printf("rank %d: xs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
+
+        const int XMAX = mx - 1;
+        const int YMAX = my - 1;
+        const int ZMAX = mz - 1;
+        const int SZMAX = XMAX * YMAX * ZMAX;
+
+        for (k=zs; k<zs+zm; k++) {
+            for (j=ys; j<ys+ym; j++) {
+                for (i=xs; i<xs+xm; i++) {
+                    node = mx * my * k + mx * j + i; // for 2D it should be = mx * j + i
+
+//                    row.i = i; row.j = j; row.k = k;
+//                    if (i==0 || j==0 || k==0 || i==XMAX || j==YMAX || k==ZMAX) {
+//                        v[0] = 2.0*(HxHydHz + HxHzdHy + HyHzdHx);
+//                        MatSetValuesStencil(B,1,&row,1,&row,v,INSERT_VALUES);
+//                        A->set(node, node, 1.0);//2.0*(HxHydHz + HxHzdHy + HyHzdHx));
+//                        cout << node << "\t" << 2.0*(HxHydHz + HxHzdHy + HyHzdHx) << endl;
+//                    } else {
+//                        v[0] = -HxHydHz;col[0].i = i; col[0].j = j; col[0].k = k-1;
+//                        v[1] = -HxHzdHy;col[1].i = i; col[1].j = j-1; col[1].k = k;
+//                        v[2] = -HyHzdHx;col[2].i = i-1; col[2].j = j; col[2].k = k;
+//                        v[3] = 2.0*(HxHydHz + HxHzdHy + HyHzdHx);col[3].i = row.i; col[3].j = row.j; col[3].k = row.k;
+//                        v[4] = -HyHzdHx;col[4].i = i+1; col[4].j = j; col[4].k = k;
+//                        v[5] = -HxHzdHy;col[5].i = i; col[5].j = j+1; col[5].k = k;
+//                        v[6] = -HxHydHz;col[6].i = i; col[6].j = j; col[6].k = k+1;
+//                        ierr = MatSetValuesStencil(B,1,&row,7,col,v,INSERT_VALUES);CHKERRQ(ierr);
+
+                    if(k != zs){
+                        A->set(node, node - (mx * my), -HxHydHz);
+                    }
+
+                    if(j != ys) {
+                        A->set(node, node - mx, -HxHzdHy);
+                    }
+
+                    if(i != xs) {
+                        A->set(node, node - 1, -HyHzdHx);
+                    }
+
+                    A->set(node, node, 2.0*(HxHydHz + HxHzdHy + HyHzdHx));
+
+//                    if(i != xs+xm - 1) {
+//                        A->set(node, node + 1, -HyHzdHx);
+//                    }
+//
+//                    if(j != ys+ym - 1) {
+//                        A->set(node, node + mx, -HxHzdHy);
+//                    }
+//
+//                    if(k != zs+zm - 1) {
+//                        A->set(node, node + (mx * my), -HxHydHz);
+//                    }
+//                    }
+                }
+            }
+        }
+    }
+
+    A->assemble(scale);
+
+    return 0;
+}
+
 int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm){
 //    u = sin(2 * SAENA_PI * x) * sin(2 * SAENA_PI * y) * sin(2 * SAENA_PI * z)
 //    rhs = 12 * SAENA_PI * SAENA_PI * sin(2 * SAENA_PI * x) * sin(2 * SAENA_PI * y) * sin(2 * SAENA_PI * z)
@@ -411,10 +669,6 @@ int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
 
 //        printf("rank %d: corners: \nxs = %d, ys = %d, zs = %d, xm = %d, ym = %d, zm = %d\n", rank, xs, ys, zs, xm, ym, zm);
 
-        const int XMAX = mx - 1;
-        const int YMAX = my - 1;
-        const int ZMAX = mz - 1;
-
         const double TWOPI       = 2 * SAENA_PI;
         const double TWOELVEPISQ = 12 * SAENA_PI * SAENA_PI;
 
@@ -426,11 +680,10 @@ int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
             for (j=ys; j<ys+ym; j++) {
                 for (i=xs; i<xs+xm; i++) {
                     rhs[iter++] = TWOELVEPISQ * sin(TWOPI * i * Hx) * sin(TWOPI * j * Hy) * sin(TWOPI * k * Hz);
-                    //std::cout << "\n";
-                    //std::cout << i << " " << j << " " << k << std::endl;
-                    //std::cout << sin(TWOPI * i * Hx) << " " << sin(TWOPI * j * Hx) << " " << sin(TWOPI * k * Hx) << std::endl;
-                    //std::cout << TWOELVEPISQ * sin(TWOPI * i * Hx) * sin(TWOPI * j * Hy) * sin(TWOPI * k * Hz) << " " << rhs[iter] << "\n";
-                    //iter ++;
+//                    std::cout << i << " " << j << " " << k << std::endl;
+//                    std::cout << sin(TWOPI * i * Hx) << " " << sin(TWOPI * j * Hx) << " " << sin(TWOPI * k * Hx) << std::endl;
+//                    std::cout << TWOELVEPISQ * sin(TWOPI * i * Hx) * sin(TWOPI * j * Hy) * sin(TWOPI * k * Hz) << " " << rhs[iter] << "\n";
+//                    iter ++;
 /*                    rhs[iter] = 12 * SAENA_PI * SAENA_PI
                                 * sin(2 * SAENA_PI * (((value_t) i ) * Hx))
                                 * sin(2 * SAENA_PI * (((value_t) j ) * Hy))
@@ -447,7 +700,7 @@ int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
 
 int saena::laplacian3D_check_solution(std::vector<double> &u, index_t mx, index_t my, index_t mz, MPI_Comm comm){
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
