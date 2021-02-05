@@ -627,6 +627,9 @@ public:
 
 
 class CSRMat{
+private:
+    MPI_Comm comm = MPI_COMM_WORLD;
+
 public:
     index_t *col      = nullptr;
     value_t *val      = nullptr;
@@ -636,10 +639,12 @@ public:
     nnz_t   nnz     = 0;
     nnz_t   max_nnz = 0;
     index_t max_M   = 0;
+
     std::vector<index_t> split;
     std::vector<nnz_t>   nnz_list;
 
     CSRMat() = default;
+    explicit CSRMat(MPI_Comm comm_): comm(comm_) {}
 };
 
 
