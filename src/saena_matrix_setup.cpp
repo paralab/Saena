@@ -1,7 +1,7 @@
 #include "saena_matrix.h"
 #include <unordered_map>
 
-int saena_matrix::assemble(bool scale /*= true*/) {
+int saena_matrix::assemble(bool scale /*= false*/) {
 
     if(!assembled){
         repartition_nnz_initial();
@@ -490,7 +490,7 @@ int saena_matrix::remove_boundary_nodes() {
     return 0;
 }
 
-int saena_matrix::matrix_setup(bool scale /*= true*/) {
+int saena_matrix::matrix_setup(bool scale /*= false*/) {
     // before using this function the following parameters of saena_matrix should be set:
     // "Mbig", "M", "nnz_g", "split", "entry",
 
@@ -598,7 +598,7 @@ int saena_matrix::matrix_setup(bool scale /*= true*/) {
 }
 
 
-int saena_matrix::matrix_setup_update(bool scale /*= true*/) {
+int saena_matrix::matrix_setup_update(bool scale /*= false*/) {
     // update values_local, values_remote and inv_diag.
 
     int rank, nprocs;
@@ -1203,7 +1203,7 @@ int saena_matrix::openmp_setup() {
 }
 
 
-int saena_matrix::scale_matrix(bool full_scale/* = true*/){
+int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 
     // scale matrix: A = D^{-1/2} * A * D^{-1/2}
     // values_local, values_remote and entry are being updated.
@@ -1334,7 +1334,7 @@ int saena_matrix::scale_matrix(bool full_scale/* = true*/){
 }
 
 
-int saena_matrix::scale_back_matrix(bool full_scale/* = true*/){
+int saena_matrix::scale_back_matrix(bool full_scale/* = false*/){
 
     // scale back matrix: A = D^{1/2} * A * D^{1/2}
     // values_local, values_remote and entry are being updated.
