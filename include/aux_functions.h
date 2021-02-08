@@ -139,7 +139,11 @@ int print_vector(const std::vector<T> &v, const int ran, const std::string &name
     // if ran >= 0 print the vector elements on proc with rank = ran
     // otherwise print the vector elements on all processors in order. (first on proc 0, then proc 1 and so on.)
 
-    int rank, nprocs;
+    if(v.empty()){
+        return 0;
+    }
+
+    int rank = -1, nprocs = -1;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
