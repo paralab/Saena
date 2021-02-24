@@ -93,7 +93,7 @@ public:
     std::vector<nnz_t>   nnz_list;          // number of nonzeros on each process.
                                             // todo: Since it is local to each processor, int is enough. nnz_l should be changed too.
 
-    bool remove_boundary = false;
+    bool remove_boundary = true;
     std::vector<index_t> bound_row; // boundary node row index
     std::vector<value_t> bound_val; // boundary node value
 
@@ -229,8 +229,7 @@ public:
     explicit saena_matrix(MPI_Comm com);
     ~saena_matrix();
 
-    int read_file(const char* Aname);
-    int read_file(const char* Aname, const std::string &input_type);
+    int read_file(const string &filename, const std::string &input_type = "");
 
     void set_comm(MPI_Comm com);
 

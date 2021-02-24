@@ -14,13 +14,7 @@ void saena_matrix::set_comm(MPI_Comm com){
 }
 
 
-int saena_matrix::read_file(const char* Aname){
-    read_file(Aname, "");
-    return 0;
-}
-
-
-int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
+int saena_matrix::read_file(const string &filename, const std::string &input_type /* = "" */) {
     // the following variables of saena_matrix class will be set in this function:
     // Mbig", "nnz_g", "initial_nnz_l", "data"
     // "data" is only required for repartition function.
@@ -33,7 +27,6 @@ int saena_matrix::read_file(const char* Aname, const std::string &input_type) {
 
     // check if file exists
     // ====================
-    std::string filename(Aname);
     std::ifstream inFile_check(filename.c_str());
     if (!inFile_check.is_open()) {
         if (!rank) std::cout << "\nCould not open the matrix file <" << filename << ">" << std::endl;
