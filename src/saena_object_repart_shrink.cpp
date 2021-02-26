@@ -195,9 +195,11 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
         split[nprocs] = Mbig;
 
 //        print_vector(split, 0, "split", comm);
+//        printf("rhs_large.size before repart = %ld\n", rhs_large.size());
 
         repart_vector(rhs_large, split, comm);
 
+//        printf("rhs_large.size after repart = %ld\n", rhs_large.size());
 //        print_vector(rhs_large, -1, "rhs_large after repart", comm);
 
         remove_boundary_rhs(rhs_large, rhs, rhs1->comm);

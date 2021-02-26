@@ -82,6 +82,9 @@ public:
     nnz_t   nnz_max = 0; // biggest nnz on all the processors
     index_t M_max   = 0; // biggest M on all the processors
 
+    index_t M_orig    = 0; // before removing boundary nodes
+    index_t Mbig_orig = 0; // before removing boundary nodes
+
     int p_order = 1;
     int prodim = 2;
 

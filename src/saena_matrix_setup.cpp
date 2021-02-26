@@ -306,6 +306,10 @@ int saena_matrix::remove_boundary_nodes() {
 //    vector<index_t> new_idx(M, -1);
 //    print_array(new_idx, M, rank_v, "send_idx", comm);
 
+    // save M and Mbig before removing boundary nodes
+    M_orig = M;
+    Mbig_orig = Mbig;
+
     const index_t ofst = split[rank];
     const nnz_t   SZ   = data_with_bound.size();
 

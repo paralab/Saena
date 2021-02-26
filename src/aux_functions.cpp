@@ -447,28 +447,34 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
     }
 
     // check if the size of rhs match the number of rows of A
-    struct stat st;
-    stat(outFileName.c_str(), &st);
-    index_t rhs_size = st.st_size / sizeof(value_t);
-    if(rhs_size != A->Mbig){
-        if(!rank){
-            printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
-            printf("Number of rows of LHS = %d\n", A->Mbig);
-            printf("Size of RHS = %d\n", rhs_size);
-        }
-        MPI_Barrier(comm);
-        MPI_Finalize();
-        exit(EXIT_FAILURE);
-    }
+//    struct stat st;
+//    stat(outFileName.c_str(), &st);
+//    index_t rhs_size = st.st_size / sizeof(value_t);
+//    if(rhs_size != A->Mbig){
+//        if(!rank){
+//            printf("Error: Size of RHS does not match the number of rows of the LHS matrix!\n");
+//            printf("Number of rows of LHS = %d\n", A->Mbig);
+//            printf("Size of RHS = %d\n", rhs_size);
+//        }
+//        MPI_Barrier(comm);
+//        MPI_Finalize();
+//        exit(EXIT_FAILURE);
+//    }
 
     // define the size of v as the local number of rows on each process
-//    std::vector <double> v(A.M);
-    v.resize(A->M);
-    double* vp = &(*(v.begin()));
+    // if remove_boundary is enabled, then rhs should be read from file as the original matrix size, not after
+    // removing the boundary nodes
+    index_t v_sz = A->M;
+    if(A->M_orig > A->M){
+        v_sz = A->M_orig;
+    }
+
+    v.resize(v_sz);
+    value_t* vp = &*v.begin();
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A->split[rank] * sizeof(double);
-    MPI_File_read_at(fh, offset, vp, A->M, MPI_DOUBLE, &status);
+    offset = A->split[rank] * sizeof(value_t);
+    MPI_File_read_at(fh, offset, vp, v_sz, MPI_DOUBLE, &status);
 
 //    int count;
 //    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
