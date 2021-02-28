@@ -11,8 +11,8 @@
 //std::vector<int> iter_num_lazy;
 
 
-int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs){
-    // this is CG.
+int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs) const{
+    // Conjugate Gradient
     // u is zero in the beginning. At the end, it is the solution.
 
     MPI_Comm comm = A->comm;
@@ -127,15 +127,13 @@ int saena_object::setup_SuperLU() {
 //    MPI_Barrier(A_coarsest->comm);
 
     MPI_Comm *comm_coarsest = &A_coarsest->comm;
-    int nprocs_coarsest, rank_coarsest;
+    int nprocs_coarsest = 0, rank_coarsest = 0;
     MPI_Comm_size(*comm_coarsest, &nprocs_coarsest);
     MPI_Comm_rank(*comm_coarsest, &rank_coarsest);
 
     superlu_allocated = true;
 
-    int m, n, m_loc, nnz_loc;
-    int nprow, npcol;
-    int iam, ldb;
+    int m = 0, n = 0, m_loc = 0, nnz_loc = 0, nprow = 0, npcol = 0, iam = 0, ldb = 0;
 
     nprow = nprocs_coarsest; // Default process rows.
     npcol = 1;               // Default process columns.
@@ -216,7 +214,7 @@ int saena_object::setup_SuperLU() {
     if (verbose_setup_coarse) {
         MPI_Barrier(*comm_coarsest);
         if (!iam) {
-            int v_major, v_minor, v_bugfix;
+            int v_major = 0, v_minor = 0, v_bugfix = 0;
             superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
             printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 //            printf("Input matrix file:\t%s\n", *cpp);
@@ -2680,8 +2678,8 @@ int saena_object::GMRES(std::vector<double> &u){
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
 
-    double  resid, beta;
-    long i, j, k;
+    double resid = 0.0, beta = 0.0;
+    long i = 0, j = 0, k = 0;
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2949,8 +2947,8 @@ int saena_object::pGMRES(std::vector<double> &u){
     double  tol      = solver_tol;
     int     max_iter = solver_max_iter;
 
-    double  resid, beta;
-    long i, j, k;
+    double resid = 0.0, beta = 0.0;
+    long i = 0, j = 0, k = 0;
 
 #ifdef __DEBUG1__
     if(verbose_solve){
