@@ -330,10 +330,10 @@ int saena_matrix::remove_boundary_nodes() {
 //            if(rank == rank_v) std::cout << "new row idx: " << data_with_bound[i].row - ofst - bound_row.size() << std::endl;
 #endif
             new_idx[data_with_bound[i].row - ofst] = data_with_bound[i].row - bound_row.size() - ofst;
-            data.emplace_back(data_with_bound[i].row - bound_row.size() - ofst , data_with_bound[i].col, data_with_bound[i].val);
+            data.emplace_back(data_with_bound[i].row - bound_row.size(), data_with_bound[i].col, data_with_bound[i].val);
             while(i + 1 < SZ && data_with_bound[i].row == data_with_bound[i + 1].row){
                 ++i;
-                data.emplace_back(data_with_bound[i].row - bound_row.size() - ofst,
+                data.emplace_back(data_with_bound[i].row - bound_row.size(),
                                   data_with_bound[i].col,
                                   data_with_bound[i].val);
             }
@@ -785,6 +785,7 @@ int saena_matrix::set_off_on_diagonal(){
         MPI_Comm_rank(comm, &rank);
 
 #ifdef __DEBUG1__
+        int rank_v = 1;
         if(verbose_matrix_setup) {
             MPI_Barrier(comm);
             printf("matrix_setup: rank = %d, local remote1 \n", rank);
@@ -815,13 +816,13 @@ int saena_matrix::set_off_on_diagonal(){
 
         nnz_t i = 0;
         while(i < nnz_l) {
+//            if(rank==rank_v) cout << endl << entry[i] << endl;
             procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
-//            if(rank==0) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
-
+//            if(rank==rank_v) printf("col = %u \tprocNum = %d \n", entry[i].col, procNum);
             if(procNum == rank){ // local
                 while(i < nnz_l && entry[i].col < split[procNum + 1]) {
-//                    if(!rank) printf("entry[i].row = %d, split[rank] = %d, dif = %d\n", entry[i].row, split[rank], entry[i].row - split[rank]);
-//                    if(!rank) cout << entry[i] << endl;
+//                    if(rank==rank_v) printf("entry[i].row = %d, split[rank] = %d, dif = %d - local\n", entry[i].row, split[rank], entry[i].row - split[rank]);
+//                    if(rank==rank_v) cout << entry[i] << endl;
                     ++nnzPerRow_local[entry[i].row - split[rank]];
                     row_local.emplace_back(entry[i].row - split[rank]);
                     col_local.emplace_back(entry[i].col);
@@ -838,6 +839,8 @@ int saena_matrix::set_off_on_diagonal(){
                     nnzPerCol_remote.emplace_back(0);
 
                     do{
+//                        if(rank==rank_v) cout << entry[i] << endl;
+
                         // the original col values are not being used in matvec. the ordering starts from 0, and goes up by 1.
                         // col_remote2 is the original col value and will be used in making strength matrix.
                         col_remote.emplace_back(vElement_remote.size() - 1);
