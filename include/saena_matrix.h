@@ -293,6 +293,8 @@ public:
 
     inline void matvec(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec_sparse2(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec_sparse3(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
     void matvec_sparse_array2(value_t *v, value_t *w);   // to be used in ietl.
 
