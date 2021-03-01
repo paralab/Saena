@@ -145,15 +145,15 @@ int saena_object::SA(Grid *grid){
         const auto r_idx = i + A->split[rank];      // row index
 
         for (j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
-            const auto idx = A->indicesP_local[iter];
+//            const auto idx = A->indicesP_local[iter];
 
-            vtmp = -Pomega * Q[i] * A->values_local[idx];
-            if(r_idx == A->col_local[idx]){ // diagonal element
+            vtmp = -Pomega * Q[i] * A->values_local[iter];
+            if(r_idx == A->col_local[iter]){ // diagonal element
                 vtmp += 1;    // extra step for diagonal elements because of I in P = (I - wQA) * P_t
             }
 
 //            if(rank == 1) printf("(%4ld, %4d) = %f\n", i, aggregate_p[A->col_local[idx]], vtmp);
-            PEntryTemp.emplace_back(cooEntry(i, aggregate_p[A->col_local[idx]], vtmp));
+            PEntryTemp.emplace_back(cooEntry(i, aggregate_p[A->col_local[iter]], vtmp));
 
 //            if(rank==1) std::cout << i + A->split[rank] << "\t" << A->col_local[idx] << "\t" <<
 //               aggregate_p[A->col_local[idx]] << "\t" << A->values_local[idx] * A->inv_diag[A->row_local[idx]] << "\n";

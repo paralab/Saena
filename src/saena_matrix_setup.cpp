@@ -541,13 +541,13 @@ int saena_matrix::matrix_setup(bool scale /*= false*/) {
 
         // *************************** find sortings ****************************
 
-        find_sortings();
+//        find_sortings();
 
         // *************************** find start and end of each thread for matvec ****************************
         // also, find nnz per row for local and remote matvec
 
         openmp_setup();
-        w_buff.resize(num_threads*M); // allocate for w_buff for matvec3()
+        w_buff.resize(num_threads * M); // allocate for w_buff for matvec3()
 
         // *************************** scale ****************************
         // scale the matrix to have its diagonal entries all equal to 1.
@@ -814,6 +814,10 @@ int saena_matrix::set_off_on_diagonal(){
 
         assert(nnz_l == entry.size());
 
+        // store local entries in this vector for sorting in row-major order.
+        // then split it to row_loc, col_loc, val_loc.
+        vector<cooEntry_row> ent_loc_row;
+
         nnz_t i = 0;
         while(i < nnz_l) {
 //            if(rank==rank_v) cout << endl << entry[i] << endl;
@@ -824,9 +828,7 @@ int saena_matrix::set_off_on_diagonal(){
 //                    if(rank==rank_v) printf("entry[i].row = %d, split[rank] = %d, dif = %d - local\n", entry[i].row, split[rank], entry[i].row - split[rank]);
 //                    if(rank==rank_v) cout << entry[i] << endl;
                     ++nnzPerRow_local[entry[i].row - split[rank]];
-                    row_local.emplace_back(entry[i].row - split[rank]);
-                    col_local.emplace_back(entry[i].col);
-                    values_local.emplace_back(entry[i].val);
+                    ent_loc_row.emplace_back(entry[i].row - split[rank], entry[i].col, entry[i].val);
                     ++i;
                 }
 
@@ -857,7 +859,7 @@ int saena_matrix::set_off_on_diagonal(){
             }
         } // for i
 
-        nnz_l_local     = row_local.size();
+        nnz_l_local     = ent_loc_row.size();
         nnz_l_remote    = row_remote.size();
         col_remote_size = vElement_remote.size();
 
@@ -873,6 +875,20 @@ int saena_matrix::set_off_on_diagonal(){
         recvCount[rank] = 0;
 
 //        print_vector(recvCount, 0, "recvCount", comm);
+
+        // sort local entries in row-major order and remote entries in column-major order
+        sort(ent_loc_row.begin(), ent_loc_row.end());
+
+//        print_vector(ent_loc_row, -1, "ent_loc_row", comm);
+
+        for(const auto &a : ent_loc_row){
+            row_local.emplace_back(a.row);
+            col_local.emplace_back(a.col);
+            values_local.emplace_back(a.val);
+        }
+
+        ent_loc_row.clear();
+        ent_loc_row.shrink_to_fit();
 
         if(nprocs != 1){
 
@@ -1033,7 +1049,7 @@ int saena_matrix::find_sortings(){
             printf("matrix_setup: rank = %d, find_sortings \n", rank);
             MPI_Barrier(comm);
         }
-
+/*
         indicesP_local.resize(nnz_l_local);
 #pragma omp parallel for
         for (nnz_t i = 0; i < nnz_l_local; i++)
@@ -1041,6 +1057,7 @@ int saena_matrix::find_sortings(){
 
         index_t *row_localP = &*row_local.begin();
         std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
+*/
 
 //    if(rank==0)
 //        for(index_t i=0; i<nnz_l_local; i++)

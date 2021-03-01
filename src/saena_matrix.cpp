@@ -708,7 +708,6 @@ int saena_matrix::erase2(){
     vecValues.clear();
 //    vSend2.clear();
 //    vecValues2.clear();
-    indicesP_local.clear();
     recvCount.clear();
     sendCount.clear();
     iter_local_array.clear();
@@ -741,7 +740,6 @@ int saena_matrix::erase2(){
     vecValues.shrink_to_fit();
 //    vSend2.shrink_to_fit();
 //    vecValues2.shrink_to_fit();
-    indicesP_local.shrink_to_fit();
     recvCount.shrink_to_fit();
     sendCount.shrink_to_fit();
     iter_local_array.shrink_to_fit();
@@ -856,7 +854,6 @@ int saena_matrix::erase_keep_remote2(){
     vecValues.clear();
 //    vSend2.clear();
 //    vecValues2.clear();
-    indicesP_local.clear();
     recvCount.clear();
     sendCount.clear();
     iter_local_array.clear();
@@ -909,7 +906,6 @@ int saena_matrix::erase_after_shrink() {
     nnzPerCol_remote.clear();
     nnzPerProcScan.clear();
     recvCount.clear();
-    indicesP_local.clear();
     sendCount.clear();
     recvProcRank.clear();
     recvProcCount.clear();

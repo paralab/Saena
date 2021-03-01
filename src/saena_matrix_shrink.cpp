@@ -523,7 +523,7 @@ void saena_matrix::compute_matvec_dummy_time(){
 
 void saena_matrix::matrix_setup_dummy(){
     set_off_on_diagonal_dummy();
-    find_sortings_dummy();
+//    find_sortings_dummy();
 }
 
 void saena_matrix::set_off_on_diagonal_dummy(){
@@ -565,6 +565,10 @@ void saena_matrix::set_off_on_diagonal_dummy(){
 
         assert(nnz_l == entry.size());
 
+        // store local entries in this vector for sorting in row-major order.
+        // then split it to row_loc, col_loc, val_loc.
+        vector<cooEntry_row> ent_loc_row;
+
         nnz_t i = 0;
         while(i < nnz_l) {
             procNum = lower_bound2(&split[0], &split[nprocs], entry[i].col);
@@ -575,9 +579,7 @@ void saena_matrix::set_off_on_diagonal_dummy(){
 //                    if(rank == 1) printf("entry[i].row = %d, split[rank] = %d, dif = %d\n", entry[i].row, split[rank], entry[i].row - split[rank]);
 //                    if(!rank) cout << entry[i] << endl;
                     ++nnzPerRow_local[entry[i].row - split[rank]];
-                    row_local.emplace_back(entry[i].row - split[rank]);
-                    col_local.emplace_back(entry[i].col);
-                    values_local.emplace_back(entry[i].val);
+                    ent_loc_row.emplace_back(entry[i].row - split[rank], entry[i].col, entry[i].val);
                     ++i;
                 }
 
@@ -604,7 +606,7 @@ void saena_matrix::set_off_on_diagonal_dummy(){
             }
         } // for i
 
-        nnz_l_local     = col_local.size();
+        nnz_l_local     = ent_loc_row.size();
         nnz_l_remote    = row_remote.size();
         col_remote_size = vElement_remote.size();
 
@@ -619,6 +621,18 @@ void saena_matrix::set_off_on_diagonal_dummy(){
 
         // don't receive anything from yourself
         recvCount[rank] = 0;
+
+        // sort local entries in row-major order and remote entries in column-major order
+        sort(ent_loc_row.begin(), ent_loc_row.end());
+
+        for(const auto &a : ent_loc_row){
+            row_local.emplace_back(a.row);
+            col_local.emplace_back(a.col);
+            values_local.emplace_back(a.val);
+        }
+
+        ent_loc_row.clear();
+        ent_loc_row.shrink_to_fit();
 
         if(nprocs != 1){
 
@@ -738,15 +752,15 @@ void saena_matrix::set_off_on_diagonal_dummy(){
 }
 
 void saena_matrix::find_sortings_dummy(){
-    if(active) {
-        indicesP_local.resize(nnz_l_local);
-#pragma omp parallel for
-        for (nnz_t i = 0; i < nnz_l_local; i++)
-            indicesP_local[i] = i;
-
-        index_t *row_localP = &*row_local.begin();
-        std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
-    }
+//    if(active) {
+//        indicesP_local.resize(nnz_l_local);
+//#pragma omp parallel for
+//        for (nnz_t i = 0; i < nnz_l_local; i++)
+//            indicesP_local[i] = i;
+//
+//        index_t *row_localP = &*row_local.begin();
+//        std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP));
+//    }
 }
 
 void saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w) {
@@ -799,7 +813,7 @@ void saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w
     for (index_t i = 0; i < M; ++i) { // rows
         w[i] = 0;
         for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
-            w[i] += values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+            w[i] += values_local[iter] * v_p[col_local[iter]];
         }
     }
 
