@@ -755,13 +755,6 @@ void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vec
     MPI_Comm_size(comm, &nprocs);
     rank_v = 1;
 
-//    int ii = 0;
-//    if(rank == 1)
-//        ii = 17;
-//    for(auto &r : rhs_large){
-//        r = ii++;
-//    }
-
 //    print_vector(rhs_large, -1, "rhs_large", comm);
 
     index_t Mbig_l = rhs_large.size(), Mbig = 0;
@@ -797,7 +790,7 @@ void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vec
     }
 
 //    print_vector(bound_sol, rank_v, "bound_sol", comm);
-//    if(rank==rank_v) cout << "here" << endl;
+//    print_vector(rhs0, rank_v, "rhs after removing boundary", comm);
 }
 
 void saena_object::add_boundary_sol(std::vector<value_t> &u){

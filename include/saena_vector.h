@@ -26,9 +26,9 @@ private:
 
 public:
 
+    index_t M     = 0;
+    index_t Mbig  = 0;
     MPI_Comm comm = MPI_COMM_WORLD;
-    index_t M;
-    index_t Mbig;
 
     bool add_duplicates = false;
     int set_dup_flag(bool add);
