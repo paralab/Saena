@@ -170,8 +170,10 @@ index_t saena::matrix::get_num_rows(){
     return m_pImpl->Mbig;
 }
 
+// the local number of rows.
+// if boundary nodes are removed, return the size before removing boundary.
 index_t saena::matrix::get_num_local_rows() {
-    return m_pImpl->M;
+    return max(m_pImpl->M, m_pImpl->M_orig);
 }
 
 nnz_t saena::matrix::get_nnz(){
@@ -567,8 +569,8 @@ int saena::amg::solve_pCG(std::vector<value_t>& u, saena::options* opts){
     if(m_pImpl->remove_boundary){
 //        m_pImpl->add_boundary_sol(u); // TODO: this part should be fixed
     } else {
-        Grid *g = &m_pImpl->grids[0];
-        g->rhs_orig->return_vec(u);
+//        Grid *g = &m_pImpl->grids[0];
+//        g->rhs_orig->return_vec(u);
     }
 
     return 0;
