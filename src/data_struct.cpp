@@ -2,17 +2,17 @@
 
 
 std::ostream & operator<<(std::ostream & stream, const cooEntry & item) {
-    stream << item.row << "\t" << item.col << "\t" << item.val;
+    stream << item.row << "\t" << item.col << "\t" << std::setprecision(16) << item.val;
     return stream;
 }
 
 std::ostream & operator<<(std::ostream & stream, const cooEntry_row & item) {
-    stream << item.row << "\t" << item.col << "\t" << item.val;
+    stream << item.row << "\t" << item.col << "\t" << std::setprecision(16) << item.val;
     return stream;
 }
 
 std::ostream & operator<<(std::ostream & stream, const vecEntry & item) {
-    stream << item.row << "\t" << item.val;
+    stream << item.row << "\t" << std::setprecision(16) << item.val;
     return stream;
 }
 

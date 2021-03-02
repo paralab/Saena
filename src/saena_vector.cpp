@@ -496,7 +496,7 @@ int saena_vector::print_entry(int ran){
     // if ran >= 0 print_entry the vector entries on proc with rank = ran
     // otherwise print the vector entries on all processors in order. (first on proc 0, then proc 1 and so on.)
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -505,8 +505,8 @@ int saena_vector::print_entry(int ran){
         if (rank == ran) {
             printf("\nvector on proc = %d \n", ran);
             printf("nnz = %lu \n", data.size());
-            for (auto i:data) {
-                std::cout << iter << "\t" << i << std::endl;
+            for (const auto &i : data) {
+                std::cout << iter << "\t" << std::setprecision(16) << i << std::endl;
                 iter++;
             }
         }
@@ -516,8 +516,8 @@ int saena_vector::print_entry(int ran){
             if (rank == proc) {
                 printf("\nvector on proc = %d \n", proc);
                 printf("nnz = %lu \n", data.size());
-                for (auto i:data) {
-                    std::cout << iter << "\t" << i << std::endl;
+                for (const auto &i : data) {
+                    std::cout << iter << "\t" << std::setprecision(16) << i << std::endl;
                     iter++;
                 }
             }

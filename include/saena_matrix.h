@@ -345,7 +345,7 @@ public:
     int erase_update_local(); // use this for compute_coarsen_update_Ac()
     int erase_keep_remote2(); // use this for compute_coarsen_update_Ac()
     int erase_after_shrink();
-    int erase_after_decide_shrinking();
+//    int erase_after_decide_shrinking();
     int erase_lazy_update();
     int erase_no_shrink_to_fit();
     int destroy();

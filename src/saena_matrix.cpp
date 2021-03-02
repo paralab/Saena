@@ -1109,7 +1109,7 @@ int saena_matrix::print_entry(int ran, const std::string &name) const{
                 std::cout << "\nmatrix " << name << " on proc " << ran << std::endl;
 //                printf("\nmatrix on proc = %d \n", ran);
                 printf("nnz = %lu \n", nnz_l);
-                for (auto i:entry) {
+                for (const auto &i : entry) {
                     std::cout << iter << "\t" << i << std::endl;
                     iter++;
                 }
@@ -1121,7 +1121,7 @@ int saena_matrix::print_entry(int ran, const std::string &name) const{
                     std::cout << "\nmatrix " << name << " on proc " << proc << std::endl;
 //                    printf("\nmatrix on proc = %d \n", proc);
                     printf("nnz = %lu \n", nnz_l);
-                    for (auto i:entry) {
+                    for (const auto &i : entry) {
                         std::cout << iter << "\t" << i << std::endl;
                         iter++;
                     }
