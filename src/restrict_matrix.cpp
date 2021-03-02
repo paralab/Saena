@@ -45,8 +45,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     // *********************** send remote part of restriction ************************
 
-    MPI_Request *requests = new MPI_Request[P->numSendProc_t + P->numRecvProc_t];
-    MPI_Status *statuses  = new MPI_Status[P->numSendProc_t + P->numRecvProc_t];
+    auto *requests = new MPI_Request[P->numSendProc_t + P->numRecvProc_t];
+    auto *statuses  = new MPI_Status[P->numSendProc_t + P->numRecvProc_t];
 
     if(nprocs > 1) {
 
@@ -71,15 +71,19 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //        print_vector(P->recvProcCount_t, 0, "recvProcCount_t", comm);
 #endif
 
+        auto dt = cooEntry::mpi_datatype();
+
         for (nnz_t i = 0; i < P->numRecvProc_t; i++) {
-            MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i],
-                      cooEntry::mpi_datatype(), P->recvProcRank_t[i], 1, comm, &(requests[i]));
+            MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i], dt,
+                      P->recvProcRank_t[i], 1, comm, &(requests[i]));
         }
 
         for (nnz_t i = 0; i < P->numSendProc_t; i++) {
-            MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], cooEntry::mpi_datatype(),
+            MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], dt,
                       P->sendProcRank_t[i], 1, comm, &(requests[P->numRecvProc_t + i]));
         }
+
+        MPI_Type_free(&dt);
     }
 
     P->recvProcRank_t.clear();

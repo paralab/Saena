@@ -335,7 +335,9 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
 
     offset = rank * nnz_t(floor(1.0 * nnz_g / nprocs)) * (2*sizeof(index_t) + sizeof(value_t));
 
-    MPI_File_read_at(fh, offset, datap, initial_nnz_l, cooEntry_row::mpi_datatype(), &status);
+    auto dt = cooEntry_row::mpi_datatype();
+    MPI_File_read_at(fh, offset, datap, initial_nnz_l, dt, &status);
+    MPI_Type_free(&dt);
 
 //    int count;
 //    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);

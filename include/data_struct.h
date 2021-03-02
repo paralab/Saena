@@ -198,6 +198,14 @@ public:
     }
 
     static MPI_Datatype mpi_datatype() {
+        static MPI_Datatype datatype;
+        MPI_Type_contiguous(sizeof(cooEntry), MPI_BYTE, &datatype);
+        MPI_Type_commit(&datatype);
+        return datatype;
+    }
+
+/*
+    static MPI_Datatype mpi_datatype() {
         static bool         first = true;
         static MPI_Datatype datatype;
 
@@ -210,6 +218,7 @@ public:
 
         return datatype;
     }
+*/
 };
 
 
@@ -303,16 +312,9 @@ public:
     }
 
     static MPI_Datatype mpi_datatype() {
-        static bool         first = true;
         static MPI_Datatype datatype;
-
-        if (first)
-        {
-            first = false;
-            MPI_Type_contiguous(sizeof(cooEntry_row), MPI_BYTE, &datatype);
-            MPI_Type_commit(&datatype);
-        }
-
+        MPI_Type_contiguous(sizeof(cooEntry_row), MPI_BYTE, &datatype);
+        MPI_Type_commit(&datatype);
         return datatype;
     }
 };
@@ -370,18 +372,10 @@ public:
         return val;
     }
 
-    static MPI_Datatype mpi_datatype()
-    {
-        static bool         first = true;
+    static MPI_Datatype mpi_datatype() {
         static MPI_Datatype datatype;
-
-        if (first)
-        {
-            first = false;
-            MPI_Type_contiguous(sizeof(vecEntry), MPI_BYTE, &datatype);
-            MPI_Type_commit(&datatype);
-        }
-
+        MPI_Type_contiguous(sizeof(vecEntry), MPI_BYTE, &datatype);
+        MPI_Type_commit(&datatype);
         return datatype;
     }
 };
@@ -427,20 +421,12 @@ public:
         return(idx2 >= node2.idx2);
     }
 
-    static MPI_Datatype mpi_datatype()
-    {
-        static bool         first = true;
-        static MPI_Datatype datatype;
-
-        if (first)
-        {
-            first = false;
-            MPI_Type_contiguous(sizeof(tuple1), MPI_BYTE, &datatype);
-            MPI_Type_commit(&datatype);
-        }
-
-        return datatype;
-    }
+//    static MPI_Datatype mpi_datatype() {
+//        static MPI_Datatype datatype;
+//        MPI_Type_contiguous(sizeof(tuple1), MPI_BYTE, &datatype);
+//        MPI_Type_commit(&datatype);
+//        return datatype;
+//    }
 };
 
 std::ostream & operator<<(std::ostream & stream, const tuple1 & item);

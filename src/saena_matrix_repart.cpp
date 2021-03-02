@@ -291,10 +291,12 @@ int saena_matrix::repartition_nnz_initial(){
         if(verbose_repart && rank == 0) printf("repartition - step 6!\n");
 #endif
 
+        auto dt = cooEntry::mpi_datatype();
         entry.resize(nnz_l);
-        MPI_Alltoallv(&data[0],  &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
-                      &entry[0], &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
+        MPI_Alltoallv(&data[0],  &send_size_array[0], &send_offset[0], dt,
+                      &entry[0], &recv_size_array[0], &recv_offset[0], dt, comm);
 
+        MPI_Type_free(&dt);
         data.clear();
         data.shrink_to_fit();
     }else{
@@ -954,9 +956,12 @@ int saena_matrix::repart(bool repart_row /*= false*/){
         std::vector<cooEntry> entry_old(std::move(entry));
         entry.resize(nnz_l);
 
-        MPI_Alltoallv(&entry_old[0], &send_size_array[0], &send_offset[0], cooEntry::mpi_datatype(),
-                      &entry[0],     &recv_size_array[0], &recv_offset[0], cooEntry::mpi_datatype(), comm);
+        auto dt = cooEntry::mpi_datatype();
 
+        MPI_Alltoallv(&entry_old[0], &send_size_array[0], &send_offset[0], dt,
+                      &entry[0],     &recv_size_array[0], &recv_offset[0], dt, comm);
+
+        MPI_Type_free(&dt);
     }
 
     std::sort(entry.begin(), entry.end());
