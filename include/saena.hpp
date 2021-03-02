@@ -117,7 +117,7 @@ namespace saena {
     class options {
     private:
         int    solver_max_iter    = 500;
-        double relative_tolerance = 1e-12;
+        double relative_tolerance = 1e-8;
         std::string smoother      = "chebyshev";
         int    preSmooth          = 3;
         int    postSmooth         = 3;
@@ -135,11 +135,11 @@ namespace saena {
         void set_preSmooth(int preSmooth);
         void set_postSmooth(int postSmooth);
 
-        int         get_max_iter();
-        double      get_relative_tolerance();
-        std::string get_smoother();
-        int         get_preSmooth();
-        int         get_postSmooth();
+        int         get_max_iter() const;
+        double      get_relative_tolerance() const;
+        std::string get_smoother() const;
+        int         get_preSmooth() const;
+        int         get_postSmooth() const;
     };
 
     class amg {

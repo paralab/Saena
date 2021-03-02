@@ -3,10 +3,7 @@
 #include "saena_vector.h"
 #include "saena_object.h"
 #include "grid.h"
-#include "parUtils.h"
 //#include "pugixml.hpp"
-
-# define PETSC_PI 3.14159265358979323846
 
 // ******************************* matrix *******************************
 
@@ -81,7 +78,7 @@ int saena::matrix::set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local
 
 int saena::matrix::set(index_t i, index_t j, unsigned int size_x, unsigned int size_y, value_t* val){
     // ordering of val should be column-major.
-    unsigned int ii, jj;
+    nnz_t ii = 0, jj = 0;
     nnz_t iter = 0;
     //todo: add openmp
     for(jj = 0; jj < size_y; jj++) {
@@ -101,7 +98,7 @@ int saena::matrix::set(index_t i, index_t j, unsigned int size_x, unsigned int s
 }
 
 int saena::matrix::set(index_t i, index_t j, unsigned int* di, unsigned int* dj, value_t* val, nnz_t nnz_local){
-    nnz_t ii;
+    nnz_t ii = 0;
     for(ii = 0; ii < nnz_local; ii++) {
         if(val[ii] != 0){
             if(!add_dup)
@@ -184,7 +181,7 @@ nnz_t saena::matrix::get_local_nnz(){
     return m_pImpl->nnz_l;
 }
 
-int saena::matrix::print(int ran, std::string name){
+int saena::matrix::print(int ran, const std::string name){
     m_pImpl->print_entry(ran, name);
     return 0;
 }
@@ -246,10 +243,12 @@ saena::vector::vector(const saena::vector &B) {
 }
 
 saena::vector& saena::vector::operator=(const saena::vector &B) {
-    delete m_pImpl;
-    m_pImpl = new saena_vector(*B.m_pImpl);
-    m_pImpl->set_dup_flag(B.m_pImpl->add_duplicates);
-//    add_dup = B.add_dup;
+    if(this != &B) {
+        delete m_pImpl;
+        m_pImpl = new saena_vector(*B.m_pImpl);
+        m_pImpl->set_dup_flag(B.m_pImpl->add_duplicates);
+//        add_dup = B.add_dup;
+    }
     return *this;
 }
 
@@ -345,7 +344,7 @@ saena::options::options() = default;
 saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
     solver_max_iter         = vcycle_n;
     relative_tolerance = relT;
-    smoother           = sm;
+    smoother           = std::move(sm);
     preSmooth          = preSm;
     postSmooth         = postSm;
 }
@@ -389,7 +388,7 @@ saena::options::~options() = default;
 void saena::options::set(int max_it, double relT, std::string sm, int preSm, int postSm){
     solver_max_iter    = max_it;
     relative_tolerance = relT;
-    smoother           = sm;
+    smoother           = std::move(sm);
     preSmooth          = preSm;
     postSmooth         = postSm;
 }
@@ -404,7 +403,7 @@ void saena::options::set_relative_tolerance(double r){
 }
 
 void saena::options::set_smoother(std::string s){
-    smoother = s;
+    smoother = std::move(s);
 }
 
 void saena::options::set_preSmooth(int pr){
@@ -416,23 +415,23 @@ void saena::options::set_postSmooth(int po){
 }
 
 
-int saena::options::get_max_iter(){
+int saena::options::get_max_iter() const{
     return solver_max_iter;
 }
 
-double saena::options::get_relative_tolerance(){
+double saena::options::get_relative_tolerance() const{
     return relative_tolerance;
 }
 
-std::string saena::options::get_smoother(){
+std::string saena::options::get_smoother() const{
     return smoother;
 }
 
-int saena::options::get_preSmooth(){
+int saena::options::get_preSmooth() const{
     return preSmooth;
 }
 
-int saena::options::get_postSmooth(){
+int saena::options::get_postSmooth() const{
     return postSmooth;
 }
 
@@ -482,12 +481,12 @@ saena_object* saena::amg::get_object() {
 
 
 int saena::amg::set_shrink_levels(std::vector<bool> sh_lev_vec) {
-    m_pImpl->set_shrink_levels(sh_lev_vec);
+    m_pImpl->set_shrink_levels(std::move(sh_lev_vec));
     return 0;
 }
 
 int saena::amg::set_shrink_values(std::vector<int> sh_val_vec) {
-    m_pImpl->set_shrink_values(sh_val_vec);
+    m_pImpl->set_shrink_values(std::move(sh_val_vec));
     return 0;
 }
 
@@ -569,8 +568,8 @@ int saena::amg::solve_pCG(std::vector<value_t>& u, saena::options* opts){
     if(m_pImpl->remove_boundary){
 //        m_pImpl->add_boundary_sol(u); // TODO: this part should be fixed
     } else {
-//        Grid *g = &m_pImpl->grids[0];
-//        g->rhs_orig->return_vec(u);
+        Grid *g = &m_pImpl->grids[0];
+        g->rhs_orig->return_vec(u);
     }
 
     return 0;
@@ -679,7 +678,7 @@ int saena::amg::matrix_diff(saena::matrix &A1, saena::matrix &B1){
 
 //    if(A->active){
         MPI_Comm comm = A->comm;
-        int nprocs, rank;
+        int nprocs = 0, rank = 0;
         MPI_Comm_size(comm, &nprocs);
         MPI_Comm_rank(comm, &rank);
 

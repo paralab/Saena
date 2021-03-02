@@ -519,12 +519,12 @@ bool saena_object::active(int l){
 }
 
 int saena_object::set_shrink_levels(std::vector<bool> sh_lev_vec) {
-    shrink_level_vector = sh_lev_vec;
+    shrink_level_vector = std::move(sh_lev_vec);
     return 0;
 }
 
 int saena_object::set_shrink_values(std::vector<int> sh_val_vec) {
-    shrink_values_vector = sh_val_vec;
+    shrink_values_vector = std::move(sh_val_vec);
     return 0;
 }
 
@@ -536,7 +536,7 @@ int saena_object::set_repart_thre(float thre) {
 
 int saena_object::repartition_u(std::vector<value_t>& u0){
 
-    int rank;
+    int rank = 0;
     MPI_Comm_rank(grids[0].A->comm, &rank);
 //    MPI_Comm_size(grids[0].A->comm, &nprocs);
 
@@ -556,7 +556,7 @@ int saena_object::repartition_u(std::vector<value_t>& u0){
 int saena_object::repartition_back_u(std::vector<value_t>& u0){
 
     MPI_Comm comm = grids[0].A->comm;
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_rank(grids[0].A->comm, &rank);
     MPI_Comm_size(grids[0].A->comm, &nprocs);
 
