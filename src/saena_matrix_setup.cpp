@@ -330,18 +330,21 @@ int saena_matrix::remove_boundary_nodes() {
 //            if(rank == rank_v) std::cout << "new row idx: " << data_with_bound[i].row - ofst - bound_row.size() << std::endl;
 #endif
             new_idx[data_with_bound[i].row - ofst] = data_with_bound[i].row - bound_row.size() - ofst;
-            data.emplace_back(data_with_bound[i].row - bound_row.size(), data_with_bound[i].col, data_with_bound[i].val);
+            data.emplace_back(data_with_bound[i].row - bound_row.size() - ofst, data_with_bound[i].col, data_with_bound[i].val);
             while(i + 1 < SZ && data_with_bound[i].row == data_with_bound[i + 1].row){
                 ++i;
-                data.emplace_back(data_with_bound[i].row - bound_row.size(),
+                data.emplace_back(data_with_bound[i].row - bound_row.size() - ofst,
                                   data_with_bound[i].col,
                                   data_with_bound[i].val);
             }
         }
     }
 
+//    printf("rank %d: boundary points = %ld, interior points = %ld, total points = %ld\n",
+//            rank, bound_row.size(), data_with_bound.size() - bound_row.size(), data_with_bound.size());
+
 //    print_array(new_idx, M, rank_v, "new_idx", comm);
-//    print_vector(data, -1, "data", comm);
+//    print_vector(data, -1, "data before update", comm);
 //    print_vector(bound_row, -1, "bound_row", comm);
 //    print_vector(bound_val, -1, "bound_val", comm);
 
