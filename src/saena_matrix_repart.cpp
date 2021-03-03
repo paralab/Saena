@@ -33,8 +33,8 @@ int saena_matrix::repartition_nnz_initial(){
     last_M_shrink = Mbig;
 //    last_nnz_shrink = nnz_g;
 
-    if(split.size() != nprocs + 1)
-        split.resize(nprocs + 1);
+    split_b.swap(split);
+    split.resize(nprocs + 1);
 
     if(nprocs > 1) {
         // *************************** find splitters ****************************
@@ -146,9 +146,6 @@ int saena_matrix::repartition_nnz_initial(){
 
         // -------------------------------------------
         // determine number of rows on each proc based on having almost the same number of nonzeros per proc.
-
-        split_b.swap(split);
-        split.resize(nprocs + 1);
 
         const nnz_t NNZ_PROC = nnz_g / nprocs;
 
