@@ -342,11 +342,17 @@ int saena::vector::print_entry(int rank_){
 saena::options::options() = default;
 
 saena::options::options(int vcycle_n, double relT, std::string sm, int preSm, int postSm){
-    solver_max_iter         = vcycle_n;
+    solver_max_iter = vcycle_n;
     relative_tolerance = relT;
-    smoother           = std::move(sm);
-    preSmooth          = preSm;
-    postSmooth         = postSm;
+
+    assert(sm == "jacobi" || sm == "chebyshev");
+    smoother = std::move(sm);
+
+    assert(preSm >= 0);
+    preSmooth = preSm;
+
+    assert(postSm >= 0);
+    postSmooth = postSm;
 }
 
 saena::options::options(char* name){
