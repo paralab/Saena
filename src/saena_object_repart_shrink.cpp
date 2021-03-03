@@ -203,9 +203,9 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 //        print_vector(rhs_large, -1, "rhs_large after repart", comm);
 
         remove_boundary_rhs(rhs_large, rhs, rhs1->comm);
-    }
 
-//    print_vector(rhs, -1, "rhs after repart", comm);
+//    print_vector(rhs, -1, "rhs after remove_boundary_rhs", comm);
+    }
 
     Mbig_l = rhs.size();
     MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
@@ -216,7 +216,7 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 
     repart_vector(rhs, A->split, comm);
 
-//    print_vector(rhs, -1, "rhs after remove_boundary_rhs", comm);
+//    print_vector(rhs, -1, "rhs after final repart", comm);
 
 #if 0
     // ************** repartition rhs, based on A.split **************

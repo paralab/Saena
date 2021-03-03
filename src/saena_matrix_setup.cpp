@@ -286,7 +286,6 @@ int saena_matrix::remove_boundary_nodes() {
 #ifdef __DEBUG1__
     int rank_v = 1;
 //    print_vector(split, rank_v, "split", comm);
-//    data = data_with_bound;
 //    print_vector(data_with_bound, rank_v, "data_with_bound", comm);
 #endif
 
@@ -340,14 +339,6 @@ int saena_matrix::remove_boundary_nodes() {
         }
     }
 
-//    printf("rank %d: boundary points = %ld, interior points = %ld, total points = %ld\n",
-//            rank, bound_row.size(), data_with_bound.size() - bound_row.size(), data_with_bound.size());
-
-//    print_array(new_idx, M, rank_v, "new_idx", comm);
-//    print_vector(data, -1, "data before update", comm);
-//    print_vector(bound_row, -1, "bound_row", comm);
-//    print_vector(bound_val, -1, "bound_val", comm);
-
     // if the last nonzero is left, it means the last row of the matrix had only one nozero, otherwise the whole row
     // would have been added in the previous while loop
     if(i == SZ - 1){
@@ -356,8 +347,17 @@ int saena_matrix::remove_boundary_nodes() {
         bound_val.emplace_back(data_with_bound[i].val);
     }
 
+//    printf("rank %d: total points = %d, boundary points = %ld, interior points = %ld\n",
+//           rank, M_orig, bound_row.size(), M_orig - bound_row.size());
+
+//    print_array(new_idx, M, rank_v, "new_idx", comm);
+//    print_vector(data, -1, "data before update", comm);
+//    print_vector(bound_row, -1, "bound_row", comm);
+//    print_vector(bound_val, -1, "bound_val", comm);
+
     if(bound_row.empty()){ // there is no diagonal boundary point
         remove_boundary = false;
+        data = move(data_with_bound);
     }else{
         // update the column indices to the new indices after removing the boundary nodes
         if(nprocs == 1){

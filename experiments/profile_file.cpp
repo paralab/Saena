@@ -53,6 +53,7 @@ int main(int argc, char* argv[]){
 
     // write matrix to a file. pass the name as the argument.
 //    A.writeMatrixToFile("mat");
+//    petsc_viewer(A.get_internal_matrix());
 
     // *************************** set rhs: read from file ****************************
 
@@ -61,12 +62,14 @@ int main(int argc, char* argv[]){
     // entries should be in double.
 
     // set the size of rhs as the local number of rows on each process
-    unsigned int num_local_row = A.get_num_local_rows();
+    index_t num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
 
     // read rhs from file
     char* Vname(argv[2]);
     read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
+
+//    print_vector(rhs_std, -1, "rhs_std", comm);
 
     // generate random rhs
 //    rhs_std.resize(num_local_row);
@@ -79,7 +82,7 @@ int main(int argc, char* argv[]){
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
 
-//    rhs.print_entry(0);
+//    rhs.print_entry(-1);
 
     // *************************** set u0 ****************************
 
@@ -90,7 +93,7 @@ int main(int argc, char* argv[]){
     // There are 3 ways to set options:
 
     // 1- set them manually
-    int    solver_max_iter    = 1000;
+    int    solver_max_iter    = 200;
     double relative_tolerance = 1e-8;
     std::string smoother      = "chebyshev";
     int    preSmooth          = 3;
@@ -138,7 +141,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-//    print_time(t1, t2, "Solve:", comm);
+    print_time(t1, t2, "Solve:", comm);
 
     // *************************** print or write the solution ****************************
 
@@ -149,7 +152,7 @@ int main(int argc, char* argv[]){
     // *************************** profile matvecs ****************************
     // profile matvec times on all multigrid levels
 //    solver.profile_matvecs();
-    solver.profile_matvecs_breakdown();
+//    solver.profile_matvecs_breakdown();
 
     // *************************** check correctness of the solution 1 ****************************
 
