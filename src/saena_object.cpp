@@ -30,10 +30,12 @@ void saena_object::destroy_mpi_comms(){
     }
 
     // last level is accessed differently, through Ac
-    int l = max_level - 1;
-    if(grids[l + 1].active && grids[l].Ac.shrinked) {
-        if(grids[l].Ac.comm != MPI_COMM_NULL && grids[l].Ac.comm != MPI_COMM_WORLD)
-            MPI_Comm_free(&grids[l].Ac.comm);
+    if(max_level > 0){
+        int l = max_level - 1;
+        if(grids[l + 1].active && grids[l].Ac.shrinked) {
+            if(grids[l].Ac.comm != MPI_COMM_NULL && grids[l].Ac.comm != MPI_COMM_WORLD)
+                MPI_Comm_free(&grids[l].Ac.comm);
+        }
     }
 }
 
