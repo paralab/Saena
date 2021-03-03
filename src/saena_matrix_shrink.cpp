@@ -186,11 +186,14 @@ int saena_matrix::shrink_cpu(){
     // For simplicity, assume cpu_shrink_thre2 is 4 (it is simpler to explain this way)
     // create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
     int color = rank / cpu_shrink_thre2;
+    MPI_Comm comm_horizontal = MPI_COMM_NULL;
     MPI_Comm_split(comm, color, rank, &comm_horizontal);
 
-    int rank_new, nprocs_new;
+    int rank_new = 0, nprocs_new = 0;
     MPI_Comm_size(comm_horizontal, &nprocs_new);
     MPI_Comm_rank(comm_horizontal, &rank_new);
+
+    MPI_Comm_free(&comm_horizontal);
 
 #ifdef __DEBUG1__
     if(verbose_shrink){
@@ -226,9 +229,11 @@ int saena_matrix::shrink_cpu(){
     }
 #endif
 
+    comm_old = comm;
+
     MPI_Group group_new;
     MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
-    MPI_Comm_create_group(comm, group_new, 0, &comm);
+    MPI_Comm_create_group(comm_old, group_new, 0, &comm);
 
     MPI_Group_free(&bigger_group);
     MPI_Group_free(&group_new);
@@ -369,11 +374,14 @@ int saena_matrix::shrink_cpu_c(){
 
     // create a new comm, consisting only of processes 4k, 4k+1, 4k+2 and 4k+3 (with new ranks 0,1,2,3)
     int color = rank / cpu_shrink_thre2;
-    MPI_Comm_split(comm, color, rank, &comm_horizontal);
+    MPI_Comm comm_horizontal = MPI_COMM_NULL;
+    MPI_Comm_split(comm_old, color, rank, &comm_horizontal);
 
     int rank_new = -1, nprocs_new = -1;
     MPI_Comm_size(comm_horizontal, &nprocs_new);
     MPI_Comm_rank(comm_horizontal, &rank_new);
+
+    MPI_Comm_free(&comm_horizontal);
 
 #ifdef __DEBUG1__
     if(verbose_shrink){

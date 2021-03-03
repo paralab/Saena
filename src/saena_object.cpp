@@ -16,11 +16,26 @@ void saena_object::set_parameters(int max_iter, double tol, std::string sm, int 
 //    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
     solver_max_iter = max_iter;
     solver_tol      = tol;
-    smoother        = sm;
+    smoother        = std::move(sm);
     preSmooth       = preSm;
     postSmooth      = postSm;
 }
 
+void saena_object::destroy_mpi_comms(){
+    for(int l = max_level - 1; l >= 0; --l){
+        if(grids[l].active && grids[l].A->shrinked) {
+            if(grids[l].A->comm != MPI_COMM_NULL && grids[l].A->comm != MPI_COMM_WORLD)
+                MPI_Comm_free(&grids[l].A->comm);
+        }
+    }
+
+    // last level is accessed differently, through Ac
+    int l = max_level - 1;
+    if(grids[l + 1].active && grids[l].Ac.shrinked) {
+        if(grids[l].Ac.comm != MPI_COMM_NULL && grids[l].Ac.comm != MPI_COMM_WORLD)
+            MPI_Comm_free(&grids[l].Ac.comm);
+    }
+}
 
 MPI_Comm saena_object::get_orig_comm(){
     return grids[0].A->comm;

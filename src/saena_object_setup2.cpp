@@ -80,8 +80,6 @@ int saena_object::compute_coarsen(Grid *grid) {
     A->cpu_shrink_thre2_next_level = -1;
     A->enable_shrink_next_level = false;
 
-    Ac->comm_old = Ac->comm;
-
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
 //    printf("Ac: rank = %d \tMbig = %u \tM = %u \tnnz_g = %lu \tnnz_l = %lu \tdensity = %f\n",

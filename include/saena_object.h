@@ -229,9 +229,12 @@ public:
 
     saena_object()  = default;
     ~saena_object() = default;
-    int destroy(){
+
+    void destroy_mpi_comms();
+
+    void destroy(){
         destroy_SuperLU();
-        return 0;
+        destroy_mpi_comms();
     }
 
     MPI_Comm get_orig_comm();

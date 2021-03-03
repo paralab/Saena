@@ -209,8 +209,7 @@ int saena::matrix::erase_no_shrink_to_fit(){
 }
 
 void saena::matrix::destroy(){
-    m_pImpl->erase();
-//    m_pImpl->~matrix();
+    m_pImpl->destroy();
 }
 
 int saena::matrix::add_duplicates(bool add) {

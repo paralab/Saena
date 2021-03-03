@@ -601,8 +601,10 @@ int saena_matrix::set3(unsigned int* row, unsigned int* col, double* val, unsign
 */
 
 
-int saena_matrix::destroy(){
-    return 0;
+void saena_matrix::destroy(){
+    erase();
+//    if(comm != MPI_COMM_WORLD && comm != MPI_COMM_NULL)
+//        MPI_Comm_free(&comm);
 }
 
 

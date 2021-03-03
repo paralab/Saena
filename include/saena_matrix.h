@@ -69,9 +69,8 @@ private:
     bool verbose_shrink            = false;
 
 public:
-    MPI_Comm comm            = MPI_COMM_WORLD;
-    MPI_Comm comm_old        = MPI_COMM_WORLD;
-    MPI_Comm comm_horizontal = MPI_COMM_WORLD;
+    MPI_Comm comm     = MPI_COMM_WORLD;
+    MPI_Comm comm_old = MPI_COMM_WORLD;
 
     index_t Mbig    = 0; // global number of rows
     index_t Nbig    = 0; // global number of columns
@@ -96,7 +95,7 @@ public:
     std::vector<nnz_t>   nnz_list;          // number of nonzeros on each process.
                                             // todo: Since it is local to each processor, int is enough. nnz_l should be changed too.
 
-    bool remove_boundary = false;
+    bool remove_boundary = true;
     std::vector<index_t> bound_row; // boundary node row index
     std::vector<value_t> bound_val; // boundary node value
 
@@ -348,7 +347,7 @@ public:
 //    int erase_after_decide_shrinking();
     int erase_lazy_update();
     int erase_no_shrink_to_fit();
-    int destroy();
+    void destroy();
 };
 
 #endif //SAENA_SAENA_MATRIX_H
