@@ -381,7 +381,7 @@ int saena_object::repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_
     if(verbose_repart_vec){MPI_Barrier(comm); if(!rank) printf("repart_vec: start\n"); MPI_Barrier(comm);}
 #endif
 
-//    print_vector(split, 0, "split", comm);
+//    print_vector(split, rank_v, "split", comm);
 //    print_vector(v, -1, "v", comm);
 
     // ************** repartition v, based on A.split **************
@@ -410,27 +410,29 @@ int saena_object::repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_
     end_proc   = lower_bound2(&*split_init.begin(), &*split_init.end(), end);
     if(split_init[rank + 1] == split[rank + 1])
         end_proc--;
-//    if(rank == 3) printf("\nstart_proc = %u, end_proc = %u \n", start_proc, end_proc);
+
+//    if(rank == rank_v) printf("\nstart_proc = %u, end_proc = %u \n", start_proc, end_proc);
+    assert(start_proc <= end_proc);
 
     grids[0].rcount.assign(nprocs, 0);
     if(start_proc < end_proc){
 //        if(rank==1) printf("start_proc = %u, end_proc = %u\n", start_proc, end_proc);
 //        if(rank==1) printf("split_init[start_proc+1] = %u, split[rank] = %u\n", split_init[start_proc+1], split[rank]);
-        grids[0].rcount[start_proc] = split_init[start_proc + 1] - split[rank];
-        grids[0].rcount[end_proc]   = split[rank+1] - split_init[end_proc];
+        if(start_proc < nprocs)
+            grids[0].rcount[start_proc] = split_init[start_proc + 1] - split[rank];
+        if(end_proc < nprocs)
+            grids[0].rcount[end_proc]   = split[rank+1] - split_init[end_proc];
 
-        for(int i = start_proc+1; i < end_proc; i++){
+        const int max_proc = min(nprocs, end_proc);
+        for(int i = start_proc+1; i < max_proc; i++){
 //            if(rank==ran) printf("split_init[i+1] = %lu, split_init[i] = %lu\n", split_init[i+1], split_init[i]);
             grids[0].rcount[i] = split_init[i + 1] - split_init[i];
         }
 
     }else if(start_proc == end_proc){
 //        grids[0].rcount[start_proc] = split[start_proc + 1] - split[start_proc];
-        grids[0].rcount[start_proc] = split[rank + 1] - split[rank];
-    }else{
-        printf("error in repart_vec function: start_proc > end_proc\n");
-        MPI_Finalize();
-        return -1;
+        if (start_proc < nprocs)
+            grids[0].rcount[start_proc] = split[rank + 1] - split[rank];
     }
 
 #ifdef __DEBUG1__
@@ -449,23 +451,24 @@ int saena_object::repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_
         end_proc--;
 
 //    if(rank == rank_v) printf("\nstart_proc = %d, end_proc = %d, start = %d, end = %d\n", start_proc, end_proc, start, end);
+    assert(start_proc <= end_proc);
 
     grids[0].scount.assign(nprocs, 0);
     if(end_proc > start_proc){
 //        if(rank==1) printf("start_proc = %u, end_proc = %u\n", start_proc, end_proc);
 //        if(rank==1) printf("split_init[rank+1] = %u, split[end_proc] = %u\n", split_init[rank+1], split[end_proc]);
-        grids[0].scount[start_proc] = split[start_proc+1] - split_init[rank];
-        grids[0].scount[end_proc] = split_init[rank + 1] - split[end_proc];
+        if(start_proc < nprocs)
+            grids[0].scount[start_proc] = split[start_proc+1] - split_init[rank];
+        if(end_proc < nprocs)
+            grids[0].scount[end_proc] = split_init[rank + 1] - split[end_proc];
 
-        for(int i = start_proc+1; i < end_proc; i++){
+        const int max_proc = min(nprocs, end_proc);
+        for(int i = start_proc+1; i < max_proc; ++i){
             grids[0].scount[i] = split[i+1] - split[i];
         }
-    } else if(start_proc == end_proc)
-        grids[0].scount[start_proc] = split_init[rank + 1] - split_init[rank];
-    else{
-        printf("error in repart_vec function: start_proc > end_proc\n");
-        MPI_Abort(comm, 1);
-        return -1;
+    } else if(start_proc == end_proc) {
+        if (start_proc < nprocs)
+            grids[0].scount[start_proc] = split_init[rank + 1] - split_init[rank];
     }
 
 #ifdef __DEBUG1__
