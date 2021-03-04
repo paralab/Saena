@@ -21,3 +21,6 @@ src/saena_matrix_matvec_backup.cpp
 CMakeLists_copy1.txt
 build_gcc_mpich
 external/dollar/.Rhistory
+build_old1/
+test/matrix_folder/
+tests/
