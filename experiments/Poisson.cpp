@@ -60,7 +60,7 @@ int main(int argc, char* argv[]){
 
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
-//    A.print(0);
+//    A.print(-1);
 
     // write matrix to a file. pass the name as the argument.
 //    A.writeMatrixToFile("mat");
@@ -81,12 +81,16 @@ int main(int argc, char* argv[]){
     saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
     //saena::laplacian3D_set_rhs_old2(rhs_std, mx, my, mz, comm);
 
+//    print_vector(rhs_std, -1, "rhs_std", comm);
+
     index_t my_split = 0;
     saena::find_split((index_t)rhs_std.size(), my_split, comm);
 
     saena::vector rhs(comm);
     rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
     rhs.assemble();
+
+//    rhs.print_entry(-1);
 
     // *************************** set u0 ****************************
 
@@ -157,8 +161,8 @@ int main(int argc, char* argv[]){
 
     // *************************** profile matvecs ****************************
     // profile matvec times on all multigrid levels
-//    solver.profile_matvecs();
-    solver.profile_matvecs_breakdown();
+    solver.profile_matvecs();
+//    solver.profile_matvecs_breakdown();
 
     // *************************** check correctness of the solution 1 ****************************
 
