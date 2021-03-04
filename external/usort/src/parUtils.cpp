@@ -402,7 +402,7 @@ namespace par {
 
 //      std::cout << rank << " : " << __func__ << arr.size() << std::endl;
 
-        assert(!arr.empty());
+//        assert(!arr.empty());
 
         if (npes == 1) {
 //            std::cout <<" have to use seq. sort"
