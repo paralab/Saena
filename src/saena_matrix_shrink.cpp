@@ -229,6 +229,8 @@ int saena_matrix::shrink_cpu(){
     }
 #endif
 
+    comm_old = comm;
+
     MPI_Group group_new;
     MPI_Group_incl(bigger_group, total_active_procs, &*ranks.begin(), &group_new);
     MPI_Comm_create_group(comm_old, group_new, 0, &comm);
@@ -314,6 +316,8 @@ int saena_matrix::shrink_cpu_minor(){
         MPI_Barrier(comm); print_vector(split, 0, "split before shrinking", comm); MPI_Barrier(comm);
     }
 #endif
+
+    comm_old = comm;
 
     std::vector<index_t> split_old_minor = split;
     split.clear();
