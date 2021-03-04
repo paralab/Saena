@@ -204,7 +204,7 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 
         remove_boundary_rhs(rhs_large, rhs, rhs1->comm);
 
-//    print_vector(rhs, -1, "rhs after remove_boundary_rhs", comm);
+//        print_vector(rhs, -1, "rhs after remove_boundary_rhs", comm);
     }
 
     Mbig_l = rhs.size();
@@ -500,8 +500,10 @@ int saena_object::repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_
 
     // todo: replace Alltoall with a for loop of send and recv.
     if(repartition){
-        vector<value_t> v_tmp = v;
-        v.resize(split[rank + 1] - split[rank]);
+        vector<value_t> v_tmp;
+        v_tmp.swap(v);
+        if(split[rank + 1] - split[rank] > 0)
+            v.resize(split[rank + 1] - split[rank]);
         MPI_Alltoallv(&v_tmp[0], &grids[0].scount[0], &grids[0].sdispls[0], par::Mpi_datatype<value_t>::value(),
                       &v[0],     &grids[0].rcount[0], &grids[0].rdispls[0], par::Mpi_datatype<value_t>::value(), comm);
     }
