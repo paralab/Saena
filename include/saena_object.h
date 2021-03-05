@@ -195,6 +195,10 @@ public:
     nnz_t  sample_prcnt_denom       = 0;
     std::string sparsifier          = "majid"; // options: 1- TRSL, 2- drineas, majid
 
+    int filter_it = 0;
+    const vector<double> filter_thre = {1e-14, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-6,
+                                        1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6};
+
     // **********************************************
     // verbose
     // **********************************************
@@ -248,6 +252,7 @@ public:
     int compute_coarsen(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid, bool symm = true);
+    void filter(vector<cooEntry> &v);
 
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false, bool B_trans = true);
     int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans = false);

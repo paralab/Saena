@@ -152,6 +152,8 @@ int saena_object::compute_coarsen(Grid *grid) {
     // form Ac
     // *******************************************************
 
+    filter(Ac->entry);
+
     if (doSparsify) {
 
         // *******************************************************
@@ -841,6 +843,20 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     return 0;
 }
 
+
+void saena_object::filter(vector<cooEntry> &v) {
+    if (filter_it >= filter_thre.size())
+        filter_it = filter_thre.size();
+    const double THRE = filter_thre[filter_it];
+
+    vector<cooEntry> w;
+    for(const auto &a : v){
+        if(fabs(a.val) > THRE)
+            w.emplace_back(a);
+    }
+    w.swap(v);
+    ++filter_it;
+}
 
 // from here: http://www.algolist.net/Algorithms/Sorting/Quicksort
 /*
