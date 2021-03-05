@@ -232,7 +232,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     recvProcCount.clear();
     sendProcRank.clear();
     sendProcCount.clear();
-    indicesP_local.clear();
+//    indicesP_local.clear();
 //    indicesP_remote.clear();
 //    entry_local.clear();
 //    entry_remote.clear();
@@ -254,6 +254,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     assert(nnz_l == entry.size());
 
+    // store local entries in this vector for sorting in row-major order.
+    // then split it to row_loc, col_loc, val_loc.
+    vector<cooEntry_row> ent_loc_row;
+
     nnz_t i = 0;
     while(i < nnz_l) {
         procNum = lower_bound3(&split[0], &split[nprocs], entry[i].col);
@@ -264,9 +268,10 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //                if(!rank) printf("entry[i].row = %d, split[rank] = %d, dif = %d\n", entry[i].row, split[rank], entry[i].row - split[rank]);
 //                if(!rank) cout << entry[i] << endl;
                 ++nnzPerRow_local[entry[i].row];
-                row_local.emplace_back(entry[i].row);
-                col_local.emplace_back(entry[i].col);
-                val_local.emplace_back(entry[i].val);
+                ent_loc_row.emplace_back(entry[i].row, entry[i].col, entry[i].val);
+//                row_local.emplace_back(entry[i].row);
+//                col_local.emplace_back(entry[i].col);
+//                val_local.emplace_back(entry[i].val);
                 ++i;
             }
 
@@ -296,11 +301,28 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         }
     } // for i
 
-    nnz_l_local     = row_local.size();
+    nnz_l_local     = ent_loc_row.size();
     nnz_l_remote    = row_remote.size();
     col_remote_size = vElement_remote.size(); // number of remote columns
 
     recvCount[rank] = 0;
+
+    // sort local entries in row-major order and remote entries in column-major order
+    sort(ent_loc_row.begin(), ent_loc_row.end());
+
+//    print_vector(ent_loc_row, -1, "ent_loc_row", comm);
+
+    row_local.resize(nnz_l_local);
+    col_local.resize(nnz_l_local);
+    val_local.resize(nnz_l_local);
+    for(i = 0; i < nnz_l_local; ++i){
+        row_local[i] = ent_loc_row[i].row;
+        col_local[i] = ent_loc_row[i].col;
+        val_local[i] = ent_loc_row[i].val;
+    }
+
+    ent_loc_row.clear();
+    ent_loc_row.shrink_to_fit();
 
     for (i = 1; i < nprocs + 1; ++i){
         nnzPerProcScan[i] += nnzPerProcScan[i - 1];
@@ -399,11 +421,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         mv_stat.resize(numSendProc + numRecvProc);
     }
 
-    indicesP_local.resize(nnz_l_local);
-    for(nnz_t i = 0; i < nnz_l_local; ++i)
-        indicesP_local[i] = i;
-    index_t *row_localP = &*row_local.begin();
-    std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // NOTE: this is ordered only row-wise, not row-major.
+//    indicesP_local.resize(nnz_l_local);
+//    for(nnz_t i = 0; i < nnz_l_local; ++i)
+//        indicesP_local[i] = i;
+//    index_t *row_localP = &*row_local.begin();
+//    std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // NOTE: this is ordered only row-wise, not row-major.
 
 #ifdef __DEBUG1__
     {
@@ -458,7 +480,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
 int restrict_matrix::openmp_setup() {
 
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -488,7 +510,7 @@ int restrict_matrix::openmp_setup() {
 //        if(rank==0 && thread_id==0) std::cout << "number of procs = " << nprocs << ", number of threads = " << num_threads << std::endl;
         index_t istart = 0; // starting row index for each thread
         index_t iend = 0;   // last row index for each thread
-        index_t iter_local, iter_remote;
+        index_t iter_local = 0, iter_remote = 0;
 
         // compute local iter to do matvec using openmp (it is done to make iter independent data on threads)
         bool first_one = true;
@@ -573,6 +595,7 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     int flag = 0;
 
     // put the values of the vector in vSend, for sending to other processors
+#pragma omp parallel for
     for(index_t i = 0; i < vIndexSize; ++i)
         vSend[i] = v[vIndex[i]];
 
@@ -589,7 +612,7 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     for(int i = 0; i < numSendProc; i++){
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &mv_req[numRecvProc+i]);
-        MPI_Test(&mv_req[numRecvProc + i], &flag, &mv_stat[numRecvProc + i]);
+        MPI_Test(&mv_req[numRecvProc + i], &flag, MPI_STATUS_IGNORE);
     }
 
     // local loop
@@ -598,10 +621,22 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     value_t* v_p = &v[0] - split[rank];
     std::fill(w.begin(), w.end(), 0);
 
-    nnz_t iter = 0;
-    for (index_t i = 0; i < M; ++i) {
-        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
-            w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+//    nnz_t iter = 0;
+//    for (index_t i = 0; i < M; ++i) {
+//        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+//            w[i] += val_local[iter] * v_p[col_local[iter]];
+//        }
+//    }
+
+#pragma omp parallel
+    {
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
+#pragma omp for
+        for (index_t i = 0; i < M; ++i) {
+            for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+//                if(rank==1) cout << entry_local[indicesP_local[iter]].col - split[rank] << "\t" << v[entry_local[indicesP_local[iter]].col - split[rank]] << endl;
+                w[i] += val_local[iter] * v_p[col_local[iter]];
+            }
         }
     }
 
@@ -612,6 +647,7 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     // -----------
 //    double t1rem = omp_get_wtime();
 
+    nnz_t iter = 0;
     int recv_proc = 0, recv_proc_idx = 0, np = 0;;
     while(np < numRecvProc){
         MPI_Waitany(numRecvProc, &mv_req[0], &recv_proc_idx, MPI_STATUS_IGNORE);
@@ -647,7 +683,7 @@ void restrict_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //    double t2rem = omp_get_wtime();
 //    trem += (t2rem - t1rem);
 
-    MPI_Waitall(numSendProc, &mv_req[numRecvProc], &mv_stat[numRecvProc]);
+    MPI_Waitall(numSendProc, &mv_req[numRecvProc], MPI_STATUSES_IGNORE);
 
 //    double t2comm = omp_get_wtime();
 //    ttot  += (t2comm - t1comm);
@@ -693,7 +729,7 @@ void restrict_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) 
     for (index_t i = 0; i < M; ++i) {
         for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
 //                if(rank==1) cout << entry_local[indicesP_local[iter]].col - split[rank] << "\t" << v[entry_local[indicesP_local[iter]].col - split[rank]] << endl;
-            w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+            w[i] += val_local[iter] * v_p[col_local[iter]];
         }
     }
 
@@ -766,12 +802,11 @@ void restrict_matrix::matvec_omp(std::vector<value_t>& v, std::vector<value_t>& 
 #pragma omp parallel
     {
         nnz_t iter = iter_local_array[omp_get_thread_num()];
-//        nnz_t iter = 0;
 #pragma omp for
         for (index_t i = 0; i < M; ++i) {
             for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
 //                if(rank==1) cout << entry_local[indicesP_local[iter]].col - split[rank] << "\t" << v[entry_local[indicesP_local[iter]].col - split[rank]] << endl;
-                w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+                w[i] += val_local[iter] * v_p[col_local[iter]];
             }
         }
     }

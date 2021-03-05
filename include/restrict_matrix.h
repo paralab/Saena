@@ -70,7 +70,7 @@ public:
     std::vector<nnz_t> iter_remote_array;
     std::vector<value_t> w_buff; // for matvec
 
-    std::vector<nnz_t> indicesP_local;
+//    std::vector<nnz_t> indicesP_local;
 //    std::vector<nnz_t> indicesP_remote;
 
     vector<MPI_Request> mv_req;
