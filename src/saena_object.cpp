@@ -151,6 +151,9 @@ int saena_object::setup(saena_matrix* A) {
             grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
 
         res = coarsen(&grids[i], map_all, g2u_all, order_dif); // create P, R and Ac for grid[i]
+        if(i >= float_level){
+            grids[i].Ac.use_double = false; // use single-precision matvec for this matrix
+        }
 
         if(res != 0){
             if(res == 1){

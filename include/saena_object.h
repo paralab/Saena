@@ -66,6 +66,8 @@ public:
     void remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0, MPI_Comm comm);
     void add_boundary_sol(std::vector<value_t> &u);
 
+    const int float_level = 3; // any matrix after this level will use single-precision matvec
+
     // *****************
     // matmat
     // *****************
