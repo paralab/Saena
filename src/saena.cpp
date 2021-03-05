@@ -404,12 +404,32 @@ saena::options::options(char* name){
 
 saena::options::~options() = default;
 
-void saena::options::set(int max_it, double relT, std::string sm, int preSm, int postSm){
-    solver_max_iter    = max_it;
-    relative_tol = relT;
-    smoother           = std::move(sm);
-    preSmooth          = preSm;
-    postSmooth         = postSm;
+void saena::options::set(int max_iter, double tol, std::string sm, int preSm, int postSm, bool dynamic_lev,
+                         int max_lev, int float_lev, double fil_thr, double fil_max, int fil_st, int fil_rate){
+    solver_max_iter = max_iter;
+    relative_tol = tol;
+
+    assert(sm == "jacobi" || sm == "chebyshev");
+    smoother = std::move(sm);
+
+    assert(preSm >= 0);
+    preSmooth = preSm;
+
+    assert(postSm >= 0);
+    postSmooth = postSm;
+
+    dynamic_levels = dynamic_lev;
+
+    assert(max_lev >= 0 && max_lev < 1000);
+    max_level = max_lev;
+
+    assert(float_level >= 0);
+    float_level = float_lev;
+
+    filter_thre  = fil_thr;
+    filter_max   = fil_max;
+    filter_start = fil_st;
+    filter_rate  = fil_rate;
 }
 
 

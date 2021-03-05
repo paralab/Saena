@@ -137,7 +137,10 @@ namespace saena {
         explicit options(char* name); // to set parameters from an xml file
         ~options();
 
-        void set(int max_iter, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
+        void set(int max_iter = 100, double relative_tolerance = 1e-8, std::string smoother = "chebyshev",
+                 int preSmooth = 3, int postSmooth = 3, bool dynamic_lev = true, int max_lev = 10,
+                 int float_lev = 3, double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 0, int fil_rate = 2);
+
         void set_max_iter(int max_iter);
         void set_relative_tolerance(double relative_tolerance);
         void set_smoother(std::string smoother);
