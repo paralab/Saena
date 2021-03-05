@@ -710,6 +710,8 @@ int saena_matrix::erase2(){
     vIndex.clear();
     vSend.clear();
     vecValues.clear();
+    vSend_f.clear();
+    vecValues_f.clear();
 //    vSend2.clear();
 //    vecValues2.clear();
     recvCount.clear();

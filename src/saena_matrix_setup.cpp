@@ -1007,6 +1007,9 @@ int saena_matrix::set_off_on_diagonal(){
             vSend.resize(vIndexSize);
             vecValues.resize(recvSize);
 
+            vSend_f.resize(vIndexSize);
+            vecValues_f.resize(recvSize);
+
 //            vSend2.resize(vIndexSize);
 //            vecValues2.resize(recvSize);
 

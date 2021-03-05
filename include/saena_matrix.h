@@ -84,6 +84,8 @@ public:
     index_t M_orig    = 0; // before removing boundary nodes
     index_t Mbig_orig = 0; // before removing boundary nodes
 
+    bool use_double = true; // to determine the precision for matvec
+
     int p_order = 1;
     int prodim = 2;
 
@@ -128,6 +130,8 @@ public:
     std::vector<value_t> vecValues;
 //    std::vector<value_t> vSend2;
 //    std::vector<value_t> vecValues2;    // for compressed matvec
+    std::vector<float> vSend_f;           // float version
+    std::vector<float> vecValues_f;       // float version
 
 //    std::vector<nnz_t> indicesP_local;
 
@@ -294,6 +298,7 @@ public:
     void matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse2(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse3(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec_sparse_float(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
     void matvec_sparse_array2(value_t *v, value_t *w);   // to be used in ietl.
 

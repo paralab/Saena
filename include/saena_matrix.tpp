@@ -6,7 +6,8 @@ inline void saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& 
     if(use_dense){
         dense_matrix.matvec(v, w);
     }else{
-        matvec_sparse(v, w);
+        if(use_double) matvec_sparse(v, w);
+        else matvec_sparse_float(v, w);
 //        matvec_sparse_zfp(v, w);
     }
 }
