@@ -49,6 +49,29 @@ void saena_object::set_dynamic_levels(const bool &dl /*= true*/){
 
 
 int saena_object::setup(saena_matrix* A) {
+    std::vector<std::vector<int>> m_l2g;
+    std::vector<int> m_g2u;
+    std::vector<int> order_dif;
+    setup(A, m_l2g, m_g2u, 0, order_dif);
+    return 0;
+}
+
+
+int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif) {
+
+    std::vector< std::vector< std::vector<int> > > map_all;
+    if(!m_l2g.empty()){
+        map_all.emplace_back(std::move(m_l2g));
+    }
+
+    std::vector< std::vector<int> > g2u_all;
+    if(!m_g2u.empty()){
+//        g2u_all.emplace_back(std::move(m_g2u));
+        g2u_all.emplace_back(m_g2u);
+    }
+
+    bdydof = m_bdydof;
+
     int nprocs = -1, rank = -1;
     MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
@@ -117,10 +140,6 @@ int saena_object::setup(saena_matrix* A) {
         A->generate_dense_matrix();
     }
 
-    std::vector< std::vector< std::vector<int> > > map_all;
-    std::vector< std::vector<int> > g2u_all;
-    std::vector<int> order_dif;
-
 #ifdef __DEBUG1__
     if(verbose_setup_steps){
         MPI_Barrier(A->comm);
@@ -139,9 +158,9 @@ int saena_object::setup(saena_matrix* A) {
 
 #ifdef __DEBUG1__
         if(verbose_setup_steps){
-            MPI_Barrier(grids[i].A->comm);
+            MPI_Barrier(A->comm);
             if(!rank_new) printf("\nsetup: level %d\n", i+1);
-            MPI_Barrier(grids[i].A->comm);
+            MPI_Barrier(A->comm);
         }
 #endif
 
@@ -210,7 +229,6 @@ int saena_object::setup(saena_matrix* A) {
 //            if(i == 2){
 //                grids[i + 1].A->writeMatrixToFile("saena");
 //            }
-
         }else{
 #ifdef __DEBUG1__
             if(verbose_setup_steps){printf("rank %d is not active for grids[%d].Ac.\n", rank, i);}
@@ -248,245 +266,6 @@ int saena_object::setup(saena_matrix* A) {
             std::stringstream buf;
             buf << "_____________________________\n\n"
                 << "number of levels = << " << max_level << " >> (the finest level is 0)\n";
-            std::cout << buf.str();
-            if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
-            print_sep();
-        }
-    }
-
-#ifdef __DEBUG1__
-    if(verbose_setup_steps){
-        MPI_Barrier(A->comm);
-        if(!rank) printf("setup: setup_SuperLU()\n");
-        MPI_Barrier(A->comm);
-    }
-#endif
-
-    if(grids.back().active) {
-        A_coarsest = grids.back().A;
-        setup_SuperLU();
-    }
-
-#ifdef __DEBUG1__
-    if(verbose_setup_steps){
-//        A_coarsest->print_info(-1);
-        MPI_Barrier(A->comm);
-        if(!rank) printf("setup done!\n");
-        MPI_Barrier(A->comm);
-    }
-#endif
-
-    return 0;
-}
-
-
-int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif) {
-    int nprocs = -1, rank = -1;
-    MPI_Comm_size(A->comm, &nprocs);
-    MPI_Comm_rank(A->comm, &rank);
-
-    #pragma omp parallel default(none) shared(rank, nprocs)
-    if(!rank && omp_get_thread_num()==0)
-        printf("\nnumber of processes: %d\nnumber of threads:   %d\n", nprocs, omp_get_num_threads());
-
-    if(smoother=="chebyshev"){
-        find_eig(*A);
-    }
-
-    if(A->remove_boundary){
-        remove_boundary = A->remove_boundary;
-        std::swap(bound_row, A->bound_row);
-        std::swap(bound_val, A->bound_val);
-    }
-
-    if(verbose_setup){
-        MPI_Barrier(A->comm);
-        if(!rank){
-            printf("Operator smoother:   %s\n", PSmoother.c_str());
-            printf("connStrength:        %.2f\n", connStrength);
-            printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
-            printf("_____________________________\n\n");
-            printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
-                   nprocs, A->Mbig, A->nnz_g, A->density);
-            if(A->use_dense){
-                printf("dense structure = True\n");
-            }
-        }
-        MPI_Barrier(A->comm);
-    }
-
-#ifdef __DEBUG1__
-    if(verbose_setup_steps){
-        MPI_Barrier(A->comm);
-
-        if(!rank){
-            #ifdef SPLIT_NNZ
-            printf("\nsplit based on nnz\n");
-            #endif
-            #ifdef SPLIT_SIZE
-            printf("\nsplit based on matrix size\n");
-            #endif
-            std::cout << "coarsen_method: " << coarsen_method << std::endl;
-            printf("\nsetup: start: find_eig()\n");
-        }
-
-        MPI_Barrier(A->comm);
-    }
-#endif
-
-    if(fabs(sample_sz_percent - 1) < 1e-4)
-        doSparsify = false;
-
-#ifdef __DEBUG1__
-    if(verbose_setup_steps){
-        MPI_Barrier(A->comm);
-        if(!rank) printf("setup: generate_dense_matrix()\n");
-        MPI_Barrier(A->comm);
-    }
-#endif
-
-    if(switch_to_dense && A->density > density_thre && A->Mbig <= dense_sz_thre) {
-        A->generate_dense_matrix();
-    }
-
-#ifdef __DEBUG1__
-    if(verbose_setup_steps){
-        MPI_Barrier(A->comm);
-        if(!rank) printf("setup: mesh info\n");
-        MPI_Barrier(A->comm);
-    }
-#endif
-
-    std::vector< std::vector< std::vector<int> > > map_all;
-    if(!m_l2g.empty()){
-        map_all.emplace_back(std::move(m_l2g));
-    }
-
-    std::vector< std::vector<int> > g2u_all;
-    if(!m_g2u.empty()){
-//        g2u_all.emplace_back(std::move(m_g2u));
-        g2u_all.emplace_back(m_g2u);
-    }
-
-    bdydof = m_bdydof;
-
-#ifdef __DEBUG1__
-    if(verbose_setup_steps){
-        MPI_Barrier(A->comm);
-        if(!rank) printf("setup: level 0\n");
-        MPI_Barrier(A->comm);
-    }
-#endif
-
-    grids.resize(max_level + 1);
-    grids[0] = Grid(A, 0);
-    grids[0].active = true;
-
-    int res = 0;
-    int rank_new = rank;
-    for(int i = 0; i < max_level; ++i){
-
-#ifdef __DEBUG1__
-        if(verbose_setup_steps){
-            MPI_Barrier(A->comm);
-            if(!rank_new) printf("\nsetup: level %d\n", i+1);
-            MPI_Barrier(A->comm);
-        }
-#endif
-
-        if (shrink_level_vector.size() > i + 1 && shrink_level_vector[i+1])
-            grids[i].A->enable_shrink_next_level = true;
-        if (shrink_values_vector.size() > i + 1)
-            grids[i].A->cpu_shrink_thre2_next_level = shrink_values_vector[i+1];
-
-        res = coarsen(&grids[i], map_all, g2u_all, order_dif); // create P, R and Ac for grid[i]
-
-        if(res != 0){
-            if(res == 1){
-                max_level = i + 1;
-            }else if(res == 2){
-                max_level = i;
-                break;
-            }else{
-                printf("Invalid return value in saena_object::setup()");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        grids[i + 1] = Grid(&grids[i].Ac, i + 1);   // Pass A to grids[i+1] (created as Ac in grids[i])
-        grids[i].coarseGrid = &grids[i + 1];        // connect grids[i+1] to grids[i]
-
-        grids[i + 1].active = grids[i].Ac.active;
-
-        if(grids[i].Ac.active) {
-            MPI_Comm_rank(grids[i].Ac.comm, &rank_new);
-
-            if (smoother == "chebyshev") {
-#ifdef __DEBUG1__
-                if(verbose_setup_steps){
-                    MPI_Barrier(grids[i].Ac.comm);
-                    if(!rank) printf("setup: find_eig()\n");
-                    MPI_Barrier(grids[i].Ac.comm);
-                }
-#endif
-                find_eig(grids[i].Ac);
-            }
-
-            if (verbose_setup) {
-
-                if (!rank_new) {
-                    printf("_____________________________\n\n");
-                    printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu"
-                           "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
-                           grids[i + 1].level, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
-                           grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
-                    if(grids[i + 1].A->use_dense){
-                        printf("dense structure = True\n");
-                    }
-                }
-            }
-
-            // write matrix to file
-//            if(i == 2){
-//                grids[i + 1].A->writeMatrixToFile("saena");
-//            }
-        }else{
-#ifdef __DEBUG1__
-            if(verbose_setup_steps){printf("rank %d is not active for grids[%d].Ac.\n", rank, i);}
-#endif
-            break;
-        }
-    }
-
-    // max_level is the lowest on the active processors in the last grid. So MPI_MIN is used in the following MPI_Allreduce.
-    int max_level_send = max_level;
-    MPI_Allreduce(&max_level_send, &max_level, 1, MPI_INT, MPI_MIN, grids[0].A->comm);
-    grids.resize(max_level + 1);
-
-#ifdef __DEBUG1__
-    {
-        if(verbose_setup_steps){
-            MPI_Barrier(A->comm);
-            if(!rank) printf("setup: finished creating the hierarchy. max_level = %u \n", max_level);
-            MPI_Barrier(A->comm);
-        }
-
-        // print active procs
-        // ==================
-//        for(int l = 0; l < max_level; ++l){
-//            MPI_Barrier(A->comm);
-//            if(grids[l].active) {
-//                printf("level %d: rank %d is active\n", l + 1, rank);
-//            }
-//        }
-    }
-#endif
-
-    if(verbose_setup){
-        if(!rank){
-            std::stringstream buf;
-            buf << "_____________________________\n\n"
-                << "number of levels = << " << BLUE << max_level << COLORRESET << " >> (the finest level is 0)\n";
             std::cout << buf.str();
             if(doSparsify) printf("final sample size percent = %f\n", 1.0 * sample_prcnt_numer / sample_prcnt_denom);
             print_sep();
