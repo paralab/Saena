@@ -116,18 +116,18 @@ namespace saena {
 
     class options {
     private:
-        int    solver_max_iter    = 500;
-        double relative_tolerance = 1e-8;
-        std::string smoother      = "chebyshev";
-        int    preSmooth          = 3;
-        int    postSmooth         = 3;
-        bool   dynamic_levels     = true;
-        int    max_level          = 20;     // fine grid is level 0.
-        int    float_level        = 3;      // any matrix after this level will use single-precision matvec
-        double filter_thre        = 1e-14;
-        double filter_max         = 1e-8;
-        int    filter_start       = 0;
-        int    filter_rate        = 2;
+        int    solver_max_iter = 500;
+        double relative_tol    = 1e-8;
+        std::string smoother   = "chebyshev";
+        int    preSmooth       = 3;
+        int    postSmooth      = 3;
+        bool   dynamic_levels  = true;
+        int    max_level       = 20;     // fine grid is level 0.
+        int    float_level     = 3;      // any matrix after this level will use single-precision matvec
+        double filter_thre     = 1e-14;
+        double filter_max      = 1e-8;
+        int    filter_start    = 0;
+        int    filter_rate     = 2;
 
     public:
         options();
@@ -145,7 +145,7 @@ namespace saena {
         void set_postSmooth(int postSmooth);
 
         int         get_max_iter() const;
-        double      get_relative_tolerance() const;
+        double      get_tol() const;
         std::string get_smoother() const;
         int         get_preSmooth() const;
         int         get_postSmooth() const;
