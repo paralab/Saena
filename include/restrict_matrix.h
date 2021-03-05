@@ -41,6 +41,8 @@ public:
     std::vector<index_t> vIndex;
     std::vector<value_t> vSend;
     std::vector<value_t> vecValues;
+    std::vector<float> vSend_f;           // float version
+    std::vector<float> vecValues_f;       // float version
 
     index_t col_remote_size = 0; // number of remote columns. this is the same as vElement_remote.size()
     std::vector<index_t> nnzPerRow_local;
@@ -84,12 +86,15 @@ public:
     double tloc = 0, trem = 0, tcomm = 0, ttot = 0;    // for timing matvec
     index_t matvec_comm_sz = 0;                        // for profiling matvec communication size (average on all procs)
 
+    bool use_double = true; // to determine the precision for matvec
+
     restrict_matrix();
     ~restrict_matrix();
 
     int transposeP(prolong_matrix* P);
     int openmp_setup();
     void matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec_float(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec2(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_omp(std::vector<value_t>& v, std::vector<value_t>& w);
 
