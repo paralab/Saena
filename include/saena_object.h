@@ -38,7 +38,7 @@ public:
     // setup
     // **********************************************
 
-    int          max_level                  = 25; // fine grid is level 0.
+    int          max_level                  = 20; // fine grid is level 0.
     // if dynamic_levels == true: coarsening will stop if the total number of rows goes below this parameter.
     unsigned int least_row_threshold        = 100;
     // if dynamic_levels == true: coarsening will stop if the number of rows of last level divided by previous level is
@@ -66,7 +66,7 @@ public:
     void remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0, MPI_Comm comm);
     void add_boundary_sol(std::vector<value_t> &u);
 
-    const int float_level = 3; // any matrix after this level will use single-precision matvec
+    int float_level = 3; // any matrix after this level will use single-precision matvec
 
     // *****************
     // matmat
@@ -197,8 +197,14 @@ public:
     nnz_t  sample_prcnt_denom       = 0;
     std::string sparsifier          = "majid"; // options: 1- TRSL, 2- drineas, majid
 
-    int filter_it = 0;
-    const vector<double> filter_thre = {1e-14, 1e-12, 1e-10, 1e-8, 1e-8, 1e-8, 1e-8, 1e-8, 1e-7, 1e-6};
+    double filter_thre  = 1e-14;
+    double filter_max   = 1e-8;
+    int    filter_it    = 0; // to count the levels for filtering
+    int    filter_start = 0; // filtering starts at this level
+    int    filter_rate  = 2; // filter_thre will get larger with rate 10^filter_rate.
+                             // So levels 0, 1, ... will be filtered by filter_thre, filter_thre * 10^filter_rate, ...
+                             // and the threshold does not get largre than filter_max.
+                             // e.g. 1e-14, 1e-12, 1e-10, ... , filter_max, filter_max
 
     // **********************************************
     // verbose

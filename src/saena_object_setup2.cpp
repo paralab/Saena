@@ -845,9 +845,17 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
 
 
 void saena_object::filter(vector<cooEntry> &v) {
-    if (filter_it >= filter_thre.size())
-        filter_it = filter_thre.size();
-    const double THRE = filter_thre[filter_it];
+
+    ++filter_it;
+    if(filter_it - 1 < filter_start){
+        return;
+    }
+
+    filter_thre *= pow(10, filter_rate);
+    if(filter_thre > filter_max){
+        filter_thre = filter_max ;
+    }
+    const double THRE = filter_thre;
 
     vector<cooEntry> w;
     for(const auto &a : v){
@@ -855,7 +863,6 @@ void saena_object::filter(vector<cooEntry> &v) {
             w.emplace_back(a);
     }
     w.swap(v);
-    ++filter_it;
 }
 
 // from here: http://www.algolist.net/Algorithms/Sorting/Quicksort
