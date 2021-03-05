@@ -12,13 +12,49 @@
 #include "petsc_functions.h"
 #endif
 
-void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm){
-//    maxLevel = l-1; // maxLevel does not include fine level. fine level is 0.
+void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm, bool dynamic_lev,
+                                  int max_lev, int float_lev, double fil_thr, double fil_max, int fil_st, int fil_rate){
     solver_max_iter = max_iter;
     solver_tol      = tol;
     smoother        = std::move(sm);
     preSmooth       = preSm;
     postSmooth      = postSm;
+    dynamic_levels  = dynamic_lev;
+    max_level       = max_lev;
+    float_level     = float_lev;
+    filter_thre     = fil_thr;
+    filter_max      = fil_max;
+    filter_start    = fil_st;
+    filter_rate     = fil_rate;
+}
+
+void saena_object::print_parameters(saena_matrix *A) const{
+    int nprocs = 0, rank = 0;
+    MPI_Comm_size(A->comm, &nprocs);
+    MPI_Comm_rank(A->comm, &rank);
+
+    MPI_Barrier(A->comm);
+    if(!rank){
+#pragma omp parallel default(none) shared(rank, nprocs)
+        if(omp_get_thread_num()==0)
+            printf("\nnumber of processes: %d\nnumber of threads:   %d\n", nprocs, omp_get_num_threads());
+
+        printf("Smoother:            %s (%d, %d)\n", smoother.c_str(), preSmooth, postSmooth);
+        printf("Operator Smoother:   %s (%.2f)\n", PSmoother.c_str(), connStrength);
+        printf("Dynamic Levels:      %s\n", dynamic_levels ? "True" : "False");
+        printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
+        printf("Max iter = %d, rel tol = %.0e, float matvec lev = %d\n",
+               solver_max_iter, solver_tol, float_level);
+        printf("Filter: thre = %.0e, max = %.0e, start = %d, rate = %d\n",
+               filter_thre, filter_max, filter_start, filter_rate);
+        printf("_____________________________\n\n");
+        printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
+               nprocs, A->Mbig, A->nnz_g, A->density);
+        if(A->use_dense){
+            printf("dense structure = True\n");
+        }
+    }
+    MPI_Barrier(A->comm);
 }
 
 void saena_object::destroy_mpi_comms(){
@@ -76,9 +112,9 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
 
-#pragma omp parallel default(none) shared(rank, nprocs)
-    if(!rank && omp_get_thread_num()==0)
-        printf("\nnumber of processes: %d\nnumber of threads:   %d\n", nprocs, omp_get_num_threads());
+    if(verbose_setup) {
+        print_parameters(A);
+    }
 
     if(smoother=="chebyshev"){
         find_eig(*A);
@@ -88,22 +124,6 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
         remove_boundary = A->remove_boundary;
         std::swap(bound_row, A->bound_row);
         std::swap(bound_val, A->bound_val);
-    }
-
-    if(verbose_setup){
-        MPI_Barrier(A->comm);
-        if(!rank){
-            printf("Operator Smoother:   %s\n", PSmoother.c_str());
-            printf("connStrength:        %.2f\n", connStrength);
-            printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
-            printf("_____________________________\n\n");
-            printf("level = 0 \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu \ndensity \t= %.6f \n",
-                   nprocs, A->Mbig, A->nnz_g, A->density);
-            if(A->use_dense){
-                printf("dense structure = True\n");
-            }
-        }
-        MPI_Barrier(A->comm);
     }
 
 #ifdef __DEBUG1__

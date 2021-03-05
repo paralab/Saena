@@ -145,10 +145,10 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 # -----------------------------------------------------------------------
 # pugixml: to read xml files for options
 
-#include_directories(external/pugixml/include)
-#set(SOURCE_FILES ${SOURCE_FILES}
-#        external/pugixml/src/pugixml.cpp
-#        )
+include_directories(external/pugixml/include)
+set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
+        ${EXT_DIR}/pugixml/src/pugixml.cpp
+        )
 
 # -----------------------------------------------------------------------
 # ZFP: for compressing arrays

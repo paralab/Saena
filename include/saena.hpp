@@ -121,10 +121,19 @@ namespace saena {
         std::string smoother      = "chebyshev";
         int    preSmooth          = 3;
         int    postSmooth         = 3;
+        bool   dynamic_levels     = true;
+        int    max_level          = 20;     // fine grid is level 0.
+        int    float_level        = 3;      // any matrix after this level will use single-precision matvec
+        double filter_thre        = 1e-14;
+        double filter_max         = 1e-8;
+        int    filter_start       = 0;
+        int    filter_rate        = 2;
 
     public:
         options();
-        options(int max_iter, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
+        explicit options(int max_iter = 100, double relative_tolerance = 1e-8, std::string smoother = "chebyshev",
+                int preSmooth = 3, int postSmooth = 3, bool dynamic_lev = true, int max_lev = 10,
+                int float_lev = 3, double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 0, int fil_rate = 2);
         explicit options(char* name); // to set parameters from an xml file
         ~options();
 

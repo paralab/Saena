@@ -249,7 +249,12 @@ public:
     }
 
     MPI_Comm get_orig_comm();
-    void set_parameters(int vcycle_num, double relative_tolerance, std::string smoother, int preSmooth, int postSmooth);
+    void set_parameters(int max_iter = 100, double relative_tolerance = 1e-8, std::string smoother = "chebyshev",
+                        int preSmooth = 3, int postSmooth = 3, bool dynamic_lev = false, int max_lev = 5,
+                        int float_lev = 3, double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 0,
+                        int fil_rate = 2);
+
+    void print_parameters(saena_matrix *A) const;
 
     int setup(saena_matrix* A);
     int setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif);
