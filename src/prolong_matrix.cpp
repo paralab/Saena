@@ -49,6 +49,10 @@ int prolong_matrix::findLocalRemote(){
 
     assert(nnz_l == entry.size());
 
+    // store local entries in this vector for sorting in row-major order.
+    // then split it to row_loc, col_loc, val_loc.
+    vector<cooEntry_row> ent_loc_row;
+
     nnz_t i = 0;
     while(i < nnz_l) {
         procNum = lower_bound3(&splitNew[0], &splitNew[nprocs], entry[i].col);
@@ -59,9 +63,10 @@ int prolong_matrix::findLocalRemote(){
 //                if(!rank) printf("entry[i].row = %d, split[rank] = %d, dif = %d\n", entry[i].row, split[rank], entry[i].row - split[rank]);
 //                if(!rank) cout << entry[i] << endl;
                 ++nnzPerRow_local[entry[i].row];
-                row_local.emplace_back(entry[i].row);
-                col_local.emplace_back(entry[i].col);
-                val_local.emplace_back(entry[i].val);
+                ent_loc_row.emplace_back(entry[i].row, entry[i].col, entry[i].val);
+//                row_local.emplace_back(entry[i].row);
+//                col_local.emplace_back(entry[i].col);
+//                val_local.emplace_back(entry[i].val);
                 ++i;
             }
 
@@ -87,7 +92,7 @@ int prolong_matrix::findLocalRemote(){
         }
     } // for i
 
-    nnz_l_local     = row_local.size();
+    nnz_l_local     = ent_loc_row.size();
     nnz_l_remote    = row_remote.size();
     col_remote_size = vElement_remote.size(); // number of remote columns
 
@@ -97,6 +102,23 @@ int prolong_matrix::findLocalRemote(){
 //        nnzPerRowScan_local[i + 1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
 //        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
 //    }
+
+    // sort local entries in row-major order and remote entries in column-major order
+    sort(ent_loc_row.begin(), ent_loc_row.end());
+
+//    print_vector(ent_loc_row, -1, "ent_loc_row", comm);
+
+    row_local.resize(nnz_l_local);
+    col_local.resize(nnz_l_local);
+    val_local.resize(nnz_l_local);
+    for(i = 0; i < nnz_l_local; ++i){
+        row_local[i] = ent_loc_row[i].row;
+        col_local[i] = ent_loc_row[i].col;
+        val_local[i] = ent_loc_row[i].val;
+    }
+
+    ent_loc_row.clear();
+    ent_loc_row.shrink_to_fit();
 
     for (i = 1; i < nprocs + 1; ++i){
         nnzPerProcScan[i] += nnzPerProcScan[i - 1];
@@ -316,13 +338,12 @@ int prolong_matrix::findLocalRemote(){
     }
 
     // todo: change the following two parts the same as indicesP for A in compute_coarsen, which is using entry, instead of row_local and row_remote.
-    indicesP_local.resize(nnz_l_local);
-    for(nnz_t i = 0; i < nnz_l_local; ++i){
-        indicesP_local[i] = i;
-    }
-
-    index_t *row_localP = &*row_local.begin();
-    std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
+//    indicesP_local.resize(nnz_l_local);
+//    for(nnz_t i = 0; i < nnz_l_local; ++i){
+//        indicesP_local[i] = i;
+//    }
+//    index_t *row_localP = &*row_local.begin();
+//    std::sort(&indicesP_local[0], &indicesP_local[nnz_l_local], sort_indices(row_localP)); // todo: is it ordered only row-wise?
 //    row_local.clear();
 //    row_local.shrink_to_fit();
 
@@ -462,6 +483,7 @@ void prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //    totalTime = 0;
 //    double t10 = MPI_Wtime();
 
+#pragma omp parallel for
     for(index_t i = 0;i < vIndexSize; ++i)
         vSend[i] = v[vIndex[i]];
 
@@ -480,21 +502,38 @@ void prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
     for(int i = 0; i < numSendProc; ++i){
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(),
                   sendProcRank[i], 1, comm, &mv_req[numRecvProc+i]);
-        MPI_Test(&mv_req[numRecvProc + i], &flag, &mv_stat[numRecvProc + i]);
+        MPI_Test(&mv_req[numRecvProc + i], &flag, MPI_STATUS_IGNORE);
     }
 
     // local loop
     // ----------
 //    double t1loc = omp_get_wtime();
 
-    std::fill(w.begin(), w.end(), 0);
     value_t* v_p = &v[0] - splitNew[rank];
-    nnz_t iter = 0;
-    for (index_t i = 0; i < M; ++i) {
-        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
-            w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+
+#pragma omp parallel
+    {
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
+//        nnz_t iter = 0;
+#pragma omp for
+        for (index_t i = 0; i < M; ++i) {
+            w[i] = 0;
+            for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+//                    if(rank==0) printf("%u \t%.18f \t%.18f \t%.18f \n",
+//                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);
+                w[i] += val_local[iter] * v_p[col_local[iter]];
+            }
         }
     }
+
+//    std::fill(w.begin(), w.end(), 0);
+//    value_t* v_p = &v[0] - splitNew[rank];
+//    nnz_t iter = 0;
+//    for (index_t i = 0; i < M; ++i) {
+//        for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+//            w[i] += val_local[iter] * v_p[col_local[iter]];
+//        }
+//    }
 
 //    double t2loc = omp_get_wtime();
 //    tloc += (t2loc - t1loc);
@@ -508,6 +547,7 @@ void prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 
 //    double t1rem = omp_get_wtime();
 
+    nnz_t iter = 0;
     int recv_proc = 0, recv_proc_idx = 0, np = 0;;
     while(np < numRecvProc){
         MPI_Waitany(numRecvProc, &mv_req[0], &recv_proc_idx, MPI_STATUS_IGNORE);
@@ -530,23 +570,10 @@ void prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
         }
     }
 
-/*
-    // remote matvec without openmp part
-    iter = 0;
-    for (index_t j = 0; j < col_remote_size; ++j) {
-        for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-//            if(rank==0 && entry_remote[iter].row==1) printf("%u \t%.18f \t%.18f \t%.18f \t%u \n",
-//                                       entry_remote[iter].col, entry_remote[iter].val, vecValues[j], entry_remote[iter].val * vecValues[j], col_remote[j]);
-//            w[entry_remote[iter].row] += entry_remote[iter].val * vecValues[j];
-            w[row_remote[iter]] += val_remote[iter] * vecValues[j];
-        }
-    }
-*/
-
 //    double t2rem = omp_get_wtime();
 //    trem += (t2rem - t1rem);
 
-    MPI_Waitall(numSendProc, &mv_req[numRecvProc], &mv_stat[numRecvProc]);
+    MPI_Waitall(numSendProc, &mv_req[numRecvProc], MPI_STATUSES_IGNORE);
 
 //    double t2comm = omp_get_wtime();
 //    ttot  += (t2comm - t1comm);
@@ -594,7 +621,7 @@ void prolong_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
     nnz_t iter = 0;
     for (index_t i = 0; i < M; ++i) {
         for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
-            w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+            w[i] += val_local[iter] * v_p[col_local[iter]];
         }
     }
 
@@ -616,7 +643,6 @@ void prolong_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) {
         for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
 //            if(rank==0 && entry_remote[iter].row==1) printf("%u \t%.18f \t%.18f \t%.18f \t%u \n",
 //                                       entry_remote[iter].col, entry_remote[iter].val, vecValues[j], entry_remote[iter].val * vecValues[j], col_remote[j]);
-//            w[entry_remote[iter].row] += entry_remote[iter].val * vecValues[j];
             w[row_remote[iter]] += val_remote[iter] * vecValues[j];
         }
     }
@@ -680,7 +706,7 @@ void prolong_matrix::matvec_omp(std::vector<value_t>& v, std::vector<value_t>& w
             for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
 //                    if(rank==0) printf("%u \t%.18f \t%.18f \t%.18f \n",
 //                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);
-                w[i] += val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]];
+                w[i] += val_local[iter] * v_p[col_local[iter]];
             }
         }
     }
