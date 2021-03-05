@@ -884,10 +884,13 @@ int saena_matrix::set_off_on_diagonal(){
 
 //        print_vector(ent_loc_row, -1, "ent_loc_row", comm);
 
-        for(const auto &a : ent_loc_row){
-            row_local.emplace_back(a.row);
-            col_local.emplace_back(a.col);
-            values_local.emplace_back(a.val);
+        row_local.resize(nnz_l_local);
+        col_local.resize(nnz_l_local);
+        values_local.resize(nnz_l_local);
+        for(i = 0; i < nnz_l_local; ++i){
+            row_local[i]    = ent_loc_row[i].row;
+            col_local[i]    = ent_loc_row[i].col;
+            values_local[i] = ent_loc_row[i].val;
         }
 
         ent_loc_row.clear();
