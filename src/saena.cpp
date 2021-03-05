@@ -474,6 +474,33 @@ int saena::options::get_postSmooth() const{
     return postSmooth;
 }
 
+bool saena::options::get_dynamic_levels() const{
+    return dynamic_levels;
+}
+
+int saena::options::get_max_lev() const{
+    return max_level;
+}
+
+int saena::options::get_float_lev() const{
+    return float_level;
+}
+
+double saena::options::get_filter_thre() const{
+    return filter_thre;
+}
+
+double saena::options::get_filter_max() const{
+    return filter_max;
+}
+
+int saena::options::get_filter_start() const{
+    return filter_start;
+}
+
+int saena::options::get_filter_rate() const{
+    return filter_rate;
+}
 
 // ******************************* amg *******************************
 
@@ -490,15 +517,19 @@ void saena::amg::set_dynamic_levels(const bool &dl) {
 }
 
 int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
+                            opts->get_postSmooth(), opts->get_dynamic_levels(), opts->get_max_lev(),
+                            opts->get_float_lev(), opts->get_filter_thre(), opts->get_filter_max(),
+                            opts->get_filter_start(), opts->get_filter_rate());
     m_pImpl->setup(A->get_internal_matrix());
     return 0;
 }
 
 int saena::amg::set_matrix(saena::matrix* A, saena::options* opts, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
+                            opts->get_postSmooth(), opts->get_dynamic_levels(), opts->get_max_lev(),
+                            opts->get_float_lev(), opts->get_filter_thre(), opts->get_filter_max(),
+                            opts->get_filter_start(), opts->get_filter_rate());
     m_pImpl->setup(A->get_internal_matrix(), m_l2g, m_g2u, m_bdydof, order_dif);
     return 0;
 }

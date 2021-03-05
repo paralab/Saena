@@ -41,7 +41,7 @@ void saena_object::print_parameters(saena_matrix *A) const{
 
         printf("Smoother:            %s (%d, %d)\n", smoother.c_str(), preSmooth, postSmooth);
         printf("Operator Smoother:   %s (%.2f)\n", PSmoother.c_str(), connStrength);
-        printf("Dynamic Levels:      %s\n", dynamic_levels ? "True" : "False");
+        printf("Dynamic Levels:      %s (%d)\n", dynamic_levels ? "True" : "False", max_level);
         printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
         printf("Max iter = %d, rel tol = %.0e, float matvec lev = %d\n",
                solver_max_iter, solver_tol, float_level);

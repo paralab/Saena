@@ -152,6 +152,13 @@ namespace saena {
         std::string get_smoother() const;
         int         get_preSmooth() const;
         int         get_postSmooth() const;
+        bool        get_dynamic_levels() const;
+        int         get_max_lev() const;
+        int         get_float_lev() const;
+        double      get_filter_thre() const;
+        double      get_filter_max() const;
+        int         get_filter_start() const;
+        int         get_filter_rate() const;
     };
 
     class amg {
