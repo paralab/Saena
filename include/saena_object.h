@@ -196,8 +196,7 @@ public:
     std::string sparsifier          = "majid"; // options: 1- TRSL, 2- drineas, majid
 
     int filter_it = 0;
-    const vector<double> filter_thre = {1e-14, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-6,
-                                        1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6};
+    const vector<double> filter_thre = {1e-14, 1e-12, 1e-10, 1e-8, 1e-8, 1e-8, 1e-8, 1e-8, 1e-7, 1e-6};
 
     // **********************************************
     // verbose
