@@ -33,7 +33,7 @@ void saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& 
 
     for(int i = 0; i < numSendProc; ++i){
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &MPI_flag, &statuses[numRecvProc + i]);
+        MPI_Test(&requests[numRecvProc + i], &MPI_flag, MPI_STATUSES_IGNORE);
     }
 
     // local loop
@@ -290,7 +290,7 @@ void saena_matrix::matvec_sparse_float(std::vector<value_t>& v, std::vector<valu
 
     for(int i = 0; i < numSendProc; ++i){
         MPI_Isend(&vSend_f[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_FLOAT, sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &MPI_flag, &statuses[numRecvProc + i]);
+        MPI_Test(&requests[numRecvProc + i], &MPI_flag, MPI_STATUSES_IGNORE);
     }
 
     // local loop
