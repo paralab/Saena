@@ -11,7 +11,7 @@ class saena_matrix;
 template<class T>
 bool inline almost_zero(const T &val){
 //    return (fabs(val) < std::numeric_limits<T>::min());
-    return (fabs(val) < 1e-12);
+    return (fabs(val) < ALMOST_ZERO);
 }
 
 
