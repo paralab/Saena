@@ -121,9 +121,9 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
         print_parameters(A);
     }
 
-    if(smoother=="chebyshev"){
+//    if(smoother=="chebyshev"){
         find_eig(*A);
-    }
+//    }
 
     if(A->remove_boundary){
         remove_boundary = A->remove_boundary;

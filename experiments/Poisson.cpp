@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
 //    saena::laplacian3D_old2(&A, mx, my, mz, scale);
 
     double t2 = omp_get_wtime();
-    print_time(t1, t2, "Matrix Assemble:", comm);
+//    print_time(t1, t2, "Matrix Assemble:", comm);
 
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
@@ -98,7 +98,8 @@ int main(int argc, char* argv[]){
     // *************************** set u0 ****************************
 
     // u is the initial guess. at the end, it will be the solution.
-    std::vector<double> u(num_local_row, 0); // initial guess = 0
+//    std::vector<double> u(num_local_row, 0); // initial guess = 0
+    std::vector<value_t> u;
 
     // *************************** AMG - Setup ****************************
     // There are 3 ways to set options:
@@ -167,6 +168,17 @@ int main(int argc, char* argv[]){
     // profile matvec times on all multigrid levels
     solver.profile_matvecs();
 //    solver.profile_matvecs_breakdown();
+
+    // *************************** solve the system with other options ****************************
+
+//    int    solver_max_iter = 100;
+//    double relative_tol    = 1e-8;
+//    std::string smoother   = "chebyshev";
+//    int    preSmooth       = 3;
+//    int    postSmooth      = 3;
+//    saena::options opts2(solver_max_iter, relative_tol, smoother, preSmooth, postSmooth);
+//    std::vector<value_t> u2;
+//    solver.solve(u, &opts2);
 
     // *************************** check correctness of the solution 1 ****************************
 
