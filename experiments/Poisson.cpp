@@ -18,9 +18,10 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(argc != 5) {
+    if(argc != 3) {
         if(rank == 0) {
-            cout << "Usage: ./profile mx my mz max_level" << endl;
+            cout << "Usage: ./profile mx <options file>" << endl;
+//            cout << "Usage: ./profile mx my mz max_level" << endl;
 //            cout << "Usage: ./profile mx my mz" << endl;
 //            cout << "Usage: ./profile mx" << endl;
         }
@@ -38,8 +39,10 @@ int main(int argc, char* argv[]){
     // *************************** initialize the matrix ****************************
 
     int mx(std::stoi(argv[1]));
-    int my(std::stoi(argv[2]));
-    int mz(std::stoi(argv[3]));
+//    int my(std::stoi(argv[2]));
+//    int mz(std::stoi(argv[3]));
+    int my = mx;
+    int mz = mx;
 
 //    if(verbose){
 //        MPI_Barrier(comm);
@@ -52,11 +55,11 @@ int main(int argc, char* argv[]){
 
     saena::matrix A(comm);
 //    saena::laplacian2D(&A, mx, my, scale);
-      saena::laplacian3D(&A, mx, my, mz, scale);
+    saena::laplacian3D(&A, mx, my, mz, scale);
 //    saena::laplacian3D_old2(&A, mx, my, mz, scale);
 
     double t2 = omp_get_wtime();
-//    print_time(t1, t2, "Matrix Assemble:", comm);
+    print_time(t1, t2, "Matrix Assemble:", comm);
 
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
@@ -100,15 +103,16 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Setup ****************************
     // There are 3 ways to set options:
     // 1- set them manually
-    int    solver_max_iter    = 100;
-    double relative_tolerance = 1e-8;
-    std::string smoother      = "chebyshev";
-    int    preSmooth          = 3;
-    int    postSmooth         = 3;
-    saena::options opts(solver_max_iter, relative_tolerance, smoother, preSmooth, postSmooth);
+//    int    solver_max_iter    = 100;
+//    double relative_tolerance = 1e-8;
+//    std::string smoother      = "chebyshev";
+//    int    preSmooth          = 3;
+//    int    postSmooth         = 3;
+//    saena::options opts(solver_max_iter, relative_tolerance, smoother, preSmooth, postSmooth);
 
     // 2- read the options from an xml file
-//    saena::options opts((char*)"options001.xml");
+    const string optsfile(argv[2]);
+    saena::options opts(optsfile);
 
     // 3- use the default options
 //    saena::options opts;
@@ -116,9 +120,9 @@ int main(int argc, char* argv[]){
     t1 = omp_get_wtime();
 
     saena::amg solver;
-    solver.set_dynamic_levels(false);
-    int max_level(std::stoi(argv[4]));
-    solver.set_multigrid_max_level(max_level);
+//    solver.set_dynamic_levels(false);
+//    int max_level(std::stoi(argv[4]));
+//    solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
     solver.set_matrix(&A, &opts);
     solver.set_rhs(rhs);
