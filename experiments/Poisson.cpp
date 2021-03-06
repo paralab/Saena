@@ -134,6 +134,12 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
+    int warmup_iter = 2;
+    int solve_iter = 3;
+    // warm-up
+    for(int i = 0; i < warmup_iter; ++i)
+        solver.solve_pCG(u, &opts);
+
     t1 = omp_get_wtime();
 
     // solve the system using AMG as the solver
@@ -143,7 +149,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_CG(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-//    for(int i = 0; i < 3; ++i)
+    for(int i = 0; i < solve_iter; ++i)
         solver.solve_pCG(u, &opts);
 
     // solve the system, using pure GMRES.
@@ -153,7 +159,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-    print_time(t2 - t1, "Solve:", comm, true, true);
+    print_time((t2 - t1) / solve_iter, "Solve:", comm, true, true);
 
 //    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
 //    saena::laplacian2D_check_solution(u, mx, my, comm);
