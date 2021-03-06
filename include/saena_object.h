@@ -259,7 +259,6 @@ public:
 
     void print_parameters(saena_matrix *A) const;
 
-    int setup(saena_matrix* A);
     int setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif);
     int coarsen(Grid *grid,std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
     int SA(Grid *grid);

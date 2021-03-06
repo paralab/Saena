@@ -98,15 +98,6 @@ void saena_object::set_dynamic_levels(const bool &dl /*= true*/){
 }
 
 
-int saena_object::setup(saena_matrix* A) {
-    std::vector<std::vector<int>> m_l2g;
-    std::vector<int> m_g2u;
-    std::vector<int> order_dif;
-    setup(A, m_l2g, m_g2u, 0, order_dif);
-    return 0;
-}
-
-
 int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif) {
 
     std::vector< std::vector< std::vector<int> > > map_all;

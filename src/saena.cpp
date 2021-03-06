@@ -579,11 +579,10 @@ void saena::amg::set_dynamic_levels(const bool &dl) {
 }
 
 int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
-                            opts->get_postSmooth(), opts->get_dynamic_levels(), opts->get_max_lev(),
-                            opts->get_float_lev(), opts->get_filter_thre(), opts->get_filter_max(),
-                            opts->get_filter_start(), opts->get_filter_rate());
-    m_pImpl->setup(A->get_internal_matrix());
+    std::vector<std::vector<int>> m_l2g;
+    std::vector<int> m_g2u;
+    std::vector<int> order_dif;
+    set_matrix(A, opts, m_l2g, m_g2u, 0, order_dif);
     return 0;
 }
 
