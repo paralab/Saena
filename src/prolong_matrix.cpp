@@ -333,6 +333,9 @@ int prolong_matrix::findLocalRemote(){
         vSend_t.resize(vIndexSize_t);
         vecValues_t.resize(recvSize_t);
 
+        vSend_f.resize(vIndexSize);
+        vecValues_f.resize(recvSize);
+
         mv_req.resize(numSendProc + numRecvProc);
         mv_stat.resize(numSendProc + numRecvProc);
     }

@@ -417,6 +417,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         vSend.resize(vIndexSize);
         vecValues.resize(recvSize);
 
+        vSend_f.resize(vIndexSize);
+        vecValues_f.resize(recvSize);
+
         mv_req.resize(numSendProc + numRecvProc);
         mv_stat.resize(numSendProc + numRecvProc);
     }
