@@ -481,6 +481,19 @@ void saena::options::set(int max_iter, double tol, std::string sm, int preSm, in
     filter_rate  = fil_rate;
 }
 
+void saena::options::set_solve_params(int max_iter, double tol, std::string sm, int preSm, int postSm) {
+    solver_max_iter = max_iter;
+    relative_tol = tol;
+
+    assert(sm == "jacobi" || sm == "chebyshev");
+    smoother = std::move(sm);
+
+    assert(preSm >= 0);
+    preSmooth = preSm;
+
+    assert(postSm >= 0);
+    postSmooth = postSm;
+}
 
 void saena::options::set_max_iter(int v){
     solver_max_iter = v;
@@ -645,8 +658,8 @@ MPI_Comm saena::amg::get_orig_comm(){
 
 
 int saena::amg::solve_smoother(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
+                              opts->get_postSmooth());
     m_pImpl->solve_smoother(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
@@ -654,8 +667,8 @@ int saena::amg::solve_smoother(std::vector<value_t>& u, saena::options* opts){
 }
 
 int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
+                              opts->get_postSmooth());
     m_pImpl->solve(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
@@ -664,8 +677,8 @@ int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
 
 
 int saena::amg::solve_CG(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
+                              opts->get_postSmooth());
     m_pImpl->solve_CG(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
@@ -680,8 +693,8 @@ int saena::amg::solve_petsc(std::vector<value_t>& u){
 }
 
 int saena::amg::solve_pCG(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
+                              opts->get_postSmooth());
     m_pImpl->solve_pCG(u);
 
     if(m_pImpl->remove_boundary){
@@ -696,8 +709,8 @@ int saena::amg::solve_pCG(std::vector<value_t>& u, saena::options* opts){
 
 
 int saena::amg::solve_GMRES(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
+                              opts->get_postSmooth());
     m_pImpl->GMRES(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
@@ -706,8 +719,8 @@ int saena::amg::solve_GMRES(std::vector<value_t>& u, saena::options* opts){
 
 
 int saena::amg::solve_pGMRES(std::vector<value_t>& u, saena::options* opts){
-    m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(),
-                            opts->get_smoother(), opts->get_preSmooth(), opts->get_postSmooth());
+    m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
+                              opts->get_postSmooth());
     m_pImpl->pGMRES(u);
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);

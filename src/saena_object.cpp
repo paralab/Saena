@@ -28,6 +28,20 @@ void saena_object::set_parameters(int max_iter, double tol, std::string sm, int 
     filter_rate     = fil_rate;
 }
 
+void saena_object::set_solve_params(int max_iter, double tol, std::string sm, int preSm, int postSm){
+    solver_max_iter = max_iter;
+    solver_tol      = tol;
+
+    smoother        = std::move(sm);
+    assert(smoother == "jacobi" || smoother == "chebyshev");
+
+    preSmooth       = preSm;
+    assert(preSmooth >= 0);
+
+    postSmooth      = postSm;
+    assert(postSmooth >= 0);
+}
+
 void saena_object::print_parameters(saena_matrix *A) const{
     int nprocs = 0, rank = 0;
     MPI_Comm_size(A->comm, &nprocs);
