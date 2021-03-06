@@ -845,11 +845,11 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
 
 
 void saena_object::filter(vector<cooEntry> &v) {
-
-    ++filter_it;
-    if(filter_it - 1 < filter_start){
+    if(++filter_it < filter_start){
         return;
     }
+
+//    printf("\nfilter next level: filter_it = %d,filter_start = %d\n", filter_it, filter_start);
 
     filter_thre *= pow(10, filter_rate);
     if(filter_thre > filter_max){

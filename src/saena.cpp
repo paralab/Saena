@@ -368,6 +368,7 @@ saena::options::options(int max_iter, double tol, std::string sm, int preSm, int
     assert(float_lev >= 0);
     float_level = float_lev;
 
+    ASSERT(fil_st >= 1, "error: filter_start = " << fil_st << ". cannot filter level 0. it should be >= 1");
     filter_thre  = fil_thr;
     filter_max   = fil_max;
     filter_start = fil_st;
@@ -438,6 +439,7 @@ saena::options::options(const string &name){
 
     attr = attr.next_attribute();
     filter_start = std::stoi(attr.value());
+    ASSERT(filter_start >= 1, "error: filter_start = " << filter_start << ". cannot filter level 0. it should be >= 1");
 //    cout << "filter_start = " << filter_start << endl;
 
     attr = attr.next_attribute();

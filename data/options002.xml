@@ -10,9 +10,9 @@
 	conn_str="0.3"
 	dynamic_levels="1"
 	max_level="10"
-	float_level="3"
-	filter_thre="1e-14"
+	float_level="0"
+	filter_thre="1e-12"
 	filter_max="1e-8"
-	filter_start="0"
+	filter_start="1"
 	filter_rate="2"/>
 </SAENA>

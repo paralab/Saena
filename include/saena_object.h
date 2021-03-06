@@ -197,12 +197,12 @@ public:
     nnz_t  sample_prcnt_denom       = 0;
     std::string sparsifier          = "majid"; // options: 1- TRSL, 2- drineas, majid
 
-    double filter_thre  = 1e-14;
+    double filter_thre  = 1e-12;
     double filter_max   = 1e-8;
     int    filter_it    = 0; // to count the levels for filtering
-    int    filter_start = 0; // filtering starts at this level
+    int    filter_start = 1; // filtering starts at this level. cannot filter level 0. so it should be >= 1
     int    filter_rate  = 2; // filter_thre will get larger with rate 10^filter_rate.
-                             // So levels 0, 1, ... will be filtered by filter_thre, filter_thre * 10^filter_rate, ...
+                             // So levels 1, 2, ... will be filtered by filter_thre, filter_thre * 10^filter_rate, ...
                              // and the threshold does not get largre than filter_max.
                              // e.g. 1e-14, 1e-12, 1e-10, ... , filter_max, filter_max
 
