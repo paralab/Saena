@@ -117,6 +117,12 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     MPI_Comm_size(A->comm, &nprocs);
     MPI_Comm_rank(A->comm, &rank);
 
+    if(A->remove_boundary){
+        remove_boundary = A->remove_boundary;
+        std::swap(bound_row, A->bound_row);
+        std::swap(bound_val, A->bound_val);
+    }
+
     if(verbose_setup) {
         print_parameters(A);
     }
@@ -124,12 +130,6 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 //    if(smoother=="chebyshev"){
         find_eig(*A);
 //    }
-
-    if(A->remove_boundary){
-        remove_boundary = A->remove_boundary;
-        std::swap(bound_row, A->bound_row);
-        std::swap(bound_val, A->bound_val);
-    }
 
 #ifdef __DEBUG1__
     if(verbose_setup_steps){
