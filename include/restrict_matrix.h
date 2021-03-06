@@ -93,8 +93,12 @@ public:
 
     int transposeP(prolong_matrix* P);
     int openmp_setup();
-    void matvec(std::vector<value_t>& v, std::vector<value_t>& w);
-    void matvec_float(std::vector<value_t>& v, std::vector<value_t>& w);
+    inline void matvec(std::vector<value_t>& v, std::vector<value_t>& w){
+        if(use_double) matvec_sparse(v, w);
+        else matvec_sparse_float(v, w);
+    }
+    void matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec_sparse_float(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec2(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_omp(std::vector<value_t>& v, std::vector<value_t>& w);
 

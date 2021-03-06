@@ -472,7 +472,7 @@ int prolong_matrix::openmp_setup() {
 }
 
 
-void prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
+void prolong_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
@@ -580,7 +580,7 @@ void prolong_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w) {
 //    tcomm += (t2comm - t1comm) - (t2loc - t1loc) - (t2rem - t1rem);
 }
 
-void prolong_matrix::matvec_float(std::vector<value_t>& v, std::vector<value_t>& w) {
+void prolong_matrix::matvec_sparse_float(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
