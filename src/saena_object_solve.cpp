@@ -1624,7 +1624,7 @@ int saena_object::solve(std::vector<value_t>& u){
     dotProduct(r, r, &init_dot, comm);
     if(!rank){
         print_sep();
-        printf("\ninitial residual = %e \n\n", sqrt(init_dot));
+        if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
     }
 
     const double THRSHLD = init_dot * solver_tol * solver_tol;
@@ -1655,9 +1655,9 @@ int saena_object::solve(std::vector<value_t>& u){
         --i;
 
     if(!rank){
-        print_sep();
-        printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
-                       "\nrelative residual       = %e \n", ++i, sqrt(current_dot), sqrt(current_dot / init_dot));
+//        print_sep();
+        printf("stopped at iteration    = %d \nfinal absolute residual = %e"
+               "\nrelative residual       = %e \n", ++i, sqrt(current_dot), sqrt(current_dot / init_dot));
         print_sep();
     }
 
@@ -1731,7 +1731,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
     dotProduct(r, r, &init_dot, comm);
     if(!rank){
         print_sep();
-        printf("\ninitial residual = %e \n\n", sqrt(init_dot));
+        if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
     }
 
     const double THRSHLD = init_dot * solver_tol * solver_tol;
@@ -1755,8 +1755,8 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
         --i;
 
     if(rank==0){
-        print_sep();
-        printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
+//        print_sep();
+        printf("stopped at iteration    = %d \nfinal absolute residual = %e"
                "\nrelative residual       = %e \n", ++i, sqrt(current_dot), sqrt(current_dot / init_dot));
         print_sep();
     }
@@ -1854,7 +1854,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
     dotProduct(r, r, &init_dot, comm);
-    if(rank==0) printf("\ninitial residual = %e \n", sqrt(init_dot));
+    if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
 /*
@@ -1980,8 +1980,8 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 //    print_time(t_dif, "solve_pcg", comm);
 
     if(rank==0){
-        print_sep();
-        printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
+//        print_sep();
+        printf("stopped at iteration    = %d \nfinal absolute residual = %e"
                "\nrelative residual       = %e \n", i+1, sqrt(current_dot), sqrt(current_dot / init_dot));
         print_sep();
     }
@@ -2137,7 +2137,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
     dotProduct(r, r, &init_dot, comm);
-    if(rank==0) printf("\ninitial residual = %e \n", sqrt(init_dot));
+    if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
@@ -2151,9 +2151,9 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 #endif
 
         if(rank==0){
-            print_sep();
-            printf("\nfinal:\nonly using the direct solver! \nfinal absolute residual = %e"
-                           "\nrelative residual       = %e \n", sqrt(current_dot), sqrt(current_dot / init_dot));
+//            print_sep();
+            printf("\nonly using the direct solver! \nfinal absolute residual = %e"
+                   "\nrelative residual       = %e \n", sqrt(current_dot), sqrt(current_dot / init_dot));
             print_sep();
         }
 
@@ -2311,9 +2311,9 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     if(rank==0){
 //        double t_pcg2 = omp_get_wtime();
-        print_sep();
-        printf("\nfinal:\nstopped at iteration    = %d \nfinal absolute residual = %e"
-                       "\nrelative residual       = %e \n", i+1, sqrt(current_dot), sqrt(current_dot / init_dot));
+//        print_sep();
+        printf("stopped at iteration    = %d \nfinal absolute residual = %e"
+               "\nrelative residual       = %e \n", i+1, sqrt(current_dot), sqrt(current_dot / init_dot));
 //        printf("total   time per iteration = %e \n", (t_pcg2 - t_pcg1)/(i+1));
 //        printf("vcycle  time per iteration = %e \n", vcycle_time/(i+1));
 //        printf("superlu time per iteration = %e \n", superlu_time/(i+1));
@@ -2906,11 +2906,11 @@ int saena_object::GMRES(std::vector<double> &u){
 #endif
 
     if(rank==0){
-        printf("\n******************************************************\n");
-        printf("\nfinal:\nstopped at iteration = %ld \n", j);
-        printf("relative residual    = %e \n", resid);
+//        print_sep();
+        printf("stopped at iteration = %ld \n", j);
 //        printf("final absolute residual = %e", beta);
-        printf("\n******************************************************\n");
+        printf("relative residual    = %e \n", resid);
+        print_sep();
     }
 
 //    max_iter = j;
@@ -3175,11 +3175,11 @@ int saena_object::pGMRES(std::vector<double> &u){
 #endif
 
     if(rank==0){
-        printf("\n******************************************************\n");
-        printf("\nfinal:\nstopped at iteration = %ld \n", j);
-        printf("relative residual    = %e \n", resid);
+        print_sep();
+        printf("stopped at iteration = %ld \n", j);
 //        printf("final absolute residual = %e", beta);
-        printf("\n******************************************************\n");
+        printf("relative residual    = %e \n", resid);
+        print_sep();
     }
 
 //    max_iter = j;
