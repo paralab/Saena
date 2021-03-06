@@ -177,6 +177,10 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     grids[0] = Grid(A, 0);
     grids[0].active = true;
 
+    if(float_level == 0){
+        A->use_double = false; // use single-precision matvec for the input matrix
+    }
+
     int res = 0;
     int rank_new = rank;
     for(int i = 0; i < max_level; ++i){
