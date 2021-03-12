@@ -111,7 +111,7 @@ int main(int argc, char* argv[]){
     t1 = omp_get_wtime();
 
     saena::amg solver;
-    solver.set_dynamic_levels(true);
+//    solver.set_dynamic_levels(true);
 //    int max_level(std::stoi(argv[3]));
 //    solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
