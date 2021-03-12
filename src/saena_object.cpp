@@ -57,7 +57,7 @@ void saena_object::print_parameters(saena_matrix *A) const{
         printf("Operator Smoother:   %s (%.2f)\n", PSmoother.c_str(), connStrength);
         printf("Dynamic Levels:      %s (%d)\n", dynamic_levels ? "True" : "False", max_level);
         printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
-        printf("Max iter = %d, rel tol = %.0e, float matvec lev = %d\n",
+        printf("\nMax iter = %d, rel tol = %.0e, float matvec lev = %d\n",
                solver_max_iter, solver_tol, float_level);
         printf("Filter: thre = %.0e, max = %.0e, start = %d, rate = %d\n",
                filter_thre, filter_max, filter_start, filter_rate);
@@ -165,6 +165,11 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
         A->generate_dense_matrix();
     }
 
+    if(float_level == 0){
+        A->use_double = false; // use single-precision matvec for the input matrix
+        if(A->use_dense) A->dense_matrix.use_double = false;
+    }
+
 #ifdef __DEBUG1__
     if(verbose_setup_steps){
         MPI_Barrier(A->comm);
@@ -176,10 +181,6 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     grids.resize(max_level + 1);
     grids[0] = Grid(A, 0);
     grids[0].active = true;
-
-    if(float_level == 0){
-        A->use_double = false; // use single-precision matvec for the input matrix
-    }
 
     int res = 0;
     int rank_new = rank;
@@ -207,6 +208,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 
         if(i + 1 >= float_level){
             grids[i].Ac.use_double = false; // use single-precision matvec for this matrix
+            if(grids[i].Ac.use_dense) grids[i].Ac.dense_matrix.use_double = false;
         }
 
         if(res != 0){

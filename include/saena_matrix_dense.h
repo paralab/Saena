@@ -11,16 +11,24 @@ class saena_matrix;
 
 class saena_matrix_dense {
 
-//private:
+private:
+    std::vector<value_t> v_send;
+    std::vector<value_t> v_recv;
+    std::vector<value_t> v_send_f; // single precision
+    std::vector<value_t> v_recv_f; // single precision
 
 public:
 
-    MPI_Comm comm      = MPI_COMM_WORLD;
-    index_t  M         = 0;
-    index_t  Nbig      = 0;
+    MPI_Comm comm  = MPI_COMM_WORLD;
+    index_t  M     = 0;
+    index_t  Nbig  = 0;
+    index_t  M_max = 0; // biggest M on all the processors
 
     vector<vector<value_t>> entry;
     std::vector<index_t>    split; // (row-wise) partition of the matrix between processes
+
+    bool use_double = true; // to determine the precision for matvec
+    int MPI_flag = 0;
 
     saena_matrix_dense();
     saena_matrix_dense(index_t M, index_t Nbig);
@@ -35,7 +43,7 @@ public:
 
     int erase();
 
-    value_t get(index_t row, index_t col){
+    inline value_t get(index_t row, index_t col){
         if(row >= M || col >= Nbig){
             printf("\ndense matrix get out of range!\n");
             exit(EXIT_FAILURE);
@@ -53,12 +61,16 @@ public:
         }
     }
 
-//    int set(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);
-//    int set2(index_t row, index_t col, value_t val);
-//    int set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local);
-
     int print(int ran);
-    int matvec(std::vector<value_t>& v, std::vector<value_t>& w);
+
+    void matvec(std::vector<value_t>& v, std::vector<value_t>& w){
+        if(use_double) matvec_dense(v, w);
+        else matvec_dense_float(v, w);
+    }
+
+    void matvec_dense(std::vector<value_t>& v, std::vector<value_t>& w);
+    void matvec_dense_float(std::vector<value_t>& v, std::vector<value_t>& w);
+
     int convert_saena_matrix(saena_matrix *A);
 
     // zfp parameters and functions
