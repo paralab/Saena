@@ -82,7 +82,6 @@ public:
     index_t M_max   = 0; // biggest M on all the processors
 
     index_t M_orig    = 0; // before removing boundary nodes
-    index_t Mbig_orig = 0; // before removing boundary nodes
 
     bool use_double = true; // to determine the precision for matvec
 

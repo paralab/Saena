@@ -307,7 +307,6 @@ int saena_matrix::remove_boundary_nodes() {
 
     // save M and Mbig before removing boundary nodes
     M_orig = M;
-    Mbig_orig = Mbig;
 
     const index_t ofst = split[rank];
     const nnz_t   SZ   = data_with_bound.size();
@@ -318,6 +317,7 @@ int saena_matrix::remove_boundary_nodes() {
 #ifdef __DEBUG1__
 //            if(rank == rank_v) std::cout << "boundry: " << data_with_bound[i] << std::endl;
 //            if(rank == rank_v) std::cout << "new row idx: " << data_with_bound[i].row - ofst - bound_row.size() << std::endl;
+            assert(data_with_bound[i].row - ofst >= 0);
 #endif
             bound_row.emplace_back(data_with_bound[i].row - ofst);
             bound_val.emplace_back(data_with_bound[i].val);
@@ -355,13 +355,17 @@ int saena_matrix::remove_boundary_nodes() {
 //    print_vector(bound_row, -1, "bound_row", comm);
 //    print_vector(bound_val, -1, "bound_val", comm);
 
-    if(bound_row.empty()){ // there is no diagonal boundary point
+    // check if there is any diagonal boundary point on all processes
+    bool bnd_l = !bound_row.empty(), bnd = true; // set true if there is boundary
+    MPI_Allreduce(&bnd_l, &bnd, 1, MPI_CXX_BOOL, MPI_LOR, comm);
+
+    if(!bnd){
         remove_boundary = false;
         data = move(data_with_bound);
-    }else{
+    }else {
         // update the column indices to the new indices after removing the boundary nodes
-        if(nprocs == 1){
-            for(auto &d : data){
+        if (nprocs == 1) {
+            for (auto &d : data) {
 //                if(rank == rank_v) cout << d.col << "\t" << new_idx[d.col] << endl;
                 d.col = new_idx[d.col];
             }
@@ -371,6 +375,7 @@ int saena_matrix::remove_boundary_nodes() {
                 max_sz = max(max_sz, split[i] - split[i - 1]);
             }
 
+//            printf("rank %d: max_sz = %d\n", rank, max_sz);
 //            if(rank == rank_v) cout << "max size = " << max_sz << endl;
 
             // M will be updated later
@@ -384,7 +389,7 @@ int saena_matrix::remove_boundary_nodes() {
                 split_tmp[i] += split_tmp[i - 1];
             }
 
-//            print_vector(split_tmp, rank_v, "split_tmp", comm);
+//            print_vector(split_tmp, 1, "split_tmp", comm);
 
             for (i = 0; i < M; ++i) {
                 if (new_idx[i] != -1)
@@ -421,12 +426,12 @@ int saena_matrix::remove_boundary_nodes() {
 //            print_array(send_idx, send_sz, rank_v, "send_idx", comm);
 
             int flag = 0;
-            MPI_Request requests[2];
+            MPI_Request reqs[2];
 //            MPI_Status  statuses[2];
 
             nnz_t it = 0;
-            if(!data.empty()){
-                while (data[it].col < split[rank]) {
+            if (!data.empty()) {
+                while (data[it].col < split[rank] && it < data.size()) {
                     ++it;
                 }
             }
@@ -439,20 +444,20 @@ int saena_matrix::remove_boundary_nodes() {
 //                if(rank==rank_v) printf("rank %d: k = %d, it2 = %ld, SZ2 = %ld\n", rank, k, it2, SZ2);
 //                print_array(send_idx, send_sz, rank_v, "send_idx", comm);
 
-                owner      = k % nprocs;
+                owner = k % nprocs;
                 next_owner = (k + 1) % nprocs;
-                recv_sz    = split[next_owner + 1] - split[next_owner];
+                recv_sz = split[next_owner + 1] - split[next_owner];
 
-                MPI_Irecv(recv_idx, recv_sz, par::Mpi_datatype<index_t>::value(), right_neighbor, 0, comm, requests);
-                MPI_Isend(send_idx, send_sz, par::Mpi_datatype<index_t>::value(), left_neighbor, 0, comm, requests + 1);
+                MPI_Irecv(recv_idx, recv_sz, par::Mpi_datatype<index_t>::value(), right_neighbor, 0, comm, reqs);
+                MPI_Isend(send_idx, send_sz, par::Mpi_datatype<index_t>::value(), left_neighbor, 0, comm, reqs + 1);
 
-//                MPI_Test(requests,   &flag, statuses);
-//                MPI_Test(requests+1, &flag, statuses+1);
+//                MPI_Test(reqs,   &flag, statuses);
+//                MPI_Test(reqs+1, &flag, statuses+1);
 
                 // update column indices
                 send_idx_p = &send_idx[0] - split[owner];
 //                if(rank==rank_v) cout << endl;
-                if(it2 < SZ2 && split[owner] <= data[it].col) {
+                if (it2 < SZ2 && split[owner] <= data[it].col) {
                     while (it2 < SZ2 && data[it].col < split[owner + 1]) {
 //                        if (rank == rank_v) cout << it << "\t" << data[it] << "\t" << split[owner] << "\t" <<
 //                                 data[it].col - split[owner] << "\t" << send_idx[data[it].col - split[owner]] << endl;
@@ -469,7 +474,7 @@ int saena_matrix::remove_boundary_nodes() {
                     }
                 }
 
-                MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
+                MPI_Waitall(2, reqs, MPI_STATUSES_IGNORE);
                 send_sz = recv_sz;
                 std::swap(send_idx, recv_idx);
 
@@ -485,6 +490,7 @@ int saena_matrix::remove_boundary_nodes() {
     }
 
 #ifdef __DEBUG1__
+//    printf("rank %d: done removing boundary\n", rank);
 //    print_vector(data, -1, "data after removing boundary nodes", comm);
 //    print_vector(bound_row, rank_v, "bound_row", comm);
 //    print_vector(bound_val, rank_v, "bound_val", comm);
