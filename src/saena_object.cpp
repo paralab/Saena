@@ -119,8 +119,8 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 
     if(A->remove_boundary){
         remove_boundary = A->remove_boundary;
-        std::swap(bound_row, A->bound_row);
-        std::swap(bound_val, A->bound_val);
+        bound_row = std::move(A->bound_row);
+        bound_val = std::move(A->bound_val);
     }
 
     if(verbose_setup) {
@@ -589,7 +589,7 @@ void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vec
     int rank = 0, nprocs = 0;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
-    rank_v = 1;
+    rank_v = 0;
 
 //    print_vector(rhs_large, -1, "rhs_large", comm);
 
@@ -607,15 +607,17 @@ void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vec
 //    vector<value_t> rhs_large_s; // sorted
 //    par::sampleSort(rhs_large, rhs_large_s, split, comm);
 
-//    if(rank == rank_v) cout << "bound_row.size(): " << bound_row.size() << ", rhs_large.size(): " << rhs_large.size() << endl;
+    const int bnd_sz  = bound_row.size();
+    const int orig_sz = rhs_large.size();
+//    if(rank==rank_v) cout << "boundary: " << bnd_sz << ", orig: " << orig_sz << ", interior: " << orig_sz-bnd_sz <<endl;
 //    print_vector(bound_row, rank_v, "bound_row", comm);
 //    print_vector(bound_val, rank_v, "bound_val", comm);
 
-    rhs0.resize(rhs_large.size() - bound_row.size());
-    bound_sol.resize(bound_row.size());
+    rhs0.resize(orig_sz - bnd_sz);
+    bound_sol.resize(bnd_sz);
 
-    index_t it1 = 0, it2 = 0;
-    for(index_t i = 0; i < rhs_large.size(); ++i){
+    index_t i = 0, it1 = 0, it2 = 0;
+    for(; i < orig_sz && it1 < bnd_sz; ++i){
 //        if(rank==rank_v) cout << i << "\t" << it1 << "\t" << bound_row[it1] << endl;
         if(bound_row[it1] == i){
             bound_sol[it1] = rhs_large[i] / bound_val[it1];
@@ -623,6 +625,10 @@ void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vec
         }else{
             rhs0[it2++] = rhs_large[i];
         }
+    }
+
+    for(; i < orig_sz; ++i) {
+        rhs0[it2++] = rhs_large[i];
     }
 
 //    print_vector(bound_sol, rank_v, "bound_sol", comm);
