@@ -128,15 +128,19 @@ namespace saena {
         int    float_level     = 3;      // any matrix after this level will use single-precision matvec
         double filter_thre     = 1e-14;
         double filter_max      = 1e-8;
-        int    filter_start    = 0;
+        int    filter_start    = 1;
         int    filter_rate     = 2;
+//        bool   switch_repart   = false;
+//        float  repart_thre     = 0.1;
+//        bool   switch_to_dense = false;
+//        float  density_thre    = 0.1; // (0 < density_thre <= 1) decide when to switch to the dense structure.
+//        int    dense_sz_thre   = 5000;
 
     public:
-        options();
         explicit options(int max_iter = 100, double relative_tol = 1e-8, std::string smoother = "chebyshev",
                 int preSmooth = 3, int postSmooth = 3, std::string PSmoother = "jacobi", float connStrength = 0.3,
                 bool dynamic_lev = true, int max_lev = 10, int float_lev = 3,
-                double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 0, int fil_rate = 2);
+                double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 1, int fil_rate = 2);
         explicit options(const string &name); // to set parameters from an xml file
         ~options();
 

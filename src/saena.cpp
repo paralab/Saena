@@ -338,8 +338,6 @@ int saena::vector::print_entry(int rank_){
 
 // ******************************* options *******************************
 
-saena::options::options() = default;
-
 saena::options::options(int max_iter, double tol, std::string sm, int preSm, int postSm, std::string psm, float connSt, bool dynamic_lev,
                         int max_lev, int float_lev, double fil_thr, double fil_max, int fil_st, int fil_rate){
     solver_max_iter = max_iter;
@@ -355,7 +353,7 @@ saena::options::options(int max_iter, double tol, std::string sm, int preSm, int
     postSmooth = postSm;
 
     assert(psm == "jacobi" || psm == "SPAI");
-    smoother = std::move(psm);
+    PSmoother = std::move(psm);
 
     assert(connSt >= 0 && connSt <= 1);
     connStrength = connSt;
@@ -373,6 +371,17 @@ saena::options::options(int max_iter, double tol, std::string sm, int preSm, int
     filter_max   = fil_max;
     filter_start = fil_st;
     filter_rate  = fil_rate;
+
+#if 0
+    printf("Smoother:            %s (%d, %d)\n", smoother.c_str(), preSmooth, postSmooth);
+    printf("Operator Smoother:   %s (%.2f)\n", PSmoother.c_str(), connStrength);
+    printf("Dynamic Levels:      %s (%d)\n", dynamic_levels ? "True" : "False", max_level);
+//    printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
+    printf("\nMax iter = %d, rel tol = %.0e, float matvec lev = %d\n",
+           solver_max_iter, relative_tol, float_level);
+    printf("Filter: thre = %.0e, max = %.0e, start = %d, rate = %d\n",
+           filter_thre, filter_max, filter_start, filter_rate);
+#endif
 }
 
 saena::options::options(const string &name){
