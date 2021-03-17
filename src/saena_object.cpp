@@ -12,20 +12,40 @@
 #include "petsc_functions.h"
 #endif
 
-void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm, bool dynamic_lev,
-                                  int max_lev, int float_lev, double fil_thr, double fil_max, int fil_st, int fil_rate){
+void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm, std::string psm,
+                                  float connSt, bool dynamic_lev, int max_lev, int float_lev, double fil_thr,
+                                  double fil_max, int fil_st, int fil_rate){
     solver_max_iter = max_iter;
-    solver_tol      = tol;
-    smoother        = std::move(sm);
-    preSmooth       = preSm;
-    postSmooth      = postSm;
-    dynamic_levels  = dynamic_lev;
-    max_level       = max_lev;
-    float_level     = float_lev;
-    filter_thre     = fil_thr;
-    filter_max      = fil_max;
-    filter_start    = fil_st;
-    filter_rate     = fil_rate;
+    solver_tol = tol;
+
+    assert(sm == "jacobi" || sm == "chebyshev");
+    smoother = sm;
+
+    assert(preSm >= 0);
+    preSmooth = preSm;
+
+    assert(postSm >= 0);
+    postSmooth = postSm;
+
+    assert(psm == "jacobi" || psm == "SPAI");
+    PSmoother = psm;
+
+    assert(connSt >= 0 && connSt <= 1);
+    connStrength = connSt;
+
+    dynamic_levels = dynamic_lev;
+
+    assert(max_lev >= 0 && max_lev < 1000);
+    max_level = max_lev;
+
+    assert(float_lev >= 0);
+    float_level = float_lev;
+
+    ASSERT(fil_st >= 1, "error: filter_start = " << fil_st << ". cannot filter level 0. it should be >= 1");
+    filter_thre  = fil_thr;
+    filter_max   = fil_max;
+    filter_start = fil_st;
+    filter_rate  = fil_rate;
 }
 
 void saena_object::set_solve_params(int max_iter, double tol, std::string sm, int preSm, int postSm){

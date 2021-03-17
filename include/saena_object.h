@@ -249,10 +249,11 @@ public:
     }
 
     MPI_Comm get_orig_comm();
+
     void set_parameters(int max_iter = 100, double relative_tol = 1e-8, std::string smoother = "chebyshev",
-                        int preSmooth = 3, int postSmooth = 3, bool dynamic_lev = false, int max_lev = 5,
-                        int float_lev = 3, double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 0,
-                        int fil_rate = 2);
+                        int preSmooth = 3, int postSmooth = 3, std::string PSmoother = "jacobi",
+                        float connStrength = 0.25, bool dynamic_lev = true, int max_lev = 10, int float_lev = 3,
+                        double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 1, int fil_rate = 2);
 
     void set_solve_params(int max_iter = 100, double relative_tol = 1e-8, std::string smoother = "chebyshev",
                           int preSmooth = 3, int postSmooth = 3);

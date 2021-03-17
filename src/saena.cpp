@@ -547,6 +547,14 @@ int saena::options::get_postSmooth() const{
     return postSmooth;
 }
 
+std::string saena::options::get_PSmoother() const{
+    return PSmoother;
+}
+
+float saena::options::get_connStr() const{
+    return connStrength;
+}
+
 bool saena::options::get_dynamic_levels() const{
     return dynamic_levels;
 }
@@ -599,7 +607,8 @@ int saena::amg::set_matrix(saena::matrix* A, saena::options* opts){
 
 int saena::amg::set_matrix(saena::matrix* A, saena::options* opts, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif){
     m_pImpl->set_parameters(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
-                            opts->get_postSmooth(), opts->get_dynamic_levels(), opts->get_max_lev(),
+                            opts->get_postSmooth(), opts->get_PSmoother(), opts->get_connStr(),
+                            opts->get_dynamic_levels(), opts->get_max_lev(),
                             opts->get_float_lev(), opts->get_filter_thre(), opts->get_filter_max(),
                             opts->get_filter_start(), opts->get_filter_rate());
     m_pImpl->setup(A->get_internal_matrix(), m_l2g, m_g2u, m_bdydof, order_dif);

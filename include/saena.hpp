@@ -162,6 +162,8 @@ namespace saena {
         std::string get_smoother() const;
         int         get_preSmooth() const;
         int         get_postSmooth() const;
+        std::string get_PSmoother() const;
+        float       get_connStr() const;
         bool        get_dynamic_levels() const;
         int         get_max_lev() const;
         int         get_float_lev() const;
