@@ -845,6 +845,9 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
 
 
 void saena_object::filter(vector<cooEntry> &v) {
+    // filter out entries less than THRE
+    // keep the diagonal entries
+
     if(++filter_it < filter_start){
         return;
     }
@@ -859,7 +862,7 @@ void saena_object::filter(vector<cooEntry> &v) {
 
     vector<cooEntry> w;
     for(const auto &a : v){
-        if(fabs(a.val) > THRE)
+        if(fabs(a.val) > THRE || a.row == a.col)
             w.emplace_back(a);
     }
     w.swap(v);
