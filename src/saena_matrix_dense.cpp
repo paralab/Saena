@@ -74,6 +74,9 @@ int saena_matrix_dense::assemble() {
         M_max = max(M_max, split[i+1] - split[i]);
     }
 
+    v_send.resize(M_max);
+    v_recv.resize(M_max);
+
 #ifdef SAENA_USE_ZFP
     if(use_zfp){
         allocate_zfp();
@@ -152,10 +155,9 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
 
 //    if(rank==0) printf("dense matvec!\n");
 
-    assert(!split.empty());
-    assert(M == v.size());
+//    assert(!split.empty());
+//    assert(M == v.size());
 
-//    MPI_Status sendRecvStatus;
     int right_neighbor = (rank + 1)%nprocs;
     int left_neighbor = rank - 1;
     if (left_neighbor < 0)
@@ -165,18 +167,16 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
     int owner = 0, next_owner = 0;
     index_t recv_size = 0, send_size = M;
 
-    std::copy(v.begin(), v.end(), std::back_inserter(v_send));
-    v_recv = v_send;
-
-//    std::vector<value_t> v_recv = v;
-//    std::vector<value_t> v_send = v;
+    std::copy(v.begin(), v.end(), v_send.begin());
+    std::copy(v.begin(), v.end(), v_recv.begin());
 
     fill(w.begin(), w.end(), 0);
 
     auto *requests = new MPI_Request[2];
     auto *statuses = new MPI_Status[2];
+    value_t* v_p = nullptr;
 
-    for(index_t k = rank; k < rank+nprocs; k++){
+    for(index_t k = rank; k < rank + nprocs; ++k){
         // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
         // Send v to the left_neighbor processor, receive v from the right_neighbor processor.
         // In the next step: send v that was received in the previous step to the left_neighbor processor,
@@ -185,19 +185,22 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
 
         // compute recv_size
         owner      = k % nprocs;
-        next_owner = (k+1) % nprocs;
+        next_owner = (k + 1) % nprocs;
         recv_size  = split[next_owner + 1] - split[next_owner];
-        v_recv.resize(recv_size); // TODO
+        v_p        = &v_send[0] - split[owner];
 
         MPI_Irecv(&v_recv[0], recv_size, par::Mpi_datatype<value_t>::value(), right_neighbor, right_neighbor, comm, &requests[0]);
-        MPI_Isend(&v_send[0], send_size, par::Mpi_datatype<value_t>::value(), left_neighbor,  rank,           comm, &requests[1]);
-//        MPI_Test(); TODO
+        MPI_Test(&requests[0], &MPI_flag, MPI_STATUS_IGNORE);
+
+        MPI_Isend(&v_send[0], send_size, par::Mpi_datatype<value_t>::value(), left_neighbor, rank, comm, &requests[1]);
+        MPI_Test(&requests[1], &MPI_flag, MPI_STATUS_IGNORE);
 
 #pragma omp parallel for
-        for(index_t i = 0; i < M; i++) {
-            for (index_t j = split[owner]; j < split[owner + 1]; j++) {
+        for(index_t i = 0; i < M; ++i) {
+            for (index_t j = split[owner]; j < split[owner + 1]; ++j) {
 //                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
-                w[i] += entry[i][j] * v_send[j - split[owner]]; // TODO
+//                w[i] += entry[i][j] * v_send[j - split[owner]];
+                w[i] += entry[i][j] * v_p[j];
             }
         }
 
@@ -216,12 +219,11 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if(rank==0) printf("dense float matvec! \n");
+//    if(rank==0) printf("dense matvec!\n");
 
-    assert(!split.empty());
-    assert(M == v.size());
+//    assert(!split.empty());
+//    assert(M == v.size());
 
-//    MPI_Status sendRecvStatus;
     int right_neighbor = (rank + 1)%nprocs;
     int left_neighbor = rank - 1;
     if (left_neighbor < 0)
@@ -231,15 +233,16 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
     int owner = 0, next_owner = 0;
     index_t recv_size = 0, send_size = M;
 
-    std::vector<value_t> v_recv = v;
-    std::vector<value_t> v_send = v;
+    std::copy(v.begin(), v.end(), v_send_f.begin());
+    std::copy(v.begin(), v.end(), v_recv_f.begin());
 
     fill(w.begin(), w.end(), 0);
 
     auto *requests = new MPI_Request[2];
     auto *statuses = new MPI_Status[2];
+    value_t* v_p = nullptr;
 
-    for(index_t k = rank; k < rank+nprocs; k++){
+    for(index_t k = rank; k < rank + nprocs; ++k){
         // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
         // Send v to the left_neighbor processor, receive v from the right_neighbor processor.
         // In the next step: send v that was received in the previous step to the left_neighbor processor,
@@ -248,26 +251,27 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
 
         // compute recv_size
         owner      = k % nprocs;
-        next_owner = (k+1) % nprocs;
+        next_owner = (k + 1) % nprocs;
         recv_size  = split[next_owner + 1] - split[next_owner];
-        v_recv.resize(recv_size); // TODO
+        v_p        = &v_send_f[0] - split[owner];
 
-        MPI_Irecv(&v_recv[0], recv_size, par::Mpi_datatype<value_t>::value(), right_neighbor, right_neighbor, comm, &requests[0]);
+        MPI_Irecv(&v_recv_f[0], recv_size, MPI_FLOAT, right_neighbor, right_neighbor, comm, &requests[0]);
         MPI_Test(&requests[0], &MPI_flag, MPI_STATUS_IGNORE);
 
-        MPI_Isend(&v_send[0], send_size, par::Mpi_datatype<value_t>::value(), left_neighbor,  rank, comm, &requests[1]);
+        MPI_Isend(&v_send_f[0], send_size, MPI_FLOAT, left_neighbor, rank, comm, &requests[1]);
         MPI_Test(&requests[1], &MPI_flag, MPI_STATUS_IGNORE);
 
 #pragma omp parallel for
-        for(index_t i = 0; i < M; i++) {
-            for (index_t j = split[owner]; j < split[owner + 1]; j++) {
-//                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
-                w[i] += entry[i][j] * v_send[j - split[owner]]; // TODO
+        for(index_t i = 0; i < M; ++i) {
+            for (index_t j = split[owner]; j < split[owner + 1]; ++j) {
+//                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send_f[j - split[owner]]);
+//                w[i] += entry[i][j] * v_send_f[j - split[owner]];
+                w[i] += entry[i][j] * v_p[j];
             }
         }
 
-        MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
-        std::swap(v_recv, v_send);
+        MPI_Waitall(2, requests, statuses);
+        std::swap(v_recv_f, v_send_f);
         send_size = recv_size;
     }
 
