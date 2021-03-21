@@ -250,7 +250,7 @@ public:
     void set_p_order(int _p_order);
     void set_prodim(int _prodim);
 
-    int assemble(bool scale = false);
+    int assemble(bool scale = false, bool use_dense = false);
     int setup_initial_data();
     int remove_duplicates();
     int remove_boundary_nodes();

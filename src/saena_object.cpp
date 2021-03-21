@@ -181,10 +181,6 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     }
 #endif
 
-    if(switch_to_dense && A->density > dense_thre && A->Mbig <= dense_sz_thre) {
-        A->generate_dense_matrix();
-    }
-
     if(float_level == 0){
         A->use_double = false; // use single-precision matvec for the input matrix
         if(A->use_dense) A->dense_matrix.use_double = false;

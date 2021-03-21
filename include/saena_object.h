@@ -139,7 +139,7 @@ public:
     // *****************
 
     // dense_thre should be greater than repart_thre, since it is more efficient on repartition based on the number of rows.
-    bool    switch_to_dense = false;
+    bool    switch_to_dense = true;
     float   dense_thre      = 0.1; // (0 < dense_thre <= 1) decide when to switch to the dense data structure.
     index_t dense_sz_thre   = 5000;
 

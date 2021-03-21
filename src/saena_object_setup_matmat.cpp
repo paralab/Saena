@@ -1166,7 +1166,7 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     // Use B's row indices as column indices and vice versa.
 
     MPI_Comm comm = A->comm;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -1679,6 +1679,18 @@ int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix
         MPI_Barrier(comm);
     }
 #endif
+
+    // TODO: check if dense structure is needed in this function
+//    if (switch_to_dense && C->density > dense_thre && C->Mbig <= dense_sz_thre) {
+//        C->use_dense = true;
+//#ifdef __DEBUG1__
+//        if (verbose_matmat_assemble) {
+//            if (!rank)
+//                printf("Switch to dense: density = %f, dense_thres = %f, dense_sz_thre= %d\n",
+//                       C->density, dense_thre, dense_sz_thre);
+//        }
+//#endif
+//    }
 
     C->matrix_setup(scale);
 

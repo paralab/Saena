@@ -126,8 +126,8 @@ void saena::matrix::set_num_threads(const int &nth){
 }
 
 
-int saena::matrix::assemble(bool scale /*= true*/) {
-    m_pImpl->assemble(scale);
+int saena::matrix::assemble(bool scale /*= true*/, bool use_den /*= false*/) {
+    m_pImpl->assemble(scale, use_den);
     return 0;
 }
 

@@ -1,10 +1,11 @@
 #include "saena_matrix.h"
 #include <unordered_map>
 
-int saena_matrix::assemble(bool scale /*= false*/) {
+int saena_matrix::assemble(bool scale /*= false*/, bool use_den /*= false*/) {
 
     if(!assembled){
         repartition_nnz_initial();
+        this->use_dense = use_den;
         matrix_setup(scale);
 //        if(enable_shrink) compute_matvec_dummy_time(); // compute the matvec time for the coarsest level,
                                                        // which will be used when deciding about shrinking for level 1.
@@ -575,6 +576,11 @@ int saena_matrix::matrix_setup(bool scale /*= false*/) {
 //            if (rank == 0)
 //                printf("%u \t%u \t%f\n", row_local[i], col_local[i], values_local[i]);
 //        }
+
+        // *************************** dense data structure ****************************
+
+        if(use_dense)
+            generate_dense_matrix();
 
         // *************************** print_entry info ****************************
 
@@ -1563,6 +1569,7 @@ int saena_matrix::inverse_diag() {
 
 
 int saena_matrix::generate_dense_matrix() {
+    cout << "generate dense" << endl;
     use_dense = true;
     dense_matrix.convert_saena_matrix(this);
 //    erase();
