@@ -193,6 +193,18 @@ int saena::matrix::set_shrink(bool val){
 }
 
 
+void saena::matrix::matvec(saena::vector& v, saena::vector& w){
+    std::vector<value_t> vstd, wstd;
+    v.get_vec(vstd);
+    v.get_vec(wstd);
+    m_pImpl->matvec(vstd, wstd);
+}
+
+void saena::matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
+    m_pImpl->matvec(v, w);
+}
+
+
 int saena::matrix::erase(){
     m_pImpl->erase();
     return 0;

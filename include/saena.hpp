@@ -9,6 +9,8 @@ class saena_object;
 
 namespace saena {
 
+    class vector;
+
     class matrix {
     public:
         matrix();
@@ -52,6 +54,9 @@ namespace saena {
         int print(int ran, std::string name = "");
 
         int set_shrink(bool val);
+
+        void matvec(saena::vector& v, saena::vector& w);
+        void matvec(std::vector<value_t>& v, std::vector<value_t>& w);
 
         int erase();
         int erase_lazy_update();
