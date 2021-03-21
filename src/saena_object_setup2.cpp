@@ -326,13 +326,13 @@ int saena_object::compute_coarsen(Grid *grid) {
 //            if (Ac->shrinked && Ac->enable_dummy_matvec)
 //                Ac->compute_matvec_dummy_time();
 
-            if (switch_to_dense && Ac->density > density_thre && Ac->Mbig <= dense_sz_thre) {
+            if (switch_to_dense && Ac->density > dense_thre && Ac->Mbig <= dense_sz_thre) {
 #ifdef __DEBUG1__
                 if (verbose_compute_coarsen) {
 //                    Ac->print_info(-1);
 //                    Ac->print_entry(-1);
                     if(!rank) printf("Switch to dense: density = %f, dense_thres = %f, dense_sz_thre= %d\n",
-                            Ac->density, density_thre, dense_sz_thre);
+                                     Ac->density, dense_thre, dense_sz_thre);
                 }
 #endif
                 Ac->generate_dense_matrix();

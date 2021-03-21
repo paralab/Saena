@@ -138,7 +138,7 @@ namespace saena {
 //        bool   switch_repart   = false;
 //        float  repart_thre     = 0.1;
 //        bool   switch_to_dense = false;
-//        float  density_thre    = 0.1; // (0 < density_thre <= 1) decide when to switch to the dense structure.
+//        float  dense_thre    = 0.1; // (0 < dense_thre <= 1) decide when to switch to the dense structure.
 //        int    dense_sz_thre   = 5000;
 
     public:

@@ -181,7 +181,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     }
 #endif
 
-    if(switch_to_dense && A->density > density_thre && A->Mbig <= dense_sz_thre) {
+    if(switch_to_dense && A->density > dense_thre && A->Mbig <= dense_sz_thre) {
         A->generate_dense_matrix();
     }
 

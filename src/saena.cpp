@@ -673,13 +673,13 @@ int saena::amg::switch_to_dense(bool val) {
 
 
 int saena::amg::set_dense_threshold(float thre){
-    m_pImpl->density_thre = thre;
+    m_pImpl->dense_thre = thre;
     return 0;
 }
 
 
 double saena::amg::get_dense_threshold(){
-    return m_pImpl->density_thre;
+    return m_pImpl->dense_thre;
 }
 
 
