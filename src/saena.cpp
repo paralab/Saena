@@ -131,7 +131,8 @@ int saena::matrix::assemble(bool scale /*= true*/) {
     return 0;
 }
 
-int saena::matrix::assemble_band_matrix(){
+int saena::matrix::assemble_band_matrix(bool use_dense /*= false*/){
+    m_pImpl->use_dense = use_dense;
     m_pImpl->matrix_setup();
     return 0;
 }

@@ -1292,12 +1292,12 @@ int saena::laplacian3D_set_rhs_zero(std::vector<double> &rhs, unsigned int mx, u
 }
 
 
-int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
+int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth, bool use_dense /*= false*/){
     // generates a band matrix with bandwidth of size "bandwidth".
     // set bandwidth to 0 to have a diagonal matrix.
     // value of entry (i,j) = 1 / (i + j + 1)
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(A.get_comm(), &nprocs);
     MPI_Comm_rank(A.get_comm(), &rank);
 
@@ -1317,7 +1317,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 //    rng.seed(std::random_device{}());
 
     value_t val = 1;
-    index_t d;
+    index_t d = 0;
     for(index_t i = rank*M; i < (rank+1)*M; i++){
         d = 0;
         for(index_t j = i; j <= i+bandwidth; j++){
@@ -1370,7 +1370,7 @@ int saena::band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth){
 #endif
 
 //    A.assemble();
-    A.assemble_band_matrix();
+    A.assemble_band_matrix(use_dense);
 
 //    printf("rank %d: M = %u, Mbig = %u, nnz_l = %lu, nnz_g = %lu \n",
 //            rank, A.get_num_local_rows(), A.get_num_rows(), A.get_local_nnz(), A.get_nnz());

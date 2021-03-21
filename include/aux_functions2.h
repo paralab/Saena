@@ -32,7 +32,7 @@ namespace saena {
 
     int laplacian3D_set_rhs_zero(std::vector<double> &rhs, unsigned int mx, unsigned int my, unsigned int mz, MPI_Comm comm);
 
-    int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth);
+    int band_matrix(saena::matrix &A, index_t M, unsigned int bandwidth, bool use_dense = false);
 
     int random_symm_matrix(saena::matrix &A, index_t M, float density);
 

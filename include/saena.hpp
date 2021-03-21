@@ -39,7 +39,7 @@ namespace saena {
         int add_duplicates(bool add);
 
         int assemble(bool scale = true);
-        int assemble_band_matrix();
+        int assemble_band_matrix(bool use_dense = false);
 
         int assemble_writeToFile(const char *folder_name = "");
         int writeMatrixToFile(const std::string &name = "") const;
