@@ -505,6 +505,84 @@ void saena::options::set(int max_iter, double tol, std::string sm, int preSm, in
     filter_rate  = fil_rate;
 }
 
+void saena::options::set_from_file(const string &name){
+    pugi::xml_document doc;
+    if (!doc.load_file(name.c_str()))
+        std::cout << "Could not find the xml file!" << std::endl;
+
+    pugi::xml_node opts = doc.child("SAENA").first_child();
+
+    pugi::xml_attribute attr = opts.first_attribute();
+    solver_max_iter = std::stoi(attr.value());
+//    cout << "max iter = " << solver_max_iter << endl;
+
+    attr = attr.next_attribute();
+    relative_tol = std::stod(attr.value());
+//    cout << "relative_tol = " << relative_tol << endl;
+
+    attr = attr.next_attribute();
+    smoother = attr.value();
+    assert(smoother == "jacobi" || smoother == "chebyshev");
+//    cout << "smoother = " << smoother << endl;
+
+    attr = attr.next_attribute();
+    preSmooth = std::stoi(attr.value());
+    assert(preSmooth >= 0);
+//    cout << "preSmooth = " << preSmooth << endl;
+
+    attr = attr.next_attribute();
+    postSmooth = std::stoi(attr.value());
+    assert(postSmooth >= 0);
+//    cout << "postSmooth = " << postSmooth << endl;
+
+    attr = attr.next_attribute();
+    PSmoother = attr.value();
+    assert(PSmoother == "jacobi" || PSmoother == "SPAI");
+//    cout << "PSmoother = " << PSmoother << endl;
+
+    attr = attr.next_attribute();
+    connStrength = std::stof(attr.value());
+    assert(connStrength >= 0 && connStrength <= 1);
+//    cout << "connStrength = " << connStrength << endl;
+
+    attr = attr.next_attribute();
+    dynamic_levels = std::stoi(attr.value());
+//    cout << "dynamic_levels = " << dynamic_levels << endl;
+
+    attr = attr.next_attribute();
+    max_level = std::stoi(attr.value());
+    assert(max_level >= 0 && max_level < 1000);
+//    cout << "max_level = " << max_level << endl;
+
+    attr = attr.next_attribute();
+    float_level = std::stoi(attr.value());
+    assert(float_level >= 0);
+//    cout << "float_level = " << float_level << endl;
+
+    attr = attr.next_attribute();
+    filter_thre = std::stod(attr.value());
+//    cout << "filter_thre = " << filter_thre << endl;
+
+    attr = attr.next_attribute();
+    filter_max = std::stod(attr.value());
+//    cout << "filter_max = " << filter_max << endl;
+
+    attr = attr.next_attribute();
+    filter_start = std::stoi(attr.value());
+    ASSERT(filter_start >= 1, "error: filter_start = " << filter_start << ". cannot filter level 0. it should be >= 1");
+//    cout << "filter_start = " << filter_start << endl;
+
+    attr = attr.next_attribute();
+    filter_rate = std::stoi(attr.value());
+//    cout << "filter_rate = " << filter_rate << endl;
+
+//    for (pugi::xml_attribute attr2 = opts.first_attribute(); attr2; attr2 = attr2.next_attribute())
+//        std::cout << attr2.name() << " = " << attr2.value() << std::endl;
+
+//    std::cout << "max iter = " << solver_max_iter << ", rel tol = " << relative_tol
+//              << ", smoother = " << smoother << ", preSmooth = " << preSmooth << ", postSmooth = " << postSmooth << std::endl;
+}
+
 void saena::options::set_solve_params(int max_iter, double tol, std::string sm, int preSm, int postSm) {
     solver_max_iter = max_iter;
     relative_tol = tol;
