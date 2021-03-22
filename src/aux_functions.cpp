@@ -471,8 +471,14 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
     if(A->Mbig < tmp)
         v_sz = A->M_orig;
 
+//    printf("rank %d: read vector size = %d, A->M_orig = %d, tmp = %d. A->M = %d, A->Mbig = %d\n",
+//            rank, v_sz, A->M_orig, tmp, A->M, A->Mbig);
+
     v.resize(v_sz);
     value_t* vp = &*v.begin();
+
+//    print_vector(A->split, 0, "split", comm);
+//    print_vector(A->split_b, 0, "split_b", comm);
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
     offset = A->split_b[rank] * sizeof(value_t);

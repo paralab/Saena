@@ -33,7 +33,6 @@ int saena_matrix::repartition_nnz_initial(){
     last_M_shrink = Mbig;
 //    last_nnz_shrink = nnz_g;
 
-    split_b.swap(split);
     split.resize(nprocs + 1);
 
     if(nprocs > 1) {
@@ -304,6 +303,7 @@ int saena_matrix::repartition_nnz_initial(){
         entry.swap(data);
     }
 
+    split_b = split;
     split_old = split;
 
     std::sort(entry.begin(), entry.end());
