@@ -18,9 +18,9 @@ int main(int argc, char* argv[]){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-    if(argc != 4) {
+    if(argc < 3 || argc > 4) {
         if(!rank) {
-            cout << "Usage: ./profile matrix_file rhs_file <options file>" << endl;
+            cout << "Usage: ./profile matrix_file rhs_file <optional: options file>" << endl;
 //            cout << "Usage: ./profile matrix_file rhs_file max_level" << endl;
 //            cout << "Usage: ./profile matrix_file rhs_file" << endl;
         }
@@ -101,21 +101,24 @@ int main(int argc, char* argv[]){
 //    int    postSmooth         = 3;
 //    saena::options opts(solver_max_iter, relative_tolerance, smoother, preSmooth, postSmooth);
 
-    // 2- read the options from an xml file
-    const string optsfile(argv[3]);
-    saena::options opts(optsfile);
+    // 2- use the default options
+    saena::options opts;
 
-    // 3- use the default options
-//    saena::options opts;
+    // 3- read the options from an xml file
+    if(argc == 4){
+        const string optsfile(argv[3]);
+        opts.set_from_file(optsfile);
+    }
 
     t1 = omp_get_wtime();
 
+    bool free_amg = false;
     saena::amg solver;
 //    solver.set_dynamic_levels(true);
 //    int max_level(std::stoi(argv[3]));
 //    solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
-    solver.set_matrix(&A, &opts);
+    solver.set_matrix(&A, &opts); free_amg = true;
     solver.set_rhs(rhs);
 
     t2 = omp_get_wtime();
@@ -267,7 +270,8 @@ int main(int argc, char* argv[]){
     // *************************** Destroy ****************************
 
     A.destroy();
-    solver.destroy();
+    if(free_amg)
+        solver.destroy();
     MPI_Finalize();
     return 0;
 }

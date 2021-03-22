@@ -170,6 +170,9 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
     std::copy(v.begin(), v.end(), v_send.begin());
     std::copy(v.begin(), v.end(), v_recv.begin());
 
+//    print_vector(v_send, -1, "v_send", comm);
+//    print_vector(v_send, -1, "v_recv", comm);
+
     fill(w.begin(), w.end(), 0);
 
     auto *requests = new MPI_Request[2];
@@ -219,7 +222,7 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
-//    if(rank==0) printf("dense matvec!\n");
+//    if(rank==0) printf("dense float matvec!\n");
 
 //    assert(!split.empty());
 //    assert(M == v.size());
