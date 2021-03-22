@@ -351,39 +351,14 @@ int saena::vector::print_entry(int rank_){
 
 // ******************************* options *******************************
 
-saena::options::options(int max_iter, double tol, std::string sm, int preSm, int postSm, std::string psm, float connSt, bool dynamic_lev,
-                        int max_lev, int float_lev, double fil_thr, double fil_max, int fil_st, int fil_rate){
-    solver_max_iter = max_iter;
-    relative_tol = tol;
+saena::options::options(int max_iter, double tol, std::string sm, int preSm, int postSm, std::string psm, float connSt,
+                        bool dynamic_lev, int max_lev, int float_lev, double fil_thr, double fil_max, int fil_st, int fil_rate,
+                        bool switch_to_den, float dense_thr, int dense_sz_thr){
+//    set(max_iter, tol, sm, preSm, postSm, psm, connSt, dynamic_lev, max_lev, float_lev, fil_thr, fil_max, fil_st,
+//            fil_rate, switch_to_den, dense_thr, dense_sz_thr);
 
-    assert(sm == "jacobi" || sm == "chebyshev");
-    smoother = std::move(sm);
-
-    assert(preSm >= 0);
-    preSmooth = preSm;
-
-    assert(postSm >= 0);
-    postSmooth = postSm;
-
-    assert(psm == "jacobi" || psm == "SPAI");
-    PSmoother = std::move(psm);
-
-    assert(connSt >= 0 && connSt <= 1);
-    connStrength = connSt;
-
-    dynamic_levels = dynamic_lev;
-
-    assert(max_lev >= 0 && max_lev < 1000);
-    max_level = max_lev;
-
-    assert(float_lev >= 0);
-    float_level = float_lev;
-
-    ASSERT(fil_st >= 1, "error: filter_start = " << fil_st << ". cannot filter level 0. it should be >= 1");
-    filter_thre  = fil_thr;
-    filter_max   = fil_max;
-    filter_start = fil_st;
-    filter_rate  = fil_rate;
+    set(max_iter, tol, sm, preSm, postSm, psm, connSt, dynamic_lev, max_lev, float_lev, fil_thr, fil_max, fil_st,
+        fil_rate, switch_to_den, dense_thr, dense_sz_thr);
 
 #if 0
     printf("Smoother:            %s (%d, %d)\n", smoother.c_str(), preSmooth, postSmooth);
@@ -398,111 +373,51 @@ saena::options::options(int max_iter, double tol, std::string sm, int preSm, int
 }
 
 saena::options::options(const string &name){
-    pugi::xml_document doc;
-    if (!doc.load_file(name.c_str()))
-        std::cout << "Could not find the xml file!" << std::endl;
-
-    pugi::xml_node opts = doc.child("SAENA").first_child();
-
-    pugi::xml_attribute attr = opts.first_attribute();
-    solver_max_iter = std::stoi(attr.value());
-//    cout << "max iter = " << solver_max_iter << endl;
-
-    attr = attr.next_attribute();
-    relative_tol = std::stod(attr.value());
-//    cout << "relative_tol = " << relative_tol << endl;
-
-    attr = attr.next_attribute();
-    smoother = attr.value();
-    assert(smoother == "jacobi" || smoother == "chebyshev");
-//    cout << "smoother = " << smoother << endl;
-
-    attr = attr.next_attribute();
-    preSmooth = std::stoi(attr.value());
-    assert(preSmooth >= 0);
-//    cout << "preSmooth = " << preSmooth << endl;
-
-    attr = attr.next_attribute();
-    postSmooth = std::stoi(attr.value());
-    assert(postSmooth >= 0);
-//    cout << "postSmooth = " << postSmooth << endl;
-
-    attr = attr.next_attribute();
-    PSmoother = attr.value();
-    assert(PSmoother == "jacobi" || PSmoother == "SPAI");
-//    cout << "PSmoother = " << PSmoother << endl;
-
-    attr = attr.next_attribute();
-    connStrength = std::stof(attr.value());
-    assert(connStrength >= 0 && connStrength <= 1);
-//    cout << "connStrength = " << connStrength << endl;
-
-    attr = attr.next_attribute();
-    dynamic_levels = std::stoi(attr.value());
-//    cout << "dynamic_levels = " << dynamic_levels << endl;
-
-    attr = attr.next_attribute();
-    max_level = std::stoi(attr.value());
-    assert(max_level >= 0 && max_level < 1000);
-//    cout << "max_level = " << max_level << endl;
-
-    attr = attr.next_attribute();
-    float_level = std::stoi(attr.value());
-    assert(float_level >= 0);
-//    cout << "float_level = " << float_level << endl;
-
-    attr = attr.next_attribute();
-    filter_thre = std::stod(attr.value());
-//    cout << "filter_thre = " << filter_thre << endl;
-
-    attr = attr.next_attribute();
-    filter_max = std::stod(attr.value());
-//    cout << "filter_max = " << filter_max << endl;
-
-    attr = attr.next_attribute();
-    filter_start = std::stoi(attr.value());
-    ASSERT(filter_start >= 1, "error: filter_start = " << filter_start << ". cannot filter level 0. it should be >= 1");
-//    cout << "filter_start = " << filter_start << endl;
-
-    attr = attr.next_attribute();
-    filter_rate = std::stoi(attr.value());
-//    cout << "filter_rate = " << filter_rate << endl;
-
-//    for (pugi::xml_attribute attr2 = opts.first_attribute(); attr2; attr2 = attr2.next_attribute())
-//        std::cout << attr2.name() << " = " << attr2.value() << std::endl;
-
-//    std::cout << "max iter = " << solver_max_iter << ", rel tol = " << relative_tol
-//              << ", smoother = " << smoother << ", preSmooth = " << preSmooth << ", postSmooth = " << postSmooth << std::endl;
+    set_from_file(name);
 }
 
 saena::options::~options() = default;
 
-void saena::options::set(int max_iter, double tol, std::string sm, int preSm, int postSm, bool dynamic_lev,
-                         int max_lev, int float_lev, double fil_thr, double fil_max, int fil_st, int fil_rate){
+void saena::options::set(int max_iter, double tol, std::string sm, int preSm, int postSm, std::string psm, float connSt,
+                         bool dynamic_lev, int max_lev, int float_lev, double fil_thr, double fil_max, int fil_st, int fil_rate,
+                         bool switch_to_den, float dense_thr, int dense_sz_thr){
     solver_max_iter = max_iter;
     relative_tol = tol;
 
-    assert(sm == "jacobi" || sm == "chebyshev");
     smoother = std::move(sm);
+    assert(smoother == "jacobi" || smoother == "chebyshev");
 
-    assert(preSm >= 0);
     preSmooth = preSm;
+    assert(preSmooth >= 0);
 
-    assert(postSm >= 0);
     postSmooth = postSm;
+    assert(postSmooth >= 0);
+
+    PSmoother = std::move(psm);
+    assert(PSmoother == "jacobi" || PSmoother == "SPAI");
+
+    connStrength = connSt;
+    assert(connStrength >= 0 && connStrength <= 1);
 
     dynamic_levels = dynamic_lev;
 
-    assert(max_lev >= 0 && max_lev < 1000);
     max_level = max_lev;
+    assert(max_level >= 0 && max_level < 1000);
 
-    assert(float_level >= 0);
+    assert(float_lev >= 0);
     float_level = float_lev;
 
     filter_thre  = fil_thr;
     filter_max   = fil_max;
     filter_start = fil_st;
     filter_rate  = fil_rate;
+    ASSERT(filter_start >= 1, "error: filter_start = " << filter_start << ". cannot filter level 0. it should be >= 1");
+
+    switch_to_dense = switch_to_den;
+    dense_thre      = dense_thr;
+    dense_sz_thre   = dense_sz_thr;
+    assert(dense_thre > 0 && dense_thre <= 1);
+    assert(dense_sz_thre > 0 && dense_sz_thre <= 100000);
 }
 
 void saena::options::set_from_file(const string &name){
@@ -575,6 +490,20 @@ void saena::options::set_from_file(const string &name){
     attr = attr.next_attribute();
     filter_rate = std::stoi(attr.value());
 //    cout << "filter_rate = " << filter_rate << endl;
+
+    attr = attr.next_attribute();
+    switch_to_dense = std::stoi(attr.value());
+//    cout << "switch_to_dense = " << switch_to_dense << endl;
+
+    attr = attr.next_attribute();
+    dense_thre = std::stof(attr.value());
+    assert(dense_thre > 0 && dense_thre <= 1);
+//    cout << "dense_thre = " << dense_thre << endl;
+
+    attr = attr.next_attribute();
+    dense_sz_thre = std::stoi(attr.value());
+    assert(dense_sz_thre > 0 && dense_sz_thre <= 100000);
+//    cout << "dense_sz_thre = " << dense_sz_thre << endl;
 
 //    for (pugi::xml_attribute attr2 = opts.first_attribute(); attr2; attr2 = attr2.next_attribute())
 //        std::cout << attr2.name() << " = " << attr2.value() << std::endl;
@@ -674,6 +603,18 @@ int saena::options::get_filter_rate() const{
     return filter_rate;
 }
 
+bool saena::options::get_switch_dense() const{
+    return switch_to_dense;
+}
+
+float saena::options::get_dense_thre() const{
+    return dense_thre;
+}
+
+int saena::options::get_dense_sz_thre() const{
+    return dense_sz_thre;
+}
+
 // ******************************* amg *******************************
 
 saena::amg::amg(){
@@ -701,7 +642,8 @@ int saena::amg::set_matrix(saena::matrix* A, saena::options* opts, std::vector<s
                             opts->get_postSmooth(), opts->get_PSmoother(), opts->get_connStr(),
                             opts->get_dynamic_levels(), opts->get_max_lev(),
                             opts->get_float_lev(), opts->get_filter_thre(), opts->get_filter_max(),
-                            opts->get_filter_start(), opts->get_filter_rate());
+                            opts->get_filter_start(), opts->get_filter_rate(), opts->get_switch_dense(),
+                            opts->get_dense_thre(), opts->get_dense_sz_thre());
     m_pImpl->setup(A->get_internal_matrix(), m_l2g, m_g2u, m_bdydof, order_dif);
     return 0;
 }

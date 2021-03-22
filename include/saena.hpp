@@ -137,21 +137,24 @@ namespace saena {
         int    filter_rate;//     = 2;
 //        bool   switch_repart   = false;
 //        float  repart_thre     = 0.1;
-//        bool   switch_to_dense = false;
-//        float  dense_thre    = 0.1; // (0 < dense_thre <= 1) decide when to switch to the dense structure.
-//        int    dense_sz_thre   = 5000;
+        bool   switch_to_dense;// = false;
+        float  dense_thre; //      = 0.1; // (0 < dense_thre <= 1) decide when to switch to the dense structure.
+        int    dense_sz_thre; //   = 5000;
 
     public:
         explicit options(int max_iter = 100, double relative_tol = 1e-8, std::string smoother = "chebyshev",
                 int preSmooth = 3, int postSmooth = 3, std::string PSmoother = "jacobi", float connStrength = 0.3,
                 bool dynamic_lev = true, int max_lev = 10, int float_lev = 3,
-                double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 1, int fil_rate = 2);
+                double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 1, int fil_rate = 2,
+                bool switch_to_den = false, float dense_thr = 0.1, int dense_sz_thr = 5000);
         explicit options(const string &name); // to set parameters from an xml file
         ~options();
 
-        void set(int max_iter = 100, double relative_tolerance = 1e-8, std::string smoother = "chebyshev",
-                 int preSmooth = 3, int postSmooth = 3, bool dynamic_lev = true, int max_lev = 10,
-                 int float_lev = 3, double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 1, int fil_rate = 2);
+        void set(int max_iter = 100, double relative_tol = 1e-8, std::string smoother = "chebyshev",
+                 int preSmooth = 3, int postSmooth = 3, std::string PSmoother = "jacobi", float connStrength = 0.3,
+                 bool dynamic_lev = true, int max_lev = 10, int float_lev = 3,
+                 double fil_thr = 1e-14, double fil_max = 1e-8, int fil_st = 1, int fil_rate = 2,
+                 bool switch_to_den = false, float dense_thr = 0.1, int dense_sz_thr = 5000);
 
         void set_from_file(const string &name);
         void set_solve_params(int max_iter = 100, double relative_tolerance = 1e-8, std::string smoother = "chebyshev",
@@ -177,6 +180,9 @@ namespace saena {
         double      get_filter_max() const;
         int         get_filter_start() const;
         int         get_filter_rate() const;
+        bool        get_switch_dense() const;
+        float       get_dense_thre() const;
+        int         get_dense_sz_thre() const;
     };
 
     class amg {

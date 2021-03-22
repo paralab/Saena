@@ -14,7 +14,8 @@
 
 void saena_object::set_parameters(int max_iter, double tol, std::string sm, int preSm, int postSm, std::string psm,
                                   float connSt, bool dynamic_lev, int max_lev, int float_lev, double fil_thr,
-                                  double fil_max, int fil_st, int fil_rate){
+                                  double fil_max, int fil_st, int fil_rate, bool switch_to_den, float dense_thr,
+                                  int dense_sz_thr){
     solver_max_iter = max_iter;
     solver_tol = tol;
 
@@ -46,6 +47,12 @@ void saena_object::set_parameters(int max_iter, double tol, std::string sm, int 
     filter_max   = fil_max;
     filter_start = fil_st;
     filter_rate  = fil_rate;
+
+    switch_to_dense = switch_to_den;
+    dense_thre      = dense_thr;
+    dense_sz_thre   = dense_sz_thr;
+    assert(dense_thre > 0 && dense_thre <= 1);
+    assert(dense_sz_thre > 0 && dense_sz_thre <= 100000);
 }
 
 void saena_object::set_solve_params(int max_iter, double tol, std::string sm, int preSm, int postSm){
@@ -77,6 +84,7 @@ void saena_object::print_parameters(saena_matrix *A) const{
         printf("Operator Smoother:   %s (%.2f)\n", PSmoother.c_str(), connStrength);
         printf("Dynamic Levels:      %s (%d)\n", dynamic_levels ? "True" : "False", max_level);
         printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
+        printf("Dense:               %s (%.2f, %d)\n", switch_to_dense ? "True" : "False", dense_thre, dense_sz_thre);
         printf("\nMax iter = %d, rel tol = %.0e, float matvec lev = %d\n",
                solver_max_iter, solver_tol, float_level);
         printf("Filter: thre = %.0e, max = %.0e, start = %d, rate = %d\n",
