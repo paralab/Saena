@@ -725,7 +725,7 @@ int saena_matrix::repartition_nnz(){
 */
 
 
-int saena_matrix::repart(bool repart_row /*= false*/){
+int saena_matrix::repart(){
     // repart_row: if true repartition based on number of rows, otherwise based on the number of nonzeros
 
     // summary: number of buckets are computed based of the number of <<rows>> and number of processors.

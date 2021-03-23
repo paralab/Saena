@@ -131,7 +131,7 @@ public:
     // *****************
 
     bool  switch_repart = true;
-    float repart_thre   = 0.01;
+    float repart_thre   = 0.1;
     int   set_repart_thre(float thre);
 
     // *****************

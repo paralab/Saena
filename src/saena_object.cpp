@@ -95,6 +95,9 @@ void saena_object::print_parameters(saena_matrix *A) const{
         if(A->use_dense){
             printf("dense structure = True\n");
         }
+        if(A->repart_row){
+            printf("equi-ROW        = True\n");
+        }
     }
     MPI_Barrier(A->comm);
 }
@@ -107,6 +110,9 @@ void saena_object::print_lev_info(const Grid &g, const int porder) const{
            g.A->density, (porder == 1 ? "h-coarsen" : "p-coarsen"));
     if(g.A->use_dense){
         printf("dense structure = True\n");
+    }
+    if(g.A->repart_row){
+        printf("equi-ROW        = True\n");
     }
 }
 

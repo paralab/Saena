@@ -286,14 +286,14 @@ int saena_object::compute_coarsen(Grid *grid) {
 
         // decide to partition based on number of rows or nonzeros.
         if (switch_repart && Ac->density >= repart_thre) {
-            if (!rank){
-                printf("equi-ROW partition for the next level: \ndensity = %.2f, repart_thre = %.2f \n",
-                       Ac->density, repart_thre);
-            }
-            Ac->repart(true);
-        } else {
-            Ac->repart(false);
+            Ac->repart_row = true;
+//            if (!rank){
+//                printf("equi-ROW partition for the next level: \ndensity = %.2f, repart_thre = %.2f \n",
+//                       Ac->density, repart_thre);
+//            }
         }
+
+        Ac->repart();
 
 #ifdef __DEBUG1__
         if (verbose_compute_coarsen) {

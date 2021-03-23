@@ -85,6 +85,8 @@ public:
 
     bool use_double = true; // to determine the precision for matvec
 
+    bool repart_row = false; // to switch to partition based on row size (instead of nnz)
+
     int p_order = 1;
     int prodim = 2;
 
@@ -262,9 +264,7 @@ public:
     int repartition_nnz_update(); // based on nnz.
     int matrix_setup_update(bool scale = false);
 
-    int repart(bool repart_row = false);
-//    int repartition_nnz(); // based on nnz. use this for repartitioning A's after they are created.
-//    int repartition_row(); // based on M.   use this for repartitioning A's after they are created.
+    int repart();
 
     int repartition_nnz_update_Ac(); // based on nnz.
 
