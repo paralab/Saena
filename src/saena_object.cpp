@@ -78,13 +78,13 @@ void saena_object::print_parameters(saena_matrix *A) const{
     if(!rank){
 #pragma omp parallel default(none) shared(rank, nprocs)
         if(omp_get_thread_num()==0)
-            printf("\nnumber of processes: %d\nnumber of threads:   %d\n", nprocs, omp_get_num_threads());
+            printf("\nNumber of MPI tasks: %d\nNumber of threads:   %d\n", nprocs, omp_get_num_threads());
 
         printf("Smoother:            %s (%d, %d)\n", smoother.c_str(), preSmooth, postSmooth);
         printf("Operator Smoother:   %s (%.2f)\n", PSmoother.c_str(), connStrength);
         printf("Dynamic Levels:      %s (%d)\n", dynamic_levels ? "True" : "False", max_level);
+        printf("Switch To Dense:     %s (%.2f, %d)\n", switch_to_dense ? "True" : "False", dense_thre, dense_sz_thre);
         printf("Remove Boundary:     %s\n", remove_boundary ? "True" : "False");
-        printf("Dense:               %s (%.2f, %d)\n", switch_to_dense ? "True" : "False", dense_thre, dense_sz_thre);
         printf("\nMax iter = %d, rel tol = %.0e, float matvec lev = %d\n",
                solver_max_iter, solver_tol, float_level);
         printf("Filter: thre = %.0e, max = %.0e, start = %d, rate = %d\n",
@@ -114,6 +114,28 @@ void saena_object::print_lev_info(const Grid &g, const int porder) const{
     if(g.A->repart_row){
         printf("equi-ROW        = True\n");
     }
+
+//    print_vector(g.A->split, 0, "split", g.A->comm);
+    index_t M_min = INT_MAX, M_ave = 0, tmp = 0;
+    for(index_t i = 1; i < g.A->split.size(); ++i){
+        tmp = g.A->split[i] - g.A->split[i - 1];
+//        cout << "tmp = " << tmp << endl;
+        M_ave += tmp;
+        M_min = min(M_min, tmp);
+//        nnz_max = max(nnz_max, a);
+    }
+    M_ave /= g.A->split.size() - 1;
+    printf("M(min,ave,max)  = (%d, %d, %d)\n", M_min, M_ave, g.A->M_max);
+
+//    print_vector(g.A->nnz_list, 0, "nnz_list", g.A->comm);
+    nnz_t nnz_min = LONG_MAX, nnz_ave = 0, nnz_max = 0;
+    for(const auto &a : g.A->nnz_list){
+        nnz_ave += a;
+        nnz_min = min(nnz_min, a);
+        nnz_max = max(nnz_max, a);
+    }
+    nnz_ave /= g.A->nnz_list.size();
+    printf("nnz(min,ave,max)= (%ld, %ld, %ld)\n", nnz_min, nnz_ave, nnz_max);
 }
 
 
