@@ -422,8 +422,11 @@ void saena::options::set(int max_iter, double tol, std::string sm, int preSm, in
 
 void saena::options::set_from_file(const string &name){
     pugi::xml_document doc;
-    if (!doc.load_file(name.c_str()))
+    if (!doc.load_file(name.c_str())){
         std::cout << "Could not find the xml file!" << std::endl;
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+    }
 
     pugi::xml_node opts = doc.child("SAENA").first_child();
 
