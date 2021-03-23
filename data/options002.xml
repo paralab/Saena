@@ -9,10 +9,13 @@
 	PSmoother="jacobi"
 	conn_str="0.3"
 	dynamic_levels="1"
-	max_level="10"
-	float_level="0"
+	max_level="14"
+	float_level="3"
 	filter_thre="1e-12"
 	filter_max="1e-8"
-	filter_start="1"
-	filter_rate="2"/>
+	filter_start="3"
+	filter_rate="2"
+	switch_to_dense="1"
+	dense_thre="0.1"
+	dense_sz_thre="5000"/>
 </SAENA>

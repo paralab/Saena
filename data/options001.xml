@@ -14,5 +14,8 @@
 	filter_thre="1e-14"
 	filter_max="1e-8"
 	filter_start="0"
-	filter_rate="2"/>
+	filter_rate="2"
+	switch_to_dense="1"
+	dense_thre="0.1"
+	dense_sz_thre="5000"/>
 </SAENA>
