@@ -99,6 +99,18 @@ void saena_object::print_parameters(saena_matrix *A) const{
     MPI_Barrier(A->comm);
 }
 
+void saena_object::print_lev_info(const Grid &g, const int porder) const{
+    printf("_____________________________\n\n");
+    printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu"
+           "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
+           g.level, g.A->total_active_procs, g.A->Mbig, g.A->nnz_g,
+           g.A->density, (porder == 1 ? "h-coarsen" : "p-coarsen"));
+    if(g.A->use_dense){
+        printf("dense structure = True\n");
+    }
+}
+
+
 void saena_object::destroy_mpi_comms(){
     for(int l = max_level - 1; l >= 0; --l){
         if(grids[l].active && grids[l].A->shrinked) {
@@ -267,17 +279,8 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
             }
 
             if (verbose_setup) {
-
-                if (!rank_new) {
-                    printf("_____________________________\n\n");
-                    printf("level = %d \nnumber of procs = %d \nmatrix size \t= %d \nnonzero \t= %lu"
-                           "\ndensity \t= %.6f \ncoarsen method \t= %s\n",
-                           grids[i + 1].level, grids[i + 1].A->total_active_procs, grids[i + 1].A->Mbig, grids[i + 1].A->nnz_g,
-                           grids[i + 1].A->density, (grids[i].A->p_order == 1 ? "h-coarsen" : "p-coarsen"));
-                    if(grids[i + 1].A->use_dense){
-                        printf("dense structure = True\n");
-                    }
-                }
+                if (!rank_new)
+                    print_lev_info(grids[i + 1], grids[i].A->p_order);
             }
 
             // write matrix to file

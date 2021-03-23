@@ -130,8 +130,8 @@ public:
     // repartition
     // *****************
 
-    bool  switch_repart = false;
-    float repart_thre   = 0.1;
+    bool  switch_repart = true;
+    float repart_thre   = 0.01;
     int   set_repart_thre(float thre);
 
     // *****************
@@ -260,6 +260,7 @@ public:
                           int preSmooth = 3, int postSmooth = 3);
 
     void print_parameters(saena_matrix *A) const;
+    void print_lev_info(const Grid &g, const int porder) const;
 
     int setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, std::vector<int> &m_g2u, int m_bdydof, std::vector<int> &order_dif);
     int coarsen(Grid *grid,std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
