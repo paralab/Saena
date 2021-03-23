@@ -243,7 +243,7 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
 
     auto *requests = new MPI_Request[2];
     auto *statuses = new MPI_Status[2];
-    value_t* v_p = nullptr;
+    float* v_p = nullptr;
 
     for(index_t k = rank; k < rank + nprocs; ++k){
         // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
