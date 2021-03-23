@@ -461,15 +461,15 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
 //        exit(EXIT_FAILURE);
 //    }
 
-    // define the size of v as the local number of rows on each process
-    index_t v_sz = A->M;
+    // define the size of v as the local number of rows on each process, before removing boundary nodes
+    index_t v_sz = A->split_b[rank + 1] - A->split_b[rank];
 
     // if remove_boundary is enabled, then rhs should be read from file as the original matrix size, not after
     // removing the boundary nodes
-    index_t tmp = 0;
-    MPI_Allreduce(&A->M_orig, &tmp, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
-    if(A->Mbig < tmp)
-        v_sz = A->M_orig;
+//    index_t tmp = 0;
+//    MPI_Allreduce(&A->M_orig, &tmp, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+//    if(A->Mbig < tmp)
+//        v_sz = A->M_orig;
 
 //    printf("rank %d: read vector size = %d, A->M_orig = %d, tmp = %d. A->M = %d, A->Mbig = %d\n",
 //            rank, v_sz, A->M_orig, tmp, A->M, A->Mbig);
