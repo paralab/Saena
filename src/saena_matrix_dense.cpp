@@ -178,7 +178,8 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
 
     auto *requests = new MPI_Request[2];
     auto *statuses = new MPI_Status[2];
-    value_t* v_p = nullptr;
+    value_t* v_p     = nullptr;
+    value_t* entry_p = nullptr;
 
     for(index_t k = rank; k < rank + nprocs; ++k){
         // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
@@ -204,10 +205,11 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
 
 #pragma omp parallel for
         for(index_t i = 0; i < M; ++i) {
+            entry_p = &entry[i * Nbig];
             for (index_t j = jst; j < jend; ++j) {
 //                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
-//                w[i] += entry[i][j] * v_send[j - split[owner]];
-                w[i] += entry[i * Nbig + j] * v_p[j];
+//                w[i] += entry[i * Nbig + j] * v_send[j - split[owner]];
+                w[i] += entry_p[j] * v_p[j];
             }
         }
 
@@ -247,7 +249,8 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
 
     auto *requests = new MPI_Request[2];
     auto *statuses = new MPI_Status[2];
-    float* v_p = nullptr;
+    float* v_p       = nullptr;
+    value_t* entry_p = nullptr;
 
     for(index_t k = rank; k < rank + nprocs; ++k){
         // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
@@ -273,10 +276,11 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
 
 #pragma omp parallel for
         for(index_t i = 0; i < M; ++i) {
+            entry_p = &entry[i * Nbig];
             for (index_t j = jst; j < jend; ++j) {
 //                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send_f[j - split[owner]]);
-//                w[i] += entry[i][j] * v_send_f[j - split[owner]];
-                w[i] += entry[i * Nbig + j] * v_p[j];
+//                w[i] += entry[i * Nbig + j] * v_send_f[j - split[owner]];
+                w[i] += entry_p[j] * v_p[j];
             }
         }
 
