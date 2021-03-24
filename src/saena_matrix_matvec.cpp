@@ -36,22 +36,33 @@ void saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& 
         MPI_Test(&requests[numRecvProc + i], &MPI_flag, MPI_STATUSES_IGNORE);
     }
 
+    // initialize w to 0
+    fill(w.begin(), w.end(), 0);
+
     // local loop
     // ----------
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    value_t* v_p = &v[0] - split[rank];
 #pragma omp parallel
     {
-        nnz_t iter = iter_local_array[omp_get_thread_num()];
+        value_t  tmp            = 0;
+        value_t* v_p            = &v[0] - split[rank];
+        index_t* col_local_p    = nullptr;
+        value_t* values_local_p = nullptr;
+        nnz_t    iter           = iter_local_array[omp_get_thread_num()];
 #pragma omp for
         for (index_t i = 0; i < M; ++i) {
-            w[i] = 0;
-            for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+            col_local_p    = &col_local[iter];
+            values_local_p = &values_local[iter];
+            const index_t jend = nnzPerRow_local[i];
+            tmp = 0;
+            for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
-                w[i] += values_local[iter] * v_p[col_local[iter]];
+                tmp += values_local_p[j] * v_p[col_local_p[j]];
             }
+            w[i] += tmp;
+            iter += jend;
         }
     }
 
@@ -298,17 +309,28 @@ void saena_matrix::matvec_sparse_float(std::vector<value_t>& v, std::vector<valu
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    value_t* v_p = &v[0] - split[rank];
+    // initialize w to 0
+    fill(w.begin(), w.end(), 0);
+
 #pragma omp parallel
     {
-        nnz_t iter = iter_local_array[omp_get_thread_num()];
+        value_t  tmp            = 0;
+        value_t* v_p            = &v[0] - split[rank];
+        index_t* col_local_p    = nullptr;
+        value_t* values_local_p = nullptr;
+        nnz_t    iter           = iter_local_array[omp_get_thread_num()];
 #pragma omp for
         for (index_t i = 0; i < M; ++i) {
-            w[i] = 0;
-            for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
+            col_local_p    = &col_local[iter];
+            values_local_p = &values_local[iter];
+            const index_t jend = nnzPerRow_local[i];
+            tmp = 0;
+            for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], values_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], values_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
-                w[i] += values_local[iter] * v_p[col_local[iter]];
+                tmp += values_local_p[j] * v_p[col_local_p[j]];
             }
+            w[i] += tmp;
+            iter += jend;
         }
     }
 
