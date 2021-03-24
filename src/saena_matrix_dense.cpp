@@ -8,20 +8,20 @@ saena_matrix_dense::saena_matrix_dense() = default;
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
     M    = M1;
     Nbig = Nbig1;
-    entry.resize(M);
-    for(index_t i = 0; i < M; i++){
-        entry[i].resize(Nbig);
-    }
+    entry.resize(M * Nbig);
+//    for(index_t i = 0; i < M; i++){
+//        entry[i].resize(Nbig);
+//    }
 }
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1){
     M    = M1;
     Nbig = Nbig1;
     comm = comm1;
-    entry.resize(M);
-    for(index_t i = 0; i < M; i++){
-        entry[i].resize(Nbig);
-    }
+    entry.resize(M * Nbig);
+//    for(index_t i = 0; i < M; i++){
+//        entry[i].resize(Nbig);
+//    }
 }
 
 // copy constructor
@@ -29,10 +29,10 @@ saena_matrix_dense::saena_matrix_dense(const saena_matrix_dense &B){
     comm = B.comm;
     M    = B.M;
     Nbig = B.Nbig;
-    entry.resize(M);
-    for(index_t i = 0; i < M; i++){
-        entry[i].resize(Nbig);
-    }
+    entry.resize(M * Nbig);
+//    for(index_t i = 0; i < M; i++){
+//        entry[i].resize(Nbig);
+//    }
     split = B.split;
 }
 
@@ -41,6 +41,7 @@ saena_matrix_dense::~saena_matrix_dense() {
 }
 
 saena_matrix_dense& saena_matrix_dense::operator=(const saena_matrix_dense &B){
+#if 0
     if(this != &B) {
         comm = B.comm;
         M = B.M;
@@ -51,9 +52,9 @@ saena_matrix_dense& saena_matrix_dense::operator=(const saena_matrix_dense &B){
         }
         split = B.split;
     }
+#endif
     return *this;
 }
-
 
 int saena_matrix_dense::assemble() {
     int nprocs = 0, rank = 0;
@@ -91,10 +92,10 @@ int saena_matrix_dense::assemble() {
 
 int saena_matrix_dense::erase(){
     if(!entry.empty()){
-        for(index_t i = 0; i < M; ++i){
-            entry[i].clear();
-            entry[i].shrink_to_fit();
-        }
+//        for(index_t i = 0; i < M; ++i){
+//            entry[i].clear();
+//            entry[i].shrink_to_fit();
+//        }
         entry.clear();
         entry.shrink_to_fit();
     }
@@ -126,7 +127,7 @@ int saena_matrix_dense::print(int ran){
             for(index_t i = 0; i < M; i++){
                 printf("\n");
                 for(index_t j = 0; j < Nbig; j++)
-                    printf("A[%u][%u] = %f \n", i+split[rank], j, entry[i][j]);
+                    printf("A[%u][%u] = %f \n", i+split[rank], j, entry[i * Nbig + j]);
             }
         }
     } else{
@@ -137,7 +138,7 @@ int saena_matrix_dense::print(int ran){
                 for(index_t i = 0; i < M; i++){
                     printf("\n");
                     for(index_t j = 0; j < Nbig; j++)
-                        printf("A[%u][%u] = %f \n", i+split[rank], j, entry[i][j]);
+                        printf("A[%u][%u] = %f \n", i+split[rank], j, entry[i * Nbig + j]);
                 }
             }
             MPI_Barrier(comm);
@@ -206,7 +207,7 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
             for (index_t j = jst; j < jend; ++j) {
 //                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
 //                w[i] += entry[i][j] * v_send[j - split[owner]];
-                w[i] += entry[i][j] * v_p[j];
+                w[i] += entry[i * Nbig + j] * v_p[j];
             }
         }
 
@@ -275,7 +276,7 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
             for (index_t j = jst; j < jend; ++j) {
 //                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send_f[j - split[owner]]);
 //                w[i] += entry[i][j] * v_send_f[j - split[owner]];
-                w[i] += entry[i][j] * v_p[j];
+                w[i] += entry[i * Nbig + j] * v_p[j];
             }
         }
 
@@ -350,7 +351,7 @@ int saena_matrix_dense::matvec_test(std::vector<value_t>& v, std::vector<value_t
 #pragma omp parallel for
         for(index_t i = 0; i < M; i++) {
             for (index_t j = split[owner]; j < split[owner + 1]; j++) {
-                w[i] += entry[i][j] * v_send[j - split[owner]];
+                w[i] += entry[i * Nbig + j] * v_send[j - split[owner]];
 //                if(rank==2) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_recv[j - split[owner]]);
             }
         }
@@ -724,17 +725,17 @@ int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
 //    print_vector(split, -1, "split", comm);
 
     if(entry.empty()){
-        entry.resize(M);
-        for(index_t i = 0; i < M; i++){
-            entry[i].assign(Nbig, 0);
-        }
+        entry.assign(M * Nbig, 0);
+//        for(index_t i = 0; i < M; i++){
+//            entry[i].assign(Nbig, 0);
+//        }
     }else{
-        assert(entry.size() == M);
+        assert(entry.size() == M * Nbig);
     }
 
 #pragma omp parallel for
     for(nnz_t i = 0; i < A->nnz_l; i++){
-        entry[A->entry[i].row - split[rank]][A->entry[i].col] = A->entry[i].val;
+        entry[(A->entry[i].row - split[rank]) * Nbig + A->entry[i].col] = A->entry[i].val;
     }
 
     v_send.resize(M_max);

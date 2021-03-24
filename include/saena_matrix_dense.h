@@ -24,7 +24,8 @@ public:
     index_t  Nbig  = 0;
     index_t  M_max = 0; // biggest M on all the processors
 
-    vector<vector<value_t>> entry;
+//    vector<vector<value_t>> entry;
+    vector<value_t> entry;
     std::vector<index_t>    split; // (row-wise) partition of the matrix between processes
 
     bool use_double = true; // to determine the precision for matvec
@@ -48,7 +49,8 @@ public:
             printf("\ndense matrix get out of range!\n");
             exit(EXIT_FAILURE);
         }else{
-            return entry[row][col];
+//            return entry[row][col];
+            return entry[row * Nbig + col];
         }
     }
 
@@ -57,7 +59,8 @@ public:
             printf("\ndense matrix set out of range: row = %d, M = %d, col = %d, Nbig = %d\n", row, M, col, Nbig);
             exit(EXIT_FAILURE);
         }else{
-            entry[row][col] = val;
+//            entry[row][col] = val;
+            entry[row * Nbig + col] = val;
         }
     }
 
