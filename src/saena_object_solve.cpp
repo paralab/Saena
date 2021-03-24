@@ -2653,10 +2653,10 @@ void saena_object::ApplyPlaneRotation(double &dx, double &dy, const double &cs, 
 }
 
 
-int saena_object::GMRES(std::vector<double> &u){
+int saena_object::GMRES(std::vector<double> &u) {
     // GMRES proconditioned with AMG
 //    Preconditioner &M, Matrix &H;
-
+#if 0
     saena_matrix *A = grids[0].A;
     vector<value_t> &rhs = grids[0].rhs;
 
@@ -2912,7 +2912,7 @@ int saena_object::GMRES(std::vector<double> &u){
         printf("relative residual    = %e \n", resid);
         print_sep();
     }
-
+#endif
 //    max_iter = j;
 //    tol = resid;
     return 0;
@@ -2925,7 +2925,7 @@ int saena_object::GMRES(std::vector<double> &u){
 int saena_object::pGMRES(std::vector<double> &u){
     // GMRES proconditioned with AMG
 //    Preconditioner &M, Matrix &H;
-
+#if 0
     saena_matrix *A = grids[0].A;
     vector<value_t> &rhs = grids[0].rhs;
 
@@ -3181,7 +3181,7 @@ int saena_object::pGMRES(std::vector<double> &u){
         printf("relative residual    = %e \n", resid);
         print_sep();
     }
-
+#endif
 //    max_iter = j;
 //    tol = resid;
     return 0;
