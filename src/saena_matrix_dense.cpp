@@ -198,9 +198,12 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
         MPI_Isend(&v_send[0], send_size, par::Mpi_datatype<value_t>::value(), left_neighbor, rank, comm, &requests[1]);
         MPI_Test(&requests[1], &MPI_flag, MPI_STATUS_IGNORE);
 
+        const index_t jst  = split[owner];
+        const index_t jend = split[owner + 1];
+
 #pragma omp parallel for
         for(index_t i = 0; i < M; ++i) {
-            for (index_t j = split[owner]; j < split[owner + 1]; ++j) {
+            for (index_t j = jst; j < jend; ++j) {
 //                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
 //                w[i] += entry[i][j] * v_send[j - split[owner]];
                 w[i] += entry[i][j] * v_p[j];
@@ -264,9 +267,12 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
         MPI_Isend(&v_send_f[0], send_size, MPI_FLOAT, left_neighbor, rank, comm, &requests[1]);
         MPI_Test(&requests[1], &MPI_flag, MPI_STATUS_IGNORE);
 
+        const index_t jst  = split[owner];
+        const index_t jend = split[owner + 1];
+
 #pragma omp parallel for
         for(index_t i = 0; i < M; ++i) {
-            for (index_t j = split[owner]; j < split[owner + 1]; ++j) {
+            for (index_t j = jst; j < jend; ++j) {
 //                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send_f[j - split[owner]]);
 //                w[i] += entry[i][j] * v_send_f[j - split[owner]];
                 w[i] += entry[i][j] * v_p[j];
