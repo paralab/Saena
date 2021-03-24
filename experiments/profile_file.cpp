@@ -127,6 +127,12 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
+    int warmup_iter = 0;
+    int solve_iter  = 1;
+    // warm-up
+    for(int i = 0; i < warmup_iter; ++i)
+        solver.solve_pCG(u, &opts);
+
     t1 = omp_get_wtime();
 
     // solve the system using AMG as the solver
@@ -136,7 +142,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_CG(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
-//    for(int i = 0; i < 3; ++i)
+    for(int i = 0; i < solve_iter; ++i)
         solver.solve_pCG(u, &opts);
 
     // solve the system, using pure GMRES.
