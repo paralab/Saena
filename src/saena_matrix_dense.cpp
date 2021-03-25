@@ -206,11 +206,14 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
 #pragma omp parallel for
         for(index_t i = 0; i < M; ++i) {
             entry_p = &entry[i * Nbig];
+            value_t tmp = 0;
+#pragma omp simd reduction(+: tmp)
             for (index_t j = jst; j < jend; ++j) {
 //                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
 //                w[i] += entry[i * Nbig + j] * v_send[j - split[owner]];
-                w[i] += entry_p[j] * v_p[j];
+                tmp += entry_p[j] * v_p[j];
             }
+            w[i] += tmp;
         }
 
         MPI_Waitall(2, requests, statuses);
@@ -277,11 +280,14 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
 #pragma omp parallel for
         for(index_t i = 0; i < M; ++i) {
             entry_p = &entry[i * Nbig];
+            value_t tmp = 0;
+#pragma omp simd reduction(+: tmp)
             for (index_t j = jst; j < jend; ++j) {
-//                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send_f[j - split[owner]]);
-//                w[i] += entry[i * Nbig + j] * v_send_f[j - split[owner]];
-                w[i] += entry_p[j] * v_p[j];
+//                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
+//                w[i] += entry[i * Nbig + j] * v_send[j - split[owner]];
+                tmp += entry_p[j] * v_p[j];
             }
+            w[i] += tmp;
         }
 
         MPI_Waitall(2, requests, statuses);
