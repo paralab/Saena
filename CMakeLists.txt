@@ -329,8 +329,8 @@ set(SAENA_SOURCE_FILES ${SAENA_SOURCE_FILES}
 
 IF(CMAKE_BUILD_TYPE STREQUAL Debug)
     add_definitions(-D__DEBUG1__)
-    set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -g")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -g -Og")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Og")
     # sanitize flags for memory leak checks
 #    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer") #for gcc and clang
 #    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer") #for gcc and clang
@@ -339,9 +339,10 @@ ENDIF()
 
 # Enable Intel Optimization flags
 IF(CMAKE_BUILD_TYPE STREQUAL Release)
-#    set(SAENA_C_FLAGS "-Ofast -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
-    set(SAENA_C_FLAGS   "-Ofast -xCORE-AVX512 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
-#    set(SAENA_C_FLAGS   "-Ofast -g")
+#    set(SAENA_C_FLAGS   "-Ofast -axCORE-AVX512,CORE-AVX2,AVX -xSSE4.2 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
+#    set(SAENA_C_FLAGS   "-Ofast -xCORE-AVX512 -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
+    set(SAENA_C_FLAGS   "-Ofast -march=cascadelake -qopenmp-simd -g -parallel-source-info=2 -shared-intel")
+#    set(SAENA_C_FLAGS   "-Ofast -g -Og")
     set(SAENA_CXX_FLAGS "${SAENA_C_FLAGS}")
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${SAENA_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAENA_CXX_FLAGS}")
