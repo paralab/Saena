@@ -39,6 +39,9 @@ typedef unsigned char uchar;
 
 #define SAENA_PI 3.1415926535897932384626433832795029
 
+// alignment size: use 64 for AVX512
+#define ALIGN_SZ 64
+
 //the following are UBUNTU/LINUX, and MacOS ONLY terminal color codes.
 #define COLORRESET  "\033[0m"
 #define BLACK       "\033[30m"          /* Black */

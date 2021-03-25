@@ -6,34 +6,28 @@
 saena_matrix_dense::saena_matrix_dense() = default;
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
-    M    = M1;
-    Nbig = Nbig1;
-    entry.resize(M * Nbig);
-//    for(index_t i = 0; i < M; i++){
-//        entry[i].resize(Nbig);
-//    }
+    M     = M1;
+    Nbig  = Nbig1;
+    entry = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M * Nbig * sizeof(value_t)));
+    fill(&entry[0], &entry[M * Nbig], 0);
 }
 
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1){
-    M    = M1;
-    Nbig = Nbig1;
-    comm = comm1;
-    entry.resize(M * Nbig);
-//    for(index_t i = 0; i < M; i++){
-//        entry[i].resize(Nbig);
-//    }
+    M     = M1;
+    Nbig  = Nbig1;
+    comm  = comm1;
+    entry = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M * Nbig * sizeof(value_t)));
+    fill(&entry[0], &entry[M * Nbig], 0);
 }
 
 // copy constructor
 saena_matrix_dense::saena_matrix_dense(const saena_matrix_dense &B){
-    comm = B.comm;
-    M    = B.M;
-    Nbig = B.Nbig;
-    entry.resize(M * Nbig);
-//    for(index_t i = 0; i < M; i++){
-//        entry[i].resize(Nbig);
-//    }
+    comm  = B.comm;
+    M     = B.M;
+    Nbig  = B.Nbig;
     split = B.split;
+    entry = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M * Nbig * sizeof(value_t)));
+    fill(&entry[0], &entry[M * Nbig], 0);
 }
 
 saena_matrix_dense::~saena_matrix_dense() {
@@ -91,13 +85,9 @@ int saena_matrix_dense::assemble() {
 
 
 int saena_matrix_dense::erase(){
-    if(!entry.empty()){
-//        for(index_t i = 0; i < M; ++i){
-//            entry[i].clear();
-//            entry[i].shrink_to_fit();
-//        }
-        entry.clear();
-        entry.shrink_to_fit();
+    if(entry != nullptr){
+        free(entry);
+        entry = nullptr;
     }
     split.clear();
     Nbig = 0;
@@ -181,6 +171,8 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
     value_t* v_p     = nullptr;
     value_t* entry_p = nullptr;
 
+//    __assume_aligned(entry, ALIGN_SZ); // Intel
+
     for(index_t k = rank; k < rank + nprocs; ++k){
         // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
         // Send v to the left_neighbor processor, receive v from the right_neighbor processor.
@@ -207,9 +199,9 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
         for(index_t i = 0; i < M; ++i) {
             entry_p = &entry[i * Nbig];
             value_t tmp = 0;
-#pragma omp simd reduction(+: tmp)
+#pragma omp simd reduction(+: tmp) aligned(entry_p: ALIGN_SZ)
             for (index_t j = jst; j < jend; ++j) {
-//                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
+//                if(rank==0) printf("A[%d][%d] = %e \t%e \n", i, j, entry[i * Nbig + j], v_send[j - split[owner]]);
 //                w[i] += entry[i * Nbig + j] * v_send[j - split[owner]];
                 tmp += entry_p[j] * v_p[j];
             }
@@ -734,13 +726,9 @@ int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
 //            rank, M, Nbig, A->entry.size(), A->nnz_l);
 //    print_vector(split, -1, "split", comm);
 
-    if(entry.empty()){
-        entry.assign(M * Nbig, 0);
-//        for(index_t i = 0; i < M; i++){
-//            entry[i].assign(Nbig, 0);
-//        }
-    }else{
-        assert(entry.size() == M * Nbig);
+    if(entry == nullptr){
+        entry = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M * Nbig * sizeof(value_t)));
+        fill(&entry[0], &entry[M * Nbig], 0);
     }
 
 #pragma omp parallel for

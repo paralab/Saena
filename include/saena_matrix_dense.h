@@ -25,8 +25,9 @@ public:
     index_t  M_max = 0; // biggest M on all the processors
 
 //    vector<vector<value_t>> entry;
-    vector<value_t> entry;
-    std::vector<index_t>    split; // (row-wise) partition of the matrix between processes
+//    vector<value_t> entry;
+    value_t *entry = nullptr;
+    std::vector<index_t> split; // (row-wise) partition of the matrix between processes
 
     bool use_double = true; // to determine the precision for matvec
     int MPI_flag = 0;
