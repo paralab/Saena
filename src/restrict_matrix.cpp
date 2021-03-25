@@ -665,11 +665,9 @@ void restrict_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t
 //    double t1rem = omp_get_wtime();
 
     nnz_t iter = 0;
-    int recv_proc = 0, recv_proc_idx = 0, np = 0;;
-    while(np < numRecvProc){
+    int recv_proc = 0, recv_proc_idx = 0;
+    for(int np = 0; np < numRecvProc; ++np){
         MPI_Waitany(numRecvProc, &mv_req[0], &recv_proc_idx, MPI_STATUS_IGNORE);
-        ++np;
-
         recv_proc = recvProcRank[recv_proc_idx];
 
 //        if(rank==1) printf("recv_proc_idx = %d, recv_proc = %d, np = %d, numRecvProc = %d, recvCount[recv_proc] = %d\n",
@@ -774,11 +772,9 @@ void restrict_matrix::matvec_sparse_float(std::vector<value_t>& v, std::vector<v
 //    double t1rem = omp_get_wtime();
 
     nnz_t iter = 0;
-    int recv_proc = 0, recv_proc_idx = 0, np = 0;;
-    while(np < numRecvProc){
+    int recv_proc = 0, recv_proc_idx = 0;
+    for(int np = 0; np < numRecvProc; ++np){
         MPI_Waitany(numRecvProc, &mv_req[0], &recv_proc_idx, MPI_STATUS_IGNORE);
-        ++np;
-
         recv_proc = recvProcRank[recv_proc_idx];
 
 //        if(rank==1) printf("recv_proc_idx = %d, recv_proc = %d, np = %d, numRecvProc = %d, recvCount[recv_proc] = %d\n",
