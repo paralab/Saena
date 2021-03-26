@@ -559,6 +559,31 @@ int saena_object::find_eig(saena_matrix& A) const{
 }
 
 
+void saena_object::print_vcycle_time(const int i, const int k, MPI_Comm comm){
+    int nprocs = 0, rank = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    // superlu happens only on 1 proc. to make the average timing correct, do the following.
+    double superlu_time_l = superlu_time;
+    MPI_Allreduce(&superlu_time_l, &superlu_time, 1, MPI_DOUBLE, MPI_MAX, comm);
+
+    if(!rank){
+        if(k == 0) printf("\naverage time:\n");
+        else if(k == 1) printf("\nmin time:\n");
+        else printf("\nmax time:\n");
+    }
+    if(!rank) printf("Rtransfer\nPtransfer\nsmooth\nsuperlu\nvcycle_resid\nvcycle_repart\nvcycle_other\n");
+    print_time(Rtransfer_time / (i+1),     "Rtransfer",    comm, true, false, k);
+    print_time(Ptransfer_time / (i+1),     "Ptransfer",    comm, true, false, k);
+    print_time(vcycle_smooth_time / (i+1), "smooth",       comm, true, false, k);
+    print_time(superlu_time / (i+1),       "superlu",      comm, true, false, k);
+    print_time(vcycle_resid / (i+1),       "vcycle_resid", comm, true, false, k);
+    print_time(vcycle_repart / (i+1),      "vcycle_repart",comm, true, false, k);
+    print_time(vcycle_other / (i+1),       "vcycle_other", comm, true, false, k);
+}
+
+
 void saena_object::profile_matvecs(){
     const int iter = 5;
     double t = 0, t1 = 0, t2 = 0;

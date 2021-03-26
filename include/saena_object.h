@@ -428,6 +428,8 @@ public:
     double vcycle_resid       = 0.0;
     double vcycle_repart      = 0.0;
 
+    void print_vcycle_time(int i, int k, MPI_Comm comm);
+
     void profile_matvecs();
     void profile_matvecs_breakdown();
 

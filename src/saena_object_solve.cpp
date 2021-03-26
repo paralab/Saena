@@ -2367,28 +2367,12 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 #endif
 
     for(int k = 0; k < 3; ++k){
-        // i = 0: average time
-        // i = 1: min time
-        // i = 2: max time
+        // k = 0: average time
+        // k = 1: min time
+        // k = 2: max time
 
 #ifdef PROFILE_VCYCLE
-        // superlu happens only on 1 proc. to make the average timing correct, do the following.
-        double superlu_time_l = superlu_time;
-        MPI_Allreduce(&superlu_time_l, &superlu_time, 1, MPI_DOUBLE, MPI_MAX, comm);
-
-        if(!rank){
-            if(k == 0) printf("\naverage time:\n");
-            else if(k == 1) printf("\nmin time:\n");
-            else printf("\nmax time:\n");
-        }
-        if(!rank) printf("Rtransfer\nPtransfer\nsmooth\nsuperlu\nvcycle_resid\nvcycle_repart\nvcycle_other\n");
-        print_time(Rtransfer_time / (i+1),     "Rtransfer",    comm, true, false, k);
-        print_time(Ptransfer_time / (i+1),     "Ptransfer",    comm, true, false, k);
-        print_time(vcycle_smooth_time / (i+1), "smooth",       comm, true, false, k);
-        print_time(superlu_time / (i+1),       "superlu",      comm, true, false, k);
-        print_time(vcycle_resid / (i+1),       "vcycle_resid", comm, true, false, k);
-        print_time(vcycle_repart / (i+1),      "vcycle_repart",comm, true, false, k);
-        print_time(vcycle_other / (i+1),       "vcycle_other", comm, true, false, k);
+        print_vcycle_time(i, k, comm);
 #endif
 
 #ifdef PROFILE_PCG
