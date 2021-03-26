@@ -343,7 +343,7 @@ public:
     int solve(std::vector<value_t>& u);
     int solve_smoother(std::vector<value_t>& u);
     int solve_CG(std::vector<value_t>& u);
-	int solve_petsc(std::vector<value_t>& u);
+	int solve_petsc(std::vector<value_t>& u, string petsc_solver, double tol);
     int solve_pCG(std::vector<value_t>& u);
     int setup_vcycle_memory();
     void vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);

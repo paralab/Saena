@@ -508,6 +508,11 @@ void saena::options::set_from_file(const string &name){
     assert(dense_sz_thre > 0 && dense_sz_thre <= 100000);
 //    cout << "dense_sz_thre = " << dense_sz_thre << endl;
 
+    attr = attr.next_attribute();
+    petsc_solver = attr.value();
+    assert(petsc_solver.empty() || petsc_solver == "gamg" || petsc_solver == "ML" || petsc_solver == "boomerAMG" ||
+           petsc_solver == "dcg");
+
 //    for (pugi::xml_attribute attr2 = opts.first_attribute(); attr2; attr2 = attr2.next_attribute())
 //        std::cout << attr2.name() << " = " << attr2.value() << std::endl;
 
@@ -616,6 +621,10 @@ float saena::options::get_dense_thre() const{
 
 int saena::options::get_dense_sz_thre() const{
     return dense_sz_thre;
+}
+
+string saena::options::get_petsc_solver() const{
+    return petsc_solver;
 }
 
 // ******************************* amg *******************************
@@ -740,8 +749,8 @@ int saena::amg::solve_CG(std::vector<value_t>& u, saena::options* opts){
     return 0;
 }
 
-int saena::amg::solve_petsc(std::vector<value_t>& u){
-    m_pImpl->solve_petsc(u);
+int saena::amg::solve_petsc(std::vector<value_t>& u, saena::options* opts){
+    m_pImpl->solve_petsc(u, opts->get_petsc_solver(), opts->get_tol());
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
     return 0;

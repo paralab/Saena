@@ -17,5 +17,6 @@
 	filter_rate="2"
 	switch_to_dense="1"
 	dense_thre="0.1"
-	dense_sz_thre="5000"/>
+	dense_sz_thre="5000"
+	petsc=""/>
 </SAENA>

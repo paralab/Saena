@@ -127,6 +127,15 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
+    if(!opts.get_petsc_solver().empty()){
+        solver.solve_petsc(u, &opts);
+        A.destroy();
+        if(free_amg)
+            solver.destroy();
+        MPI_Finalize();
+        return 0;
+    }
+
     int warmup_iter = 2;
     int solve_iter  = 3;
     // warm-up

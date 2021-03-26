@@ -140,7 +140,7 @@ int main(int argc, char* argv[]){
     // solve the system, using pure CG.
 //    solver.solve_CG(u, &opts);
 	if (if_petsc)
-	 	solver.solve_petsc(u);
+	 	solver.solve_petsc(u, &opts);
 	else
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
 //    for(int i = 0; i < 3; ++i)

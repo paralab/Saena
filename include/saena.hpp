@@ -140,6 +140,7 @@ namespace saena {
         bool   switch_to_dense;// = false;
         float  dense_thre; //      = 0.1; // (0 < dense_thre <= 1) decide when to switch to the dense structure.
         int    dense_sz_thre; //   = 5000;
+        string petsc_solver;
 
     public:
         explicit options(int max_iter = 100, double relative_tol = 1e-8, std::string smoother = "chebyshev",
@@ -183,6 +184,7 @@ namespace saena {
         bool        get_switch_dense() const;
         float       get_dense_thre() const;
         int         get_dense_sz_thre() const;
+        string      get_petsc_solver() const;
     };
 
     class amg {
@@ -213,7 +215,7 @@ namespace saena {
         int solve(std::vector<value_t>& u, saena::options* opts);
         int solve_smoother(std::vector<value_t>& u, saena::options* opts);
         int solve_CG(std::vector<value_t>& u, saena::options* opts);
-		int solve_petsc(std::vector<value_t>& u);
+		int solve_petsc(std::vector<value_t>& u, saena::options* opts);
         int solve_pCG(std::vector<value_t>& u, saena::options* opts);
         // if solver is made based of a matrix, let's call it A, and there is an updated version of A, let's call it B,
         // and one wants to solve B*x = rhs instead of A*x = rhs, then solve_pcg_update can be used and B can be passed as the third argument.
