@@ -82,6 +82,16 @@ int saena_matrix_dense::assemble() {
         assert(v_recv);
     }
 
+    if(v_send_f == nullptr){
+        v_send_f = static_cast<float*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(float)));
+        assert(v_send_f);
+    }
+
+    if(v_recv_f == nullptr) {
+        v_recv_f = static_cast<float*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(float)));
+        assert(v_recv_f);
+    }
+
 #ifdef SAENA_USE_ZFP
     if(use_zfp){
         allocate_zfp();
@@ -106,6 +116,14 @@ int saena_matrix_dense::erase(){
     if(v_recv != nullptr){
         free(v_recv);
         v_recv = nullptr;
+    }
+    if(v_send_f != nullptr){
+        free(v_send_f);
+        v_send_f = nullptr;
+    }
+    if(v_recv_f != nullptr){
+        free(v_recv_f);
+        v_recv_f = nullptr;
     }
     split.clear();
     Nbig = 0;
@@ -255,15 +273,17 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
     int owner = 0, next_owner = 0;
     index_t recv_size = 0, send_size = M;
 
-    std::copy(v.begin(), v.end(), v_send_f.begin());
-    std::copy(v.begin(), v.end(), v_recv_f.begin());
+    std::copy(v.begin(), v.end(), &v_send_f[0]);
+    std::copy(v.begin(), v.end(), &v_recv_f[0]);
 
     fill(w.begin(), w.end(), 0);
 
-    auto *requests = new MPI_Request[2];
-    auto *statuses = new MPI_Status[2];
-    float* v_p       = nullptr;
-    value_t* entry_p = nullptr;
+    auto*    requests = new MPI_Request[2];
+    auto*    statuses = new MPI_Status[2];
+    float*   v_p      = nullptr;
+    value_t* entry_p  = nullptr;
+
+//    __assume_aligned(entry, ALIGN_SZ); // Intel
 
     for(index_t k = rank; k < rank + nprocs; ++k){
         // Both local and remote loops are done here. The first iteration is the local loop. The rest are remote.
@@ -276,7 +296,6 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
         owner      = k % nprocs;
         next_owner = (k + 1) % nprocs;
         recv_size  = split[next_owner + 1] - split[next_owner];
-        v_p        = &v_send_f[0] - split[owner];
 
         MPI_Irecv(&v_recv_f[0], recv_size, MPI_FLOAT, right_neighbor, right_neighbor, comm, &requests[0]);
         MPI_Test(&requests[0], &MPI_flag, MPI_STATUS_IGNORE);
@@ -285,16 +304,17 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
         MPI_Test(&requests[1], &MPI_flag, MPI_STATUS_IGNORE);
 
         const index_t jst  = split[owner];
-        const index_t jend = split[owner + 1];
+        const index_t jend = split[owner + 1] - jst;
+        v_p = &v_send_f[jst] - split[owner];
 
 #pragma omp parallel for
         for(index_t i = 0; i < M; ++i) {
-            entry_p = &entry[i * Nbig];
+            entry_p = &entry[i * Nbig + jst];
             value_t tmp = 0;
-#pragma omp simd reduction(+: tmp)
-            for (index_t j = jst; j < jend; ++j) {
-//                if(rank==0) printf("A[%u][%u] = %f \t%f \n", i, j, entry[i][j], v_send[j - split[owner]]);
-//                w[i] += entry[i * Nbig + j] * v_send[j - split[owner]];
+#pragma omp simd reduction(+: tmp) aligned(entry_p, v_p : ALIGN_SZ)
+            for (index_t j = 0; j < jend; ++j) {
+//                if(rank==0) printf("A[%d][%d] = %e \t%e \n", i, j, entry[i * Nbig + j], v_send_f[j - split[owner]]);
+//                w[i] += entry[i * Nbig + j] * v_send_f[j - split[owner]];
                 tmp += entry_p[j] * v_p[j];
             }
             w[i] += tmp;
@@ -764,8 +784,15 @@ int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
         assert(v_recv);
     }
 
-    v_send_f.resize(M_max);
-    v_recv_f.resize(M_max);
+    if(v_send_f == nullptr){
+        v_send_f = static_cast<float*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(float)));
+        assert(v_send_f);
+    }
+
+    if(v_recv_f == nullptr) {
+        v_recv_f = static_cast<float*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(float)));
+        assert(v_recv_f);
+    }
 
     return 0;
 }
