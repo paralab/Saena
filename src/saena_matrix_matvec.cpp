@@ -66,11 +66,13 @@ void saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& 
         }
     }
 
+    index_t* row_remote_p = nullptr;
+    value_t* val_remote_p = nullptr;
     nnz_t iter = 0;
-    int recv_proc = 0, recv_proc_idx = 0;
+    int recv_proc_idx = 0;
     for(int np = 0; np < numRecvProc; ++np){
         MPI_Waitany(numRecvProc, &requests[0], &recv_proc_idx, MPI_STATUS_IGNORE);
-        recv_proc = recvProcRank[recv_proc_idx];
+        const int recv_proc = recvProcRank[recv_proc_idx];
 //        if(rank==1) printf("recv_proc_idx = %d, recv_proc = %d, np = %d, numRecvProc = %d, recvCount[recv_proc] = %d\n",
 //                              recv_proc_idx, recv_proc, np, numRecvProc, recvCount[recv_proc]);
 
@@ -79,11 +81,17 @@ void saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& 
         auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
         for (index_t j = 0; j < recvCount[recv_proc]; ++j) {
 //            if(rank==1) printf("%u\n", nnzPerCol_remote_p[j]);
-            for (index_t i = 0; i < nnzPerCol_remote_p[j]; ++i, ++iter) {
+            row_remote_p = &row_remote[iter];
+            val_remote_p = &values_remote[iter];
+            const index_t iend = nnzPerCol_remote_p[j];
+            const value_t vrem = vecValues_p[j];
+#pragma omp simd
+            for (index_t i = 0; i < iend; ++i) {
 //                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
 //                iter, row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[rdispls[recv_proc] + j]);
-                w[row_remote[iter]] += values_remote[iter] * vecValues_p[j];
+                w[row_remote_p[i]] += val_remote_p[i] * vrem;
             }
+            iter += iend;
         }
     }
 
