@@ -386,6 +386,10 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
 
 
 saena_matrix::~saena_matrix(){
+    if(dense_matrix != nullptr){
+        delete dense_matrix;
+        dense_matrix = nullptr;
+    }
 #ifdef SAENA_USE_ZFP
     if(free_zfp_buff){
         deallocate_zfp();

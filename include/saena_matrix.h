@@ -183,8 +183,8 @@ public:
 
     // dense matrix parameters
     // ***********************************************************
-    // search for "uncomment to enable DENSE" to enable the dense part
-    saena_matrix_dense dense_matrix;  // uncomment to enable DENSE
+
+    saena_matrix_dense* dense_matrix = nullptr;
     bool use_dense = false;   // this will be set to true inside generate_dense_matrix()
 
     int generate_dense_matrix();

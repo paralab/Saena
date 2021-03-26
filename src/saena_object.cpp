@@ -231,7 +231,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 
     if(float_level == 0){
         A->use_double = false; // use single-precision matvec for the input matrix
-        if(A->use_dense) A->dense_matrix.use_double = false;
+        if(A->use_dense) A->dense_matrix->use_double = false;
     }
 
 #ifdef __DEBUG1__
@@ -272,7 +272,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 
         if(i + 1 >= float_level){
             grids[i].Ac.use_double = false; // use single-precision matvec for this matrix
-            if(grids[i].Ac.use_dense) grids[i].Ac.dense_matrix.use_double = false;
+            if(grids[i].Ac.use_dense) grids[i].Ac.dense_matrix->use_double = false;
         }
 
         if(res != 0){

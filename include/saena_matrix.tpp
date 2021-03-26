@@ -4,7 +4,7 @@
 
 inline void saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
     if(use_dense){
-        dense_matrix.matvec(v, w);
+        dense_matrix->matvec(v, w);
     }else{
         if(use_double) matvec_sparse(v, w);
         else matvec_sparse_float(v, w);
