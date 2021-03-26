@@ -127,8 +127,8 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
-    int warmup_iter = 0;
-    int solve_iter  = 1;
+    int warmup_iter = 2;
+    int solve_iter  = 3;
     // warm-up
     for(int i = 0; i < warmup_iter; ++i)
         solver.solve_pCG(u, &opts);
