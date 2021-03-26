@@ -217,7 +217,7 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
         for(index_t i = 0; i < M; ++i) {
             entry_p = &entry[i * Nbig + jst];
             value_t tmp = 0;
-#pragma omp simd reduction(+: tmp) aligned(entry_p : ALIGN_SZ)
+#pragma omp simd reduction(+: tmp) aligned(entry_p, v_p : ALIGN_SZ)
             for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("A[%d][%d] = %e \t%e \n", i, j, entry[i * Nbig + j], v_send[j - split[owner]]);
 //                w[i] += entry[i * Nbig + j] * v_send[j - split[owner]];
