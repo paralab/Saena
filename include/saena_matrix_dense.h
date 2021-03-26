@@ -12,8 +12,10 @@ class saena_matrix;
 class saena_matrix_dense {
 
 private:
-    std::vector<value_t> v_send;
-    std::vector<value_t> v_recv;
+    value_t* v_send = nullptr;
+    value_t* v_recv = nullptr;
+//    std::vector<value_t> v_send;
+//    std::vector<value_t> v_recv;
     std::vector<float> v_send_f; // single precision
     std::vector<float> v_recv_f; // single precision
 
