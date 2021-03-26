@@ -372,20 +372,20 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
 //    print_vector(R->entry, -1, "R->entry", comm);
 
     if (verbose_triple_mat_mult) {
-        MPI_Barrier(comm);
-        if (rank == 0) printf("\nstart of triple_mat_mult: nprocs: %d \n", nprocs);
-        MPI_Barrier(comm);
-        printf("rank %d: A: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu\n",
-                rank, A->Mbig, A->M, A->nnz_g, A->nnz_l);
-        MPI_Barrier(comm);
-        printf("rank %d: P: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u\n",
-                rank, P->Mbig, P->M, P->nnz_g, P->nnz_l, P->Nbig);
-        MPI_Barrier(comm);
-        printf("rank %d: R: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u\n",
-                rank, R->Mbig, R->M, R->nnz_g, R->nnz_l, R->Nbig);
-        MPI_Barrier(comm);
-        print_vector(A->split,    1, "A->split",    comm);
-        print_vector(R->splitNew, 1, "R->splitNew", comm);
+//        MPI_Barrier(comm);
+//        if (rank == 0) printf("\nstart of triple_mat_mult: nprocs: %d \n", nprocs);
+//        MPI_Barrier(comm);
+//        printf("rank %d: A: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu\n",
+//                rank, A->Mbig, A->M, A->nnz_g, A->nnz_l);
+//        MPI_Barrier(comm);
+//        printf("rank %d: P: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u\n",
+//                rank, P->Mbig, P->M, P->nnz_g, P->nnz_l, P->Nbig);
+//        MPI_Barrier(comm);
+//        printf("rank %d: R: Mbig = %u, \tM = %u, \tnnz_g = %lu, \tnnz_l = %lu, \tNbig = %u\n",
+//                rank, R->Mbig, R->M, R->nnz_g, R->nnz_l, R->Nbig);
+//        MPI_Barrier(comm);
+//        print_vector(A->split,    1, "A->split",    comm);
+//        print_vector(R->splitNew, 1, "R->splitNew", comm);
 //        print_vector(A->nnz_list, 1, "A->nnz_list", comm);
 //        print_vector(R->nnz_list, 1, "R->nnz_list", comm);
     }
