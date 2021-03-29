@@ -140,7 +140,7 @@ namespace saena {
         bool   switch_to_dense;// = false;
         float  dense_thre; //      = 0.1; // (0 < dense_thre <= 1) decide when to switch to the dense structure.
         int    dense_sz_thre; //   = 5000;
-        string petsc_solver;
+        string petsc_solver; // "", "gamg", "ml", "boomerAMG", "dcg". option "" means don't use petsc.
 
     public:
         explicit options(int max_iter = 100, double relative_tol = 1e-8, std::string smoother = "chebyshev",

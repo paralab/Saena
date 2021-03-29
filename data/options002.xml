@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!--options for petsc: petsc="", "gamg", "ml", "boomerAMG", "dcg"-->
 <SAENA>
     <OPTIONS
-	solver_max_iter="10"
+	solver_max_iter="50"
 	solver_tol="1e-8"
 	smoother="jacobi"
 	preSmooth="3"
@@ -18,5 +19,5 @@
 	switch_to_dense="0"
 	dense_thre="0.1"
 	dense_sz_thre="5000"
-	petsc="gamg"/>
+	petsc=""/>
 </SAENA>
