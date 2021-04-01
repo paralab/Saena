@@ -502,10 +502,11 @@ void prolong_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>
 //        MPI_Test(&mv_req[i], &flag, &mv_stat[i]);
     }
 
-    for(int i = 0; i < numSendProc; ++i){
+   MPI_Request *req_p = &mv_req[numRecvProc];
+   for(int i = 0; i < numSendProc; ++i){
         MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(),
-                  sendProcRank[i], 1, comm, &mv_req[numRecvProc+i]);
-        MPI_Test(&mv_req[numRecvProc + i], &flag, MPI_STATUS_IGNORE);
+                  sendProcRank[i], 1, comm, &req_p[i]);
+        MPI_Test(&req_p[i], &flag, MPI_STATUS_IGNORE);
     }
 
     // initialize w to 0
@@ -614,15 +615,14 @@ void prolong_matrix::matvec_sparse_float(std::vector<value_t>& v, std::vector<va
 //    double t1comm = omp_get_wtime();
 
     for(int i = 0; i < numRecvProc; ++i){
-        MPI_Irecv(&vecValues_f[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_FLOAT,
-                  recvProcRank[i], 1, comm, &mv_req[i]);
+        MPI_Irecv(&vecValues_f[rdispls[recvProcRank[i]]], recvProcCount[i], MPI_FLOAT, recvProcRank[i], 1, comm, &mv_req[i]);
 //        MPI_Test(&mv_req[i], &flag, &mv_stat[i]);
     }
 
+    MPI_Request *req_p = &mv_req[numRecvProc];
     for(int i = 0; i < numSendProc; ++i){
-        MPI_Isend(&vSend_f[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_FLOAT,
-                  sendProcRank[i], 1, comm, &mv_req[numRecvProc+i]);
-        MPI_Test(&mv_req[numRecvProc + i], &flag, MPI_STATUS_IGNORE);
+        MPI_Isend(&vSend_f[vdispls[sendProcRank[i]]], sendProcCount[i], MPI_FLOAT, sendProcRank[i], 1, comm, &req_p[i]);
+        MPI_Test(&req_p[i], &flag, MPI_STATUS_IGNORE);
     }
 
     // initialize w to 0

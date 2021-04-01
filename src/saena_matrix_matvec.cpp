@@ -31,9 +31,10 @@ void saena_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& 
 //        MPI_Test(&requests[i], &MPI_flag, &statuses[i]);
     }
 
+    MPI_Request *requests_p = &requests[numRecvProc];
     for(int i = 0; i < numSendProc; ++i){
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &MPI_flag, MPI_STATUSES_IGNORE);
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests_p[i]);
+        MPI_Test(&requests_p[i], &MPI_flag, MPI_STATUSES_IGNORE);
     }
 
     // initialize w to 0
@@ -124,10 +125,11 @@ void saena_matrix::matvec_sparse2(std::vector<value_t>& v, std::vector<value_t>&
 //        MPI_Test(&requests[i], &MPI_flag, &statuses[i]);
     }
 
+    MPI_Request *requests_p = &requests[numRecvProc];
     for(int i = 0; i < numSendProc; ++i){
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests_p[i]);
 //        MPI_Test(&requests[numRecvProc + i], &MPI_flag, &statuses[numRecvProc + i]);
-        MPI_Test(&requests[numRecvProc + i], &MPI_flag, MPI_STATUS_IGNORE);
+        MPI_Test(&requests_p[i], &MPI_flag, MPI_STATUS_IGNORE);
     }
 
 //    }
@@ -201,10 +203,11 @@ void saena_matrix::matvec_sparse3(std::vector<value_t>& v, std::vector<value_t>&
         MPI_Test(&requests[i], &MPI_flag, MPI_STATUS_IGNORE);
     }
 
-    for(int i = 0; i < numSendProc; ++i){
-        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests[numRecvProc+i]);
-        MPI_Test(&requests[numRecvProc + i], &MPI_flag, MPI_STATUS_IGNORE);
-    }
+   MPI_Request *requests_p = &requests[numRecvProc];
+   for(int i = 0; i < numSendProc; ++i){
+      MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests_p[i]);
+      MPI_Test(&requests_p[i], &MPI_flag, MPI_STATUS_IGNORE);
+   }
 
 //    }
 
