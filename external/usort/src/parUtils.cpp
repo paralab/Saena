@@ -401,6 +401,7 @@ namespace par {
         MPI_Comm_rank(comm, &rank);
 
 //      std::cout << rank << " : " << __func__ << arr.size() << std::endl;
+        if(!rank) printf("sampleSort - step1\n");
 
 //        assert(!arr.empty());
 
@@ -416,8 +417,6 @@ namespace par {
 
         int myrank = 0;
         MPI_Comm_rank(comm, &myrank);
-
-        if(!rank) printf("sampleSort - step1\n");
 
         DendroIntL nelem = arr.size();
         DendroIntL nelemCopy = nelem;
