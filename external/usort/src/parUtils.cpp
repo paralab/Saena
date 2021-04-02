@@ -417,6 +417,8 @@ namespace par {
         int myrank = 0;
         MPI_Comm_rank(comm, &myrank);
 
+        if(!rank) printf("sampleSort - step1\n");
+
         DendroIntL nelem = arr.size();
         DendroIntL nelemCopy = nelem;
         DendroIntL totSize = 0;
@@ -424,6 +426,7 @@ namespace par {
 
         DendroIntL npesLong = npes;
         const DendroIntL FIVE = 5;
+        if(!rank) printf("sampleSort - step2\n");
 
         if(totSize < (FIVE * npesLong * npesLong)) {
 //            if(!myrank) {
@@ -432,6 +435,7 @@ namespace par {
 //            }
 
             par::partitionW<cooEntry_row>(arr, nullptr, comm);
+            if(!rank) printf("sampleSort - step3\n");
 
 #ifdef __DEBUG_PAR__
             MPI_Barrier(comm);
@@ -440,6 +444,7 @@ namespace par {
         }
         MPI_Barrier(comm);
 #endif
+            if(!rank) printf("sampleSort - step4\n");
 
             SortedElem = arr;
             MPI_Comm new_comm;
@@ -460,10 +465,12 @@ namespace par {
         }
         MPI_Barrier(comm);
 #endif
+            if(!rank) printf("sampleSort - step5\n");
 
             if(!SortedElem.empty()) {
                 par::bitonicSort<cooEntry_row>(SortedElem, new_comm);
             }
+            if(!rank) printf("sampleSort - step6\n");
 
 #ifdef __DEBUG_PAR__
             MPI_Barrier(comm);
@@ -480,14 +487,17 @@ namespace par {
             std::cout<<"Using sample sort to sort nodes. n/p^2 is fine."<<std::endl;
         }
 #endif
+        if(!rank) printf("sampleSort - step7\n");
 
         //Re-part arr so that each proc. has at least p elements.
         par::partitionW<cooEntry_row>(arr, nullptr, comm);
 
         nelem = arr.size();
+        if(!rank) printf("sampleSort - step8\n");
 
 //      std::sort(arr.begin(),arr.end());
         omp_par::merge_sort(arr.begin(),arr.end());
+        if(!rank) printf("sampleSort - step9\n");
 
         int *sendcnts = new int[npes];
         assert(sendcnts);
@@ -530,8 +540,10 @@ namespace par {
             }//end if-else
 
         }//end for j
+        if(!rank) printf("sampleSort - step10\n");
 
         par::Mpi_Alltoall<int>(sendcnts, recvcnts, 1, comm);
+        if(!rank) printf("sampleSort - step11\n");
 
         sdispls[0] = 0; rdispls[0] = 0;
 //      for (int j = 1; j < npes; j++){
@@ -543,6 +555,7 @@ namespace par {
 
         DendroIntL nsorted = rdispls[npes-1] + recvcnts[npes-1];
         SortedElem.resize(nsorted);
+        if(!rank) printf("sampleSort - step12\n");
 
         cooEntry_row* arrPtr = NULL;
         cooEntry_row* SortedElemPtr = NULL;
@@ -556,6 +569,7 @@ namespace par {
                                                SortedElemPtr, recvcnts, rdispls, comm);
 
         arr.clear();
+        if(!rank) printf("sampleSort - step13\n");
 
         delete [] sendcnts;
         sendcnts = nullptr;
@@ -571,6 +585,7 @@ namespace par {
 
 //      sort(SortedElem.begin(), SortedElem.end());
         omp_par::merge_sort(&SortedElem[0], &SortedElem[nsorted]);
+        if(!rank) printf("sampleSort - step14\n");
 
         return 0;
     }//end function
