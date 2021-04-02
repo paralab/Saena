@@ -48,7 +48,7 @@ int main(int argc, char* argv[]){
     if(!rank) printf("assemble done\n");
 
     double t2 = omp_get_wtime();
-    print_time(t1, t2, "Matrix Assemble:", comm);
+//    print_time(t1, t2, "Matrix Assemble:", comm);
 
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
@@ -120,11 +120,11 @@ int main(int argc, char* argv[]){
 //    int max_level(std::stoi(argv[3]));
 //    solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
-    solver.set_matrix(&A, &opts); free_amg = true;
-    solver.set_rhs(rhs);
+//    solver.set_matrix(&A, &opts); free_amg = true;
+//    solver.set_rhs(rhs);
 
     t2 = omp_get_wtime();
-    print_time(t1, t2, "Setup:", comm);
+//    print_time(t1, t2, "Setup:", comm);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
