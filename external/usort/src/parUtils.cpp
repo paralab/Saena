@@ -433,6 +433,7 @@ namespace par {
 //                <<totSize<<" npes: "<<npes <<std::endl;
 //            }
 
+            if(!rank) printf("sampleSort - step2-2 partitionW\n");
             par::partitionW<cooEntry_row>(arr, nullptr, comm);
             if(!rank) printf("sampleSort - step3\n");
 
