@@ -823,7 +823,9 @@ int saena_matrix::repart(){
         initial_nnz_l = nnz_l;
         // H_l is the histogram of (local) nnz per bucket
         for (nnz_t i = 0; i < nnz_l; i++) {
-            least_bucket += lower_bound2(&firstSplit[least_bucket], &firstSplit[last_bucket], entry[i].row);
+            if(entry[i].row > firstSplit[least_bucket]){
+                least_bucket += lower_bound2(&firstSplit[least_bucket], &firstSplit[last_bucket], entry[i].row);
+            }
             H_l[least_bucket]++;
         }
 
@@ -910,8 +912,10 @@ int saena_matrix::repart(){
 
         std::vector<int> send_size_array(nprocs, 0);
         for (nnz_t i = 0; i < nnz_l; ++i){
-            least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry[i].row);
-            send_size_array[least_proc]++;
+            if(entry[i].row > split[least_proc]){
+                least_proc += lower_bound2(&split[least_proc], &split[last_proc], entry[i].row);
+            }
+            ++send_size_array[least_proc];
         }
 
 //        print_vector(send_size_array, 0, "send_size_array", comm);
