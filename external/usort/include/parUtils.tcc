@@ -2742,6 +2742,8 @@ namespace par {
         DendroIntL npesLong = npes;
         const DendroIntL FIVE = 5;
 
+        if(!rank) printf("sampleSort - step1\n");
+
         if(totSize < (FIVE * npesLong * npesLong)) {
 //            if(!myrank) {
 //                std::cout <<" Using bitonic sort since totSize < (5*(npes^2)). totSize: "
@@ -2757,6 +2759,7 @@ namespace par {
         }
         MPI_Barrier(comm);
 #endif
+            if(!rank) printf("sampleSort - step2\n");
 
             SortedElem = arr;
             MPI_Comm new_comm;
@@ -2777,6 +2780,7 @@ namespace par {
         }
         MPI_Barrier(comm);
 #endif
+            if(!rank) printf("sampleSort - step3\n");
 
             if(!SortedElem.empty()) {
                 par::bitonicSort<T>(SortedElem, new_comm);
@@ -2797,6 +2801,7 @@ namespace par {
             std::cout<<"Using sample sort to sort nodes. n/p^2 is fine."<<std::endl;
         }
 #endif
+        if(!rank) printf("sampleSort - step4\n");
 
         //Re-part arr so that each proc. has at least p elements.
         par::partitionW<T>(arr, nullptr, comm);
@@ -2822,6 +2827,7 @@ namespace par {
         for(int k = 0; k < npes; k++){
             sendcnts[k] = 0;
         }
+        if(!rank) printf("sampleSort - step5\n");
 
         //To be parallelized
         int k = 0;
@@ -2847,6 +2853,7 @@ namespace par {
             }//end if-else
 
         }//end for j
+        if(!rank) printf("sampleSort - step6\n");
 
         par::Mpi_Alltoall<int>(sendcnts, recvcnts, 1, comm);
 
@@ -2860,6 +2867,7 @@ namespace par {
 
         DendroIntL nsorted = rdispls[npes-1] + recvcnts[npes-1];
         SortedElem.resize(nsorted);
+        if(!rank) printf("sampleSort - step7\n");
 
         T* arrPtr = NULL;
         T* SortedElemPtr = NULL;
@@ -2873,6 +2881,7 @@ namespace par {
                                     SortedElemPtr, recvcnts, rdispls, comm);
 
         arr.clear();
+        if(!rank) printf("sampleSort - step8\n");
 
         delete [] sendcnts;
         sendcnts = nullptr;
@@ -2888,6 +2897,7 @@ namespace par {
 
 //      sort(SortedElem.begin(), SortedElem.end());
         omp_par::merge_sort(&SortedElem[0], &SortedElem[nsorted]);
+        if(!rank) printf("sampleSort - step9\n");
 
         return 0;
     }//end function
