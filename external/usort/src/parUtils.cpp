@@ -397,10 +397,11 @@ namespace par {
         MPI_Comm_size(comm, &npes);
 
         //--
-        int rank = 0;
-        MPI_Comm_rank(comm, &rank);
 
-//      std::cout << rank << " : " << __func__ << arr.size() << std::endl;
+        int myrank = 0;
+        MPI_Comm_rank(comm, &myrank);
+
+//      std::cout << myrank << " : " << __func__ << arr.size() << std::endl;
 
 //        assert(!arr.empty());
 
@@ -413,9 +414,6 @@ namespace par {
             SortedElem = arr;
             return 0;
         }
-
-        int myrank = 0;
-        MPI_Comm_rank(comm, &myrank);
 
         DendroIntL nelem = arr.size();
         DendroIntL nelemCopy = nelem;
