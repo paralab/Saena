@@ -336,7 +336,7 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
     // because initial_nnz_l of the last process will be used, instead of the initial_nnz_l of the other processes.
 
     offset = rank * nnz_t(floor(1.0 * nnz_g / nprocs)) * (2*sizeof(index_t) + sizeof(value_t));
-    if(!rank) printf("offset = %ld\n", nnz_g);
+    if(!rank) printf("offset = %lld\n", offset);
 
     auto dt = cooEntry_row::mpi_datatype();
     MPI_File_read_at(fh, offset, datap, initial_nnz_l, dt, &status);
@@ -346,6 +346,8 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
 //    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);
     //printf("process %d read %d lines of triples\n", rank, count);
     MPI_File_close(&fh);
+
+    if(!rank) printf("reading file done\n");
 
 //    print_vector(data_unsorted, -1, "data_unsorted", comm);
 //    printf("rank = %d \t\t\t before sort: data_unsorted size = %lu\n", rank, data_unsorted.size());
