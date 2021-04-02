@@ -293,6 +293,7 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
     }
 
     nnz_g = st.st_size / (2*sizeof(index_t) + sizeof(value_t));
+    if(!rank) printf("nnz_g = %ld\n", nnz_g);
 
     if(nnz_g == 0){
         std::ostringstream errmsg;
@@ -306,6 +307,7 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
     if (rank == nprocs - 1) {
         initial_nnz_l = nnz_g - (nprocs - 1) * initial_nnz_l;
     }
+    if(!rank) printf("initial_nnz_l = %ld\n", initial_nnz_l);
 
     if(verbose_saena_matrix){
         MPI_Barrier(comm);
@@ -334,6 +336,7 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
     // because initial_nnz_l of the last process will be used, instead of the initial_nnz_l of the other processes.
 
     offset = rank * nnz_t(floor(1.0 * nnz_g / nprocs)) * (2*sizeof(index_t) + sizeof(value_t));
+    if(!rank) printf("offset = %ld\n", nnz_g);
 
     auto dt = cooEntry_row::mpi_datatype();
     MPI_File_read_at(fh, offset, datap, initial_nnz_l, dt, &status);
@@ -348,9 +351,11 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
 //    printf("rank = %d \t\t\t before sort: data_unsorted size = %lu\n", rank, data_unsorted.size());
 
     remove_duplicates();
+    if(!rank) printf("remove_duplicates done\n");
 
     if(remove_boundary){
         remove_boundary_nodes();
+        if(!rank) printf("remove_boundary_nodes done\n");
 
         index_t Mbig_local = 0;
         if(!data.empty())
@@ -364,6 +369,7 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
     // after removing duplicates, initial_nnz_l and nnz_g will be smaller, so update them.
     initial_nnz_l = data.size();
     MPI_Allreduce(&initial_nnz_l, &nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
+    if(!rank) printf("initial_nnz_l = %ld\n", initial_nnz_l);
 
     // *************************** find Mbig (global number of rows) ****************************
     // Since data[] has row-major order, the last element on the last process is the number of rows.

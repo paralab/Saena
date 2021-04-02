@@ -43,10 +43,12 @@ int main(int argc, char* argv[]){
     saena::matrix A(comm);
     char* file_name(argv[1]);
     A.read_file(file_name);
+    if(!rank) printf("reading file done\n");
     A.assemble(scale);
+    if(!rank) printf("assemble done\n");
 
     double t2 = omp_get_wtime();
-//    print_time(t1, t2, "Matrix Assemble:", comm);
+    print_time(t1, t2, "Matrix Assemble:", comm);
 
     // the print function can be used to print the matrix entries on a specific processor (pass the
     // processor rank to the print function), or on all the processors (pass -1).
@@ -136,8 +138,8 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    int warmup_iter = 2;
-    int solve_iter  = 3;
+    int warmup_iter = 0;
+    int solve_iter  = 0;
     // warm-up
     for(int i = 0; i < warmup_iter; ++i)
         solver.solve_pCG(u, &opts);
@@ -161,7 +163,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-    print_time(t1, t2, "Solve:", comm);
+//    print_time(t1, t2, "Solve:", comm);
 
     // *************************** print or write the solution ****************************
 
@@ -171,7 +173,7 @@ int main(int argc, char* argv[]){
 
     // *************************** profile matvecs ****************************
     // profile matvec times on all multigrid levels
-    solver.profile_matvecs();
+//    solver.profile_matvecs();
 //    solver.profile_matvecs_breakdown();
 
     // *************************** check correctness of the solution 1 ****************************
