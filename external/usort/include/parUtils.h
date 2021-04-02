@@ -20,6 +20,8 @@
 #include "mpi.h"
 #include <vector>
 
+#define __USE_64_BIT_INT__
+
 #ifdef __USE_64_BIT_INT__
 #define DendroIntL long long
 #define DendroIntLSpecifier %lld
