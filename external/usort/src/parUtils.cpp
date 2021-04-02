@@ -491,7 +491,7 @@ namespace par {
         if(!rank) printf("sampleSort - step7\n");
 
         //Re-part arr so that each proc. has at least p elements.
-        par::partitionW<cooEntry_row>(arr, nullptr, comm);
+//        par::partitionW<cooEntry_row>(arr, nullptr, comm);
 
         nelem = arr.size();
         if(!rank) printf("sampleSort - step8\n");
