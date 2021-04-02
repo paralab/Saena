@@ -148,6 +148,7 @@ int saena_matrix::remove_duplicates() {
     MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
 
+    if(!rank) printf("Mbig = %ld\n", Mbig);
 //    printf("rank %d: Mbig_l = %d, Mbig = %d\n", rank, Mbig_l, Mbig);
 
     index_t ofst = Mbig / nprocs;
@@ -159,12 +160,14 @@ int saena_matrix::remove_duplicates() {
     }
     split[nprocs] = Mbig;
 
+    if(!rank) printf("split done\n");
 //    print_vector(split, 0, "split", comm);
 
     std::vector<cooEntry_row> data_sorted_row;
 //    par::sampleSort(data_unsorted, data_sorted_row, comm);
     par::sampleSort(data_unsorted, data_sorted_row, split, comm);
 
+    if(!rank) printf("sampleSort done\n");
 //    print_vector(data_sorted_row, -1, "data_sorted_row", comm);
 
     // clear data_unsorted and free memory.
