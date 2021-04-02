@@ -317,7 +317,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 //            }
         }else{
 #ifdef __DEBUG1__
-            if(verbose_setup_steps){printf("rank %d is not active for grids[%d].Ac.\n", rank, i);}
+//            if(verbose_setup_steps){printf("rank %d is not active for grids[%d].Ac.\n", rank, i);}
 #endif
             break;
         }
