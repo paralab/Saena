@@ -148,7 +148,7 @@ int saena_matrix::remove_duplicates() {
     MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_MAX, comm);
     Mbig++; // since indices start from 0, not 1.
 
-    if(!rank) printf("Mbig = %ld\n", Mbig);
+    if(!rank) printf("Mbig = %d\n", Mbig);
 //    printf("rank %d: Mbig_l = %d, Mbig = %d\n", rank, Mbig_l, Mbig);
 
     index_t ofst = Mbig / nprocs;
