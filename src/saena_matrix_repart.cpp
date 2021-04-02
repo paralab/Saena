@@ -105,7 +105,7 @@ int saena_matrix::repartition_nnz_initial(){
 #endif
 
         // H_l is the histogram of (local) nnz of buckets
-        std::vector<index_t> H_l(n_buckets, 0);
+        std::vector<nnz_t> H_l(n_buckets, 0);
 //        H_l[least_bucket]++; // add the first element to local histogram (H_l) here.
 
         for (nnz_t i = 0; i < initial_nnz_l; i++) {
@@ -121,8 +121,8 @@ int saena_matrix::repartition_nnz_initial(){
 #endif
 
         // H_g is the histogram of (global) nnz per bucket
-        std::vector<index_t> H_g(n_buckets);
-        MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+        std::vector<nnz_t> H_g(n_buckets);
+        MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 
         H_l.clear();
         H_l.shrink_to_fit();
@@ -131,9 +131,9 @@ int saena_matrix::repartition_nnz_initial(){
 //    print_vector(H_g, 0, "H_g", comm);
 #endif
 
-        std::vector<index_t> H_g_scan(n_buckets);
+        std::vector<nnz_t> H_g_scan(n_buckets);
         H_g_scan[0] = H_g[0];
-        for (index_t i = 1; i < n_buckets; i++)
+        for (nnz_t i = 1; i < n_buckets; i++)
             H_g_scan[i] = H_g[i] + H_g_scan[i - 1];
 
         H_g.clear();
@@ -151,7 +151,7 @@ int saena_matrix::repartition_nnz_initial(){
 
         index_t procNum = 0;
         split[0] = 0;
-        for (index_t i = 1; i < n_buckets; ++i) {
+        for (nnz_t i = 1; i < n_buckets; ++i) {
             // allocate at least 1 row to the remaining processors
             if(Mbig - firstSplit[i + 1] < nprocs - (procNum + 1)){
                 for(; i < n_buckets; ++i){
@@ -332,7 +332,7 @@ int saena_matrix::repartition_nnz_update(){
     // the following variables of saena_matrix class will be set in this function:
     // "nnz_l", "M", "split", "entry"
 
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
@@ -778,7 +778,7 @@ int saena_matrix::repart(){
 //    if (rank==0) std::cout << "baseOffset = " << baseOffset << ", offsetRes = " << offsetRes << std::endl;
     float offsetResSum = 0;
     splitOffset[0] = 0;
-    for(index_t i=1; i<n_buckets; i++){
+    for(index_t i = 1; i < n_buckets; ++i){
         splitOffset[i] = baseOffset;
         offsetResSum += offsetRes;
         if (offsetResSum >= 1){
@@ -810,7 +810,7 @@ int saena_matrix::repart(){
 
         index_t least_bucket = 0, last_bucket = 0;
         least_bucket = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], entry[0].row);
-        last_bucket = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], entry.back().row);
+        last_bucket  = lower_bound2(&firstSplit[0], &firstSplit[n_buckets], entry.back().row);
         last_bucket++;
 
 #ifdef __DEBUG1__
@@ -818,7 +818,7 @@ int saena_matrix::repart(){
 #endif
 
         // H_l is the histogram of (local) nnz of buckets
-        std::vector<index_t> H_l(n_buckets, 0);
+        std::vector<nnz_t> H_l(n_buckets, 0);
 
         initial_nnz_l = nnz_l;
         // H_l is the histogram of (local) nnz per bucket
@@ -830,17 +830,17 @@ int saena_matrix::repart(){
 //    print_vector(H_l, 0, "H_l", comm);
 
         // H_g is the histogram of (global) nnz per bucket
-        std::vector<index_t> H_g(n_buckets);
-        MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+        std::vector<nnz_t> H_g(n_buckets);
+        MPI_Allreduce(&H_l[0], &H_g[0], n_buckets, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
 
         H_l.clear();
         H_l.shrink_to_fit();
 
 //    print_vector(H_g, 0, "H_g", comm);
 
-        std::vector<index_t> H_g_scan(n_buckets);
+        std::vector<nnz_t> H_g_scan(n_buckets);
         H_g_scan[0] = H_g[0];
-        for (index_t i = 1; i < n_buckets; i++)
+        for (nnz_t i = 1; i < n_buckets; i++)
             H_g_scan[i] = H_g[i] + H_g_scan[i - 1];
 
         H_g.clear();
@@ -875,7 +875,7 @@ int saena_matrix::repart(){
     } else {
         split_old = split;
         split[0] = 0;
-        for(index_t i=1; i<nprocs; i++){
+        for(index_t i = 1; i < nprocs; ++i){
             split[i] = split[i-1] + splitOffset[i];
         }
         split[nprocs] = Mbig;
