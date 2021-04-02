@@ -418,11 +418,11 @@ namespace par {
         int myrank = 0;
         MPI_Comm_rank(comm, &myrank);
 
-        DendroIntL nelem = arr.size();
-        DendroIntL nelemCopy = nelem;
-        DendroIntL totSize = 0;
-        par::Mpi_Allreduce<DendroIntL>(&nelemCopy, &totSize, 1, MPI_SUM, comm);
-        if(!rank) printf("nelem local = %d, totSize = %d\n", nelem, totSize);
+        long nelem = arr.size();
+        long nelemCopy = nelem;
+        long totSize = 0;
+        par::Mpi_Allreduce<long>(&nelemCopy, &totSize, 1, MPI_SUM, comm);
+        if(!rank) printf("nelem local = %ld, totSize = %ld\n", nelem, totSize);
 
         DendroIntL npesLong = npes;
         const DendroIntL FIVE = 5;
