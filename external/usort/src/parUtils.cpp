@@ -10,7 +10,7 @@
 #include "dtypes.h"
 #include "parUtils.h"
 
-//#include "data_struct.h"
+#define __DEBUG_PAR__
 
 #ifdef __DEBUG__
 #ifndef __DEBUG_PAR__
