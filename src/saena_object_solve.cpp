@@ -1906,8 +1906,8 @@ int saena_object::solve_CG(std::vector<value_t>& u){
         dotProduct(&p[0], &h[0],   sz, &pdoth,   comm);
         alpha = rho_res / pdoth;
 
-#pragma omp parallel for default(none) shared(u, r, p, h, alpha)
-        for(index_t j = 0; j < u.size(); j++){
+#pragma omp parallel for default(none) shared(u, r, p, h, alpha, sz)
+        for(index_t j = 0; j < sz; ++j){
             u[j] -= alpha * p[j];
             r[j] -= alpha * h[j];
         }
@@ -1950,7 +1950,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
         beta /= rho_res;
 
 //#pragma omp parallel for default(none) shared(u, p, rho, beta)
-        for(index_t j = 0; j < u.size(); j++) {
+        for(index_t j = 0; j < sz; ++j) {
             p[j] = rho[j] + beta * p[j];
         }
     } // for i
@@ -2209,8 +2209,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
         alpha = rho_res / pdoth;
 
-#pragma omp parallel for default(none) shared(u, r, p, h, alpha)
-        for(index_t j = 0; j < u.size(); j++){
+#pragma omp parallel for default(none) shared(u, r, p, h, alpha, sz)
+        for(index_t j = 0; j < sz; ++j){
             u[j] -= alpha * p[j];
             r[j] -= alpha * h[j];
         }
@@ -2282,7 +2282,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         beta /= rho_res;
 
 //#pragma omp parallel for default(none) shared(u, p, rho, beta)
-        for(index_t j = 0; j < u.size(); j++) {
+        for(index_t j = 0; j < sz; ++j) {
             p[j] = rho[j] + beta * p[j];
         }
     } // for i
