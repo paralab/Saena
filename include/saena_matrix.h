@@ -331,8 +331,8 @@ public:
     int inverse_diag();
 
     // smoothers
-    void jacobi(int iter, std::vector<value_t>& u, std::vector<value_t>& rhs);
-    void chebyshev(const int &iter, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    void jacobi(int iter, std::vector<value_t>& u, const value_t *rhs);
+    void chebyshev(const int &iter, std::vector<value_t>& u, const value_t *rhs);
 
     // I/O functions
     int print_entry(int ran, const std::string &name = "") const;

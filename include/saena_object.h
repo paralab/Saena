@@ -346,8 +346,8 @@ public:
 	int solve_petsc(std::vector<value_t>& u, string petsc_solver, double tol);
     int solve_pCG(std::vector<value_t>& u);
     inline void setup_vcycle_memory();
-    void vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs);
-    void inline smooth(Grid *grid, std::vector<value_t> &u, std::vector<value_t> &rhs, int iter) const;
+    void vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs);
+    void inline smooth(Grid *grid, std::vector<value_t> &u, value_t *rhs, int iter) const;
 
     // *****************
     // GMRES functions
@@ -365,9 +365,9 @@ public:
     // direct solvers
     // *****************
     int setup_SuperLU();
-    int solve_coarsest_SuperLU(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
+    int solve_coarsest_SuperLU(saena_matrix* A, value_t *u, value_t *rhs);
     int destroy_SuperLU();
-    int solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs) const;
+    int solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) const;
 //    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
 
     // *****************

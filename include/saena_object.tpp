@@ -2,7 +2,7 @@
 
 #include <saena_object.h>
 
-void inline saena_object::smooth(Grid *grid, std::vector<value_t> &u, std::vector<value_t> &rhs, int iter) const{
+void inline saena_object::smooth(Grid *grid, std::vector<value_t> &u, value_t *rhs, int iter) const{
     if(smoother == "jacobi"){
         grid->A->jacobi(iter, u, rhs);
     }else if(smoother == "chebyshev"){

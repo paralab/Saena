@@ -11,7 +11,7 @@
 //std::vector<int> iter_num_lazy;
 
 
-int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs) const{
+int saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) const{
     // Conjugate Gradient
     // u is zero in the beginning. At the end, it is the solution.
 
@@ -29,7 +29,9 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
 #endif
 
     // since u is zero, res = -rhs, and the residual in this function is the negative of what I have in this library.
-    std::vector<value_t> res = rhs;
+//    std::vector<value_t> res = rhs;
+    std::vector<value_t> res(A->M);
+    std::copy(&rhs[0], &rhs[A->M], &res[0]);
 
     double initial_dot = 0.0;
     dotProduct(res, res, &initial_dot, comm);
@@ -787,7 +789,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 }
 #endif
 
-int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &u, std::vector<value_t> &rhs){
+int saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *rhs){
     // For a similar code, using the same matrix for mutiple rhs's, read SuperLU_DIST_5.4.0/EXAMPLE/pddrive1.c
 
     if(!superlu_active){
@@ -810,13 +812,13 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 //    print_vector(rhs, -1, "rhs passed to superlu", comm);
 //    print_vector(u, -1, "u passed to superlu", comm);
 
-    int u_sz = u.size(), u_tot_sz = 0;
-    MPI_Allreduce(&u_sz, &u_tot_sz, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
-    assert(A->Mbig == u_tot_sz);
+//    int u_sz = u.size(), u_tot_sz = 0;
+//    MPI_Allreduce(&u_sz, &u_tot_sz, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+//    assert(A->Mbig == u_tot_sz);
 
-    int rhs_sz = rhs.size(), rhs_tot_sz = 0;
-    MPI_Allreduce(&rhs_sz, &rhs_tot_sz, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
-    assert(A->Mbig == rhs_tot_sz);
+//    int rhs_sz = rhs.size(), rhs_tot_sz = 0;
+//    MPI_Allreduce(&rhs_sz, &rhs_tot_sz, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+//    assert(A->Mbig == rhs_tot_sz);
 #endif
 
     SuperLUStat_t stat;
@@ -869,7 +871,8 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
        ------------------------------------------------------------*/
 
     b = &rhs[0];
-    u = rhs; // copy rhs to u. the solution will be saved in b at the end. then, swap u and rhs.
+//    u = rhs; // copy rhs to u. the solution will be saved in b at the end. then, swap u and rhs.
+    std::copy(&rhs[0], &rhs[m_loc], &u[0]);
 
     /* ------------------------------------------------------------
        SOLVE THE LINEAR SYSTEM
@@ -899,7 +902,8 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 
     // put the solution in u
     // b points to rhs. after calling pdgssvx it will be the solution.
-    u.swap(rhs);
+//    u.swap(rhs);
+    swap(u, rhs);
 
 //    print_vector(u, -1, "u computed in superlu", comm);
 
@@ -954,7 +958,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 }
 
 
-void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs) {
+void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 
     if (!grid->A->active) {
         return;
@@ -976,8 +980,8 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
         MPI_Barrier(comm);
         if (!rank) printf("\n");
         MPI_Barrier(comm);
-        printf("rank = %d: vcycle level = %d, A->M = %u, u.size = %lu, rhs.size = %lu \n",
-               rank, grid->level, grid->A->M, u.size(), rhs.size());
+        printf("rank = %d: vcycle level = %d, A->M = %u, u.size = %lu\n",
+               rank, grid->level, grid->A->M, u.size());
         MPI_Barrier(comm);
     }
 #endif
@@ -1001,9 +1005,9 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
 #endif
 
         if (direct_solver == "CG") {
-            solve_coarsest_CG(grid->A, u, rhs);
+            solve_coarsest_CG(grid->A, &u[0], rhs);
         } else if (direct_solver == "SuperLU") {
-            solve_coarsest_SuperLU(grid->A, u, rhs);
+            solve_coarsest_SuperLU(grid->A, &u[0], rhs);
         } else {
             if (!rank) printf("Error: Unknown direct solver! \n");
             exit(EXIT_FAILURE);
@@ -1253,7 +1257,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value
             vcycle_other += time_other2 - time_other1;
 #endif
 
-            vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
+            vcycle(grid->coarseGrid, uCorrCoarse, &res_coarse[0]);
 
 #ifdef PROFILE_VCYCLE
             MPI_Barrier(comm);
@@ -1611,7 +1615,7 @@ int saena_object::solve(std::vector<value_t>& u){
 
     int i = 0;
     for(; i < solver_max_iter; ++i){
-        vcycle(&grids[0], u, rhs);
+        vcycle(&grids[0], u, &rhs[0]);
         A->residual(&u[0], &rhs[0], &r[0]);
         dotProduct(r, r, &current_dot, comm);
 
@@ -1714,7 +1718,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 
     int i = 0;
     for(i = 0; i < solver_max_iter; ++i){
-        smooth(&grids[0], u, rhs, preSmooth);
+        smooth(&grids[0], u, &rhs[0], preSmooth);
         A->residual(&u[0], &rhs[0], &r[0]);
         dotProduct(r, r, &current_dot, comm);
 
@@ -2116,7 +2120,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
-        vcycle(&grids[0], u, rhs);
+        vcycle(&grids[0], u, &rhs[0]);
         A->residual(&u[0], &rhs[0], &r[0]);
         dotProduct(r, r, &current_dot, comm);
 
@@ -2146,7 +2150,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     }
 
     std::vector<value_t> rho(A->M, 0);
-    vcycle(&grids[0], rho, r);
+    vcycle(&grids[0], rho, &r[0]);
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2247,7 +2251,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 #endif
 
         std::fill(rho.begin(), rho.end(), 0);
-        vcycle(&grids[0], rho, r);
+        vcycle(&grids[0], rho, &r[0]);
 
 #ifdef PROFILE_PCG
         double time_vcycle2 = omp_get_wtime();
