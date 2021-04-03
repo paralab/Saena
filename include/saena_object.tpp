@@ -15,6 +15,17 @@ void inline saena_object::smooth(Grid *grid, std::vector<value_t> &u, std::vecto
 //        }
 }
 
+inline void saena_object::setup_vcycle_memory(){
+    for(int i = 0; i < grids.size() - 1; ++i){
+        if(grids[i].active){
+            grids[i].res.resize(grids[i].A->M);
+            grids[i].uCorr.resize(grids[i].A->M);
+//            grids[i].res_coarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
+//            grids[i].uCorrCoarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
+        }
+    }
+}
+
 template <class T>
 int saena_object::writeVectorToFile(std::vector<T>& v, const std::string &name, MPI_Comm comm /*= MPI_COMM_WORLD*/,
         bool mat_market /*= false*/, index_t OFST /*= 0*/) {

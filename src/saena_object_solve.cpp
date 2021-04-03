@@ -954,19 +954,6 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 }
 
 
-int saena_object::setup_vcycle_memory(){
-    for(int i = 0; i < grids.size() - 1; ++i){
-        if(grids[i].active){
-            grids[i].res.resize(grids[i].A->M);
-            grids[i].uCorr.resize(grids[i].A->M);
-//            grids[i].res_coarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
-//            grids[i].uCorrCoarse.resize(max(grids[i].Ac.M_old, grids[i].Ac.M));
-        }
-    }
-    return 0;
-}
-
-
 void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, std::vector<value_t>& rhs) {
 
     if (!grid->A->active) {
