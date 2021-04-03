@@ -174,7 +174,7 @@ int saena_matrix_dense::print(int ran){
 }
 
 
-void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value_t>& w){
+void saena_matrix_dense::matvec_dense(value_t *v, value_t *w){
 
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
@@ -194,13 +194,13 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
     int owner = 0, next_owner = 0;
     index_t recv_size = 0, send_size = M;
 
-    std::copy(v.begin(), v.end(), &v_send[0]);
-    std::copy(v.begin(), v.end(), &v_recv[0]);
+    std::copy(&v[0], &v[M], &v_send[0]);
+    std::copy(&v[0], &v[M], &v_recv[0]);
 
 //    print_vector(v_send, -1, "v_send", comm);
 //    print_vector(v_send, -1, "v_recv", comm);
 
-    fill(w.begin(), w.end(), 0);
+    fill(&w[0], &w[M], 0);
 
     auto *requests = new MPI_Request[2];
     auto *statuses = new MPI_Status[2];
@@ -253,7 +253,7 @@ void saena_matrix_dense::matvec_dense(std::vector<value_t>& v, std::vector<value
     delete [] statuses;
 }
 
-void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector<value_t>& w){
+void saena_matrix_dense::matvec_dense_float(value_t *v, value_t *w){
 
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
@@ -273,10 +273,10 @@ void saena_matrix_dense::matvec_dense_float(std::vector<value_t>& v, std::vector
     int owner = 0, next_owner = 0;
     index_t recv_size = 0, send_size = M;
 
-    std::copy(v.begin(), v.end(), &v_send_f[0]);
-    std::copy(v.begin(), v.end(), &v_recv_f[0]);
+    std::copy(&v[0], &v[M], &v_send_f[0]);
+    std::copy(&v[0], &v[M], &v_recv_f[0]);
 
-    fill(w.begin(), w.end(), 0);
+    fill(&w[0], &w[M], 0);
 
     auto*    requests = new MPI_Request[2];
     auto*    statuses = new MPI_Status[2];

@@ -2,7 +2,7 @@
 
 #include "saena_matrix.h"
 
-inline void saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
+inline void saena_matrix::matvec(value_t *v, value_t *w){
     if(use_dense){
         dense_matrix->matvec(v, w);
     }else{
@@ -14,7 +14,7 @@ inline void saena_matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& 
 
 // Vector res = A * u - rhs;
 inline void saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
-    matvec(u, res);
+    matvec(&u[0], &res[0]);
 #pragma omp parallel for
     for(index_t i = 0; i < M; ++i){
         res[i] -= rhs[i];
@@ -23,7 +23,7 @@ inline void saena_matrix::residual(std::vector<value_t>& u, std::vector<value_t>
 
 // Vector res = rhs - A * u
 inline void saena_matrix::residual_negative(std::vector<value_t>& u, std::vector<value_t>& rhs, std::vector<value_t>& res){
-    matvec(u, res);
+    matvec(&u[0], &res[0]);
 #pragma omp parallel for
     for(index_t i = 0; i < M; i++){
         res[i] = rhs[i] - res[i];

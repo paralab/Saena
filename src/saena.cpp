@@ -198,11 +198,11 @@ void saena::matrix::matvec(saena::vector& v, saena::vector& w){
     std::vector<value_t> vstd, wstd;
     v.get_vec(vstd);
     v.get_vec(wstd);
-    m_pImpl->matvec(vstd, wstd);
+    m_pImpl->matvec(&vstd[0], &wstd[0]);
 }
 
 void saena::matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
-    m_pImpl->matvec(v, w);
+    m_pImpl->matvec(&v[0], &w[0]);
 }
 
 

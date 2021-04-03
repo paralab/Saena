@@ -1036,7 +1036,7 @@ void saena_matrix::jacobi(int iter, std::vector<value_t>& u, std::vector<value_t
 //    MPI_Comm_rank(comm, &rank);
 
     for(int j = 0; j < iter; j++){
-        matvec(u, temp1);
+        matvec(&u[0], &temp1[0]);
 
         #pragma omp parallel for
         for(index_t i = 0; i < M; i++){

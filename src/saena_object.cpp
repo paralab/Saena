@@ -596,7 +596,7 @@ void saena_object::profile_matvecs(){
             MPI_Barrier(grids[l].A->comm);
             for(int i = 0; i < iter; ++i){
                 t1 = omp_get_wtime();
-                grids[l].A->matvec(v, w);
+                grids[l].A->matvec(&v[0], &w[0]);
                 t2 = omp_get_wtime();
                 t += t2 - t1;
                 swap(v, w);

@@ -54,7 +54,7 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, std::vector<value_t>& u, st
     while (i < max_iter) {
 //        if(rank==0) std::cout << "starting iteration of CG = " << i << std::endl;
         // factor = sq_norm/ (dir' * A * dir)
-        A->matvec(dir, matvecTemp);
+        A->matvec(&dir[0], &matvecTemp[0]);
 
         dotProduct(dir, matvecTemp, &factor, comm);
         factor = dot / factor;
@@ -1892,7 +1892,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 //    previous_dot = init_dot;
 
     for(i = 0; i < solver_max_iter; i++){
-        A->matvec(p, h);
+        A->matvec(&p[0], &h[0]);
         dotProduct(r, rho, &rho_res, comm);
         dotProduct(p, h,   &pdoth,   comm);
         alpha = rho_res / pdoth;
@@ -2179,7 +2179,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         double time_matvec1 = omp_get_wtime();
 #endif
 
-        A->matvec(p, h);
+        A->matvec(&p[0], &h[0]);
 
 #ifdef PROFILE_PCG
         double time_matvec2 = omp_get_wtime();
