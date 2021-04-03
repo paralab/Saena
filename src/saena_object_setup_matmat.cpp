@@ -1777,7 +1777,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
         // 1- row:    type: index_t, size: send_nnz
         // 2- c_scan: type: index_t, size: Bcsc.col_sz + 1
         // 3- val:    type: value_t, size: send_nnz
-        auto mat_send = &mempool6[0];
+        auto *mat_send = &mempool6[0];
 
 #ifdef MATMAT_TIME
         t_temp3 = omp_get_wtime();
