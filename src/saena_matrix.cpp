@@ -1023,7 +1023,7 @@ int saena_matrix::set_zero(){
 }
 
 
-void saena_matrix::jacobi(int iter, std::vector<value_t>& u, const value_t *rhs) {
+void saena_matrix::jacobi(const int &iter, std::vector<value_t>& u, const value_t *rhs) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Au - rhs)
@@ -1035,14 +1035,15 @@ void saena_matrix::jacobi(int iter, std::vector<value_t>& u, const value_t *rhs)
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
 
+    const index_t sz = M;
     for(int j = 0; j < iter; j++){
         matvec(&u[0], &temp1[0]);
 
         #pragma omp parallel for
-        for(index_t i = 0; i < M; i++){
+        for(index_t i = 0; i < sz; ++i){
             temp1[i] -= rhs[i];
             temp1[i] *= inv_diag[i] * jacobi_omega;
-            u[i]    -= temp1[i];
+            u[i]     -= temp1[i];
         }
     }
 }
@@ -1073,8 +1074,9 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, const val
     // first loop
     residual_negative(&u[0], &rhs[0], &res[0]);
 
+    const index_t sz = u.size();
     #pragma omp parallel for
-    for(index_t i = 0; i < u.size(); ++i){
+    for(index_t i = 0; i < sz; ++i){
         d[i] = (res[i] * inv_diag[i]) / theta;
         u[i] += d[i];
 //        if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
@@ -1091,7 +1093,7 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, const val
         residual_negative(&u[0], &rhs[0], &res[0]);
 
         #pragma omp parallel for
-        for(index_t j = 0; j < u.size(); ++j){
+        for(index_t j = 0; j < sz; ++j){
             d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag[j]);
             u[j] += d[j];
 //            if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
