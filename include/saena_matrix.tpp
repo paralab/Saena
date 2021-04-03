@@ -2,7 +2,7 @@
 
 #include "saena_matrix.h"
 
-inline void saena_matrix::matvec(value_t *v, value_t *w){
+inline void saena_matrix::matvec(const value_t *v, value_t *w){
     if(use_dense){
         dense_matrix->matvec(v, w);
     }else{

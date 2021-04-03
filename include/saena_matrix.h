@@ -293,11 +293,11 @@ public:
     int shrink_cpu_minor();
     int shrink_cpu_c(); // for the coarsest level
 
-    inline void matvec(value_t *v, value_t *w);
-    void matvec_sparse(value_t *v, value_t *w);
-    void matvec_sparse2(value_t *v, value_t *w);
-    void matvec_sparse3(value_t *v, value_t *w);
-    void matvec_sparse_float(value_t *v, value_t *w);
+    inline void matvec(const value_t *v, value_t *w);
+    void matvec_sparse(const value_t *v, value_t *w);
+    void matvec_sparse2(const value_t *v, value_t *w);
+    void matvec_sparse3(const value_t *v, value_t *w);
+    void matvec_sparse_float(const value_t *v, value_t *w);
 
     // for profiling
     unsigned long matvec_iter = 0;

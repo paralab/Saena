@@ -6,7 +6,7 @@
 //                              std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus<value_t>())) \
 //                    initializer(omp_priv = omp_orig)
 
-void saena_matrix::matvec_sparse(value_t *v, value_t *w) {
+void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
     // combination of openmp and waitany
 
     int nprocs, rank;
@@ -48,7 +48,7 @@ void saena_matrix::matvec_sparse(value_t *v, value_t *w) {
 #pragma omp parallel
     {
         value_t  tmp            = 0;
-        value_t* v_p            = &v[0] - split[rank];
+        const value_t* v_p      = &v[0] - split[rank];
         index_t* col_local_p    = nullptr;
         value_t* values_local_p = nullptr;
         nnz_t    iter           = iter_local_array[omp_get_thread_num()];
@@ -99,7 +99,7 @@ void saena_matrix::matvec_sparse(value_t *v, value_t *w) {
     MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
 }
 
-void saena_matrix::matvec_sparse2(value_t *v, value_t *w) {
+void saena_matrix::matvec_sparse2(const value_t *v, value_t *w) {
     // with waitany, no openmp
 
     int nprocs, rank;
@@ -139,8 +139,8 @@ void saena_matrix::matvec_sparse2(value_t *v, value_t *w) {
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
-    value_t* v_p  = &v[0] - split[rank];
-    nnz_t    iter = 0;
+    const value_t* v_p = &v[0] - split[rank];
+    nnz_t iter = 0;
     for (index_t i = 0; i < M; ++i) { // rows
         w[i] = 0;
         for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
@@ -176,7 +176,7 @@ void saena_matrix::matvec_sparse2(value_t *v, value_t *w) {
 //    }
 }
 
-void saena_matrix::matvec_sparse3(value_t *v, value_t *w) {
+void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
     // with openmp, no waitany
 
     int nprocs, rank;
@@ -222,7 +222,7 @@ void saena_matrix::matvec_sparse3(value_t *v, value_t *w) {
 #pragma omp parallel
    {
       value_t  tmp            = 0;
-      value_t* v_p            = &v[0] - split[rank];
+      const value_t* v_p     = &v[0] - split[rank];
       index_t* col_local_p    = nullptr;
       value_t* values_local_p = nullptr;
       nnz_t    iter           = iter_local_array[omp_get_thread_num()];
@@ -299,7 +299,7 @@ void saena_matrix::matvec_sparse3(value_t *v, value_t *w) {
 //    }
 }
 
-void saena_matrix::matvec_sparse_float(value_t *v, value_t *w) {
+void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
     // combination of openmp and waitany
 
     int nprocs, rank;
@@ -340,7 +340,7 @@ void saena_matrix::matvec_sparse_float(value_t *v, value_t *w) {
 #pragma omp parallel
     {
         value_t  tmp            = 0;
-        value_t* v_p            = &v[0] - split[rank];
+        const value_t* v_p      = &v[0] - split[rank];
         index_t* col_local_p    = nullptr;
         value_t* values_local_p = nullptr;
         nnz_t    iter           = iter_local_array[omp_get_thread_num()];

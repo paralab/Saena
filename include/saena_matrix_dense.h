@@ -67,13 +67,13 @@ public:
 
     int print(int ran);
 
-    void matvec(value_t *v, value_t *w){
+    void matvec(const value_t *v, value_t *w){
         if(use_double) matvec_dense(v, w);
         else matvec_dense_float(v, w);
     }
 
-    void matvec_dense(value_t *v, value_t *w);
-    void matvec_dense_float(value_t *v, value_t *w);
+    void matvec_dense(const value_t *v, value_t *w);
+    void matvec_dense_float(const value_t *v, value_t *w);
 
     int convert_saena_matrix(saena_matrix *A);
 

@@ -174,7 +174,7 @@ int saena_matrix_dense::print(int ran){
 }
 
 
-void saena_matrix_dense::matvec_dense(value_t *v, value_t *w){
+void saena_matrix_dense::matvec_dense(const value_t *v, value_t *w){
 
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
@@ -253,7 +253,7 @@ void saena_matrix_dense::matvec_dense(value_t *v, value_t *w){
     delete [] statuses;
 }
 
-void saena_matrix_dense::matvec_dense_float(value_t *v, value_t *w){
+void saena_matrix_dense::matvec_dense_float(const value_t *v, value_t *w){
 
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
