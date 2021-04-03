@@ -1071,7 +1071,7 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vect
     std::vector<value_t>& d   = temp2;
 
     // first loop
-    residual_negative(u, rhs, res);
+    residual_negative(&u[0], &rhs[0], &res[0]);
 
     #pragma omp parallel for
     for(index_t i = 0; i < u.size(); ++i){
@@ -1088,7 +1088,7 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, std::vect
         d2     = two_rhokp1 / delta;
         rhok   = rhokp1;
 
-        residual_negative(u, rhs, res);
+        residual_negative(&u[0], &rhs[0], &res[0]);
 
         #pragma omp parallel for
         for(index_t j = 0; j < u.size(); ++j){
