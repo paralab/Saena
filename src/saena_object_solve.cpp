@@ -28,13 +28,15 @@ void saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) 
     }
 #endif
 
+    const index_t sz = A->M;
+
     // since u is zero, res = -rhs, and the residual in this function is the negative of what I have in this library.
 //    std::vector<value_t> res = rhs;
-    std::vector<value_t> res(A->M);
-    std::copy(&rhs[0], &rhs[A->M], &res[0]);
+    std::vector<value_t> res(sz);
+    std::copy(&rhs[0], &rhs[sz], &res[0]);
 
     double initial_dot = 0.0;
-    dotProduct(res, res, &initial_dot, comm);
+    dotProduct(&res[0], &res[0], sz, &initial_dot, comm);
 //    if(rank==0) std::cout << "\nsolveCoarsest: initial norm(res) = " << sqrt(initial_dot) << std::endl;
 
     double thres = initial_dot * CG_coarsest_tol * CG_coarsest_tol;
@@ -44,32 +46,32 @@ void saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) 
     if (dot < CG_coarsest_tol*CG_coarsest_tol)
         max_iter = 0;
 
-    std::vector<value_t> dir(A->M);
+    std::vector<value_t> dir(sz);
     dir = res;
 
 //    double dot2;
-    std::vector<value_t> res2(A->M);
+    std::vector<value_t> res2(sz);
 
     double factor = 0.0, dot_prev = 0.0;
-    std::vector<value_t> matvecTemp(A->M);
+    std::vector<value_t> matvecTemp(sz);
     int i = 1;
     while (i < max_iter) {
 //        if(rank==0) std::cout << "starting iteration of CG = " << i << std::endl;
         // factor = sq_norm/ (dir' * A * dir)
         A->matvec(&dir[0], &matvecTemp[0]);
 
-        dotProduct(dir, matvecTemp, &factor, comm);
+        dotProduct(&dir[0], &matvecTemp[0], sz, &factor, comm);
         factor = dot / factor;
 //        if(rank==1) std::cout << "\nsolveCoarsest: factor = " << factor << std::endl;
 
         #pragma omp parallel for
-        for(index_t j = 0; j < A->M; ++j){
+        for(index_t j = 0; j < sz; ++j){
             u[j]   += factor * dir[j];
             res[j] -= factor * matvecTemp[j];
         }
 
         dot_prev = dot;
-        dotProduct(res, res, &dot, comm);
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
 //        if(rank==0) std::cout << "absolute norm(res) = " << sqrt(dot) << "\t( r_i / r_0 ) = " << sqrt(dot)/initialNorm << "  \t( r_i / r_i-1 ) = " << sqrt(dot)/sqrt(dot_prev) << std::endl;
 //        if(rank==0) std::cout << sqrt(dot)/initialNorm << std::endl;
 
@@ -92,7 +94,7 @@ void saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) 
 
         // update direction
         #pragma omp parallel for
-        for(index_t j = 0; j < A->M; j++)
+        for(index_t j = 0; j < sz; j++)
             dir[j] = res[j] + factor * dir[j];
 
         i++;
@@ -787,7 +789,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 }
 #endif
 
-int saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *rhs){
+void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *rhs){
     // For a similar code, using the same matrix for mutiple rhs's, read SuperLU_DIST_5.4.0/EXAMPLE/pddrive1.c
 
     if(!superlu_active){
@@ -965,6 +967,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    const index_t sz = grid->A->M;
     double t1 = 0, t2 = 0;
     value_t dot = 0.0;
 
@@ -1023,9 +1026,9 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
             }
 
             if (verbose_vcycle_residuals) {
-                std::vector<value_t> res(grid->A->M);
+                std::vector<value_t> res(sz);
                 grid->A->residual(&u[0], &rhs[0], &res[0]);
-                dotProduct(res, res, &dot, comm);
+                dotProduct(&res[0], &res[0], sz, &dot, comm);
                 if (rank == 0)
                     std::cout << "\nlevel = " << grid->level
                               << ", after coarsest level = " << sqrt(dot) << std::endl;
@@ -1075,7 +1078,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 #ifdef __DEBUG1__
     if (verbose_vcycle_residuals) {
         grid->A->residual(&u[0], &rhs[0], &res[0]);
-        dotProduct(res, res, &dot, comm);
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
         if (!rank)
             std::cout << "\nlevel = " << grid->level << ", vcycle start      = " << sqrt(dot) << std::endl;
     }
@@ -1147,7 +1150,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 //    print_vector(res, -1, "res", comm);
 
     if (verbose_vcycle_residuals) {
-        dotProduct(res, res, &dot, comm);
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
         if (rank == 0)
             std::cout << "level = " << grid->level << ", after pre-smooth  = " << sqrt(dot) << std::endl;
     }
@@ -1368,7 +1371,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 
     if(verbose_vcycle_residuals){
         grid->A->residual(&u[0], &rhs[0], &res[0]);
-        dotProduct(res, res, &dot, comm);
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
         if(rank==0) std::cout << "level = " << grid->level << ", after correction  = " << sqrt(dot) << std::endl;
     }
 #endif
@@ -1414,7 +1417,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 //        print_vector(u, 0, "u post-smooth", grid->A->comm);
 
         grid->A->residual(&u[0], &rhs[0], &res[0]);
-        dotProduct(res, res, &dot, comm);
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
         if(rank==0) std::cout << "level = " << grid->level << ", after post-smooth = " << sqrt(dot) << std::endl;
     }
 #endif
@@ -1561,6 +1564,8 @@ int saena_object::solve(std::vector<value_t>& u){
     }
 #endif
 
+    const index_t sz = A->M;
+
     // ************** check u size **************
 /*
     index_t u_size_local = u.size(), u_size_total;
@@ -1579,7 +1584,7 @@ int saena_object::solve(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-    u.assign(A->M, 0);
+    u.assign(sz, 0);
 
     // ************** allocate memory for vcycle **************
 
@@ -1593,10 +1598,10 @@ int saena_object::solve(std::vector<value_t>& u){
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 #endif
 
-    std::vector<value_t> r(A->M);
+    std::vector<value_t> r(sz);
     A->residual(&u[0], &rhs[0], &r[0]);
     double init_dot = 0.0, current_dot = 0.0;
-    dotProduct(r, r, &init_dot, comm);
+    dotProduct(&r[0], &r[0], sz, &init_dot, comm);
     if(!rank){
         print_sep();
         if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
@@ -1613,7 +1618,7 @@ int saena_object::solve(std::vector<value_t>& u){
     for(; i < solver_max_iter; ++i){
         vcycle(&grids[0], u, &rhs[0]);
         A->residual(&u[0], &rhs[0], &r[0]);
-        dotProduct(r, r, &current_dot, comm);
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 #ifdef __DEBUG1__
 //        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
@@ -1674,6 +1679,8 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    const index_t sz = A->M;
+
     // ************** check u size **************
 /*
     index_t u_size_local = u.size(), u_size_total;
@@ -1692,7 +1699,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-    u.assign(A->M, 0);
+    u.assign(sz, 0);
 
     // ************** solve **************
 
@@ -1700,10 +1707,10 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 //    current_dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
-    std::vector<value_t> r(A->M);
+    std::vector<value_t> r(sz);
     A->residual(&u[0], &rhs[0], &r[0]);
     double init_dot = 0.0, current_dot = 0.0;
-    dotProduct(r, r, &init_dot, comm);
+    dotProduct(&r[0], &r[0], sz, &init_dot, comm);
     if(!rank){
         print_sep();
         if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
@@ -1716,7 +1723,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
     for(i = 0; i < solver_max_iter; ++i){
         smooth(&grids[0], u, &rhs[0], preSmooth);
         A->residual(&u[0], &rhs[0], &r[0]);
-        dotProduct(r, r, &current_dot, comm);
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 //        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
 //        if(rank==0) printf("vcycle iteration = %d, residual = %.12f \n", i, sqrt(current_dot));
@@ -1764,6 +1771,8 @@ int saena_object::solve_CG(std::vector<value_t>& u){
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    const index_t sz = A->M;
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -1813,7 +1822,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-    u.assign(A->M, 0);
+    u.assign(sz, 0);
 
     // ************** solve **************
 
@@ -1823,12 +1832,12 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 //    dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
-    std::vector<value_t> r(A->M);
+    std::vector<value_t> r(sz);
     A->residual(&u[0], &rhs[0], &r[0]);
 
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
-    dotProduct(r, r, &init_dot, comm);
+    dotProduct(&r[0], &r[0], sz, &init_dot, comm);
     if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
@@ -1881,7 +1890,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 //    }
 #endif
 
-    std::vector<value_t> h(A->M);
+    std::vector<value_t> h(sz);
     std::vector<value_t> p = rho;
 
     const double THRSHLD = init_dot * solver_tol * solver_tol;
@@ -1893,8 +1902,8 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 
     for(i = 0; i < solver_max_iter; i++){
         A->matvec(&p[0], &h[0]);
-        dotProduct(r, rho, &rho_res, comm);
-        dotProduct(p, h,   &pdoth,   comm);
+        dotProduct(&r[0], &rho[0], sz, &rho_res, comm);
+        dotProduct(&p[0], &h[0],   sz, &pdoth,   comm);
         alpha = rho_res / pdoth;
 
 #pragma omp parallel for default(none) shared(u, r, p, h, alpha)
@@ -1903,7 +1912,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
             r[j] -= alpha * h[j];
         }
 
-        dotProduct(r, r, &current_dot, comm);
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 #ifdef __DEBUG1__
 //        printf("rho_res = %e, pdoth = %e, alpha = %f \n", rho_res, pdoth, alpha);
@@ -1937,7 +1946,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 
         // **************************************************************
 
-        dotProduct(r, rho, &beta, comm);
+        dotProduct(&r[0], &rho[0], sz, &beta, comm);
         beta /= rho_res;
 
 //#pragma omp parallel for default(none) shared(u, p, rho, beta)
@@ -2024,6 +2033,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
     }
 #endif
 
+    const index_t sz = A->M;
+
     Rtransfer_time = 0;
     Ptransfer_time = 0;
     superlu_time = 0;
@@ -2092,7 +2103,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-    u.assign(A->M, 0);
+    u.assign(sz, 0);
 
     // ************** allocate memory for vcycle **************
 
@@ -2106,19 +2117,19 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //    dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
-    std::vector<value_t> r(A->M);
+    std::vector<value_t> r(sz);
     A->residual(&u[0], &rhs[0], &r[0]);
 
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
-    dotProduct(r, r, &init_dot, comm);
+    dotProduct(&r[0], &r[0], sz, &init_dot, comm);
     if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
         vcycle(&grids[0], u, &rhs[0]);
         A->residual(&u[0], &rhs[0], &r[0]);
-        dotProduct(r, r, &current_dot, comm);
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 #ifdef __DEBUG1__
 //        print_vector(r, -1, "res", comm);
@@ -2145,7 +2156,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         return 0;
     }
 
-    std::vector<value_t> rho(A->M, 0);
+    std::vector<value_t> rho(sz, 0);
     vcycle(&grids[0], rho, &r[0]);
 
 #ifdef __DEBUG1__
@@ -2163,7 +2174,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //    }
 #endif
 
-    std::vector<value_t> h(A->M);
+    std::vector<value_t> h(sz);
     std::vector<value_t> p = rho;
 
     const double THRSHLD = init_dot * solver_tol * solver_tol;
@@ -2188,8 +2199,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         double dot1 = omp_get_wtime();
 #endif
 
-        dotProduct(r, rho, &rho_res, comm);
-        dotProduct(p, h,   &pdoth,   comm);
+        dotProduct(&r[0], &rho[0], sz, &rho_res, comm);
+        dotProduct(&p[0], &h[0],   sz, &pdoth,   comm);
 
 #ifdef PROFILE_PCG
         double dot2 = omp_get_wtime();
@@ -2209,7 +2220,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         dot1 = omp_get_wtime();
 #endif
 
-        dotProduct(r, r, &current_dot, comm);
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 #ifdef PROFILE_PCG
         dot2 = omp_get_wtime();
@@ -2261,7 +2272,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         dot1 = omp_get_wtime();
 #endif
 
-        dotProduct(r, rho, &beta, comm);
+        dotProduct(&r[0], &rho[0], sz, &beta, comm);
 
 #ifdef PROFILE_PCG
         dot2 = omp_get_wtime();

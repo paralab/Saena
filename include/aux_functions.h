@@ -113,9 +113,9 @@ long upper_bound2(T *left, T *right, T val){
 void setIJV(char* file_name, index_t* I,index_t* J, value_t* V, nnz_t nnz_g, nnz_t initial_nnz_l, MPI_Comm comm);
 
 
-inline void dotProduct(std::vector<value_t>& r, std::vector<value_t>& s, value_t* dot, MPI_Comm comm){
+inline void dotProduct(const value_t *r, const value_t *s, const index_t sz, value_t* dot, MPI_Comm comm){
     value_t dot_l = 0;
-    for(index_t i = 0; i < r.size(); i++)
+    for(index_t i = 0; i < sz; ++i)
         dot_l += r[i] * s[i];
     MPI_Allreduce(&dot_l, dot, 1, MPI_DOUBLE, MPI_SUM, comm);
 //    MPI_Allreduce(&dot_l, dot, 1, par::Mpi_datatype<value_t>::value(), MPI_SUM, comm);
