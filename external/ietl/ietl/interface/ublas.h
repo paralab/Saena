@@ -56,7 +56,7 @@ namespace ietl {
     inline void mult(M& m, boost::numeric::ublas::vector<T>& x, boost::numeric::ublas::vector<T>& y) {
 //        y = boost::numeric::ublas::prod(m,x);
 //        m.matvec_sparse_array(&x[m.split[rank]], &y[m.split[rank]]);
-        m.matvec_sparse_array(&x[0], &y[0]);
+        m.matvec_sparse(&x[0], &y[0]);
         for(auto i = m.M; i < m.Mbig; ++i){ // size of vectors are global (m.Mbig). not using this part, will make the
             y[i] = 0;                       // result wrong in parallel.
         }

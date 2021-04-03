@@ -298,8 +298,6 @@ public:
     void matvec_sparse2(value_t *v, value_t *w);
     void matvec_sparse3(value_t *v, value_t *w);
     void matvec_sparse_float(value_t *v, value_t *w);
-    void matvec_sparse_array(value_t *v, value_t *w);    // to be used in ietl.
-    void matvec_sparse_array2(value_t *v, value_t *w);   // to be used in ietl.
 
     // for profiling
     unsigned long matvec_iter = 0;
