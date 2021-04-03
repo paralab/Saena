@@ -324,9 +324,9 @@ public:
 //    int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
 
     // Vector res = A * u - rhs;
-    inline void residual(value_t *u, const value_t *rhs, value_t *res);
+    inline void residual(const value_t *u, const value_t *rhs, value_t *res);
     // Vector res = rhs - A * u
-    inline void residual_negative(value_t *u, const value_t *rhs, value_t *res);
+    inline void residual_negative(const value_t *u, const value_t *rhs, value_t *res);
 
     int inverse_diag();
 

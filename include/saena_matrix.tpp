@@ -13,7 +13,7 @@ inline void saena_matrix::matvec(const value_t *v, value_t *w){
 }
 
 // Vector res = A * u - rhs;
-inline void saena_matrix::residual(value_t *u, const value_t *rhs, value_t *res){
+inline void saena_matrix::residual(const value_t *u, const value_t *rhs, value_t *res){
     matvec(&u[0], &res[0]);
 #pragma omp parallel for
     for(index_t i = 0; i < M; ++i){
@@ -22,7 +22,7 @@ inline void saena_matrix::residual(value_t *u, const value_t *rhs, value_t *res)
 }
 
 // Vector res = rhs - A * u
-inline void saena_matrix::residual_negative(value_t *u, const value_t *rhs, value_t *res){
+inline void saena_matrix::residual_negative(const value_t *u, const value_t *rhs, value_t *res){
     matvec(&u[0], &res[0]);
 #pragma omp parallel for
     for(index_t i = 0; i < M; i++){
