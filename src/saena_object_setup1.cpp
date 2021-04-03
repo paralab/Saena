@@ -200,7 +200,7 @@ int saena_object::SA(Grid *grid){
 
     std::sort(PEntryTemp.begin(), PEntryTemp.end());
 
-    const int SZ_M1 = static_cast<int>(PEntryTemp.size()) - 1;
+    const nnz_t SZ_M1 = static_cast<int>(PEntryTemp.size()) - 1;
     cooEntry tmp(0, 0, 0.0);
     for(i = 0; i < PEntryTemp.size(); ++i){
         tmp = PEntryTemp[i];
@@ -249,7 +249,7 @@ int saena_object::find_aggregation(saena_matrix* A, std::vector<index_t>& aggreg
     // 2: stop the coarsening. the previous level will be set as the last level.
 
     MPI_Comm comm = A->comm;
-    int rank;
+    int rank = 0;
     MPI_Comm_rank(comm, &rank);
 //    MPI_Comm_size(A->comm, &nprocs);
 
@@ -675,12 +675,14 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
     // todo: add OpenMP just like matvec.
     // TODO: double check values for entryT.
     nnz_t iter = 0;
-    double valtmp = 0;
-    for (index_t i = 0; i < A->col_remote_size; ++i) {
-        valtmp = -1 / A->vecValues[i];
-        for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
+    cooEntry *entryT_p = &S->entryT[A->nnz_l_local];
+    const index_t iend = A->col_remote_size;
+    for (index_t i = 0; i < iend; ++i) {
+        const value_t valtmp = -1 / A->vecValues[i];
+        const index_t iterend = iter + A->nnzPerCol_remote[i];
+        for (; iter < iterend; ++iter) {
 //            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->values_remote[iter] / A->vecValues[i]);
-            S->entryT[iter + A->nnz_l_local] = cooEntry(A->row_remote[iter], A->col_remote2[iter], A->values_remote[iter] * valtmp);
+            entryT_p[iter] = cooEntry(A->row_remote[iter], A->col_remote2[iter], A->values_remote[iter] * valtmp);
         }
     }
 
@@ -1999,7 +2001,7 @@ int saena_object::aggregation_2_dist(strength_matrix *S, std::vector<unsigned lo
 int saena_object::change_aggregation(saena_matrix* A, std::vector<index_t>& aggregate, std::vector<index_t>& splitNew){
 
     MPI_Comm comm = A->comm;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
     index_t i = 0;
