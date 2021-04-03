@@ -1567,6 +1567,9 @@ int saena_matrix::inverse_diag() {
     return 0;
 }
 
+vector<index_t> saena_matrix::get_orig_split(){
+    return split_b;
+}
 
 int saena_matrix::generate_dense_matrix() {
 //    cout << "generate dense" << endl;

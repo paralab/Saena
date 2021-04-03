@@ -344,7 +344,7 @@ int generate_rhs_old(std::vector<value_t>& rhs){
 }
 
 
-int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm){
+int read_from_file_rhs(std::vector<value_t>& v, const std::vector<index_t>& split, char *file, MPI_Comm comm){
 
     int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
@@ -462,26 +462,13 @@ int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI
 //    }
 
     // define the size of v as the local number of rows on each process, before removing boundary nodes
-    index_t v_sz = A->split_b[rank + 1] - A->split_b[rank];
-
-    // if remove_boundary is enabled, then rhs should be read from file as the original matrix size, not after
-    // removing the boundary nodes
-//    index_t tmp = 0;
-//    MPI_Allreduce(&A->M_orig, &tmp, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
-//    if(A->Mbig < tmp)
-//        v_sz = A->M_orig;
-
-//    printf("rank %d: read vector size = %d, A->M_orig = %d, tmp = %d. A->M = %d, A->Mbig = %d\n",
-//            rank, v_sz, A->M_orig, tmp, A->M, A->Mbig);
+    const index_t v_sz = split[rank + 1] - split[rank];
 
     v.resize(v_sz);
     value_t* vp = &*v.begin();
 
-//    print_vector(A->split, 0, "split", comm);
-//    print_vector(A->split_b, 0, "split_b", comm);
-
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
-    offset = A->split_b[rank] * sizeof(value_t);
+    offset = split[rank] * sizeof(value_t);
     MPI_File_read_at(fh, offset, vp, v_sz, MPI_DOUBLE, &status);
 
 //    int count;

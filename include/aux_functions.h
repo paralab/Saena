@@ -289,7 +289,7 @@ public:
 };
 
 
-int read_from_file_rhs(std::vector<value_t>& v, saena_matrix *A, char *file, MPI_Comm comm);
+int read_from_file_rhs(std::vector<value_t>& v, const std::vector<index_t>& split, char *file, MPI_Comm comm);
 
 template <class T>
 int write_to_file_vec(std::vector<T>& v, const std::string &name, MPI_Comm comm) {

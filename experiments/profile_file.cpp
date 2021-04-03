@@ -62,25 +62,29 @@ int main(int argc, char* argv[]){
     // first line shows the value in row 0, second line shows the value in row 1, ...
     // entries should be in double.
 
+    auto orig_split = A.get_orig_split();
+    const index_t orig_sz = orig_split[rank + 1] - orig_split[rank];
+
     // set the size of rhs as the local number of rows on each process
-    index_t num_local_row = A.get_num_local_rows();
     std::vector<double> rhs_std;
 
     // read rhs from file
+    //-------------------
     char* Vname(argv[2]);
-    read_from_file_rhs(rhs_std, A.get_internal_matrix(), Vname, comm);
+    read_from_file_rhs(rhs_std, orig_split, Vname, comm);
+    //-------------------
+
+    // generate random rhs
+    //--------------------
+//    index_t num_local_row = A.get_num_local_rows();
+//    rhs_std.resize(num_local_row);
+//    generate_rhs_old(rhs_std);
+    //--------------------
 
 //    print_vector(rhs_std, -1, "rhs_std", comm);
 
-    // generate random rhs
-//    rhs_std.resize(num_local_row);
-//    generate_rhs_old(rhs_std);
-
-    index_t my_split = 0;
-    saena::find_split((index_t)rhs_std.size(), my_split, comm);
-
     saena::vector rhs(comm);
-    rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
+    rhs.set(&rhs_std[0], orig_sz, orig_split[rank]);
     rhs.assemble();
 
 //    rhs.print_entry(-1);
@@ -88,7 +92,8 @@ int main(int argc, char* argv[]){
     // *************************** set u0 ****************************
 
     // u is the initial guess. at the end, it will be the solution.
-    std::vector<double> u(num_local_row, 0); // initial guess = 0
+//    std::vector<double> u(num_local_row, 0); // initial guess = 0
+    std::vector<double> u;
 
     // *************************** AMG - Setup ****************************
     // There are 3 ways to set options:
@@ -178,6 +183,7 @@ int main(int argc, char* argv[]){
 
     // A is scaled. read it from the file and don't scale.
 #if 0
+    index_t num_local_row = A.get_num_local_rows();
     saena::matrix Ap(comm);
     saena::laplacian3D(&Ap, mx, my, mz, false);
 

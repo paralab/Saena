@@ -50,6 +50,7 @@ namespace saena {
         index_t get_num_local_rows();
         nnz_t get_nnz();
         nnz_t get_local_nnz();
+        std::vector<index_t> get_orig_split();
 
         int print(int ran, std::string name = "");
 

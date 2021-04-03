@@ -182,6 +182,10 @@ nnz_t saena::matrix::get_local_nnz(){
     return m_pImpl->nnz_l;
 }
 
+std::vector<index_t> saena::matrix::get_orig_split(){
+    return m_pImpl->get_orig_split();
+}
+
 int saena::matrix::print(int ran, const std::string name){
     m_pImpl->print_entry(ran, name);
     return 0;

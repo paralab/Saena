@@ -122,7 +122,6 @@ public:
     std::vector<value_t> inv_sq_diag;
     std::vector<value_t> inv_diag_orig;
     std::vector<value_t> inv_sq_diag_orig;
-//    double norm1, normInf, rhoDA;
 
     index_t vIndexSize = 0;
     index_t recvSize   = 0;
@@ -329,6 +328,7 @@ public:
     inline void residual_negative(const value_t *u, const value_t *rhs, value_t *res);
 
     int inverse_diag();
+    vector<index_t> get_orig_split();
 
     // smoothers
     void jacobi(const int &iter, std::vector<value_t>& u, const value_t *rhs);
