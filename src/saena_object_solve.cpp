@@ -11,7 +11,7 @@
 //std::vector<int> iter_num_lazy;
 
 
-int saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) const{
+void saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) const{
     // Conjugate Gradient
     // u is zero in the beginning. At the end, it is the solution.
 
@@ -105,8 +105,6 @@ int saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) c
 
     if(verbose_solve_coarse && rank==0) printf("end of solve_coarsest! it took CG iterations = %d\n \n", i);
 //    if(rank==0) printf("end of solve_coarsest! it took CG iterations = %d \n\n", i);
-
-    return 0;
 }
 
 
@@ -793,7 +791,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *r
     // For a similar code, using the same matrix for mutiple rhs's, read SuperLU_DIST_5.4.0/EXAMPLE/pddrive1.c
 
     if(!superlu_active){
-        return 0;
+        return;
     }
 
     MPI_Comm comm = A->comm;
@@ -953,8 +951,6 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *r
         MPI_Barrier(comm);
     }
 #endif
-
-    return 0;
 }
 
 

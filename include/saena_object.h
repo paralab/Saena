@@ -365,9 +365,9 @@ public:
     // direct solvers
     // *****************
     int setup_SuperLU();
-    int solve_coarsest_SuperLU(saena_matrix* A, value_t *u, value_t *rhs);
+    void solve_coarsest_SuperLU(saena_matrix* A, value_t *u, value_t *rhs);
     int destroy_SuperLU();
-    int solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) const;
+    void solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) const;
 //    int solve_coarsest_Elemental(saena_matrix* A, std::vector<value_t>& u, std::vector<value_t>& rhs);
 
     // *****************
