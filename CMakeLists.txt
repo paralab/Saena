@@ -356,7 +356,7 @@ ENDIF()
 # -qopt-report-phase  =loop, vec, par, cg, openmp, ipo, pgo, offload, all
 # -qopt-report-routine=fn1[,fn2,…]
 
-#set(REPORT_ARG1 "-qopt-report=5 -qopt-report-file=stdout -qopt-report-phase=loop,vec,par,cg")
+#set(REPORT_ARG1 "-qopt-report=5 -qopt-report-file=stdout -qopt-report-phase=loop,vec,par,cg -fno-inline")
 #set(REPORT_ROUTINE "-qopt-report-routine=reorder_split")
 #set(REPORT_FILES "src/saena_object_setup_matmat.cpp")
 #set(REPORT_FILE "-qopt-report-filter=${REPORT_FILES}")
