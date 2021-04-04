@@ -26,8 +26,8 @@ private:
 
 public:
 
-    index_t M     = 0;
-    index_t Mbig  = 0;
+//    index_t M     = 0;
+//    index_t Mbig  = 0;
     MPI_Comm comm = MPI_COMM_WORLD;
 
     bool add_duplicates = false;
@@ -80,14 +80,15 @@ public:
     void set(const index_t* idx, const value_t* val, index_t size);
     void set(const value_t* val, index_t size, index_t offset = 0);
 
-    int remove_duplicates();
-    int assemble();
+    void remove_duplicates();
+    void assemble();
 
-    int get_vec(std::vector<double> &vec);
-    int print_entry(int ran);
-
+    index_t get_size() const;
+    void get_vec(std::vector<double> &vec);
     int return_vec(std::vector<double> &u1, std::vector<double> &u2);
     int return_vec(std::vector<double> &u);
+
+    int print_entry(int ran);
 };
 
 #endif //SAENA_SAENA_VECTOR_H

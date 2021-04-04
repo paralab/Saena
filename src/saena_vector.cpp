@@ -78,7 +78,7 @@ void saena_vector::set(const value_t* val, const index_t size, const index_t off
 }
 
 
-int saena_vector::remove_duplicates() {
+void saena_vector::remove_duplicates() {
     // parameters needed for this function:
     // parameters being set in this function:
 
@@ -109,7 +109,7 @@ int saena_vector::remove_duplicates() {
     if(data_sorted_dup.empty()) {
         printf("error: data_sorted_dup of the vector has no element on process %d! \n", rank);
         MPI_Finalize();
-        return -1;
+        return;
     }
 
 /*
@@ -212,25 +212,25 @@ int saena_vector::remove_duplicates() {
 #endif
 
 //    print_vector(data, -1, "final data", comm);
-
-    return 0;
 }
 
-int saena_vector::assemble(){
+
+void saena_vector::assemble(){
     remove_duplicates();
-    return 0;
 }
 
 
-int saena_vector::get_vec(std::vector<double> &vec){
+index_t saena_vector::get_size() const{
+    return data.size();
+}
 
-    vec.resize(data.size());
+
+void saena_vector::get_vec(std::vector<double> &vec){
+    vec.resize(get_size());
     for(index_t i = 0; i < data.size(); i++){
         vec[i] = data[i].val;
 //        std::cout << data[i].val << std::endl;
     }
-
-    return 0;
 }
 
 
