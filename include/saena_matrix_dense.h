@@ -41,6 +41,7 @@ public:
 
     saena_matrix_dense& operator=(const saena_matrix_dense &B);
 
+    void matvec_alloc();
     int assemble();
 
     int erase();

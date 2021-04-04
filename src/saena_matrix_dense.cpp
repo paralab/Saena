@@ -8,7 +8,7 @@ saena_matrix_dense::saena_matrix_dense() = default;
 saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1){
     M     = M1;
     Nbig  = Nbig1;
-    entry = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M * Nbig * sizeof(value_t)));
+    entry = saena_aligned_alloc<value_t>(M * Nbig);
     assert(entry);
     fill(&entry[0], &entry[M * Nbig], 0);
 }
@@ -17,7 +17,7 @@ saena_matrix_dense::saena_matrix_dense(index_t M1, index_t Nbig1, MPI_Comm comm1
     M     = M1;
     Nbig  = Nbig1;
     comm  = comm1;
-    entry = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M * Nbig * sizeof(value_t)));
+    entry = saena_aligned_alloc<value_t>(M * Nbig);
     assert(entry);
     fill(&entry[0], &entry[M * Nbig], 0);
 }
@@ -28,7 +28,7 @@ saena_matrix_dense::saena_matrix_dense(const saena_matrix_dense &B){
     M     = B.M;
     Nbig  = B.Nbig;
     split = B.split;
-    entry = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M * Nbig * sizeof(value_t)));
+    entry = saena_aligned_alloc<value_t>(M * Nbig);
     assert(entry);
     fill(&entry[0], &entry[M * Nbig], 0);
 }
@@ -53,6 +53,28 @@ saena_matrix_dense& saena_matrix_dense::operator=(const saena_matrix_dense &B){
     return *this;
 }
 
+void saena_matrix_dense::matvec_alloc() {
+    if(v_send == nullptr){
+        v_send = saena_aligned_alloc<value_t>(M_max);
+        assert(v_send);
+    }
+
+    if(v_recv == nullptr) {
+        v_recv = saena_aligned_alloc<value_t>(M_max);
+        assert(v_recv);
+    }
+
+    if(v_send_f == nullptr){
+        v_send_f = saena_aligned_alloc<float>(M_max);
+        assert(v_send_f);
+    }
+
+    if(v_recv_f == nullptr) {
+        v_recv_f = saena_aligned_alloc<float>(M_max);
+        assert(v_recv_f);
+    }
+}
+
 int saena_matrix_dense::assemble() {
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
@@ -72,25 +94,7 @@ int saena_matrix_dense::assemble() {
         M_max = max(M_max, split[i+1] - split[i]);
     }
 
-    if(v_send == nullptr){
-        v_send = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(value_t)));
-        assert(v_send);
-    }
-
-    if(v_recv == nullptr) {
-        v_recv = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(value_t)));
-        assert(v_recv);
-    }
-
-    if(v_send_f == nullptr){
-        v_send_f = static_cast<float*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(float)));
-        assert(v_send_f);
-    }
-
-    if(v_recv_f == nullptr) {
-        v_recv_f = static_cast<float*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(float)));
-        assert(v_recv_f);
-    }
+    matvec_alloc();
 
 #ifdef SAENA_USE_ZFP
     if(use_zfp){
@@ -764,7 +768,7 @@ int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
 //    print_vector(split, -1, "split", comm);
 
     if(entry == nullptr){
-        entry = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M * Nbig * sizeof(value_t)));
+        entry = saena_aligned_alloc<value_t>(M * Nbig);
         fill(&entry[0], &entry[M * Nbig], 0);
         assert(entry);
     }
@@ -774,25 +778,7 @@ int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
         entry[(A->entry[i].row - split[rank]) * Nbig + A->entry[i].col] = A->entry[i].val;
     }
 
-    if(v_send == nullptr){
-        v_send = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(value_t)));
-        assert(v_send);
-    }
-
-    if(v_recv == nullptr) {
-        v_recv = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(value_t)));
-        assert(v_recv);
-    }
-
-    if(v_send_f == nullptr){
-        v_send_f = static_cast<float*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(float)));
-        assert(v_send_f);
-    }
-
-    if(v_recv_f == nullptr) {
-        v_recv_f = static_cast<float*>(aligned_alloc(ALIGN_SZ, M_max * sizeof(float)));
-        assert(v_recv_f);
-    }
+    matvec_alloc();
 
     return 0;
 }
