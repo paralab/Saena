@@ -215,13 +215,18 @@ int print_agg(const std::vector<T> &v, const int ran, const std::string &name, M
 
 
 template<class T>
-int print_array(const T &v, const nnz_t sz, const int ran, const std::string &name, MPI_Comm comm){
+void print_array(const T &v, const nnz_t sz, const int ran, const std::string &name, MPI_Comm comm){
     // if ran >= 0 print the array elements on proc with rank = ran
     // otherwise print the array elements on all processors in order. (first on proc 0, then proc 1 and so on.)
 
-    int rank, nprocs;
+    int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    if(v == nullptr){
+        printf("rank %d: print_array: array is NULL, size is %ld\n", rank, sz);
+        return;
+    }
 
     index_t iter = 0;
     if(ran >= 0) {
@@ -247,8 +252,6 @@ int print_array(const T &v, const nnz_t sz, const int ran, const std::string &na
             MPI_Barrier(comm);
         }
     }
-
-    return 0;
 }
 
 
@@ -293,11 +296,19 @@ int read_from_file_rhs(value_t *v, const std::vector<index_t>& split, char *file
 
 
 template<class T>
-T* saena_aligned_alloc(const nnz_t sz){
+inline T* saena_aligned_alloc(const nnz_t sz){
     const nnz_t alloc_sz = ceil((1.0 * sz * sizeof(T)) / ALIGN_SZ) * ALIGN_SZ;
     return static_cast<T*>(aligned_alloc(ALIGN_SZ, alloc_sz));
 }
 
+
+template<class T>
+inline void saena_free(T*& v){
+    if(v != nullptr){
+        free(v);
+        v = nullptr;
+    }
+}
 
 template <class T>
 int write_to_file_vec(std::vector<T>& v, const std::string &name, MPI_Comm comm) {
