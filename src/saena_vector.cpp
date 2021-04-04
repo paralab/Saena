@@ -71,6 +71,7 @@ void saena_vector::set(const index_t* idx, const value_t* val, const index_t siz
 }
 
 void saena_vector::set(const value_t* val, const index_t size, const index_t offset /* = 0*/){
+    assert(val);
     for(index_t i = 0; i < size; i++){
         set(i + offset, val[i]);
     }
