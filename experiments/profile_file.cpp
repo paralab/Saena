@@ -63,28 +63,27 @@ int main(int argc, char* argv[]){
     // entries should be in double.
 
     auto orig_split = A.get_orig_split();
-    const index_t orig_sz = orig_split[rank + 1] - orig_split[rank];
-
-    // set the size of rhs as the local number of rows on each process
-    std::vector<double> rhs_std;
+    const nnz_t orig_sz = orig_split[rank + 1] - orig_split[rank];
 
     // read rhs from file
     //-------------------
+    auto *rhs_std = saena_aligned_alloc<value_t>(orig_sz);
+    assert(rhs_std);
     char* Vname(argv[2]);
     read_from_file_rhs(rhs_std, orig_split, Vname, comm);
     //-------------------
 
     // generate random rhs
     //--------------------
-//    index_t num_local_row = A.get_num_local_rows();
-//    rhs_std.resize(num_local_row);
+//    auto *rhs_std = saena_aligned_alloc<value_t>(A.get_num_local_rows());
+//    assert(rhs_std);
 //    generate_rhs_old(rhs_std);
     //--------------------
 
 //    print_vector(rhs_std, -1, "rhs_std", comm);
 
     saena::vector rhs(comm);
-    rhs.set(&rhs_std[0], orig_sz, orig_split[rank]);
+    rhs.set(rhs_std, orig_sz, orig_split[rank]);
     rhs.assemble();
 
 //    rhs.print_entry(-1);
@@ -293,6 +292,8 @@ int main(int argc, char* argv[]){
     A.destroy();
     if(free_amg)
         solver.destroy();
+    if(rhs_std)
+        free(rhs_std);
     MPI_Finalize();
     return 0;
 }
