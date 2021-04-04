@@ -1426,7 +1426,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 int saena_object::solve_petsc(std::vector<value_t>& u, string petsc_solver, double tol) {
 
     auto *A = grids[0].A;
-    vector<value_t> &rhs = grids[0].rhs;
+    value_t *rhs = &grids[0].rhs[0];
 
     MPI_Comm comm = A->comm;
     int nprocs = 0, rank = 0;
@@ -1548,7 +1548,7 @@ int saena_object::solve_petsc(std::vector<value_t>& u, string petsc_solver, doub
 int saena_object::solve(std::vector<value_t>& u){
 
     auto *A = grids[0].A;
-    vector<value_t> &rhs = grids[0].rhs;
+    value_t *rhs = &grids[0].rhs[0];
 
     MPI_Comm comm = A->comm;
     int nprocs = -1, rank = -1;
@@ -1672,7 +1672,7 @@ int saena_object::solve(std::vector<value_t>& u){
 int saena_object::solve_smoother(std::vector<value_t>& u){
 
     auto *A = grids[0].A;
-    vector<value_t> &rhs = grids[0].rhs;
+    value_t *rhs = &grids[0].rhs[0];
 
     MPI_Comm comm = A->comm;
     int nprocs = -1, rank = -1;
@@ -1765,7 +1765,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 int saena_object::solve_CG(std::vector<value_t>& u){
 
     auto *A = grids[0].A;
-    vector<value_t> &rhs = grids[0].rhs;
+    value_t *rhs = &grids[0].rhs[0];
 
     MPI_Comm comm = A->comm;
     int nprocs = 0, rank = 0;
@@ -2017,7 +2017,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 int saena_object::solve_pCG(std::vector<value_t>& u){
 
     auto *A = grids[0].A;
-    vector<value_t> &rhs = grids[0].rhs;
+    value_t *rhs = &grids[0].rhs[0];
 
     MPI_Comm comm = A->comm;
     int nprocs = 0, rank = 0;

@@ -19,8 +19,8 @@ public:
 //    saena_matrix_dense* A_d; // dense matrix
 //    saena_matrix_dense Ac_d; // dense matrix
 
-    std::vector<value_t> rhs;
-    saena_vector         *rhs_orig = nullptr;
+    saena_vector *rhs_orig = nullptr;
+    value_t      *rhs      = nullptr;
 
     Grid* coarseGrid = nullptr;
     int   level      = 0;
@@ -56,7 +56,12 @@ public:
         level = lev;
     }
 
-    ~Grid() = default;
+    ~Grid(){
+        if(rhs != nullptr){
+            free(rhs);
+            rhs = nullptr;
+        }
+    }
 
     void repart_u_prepare();
     void repart_u(std::vector<value_t> &u);

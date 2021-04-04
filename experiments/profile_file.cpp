@@ -136,6 +136,10 @@ int main(int argc, char* argv[]){
         A.destroy();
         if(free_amg)
             solver.destroy();
+        if(rhs_std){
+            free(rhs_std);
+            rhs_std = nullptr;
+        }
         MPI_Finalize();
         return 0;
     }
@@ -292,8 +296,10 @@ int main(int argc, char* argv[]){
     A.destroy();
     if(free_amg)
         solver.destroy();
-    if(rhs_std)
+    if(rhs_std){
         free(rhs_std);
+        rhs_std = nullptr;
+    }
     MPI_Finalize();
     return 0;
 }

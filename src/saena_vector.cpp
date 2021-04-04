@@ -225,10 +225,11 @@ index_t saena_vector::get_size() const{
 }
 
 
-void saena_vector::get_vec(std::vector<double> &vec){
-    vec.resize(get_size());
-    for(index_t i = 0; i < data.size(); i++){
-        vec[i] = data[i].val;
+void saena_vector::get_vec(value_t *&v){
+    const index_t sz = get_size();
+    v = saena_aligned_alloc<value_t>(sz);
+    for(index_t i = 0; i < sz; ++i){
+        v[i] = data[i].val;
 //        std::cout << data[i].val << std::endl;
     }
 }

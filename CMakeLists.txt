@@ -332,9 +332,9 @@ IF(CMAKE_BUILD_TYPE STREQUAL Debug)
     set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -g")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
     # sanitize flags for memory leak checks
-#    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer") #for gcc and clang
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer") #for gcc and clang
-#    set(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} -fsanitize=address)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer") #for gcc and clang
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer") #for gcc and clang
+    set(SAENA_LIB_DEPENDENCIES ${SAENA_LIB_DEPENDENCIES} -fsanitize=address)
 ENDIF()
 
 # Enable Intel Optimization flags

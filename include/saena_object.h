@@ -63,7 +63,7 @@ public:
     std::vector<index_t> bound_row; // boundary node row index
     std::vector<value_t> bound_val; // boundary node value
     std::vector<value_t> bound_sol; // solution corresponding to boundary nodes
-    void remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0, MPI_Comm comm);
+    void remove_boundary_rhs(const value_t *rhs_large, value_t *&rhs0, index_t &sz, MPI_Comm comm);
     void add_boundary_sol(std::vector<value_t> &u);
 
     int float_level = 3; // any matrix after this level will use single-precision matvec
@@ -303,7 +303,7 @@ public:
     int create_prolongation(Grid *gird, std::vector< std::vector< std::vector<int> > > &map_all, std::vector< std::vector<int> > &g2u_all, std::vector<int> &order_dif);
 
     int set_repartition_rhs(saena_vector *rhs);
-    int repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_Comm comm);
+    int repart_vector(value_t *&v, index_t &sz, vector<index_t> &split, MPI_Comm comm);
 
     // if Saena needs to repartition the input A and rhs, then call repartition_u() at the start of the solving function.
     // then, repartition_back_u() at the end of the solve function to convert the solution to the initial partition.
@@ -399,7 +399,8 @@ public:
     bool active(int l);
 
     int local_diff(saena_matrix &A, saena_matrix &B, std::vector<cooEntry> &C);
-    int scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
+    void scale_vector(std::vector<value_t>& v, std::vector<value_t>& w);
+    void scale_vector(value_t *v, const value_t *w, const index_t sz) const;
     void transpose_locally(cooEntry *A, nnz_t size);
     void transpose_locally(cooEntry *A, nnz_t size, cooEntry *B);
     void transpose_locally(cooEntry *A, nnz_t size, const index_t &row_offset, cooEntry *B);

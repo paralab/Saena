@@ -83,7 +83,7 @@ public:
     void assemble();
 
     index_t get_size() const;
-    void get_vec(std::vector<double> &vec);
+    void get_vec(value_t *&vec);
     int return_vec(std::vector<double> &u1, std::vector<double> &u2);
     int return_vec(std::vector<double> &u);
 

@@ -98,7 +98,7 @@ namespace saena {
 //        int assemble_writeToFile();
 //        int assemble_writeToFile(const char *folder_name);
 
-        int get_vec(std::vector<double> &vec);
+        void get_vec(value_t *&vec);
         int return_vec(std::vector<double> &u1, std::vector<double> &u2);
         saena_vector* get_internal_vector();
         MPI_Comm get_comm();

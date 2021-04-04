@@ -529,13 +529,17 @@ int saena_object::create_prolongation(Grid *grid, std::vector< std::vector< std:
 }
 
 
-int saena_object::scale_vector(std::vector<value_t>& v, std::vector<value_t>& w) {
-
+void saena_object::scale_vector(std::vector<value_t>& v, std::vector<value_t>& w) {
+    const index_t sz = v.size();
 #pragma omp parallel for
-    for(index_t i = 0; i < v.size(); i++)
+    for(index_t i = 0; i < sz; i++)
         v[i] *= w[i];
+}
 
-    return 0;
+void saena_object::scale_vector(value_t *v, const value_t *w, const index_t sz) const{
+#pragma omp parallel for
+    for(index_t i = 0; i < sz; ++i)
+        v[i] *= w[i];
 }
 
 
@@ -665,16 +669,16 @@ void saena_object::profile_matvecs_breakdown(){
     }
 }
 
-void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vector<value_t> &rhs0, MPI_Comm comm){
+void saena_object::remove_boundary_rhs(const value_t *rhs_large, value_t *&rhs0, index_t &sz, MPI_Comm comm){
     int rank = 0, nprocs = 0;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &nprocs);
     rank_v = 0;
 
-//    print_vector(rhs_large, -1, "rhs_large", comm);
+//    print_array(rhs_large, sz, -1, "rhs_large", comm);
 
-    index_t Mbig_l = rhs_large.size(), Mbig = 0;
-    MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+    index_t Mbig = 0;
+    MPI_Allreduce(&sz, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
     index_t ofst = Mbig / nprocs;
 
     // initial split. it will get updated later
@@ -687,17 +691,16 @@ void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vec
 //    vector<value_t> rhs_large_s; // sorted
 //    par::sampleSort(rhs_large, rhs_large_s, split, comm);
 
-    const int bnd_sz  = bound_row.size();
-    const int orig_sz = rhs_large.size();
-//    if(rank==rank_v) cout << "boundary: " << bnd_sz << ", orig: " << orig_sz << ", interior: " << orig_sz-bnd_sz <<endl;
+    const int bnd_sz = bound_row.size();
+//    if(rank==rank_v) cout << "boundary: " << bnd_sz << ", orig: " << sz << ", interior: " << sz-bnd_sz <<endl;
 //    print_vector(bound_row, rank_v, "bound_row", comm);
 //    print_vector(bound_val, rank_v, "bound_val", comm);
 
-    rhs0.resize(orig_sz - bnd_sz);
+    rhs0 = saena_aligned_alloc<value_t>(sz - bnd_sz);
     bound_sol.resize(bnd_sz);
 
     index_t i = 0, it1 = 0, it2 = 0;
-    for(; i < orig_sz && it1 < bnd_sz; ++i){
+    for(; i < sz && it1 < bnd_sz; ++i){
 //        if(rank==rank_v) cout << i << "\t" << it1 << "\t" << bound_row[it1] << endl;
         if(bound_row[it1] == i){
             bound_sol[it1] = rhs_large[i] / bound_val[it1];
@@ -707,9 +710,14 @@ void saena_object::remove_boundary_rhs(std::vector<value_t> &rhs_large, std::vec
         }
     }
 
-    for(; i < orig_sz; ++i) {
-        rhs0[it2++] = rhs_large[i];
-    }
+    std::copy(&rhs_large[i], &rhs_large[sz], &rhs0[it2]);
+
+//    for(; i < sz; ++i) {
+//        rhs0[it2++] = rhs_large[i];
+//    }
+
+    // update size
+    sz = sz - bnd_sz;
 
 //    print_vector(bound_sol, rank_v, "bound_sol", comm);
 //    print_vector(rhs0, rank_v, "rhs after removing boundary", comm);

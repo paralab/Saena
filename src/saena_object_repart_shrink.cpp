@@ -153,8 +153,8 @@ int saena_object::set_repartition_rhs(std::vector<value_t> rhs0){
 
 int saena_object::set_repartition_rhs(saena_vector *rhs1){
 
-    saena_matrix    *A   = grids[0].A;
-    vector<value_t> &rhs = grids[0].rhs;
+    saena_matrix *A   = grids[0].A;
+    value_t      *rhs = nullptr;
 
     MPI_Comm comm = A->comm;
     int rank = 0, nprocs = 0;
@@ -168,25 +168,24 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 #endif
 
     grids[0].rhs_orig = rhs1; // use this for returning solution to the original order, based on the input rhs.
-//    rhs1->split = &grids[0].A->split[0];
     rhs1->split = std::move(A->split_b);
-
     rhs1->get_vec(rhs);
-
-//    print_vector(rhs, -1, "rhs", comm);
 
     // ************** check rhs size **************
 
-    index_t Mbig_l = rhs.size(), Mbig = 0;
+    index_t sz = rhs1->get_size(), Mbig = 0;
+//    print_array(rhs, sz, -1, "rhs after repartition", comm);
 
     if(remove_boundary){
-        std::vector<value_t> rhs_large;
-        rhs_large.swap(rhs);
+        value_t *rhs_large = nullptr;
+        swap(rhs_large, rhs);
+
+//        print_array(rhs_large, sz, -1, "rhs_large", comm);
 
         // compute split for rhs_large to pass to repart_vector()
         // initial split. have equal number of rows on each proc (except probably at the last proc)
         // it will get updated later
-        MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+        MPI_Allreduce(&sz, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
         index_t ofst = Mbig / nprocs;
         vector<index_t> split(nprocs + 1);
         for (int i = 0; i < nprocs; ++i) {
@@ -197,26 +196,26 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 //        print_vector(split, 0, "split", comm);
 //        printf("rhs_large.size before repart = %ld\n", rhs_large.size());
 
-        repart_vector(rhs_large, split, comm);
+        repart_vector(rhs_large, sz, split, comm);
 
-//        printf("rhs_large.size after repart = %ld\n", rhs_large.size());
-//        print_vector(rhs_large, -1, "rhs_large after repart", comm);
+//        printf("rhs_large.size after repart = %ld\n", sz);
+//        print_array(rhs_large, sz, -1, "rhs_large after repart", comm);
 
-        remove_boundary_rhs(rhs_large, rhs, rhs1->comm);
+        remove_boundary_rhs(rhs_large, rhs, sz, rhs1->comm);
+        saena_free(rhs_large);
 
-//        print_vector(rhs, -1, "rhs after remove_boundary_rhs", comm);
+//        print_array(rhs, sz, -1, "rhs after remove_boundary_rhs", comm);
     }
 
-    Mbig_l = rhs.size();
-    MPI_Allreduce(&Mbig_l, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
+    MPI_Allreduce(&sz, &Mbig, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
     if(A->Mbig != Mbig){
         if(rank==0) printf("Error: size of LHS (=%u) and RHS (=%u) are not equal!\n", A->Mbig, Mbig);
         MPI_Abort(comm, 1);
     }
 
-    repart_vector(rhs, A->split, comm);
+    repart_vector(rhs, sz, A->split, comm);
 
-//    print_vector(rhs, -1, "rhs after final repart", comm);
+//    print_array(rhs, sz, -1, "rhs after final repart", comm);
 
 #if 0
     // ************** repartition rhs, based on A.split **************
@@ -348,14 +347,18 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
     // scale rhs
     // ---------
     if(scale){
-        scale_vector(rhs, A->inv_sq_diag_orig);
+        scale_vector(rhs, &A->inv_sq_diag_orig[0], sz);
     }
+
+    // save ths in the grid object
+    grids[0].rhs = rhs;
 
     // write rhs to a file
 //    writeVectorToFile(rhs, "rhs", comm, true, A->split[rank]);
 
 #ifdef __DEBUG1__
-//    print_vector(grids[0].rhs, -1, "rhs after repartition", comm);
+//    print_array(rhs, sz, -1, "rhs after repartition", comm);
+//    print_array(grids[0].rhs, sz, -1, "grids[0].rhs after repartition", comm);
     if(verbose_set_rhs){MPI_Barrier(A->comm); if(!rank) printf("set_repartition_rhs: end\n"); MPI_Barrier(A->comm);}
 #endif
 
@@ -363,7 +366,7 @@ int saena_object::set_repartition_rhs(saena_vector *rhs1){
 }
 
 
-int saena_object::repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_Comm comm){
+int saena_object::repart_vector(value_t *&v, index_t &sz, vector<index_t> &split, MPI_Comm comm){
     // v: the vector to be repartitioned
     // split: the desired repartition
 
@@ -391,8 +394,7 @@ int saena_object::repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_
 #endif
 
     std::vector<index_t> split_init(nprocs + 1);
-    auto temp = (index_t) v.size();
-    MPI_Allgather(&temp, 1, par::Mpi_datatype<index_t>::value(), &split_init[1], 1, par::Mpi_datatype<index_t>::value(), comm);
+    MPI_Allgather(&sz, 1, par::Mpi_datatype<index_t>::value(), &split_init[1], 1, par::Mpi_datatype<index_t>::value(), comm);
 
     split_init[0] = 0;
     for(int i = 1; i < nprocs+1; i++)
@@ -503,12 +505,13 @@ int saena_object::repart_vector(vector<value_t> &v, vector<index_t> &split, MPI_
 
     // todo: replace Alltoall with a for loop of send and recv.
     if(repartition){
-        vector<value_t> v_tmp;
-        v_tmp.swap(v);
-        if(split[rank + 1] - split[rank] > 0)
-            v.resize(split[rank + 1] - split[rank]);
+        value_t *v_tmp = nullptr;
+        swap(v_tmp, v);
+        sz = split[rank + 1] - split[rank];
+        v = saena_aligned_alloc<value_t>(sz);
         MPI_Alltoallv(&v_tmp[0], &grids[0].scount[0], &grids[0].sdispls[0], par::Mpi_datatype<value_t>::value(),
                       &v[0],     &grids[0].rcount[0], &grids[0].rdispls[0], par::Mpi_datatype<value_t>::value(), comm);
+        saena_free(v_tmp);
     }
 
 #ifdef __DEBUG1__

@@ -199,10 +199,12 @@ int saena::matrix::set_shrink(bool val){
 
 
 void saena::matrix::matvec(saena::vector& v, saena::vector& w){
-    std::vector<value_t> vstd, wstd;
+    value_t *vstd = nullptr, *wstd = nullptr;
     v.get_vec(vstd);
     v.get_vec(wstd);
-    m_pImpl->matvec(&vstd[0], &wstd[0]);
+    m_pImpl->matvec(vstd, wstd);
+    saena_free(vstd);
+    saena_free(wstd);
 }
 
 void saena::matrix::matvec(std::vector<value_t>& v, std::vector<value_t>& w){
@@ -331,9 +333,8 @@ int saena::vector::assemble() {
 }
 
 
-int saena::vector::get_vec(std::vector<double> &vec){
+void saena::vector::get_vec(value_t *&vec){
     m_pImpl->get_vec(vec);
-    return 0;
 }
 
 
