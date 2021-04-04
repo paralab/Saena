@@ -344,7 +344,7 @@ int generate_rhs_old(std::vector<value_t>& rhs){
 }
 
 
-int read_from_file_rhs(std::vector<value_t>& v, const std::vector<index_t>& split, char *file, MPI_Comm comm){
+int read_from_file_rhs(value_t *v, const std::vector<index_t>& split, char *file, MPI_Comm comm){
 
     int rank = 0, nprocs = 0;
     MPI_Comm_size(comm, &nprocs);
@@ -464,12 +464,16 @@ int read_from_file_rhs(std::vector<value_t>& v, const std::vector<index_t>& spli
     // define the size of v as the local number of rows on each process, before removing boundary nodes
     const index_t v_sz = split[rank + 1] - split[rank];
 
-    v.resize(v_sz);
-    value_t* vp = &*v.begin();
+    if(v == nullptr){
+        v = saena_aligned_alloc<value_t>(v_sz);
+    }
+
+//    v = static_cast<value_t*>(aligned_alloc(ALIGN_SZ, v_sz * sizeof(value_t)));
+    assert(v);
 
     // vector should have the following format: first line shows the value in row 0, second line shows the value in row 1
     offset = split[rank] * sizeof(value_t);
-    MPI_File_read_at(fh, offset, vp, v_sz, MPI_DOUBLE, &status);
+    MPI_File_read_at(fh, offset, v, v_sz, MPI_DOUBLE, &status);
 
 //    int count;
 //    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &count);

@@ -289,7 +289,15 @@ public:
 };
 
 
-int read_from_file_rhs(std::vector<value_t>& v, const std::vector<index_t>& split, char *file, MPI_Comm comm);
+int read_from_file_rhs(value_t *v, const std::vector<index_t>& split, char *file, MPI_Comm comm);
+
+
+template<class T>
+T* saena_aligned_alloc(const nnz_t sz){
+    const nnz_t alloc_sz = ceil((1.0 * sz * sizeof(T)) / ALIGN_SZ) * ALIGN_SZ;
+    return static_cast<T*>(aligned_alloc(ALIGN_SZ, alloc_sz));
+}
+
 
 template <class T>
 int write_to_file_vec(std::vector<T>& v, const std::string &name, MPI_Comm comm) {
