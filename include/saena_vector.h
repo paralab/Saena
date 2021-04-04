@@ -23,26 +23,12 @@ class saena_vector {
 //    data		        std::vector<vecEntry>		remove duplicates
 
 private:
-
-public:
-
 //    index_t M     = 0;
 //    index_t Mbig  = 0;
-    MPI_Comm comm = MPI_COMM_WORLD;
-
-    bool add_duplicates = false;
-    int set_dup_flag(bool add);
 
     std::set<vecEntry>    data_set;
     std::vector<vecEntry> data;
 //    std::vector<double>   val;
-
-    index_t idx_offset = 0;
-    std::vector<index_t> orig_order; // save the input order
-    std::vector<tuple1> remote_idx_tuple;
-//    std::vector<index_t> remote_idx; // indices that should receive their value from other procs
-    std::vector<index_t> split;
-//    index_t *split; // point to the split of input matrix. size of it is (size of comm + 1).
 
     int numRecvProc = 0;
     int numSendProc = 0;
@@ -62,6 +48,19 @@ public:
     std::vector<index_t> send_idx;
     std::vector<value_t> send_vals;
     std::vector<value_t> recv_vals;
+
+public:
+    MPI_Comm comm = MPI_COMM_WORLD;
+    bool add_duplicates = false;
+    int set_dup_flag(bool add);
+
+    index_t idx_offset = 0;
+    std::vector<index_t> orig_order; // save the input order
+    std::vector<tuple1> remote_idx_tuple;
+//    std::vector<index_t> remote_idx; // indices that should receive their value from other procs
+    std::vector<index_t> split;
+//    index_t *split; // point to the split of input matrix. size of it is (size of comm + 1).
+
 
     bool return_vec_prep    = false;        // to track if the parameters needed in return_vec() are computed.
 
