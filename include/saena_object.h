@@ -275,7 +275,7 @@ public:
     int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans = false);
     int matmat_memory_alloc(CSCMat &Acsc, CSCMat &Bcsc);
     int matmat_memory_free();
-    int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C);
+    int matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C) const;
 
     int matmat_grid(Grid *grid);
 //    int matmat(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, nnz_t send_size_max, double &matmat_time);
