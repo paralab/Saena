@@ -333,8 +333,8 @@ public:
     vector<index_t> get_orig_split();
 
     // smoothers
-    void jacobi(const int &iter, value_t *&u, const value_t *rhs);
-    void chebyshev(const int &iter, value_t *&u, const value_t *rhs);
+    void jacobi(const int &iter, value_t *u, const value_t *rhs);
+    void chebyshev(const int &iter, value_t *u, const value_t *rhs);
 
     // I/O functions
     int print_entry(int ran, const std::string &name = "") const;

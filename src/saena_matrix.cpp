@@ -1035,7 +1035,7 @@ int saena_matrix::set_zero(){
 }
 
 
-void saena_matrix::jacobi(const int &iter, value_t *&u, const value_t *rhs) {
+void saena_matrix::jacobi(const int &iter, value_t *u, const value_t *rhs) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Au - rhs)
@@ -1060,13 +1060,13 @@ void saena_matrix::jacobi(const int &iter, value_t *&u, const value_t *rhs) {
         for(index_t i = 0; i < sz; ++i){
             temp1_p[i] -= rhs[i];
             temp1_p[i] *= inv_diag_p[i] * omega;
-            u[i]     -= temp1_p[i];
+            u[i]       -= temp1_p[i];
         }
     }
 }
 
 
-void saena_matrix::chebyshev(const int &iter, value_t *&u, const value_t *rhs){
+void saena_matrix::chebyshev(const int &iter, value_t *u, const value_t *rhs){
 
 #ifdef __DEBUG1__
 //    int rank;
