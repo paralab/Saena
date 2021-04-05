@@ -49,8 +49,10 @@ public:
 //    std::vector<value_t> res_coarse;
 //    std::vector<value_t> uCorrCoarse;
 
-    value_t *res   = nullptr;
-    value_t *uCorr = nullptr;
+    value_t *res         = nullptr;
+    value_t *uCorr       = nullptr;
+//    value_t *res_coarse  = nullptr;
+//    value_t *uCorrCoarse = nullptr;
 
     Grid() = default;
 

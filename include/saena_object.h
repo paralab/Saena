@@ -347,7 +347,7 @@ public:
     int solve_pCG(value_t *&u);
     inline void alloc_vcycle_memory();
     inline void free_vcycle_memory();
-    void vcycle(Grid* grid, value_t *&u, value_t *rhs);
+    void vcycle(Grid* grid, value_t *&u, value_t *&rhs);
     void inline smooth(Grid *grid, value_t *&u, value_t *rhs, int iter) const;
 
     // *****************

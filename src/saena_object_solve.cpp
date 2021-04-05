@@ -956,7 +956,7 @@ void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *
 }
 
 
-void saena_object::vcycle(Grid* grid, value_t *&u, value_t *rhs) {
+void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
 
     if (!grid->A->active) {
         return;
@@ -1059,18 +1059,10 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *rhs) {
     double time_other1 = omp_get_wtime();
 #endif
 
-//    std::vector<value_t> &res         = grid->res;
-//    std::vector<value_t> &uCorr       = grid->uCorr;
-//    std::vector<value_t> &res_coarse  = grid->res_coarse;
-//    std::vector<value_t> &uCorrCoarse = grid->uCorrCoarse;
-
-//    std::vector<value_t> res_coarse(grid->Ac.M_old);
-//    std::vector<value_t> uCorrCoarse(grid->Ac.M);
-//    std::vector<value_t> res(grid->A->M);
-//    std::vector<value_t> uCorr(grid->A->M);
-
     auto *res         = &grid->res[0];
     auto *uCorr       = &grid->uCorr[0];
+//    auto *res_coarse  = &grid->res_coarse[0];
+//    auto *uCorrCoarse = &grid->uCorrCoarse[0];
     auto *res_coarse  = saena_aligned_alloc<value_t>(grid->Ac.M_old);
     auto *uCorrCoarse = saena_aligned_alloc<value_t>(grid->Ac.M);
 
@@ -1259,7 +1251,7 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *rhs) {
             vcycle_other += time_other2 - time_other1;
 #endif
 
-            vcycle(grid->coarseGrid, uCorrCoarse, &res_coarse[0]);
+            vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
 
 #ifdef PROFILE_VCYCLE
             MPI_Barrier(comm);
@@ -1628,7 +1620,7 @@ int saena_object::solve(value_t *&u){
 
     int i = 0;
     for(; i < solver_max_iter; ++i){
-        vcycle(&grids[0], u, &rhs[0]);
+        vcycle(&grids[0], u, rhs);
         A->residual(&u[0], &rhs[0], &r[0]);
         dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
@@ -2145,7 +2137,7 @@ int saena_object::solve_pCG(value_t *&u){
 //    dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
-    std::vector<value_t> r(sz);
+    auto *r = saena_aligned_alloc<value_t>(sz);
     A->residual(&u[0], &rhs[0], &r[0]);
 
     double init_dot = 0.0, current_dot = 0.0;
@@ -2155,7 +2147,7 @@ int saena_object::solve_pCG(value_t *&u){
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
-        vcycle(&grids[0], u, &rhs[0]);
+        vcycle(&grids[0], u, rhs);
         A->residual(&u[0], &rhs[0], &r[0]);
         dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
@@ -2186,7 +2178,7 @@ int saena_object::solve_pCG(value_t *&u){
 
     auto *rho = saena_aligned_alloc<value_t>(sz);
     fill(&rho[0], &rho[sz], 0.0);
-    vcycle(&grids[0], rho, &r[0]);
+    vcycle(&grids[0], rho, r);
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2288,7 +2280,7 @@ int saena_object::solve_pCG(value_t *&u){
 #endif
 
         std::fill(&rho[0], &rho[sz], 0.0);
-        vcycle(&grids[0], rho, &r[0]);
+        vcycle(&grids[0], rho, r);
 
 #ifdef PROFILE_PCG
         double time_vcycle2 = omp_get_wtime();
@@ -2373,6 +2365,7 @@ int saena_object::solve_pCG(value_t *&u){
     free_vcycle_memory();
     saena_free(rho);
     saena_free(p);
+    saena_free(r);
 
 #ifdef PROFILE_TOTAL_PCG
     double t_pcg2 = omp_get_wtime();

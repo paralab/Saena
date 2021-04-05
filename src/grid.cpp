@@ -164,12 +164,10 @@ void Grid::repart_back_u(value_t *&u){
 
 void Grid::allocate_mem(){
     if(active){
-        res   = saena_aligned_alloc<value_t>(A->M);
-        uCorr = saena_aligned_alloc<value_t>(A->M);
-//        res.resize(A->M);
-//        uCorr.resize(A->M);
-//        res_coarse.resize(max(Ac.M_old, Ac.M));
-//        uCorrCoarse.resize(max(Ac.M_old, Ac.M));
+        res         = saena_aligned_alloc<value_t>(A->M);
+        uCorr       = saena_aligned_alloc<value_t>(A->M);
+//        res_coarse  = saena_aligned_alloc<value_t>(Ac.M_old);
+//        uCorrCoarse = saena_aligned_alloc<value_t>(Ac.M);
     }
 }
 
@@ -177,5 +175,7 @@ void Grid::free_mem(){
     if(active){
         saena_free(res);
         saena_free(uCorr);
+//        saena_free(res_coarse);
+//        saena_free(uCorrCoarse);
     }
 }
