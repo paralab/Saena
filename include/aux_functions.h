@@ -115,6 +115,7 @@ void setIJV(char* file_name, index_t* I,index_t* J, value_t* V, nnz_t nnz_g, nnz
 
 inline void dotProduct(const value_t *r, const value_t *s, const index_t sz, value_t* dot, MPI_Comm comm){
     value_t dot_l = 0;
+#pragma omp simd aligned(r, s: ALIGN_SZ)
     for(index_t i = 0; i < sz; ++i)
         dot_l += r[i] * s[i];
     MPI_Allreduce(&dot_l, dot, 1, MPI_DOUBLE, MPI_SUM, comm);
