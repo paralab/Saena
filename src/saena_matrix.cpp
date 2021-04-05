@@ -386,6 +386,8 @@ int saena_matrix::read_file(const string &filename, const std::string &input_typ
 
 
 saena_matrix::~saena_matrix(){
+    destroy();
+
     if(dense_matrix != nullptr){
         delete dense_matrix;
         dense_matrix = nullptr;
@@ -630,7 +632,6 @@ int saena_matrix::erase(){
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -653,7 +654,6 @@ int saena_matrix::erase(){
     col_remote2.shrink_to_fit();
     nnzPerRow_local.shrink_to_fit();
     nnzPerCol_remote.shrink_to_fit();
-    inv_diag.shrink_to_fit();
     vdispls.shrink_to_fit();
     rdispls.shrink_to_fit();
     recvProcRank.shrink_to_fit();
@@ -663,6 +663,11 @@ int saena_matrix::erase(){
     sendProcCount.shrink_to_fit();
     requests.shrink_to_fit();
     statuses.shrink_to_fit();
+
+    saena_free(inv_diag);
+    saena_free(inv_diag_orig);
+    saena_free(temp1);
+    saena_free(temp2);
 
 #ifdef SAENA_USE_ZFP
     if(free_zfp_buff){
@@ -704,7 +709,6 @@ int saena_matrix::erase2(){
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -738,7 +742,6 @@ int saena_matrix::erase2(){
     col_remote2.shrink_to_fit();
     nnzPerRow_local.shrink_to_fit();
     nnzPerCol_remote.shrink_to_fit();
-    inv_diag.shrink_to_fit();
     vdispls.shrink_to_fit();
     rdispls.shrink_to_fit();
     recvProcRank.shrink_to_fit();
@@ -757,6 +760,9 @@ int saena_matrix::erase2(){
 //    iter_local_array2.shrink_to_fit();
     vElement_remote.shrink_to_fit();
     w_buff.shrink_to_fit();
+
+    saena_free(inv_diag);
+    saena_free(inv_diag_orig);
 
 #ifdef SAENA_USE_ZFP
     if(free_zfp_buff){
@@ -808,7 +814,6 @@ int saena_matrix::erase_update_local(){
     values_remote.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -816,6 +821,9 @@ int saena_matrix::erase_update_local(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
+
+    saena_free(inv_diag);
+    saena_free(inv_diag_orig);
 
 //    M = 0;
 //    Mbig = 0;
@@ -852,7 +860,6 @@ int saena_matrix::erase_keep_remote2(){
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -871,6 +878,9 @@ int saena_matrix::erase_keep_remote2(){
 //    iter_local_array2.clear();
     vElement_remote.clear();
     w_buff.clear();
+
+    saena_free(inv_diag);
+    saena_free(inv_diag_orig);
 
     // erase_keep_remote() is used in coarsen2(), so keep the memory reserved for performance.
     // so don't use shrink_to_fit() on these vectors.
@@ -954,7 +964,6 @@ int saena_matrix::erase_no_shrink_to_fit(){
     col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
-    inv_diag.clear();
     vdispls.clear();
     rdispls.clear();
     recvProcRank.clear();
@@ -962,6 +971,9 @@ int saena_matrix::erase_no_shrink_to_fit(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
+
+    saena_free(inv_diag);
+    saena_free(inv_diag_orig);
 
 //    data.shrink_to_fit();
 //    data_unsorted.shrink_to_fit();
@@ -1035,15 +1047,20 @@ void saena_matrix::jacobi(const int &iter, value_t *&u, const value_t *rhs) {
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
 
+    value_t *temp1_p = temp1;
+    const value_t *inv_diag_p = inv_diag;
+    const float omega = jacobi_omega;
     const index_t sz = M;
-    for(int j = 0; j < iter; j++){
+
+    for(int j = 0; j < iter; ++j){
         matvec(&u[0], &temp1[0]);
 
-        #pragma omp parallel for
+//        #pragma omp parallel for
+        #pragma omp simd aligned(inv_diag_p, temp1_p, rhs, u: ALIGN_SZ)
         for(index_t i = 0; i < sz; ++i){
-            temp1[i] -= rhs[i];
-            temp1[i] *= inv_diag[i] * jacobi_omega;
-            u[i]     -= temp1[i];
+            temp1_p[i] -= rhs[i];
+            temp1_p[i] *= inv_diag_p[i] * omega;
+            u[i]     -= temp1_p[i];
         }
     }
 }
@@ -1068,16 +1085,18 @@ void saena_matrix::chebyshev(const int &iter, value_t *&u, const value_t *rhs){
           double rhok  = 1 / s1;
           double rhokp1 = 0.0, two_rhokp1 = 0.0, d1 = 0.0, d2 = 0.0;
 
-    std::vector<value_t>& res = temp1;
-    std::vector<value_t>& d   = temp2;
+    value_t *res = temp1;
+    value_t *d   = temp2;
+    const value_t *inv_diag_p = inv_diag;
 
     // first loop
     residual_negative(&u[0], &rhs[0], &res[0]);
 
     const index_t sz = M;
-    #pragma omp parallel for
+//    #pragma omp parallel for
+    #pragma omp simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
     for(index_t i = 0; i < sz; ++i){
-        d[i] = (res[i] * inv_diag[i]) / theta;
+        d[i] = (res[i] * inv_diag_p[i]) / theta;
         u[i] += d[i];
 //        if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                           i, inv_diag[i], i, res[i], i, d[i], i, u[i]);
@@ -1092,9 +1111,10 @@ void saena_matrix::chebyshev(const int &iter, value_t *&u, const value_t *rhs){
 
         residual_negative(&u[0], &rhs[0], &res[0]);
 
-        #pragma omp parallel for
+//        #pragma omp parallel for
+        #pragma omp simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
         for(index_t j = 0; j < sz; ++j){
-            d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag[j]);
+            d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag_p[j] );
             u[j] += d[j];
 //            if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                               j, inv_diag[j], j, res[j], j, d[j], j, u[j]);

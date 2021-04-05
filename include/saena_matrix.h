@@ -45,8 +45,8 @@ private:
     vector<MPI_Request> requests;
     vector<MPI_Status>  statuses;
 
-    std::vector<value_t> temp1;      // to be used in smoothers
-    std::vector<value_t> temp2;      // to be used in smoothers
+    value_t *temp1 = nullptr;
+    value_t *temp2 = nullptr;
 
     int num_threads   = 1;
     int matvec_levels = 1;
@@ -118,9 +118,11 @@ public:
     std::vector<index_t> nnzPerCol_remote;
     std::vector<nnz_t>   nnzPerProcScan; // number of remote nonzeros on each proc. used in matvec_comp.
 
-    std::vector<value_t> inv_diag;
+    value_t *inv_diag      = nullptr;
+    value_t *inv_diag_orig = nullptr;
+//    std::vector<value_t> inv_diag;
     std::vector<value_t> inv_sq_diag;
-    std::vector<value_t> inv_diag_orig;
+//    std::vector<value_t> inv_diag_orig;
     std::vector<value_t> inv_sq_diag_orig;
 
     index_t vIndexSize = 0;

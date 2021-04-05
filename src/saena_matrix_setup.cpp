@@ -536,7 +536,6 @@ int saena_matrix::matrix_setup(bool scale /*= false*/) {
             MPI_Barrier(comm);
         }
 
-        inv_diag.resize(M);
         inverse_diag();
 
 //        print_vector(inv_diag, -1, "inv_diag", comm);
@@ -1051,8 +1050,8 @@ int saena_matrix::set_off_on_diagonal(){
 #endif
 
         // to be used in smoothers
-        temp1.resize(M);
-        temp2.resize(M);
+        temp1 = saena_aligned_alloc<value_t>(M);
+        temp2 = saena_aligned_alloc<value_t>(M);
     }
 
     return 0;
@@ -1358,10 +1357,12 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 
 //        print_vector(inv_diag, -1, "inv_diag", comm);
 
-        inv_diag_orig    = std::move(inv_diag);
+        swap(inv_diag, inv_diag_orig);
+//        inv_diag_orig    = std::move(inv_diag);
         inv_sq_diag_orig = std::move(inv_sq_diag);
 
-        inv_diag.assign(inv_diag_orig.size(), 1);
+        inv_diag = saena_aligned_alloc<value_t>(M);
+        fill(&inv_diag[0], &inv_diag[M], 1.0);
         inv_sq_diag.assign(inv_sq_diag_orig.size(), 1);
 //        inv_sq_diag = inv_sq_diag_orig;
     }
@@ -1517,7 +1518,8 @@ int saena_matrix::inverse_diag() {
 #endif
 
     double temp;
-    inv_diag.assign(M, 0);
+    inv_diag = saena_aligned_alloc<value_t>(M);
+    fill(&inv_diag[0], &inv_diag[M], 0.0);
     inv_sq_diag.assign(M, 0);
 
     if(!entry.empty()) {
@@ -1543,7 +1545,7 @@ int saena_matrix::inverse_diag() {
         }
     }
 
-    for(int i = 0; i < inv_diag.size(); ++i){
+    for(int i = 0; i < M; ++i){
         ASSERT(inv_diag[i] != 0, "rank " << rank << ": " << i << "\t" << inv_diag[i]);
     }
 
