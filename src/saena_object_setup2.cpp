@@ -410,9 +410,13 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     Rcsc.col_sz   = R->Nbig;        //TODO: check if this is correct or Mbig should be used.
     Rcsc.max_nnz  = R->nnz_max;
     Rcsc.max_M    = R->M_max;
-    Rcsc.row      = new index_t[Rcsc.nnz];
-    Rcsc.val      = new value_t[Rcsc.nnz];
-    Rcsc.col_scan = new index_t[Rcsc.col_sz + 1];
+    Rcsc.row      = saena_aligned_alloc<index_t>(Rcsc.nnz);
+    Rcsc.val      = saena_aligned_alloc<value_t>(Rcsc.nnz);
+    Rcsc.col_scan = saena_aligned_alloc<index_t>(Rcsc.col_sz + 1);
+
+    assert(Rcsc.row);
+    assert(Rcsc.val);
+    assert(Rcsc.col_scan);
 
     std::fill(&Rcsc.col_scan[0], &Rcsc.col_scan[Rcsc.col_sz + 1], 0);
     Rcsc.col_scan[0] = 1; // starts from 1, not 0, because the mkl function indexing starts from 1.
@@ -481,9 +485,13 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     Acsc.col_sz   = A->M;
     Acsc.max_nnz  = A->nnz_max;
     Acsc.max_M    = A->M_max;
-    Acsc.row      = new index_t[Acsc.nnz];
-    Acsc.val      = new value_t[Acsc.nnz];
-    Acsc.col_scan = new index_t[Acsc.col_sz + 1];
+    Acsc.row      = saena_aligned_alloc<index_t>(Acsc.nnz);
+    Acsc.val      = saena_aligned_alloc<value_t>(Acsc.nnz);
+    Acsc.col_scan = saena_aligned_alloc<index_t>(Acsc.col_sz + 1);
+
+    assert(Acsc.row);
+    assert(Acsc.val);
+    assert(Acsc.col_scan);
 
     std::fill(&Acsc.col_scan[0], &Acsc.col_scan[Acsc.col_sz + 1], 0);
     Acsc.col_scan[0] = 1;
@@ -588,21 +596,13 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
 
     // keep the mempool parameters for the next part
 
-    delete []Rcsc.row;
-    delete []Rcsc.val;
-    delete []Rcsc.col_scan;
+    saena_free(Rcsc.row);
+    saena_free(Rcsc.val);
+    saena_free(Rcsc.col_scan);
 
-    Rcsc.row = nullptr;
-    Rcsc.val = nullptr;
-    Rcsc.col_scan = nullptr;
-
-    delete []Acsc.row;
-    delete []Acsc.val;
-    delete []Acsc.col_scan;
-
-    Acsc.row = nullptr;
-    Acsc.val = nullptr;
-    Acsc.col_scan = nullptr;
+    saena_free(Acsc.row);
+    saena_free(Acsc.val);
+    saena_free(Acsc.col_scan);
 
     matmat_memory_free();
 
@@ -623,9 +623,13 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     RAcsc.nnz      = RA.entry.size();
     RAcsc.col_sz   = A->Mbig;
 //    RAcsc.max_M    = R->M_max;    // we only need this for the right-hand side matrix in matmat.
-    RAcsc.row      = new index_t[RAcsc.nnz];
-    RAcsc.val      = new value_t[RAcsc.nnz];
-    RAcsc.col_scan = new index_t[RAcsc.col_sz + 1];
+    RAcsc.row      = saena_aligned_alloc<index_t>(RAcsc.nnz);
+    RAcsc.val      = saena_aligned_alloc<value_t>(RAcsc.nnz);
+    RAcsc.col_scan = saena_aligned_alloc<index_t>(RAcsc.col_sz + 1);
+
+    assert(RAcsc.row);
+    assert(RAcsc.val);
+    assert(RAcsc.col_scan);
 
     // compute nnz_max
     MPI_Allreduce(&RAcsc.nnz, &RAcsc.max_nnz, 1, par::Mpi_datatype<nnz_t>::value(), MPI_MAX, comm);
@@ -701,9 +705,13 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     Pcsc.col_sz   = R->M;
     Pcsc.max_nnz  = R->nnz_max;
     Pcsc.max_M    = R->M_max;
-    Pcsc.row      = new index_t[Pcsc.nnz];
-    Pcsc.val      = new value_t[Pcsc.nnz];
-    Pcsc.col_scan = new index_t[Pcsc.col_sz + 1];
+    Pcsc.row      = saena_aligned_alloc<index_t>(Pcsc.nnz);
+    Pcsc.val      = saena_aligned_alloc<value_t>(Pcsc.nnz);
+    Pcsc.col_scan = saena_aligned_alloc<index_t>(Pcsc.col_sz + 1);
+
+    assert(Pcsc.row);
+    assert(Pcsc.val);
+    assert(Pcsc.col_scan);
 
     std::fill(&Pcsc.col_scan[0], &Pcsc.col_scan[Pcsc.col_sz + 1], 0);
     Pcsc.col_scan[0] = 1;
@@ -812,21 +820,13 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     // finalize
     // =======================================
 
-    delete []RAcsc.row;
-    delete []RAcsc.val;
-    delete []RAcsc.col_scan;
+    saena_free(RAcsc.row);
+    saena_free(RAcsc.val);
+    saena_free(RAcsc.col_scan);
 
-    RAcsc.row = nullptr;
-    RAcsc.val = nullptr;
-    RAcsc.col_scan = nullptr;
-
-    delete []Pcsc.row;
-    delete []Pcsc.val;
-    delete []Pcsc.col_scan;
-
-    Pcsc.row = nullptr;
-    Pcsc.val = nullptr;
-    Pcsc.col_scan = nullptr;
+    saena_free(Pcsc.row);
+    saena_free(Pcsc.val);
+    saena_free(Pcsc.col_scan);
 
     matmat_memory_free();
 
@@ -970,7 +970,8 @@ void saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
     // allocate memory and initialize the second half's col_scan
     // ========================================================
 
-    A2.col_scan = new index_t[A2.col_sz + 1];
+    A2.col_scan = saena_aligned_alloc<index_t>(A2.col_sz + 1);
+    assert(A2.col_scan);
     A2.free_c   = true;
     auto *Ac2_p = &A2.col_scan[1]; // to do scan on it at the end.
 
@@ -1127,8 +1128,7 @@ void saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
     // if A1 does not have any nonzero, then free A2's memory and make A2.col_scan point to A.col_scan and return.
     if(A1.nnz == 0){
-        delete [] A2.col_scan;
-        A2.col_scan = nullptr;
+        saena_free(A2.col_scan);
         A2.free_c   = false;
         A2.col_scan = A1.col_scan;
         A2.r = &A.r[0];
@@ -1153,8 +1153,7 @@ void saena_object::reorder_split(CSCMat_mm &A, CSCMat_mm &A1, CSCMat_mm &A2){
 
     // if A2 does not have any nonzero, then free its memory and return.
     if(A2.nnz == 0){
-        delete [] A2.col_scan;
-        A2.col_scan = nullptr;
+        saena_free(A2.col_scan);
         A2.free_c   = false;
 
 #ifdef __DEBUG1__

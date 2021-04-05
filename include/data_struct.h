@@ -576,17 +576,17 @@ public:
 
     ~CSCMat_mm(){
         if(free_r){
-            delete []r;
+            free(r);
             r = nullptr;
             free_r = false;
         }
         if(free_c){
-            delete []col_scan;
+            free(col_scan);
             col_scan = nullptr;
             free_c = false;
         }
         if(free_v){
-            delete []v;
+            free(v);
             v = nullptr;
             free_v = false;
         }
