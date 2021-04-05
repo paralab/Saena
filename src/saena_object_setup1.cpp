@@ -97,17 +97,18 @@ int saena_object::SA(Grid *grid){
     // use these to avoid subtracting A->split[rank] from each aggregate[i]
     auto *aggregate_p = &aggregate[0] - A->split[rank];
 
+    const index_t sz = A->M;
     value_t *Q = nullptr;
     if(PSmoother == "jacobi"){
         // P = (I - 4 / (3 * rhoDA) * DA) * P_t
         Q = &A->inv_diag[0];
         Pomega = A->jacobi_omega; // todo: receive omega as user input. it is usually 2/3 for 2D and 6/7 for 3D.
     }else if(PSmoother == "SPAI"){
-        Q = new value_t[A->M];
+        Q = saena_aligned_alloc<value_t>(sz);
         assert(Q);
-        fill(&Q[0], &Q[A->M], 0);
+        fill(&Q[0], &Q[sz], 0);
 
-        std::vector<value_t> QA(A->M, 0);
+        std::vector<value_t> QA(sz, 0);
 
         value_t *Qp  = &Q[0] - A->split[rank];
         value_t *QAp = &QA[0] - A->split[rank];
@@ -118,10 +119,10 @@ int saena_object::SA(Grid *grid){
         }
 
         value_t rhoQA_l = 0;
-        for(i = 0; i < A->M; ++i){
-            Q[i]   = 1.0 / (A->inv_diag[i] * Q[i]);
-            assert(Q[i]);
+        for(i = 0; i < sz; ++i){
+            Q[i]    = 1.0 / (A->inv_diag[i] * Q[i]);
             rhoQA_l = max(rhoQA_l, QA[i]);
+            assert(Q[i]);
 //            if(rank == 1) printf("Q[i] = %f, A->inv_diag[i] = %f\n", Q[i], A->inv_diag[i]);
         }
 
@@ -141,7 +142,7 @@ int saena_object::SA(Grid *grid){
     // go through A row-wise using indicesP_local (there is no order for the columns, only rows are ordered.)
     value_t vtmp = 0;
     long iter = 0;
-    for (i = 0; i < A->M; ++i) {
+    for (i = 0; i < sz; ++i) {
         const auto r_idx = i + A->split[rank];      // row index
 
         for (j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
@@ -192,7 +193,7 @@ int saena_object::SA(Grid *grid){
 #endif
 
     if(PSmoother == "SPAI"){
-        delete [] Q;
+        saena_free(Q);
     }
 
     // add duplicates.
@@ -2059,18 +2060,20 @@ int saena_object::change_aggregation(saena_matrix* A, std::vector<index_t>& aggr
     fill(splitNew.begin(), splitNew.end(), 0);
     splitNew[rank] = newSize;
 
-    auto* splitNewTemp = new index_t[nprocs];
+    auto* splitNewTemp = saena_aligned_alloc<index_t>(nprocs);
+    assert(splitNewTemp);
     MPI_Allreduce(&splitNew[0], splitNewTemp, nprocs, par::Mpi_datatype<index_t>::value(), MPI_SUM, comm);
 
     // do scan on splitNew
+    const index_t iend = nprocs + 1;
     splitNew[0] = 0;
-    for(i = 1; i < nprocs+1; ++i)
+    for(i = 1; i < iend; ++i)
         splitNew[i] = splitNew[i-1] + splitNewTemp[i-1];
 
 //    for(i=0; i<nprocs+1; i++)
 //        std::cout << splitNew[i] << std::endl;
 
-    delete []splitNewTemp;
+    saena_free(splitNewTemp);
 
     return 0;
 }
