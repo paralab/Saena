@@ -12,6 +12,7 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
     int nprocs, rank;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+    const index_t sz = M;
 
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
@@ -38,7 +39,7 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
     }
 
     // initialize w to 0
-    fill(&w[0], &w[M], 0);
+    fill(&w[0], &w[sz], 0);
 
     // local loop
     // ----------
@@ -53,7 +54,7 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
         value_t* values_local_p = nullptr;
         nnz_t    iter           = iter_local_array[omp_get_thread_num()];
 #pragma omp for
-        for (index_t i = 0; i < M; ++i) {
+        for (index_t i = 0; i < sz; ++i) {
             col_local_p    = &col_local[iter];
             values_local_p = &values_local[iter];
             const index_t jend = nnzPerRow_local[i];

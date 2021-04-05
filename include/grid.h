@@ -42,12 +42,15 @@ public:
     std::vector<int> sproc_id; // store the index of nonzero scounts2
 
     std::vector<MPI_Request> requests;  // used in repart_u() and repart_back_u()
-    std::vector<value_t> u_old;         // used in repart_u() and repart_back_u()
+    value_t *u_old = nullptr;           // used in repart_u() and repart_back_u()
 
-    std::vector<value_t> res;
-    std::vector<value_t> uCorr;
+//    std::vector<value_t> res;
+//    std::vector<value_t> uCorr;
 //    std::vector<value_t> res_coarse;
 //    std::vector<value_t> uCorrCoarse;
+
+    value_t *res   = nullptr;
+    value_t *uCorr = nullptr;
 
     Grid() = default;
 
@@ -57,15 +60,17 @@ public:
     }
 
     ~Grid(){
-        if(rhs != nullptr){
-            free(rhs);
-            rhs = nullptr;
-        }
+        saena_free(rhs);
+        saena_free(u_old);
+        saena_free(res);
+        saena_free(uCorr);
     }
 
     void repart_u_prepare();
-    void repart_u(std::vector<value_t> &u);
-    void repart_back_u(std::vector<value_t> &u);
+    void repart_u(value_t *&u);
+    void repart_back_u(value_t *&u);
+    void allocate_mem();
+    void free_mem();
 };
 
 #endif //SAENA_GRID_H

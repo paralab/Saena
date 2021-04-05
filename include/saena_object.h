@@ -340,21 +340,22 @@ public:
     // solve functions
     // **********************************************
 
-    int solve(std::vector<value_t>& u);
-    int solve_smoother(std::vector<value_t>& u);
-    int solve_CG(std::vector<value_t>& u);
-	int solve_petsc(std::vector<value_t>& u, string petsc_solver, double tol);
-    int solve_pCG(std::vector<value_t>& u);
-    inline void setup_vcycle_memory();
-    void vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs);
-    void inline smooth(Grid *grid, std::vector<value_t> &u, value_t *rhs, int iter) const;
+    int solve(value_t *&u);
+    int solve_smoother(value_t *&u);
+    int solve_CG(value_t *&u);
+	int solve_petsc(value_t *&u, string petsc_solver, double tol);
+    int solve_pCG(value_t *&u);
+    inline void alloc_vcycle_memory();
+    inline void free_vcycle_memory();
+    void vcycle(Grid* grid, value_t *&u, value_t *rhs);
+    void inline smooth(Grid *grid, value_t *&u, value_t *rhs, int iter) const;
 
     // *****************
     // GMRES functions
     // *****************
 
-    int  GMRES(std::vector<double> &u);
-    int  pGMRES(std::vector<double> &u);
+    int  GMRES(value_t *&u);
+    int  pGMRES(value_t *&u);
     void GMRES_update(std::vector<double> &x, index_t k, saena_matrix_dense &h, std::vector<double> &s, std::vector<std::vector<double>> &v);
     void GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn);
     void ApplyPlaneRotation(double &dx, double &dy, const double &cs, const double &sn);

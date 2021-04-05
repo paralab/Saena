@@ -338,7 +338,7 @@ void saena::vector::get_vec(value_t *&vec){
 }
 
 
-int saena::vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
+int saena::vector::return_vec(value_t *&u1, value_t *&u2){
     m_pImpl->return_vec(u1, u2);
     return 0;
 }
@@ -726,7 +726,7 @@ MPI_Comm saena::amg::get_orig_comm(){
 }
 
 
-int saena::amg::solve_smoother(std::vector<value_t>& u, saena::options* opts){
+int saena::amg::solve_smoother(value_t *&u, saena::options* opts){
     m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
                               opts->get_postSmooth());
     m_pImpl->solve_smoother(u);
@@ -735,7 +735,7 @@ int saena::amg::solve_smoother(std::vector<value_t>& u, saena::options* opts){
     return 0;
 }
 
-int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
+int saena::amg::solve(value_t *&u, saena::options* opts){
     m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
                               opts->get_postSmooth());
     m_pImpl->solve(u);
@@ -745,7 +745,7 @@ int saena::amg::solve(std::vector<value_t>& u, saena::options* opts){
 }
 
 
-int saena::amg::solve_CG(std::vector<value_t>& u, saena::options* opts){
+int saena::amg::solve_CG(value_t *&u, saena::options* opts){
     m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
                               opts->get_postSmooth());
     m_pImpl->solve_CG(u);
@@ -754,14 +754,14 @@ int saena::amg::solve_CG(std::vector<value_t>& u, saena::options* opts){
     return 0;
 }
 
-int saena::amg::solve_petsc(std::vector<value_t>& u, saena::options* opts){
+int saena::amg::solve_petsc(value_t *&u, saena::options* opts){
     m_pImpl->solve_petsc(u, opts->get_petsc_solver(), opts->get_tol());
     Grid *g = &m_pImpl->grids[0];
     g->rhs_orig->return_vec(u);
     return 0;
 }
 
-int saena::amg::solve_pCG(std::vector<value_t>& u, saena::options* opts){
+int saena::amg::solve_pCG(value_t *&u, saena::options* opts){
     m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
                               opts->get_postSmooth());
     m_pImpl->solve_pCG(u);
@@ -777,7 +777,7 @@ int saena::amg::solve_pCG(std::vector<value_t>& u, saena::options* opts){
 }
 
 
-int saena::amg::solve_GMRES(std::vector<value_t>& u, saena::options* opts){
+int saena::amg::solve_GMRES(value_t *&u, saena::options* opts){
     m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
                               opts->get_postSmooth());
     m_pImpl->GMRES(u);
@@ -787,7 +787,7 @@ int saena::amg::solve_GMRES(std::vector<value_t>& u, saena::options* opts){
 }
 
 
-int saena::amg::solve_pGMRES(std::vector<value_t>& u, saena::options* opts){
+int saena::amg::solve_pGMRES(value_t *&u, saena::options* opts){
     m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
                               opts->get_postSmooth());
     m_pImpl->pGMRES(u);

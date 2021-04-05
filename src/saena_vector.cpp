@@ -235,7 +235,7 @@ void saena_vector::get_vec(value_t *&v){
 }
 
 
-int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
+int saena_vector::return_vec(const value_t *u1, value_t *&u2){
     // input:  u1
     // output: u2
     // if it is run in serial, only do the permutation, otherwise communication is needed for the duplicates.
@@ -258,11 +258,16 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
 //    print_vector(orig_order, -1, "orig_order", comm);
 #endif
 
-    u2.resize(orig_order.size());
+    const index_t sz = get_size();
+    const index_t orig_sz = orig_order.size();
+//    u2.resize(orig_order.size());
+    if(u2 != nullptr)
+        saena_free(u2);
+    u2 = saena_aligned_alloc<value_t>(orig_sz);
 
     if(nprocs == 1){
 
-        for(index_t i = 0; i < orig_order.size(); i++){
+        for(index_t i = 0; i < orig_sz; ++i){
             u2[i] = u1[orig_order[i]];
         }
 
@@ -276,7 +281,7 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
             return_vec_prep = true;
             long procNum = 0;
             recvCount.assign(nprocs, 0);
-            std::fill(u2.begin(), u2.end(), 0);
+            std::fill(&u2[0], &u2[orig_sz], 0.0);
 
             for (index_t i = 0; i < orig_order.size(); i++) {
 //            if(rank==1) printf("%u \t%u\n", i, orig_order[i]);
@@ -481,14 +486,15 @@ int saena_vector::return_vec(std::vector<double> &u1, std::vector<double> &u2){
     return 0;
 }
 
-int saena_vector::return_vec(std::vector<double> &u2){
+int saena_vector::return_vec(value_t *&u2){
     // input:  u2
     // output: u2
 
     // copy u2 to u1
-    std::vector<double> u1 = u2;
+    const index_t sz = get_size();
+    auto *u1 = saena_aligned_alloc<value_t>(sz);
     return_vec(u1, u2);
-
+    saena_free(u1);
     return 0;
 }
 

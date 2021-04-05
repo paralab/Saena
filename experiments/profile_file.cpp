@@ -90,9 +90,8 @@ int main(int argc, char* argv[]){
 
     // *************************** set u0 ****************************
 
-    // u is the initial guess. at the end, it will be the solution.
-//    std::vector<double> u(num_local_row, 0); // initial guess = 0
-    std::vector<double> u;
+//    std::vector<double> u;
+    value_t *u = nullptr;
 
     // *************************** AMG - Setup ****************************
     // There are 3 ways to set options:
@@ -136,10 +135,8 @@ int main(int argc, char* argv[]){
         A.destroy();
         if(free_amg)
             solver.destroy();
-        if(rhs_std){
-            free(rhs_std);
-            rhs_std = nullptr;
-        }
+        saena_free(rhs_std);
+        saena_free(u);
         MPI_Finalize();
         return 0;
     }
@@ -296,10 +293,8 @@ int main(int argc, char* argv[]){
     A.destroy();
     if(free_amg)
         solver.destroy();
-    if(rhs_std){
-        free(rhs_std);
-        rhs_std = nullptr;
-    }
+    saena_free(rhs_std);
+    saena_free(u);
     MPI_Finalize();
     return 0;
 }

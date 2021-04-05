@@ -1023,7 +1023,7 @@ int saena_matrix::set_zero(){
 }
 
 
-void saena_matrix::jacobi(const int &iter, std::vector<value_t>& u, const value_t *rhs) {
+void saena_matrix::jacobi(const int &iter, value_t *&u, const value_t *rhs) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Au - rhs)
@@ -1049,7 +1049,7 @@ void saena_matrix::jacobi(const int &iter, std::vector<value_t>& u, const value_
 }
 
 
-void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, const value_t *rhs){
+void saena_matrix::chebyshev(const int &iter, value_t *&u, const value_t *rhs){
 
 #ifdef __DEBUG1__
 //    int rank;
@@ -1074,7 +1074,7 @@ void saena_matrix::chebyshev(const int &iter, std::vector<value_t>& u, const val
     // first loop
     residual_negative(&u[0], &rhs[0], &res[0]);
 
-    const index_t sz = u.size();
+    const index_t sz = M;
     #pragma omp parallel for
     for(index_t i = 0; i < sz; ++i){
         d[i] = (res[i] * inv_diag[i]) / theta;

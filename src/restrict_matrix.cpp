@@ -591,11 +591,12 @@ int restrict_matrix::openmp_setup() {
 restrict_matrix::~restrict_matrix() = default;
 
 
-void restrict_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t>& w) {
+void restrict_matrix::matvec_sparse(value_t *v, value_t *w) {
 
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
     int flag = 0;
+    const index_t sz = M;
 
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
@@ -620,7 +621,7 @@ void restrict_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t
     }
 
     // initialize w to 0
-    fill(w.begin(), w.end(), 0);
+    fill(&w[0], &w[sz], 0);
 
     // local loop
     // ----------
@@ -636,13 +637,13 @@ void restrict_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t
 #pragma omp parallel
     {
         value_t  tmp         = 0;
-        value_t* v_p         = &v[0] - split[rank];
+        const value_t* v_p   = &v[0] - split[rank];
         index_t* col_local_p = nullptr;
         value_t* val_local_p = nullptr;
         nnz_t    iter        = iter_local_array[omp_get_thread_num()];
 //        nnz_t iter = 0;
 #pragma omp for
-        for (index_t i = 0; i < M; ++i) {
+        for (index_t i = 0; i < sz; ++i) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
@@ -714,11 +715,12 @@ void restrict_matrix::matvec_sparse(std::vector<value_t>& v, std::vector<value_t
 //    tcomm += (t2comm - t1comm) - (t2loc - t1loc) - (t2rem - t1rem);
 }
 
-void restrict_matrix::matvec_sparse_float(std::vector<value_t>& v, std::vector<value_t>& w) {
+void restrict_matrix::matvec_sparse_float(value_t *v, value_t *w) {
 
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
     int flag = 0;
+    const index_t sz = M;
 
     // put the values of the vector in vSend, for sending to other processors
 #pragma omp parallel for
@@ -743,7 +745,7 @@ void restrict_matrix::matvec_sparse_float(std::vector<value_t>& v, std::vector<v
     }
 
     // initialize w to 0
-    fill(w.begin(), w.end(), 0);
+    fill(&w[0], &w[sz], 0);
 
     // local loop
     // ----------
@@ -752,13 +754,13 @@ void restrict_matrix::matvec_sparse_float(std::vector<value_t>& v, std::vector<v
 #pragma omp parallel
     {
         value_t  tmp         = 0;
-        value_t* v_p         = &v[0] - split[rank];
+        const value_t* v_p   = &v[0] - split[rank];
         index_t* col_local_p = nullptr;
         value_t* val_local_p = nullptr;
         nnz_t    iter        = iter_local_array[omp_get_thread_num()];
 //        nnz_t iter = 0;
 #pragma omp for
-        for (index_t i = 0; i < M; ++i) {
+        for (index_t i = 0; i < sz; ++i) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];

@@ -956,7 +956,7 @@ void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *
 }
 
 
-void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
+void saena_object::vcycle(Grid* grid, value_t *&u, value_t *rhs) {
 
     if (!grid->A->active) {
         return;
@@ -979,8 +979,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
         MPI_Barrier(comm);
         if (!rank) printf("\n");
         MPI_Barrier(comm);
-        printf("rank = %d: vcycle level = %d, A->M = %u, u.size = %lu\n",
-               rank, grid->level, grid->A->M, u.size());
+        printf("rank = %d: vcycle level = %d, A->M = %u\n", rank, grid->level, grid->A->M);
         MPI_Barrier(comm);
     }
 #endif
@@ -1060,15 +1059,20 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
     double time_other1 = omp_get_wtime();
 #endif
 
-    std::vector<value_t> &res         = grid->res;
-    std::vector<value_t> &uCorr       = grid->uCorr;
+//    std::vector<value_t> &res         = grid->res;
+//    std::vector<value_t> &uCorr       = grid->uCorr;
 //    std::vector<value_t> &res_coarse  = grid->res_coarse;
 //    std::vector<value_t> &uCorrCoarse = grid->uCorrCoarse;
 
-    std::vector<value_t> res_coarse(grid->Ac.M_old);
-    std::vector<value_t> uCorrCoarse(grid->Ac.M);
+//    std::vector<value_t> res_coarse(grid->Ac.M_old);
+//    std::vector<value_t> uCorrCoarse(grid->Ac.M);
 //    std::vector<value_t> res(grid->A->M);
 //    std::vector<value_t> uCorr(grid->A->M);
+
+    auto *res         = &grid->res[0];
+    auto *uCorr       = &grid->uCorr[0];
+    auto *res_coarse  = saena_aligned_alloc<value_t>(grid->Ac.M_old);
+    auto *uCorrCoarse = saena_aligned_alloc<value_t>(grid->Ac.M);
 
 #ifdef PROFILE_VCYCLE
     double time_other2 = omp_get_wtime();
@@ -1099,7 +1103,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
     double time_smooth_pre1 = 0.0, time_smooth_pre2 = 0.0;
 //    if (grid->level == 0) {
 #ifdef PROFILE_VCYCLE
-        MPI_Barrier(comm);
+    MPI_Barrier(comm);
         time_smooth_pre1 = omp_get_wtime();
 #endif
 //    }
@@ -1110,7 +1114,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 
 //    if (grid->level == 0) {
 #ifdef PROFILE_VCYCLE
-        time_smooth_pre2 = omp_get_wtime();
+    time_smooth_pre2 = omp_get_wtime();
         vcycle_smooth_time += time_smooth_pre2 - time_smooth_pre1;
 #endif
 //    }
@@ -1174,7 +1178,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
     double t_trans1 = omp_get_wtime();
 #endif
 
-    grid->R.matvec(res, res_coarse);
+    grid->R.matvec(&res[0], &res_coarse[0]);
 
 #ifdef PROFILE_VCYCLE
     double t_trans2 = omp_get_wtime();
@@ -1239,17 +1243,16 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 #endif
 
 #ifdef PROFILE_VCYCLE
-//            MPI_Barrier(comm); // barrier is not needed, because there is synchronization at the end of repart_u()
+            //            MPI_Barrier(comm); // barrier is not needed, because there is synchronization at the end of repart_u()
             time_other1 = omp_get_wtime();
 #endif
 
             // scale rhs of the next level
             if(scale) {
-                scale_vector(res_coarse, grid->coarseGrid->A->inv_sq_diag_orig);
+                scale_vector(&res_coarse[0], &grid->coarseGrid->A->inv_sq_diag_orig[0], grid->Ac.M);
             }
 
-//            uCorrCoarse.assign(grid->Ac.M, 0);
-            fill(uCorrCoarse.begin(), uCorrCoarse.end(), 0);
+            fill(&uCorrCoarse[0], &uCorrCoarse[grid->Ac.M], 0);
 
 #ifdef PROFILE_VCYCLE
             time_other2 = omp_get_wtime();
@@ -1265,7 +1268,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 
             // scale uCorrCoarse
             if(scale) {
-                scale_vector(uCorrCoarse, grid->coarseGrid->A->inv_sq_diag_orig);
+                scale_vector(&uCorrCoarse[0], &grid->coarseGrid->A->inv_sq_diag_orig[0], grid->Ac.M);
             }
 
 #ifdef PROFILE_VCYCLE
@@ -1357,8 +1360,8 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
     time_other1 = omp_get_wtime();
 #endif
 
-    #pragma omp parallel for default(none) shared(u, uCorr)
-    for (index_t i = 0; i < u.size(); i++)
+#pragma omp parallel for default(none) shared(u, uCorr, sz)
+    for (index_t i = 0; i < sz; ++i)
         u[i] -= uCorr[i];
 
 #ifdef PROFILE_VCYCLE
@@ -1390,7 +1393,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
     double time_smooth_post1 = 0.0, time_smooth_post2 = 0.0;
 //    if (grid->level == 0) {
 #ifdef PROFILE_VCYCLE
-        MPI_Barrier(comm);
+    MPI_Barrier(comm);
         time_smooth_post1 = omp_get_wtime();
 //    }
 #endif
@@ -1401,7 +1404,7 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
 
 //    if (grid->level == 0) {
 #ifdef PROFILE_VCYCLE
-        time_smooth_post2 = omp_get_wtime();
+    time_smooth_post2 = omp_get_wtime();
         vcycle_smooth_time += time_smooth_post2 - time_smooth_post1;
 #endif
 //    }
@@ -1421,12 +1424,15 @@ void saena_object::vcycle(Grid* grid, std::vector<value_t>& u, value_t *rhs) {
         if(rank==0) std::cout << "level = " << grid->level << ", after post-smooth = " << sqrt(dot) << std::endl;
     }
 #endif
+    saena_free(uCorrCoarse);
+    saena_free(res_coarse);
 }
 
-int saena_object::solve_petsc(std::vector<value_t>& u, string petsc_solver, double tol) {
+int saena_object::solve_petsc(value_t *&u, string petsc_solver, double tol) {
 
     auto *A = grids[0].A;
     value_t *rhs = &grids[0].rhs[0];
+    const index_t sz = A->M;
 
     MPI_Comm comm = A->comm;
     int nprocs = 0, rank = 0;
@@ -1437,8 +1443,10 @@ int saena_object::solve_petsc(std::vector<value_t>& u, string petsc_solver, doub
 	solver_tol = tol;
 	
 	string petsc_option;
-    //std::vector<double> u_petsc(rhs.size());
-    u.assign(A->M, 0);
+	if(u == nullptr){
+        u = saena_aligned_alloc<value_t>(sz);
+	}
+	fill(&u[0], &u[sz], 0.0);
 
 	if (petsc_solver == "gamg")	{
     	// call gamg
@@ -1545,7 +1553,7 @@ int saena_object::solve_petsc(std::vector<value_t>& u, string petsc_solver, doub
 	return 0;
 }
 
-int saena_object::solve(std::vector<value_t>& u){
+int saena_object::solve(value_t *&u){
 
     auto *A = grids[0].A;
     value_t *rhs = &grids[0].rhs[0];
@@ -1584,11 +1592,15 @@ int saena_object::solve(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-    u.assign(sz, 0);
+    if(u == nullptr){
+        u = saena_aligned_alloc<value_t>(sz);
+    }
+
+    fill(&u[0], &u[sz], 0);
 
     // ************** allocate memory for vcycle **************
 
-    setup_vcycle_memory();
+    alloc_vcycle_memory();
 
     // ************** solve **************
 
@@ -1648,13 +1660,17 @@ int saena_object::solve(std::vector<value_t>& u){
     // ************** scale u **************
 
     if(scale){
-        scale_vector(u, A->inv_sq_diag_orig);
+        scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
     }
 
     // ************** repartition u back **************
 
 //    if(repartition)
 //        repartition_back_u(u);
+
+    // ************** free memory **************
+
+    free_vcycle_memory();
 
 #ifdef __DEBUG1__
 //    print_vector(u, -1, "u", comm);
@@ -1669,7 +1685,7 @@ int saena_object::solve(std::vector<value_t>& u){
 }
 
 
-int saena_object::solve_smoother(std::vector<value_t>& u){
+int saena_object::solve_smoother(value_t *&u){
 
     auto *A = grids[0].A;
     value_t *rhs = &grids[0].rhs[0];
@@ -1699,7 +1715,11 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-    u.assign(sz, 0);
+    if(u == nullptr){
+        u = saena_aligned_alloc<value_t>(sz);
+    }
+
+    fill(&u[0], &u[sz], 0);
 
     // ************** solve **************
 
@@ -1748,7 +1768,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
     // ************** scale u **************
 
     if(scale){
-        scale_vector(u, A->inv_sq_diag_orig);
+        scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
     }
 
     // ************** repartition u back **************
@@ -1762,7 +1782,7 @@ int saena_object::solve_smoother(std::vector<value_t>& u){
 }
 
 
-int saena_object::solve_CG(std::vector<value_t>& u){
+int saena_object::solve_CG(value_t *&u){
 
     auto *A = grids[0].A;
     value_t *rhs = &grids[0].rhs[0];
@@ -1822,7 +1842,11 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-    u.assign(sz, 0);
+    if(u == nullptr){
+        u = saena_aligned_alloc<value_t>(sz);
+    }
+
+    fill(&u[0], &u[sz], 0);
 
     // ************** solve **************
 
@@ -1987,7 +2011,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
     // ************** scale u **************
 
     if(scale){
-        scale_vector(u, A->inv_sq_diag_orig);
+        scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
     }
 
     // ************** repartition u back **************
@@ -2014,7 +2038,7 @@ int saena_object::solve_CG(std::vector<value_t>& u){
 }
 
 
-int saena_object::solve_pCG(std::vector<value_t>& u){
+int saena_object::solve_pCG(value_t *&u){
 
     auto *A = grids[0].A;
     value_t *rhs = &grids[0].rhs[0];
@@ -2103,11 +2127,15 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
     // ************** initialize u **************
 
-    u.assign(sz, 0);
+    if(u == nullptr){
+        u = saena_aligned_alloc<value_t>(sz);
+    }
+
+    fill(&u[0], &u[sz], 0);
 
     // ************** allocate memory for vcycle **************
 
-    setup_vcycle_memory();
+    alloc_vcycle_memory();
 
     // ************** solve **************
 
@@ -2145,7 +2173,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 
         // scale the solution u
         if(scale) {
-            scale_vector(u, A->inv_sq_diag_orig);
+            scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
         }
 
         // repartition u back
@@ -2156,7 +2184,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         return 0;
     }
 
-    std::vector<value_t> rho(sz, 0);
+    auto *rho = saena_aligned_alloc<value_t>(sz);
+    fill(&rho[0], &rho[sz], 0.0);
     vcycle(&grids[0], rho, &r[0]);
 
 #ifdef __DEBUG1__
@@ -2175,7 +2204,8 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 #endif
 
     std::vector<value_t> h(sz);
-    std::vector<value_t> p = rho;
+    auto *p = saena_aligned_alloc<value_t>(sz);
+    copy(&rho[0], &rho[sz], &p[0]);
 
     const double THRSHLD = init_dot * solver_tol * solver_tol;
 
@@ -2257,7 +2287,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
         double time_vcycle1 = omp_get_wtime();
 #endif
 
-        std::fill(rho.begin(), rho.end(), 0);
+        std::fill(&rho[0], &rho[sz], 0.0);
         vcycle(&grids[0], rho, &r[0]);
 
 #ifdef PROFILE_PCG
@@ -2327,7 +2357,7 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //    writeVectorToFile(u, "sol", comm);
 
     if(scale){
-        scale_vector(u, A->inv_sq_diag_orig);
+        scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
     }
 
     // ************** repartition u back **************
@@ -2337,6 +2367,12 @@ int saena_object::solve_pCG(std::vector<value_t>& u){
 //    if(repartition){
 //        repartition_back_u(u);
 //    }
+
+    // ************** free memory **************
+
+    free_vcycle_memory();
+    saena_free(rho);
+    saena_free(p);
 
 #ifdef PROFILE_TOTAL_PCG
     double t_pcg2 = omp_get_wtime();
@@ -2623,7 +2659,7 @@ void saena_object::ApplyPlaneRotation(double &dx, double &dy, const double &cs, 
 }
 
 
-int saena_object::GMRES(std::vector<double> &u) {
+int saena_object::GMRES(value_t *&u) {
     // GMRES proconditioned with AMG
 //    Preconditioner &M, Matrix &H;
 #if 0
@@ -2892,7 +2928,7 @@ int saena_object::GMRES(std::vector<double> &u) {
 //template < class Operator, class Preconditioner, class Matrix>
 //int GMRES(std::vector<double> &u, std::vector<double> &rhs,
 //                        const Preconditioner &M, Matrix &H, int &m, int &max_iter, double &tol){
-int saena_object::pGMRES(std::vector<double> &u){
+int saena_object::pGMRES(value_t *&u){
     // GMRES proconditioned with AMG
 //    Preconditioner &M, Matrix &H;
 #if 0

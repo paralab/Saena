@@ -1224,7 +1224,7 @@ int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, cons
     return 0;
 }
 
-int petsc_solve(saena_matrix *A1, value_t *&b1, vector<value_t> &x1, const double &rel_tol, const char in_str[], string pc_type){
+int petsc_solve(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_tol, const char in_str[], string pc_type){
 
     Vec            x,b;      /* approx solution, RHS */
     Mat            A;        /* linear system matrix */
@@ -1323,7 +1323,7 @@ int petsc_solve(saena_matrix *A1, value_t *&b1, vector<value_t> &x1, const doubl
 //    VecView(x, PETSC_VIEWER_STDOUT_WORLD);
 
     VecGetArray(x, &array);
-    for (int i = 0; i < x1.size(); i++)
+    for (int i = 0; i < sz; ++i)
         x1[i] = array[i];
     VecRestoreArray(x, &array);
 

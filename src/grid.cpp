@@ -93,10 +93,10 @@ void Grid::repart_u_prepare(){
     scount2.shrink_to_fit();
 
     requests.resize(rcount3.size() + scount3.size());
-    u_old.resize(Ac.M);
+    u_old = saena_aligned_alloc<value_t>(Ac.M);
 }
 
-void Grid::repart_u(std::vector<value_t> &u){
+void Grid::repart_u(value_t *&u){
     // this is used in vcycle
 
     MPI_Comm comm = Ac.comm_old;
@@ -108,7 +108,7 @@ void Grid::repart_u(std::vector<value_t> &u){
 //    int rank = 0;
 //    MPI_Comm_rank(comm, &rank);
 
-    u.swap(u_old);
+    swap(u, u_old);
 
     int flag = 0;
     int reqs = 0;
@@ -129,7 +129,7 @@ void Grid::repart_u(std::vector<value_t> &u){
 //    print_vector(u, -1, "u", comm);
 }
 
-void Grid::repart_back_u(std::vector<value_t> &u){
+void Grid::repart_back_u(value_t *&u){
     // this is used in vcycle
 
     MPI_Comm comm = Ac.comm_old;
@@ -141,7 +141,7 @@ void Grid::repart_back_u(std::vector<value_t> &u){
 //    int rank;
 //    MPI_Comm_rank(comm, &rank);
 
-    u.swap(u_old);
+    swap(u, u_old);
 
     int flag = 0;
     int reqs = 0;
@@ -160,4 +160,22 @@ void Grid::repart_back_u(std::vector<value_t> &u){
     MPI_Waitall(reqs, &requests[0], MPI_STATUSES_IGNORE);
 
 //    print_vector(u, -1, "u", comm);
+}
+
+void Grid::allocate_mem(){
+    if(active){
+        res   = saena_aligned_alloc<value_t>(A->M);
+        uCorr = saena_aligned_alloc<value_t>(A->M);
+//        res.resize(A->M);
+//        uCorr.resize(A->M);
+//        res_coarse.resize(max(Ac.M_old, Ac.M));
+//        uCorrCoarse.resize(max(Ac.M_old, Ac.M));
+    }
+}
+
+void Grid::free_mem(){
+    if(active){
+        saena_free(res);
+        saena_free(uCorr);
+    }
 }
