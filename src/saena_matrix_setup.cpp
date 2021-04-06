@@ -996,6 +996,8 @@ int saena_matrix::set_off_on_diagonal(){
 
             vElement_remote.clear();
             vElement_remote.shrink_to_fit();
+            sendCount.clear();
+            sendCount.shrink_to_fit();
 
 #ifdef __DEBUG1__
 //            print_vector(vIndex, -1, "vIndex", comm);
