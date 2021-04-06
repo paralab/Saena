@@ -17,9 +17,10 @@ prolong_matrix::~prolong_matrix() = default;
 
 int prolong_matrix::findLocalRemote(){
 
-    int nprocs = 0, rank = 0;
-    MPI_Comm_size(comm, &nprocs);
+    int np = 0, rank = 0;
+    MPI_Comm_size(comm, &np);
     MPI_Comm_rank(comm, &rank);
+    const int nprocs = np;
 
 //    printf("rank=%d \t P.nnz_l=%lu \t P.nnz_g=%lu \n", rank, nnz_l, nnz_g);
 //    print_vector(entry, -1, "entry", comm);
@@ -64,9 +65,6 @@ int prolong_matrix::findLocalRemote(){
 //                if(!rank) cout << entry[i] << endl;
                 ++nnzPerRow_local[entry[i].row];
                 ent_loc_row.emplace_back(entry[i].row, entry[i].col, entry[i].val);
-//                row_local.emplace_back(entry[i].row);
-//                col_local.emplace_back(entry[i].col);
-//                val_local.emplace_back(entry[i].val);
                 ++i;
             }
 
@@ -76,7 +74,6 @@ int prolong_matrix::findLocalRemote(){
             while(i < nnz_l && entry[i].col < splitNew[procNum + 1]) {
                 vElement_remote.emplace_back(entry[i].col);
                 nnzPerCol_remote.emplace_back(0);
-//                vElement_remote_t.emplace_back(row_remote.size() - 1);
 
                 do{
                     row_remote.emplace_back(entry[i].row);
@@ -108,10 +105,11 @@ int prolong_matrix::findLocalRemote(){
 
 //    print_vector(ent_loc_row, -1, "ent_loc_row", comm);
 
-    row_local.resize(nnz_l_local);
-    col_local.resize(nnz_l_local);
-    val_local.resize(nnz_l_local);
-    for(i = 0; i < nnz_l_local; ++i){
+    const nnz_t nnzl = nnz_l_local;
+    row_local.resize(nnzl);
+    col_local.resize(nnzl);
+    val_local.resize(nnzl);
+    for(i = 0; i < nnzl; ++i){
         row_local[i] = ent_loc_row[i].row;
         col_local[i] = ent_loc_row[i].col;
         val_local[i] = ent_loc_row[i].val;
@@ -219,7 +217,7 @@ int prolong_matrix::findLocalRemote(){
 
         numRecvProc = 0;
         numSendProc = 0;
-        for (int i = 0; i < nprocs; i++) {
+        for (int i = 0; i < nprocs; ++i) {
             if (recvCount[i] != 0) {
                 numRecvProc++;
                 recvProcRank.emplace_back(i);
@@ -242,9 +240,10 @@ int prolong_matrix::findLocalRemote(){
         vdispls[0] = 0;
         rdispls[0] = 0;
 
-        for (int i = 1; i < nprocs; i++) {
-            vdispls[i] = vdispls[i - 1] + vIndexCount[i - 1];
-            rdispls[i] = rdispls[i - 1] + recvCount[i - 1];
+        const int np_M1 = nprocs - 1;
+        for (int i = 0; i < np_M1; ++i) {
+            vdispls[i + 1] = vdispls[i] + vIndexCount[i];
+            rdispls[i + 1] = rdispls[i] + recvCount[i];
         }
 
         vIndexSize = vdispls[nprocs - 1] + vIndexCount[nprocs - 1];
@@ -277,7 +276,7 @@ int prolong_matrix::findLocalRemote(){
 
         numRecvProc_t = 0;
         numSendProc_t = 0;
-        for (int i = 0; i < nprocs; i++) {
+        for (int i = 0; i < nprocs; ++i) {
             if (recvCount_t[i] != 0) {
                 numRecvProc_t++;
                 recvProcRank_t.emplace_back(i);
@@ -297,7 +296,7 @@ int prolong_matrix::findLocalRemote(){
         vdispls_t[0] = 0;
         rdispls_t[0] = 0;
 
-        for (int i = 1; i < nprocs; i++) {
+        for (int i = 1; i < nprocs; ++i) {
 //        if(rank==0) cout << "vIndexCount_t = " << vIndexCount_t[i-1] << endl;
             vdispls_t[i] = vdispls_t[i - 1] + vIndexCount_t[i - 1];
             rdispls_t[i] = rdispls_t[i - 1] + recvCount_t[i - 1];
@@ -320,8 +319,10 @@ int prolong_matrix::findLocalRemote(){
 //        if(rank==1) cout << vElement_remote[i] << endl;
 
         // change the indices from global to local
-        for (index_t i = 0; i < vIndexSize; i++) {
-            vIndex[i] -= splitNew[rank];
+        const index_t sendsz = vIndexSize;
+        const index_t ofst   = splitNew[rank];
+        for (index_t i = 0; i < sendsz; ++i) {
+            vIndex[i] -= ofst;
         }
 
         // vSend = vector values to send to other procs
@@ -376,9 +377,10 @@ int prolong_matrix::findLocalRemote(){
 
 int prolong_matrix::openmp_setup() {
 
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+    const index_t sz = M;
 
     if(verbose_prolong_setup) {
         MPI_Barrier(comm);
@@ -402,12 +404,12 @@ int prolong_matrix::openmp_setup() {
 //        if(rank==0 && thread_id==0) std::cout << "number of procs = " << nprocs << ", number of threads = " << num_threads << std::endl;
         index_t istart = 0; // starting row index for each thread
         index_t iend = 0;   // last row index for each thread
-        index_t iter_local, iter_remote;
+        index_t iter_local = 0, iter_remote = 0;
 
         // compute local iter to do matvec using openmp (it is done to make iter independent data on threads)
         bool first_one = true;
 #pragma omp for
-        for (index_t i = 0; i < M; ++i) {
+        for (index_t i = 0; i < sz; ++i) {
             if (first_one) {
                 istart = i;
                 first_one = false;
@@ -426,8 +428,9 @@ int prolong_matrix::openmp_setup() {
 
         // compute remote iter to do matvec using openmp (it is done to make iter independent data on threads)
         first_one = true;
+        const index_t crsz = col_remote_size;
 #pragma omp for
-        for (index_t i = 0; i < col_remote_size; ++i) {
+        for (index_t i = 0; i < crsz; ++i) {
             if (first_one) {
                 istart = i;
                 first_one = false;
