@@ -98,6 +98,9 @@ int saena_object::writeMatrixToFileR(restrict_matrix* R, std::string name) {
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(!rank) printf("writeMatrixToFileR: R.splitNew is cleared. This func. needs to be updated!\n");
+    return 0;
+
     std::ofstream outFileTxt;
     std::string outFileNameTxt = "/home/abaris/Dropbox/Projects/Saena/build/writeMatrix/";
     outFileNameTxt += name;

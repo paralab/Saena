@@ -1097,6 +1097,9 @@ int restrict_matrix::writeMatrixToFile(const std::string &name) const{
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(!rank) printf("estrict_matrix::writeMatrixToFile: R.splitNew is cleared. This func. needs to be updated!\n");
+    return 0;
+
     std::string outFileNameTxt = name + "R-r" + std::to_string(rank) + ".mtx";
     std::ofstream outFileTxt(outFileNameTxt);
 

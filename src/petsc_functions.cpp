@@ -342,6 +342,7 @@ int petsc_restrict_matrix(const restrict_matrix *R, Mat &B){
     MPI_Comm_rank(comm, &rank);
 
     if(!rank) printf("petsc_restrict_matrix: R.row_local is deleted. This func. needs to be updated!\n");
+    if(!rank) printf("petsc_restrict_matrix: R.splitNew is cleared. This func. needs to be updated!\n");
     return 0;
 
     std::vector<int> nnz_per_row_diag(R->M, 0);
@@ -364,6 +365,7 @@ int petsc_restrict_matrix(const restrict_matrix *R, Mat &B){
     MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
     MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
+    // todo: R->splitNew is cleared. update this!
     for(unsigned long i = 0; i < R->nnz_l; i++){
         MatSetValue(B, R->entry[i].row + R->splitNew[rank], R->entry[i].col, R->entry[i].val, INSERT_VALUES);
     }

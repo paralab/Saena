@@ -716,7 +716,7 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     std::fill(&Pcsc.col_scan[0], &Pcsc.col_scan[Pcsc.col_sz + 1], 0);
     Pcsc.col_scan[0] = 1;
 
-    Pcsc.split = R->splitNew;
+    Pcsc.split = std::move(R->splitNew);
 
     index_t *Pc_tmp = &Pcsc.col_scan[1];
     for(nnz_t i = 0; i < Pcsc.nnz; ++i){
