@@ -1957,7 +1957,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
 
         // set the mat_recv data
         nnz_t recv_nnz  = 0, recv_size = 0;
-        index_t row_comp_sz = 0, col_comp_sz = 0, current_comp_sz = 0;
+        nnz_t row_comp_sz = 0, col_comp_sz = 0, current_comp_sz = 0;
         index_t mat_recv_M = 0, mat_current_M = 0;
         auto *mat_recv = &mempool6[mempool6_sz / 2];
 
