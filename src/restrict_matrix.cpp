@@ -72,20 +72,26 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 #endif
 
         auto dt = cooEntry::mpi_datatype();
-
+        int flag = 1;
         for (nnz_t i = 0; i < P->numRecvProc_t; i++) {
             MPI_Irecv(&P->vecValues_t[P->rdispls_t[P->recvProcRank_t[i]]], P->recvProcCount_t[i], dt,
-                      P->recvProcRank_t[i], 1, comm, &(requests[i]));
+                      P->recvProcRank_t[i], 1, comm, &requests[i]);
+            MPI_Test(&requests[i], &flag, MPI_STATUS_IGNORE);
         }
 
         for (nnz_t i = 0; i < P->numSendProc_t; i++) {
             MPI_Isend(&P->vSend_t[P->vdispls_t[P->sendProcRank_t[i]]], P->sendProcCount_t[i], dt,
-                      P->sendProcRank_t[i], 1, comm, &(requests[P->numRecvProc_t + i]));
+                      P->sendProcRank_t[i], 1, comm, &requests[P->numRecvProc_t + i]);
+            MPI_Test(&requests[P->numRecvProc_t + i], &flag, MPI_STATUS_IGNORE);
         }
 
         MPI_Type_free(&dt);
     }
 
+    P->vdispls_t.clear();
+    P->vdispls_t.shrink_to_fit();
+    P->rdispls_t.clear();
+    P->rdispls_t.shrink_to_fit();
     P->recvProcRank_t.clear();
     P->recvProcRank_t.shrink_to_fit();
     P->sendProcRank_t.clear();
@@ -107,8 +113,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
     entry.clear();
 
+    const nnz_t nnzl = P->nnz_l_local;
     const index_t OFST = split[rank], OFSTNEW = splitNew[rank];
-    for (index_t i = 0; i < P->nnz_l_local; ++i) {
+    for (index_t i = 0; i < nnzl; ++i) {
         entry.emplace_back(cooEntry(P->col_local[i] - OFSTNEW, // make row index local
                                     P->row_local[i] + OFST,    // make col index global
                                     P->val_local[i]));
@@ -167,7 +174,8 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //        if(rank==1) cout << "vecValues_t:" << endl;
 #endif
 
-        for (nnz_t i = 0; i < P->recvSize_t; i++) {
+        const nnz_t pend = P->recvSize_t;
+        for (nnz_t i = 0; i < pend; ++i) {
 //            if(rank==2) printf("%u \t%u \t%f \n", P->vecValues_t[i].row, P->vecValues_t[i].col, P->vecValues_t[i].val);
             entry.emplace_back(cooEntry(P->vecValues_t[i].col - OFSTNEW, // make row index local
                                         P->vecValues_t[i].row,
@@ -236,7 +244,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 //    indicesP_remote.clear();
 //    entry_local.clear();
 //    entry_remote.clear();
-    row_local.clear();
+//    row_local.clear();
     col_local.clear();
     val_local.clear();
     row_remote.clear();
@@ -312,11 +320,11 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
 //    print_vector(ent_loc_row, -1, "ent_loc_row", comm);
 
-    row_local.resize(nnz_l_local);
+//    row_local.resize(nnz_l_local);
     col_local.resize(nnz_l_local);
     val_local.resize(nnz_l_local);
     for(i = 0; i < nnz_l_local; ++i){
-        row_local[i] = ent_loc_row[i].row;
+//        row_local[i] = ent_loc_row[i].row;
         col_local[i] = ent_loc_row[i].col;
         val_local[i] = ent_loc_row[i].val;
     }

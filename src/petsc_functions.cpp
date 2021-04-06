@@ -338,12 +338,15 @@ int petsc_restrict_matrix(const restrict_matrix *R, Mat &B){
 
     MPI_Comm comm = R->comm;
     PETSC_COMM_WORLD = comm;
-    int rank;
+    int rank = 0;
     MPI_Comm_rank(comm, &rank);
+
+    if(!rank) printf("petsc_restrict_matrix: R.row_local is deleted. This func. needs to be updated!\n");
+    return 0;
 
     std::vector<int> nnz_per_row_diag(R->M, 0);
     for(nnz_t i = 0; i < R->nnz_l_local; i++){
-        nnz_per_row_diag[R->row_local[i]]++;
+//        nnz_per_row_diag[R->row_local[i]]++;
     }
 
     std::vector<int> nnz_per_row_off_diag(R->M, 0);

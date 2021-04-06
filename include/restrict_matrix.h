@@ -27,7 +27,7 @@ public:
     std::vector<cooEntry> entry; // local row indices (not global)
 //    std::vector<cooEntry> entry_local;
 //    std::vector<cooEntry> entry_remote;
-    std::vector<index_t>  row_local;
+//    std::vector<index_t>  row_local;
     std::vector<index_t>  col_local;
     std::vector<value_t>  val_local;
     std::vector<index_t>  row_remote;
