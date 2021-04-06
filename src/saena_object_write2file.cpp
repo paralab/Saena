@@ -65,6 +65,7 @@ int saena_object::writeMatrixToFileP(prolong_matrix* P, std::string name) {
     MPI_Comm_rank(comm, &rank);
 
     if(!rank) printf("writeMatrixToFileP: P.entry is cleared. This func. needs to be updated!\n");
+    if(!rank) printf("writeMatrixToFileP: P.split is cleared. This func. needs to be updated!\n");
     return 0;
 
     std::ofstream outFileTxt;

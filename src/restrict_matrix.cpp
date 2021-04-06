@@ -12,13 +12,13 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
     // splitNew is the row partition for restrict_matrix and split is column partition. it is the opposite of prolong_matrix and saena_matrix.
 
     comm = P->comm;
-    int nprocs, rank;
+    int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
     Mbig     = P->Nbig;
     Nbig     = P->Mbig;
-    split    = P->split;
+    split    = std::move(P->split);
     splitNew = P->splitNew;
 
     // set the number of rows for each process

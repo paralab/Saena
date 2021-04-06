@@ -1030,6 +1030,7 @@ int prolong_matrix::writeMatrixToFile(const std::string &name) const{
     MPI_Comm_rank(comm, &rank);
 
     if(!rank) printf("prolong_matrix::writeMatrixToFile: P.entry is cleared. This func. needs to be updated!\n");
+    if(!rank) printf("prolong_matrix::writeMatrixToFile: P.split is cleared. This func. needs to be updated!\n");
     return 0;
 
     std::string outFileNameTxt = name + "P-r" + std::to_string(rank) + ".mtx";

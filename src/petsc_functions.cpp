@@ -228,7 +228,9 @@ int petsc_prolong_matrix(const prolong_matrix *P, Mat &B){
 
     int rank = -1;
     MPI_Comm_rank(comm, &rank);
+
     if(!rank) printf("petsc_prolong_matrix: P.entry is cleared. This func. needs to be updated!\n");
+    if(!rank) printf("petsc_prolong_matrix: P.split is cleared. This func. needs to be updated!\n");
     return 0;
 
     std::vector<int> nnz_per_row_diag(P->M, 0);
