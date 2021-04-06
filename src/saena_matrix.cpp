@@ -1035,7 +1035,7 @@ int saena_matrix::set_zero(){
 }
 
 
-void saena_matrix::jacobi(const int &iter, value_t *u, const value_t *rhs) {
+void saena_matrix::jacobi(const int &iter, value_t * __restrict__ u, const value_t * __restrict__ rhs) {
 
 // Ax = rhs
 // u = u - (D^(-1))(Au - rhs)
@@ -1065,7 +1065,7 @@ void saena_matrix::jacobi(const int &iter, value_t *u, const value_t *rhs) {
 }
 
 
-void saena_matrix::chebyshev(const int &iter, value_t *u, const value_t *rhs){
+void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const value_t * __restrict__ rhs){
 
 #ifdef __DEBUG1__
 //    int rank;
