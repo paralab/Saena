@@ -47,8 +47,8 @@ public:
     index_t col_remote_size = 0; // number of remote columns. this is the same as vElement_remote.size()
     std::vector<index_t> nnzPerRow_local;
     std::vector<index_t> vElement_remote;
-    std::vector<index_t> vElementRep_local;
-    std::vector<index_t> vElementRep_remote;
+//    std::vector<index_t> vElementRep_local;
+//    std::vector<index_t> vElementRep_remote;
     std::vector<index_t> nnzPerCol_remote;
 //    std::vector<nnz_t> nnzPerRowScan_local;
     std::vector<nnz_t>   nnzPerProcScan; // number of remote nonzeros on each proc. used in matvec

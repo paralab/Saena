@@ -404,6 +404,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         MPI_Reduce(&vIndexSize, &matvec_comm_sz, 1, par::Mpi_datatype<index_t>::value(), MPI_SUM, 0, comm);
         matvec_comm_sz /= nprocs;
 
+        vElement_remote.clear();
+        vElement_remote.shrink_to_fit();
+
 #ifdef __DEBUG1__
 //        if(!rank) printf("R: ave comm sz = %d\n", matvec_comm_sz);
         if (verbose_transposeP) {
