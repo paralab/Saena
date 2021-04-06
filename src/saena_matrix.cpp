@@ -1055,8 +1055,7 @@ void saena_matrix::jacobi(const int &iter, value_t *u, const value_t *rhs) {
     for(int j = 0; j < iter; ++j){
         matvec(&u[0], &temp1[0]);
 
-//        #pragma omp parallel for
-        #pragma omp simd aligned(inv_diag_p, temp1_p, rhs, u: ALIGN_SZ)
+        #pragma omp parallel for simd aligned(inv_diag_p, temp1_p, rhs, u: ALIGN_SZ)
         for(index_t i = 0; i < sz; ++i){
             temp1_p[i] -= rhs[i];
             temp1_p[i] *= inv_diag_p[i] * omega;
@@ -1094,7 +1093,7 @@ void saena_matrix::chebyshev(const int &iter, value_t *u, const value_t *rhs){
 
     const index_t sz = M;
 //    #pragma omp parallel for
-    #pragma omp simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
+    #pragma omp parallel for simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
     for(index_t i = 0; i < sz; ++i){
         d[i] = (res[i] * inv_diag_p[i]) / theta;
         u[i] += d[i];
@@ -1112,7 +1111,7 @@ void saena_matrix::chebyshev(const int &iter, value_t *u, const value_t *rhs){
         residual_negative(&u[0], &rhs[0], &res[0]);
 
 //        #pragma omp parallel for
-        #pragma omp simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
+        #pragma omp parallel for simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
         for(index_t j = 0; j < sz; ++j){
             d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag_p[j] );
             u[j] += d[j];
