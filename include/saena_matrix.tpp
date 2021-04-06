@@ -38,7 +38,7 @@ inline void saena_matrix::residual_multiply(const value_t * __restrict__ u, cons
                                             value_t * __restrict__ res, const value_t *w, const value_t &c){
     matvec(&u[0], &res[0]);
     const index_t sz = M;
-#pragma omp parallel for simd aligned(res, rhs: ALIGN_SZ)
+#pragma omp parallel for simd aligned(res, rhs, w: ALIGN_SZ)
     for(index_t i = 0; i < sz; ++i){
         res[i] = c * w[i] * (rhs[i] - res[i]);
     }
