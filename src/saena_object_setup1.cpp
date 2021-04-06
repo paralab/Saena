@@ -179,9 +179,9 @@ int saena_object::SA(Grid *grid){
         for (j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
             PEntryTemp.emplace_back(cooEntry(A->row_remote[iter],
                                              c_idx,
-                                             -om * Q[A->row_remote[iter]] * A->values_remote[iter]));
+                                             -om * Q[A->row_remote[iter]] * A->val_remote[iter]));
 //            if(rank==3) std::cout << A->row_remote[iter] + A->split[rank] << "\t" << vecValuesAgg[A->col_remote[iter]] << "\t"
-//                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << "\t" << A->col_remote[iter] << std::endl;
+//                      << A->val_remote[iter] * A->inv_diag[A->row_remote[iter]] << "\t" << A->col_remote[iter] << std::endl;
         }
     }
 
@@ -494,10 +494,10 @@ int saena_object::create_strength_matrix_test(saena_matrix* A, strength_matrix* 
     nnz_t iter = 0;
     for (index_t i = 0; i < A->col_remote_size; ++i) {
         for (index_t j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
-//            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->values_remote[iter] / A->vecValues[i]);
+//            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->val_remote[iter] / A->vecValues[i]);
             S->entry[iter + A->nnz_l_local] = cooEntry(A->row_remote[iter],
                                                        A->col_remote2[iter],
-                             fabs(A->values_remote[iter]) / sqrt(fabs(A->inv_diag[A->row_local[i]] * A->vecValues[i])));
+                                                       fabs(A->val_remote[iter]) / sqrt(fabs(A->inv_diag[A->row_local[i]] * A->vecValues[i])));
         }
     }
 
@@ -681,7 +681,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
         for (unsigned int j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
             STi.emplace_back(A->row_remote[A->indicesP_remote[iter]]);
             STj.emplace_back(A->col_remote2[A->indicesP_remote[iter]]);
-            STval.emplace_back( -A->values_remote[A->indicesP_remote[iter]] / A->vecValues[A->col_remote[A->indicesP_remote[iter]]] );
+            STval.emplace_back( -A->val_remote[A->indicesP_remote[iter]] / A->vecValues[A->col_remote[A->indicesP_remote[iter]]] );
         }
     }
 */
@@ -696,8 +696,8 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
         const value_t valtmp = -1 / A->vecValues[i];
         const index_t iterend = iter + A->nnzPerCol_remote[i];
         for (; iter < iterend; ++iter) {
-//            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->values_remote[iter] / A->vecValues[i]);
-            entryT_p[iter] = cooEntry(A->row_remote[iter], A->col_remote2[iter], A->values_remote[iter] * valtmp);
+//            if(rank==1) printf("%u \t%u \t%f \n", A->row_remote[iter], A->col_remote2[iter], -A->val_remote[iter] / A->vecValues[i]);
+            entryT_p[iter] = cooEntry(A->row_remote[iter], A->col_remote2[iter], A->val_remote[iter] * valtmp);
         }
     }
 

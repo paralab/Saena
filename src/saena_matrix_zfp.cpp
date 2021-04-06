@@ -168,8 +168,8 @@ int saena_matrix::matvec_sparse_comp(std::vector<value_t>& v, std::vector<value_
     iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
         for (index_t i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-//            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j], values_remote[iter] * vecValues[j]);
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+//            if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[j], val_remote[iter] * vecValues[j]);
+            w[row_remote[iter]] += val_remote[iter] * vecValues[j];
         }
     }
 
@@ -412,8 +412,8 @@ int saena_matrix::matvec_sparse_comp2(std::vector<value_t>& v, std::vector<value
                 for (index_t j = 0; j < recvCount[recv_proc_prev]; ++j) {
                     for (index_t i = 0; i < nnzPerCol_remote_p[j]; ++i, ++iter) {
 //                        if(rank==rankv) printf("%ld \t%u \t%u \t%f \t%f\n",
-//                        iter, row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j]);
-                        w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+//                        iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[j]);
+                        w[row_remote[iter]] += val_remote[iter] * vecValues[j];
                     }
                 }
 
@@ -700,8 +700,8 @@ int saena_matrix::matvec_sparse_comp3(std::vector<value_t>& v, std::vector<value
                 for (index_t j = 0; j < recvCount[recv_proc_prev]; ++j) {
                     for (index_t i = 0; i < nnzPerCol_remote_p[j]; ++i, ++iter) {
 //                        if(rank==rankv) printf("%ld \t%u \t%u \t%f \t%f\n",
-//                        iter, row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[j]);
-                        w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+//                        iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[j]);
+                        w[row_remote[iter]] += val_remote[iter] * vecValues[j];
                     }
                 }
 
@@ -894,7 +894,7 @@ int saena_matrix::matvec_sparse_comp_omp(std::vector<value_t>& v, std::vector<va
     iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
         for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+            w[row_remote[iter]] += val_remote[iter] * vecValues[j];
         }
     }
     t = omp_get_wtime() - t;
@@ -1080,7 +1080,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
         for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+            w[row_remote[iter]] += val_remote[iter] * vecValues[j];
 //            if(rank==1) std::cout << vecValues[j] << std::endl;
         }
     }
@@ -1249,7 +1249,7 @@ int saena_matrix::matvec_sparse_zfp(std::vector<value_t>& v, std::vector<value_t
     iter = 0;
     for (index_t j = 0; j < col_remote_size; ++j) {
         for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-            w[row_remote[iter]] += values_remote[iter] * vecValues[j];
+            w[row_remote[iter]] += val_remote[iter] * vecValues[j];
 //            if(rank==1) std::cout << vecValues[j] << std::endl;
         }
     }

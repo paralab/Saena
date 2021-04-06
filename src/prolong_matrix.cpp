@@ -367,7 +367,7 @@ int prolong_matrix::findLocalRemote(){
 //    if(rank==1) cout << "nnz_l_remote = " << nnz_l_remote << "\t\trecvSize_t = " << recvSize_t << "\t\tvIndexSize_t = " << vIndexSize_t << endl;
 //    if(rank==0){
 //        for(i=0; i<nnz_l_remote; i++)
-//            cout << row_remote[i] << "\t" << col_remote2[i] << " =\t" << values_remote[i] << "\t\t\t" << vElement_remote_t[i] << endl;
+//            cout << row_remote[i] << "\t" << col_remote2[i] << " =\t" << val_remote[i] << "\t\t\t" << vElement_remote_t[i] << endl;
 //    }
 //    MPI_Barrier(comm);
 
@@ -591,7 +591,7 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
 #pragma omp simd
             for (index_t i = 0; i < iend; ++i) {
 //                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
-//                iter, row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[rdispls[recv_proc] + j]);
+//                iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[rdispls[recv_proc] + j]);
                 w[row_remote_p[i]] += val_remote_p[i] * vrem;
             }
             iter += iend;
@@ -715,7 +715,7 @@ void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
 #pragma omp simd
             for (index_t i = 0; i < iend; ++i) {
 //                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
-//                iter, row_remote[iter], col_remote2[iter], values_remote[iter], vecValues[rdispls[recv_proc] + j]);
+//                iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[rdispls[recv_proc] + j]);
                 w[row_remote_p[i]] += val_remote_p[i] * vrem;
             }
             iter += iend;

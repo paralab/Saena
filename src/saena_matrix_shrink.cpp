@@ -603,7 +603,7 @@ void saena_matrix::set_off_on_diagonal_dummy(){
 //                        col_remote.emplace_back(vElement_remote.size() - 1);
 //                        col_remote2.emplace_back(entry[i].col);
                         row_remote.emplace_back(entry[i].row - split[rank]);
-                        values_remote.emplace_back(entry[i].val);
+                        val_remote.emplace_back(entry[i].val);
                         ++nnzPerCol_remote.back();
 #ifdef _USE_PETSC_
                         ++nnzPerRow_remote[entry[i].row - split[rank]];
@@ -846,7 +846,7 @@ void saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w
         nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
         for (index_t j = 0; j < recvCount[recv_proc]; ++j) {
             for (index_t i = 0; i < nnzPerCol_remote_p[j]; ++i, ++iter) {
-                w[row_remote[iter]] += values_remote[iter] * vecValues_p[j];
+                w[row_remote[iter]] += val_remote[iter] * vecValues_p[j];
             }
         }
         t = omp_get_wtime() - t;

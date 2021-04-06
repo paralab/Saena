@@ -49,8 +49,8 @@ int find_eig_ietl(Matrix& A){
 
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_remote; i++) {
-//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, remote \n", i, A.row_remote[i], A.values_remote[i], A.inv_diag[A.row_remote[i]], A.values_remote[i]*A.inv_diag[A.row_remote[i]]);
-//        A.values_remote[i] *= A.inv_diag[A.row_remote[i]];
+//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, remote \n", i, A.row_remote[i], A.val_remote[i], A.inv_diag[A.row_remote[i]], A.val_remote[i]*A.inv_diag[A.row_remote[i]]);
+//        A.val_remote[i] *= A.inv_diag[A.row_remote[i]];
 //    }
 //    MPI_Barrier(A.comm);
     }

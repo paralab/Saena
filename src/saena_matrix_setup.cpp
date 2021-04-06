@@ -617,7 +617,7 @@ int saena_matrix::matrix_setup(bool scale /*= false*/) {
 
 
 int saena_matrix::matrix_setup_update(bool scale /*= false*/) {
-    // update val_local, values_remote and inv_diag.
+    // update val_local, val_remote and inv_diag.
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -627,14 +627,14 @@ int saena_matrix::matrix_setup_update(bool scale /*= false*/) {
 
     // todo: check if instead of clearing and pushing back, it is possible to only update the values.
     val_local.clear();
-    values_remote.clear();
+    val_remote.clear();
 
     if(!entry.empty()) {
         for (nnz_t i = 0; i < nnz_l; i++) {
             if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
                 val_local.emplace_back(entry[i].val);
             } else {
-                values_remote.emplace_back(entry[i].val);
+                val_remote.emplace_back(entry[i].val);
             }
         }
     }
@@ -651,7 +651,7 @@ int saena_matrix::matrix_setup_update(bool scale /*= false*/) {
 
 
 int saena_matrix::matrix_setup_lazy_update() {
-    // update val_local, values_remote and inv_diag.
+    // update val_local, val_remote and inv_diag.
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -665,14 +665,14 @@ int saena_matrix::matrix_setup_lazy_update() {
 
     // todo: check if instead of clearing and pushing back, it is possible to only update the values.
     val_local.clear();
-    values_remote.clear();
+    val_remote.clear();
 
     if(!entry.empty()) {
         for (nnz_t i = 0; i < nnz_l; i++) {
             if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
                 val_local.emplace_back(entry[i].val);
             } else {
-                values_remote.emplace_back(entry[i].val);
+                val_remote.emplace_back(entry[i].val);
             }
         }
     }
@@ -862,7 +862,7 @@ int saena_matrix::set_off_on_diagonal(){
                         col_remote.emplace_back(vElement_remote.size() - 1);
                         col_remote2.emplace_back(entry[i].col);
                         row_remote.emplace_back(entry[i].row - split[rank]);
-                        values_remote.emplace_back(entry[i].val);
+                        val_remote.emplace_back(entry[i].val);
                         ++nnzPerCol_remote.back();
 #ifdef _USE_PETSC_
                         ++nnzPerRow_remote[entry[i].row - split[rank]];
@@ -899,8 +899,8 @@ int saena_matrix::set_off_on_diagonal(){
         col_local.resize(nnz_l_local);
         val_local.resize(nnz_l_local);
         for(i = 0; i < nnz_l_local; ++i){
-            row_local[i]    = ent_loc_row[i].row;
-            col_local[i]    = ent_loc_row[i].col;
+            row_local[i] = ent_loc_row[i].row;
+            col_local[i] = ent_loc_row[i].col;
             val_local[i] = ent_loc_row[i].val;
         }
 
@@ -1252,7 +1252,7 @@ int saena_matrix::openmp_setup() {
 int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 
     // scale matrix: A = D^{-1/2} * A * D^{-1/2}
-    // val_local, values_remote and entry are being updated.
+    // val_local, val_remote and entry are being updated.
     // A[i] *= D^{-1/2}[row[i]] * D^{-1/2}[col[i]]
 
     int nprocs, rank;
@@ -1328,7 +1328,7 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 #pragma omp for
             for (index_t j = 0; j < col_remote_size; ++j) {
                 for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-                    values_remote[iter] *= inv_sq_diag[row_remote[iter]] * vecValues[j]; // D^{-1/2} * A * D^{-1/2}
+                    val_remote[iter] *= inv_sq_diag[row_remote[iter]] * vecValues[j]; // D^{-1/2} * A * D^{-1/2}
                 }
             }
         }
@@ -1350,8 +1350,8 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
             // copy remote entries
 #pragma omp parallel for
             for (nnz_t i = 0; i < nnz_l_remote; ++i) {
-//                entry[nnz_l_local + i] = cooEntry(row_remote[i]+split[rank], col_remote2[i], values_remote[i]);
-                entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]));
+//                entry[nnz_l_local + i] = cooEntry(row_remote[i]+split[rank], col_remote2[i], val_remote[i]);
+                entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], val_remote[i]));
             }
         }
 
@@ -1385,7 +1385,7 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 int saena_matrix::scale_back_matrix(bool full_scale/* = false*/){
 
     // scale back matrix: A = D^{1/2} * A * D^{1/2}
-    // val_local, values_remote and entry are being updated.
+    // val_local, val_remote and entry are being updated.
     // A[i] /= D^{-1/2}[row[i]] * D^{-1/2}[col[i]]
 
     int nprocs, rank;
@@ -1464,7 +1464,7 @@ int saena_matrix::scale_back_matrix(bool full_scale/* = false*/){
 #pragma omp for
             for (index_t j = 0; j < col_remote_size; ++j) {
                 for (i = 0; i < nnzPerCol_remote[j]; ++i, ++iter) {
-                    values_remote[iter] /= inv_sq_diag[row_remote[iter]] * vecValues[j];
+                    val_remote[iter] /= inv_sq_diag[row_remote[iter]] * vecValues[j];
                 }
             }
         }
@@ -1485,7 +1485,7 @@ int saena_matrix::scale_back_matrix(bool full_scale/* = false*/){
             // copy remote entries
 #pragma omp parallel for
             for (nnz_t i = 0; i < nnz_l_remote; ++i) {
-                entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], values_remote[i]));
+                entry.emplace_back(cooEntry(row_remote[i] + split[rank], col_remote2[i], val_remote[i]));
             }
         }
 
