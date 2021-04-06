@@ -2038,8 +2038,8 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                 MPI_Isend(mat_send, send_size, MPI_CHAR, left_neighbor,  rank,           comm, requests + 1);
 
                 int flag = 0;
-                MPI_Test(requests,   &flag, statuses);
-                MPI_Test(requests+1, &flag, statuses+1);
+                MPI_Test(requests,   &flag, MPI_STATUS_IGNORE);
+                MPI_Test(requests+1, &flag, MPI_STATUS_IGNORE);
             }
 
             // =======================================
