@@ -13,7 +13,8 @@ inline void saena_matrix::matvec(const value_t *v, value_t *w){
 }
 
 // Vector res = A * u - rhs;
-inline void saena_matrix::residual(const value_t *u, const value_t *rhs, value_t *res){
+inline void saena_matrix::residual(const value_t * __restrict__ u, const value_t * __restrict__ rhs,
+                                   value_t * __restrict__ res){
     matvec(&u[0], &res[0]);
     const index_t sz = M;
 #pragma omp parallel for simd aligned(res, rhs: ALIGN_SZ)
@@ -23,7 +24,8 @@ inline void saena_matrix::residual(const value_t *u, const value_t *rhs, value_t
 }
 
 // Vector res = rhs - A * u
-inline void saena_matrix::residual_negative(const value_t *u, const value_t *rhs, value_t *res){
+inline void saena_matrix::residual_negative(const value_t * __restrict__ u, const value_t * __restrict__ rhs,
+                                            value_t * __restrict__ res){
     matvec(&u[0], &res[0]);
     const index_t sz = M;
 #pragma omp parallel for simd aligned(res, rhs: ALIGN_SZ)
