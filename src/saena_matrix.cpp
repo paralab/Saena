@@ -1089,13 +1089,14 @@ void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const va
     const value_t *inv_diag_p = inv_diag;
 
     // first loop
-    residual_negative(&u[0], &rhs[0], &res[0]);
+//    residual_negative(&u[0], &rhs[0], &res[0]);
+    residual_multiply(&u[0], &rhs[0], &d[0], inv_diag_p, 1 / theta);
 
     const index_t sz = M;
-//    #pragma omp parallel for
-    #pragma omp parallel for simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
+//    #pragma omp parallel for simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
+    #pragma omp parallel for simd aligned(d, u: ALIGN_SZ)
     for(index_t i = 0; i < sz; ++i){
-        d[i] = (res[i] * inv_diag_p[i]) / theta;
+//        d[i] = (res[i] * inv_diag_p[i]) / theta;
         u[i] += d[i];
 //        if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                           i, inv_diag[i], i, res[i], i, d[i], i, u[i]);
@@ -1108,12 +1109,14 @@ void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const va
         d2     = two_rhokp1 / delta;
         rhok   = rhokp1;
 
-        residual_negative(&u[0], &rhs[0], &res[0]);
+//        residual_negative(&u[0], &rhs[0], &res[0]);
+        residual_multiply(&u[0], &rhs[0], &res[0], inv_diag_p, d2);
 
 //        #pragma omp parallel for
         #pragma omp parallel for simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
         for(index_t j = 0; j < sz; ++j){
-            d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag_p[j] );
+//            d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag_p[j] );
+            d[j] = ( d1 * d[j] ) + res[j];
             u[j] += d[j];
 //            if(rank==0) printf("inv_diag[%u] = %f, \tres[%u] = %f, \td[%u] = %f, \tu[%u] = %f \n",
 //                               j, inv_diag[j], j, res[j], j, d[j], j, u[j]);

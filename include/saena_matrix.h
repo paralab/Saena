@@ -328,6 +328,7 @@ public:
     inline void residual(const value_t *u, const value_t *rhs, value_t *res);
     // Vector res = rhs - A * u
     inline void residual_negative(const value_t *u, const value_t *rhs, value_t *res);
+    inline void residual_multiply(const value_t *u, const value_t *rhs, value_t *res,const value_t *w,const value_t &c);
 
     int inverse_diag();
     vector<index_t> get_orig_split();
