@@ -28,7 +28,7 @@ public:
     std::vector<cooEntry> entry;
     std::vector<cooEntry> entryT; // transpose entries
 
-//    std::vector<value_t> values_local;
+//    std::vector<value_t> val_local;
 //    std::vector<value_t> values_remote;
     std::vector<index_t> row_local;
     std::vector<index_t> row_remote;

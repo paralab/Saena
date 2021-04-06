@@ -149,7 +149,7 @@ int saena_object::SA(Grid *grid){
         for (j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
 //            const auto idx = A->indicesP_local[iter];
 
-            vtmp = -om * Q[i] * A->values_local[iter];
+            vtmp = -om * Q[i] * A->val_local[iter];
             if(r_idx == A->col_local[iter]){ // diagonal element
                 vtmp += 1;    // extra step for diagonal elements because of I in P = (I - wQA) * P_t
             }
@@ -158,7 +158,7 @@ int saena_object::SA(Grid *grid){
             PEntryTemp.emplace_back(cooEntry(i, aggregate_p[A->col_local[iter]], vtmp));
 
 //            if(rank==1) std::cout << i + A->split[rank] << "\t" << A->col_local[idx] << "\t" <<
-//               aggregate_p[A->col_local[idx]] << "\t" << A->values_local[idx] * A->inv_diag[A->row_local[idx]] << "\n";
+//               aggregate_p[A->col_local[idx]] << "\t" << A->val_local[idx] * A->inv_diag[A->row_local[idx]] << "\n";
         }
     }
 
@@ -465,7 +465,7 @@ int saena_object::create_strength_matrix_test(saena_matrix* A, strength_matrix* 
 //        if(rank==1) std::cout << A->entry[i] << "\t maxPerRow = " << maxPerRow_p[A->entry[i].row] << std::endl;
         S->entry[i] = cooEntry(A->row_local[i],
                                A->col_local[i],
-                    fabs(A->values_local[i]) / sqrt(fabs(A->inv_diag[A->row_local[i]] * A->inv_diag[A->col_local[i]])));
+                               fabs(A->val_local[i]) / sqrt(fabs(A->inv_diag[A->row_local[i]] * A->inv_diag[A->col_local[i]])));
     }
 
     // ******************************** compute S - remote ********************************
@@ -656,7 +656,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
 
             STi.emplace_back(iter2); // iter2 is actually i, but it was giving an error for using i.
             STj.emplace_back(A->col_local[A->indicesP_local[iter]]);
-            STval.emplace_back( -A->values_local[A->indicesP_local[iter]] / maxPerRow[A->col_local[A->indicesP_local[iter]]] );
+            STval.emplace_back( -A->val_local[A->indicesP_local[iter]] / maxPerRow[A->col_local[A->indicesP_local[iter]]] );
         }
     }
 */
@@ -667,7 +667,7 @@ int saena_object::create_strength_matrix(saena_matrix* A, strength_matrix* S) co
         if(A->row_local[i] + A->split[rank] == A->col_local[i]) // diagonal entry
             val_temp = 1;
         else
-            val_temp = -A->values_local[i] / maxPerRow_p[A->col_local[i]];
+            val_temp = -A->val_local[i] / maxPerRow_p[A->col_local[i]];
 
 //        if(rank==3) printf("%u \t%u \t%f \n", A->row_local[i] + A->split[rank], A->col_local[i], val_temp);
         S->entryT[i] = cooEntry(A->row_local[i], A->col_local[i], val_temp);

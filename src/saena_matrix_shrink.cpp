@@ -636,7 +636,7 @@ void saena_matrix::set_off_on_diagonal_dummy(){
         for(const auto &a : ent_loc_row){
             row_local.emplace_back(a.row);
             col_local.emplace_back(a.col);
-            values_local.emplace_back(a.val);
+            val_local.emplace_back(a.val);
         }
 
         ent_loc_row.clear();
@@ -821,7 +821,7 @@ void saena_matrix::matvec_dummy(std::vector<value_t>& v, std::vector<value_t>& w
     for (index_t i = 0; i < M; ++i) { // rows
         w[i] = 0;
         for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) { // columns
-            w[i] += values_local[iter] * v_p[col_local[iter]];
+            w[i] += val_local[iter] * v_p[col_local[iter]];
         }
     }
 

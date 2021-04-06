@@ -563,7 +563,7 @@ int saena_matrix::matrix_setup(bool scale /*= false*/) {
 
 //        for(nnz_t i = 0; i < nnz_l_local; i++) {
 //            if (rank == 0)
-//                printf("%u \t%u \t%f\n", row_local[i], col_local[i], values_local[i]);
+//                printf("%u \t%u \t%f\n", row_local[i], col_local[i], val_local[i]);
 //        }
 
 //        print_vector(entry, 0, "entry", comm);
@@ -573,7 +573,7 @@ int saena_matrix::matrix_setup(bool scale /*= false*/) {
 
 //        for(nnz_t i = 0; i < nnz_l_local; i++) {
 //            if (rank == 0)
-//                printf("%u \t%u \t%f\n", row_local[i], col_local[i], values_local[i]);
+//                printf("%u \t%u \t%f\n", row_local[i], col_local[i], val_local[i]);
 //        }
 
         // *************************** dense data structure ****************************
@@ -617,7 +617,7 @@ int saena_matrix::matrix_setup(bool scale /*= false*/) {
 
 
 int saena_matrix::matrix_setup_update(bool scale /*= false*/) {
-    // update values_local, values_remote and inv_diag.
+    // update val_local, values_remote and inv_diag.
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -626,13 +626,13 @@ int saena_matrix::matrix_setup_update(bool scale /*= false*/) {
 //    assembled = true;
 
     // todo: check if instead of clearing and pushing back, it is possible to only update the values.
-    values_local.clear();
+    val_local.clear();
     values_remote.clear();
 
     if(!entry.empty()) {
         for (nnz_t i = 0; i < nnz_l; i++) {
             if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
-                values_local.emplace_back(entry[i].val);
+                val_local.emplace_back(entry[i].val);
             } else {
                 values_remote.emplace_back(entry[i].val);
             }
@@ -651,7 +651,7 @@ int saena_matrix::matrix_setup_update(bool scale /*= false*/) {
 
 
 int saena_matrix::matrix_setup_lazy_update() {
-    // update values_local, values_remote and inv_diag.
+    // update val_local, values_remote and inv_diag.
 
     int rank, nprocs;
     MPI_Comm_rank(comm, &rank);
@@ -664,13 +664,13 @@ int saena_matrix::matrix_setup_lazy_update() {
     }
 
     // todo: check if instead of clearing and pushing back, it is possible to only update the values.
-    values_local.clear();
+    val_local.clear();
     values_remote.clear();
 
     if(!entry.empty()) {
         for (nnz_t i = 0; i < nnz_l; i++) {
             if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
-                values_local.emplace_back(entry[i].val);
+                val_local.emplace_back(entry[i].val);
             } else {
                 values_remote.emplace_back(entry[i].val);
             }
@@ -897,11 +897,11 @@ int saena_matrix::set_off_on_diagonal(){
 
         row_local.resize(nnz_l_local);
         col_local.resize(nnz_l_local);
-        values_local.resize(nnz_l_local);
+        val_local.resize(nnz_l_local);
         for(i = 0; i < nnz_l_local; ++i){
             row_local[i]    = ent_loc_row[i].row;
             col_local[i]    = ent_loc_row[i].col;
-            values_local[i] = ent_loc_row[i].val;
+            val_local[i] = ent_loc_row[i].val;
         }
 
         ent_loc_row.clear();
@@ -1084,7 +1084,7 @@ int saena_matrix::find_sortings(){
 //    if(rank==0)
 //        for(index_t i=0; i<nnz_l_local; i++)
 //            std::cout << row_local[indicesP_local[i]] << "\t" << col_local[indicesP_local[i]]
-//                      << "\t" << values_local[indicesP_local[i]] << std::endl;
+//                      << "\t" << val_local[indicesP_local[i]] << std::endl;
 
 //        indicesP_remote.resize(nnz_l_remote);
 //        for (nnz_t i = 0; i < nnz_l_remote; i++)
@@ -1252,7 +1252,7 @@ int saena_matrix::openmp_setup() {
 int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 
     // scale matrix: A = D^{-1/2} * A * D^{-1/2}
-    // values_local, values_remote and entry are being updated.
+    // val_local, values_remote and entry are being updated.
     // A[i] *= D^{-1/2}[row[i]] * D^{-1/2}[col[i]]
 
     int nprocs, rank;
@@ -1302,12 +1302,12 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 
 #pragma omp parallel for
     for(nnz_t i = 0; i < nnz_l_local; i++) {
-//        cout << i << "\t" << std::setprecision(16) << values_local[i] << "\t" << std::setprecision(16) << inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]] << endl;
-//        values_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]]; //D^{-1/2} * A * D^{-1/2}
-        values_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]]; //D^{-1/2} * A * D^{-1/2}
+//        cout << i << "\t" << std::setprecision(16) << val_local[i] << "\t" << std::setprecision(16) << inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]] << endl;
+//        val_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]]; //D^{-1/2} * A * D^{-1/2}
+        val_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]]; //D^{-1/2} * A * D^{-1/2}
     }
 
-//    print_vector(values_local, -1, "values_local", comm);
+//    print_vector(val_local, -1, "val_local", comm);
 
     if(nprocs > 1){
         // Wait for the receive communication to finish.
@@ -1342,8 +1342,8 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
         // copy local entries
 #pragma omp parallel for
         for (nnz_t i = 0; i < nnz_l_local; ++i) {
-//            entry[i] = cooEntry(row_local[i]+split[rank], col_local[i], values_local[i]);
-            entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]));
+//            entry[i] = cooEntry(row_local[i]+split[rank], col_local[i], val_local[i]);
+            entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], val_local[i]));
         }
 
         if (nprocs > 1) {
@@ -1385,7 +1385,7 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 int saena_matrix::scale_back_matrix(bool full_scale/* = false*/){
 
     // scale back matrix: A = D^{1/2} * A * D^{1/2}
-    // values_local, values_remote and entry are being updated.
+    // val_local, values_remote and entry are being updated.
     // A[i] /= D^{-1/2}[row[i]] * D^{-1/2}[col[i]]
 
     int nprocs, rank;
@@ -1438,11 +1438,11 @@ int saena_matrix::scale_back_matrix(bool full_scale/* = false*/){
 //    index_t* col_p = &col_local[0] - split[rank];
 #pragma omp parallel for
     for(nnz_t i = 0; i < nnz_l_local; i++) {
-        values_local[i] /= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]];
-//        cout << i << "\t"  << std::setprecision(16) << values_local[i] << "\t"  << std::setprecision(16) << inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]] << endl;
+        val_local[i] /= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]];
+//        cout << i << "\t"  << std::setprecision(16) << val_local[i] << "\t"  << std::setprecision(16) << inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]] << endl;
     }
 
-//    print_vector(values_local, -1, "values_local", comm);
+//    print_vector(val_local, -1, "val_local", comm);
 
     if(nprocs > 1){
         // Wait for the receive communication to finish.
@@ -1478,7 +1478,7 @@ int saena_matrix::scale_back_matrix(bool full_scale/* = false*/){
         // copy local entries
 #pragma omp parallel for
         for (nnz_t i = 0; i < nnz_l_local; ++i) {
-            entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], values_local[i]));
+            entry.emplace_back(cooEntry(row_local[i] + split[rank], col_local[i], val_local[i]));
         }
 
         if (nprocs > 1) {

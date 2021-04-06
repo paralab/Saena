@@ -623,7 +623,7 @@ int saena_matrix::erase(){
     entry.clear();
     split.clear();
     split_old.clear();
-    values_local.clear();
+    val_local.clear();
     row_local.clear();
     values_remote.clear();
     row_remote.clear();
@@ -645,7 +645,7 @@ int saena_matrix::erase(){
     entry.shrink_to_fit();
     split.shrink_to_fit();
     split_old.shrink_to_fit();
-    values_local.shrink_to_fit();
+    val_local.shrink_to_fit();
     values_remote.shrink_to_fit();
     row_local.shrink_to_fit();
     row_remote.shrink_to_fit();
@@ -700,7 +700,7 @@ int saena_matrix::erase2(){
     entry.clear();
     split.clear();
     split_old.clear();
-    values_local.clear();
+    val_local.clear();
     row_local.clear();
     values_remote.clear();
     row_remote.clear();
@@ -733,7 +733,7 @@ int saena_matrix::erase2(){
     entry.shrink_to_fit();
     split.shrink_to_fit();
     split_old.shrink_to_fit();
-    values_local.shrink_to_fit();
+    val_local.shrink_to_fit();
     values_remote.shrink_to_fit();
     row_local.shrink_to_fit();
     row_remote.shrink_to_fit();
@@ -796,7 +796,7 @@ int saena_matrix::erase_update_local(){
 //    values_local_temp.clear();
 //    row_local.swap(row_local_temp);
 //    col_local.swap(col_local_temp);
-//    values_local.swap(values_local_temp);
+//    val_local.swap(values_local_temp);
 
 //    entry.clear();
     // push back the remote part
@@ -805,7 +805,7 @@ int saena_matrix::erase_update_local(){
 
 //    split.clear();
 //    split_old.clear();
-    values_local.clear();
+    val_local.clear();
     row_local.clear();
     col_local.clear();
     row_remote.clear();
@@ -851,7 +851,7 @@ int saena_matrix::erase_keep_remote2(){
 
     split.clear();
     split_old.clear();
-    values_local.clear();
+    val_local.clear();
     row_local.clear();
     values_remote.clear();
     row_remote.clear();
@@ -915,7 +915,7 @@ int saena_matrix::erase_after_shrink() {
 
     row_local.clear();
     col_local.clear();
-    values_local.clear();
+    val_local.clear();
     row_remote.clear();
 //    col_remote.clear();
 //    col_remote2.clear();
@@ -955,7 +955,7 @@ int saena_matrix::erase_no_shrink_to_fit(){
     entry.clear();
     split.clear();
     split_old.clear();
-    values_local.clear();
+    val_local.clear();
     row_local.clear();
     values_remote.clear();
     row_remote.clear();
@@ -980,7 +980,7 @@ int saena_matrix::erase_no_shrink_to_fit(){
 //    entry.shrink_to_fit();
 //    split.shrink_to_fit();
 //    split_old.shrink_to_fit();
-//    values_local.shrink_to_fit();
+//    val_local.shrink_to_fit();
 //    values_remote.shrink_to_fit();
 //    row_local.shrink_to_fit();
 //    row_remote.shrink_to_fit();
@@ -1028,7 +1028,7 @@ int saena_matrix::set_zero(){
     for(nnz_t i = 0; i < nnz_l; i++)
         entry[i].val = 0;
 
-    values_local.clear();
+    val_local.clear();
     values_remote.clear();
 
     return 0;

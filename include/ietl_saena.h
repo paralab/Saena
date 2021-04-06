@@ -42,9 +42,9 @@ int find_eig_ietl(Matrix& A){
 
 //    MPI_Barrier(A.comm);
 //    for(unsigned long i = 0; i < A.nnz_l_local; i++) {
-//        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], (A.values_local[i]*A.inv_diag[A.row_local[i]] - A.entry[i].val * A.inv_diag[A.entry[i].row - A.split[rank]]));
-//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, local \n", i, A.row_local[i]+A.split[rank], A.values_local[i], A.inv_diag[A.row_local[i]], A.values_local[i]*A.inv_diag[A.row_local[i]]);
-//        A.values_local[i] *= A.inv_diag[A.row_local[i]];
+//        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], (A.val_local[i]*A.inv_diag[A.row_local[i]] - A.entry[i].val * A.inv_diag[A.entry[i].row - A.split[rank]]));
+//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, local \n", i, A.row_local[i]+A.split[rank], A.val_local[i], A.inv_diag[A.row_local[i]], A.val_local[i]*A.inv_diag[A.row_local[i]]);
+//        A.val_local[i] *= A.inv_diag[A.row_local[i]];
 //    }
 
 //    MPI_Barrier(A.comm);
