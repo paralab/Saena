@@ -1113,7 +1113,7 @@ void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const va
         residual_multiply(&u[0], &rhs[0], &res[0], inv_diag_p, d2);
 
 //        #pragma omp parallel for
-        #pragma omp parallel for simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
+        #pragma omp parallel for simd aligned(d, res, u: ALIGN_SZ)
         for(index_t j = 0; j < sz; ++j){
 //            d[j] = ( d1 * d[j] ) + ( d2 * res[j] * inv_diag_p[j] );
             d[j] = ( d1 * d[j] ) + res[j];
