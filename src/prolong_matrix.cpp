@@ -95,6 +95,9 @@ int prolong_matrix::findLocalRemote(){
 
     recvCount[rank] = 0;
 
+    entry.clear();
+    entry.shrink_to_fit();
+
 //    for (i = 0; i < M; ++i) {
 //        nnzPerRowScan_local[i + 1] = nnzPerRowScan_local[i] + nnzPerRow_local[i];
 //        if(rank==0) printf("nnzPerRowScan_local=%d, nnzPerRow_local=%d\n", nnzPerRowScan_local[i], nnzPerRow_local[i]);
@@ -958,6 +961,9 @@ int prolong_matrix::print_entry(int ran){
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(!rank) printf("prolong_matrix::print_entry: P.entry is cleared. This func. needs to be updated!\n");
+    return 0;
+
     if(ran >= 0) {
         if (rank == ran) {
             printf("\nprolongation matrix on proc = %d \n", ran);
@@ -1022,6 +1028,9 @@ int prolong_matrix::writeMatrixToFile(const std::string &name) const{
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
+
+    if(!rank) printf("prolong_matrix::writeMatrixToFile: P.entry is cleared. This func. needs to be updated!\n");
+    return 0;
 
     std::string outFileNameTxt = name + "P-r" + std::to_string(rank) + ".mtx";
     std::ofstream outFileTxt(outFileNameTxt);
