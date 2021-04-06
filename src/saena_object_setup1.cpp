@@ -140,6 +140,7 @@ int saena_object::SA(Grid *grid){
 
     // aggregate is used as P_t in the following "for" loop.
     // go through A row-wise using indicesP_local (there is no order for the columns, only rows are ordered.)
+    const auto om = Pomega;
     value_t vtmp = 0;
     long iter = 0;
     for (i = 0; i < sz; ++i) {
@@ -148,7 +149,7 @@ int saena_object::SA(Grid *grid){
         for (j = 0; j < A->nnzPerRow_local[i]; ++j, ++iter) {
 //            const auto idx = A->indicesP_local[iter];
 
-            vtmp = -Pomega * Q[i] * A->values_local[iter];
+            vtmp = -om * Q[i] * A->values_local[iter];
             if(r_idx == A->col_local[iter]){ // diagonal element
                 vtmp += 1;    // extra step for diagonal elements because of I in P = (I - wQA) * P_t
             }
@@ -178,10 +179,14 @@ int saena_object::SA(Grid *grid){
         for (j = 0; j < A->nnzPerCol_remote[i]; ++j, ++iter) {
             PEntryTemp.emplace_back(cooEntry(A->row_remote[iter],
                                              c_idx,
-                                             -Pomega * Q[A->row_remote[iter]] * A->values_remote[iter]));
+                                             -om * Q[A->row_remote[iter]] * A->values_remote[iter]));
 //            if(rank==3) std::cout << A->row_remote[iter] + A->split[rank] << "\t" << vecValuesAgg[A->col_remote[iter]] << "\t"
 //                      << A->values_remote[iter] * A->inv_diag[A->row_remote[iter]] << "\t" << A->col_remote[iter] << std::endl;
         }
+    }
+
+    if(PSmoother == "SPAI"){
+        saena_free(Q);
     }
 
 #ifdef __DEBUG1__
@@ -192,18 +197,21 @@ int saena_object::SA(Grid *grid){
     }
 #endif
 
-    if(PSmoother == "SPAI"){
-        saena_free(Q);
-    }
-
     // add duplicates.
     // values of entries with the same row and col should be added together.
 
     std::sort(PEntryTemp.begin(), PEntryTemp.end());
 
-    const nnz_t SZ_M1 = static_cast<int>(PEntryTemp.size()) - 1;
+#ifdef __DEBUG1__
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("SA: step 5\n"); MPI_Barrier(comm);
+    }
+#endif
+
+    const nnz_t pend  = PEntryTemp.size();
+    const nnz_t SZ_M1 = PEntryTemp.size() - 1;
     cooEntry tmp(0, 0, 0.0);
-    for(i = 0; i < PEntryTemp.size(); ++i){
+    for(i = 0; i < pend; ++i){
         tmp = PEntryTemp[i];
         while(i < SZ_M1 && PEntryTemp[i] == PEntryTemp[i+1]){
             tmp.val += PEntryTemp[++i].val;
@@ -218,6 +226,12 @@ int saena_object::SA(Grid *grid){
         ASSERT(tmp.col >= 0, "rank " << rank << ": col = " << tmp.col);
 #endif
     }
+
+#ifdef __DEBUG1__
+    if(verbose_setup_steps) {
+        MPI_Barrier(comm); if (!rank) printf("SA: step 6\n"); MPI_Barrier(comm);
+    }
+#endif
 
     P->nnz_l = P->entry.size();
     MPI_Allreduce(&P->nnz_l, &P->nnz_g, 1, par::Mpi_datatype<nnz_t>::value(), MPI_SUM, comm);
@@ -727,7 +741,9 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
 //    S->print_entry(-1);
 #endif
 
-    index_t size = S->M;
+    int MPI_flag = 0;
+    const index_t size = S->M;
+    const index_t sendsz = S->vIndexSize;
     std::vector<index_t> aggregate2(size);
     std::vector<value_t> aggval(size);
 
@@ -745,14 +761,14 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
     auto *is_root_nei = new bool[size];
     assert(is_root_nei != nullptr);
 
-    auto *vSend = new bool[2 * S->vIndexSize];
+    auto *vSend = new bool[2 * sendsz];
     assert(vSend != nullptr);
 
     auto *vecValues = new bool[2 * S->recvSize];
     assert(vecValues != nullptr);
 
     bool continueAggLocal = true, continueAgg = true;
-    index_t i = 0, j = 0, i_remote = 0, j_remote = 0, it = 0, col_idx = 0;
+    index_t i = 0, j = 0, it = 0;
 
     auto *requests = new MPI_Request[S->numSendProc + S->numRecvProc];
     auto *statuses = new MPI_Status[S->numSendProc + S->numRecvProc];
@@ -793,7 +809,7 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
                 dec_nei[i]     = true;
                 is_root_nei[i] = false;
                 for (j = 0; j < S->nnzPerRow_local[i]; ++j, ++it) {
-                    col_idx = S->col_local[it];
+                    const index_t col_idx = S->col_local[it];
 #ifdef __DEBUG1__
 //                    if(rank==0) printf("%d:\taggregate[i] = %3d,\taggregate2[i] = %3d,\taggregate[col_idx] = %3d,"
 //                                       "\tdecided[col_idx] = %d,\tis_root[col_idx] = %d,\tcol_idx = %d"
@@ -831,42 +847,49 @@ int saena_object::aggregation_1_dist(strength_matrix *S, std::vector<index_t> &a
         // remote part
         // ===========
         if(nprocs > 1){
-            for (i = 0; i < S->vIndexSize; ++i){
+            for (i = 0; i < sendsz; ++i){
                 vSend[2 * i]     = decided[S->vIndex[i]];
                 vSend[2 * i + 1] = is_root[S->vIndex[i]];
             }
 
-            for (i = 0; i < S->numRecvProc; ++i)
+            for (i = 0; i < S->numRecvProc; ++i){
                 MPI_Irecv(&vecValues[S->rdispls[S->recvProcRank[i]]], S->recvProcCount[i], MPI_CXX_BOOL,
                           S->recvProcRank[i], 1, comm, &requests[i]);
+                MPI_Test(&requests[i], &MPI_flag, MPI_STATUSES_IGNORE);
+            }
 
-            for (i = 0; i < S->numSendProc; ++i)
+
+            MPI_Request *requests_p = &requests[S->numRecvProc];
+            for (i = 0; i < S->numSendProc; ++i){
                 MPI_Isend(&vSend[S->vdispls[S->sendProcRank[i]]], S->sendProcCount[i], MPI_CXX_BOOL,
-                          S->sendProcRank[i], 1, comm, &requests[S->numRecvProc + i]);
+                          S->sendProcRank[i], 1, comm, &requests_p[i]);
+                MPI_Test(&requests_p[i], &MPI_flag, MPI_STATUSES_IGNORE);
+            }
 
-            MPI_Waitall(S->numRecvProc, requests, statuses);
+            MPI_Waitall(S->numRecvProc, requests, MPI_STATUSES_IGNORE);
 
             it = 0;
             for (i = 0; i < S->col_remote_size; ++i) {
-                for (j = 0; j < S->nnzPerCol_remote[i]; ++j, ++it) {
-                    i_remote = S->row_remote[it];
-                    j_remote = S->col_remote[it];
+                const nnz_t itend = it + S->nnzPerCol_remote[i];
+                for (; it < itend; ++it) {
+                    const index_t i_remote     = S->row_remote[it];
+                    const index_t two_j_remote = 2 * S->col_remote[it];
 //                    if(rank==1) printf("%d:\trow_remote = %4d,\tcol_remote2 = %4d,\tvecValues[2*it] = %4d,\tvecValues[2*it+1] = %4d\n",
 //                                       it, S->row_remote[it], S->col_remote2[it], vecValues[2 * j_remote], vecValues[2 * j_remote + 1]);
 
                     if (!decided[i_remote] &&
                        (S->col_remote2[it] < aggregate2[i_remote]) &&
-                       (!vecValues[2 * j_remote] || vecValues[2 * j_remote + 1]) ){ // vecValues[2 * it]:     decided
+                       (!vecValues[two_j_remote] || vecValues[two_j_remote + 1]) ){ // vecValues[2 * it]:     decided
                                                                                     // vecValues[2 * it + 1]: is_root
                                                                              // equivalent: if(dec_nei && !is_root) skip
                         aggregate2[i_remote]  = S->col_remote2[it];
-                        dec_nei[i_remote]     = vecValues[2 * j_remote];
-                        is_root_nei[i_remote] = vecValues[2 * j_remote + 1];
+                        dec_nei[i_remote]     = vecValues[two_j_remote];
+                        is_root_nei[i_remote] = vecValues[two_j_remote + 1];
                     }
                 }
             }
 
-            MPI_Waitall(S->numSendProc, S->numRecvProc+requests, S->numRecvProc+statuses);
+            MPI_Waitall(S->numSendProc, S->numRecvProc+requests, MPI_STATUSES_IGNORE);
         }
 
         // put weight2 in weight and aggregate2 in aggregate.
