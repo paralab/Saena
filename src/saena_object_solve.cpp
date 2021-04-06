@@ -789,7 +789,7 @@ int saena_object::solve_coarsest_SuperLU(saena_matrix *A, std::vector<value_t> &
 }
 #endif
 
-void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *rhs){
+void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *&u, value_t *rhs){
     // For a similar code, using the same matrix for mutiple rhs's, read SuperLU_DIST_5.4.0/EXAMPLE/pddrive1.c
 
     if(!superlu_active){
@@ -823,7 +823,7 @@ void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *
 
     SuperLUStat_t stat;
     double   *berr = nullptr;
-    value_t  *b    = nullptr;
+//    value_t  *b    = nullptr;
     int      m = 0, n = 0, m_loc = 0, nnz_loc = 0;
     int      nprow = 0, npcol = 0;
     int      iam = 0, info = 0, ldb = 0, nrhs = 0;
@@ -870,8 +870,8 @@ void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *
        SET THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
 
-    b = &rhs[0];
-//    u = rhs; // copy rhs to u. the solution will be saved in b at the end. then, swap u and rhs.
+//    b = &rhs[0];
+//    copy rhs into u. the solution will be saved in u at the end.
     std::copy(&rhs[0], &rhs[m_loc], &u[0]);
 
     /* ------------------------------------------------------------
@@ -897,13 +897,9 @@ void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *u, value_t *
 
     // Call the linear equation solver.
     // on entry, b points to rhs. on return, it will be the solution.
-    pdgssvx(&options, &A_SLU2, &ScalePermstruct, b, ldb, nrhs, &superlu_grid,
+    // pass u as rhs. the solution will be saved in u at the end.
+    pdgssvx(&options, &A_SLU2, &ScalePermstruct, u, ldb, nrhs, &superlu_grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
-
-    // put the solution in u
-    // b points to rhs. after calling pdgssvx it will be the solution.
-//    u.swap(rhs);
-    swap(u, rhs);
 
 //    print_vector(u, -1, "u computed in superlu", comm);
 
@@ -1005,7 +1001,7 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
         if (direct_solver == "CG") {
             solve_coarsest_CG(grid->A, &u[0], rhs);
         } else if (direct_solver == "SuperLU") {
-            solve_coarsest_SuperLU(grid->A, &u[0], rhs);
+            solve_coarsest_SuperLU(grid->A, u, rhs);
         } else {
             if (!rank) printf("Error: Unknown direct solver! \n");
             exit(EXIT_FAILURE);
