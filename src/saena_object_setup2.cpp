@@ -730,7 +730,7 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
         Pcsc.col_scan[i+1] += Pcsc.col_scan[i];
     }
 
-    Pcsc.nnz_list = R->nnz_list;
+    Pcsc.nnz_list = std::move(R->nnz_list);
 
     Pcsc.use_trans = true;
 
