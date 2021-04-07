@@ -105,13 +105,15 @@ public:
     nnz_t   nnz_l_local     = 0;
     nnz_t   nnz_l_remote    = 0;
     index_t col_remote_size = 0;            // number of remote columns
-    std::vector<value_t> val_local;
-    std::vector<value_t> val_remote;
-    std::vector<index_t> row_local;
-    std::vector<index_t> row_remote;
-    std::vector<index_t> col_local;
-    std::vector<index_t> col_remote;        // index starting from 0, instead of the original column index
-    std::vector<index_t> col_remote2;       // original col index
+
+    value_t *val_local   = nullptr;
+    value_t *val_remote  = nullptr;
+    index_t *row_local   = nullptr;
+    index_t *row_remote  = nullptr;
+    index_t *col_local   = nullptr;
+    index_t *col_remote  = nullptr;        // index starting from 0, instead of the original column index
+    index_t *col_remote2 = nullptr;        // original col index
+
     std::vector<index_t> nnzPerRow_local;   // todo: this is used for openmp part of saena_matrix.cpp
 //    std::vector<index_t> nnzPerRow_local2;  // todo: remove this. this is used for openmp part of saena_matrix.cpp
     std::vector<index_t> nnzPerRow_remote;  // It is also used for PETSc function: MatMPIAIJSetPreallocation()

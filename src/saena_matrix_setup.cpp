@@ -626,15 +626,17 @@ int saena_matrix::matrix_setup_update(bool scale /*= false*/) {
 //    assembled = true;
 
     // todo: check if instead of clearing and pushing back, it is possible to only update the values.
-    val_local.clear();
-    val_remote.clear();
+//    saena_free(val_local);
+//    saena_free(val_remote);
 
     if(!entry.empty()) {
         for (nnz_t i = 0; i < nnz_l; i++) {
             if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
-                val_local.emplace_back(entry[i].val);
+//                val_local.emplace_back(entry[i].val);
+                val_local[i] = entry[i].val;
             } else {
-                val_remote.emplace_back(entry[i].val);
+//                val_remote.emplace_back(entry[i].val);
+                val_remote[i] = entry[i].val;
             }
         }
     }
@@ -664,15 +666,17 @@ int saena_matrix::matrix_setup_lazy_update() {
     }
 
     // todo: check if instead of clearing and pushing back, it is possible to only update the values.
-    val_local.clear();
-    val_remote.clear();
+//    saena_free(val_local);
+//    saena_free(val_remote);
 
     if(!entry.empty()) {
         for (nnz_t i = 0; i < nnz_l; i++) {
             if (entry[i].col >= split[rank] && entry[i].col < split[rank + 1]) {
-                val_local.emplace_back(entry[i].val);
+//                val_local.emplace_back(entry[i].val);
+                val_local[i] = entry[i].val;
             } else {
-                val_remote.emplace_back(entry[i].val);
+//                val_remote.emplace_back(entry[i].val);
+                val_remote[i] = entry[i].val;
             }
         }
     }
@@ -832,6 +836,13 @@ int saena_matrix::set_off_on_diagonal(){
         // then split it to row_loc, col_loc, val_loc.
         vector<cooEntry_row> ent_loc_row;
 
+        // store remote entries in the following vectors. These are not memory-aligned. So then move them into aligned
+        // arrays.
+        vector<index_t> row_rem_unaligned;
+        vector<index_t> col_rem_unaligned;
+        vector<index_t> col_rem2_unaligned;
+        vector<value_t> val_rem_unaligned;
+
         nnz_t i = 0;
         while(i < nnz_l) {
 //            if(rank==rank_v) cout << endl << entry[i] << endl;
@@ -859,10 +870,10 @@ int saena_matrix::set_off_on_diagonal(){
 
                         // the original col values are not being used in matvec. the ordering starts from 0, and goes up by 1.
                         // col_remote2 is the original col value and will be used in making strength matrix.
-                        col_remote.emplace_back(vElement_remote.size() - 1);
-                        col_remote2.emplace_back(entry[i].col);
-                        row_remote.emplace_back(entry[i].row - split[rank]);
-                        val_remote.emplace_back(entry[i].val);
+                        col_rem_unaligned.emplace_back(vElement_remote.size() - 1);
+                        col_rem2_unaligned.emplace_back(entry[i].col);
+                        row_rem_unaligned.emplace_back(entry[i].row - split[rank]);
+                        val_rem_unaligned.emplace_back(entry[i].val);
                         ++nnzPerCol_remote.back();
 #ifdef _USE_PETSC_
                         ++nnzPerRow_remote[entry[i].row - split[rank]];
@@ -874,7 +885,7 @@ int saena_matrix::set_off_on_diagonal(){
         } // for i
 
         nnz_l_local     = ent_loc_row.size();
-        nnz_l_remote    = row_remote.size();
+        nnz_l_remote    = row_rem_unaligned.size();
         col_remote_size = vElement_remote.size();
 
 #ifdef __DEBUG1__
@@ -895,10 +906,15 @@ int saena_matrix::set_off_on_diagonal(){
 
 //        print_vector(ent_loc_row, -1, "ent_loc_row", comm);
 
-        row_local.resize(nnz_l_local);
-        col_local.resize(nnz_l_local);
-        val_local.resize(nnz_l_local);
-        for(i = 0; i < nnz_l_local; ++i){
+        const nnz_t nnzl = nnz_l_local;
+        row_local = saena_aligned_alloc<index_t>(nnzl);
+        assert(row_local);
+        col_local = saena_aligned_alloc<index_t>(nnzl);
+        assert(col_local);
+        val_local = saena_aligned_alloc<value_t>(nnzl);
+        assert(val_local);
+
+        for(i = 0; i < nnzl; ++i){
             row_local[i] = ent_loc_row[i].row;
             col_local[i] = ent_loc_row[i].col;
             val_local[i] = ent_loc_row[i].val;
@@ -906,6 +922,22 @@ int saena_matrix::set_off_on_diagonal(){
 
         ent_loc_row.clear();
         ent_loc_row.shrink_to_fit();
+
+        // copy remote entries to the aligned arrays
+        const nnz_t nnzr = nnz_l_remote;
+        row_remote = saena_aligned_alloc<index_t>(nnzr);
+        assert(row_remote);
+        col_remote = saena_aligned_alloc<index_t>(nnzr);
+        assert(col_remote);
+        col_remote2 = saena_aligned_alloc<index_t>(nnzr);
+        assert(col_remote2);
+        val_remote = saena_aligned_alloc<value_t>(nnzr);
+        assert(val_remote);
+
+        std::copy(&row_rem_unaligned[0], &row_rem_unaligned[nnzr], &row_remote[0]);
+        std::copy(&col_rem_unaligned[0], &col_rem_unaligned[nnzr], &col_remote[0]);
+        std::copy(&col_rem2_unaligned[0], &col_rem2_unaligned[nnzr], &col_remote2[0]);
+        std::copy(&val_rem_unaligned[0], &val_rem_unaligned[nnzr], &val_remote[0]);
 
         if(nprocs != 1){
 

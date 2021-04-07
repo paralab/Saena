@@ -623,13 +623,6 @@ int saena_matrix::erase(){
     entry.clear();
     split.clear();
     split_old.clear();
-    val_local.clear();
-    row_local.clear();
-    val_remote.clear();
-    row_remote.clear();
-    col_local.clear();
-    col_remote.clear();
-    col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
     vdispls.clear();
@@ -645,13 +638,6 @@ int saena_matrix::erase(){
     entry.shrink_to_fit();
     split.shrink_to_fit();
     split_old.shrink_to_fit();
-    val_local.shrink_to_fit();
-    val_remote.shrink_to_fit();
-    row_local.shrink_to_fit();
-    row_remote.shrink_to_fit();
-    col_local.shrink_to_fit();
-    col_remote.shrink_to_fit();
-    col_remote2.shrink_to_fit();
     nnzPerRow_local.shrink_to_fit();
     nnzPerCol_remote.shrink_to_fit();
     vdispls.shrink_to_fit();
@@ -663,6 +649,14 @@ int saena_matrix::erase(){
     sendProcCount.shrink_to_fit();
     requests.shrink_to_fit();
     statuses.shrink_to_fit();
+
+    saena_free(val_local);
+    saena_free(val_remote);
+    saena_free(row_local);
+    saena_free(row_remote);
+    saena_free(col_local);
+    saena_free(col_remote);
+    saena_free(col_remote2);
 
     saena_free(inv_diag);
     saena_free(inv_diag_orig);
@@ -700,13 +694,6 @@ int saena_matrix::erase2(){
     entry.clear();
     split.clear();
     split_old.clear();
-    val_local.clear();
-    row_local.clear();
-    val_remote.clear();
-    row_remote.clear();
-    col_local.clear();
-    col_remote.clear();
-    col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
     vdispls.clear();
@@ -733,13 +720,6 @@ int saena_matrix::erase2(){
     entry.shrink_to_fit();
     split.shrink_to_fit();
     split_old.shrink_to_fit();
-    val_local.shrink_to_fit();
-    val_remote.shrink_to_fit();
-    row_local.shrink_to_fit();
-    row_remote.shrink_to_fit();
-    col_local.shrink_to_fit();
-    col_remote.shrink_to_fit();
-    col_remote2.shrink_to_fit();
     nnzPerRow_local.shrink_to_fit();
     nnzPerCol_remote.shrink_to_fit();
     vdispls.shrink_to_fit();
@@ -760,6 +740,14 @@ int saena_matrix::erase2(){
 //    iter_local_array2.shrink_to_fit();
     vElement_remote.shrink_to_fit();
     w_buff.shrink_to_fit();
+
+    saena_free(val_local);
+    saena_free(val_remote);
+    saena_free(row_local);
+    saena_free(row_remote);
+    saena_free(col_local);
+    saena_free(col_remote);
+    saena_free(col_remote2);
 
     saena_free(inv_diag);
     saena_free(inv_diag_orig);
@@ -805,13 +793,6 @@ int saena_matrix::erase_update_local(){
 
 //    split.clear();
 //    split_old.clear();
-    val_local.clear();
-    row_local.clear();
-    col_local.clear();
-    row_remote.clear();
-    col_remote.clear();
-    col_remote2.clear();
-    val_remote.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
     vdispls.clear();
@@ -821,6 +802,14 @@ int saena_matrix::erase_update_local(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
+
+    saena_free(val_local);
+    saena_free(val_remote);
+    saena_free(row_local);
+    saena_free(row_remote);
+    saena_free(col_local);
+    saena_free(col_remote);
+    saena_free(col_remote2);
 
     saena_free(inv_diag);
     saena_free(inv_diag_orig);
@@ -846,18 +835,11 @@ int saena_matrix::erase_keep_remote2(){
     entry.clear();
 
     // push back the remote part
-    for(unsigned long i = 0; i < row_remote.size(); i++)
+    for(unsigned long i = 0; i < nnz_l_remote; ++i)
         entry.emplace_back(cooEntry(row_remote[i], col_remote2[i], val_remote[i]));
 
     split.clear();
     split_old.clear();
-    val_local.clear();
-    row_local.clear();
-    val_remote.clear();
-    row_remote.clear();
-    col_local.clear();
-    col_remote.clear();
-    col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
     vdispls.clear();
@@ -878,6 +860,14 @@ int saena_matrix::erase_keep_remote2(){
 //    iter_local_array2.clear();
     vElement_remote.clear();
     w_buff.clear();
+
+    saena_free(val_local);
+    saena_free(val_remote);
+    saena_free(row_local);
+    saena_free(row_remote);
+    saena_free(col_local);
+    saena_free(col_remote);
+    saena_free(col_remote2);
 
     saena_free(inv_diag);
     saena_free(inv_diag_orig);
@@ -913,13 +903,13 @@ int saena_matrix::erase_after_shrink() {
     vIndexSize = 0;
     recvSize = 0;
 
-    row_local.clear();
-    col_local.clear();
-    val_local.clear();
-    row_remote.clear();
-//    col_remote.clear();
-//    col_remote2.clear();
-    val_remote.clear();
+    saena_free(val_local);
+    saena_free(val_remote);
+    saena_free(row_local);
+    saena_free(row_remote);
+    saena_free(col_local);
+//    saena_free(col_remote);
+//    saena_free(col_remote2);
 
     vElement_remote.clear();
     nnzPerRow_local.clear();
@@ -955,13 +945,6 @@ int saena_matrix::erase_no_shrink_to_fit(){
     entry.clear();
     split.clear();
     split_old.clear();
-    val_local.clear();
-    row_local.clear();
-    val_remote.clear();
-    row_remote.clear();
-    col_local.clear();
-    col_remote.clear();
-    col_remote2.clear();
     nnzPerRow_local.clear();
     nnzPerCol_remote.clear();
     vdispls.clear();
@@ -971,6 +954,14 @@ int saena_matrix::erase_no_shrink_to_fit(){
     sendProcRank.clear();
     sendProcCount.clear();
     sendProcCount.clear();
+
+    saena_free(val_local);
+    saena_free(val_remote);
+    saena_free(row_local);
+    saena_free(row_remote);
+    saena_free(col_local);
+    saena_free(col_remote);
+    saena_free(col_remote2);
 
     saena_free(inv_diag);
     saena_free(inv_diag_orig);
@@ -1028,8 +1019,8 @@ int saena_matrix::set_zero(){
     for(nnz_t i = 0; i < nnz_l; i++)
         entry[i].val = 0;
 
-    val_local.clear();
-    val_remote.clear();
+    saena_free(val_local);
+    saena_free(val_remote);
 
     return 0;
 }
