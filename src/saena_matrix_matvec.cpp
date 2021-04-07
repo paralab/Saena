@@ -59,7 +59,7 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
             values_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
             tmp = 0;
-#pragma omp simd reduction(+: tmp) aligned(values_local_p, v_p, col_local_p: ALIGN_SZ)
+#pragma omp simd reduction(+: tmp) aligned(v_p, col_local_p: ALIGN_SZ)
             for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], val_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
                 tmp += values_local_p[j] * v_p[col_local_p[j]];
@@ -352,7 +352,7 @@ void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
             values_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
             tmp = 0;
-#pragma omp simd reduction(+: tmp) aligned(values_local_p, v_p, col_local_p: ALIGN_SZ)
+#pragma omp simd reduction(+: tmp) aligned(v_p, col_local_p: ALIGN_SZ)
             for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], val_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
                 tmp += values_local_p[j] * v_p[col_local_p[j]];
