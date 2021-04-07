@@ -769,8 +769,8 @@ int saena::amg::solve_pCG(value_t *&u, saena::options* opts){
     if(m_pImpl->remove_boundary){
 //        m_pImpl->add_boundary_sol(u); // TODO: this part should be fixed
     } else {
-        Grid *g = &m_pImpl->grids[0];
-        g->rhs_orig->return_vec(u);
+//        Grid *g = &m_pImpl->grids[0];
+//        g->rhs_orig->return_vec(u);
     }
 
     return 0;
