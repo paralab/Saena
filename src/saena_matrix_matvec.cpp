@@ -88,7 +88,7 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
             val_remote_p = &val_remote[iter];
             const index_t iend = nnzPerCol_remote_p[j];
             const value_t vrem = vecValues_p[j];
-#pragma omp simd
+#pragma omp simd aligned(row_remote_p, val_remote_p: ALIGN_SZ)
             for (index_t i = 0; i < iend; ++i) {
 //                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
 //                iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[rdispls[recv_proc] + j]);
@@ -352,6 +352,7 @@ void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
             values_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
             tmp = 0;
+#pragma omp simd reduction(+: tmp) aligned(values_local_p, v_p, col_local_p: ALIGN_SZ)
             for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], val_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
                 tmp += values_local_p[j] * v_p[col_local_p[j]];
@@ -361,11 +362,13 @@ void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
         }
     }
 
+    index_t* row_remote_p = nullptr;
+    value_t* val_remote_p = nullptr;
     nnz_t iter = 0;
-    int recv_proc = 0, recv_proc_idx = 0;
+    int recv_proc_idx = 0;
     for(int np = 0; np < numRecvProc; ++np){
         MPI_Waitany(numRecvProc, &requests[0], &recv_proc_idx, MPI_STATUS_IGNORE);
-        recv_proc = recvProcRank[recv_proc_idx];
+        const int recv_proc = recvProcRank[recv_proc_idx];
 //        if(rank==1) printf("recv_proc_idx = %d, recv_proc = %d, np = %d, numRecvProc = %d, recvCount[recv_proc] = %d\n",
 //                              recv_proc_idx, recv_proc, np, numRecvProc, recvCount[recv_proc]);
 
@@ -374,11 +377,17 @@ void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
         auto  *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
         for (index_t j = 0; j < recvCount[recv_proc]; ++j) {
 //            if(rank==1) printf("%u\n", nnzPerCol_remote_p[j]);
-            for (index_t i = 0; i < nnzPerCol_remote_p[j]; ++i, ++iter) {
+            row_remote_p = &row_remote[iter];
+            val_remote_p = &val_remote[iter];
+            const index_t iend = nnzPerCol_remote_p[j];
+            const value_t vrem = vecValues_p[j];
+#pragma omp simd aligned(row_remote_p, val_remote_p: ALIGN_SZ)
+            for (index_t i = 0; i < iend; ++i) {
 //                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
 //                iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[rdispls[recv_proc] + j]);
-                w[row_remote[iter]] += val_remote[iter] * vecValues_p[j];
+                w[row_remote_p[i]] += val_remote_p[i] * vrem;
             }
+            iter += iend;
         }
     }
 
