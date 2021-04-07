@@ -756,8 +756,8 @@ int saena::amg::solve_CG(value_t *&u, saena::options* opts){
 
 int saena::amg::solve_petsc(value_t *&u, saena::options* opts){
     m_pImpl->solve_petsc(u, opts->get_petsc_solver(), opts->get_tol());
-    Grid *g = &m_pImpl->grids[0];
-    g->rhs_orig->return_vec(u);
+//    Grid *g = &m_pImpl->grids[0];
+//    g->rhs_orig->return_vec(u);
     return 0;
 }
 
