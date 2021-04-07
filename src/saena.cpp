@@ -515,7 +515,7 @@ void saena::options::set_from_file(const string &name){
 
     attr = attr.next_attribute();
     petsc_solver = attr.value();
-    assert(petsc_solver.empty() || petsc_solver == "gamg" || petsc_solver == "ML" || petsc_solver == "boomerAMG" ||
+    assert(petsc_solver.empty() || petsc_solver == "gamg" || petsc_solver == "ml" || petsc_solver == "boomerAMG" ||
            petsc_solver == "dcg");
 
 //    for (pugi::xml_attribute attr2 = opts.first_attribute(); attr2; attr2 = attr2.next_attribute())
