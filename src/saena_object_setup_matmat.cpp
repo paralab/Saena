@@ -1534,44 +1534,36 @@ int saena_object::matmat_memory_alloc(CSCMat &A, CSCMat &B){
 //        if(rank==56) printf("v_buffer_sz_max = %ld, r_cscan_buffer_sz_max = %ld, mempool3_sz = %ld\n",
 //                             v_buffer_sz_max, r_cscan_buffer_sz_max, mempool3_sz);
 
-        mempool3 = saena_aligned_alloc<index_t>(mempool3_sz); // used to store mat_current in matmat()
-        assert(mempool3);
-//        try {
-//            mempool3 = new index_t[mempool3_sz]; // used to store mat_current in matmat()
-//        } catch (std::bad_alloc &ba) {
-//            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-//        }
+        try {
+            mempool3 = new index_t[mempool3_sz]; // used to store mat_current in matmat()
+        } catch (std::bad_alloc &ba) {
+            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        }
     }
 
     mempool4and5_sz = std::max(A.max_nnz, B.max_nnz);
 
-    mempool4 = saena_aligned_alloc<index_t>(mempool4and5_sz);//used in reorder_split and reorder_back_split
-    assert(mempool4);
-//    try{
-//        mempool4 = new index_t[mempool4and5_sz]; //used in reorder_split and reorder_back_split
-//    }catch(std::bad_alloc& ba){
-//        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-//    }
+    try{
+        mempool4 = new index_t[mempool4and5_sz]; //used in reorder_split and reorder_back_split
+    }catch(std::bad_alloc& ba){
+        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
 
-    mempool5 = saena_aligned_alloc<value_t>(mempool4and5_sz);//used in reorder_split and reorder_back_split
-    assert(mempool5);
-//    try{
-//        mempool5 = new value_t[mempool4and5_sz]; //used in reorder_split and reorder_back_split
-//    }catch(std::bad_alloc& ba){
-//        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-//    }
+    try{
+        mempool5 = new value_t[mempool4and5_sz]; //used in reorder_split and reorder_back_split
+    }catch(std::bad_alloc& ba){
+        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
 
     if(nprocs > 1) {
         assert(B.max_comp_sz != 0);
         mempool6_sz = 2 * (B.max_comp_sz + B.max_nnz * sizeof(value_t));
 
-        mempool6 = saena_aligned_alloc<uchar>(mempool6_sz);// one for mat_send, one for mat_recv. both are compressed.
-        assert(mempool6);
-//        try {
-//            mempool6 = new uchar[mempool6_sz]; // one for mat_send, one for mat_recv. both are compressed.
-//        } catch (std::bad_alloc &ba) {
-//            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-//        }
+        try {
+            mempool6 = new uchar[mempool6_sz]; // one for mat_send, one for mat_recv. both are compressed.
+        } catch (std::bad_alloc &ba) {
+            std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        }
 
 //        if(zfp_thrshld > 1e-8) {
             // the buffer size is sometimes bigger than the original array, so choosing 2 to be safe.
@@ -1585,14 +1577,10 @@ int saena_object::matmat_memory_alloc(CSCMat &A, CSCMat &B){
 //        }
     }
 
-    Cmkl_r = saena_aligned_alloc<index_t>(matmat_thre1);
-    assert(Cmkl_r);
-    Cmkl_v = saena_aligned_alloc<value_t>(matmat_thre1);
-    assert(Cmkl_v);
-
     matmat_thre2 = ceil(sqrt(matmat_thre1));
-    Cmkl_c_scan = saena_aligned_alloc<index_t>(matmat_thre2 + 1);
-    assert(Cmkl_c_scan);
+    Cmkl_r        = new index_t[matmat_thre1];
+    Cmkl_v        = new value_t[matmat_thre1];
+    Cmkl_c_scan   = new index_t[matmat_thre2 + 1];
 
 //    mempool1 = std::make_unique<value_t[]>(matmat_size_thre2);
 //    mempool2 = std::make_unique<index_t[]>(A->Mbig * 4);
@@ -1619,25 +1607,33 @@ int saena_object::matmat_memory_free(){
 
 //    delete []mempool1;
 //    delete []mempool2;
+    delete []mempool3;
+    delete []mempool4;
+    delete []mempool5;
+    delete []mempool6;
 
-    saena_free(mempool3);
-    saena_free(mempool4);
-    saena_free(mempool5);
-    saena_free(mempool6);
-
-    saena_free(Cmkl_r);
-    saena_free(Cmkl_v);
-    saena_free(Cmkl_c_scan);
+    mempool3 = nullptr;
+    mempool4 = nullptr;
+    mempool5 = nullptr;
+    mempool6 = nullptr;
 
 //    if(zfp_thrshld > 1e-8) {
 //        delete[]mempool7;
 //        mempool7 = nullptr;
 //    }
 
+    delete []Cmkl_r;
+    delete []Cmkl_v;
+    delete []Cmkl_c_scan;
+
+    Cmkl_r = nullptr;
+    Cmkl_v = nullptr;
+    Cmkl_c_scan = nullptr;
+
     return 0;
 }
 
-int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C) const{
+int saena_object::matmat_assemble(saena_matrix *A, saena_matrix *B, saena_matrix *C){
 
     MPI_Comm comm = A->comm;
     int nprocs, rank;
