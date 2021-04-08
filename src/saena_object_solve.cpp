@@ -1452,7 +1452,7 @@ int saena_object::solve_petsc(value_t *&u, string petsc_solver, double tol) {
 		// option for poisson
 		petsc_option = 	"-ksp_type cg -pc_type gamg -pc_gamg_type agg -pc_gamg_agg_nsmooths 1"
 						" -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
-						" -pc_gamg_threshold 0.01 -pc_gamg_sym_graph false -pc_gamg_square_graph 0 -pc_gamg_coarse_eq_limit 200"
+						" -pc_gamg_threshold 0.01 -pc_gamg_sym_graph false -pc_gamg_square_graph 0 -pc_gamg_coarse_eq_limit 100"
 						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";
 
 		// info:
@@ -1528,7 +1528,7 @@ int saena_object::solve_petsc(value_t *&u, string petsc_solver, double tol) {
 			std::cout << "using dcg solver" << std::endl;
 		//u_petsc.clear();
 		petsc_option = "-ksp_type cg -pc_type jacobi"
-						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-10 -ksp_converged_reason -ksp_view  -log_view";
+						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view  -log_view";
 	} else {
 		if (!rank) cout << "petsc solver not specified" << endl;
 		return 0;
