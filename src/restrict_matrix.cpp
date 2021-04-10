@@ -632,7 +632,7 @@ void restrict_matrix::matvec_sparse(value_t *v, value_t *w) {
     }
 
     // initialize w to 0
-    fill(&w[0], &w[sz], 0);
+    fill(&w[0], &w[sz], 0.0);
 
     // local loop
     // ----------
@@ -647,7 +647,7 @@ void restrict_matrix::matvec_sparse(value_t *v, value_t *w) {
 
 #pragma omp parallel
     {
-        value_t  tmp         = 0;
+        value_t  tmp         = 0.0;
         const value_t* v_p   = &v[0] - split[rank];
         index_t* col_local_p = nullptr;
         value_t* val_local_p = nullptr;
@@ -658,7 +658,7 @@ void restrict_matrix::matvec_sparse(value_t *v, value_t *w) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
-            tmp = 0;
+            tmp = 0.0;
             for (index_t j = 0; j < jend; ++j) {
 //                    if(rank==0) printf("%u \t%.18f \t%.18f \t%.18f \n",
 //                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);
@@ -756,7 +756,7 @@ void restrict_matrix::matvec_sparse_float(value_t *v, value_t *w) {
     }
 
     // initialize w to 0
-    fill(&w[0], &w[sz], 0);
+    fill(&w[0], &w[sz], 0.0);
 
     // local loop
     // ----------
@@ -764,7 +764,7 @@ void restrict_matrix::matvec_sparse_float(value_t *v, value_t *w) {
 
 #pragma omp parallel
     {
-        value_t  tmp         = 0;
+        value_t  tmp         = 0.0;
         const value_t* v_p   = &v[0] - split[rank];
         index_t* col_local_p = nullptr;
         value_t* val_local_p = nullptr;
@@ -775,7 +775,7 @@ void restrict_matrix::matvec_sparse_float(value_t *v, value_t *w) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
-            tmp = 0;
+            tmp = 0.0;
             for (index_t j = 0; j < jend; ++j) {
 //                    if(rank==0) printf("%u \t%.18f \t%.18f \t%.18f \n",
 //                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);
@@ -951,7 +951,7 @@ void restrict_matrix::matvec_omp(std::vector<value_t>& v, std::vector<value_t>& 
     // ----------
 //    double t1loc = omp_get_wtime();
     value_t* v_p = &v[0] - split[rank];
-    std::fill(w.begin(), w.end(), 0);
+    std::fill(w.begin(), w.end(), 0.0);
 #pragma omp parallel
     {
         nnz_t iter = iter_local_array[omp_get_thread_num()];
@@ -983,7 +983,7 @@ void restrict_matrix::matvec_omp(std::vector<value_t>& v, std::vector<value_t>& 
         if(thread_id==0)
             w_local = &*w.begin();
         else
-            std::fill(&w_local[0], &w_local[M], 0);
+            std::fill(&w_local[0], &w_local[M], 0.0);
 
         nnz_t iter = iter_remote_array[thread_id];
         #pragma omp for

@@ -517,7 +517,7 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
     }
 
     // initialize w to 0
-    fill(&w[0], &w[sz], 0);
+    fill(&w[0], &w[sz], 0.0);
 
     // local loop
     // ----------
@@ -525,7 +525,7 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
 
 #pragma omp parallel
     {
-        value_t  tmp         = 0;
+        value_t  tmp         = 0.0;
         value_t* v_p         = &v[0] - splitNew[rank];
         index_t* col_local_p = nullptr;
         value_t* val_local_p = nullptr;
@@ -536,7 +536,7 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
-            tmp = 0;
+            tmp = 0.0;
             for (index_t j = 0; j < jend; ++j) {
 //                    if(rank==0) printf("%u \t%.18f \t%.18f \t%.18f \n",
 //                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);
@@ -642,7 +642,7 @@ void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
     }
 
     // initialize w to 0
-    fill(&w[0], &w[sz], 0);
+    fill(&w[0], &w[sz], 0.0);
 
     // local loop
     // ----------
@@ -650,7 +650,7 @@ void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
 
 #pragma omp parallel
     {
-        value_t  tmp         = 0;
+        value_t  tmp         = 0.0;
         value_t* v_p         = &v[0] - splitNew[rank];
         index_t* col_local_p = nullptr;
         value_t* val_local_p = nullptr;
@@ -661,7 +661,7 @@ void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
-            tmp = 0;
+            tmp = 0.0;
             for (index_t j = 0; j < jend; ++j) {
 //                    if(rank==0) printf("%u \t%.18f \t%.18f \t%.18f \n",
 //                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);
@@ -854,7 +854,7 @@ void prolong_matrix::matvec_omp(std::vector<value_t>& v, std::vector<value_t>& w
 //        nnz_t iter = 0;
 #pragma omp for
         for (index_t i = 0; i < M; ++i) {
-            w[i] = 0;
+            w[i] = 0.0;
             for (index_t j = 0; j < nnzPerRow_local[i]; ++j, ++iter) {
 //                    if(rank==0) printf("%u \t%.18f \t%.18f \t%.18f \n",
 //                            entry_local[indicesP_local[iter]].col, entry_local[indicesP_local[iter]].val, v_p[entry_local[indicesP_local[iter]].col], entry_local[indicesP_local[iter]].val * v_p[entry_local[indicesP_local[iter]].col]);

@@ -39,7 +39,7 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
     }
 
     // initialize w to 0
-    fill(&w[0], &w[sz], 0);
+    fill(&w[0], &w[sz], 0.0);
 
     // local loop
     // ----------
@@ -48,7 +48,7 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
 
 #pragma omp parallel
     {
-        value_t  tmp            = 0;
+        value_t  tmp            = 0.0;
         const value_t* v_p      = &v[0] - split[rank];
         index_t* col_local_p    = nullptr;
         value_t* values_local_p = nullptr;
@@ -58,7 +58,7 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
             col_local_p    = &col_local[iter];
             values_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
-            tmp = 0;
+            tmp = 0.0;
 //#pragma omp simd reduction(+: tmp) aligned(v_p, col_local_p: ALIGN_SZ)
             for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], val_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
@@ -214,7 +214,7 @@ void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
 //    }
 
    // initialize w to 0
-    fill(&w[0], &w[M], 0);
+    fill(&w[0], &w[M], 0.0);
 
     // local loop
     // ----------
@@ -223,7 +223,7 @@ void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
 
 #pragma omp parallel
    {
-      value_t  tmp            = 0;
+      value_t  tmp            = 0.0;
       const value_t* v_p     = &v[0] - split[rank];
       index_t* col_local_p    = nullptr;
       value_t* values_local_p = nullptr;
@@ -233,7 +233,7 @@ void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
          col_local_p    = &col_local[iter];
          values_local_p = &val_local[iter];
          const index_t jend = nnzPerRow_local[i];
-         tmp = 0;
+         tmp = 0.0;
          for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], val_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
             tmp += values_local_p[j] * v_p[col_local_p[j]];
@@ -260,7 +260,7 @@ void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
         if(thread_id==0)
             w_local = &w[0];
         else
-            std::fill(&w_local[0], &w_local[M], 0);
+            std::fill(&w_local[0], &w_local[M], 0.0);
 
         nnz_t iter = iter_remote_array[thread_id];
         const index_t jend = col_remote_size;
@@ -337,11 +337,11 @@ void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
     // initialize w to 0
-    fill(&w[0], &w[M], 0);
+    fill(&w[0], &w[M], 0.0);
 
 #pragma omp parallel
     {
-        value_t  tmp            = 0;
+        value_t  tmp            = 0.0;
         const value_t* v_p      = &v[0] - split[rank];
         index_t* col_local_p    = nullptr;
         value_t* values_local_p = nullptr;
@@ -351,7 +351,7 @@ void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
             col_local_p    = &col_local[iter];
             values_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
-            tmp = 0;
+            tmp = 0.0;
 //#pragma omp simd reduction(+: tmp) aligned(v_p, col_local_p: ALIGN_SZ)
             for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], val_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
@@ -881,7 +881,7 @@ void saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<valu
     MPI_Request* requests = new MPI_Request[2];
     MPI_Status*  statuses = new MPI_Status[2];
 
-    fill(w.begin(), w.end(), 0);
+    fill(w.begin(), w.end(), 0.0);
 
 //    print_info(-1);
 //    print_vector(v, -1, "v", comm);
@@ -1172,7 +1172,7 @@ void saena_matrix::matvec_sparse_test4(std::vector<value_t>& v, std::vector<valu
         if(thread_id==0)
             w_local = &*w.begin();
         else
-            std::fill(&w_local[0], &w_local[M], 0);
+            std::fill(&w_local[0], &w_local[M], 0.0);
 
         nnz_t iter = iter_remote_array[thread_id];
 #pragma omp for
@@ -1307,7 +1307,7 @@ void saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<v
         if(thread_id==0)
             w_local = &*w.begin();
         else
-            std::fill(&w_local[0], &w_local[M], 0);
+            std::fill(&w_local[0], &w_local[M], 0.0);
 
         nnz_t iter = iter_remote_array[thread_id];
 #pragma omp for
