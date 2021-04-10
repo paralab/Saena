@@ -69,6 +69,19 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
         }
     }
 
+    static int tid;
+    static value_t *w_local;
+#pragma omp threadprivate(tid, w_local)
+#pragma omp parallel
+    {
+        tid = omp_get_thread_num();
+        w_local = &w_buff[tid * sz];
+        if(tid==0)
+            w_local = &w[0];
+        else
+            std::fill(&w_local[0], &w_local[sz], 0.0);
+    }
+
     index_t* row_remote_p = nullptr;
     value_t* val_remote_p = nullptr;
     nnz_t iter = 0;
@@ -89,12 +102,33 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
             const index_t iend = nnzPerCol_remote_p[j];
             const value_t vrem = vecValues_p[j];
 //#pragma omp simd aligned(row_remote_p, val_remote_p: ALIGN_SZ)
+#pragma omp parallel for
             for (index_t i = 0; i < iend; ++i) {
 //                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
 //                iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[rdispls[recv_proc] + j]);
-                w[row_remote_p[i]] += val_remote_p[i] * vrem;
+                w_local[row_remote_p[i]] += val_remote_p[i] * vrem;
             }
             iter += iend;
+        }
+    }
+
+#pragma omp parallel
+    {
+        index_t i = 0, l = 0;
+        int thread_partner = 0;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (tid % int(pow(2, l+1)) == 0) {
+                thread_partner = tid + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    value_t *w_buff_p = &w_buff[thread_partner * sz];
+                    for (i = 0; i < sz; ++i){
+                        w_local[i] += w_buff_p[i];
+                    }
+                }
+            }
+#pragma omp barrier
         }
     }
 
