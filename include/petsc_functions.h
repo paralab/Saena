@@ -39,7 +39,7 @@ int petsc_check_matmatmat(restrict_matrix *R, saena_matrix *A, prolong_matrix *P
 
 int petsc_solve(const saena_matrix *A, const vector<value_t> &rhs, vector<value_t> &u, const double &rel_tol);
 int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, const double &rel_tol, const char in_str[], string pc_type);
-int petsc_solve(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_tol, const char in_str[], string pc_type);
+int petsc_solve(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_tol, const char in_str[], const string &pc_type);
 
 #endif //SAENA_PETSC_FUNCTIONS_H
 

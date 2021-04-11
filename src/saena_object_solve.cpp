@@ -1416,7 +1416,7 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
     saena_free(res_coarse);
 }
 
-int saena_object::solve_petsc(value_t *&u, string petsc_solver, double tol) {
+int saena_object::solve_petsc(value_t *&u, const string &petsc_solver, const double &tol) {
 
     auto *A = grids[0].A;
     value_t *rhs = &grids[0].rhs[0];
