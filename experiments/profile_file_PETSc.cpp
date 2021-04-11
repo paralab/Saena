@@ -29,6 +29,16 @@ int main(int argc, char* argv[]){
     // set the number of OpenMP threads at run-time
 //    omp_set_num_threads(1);
 
+    // *************************** check the petsc flag ****************************
+
+    {
+        saena::options opts_test(argv[3]);
+        if(opts_test.get_petsc_solver().empty()){
+            if(!rank) printf("petsc part of the options file should be set!\n");
+            return 0;
+        }
+    }
+
     // *************************** set the scaling factor ****************************
 
     bool scale = false;
