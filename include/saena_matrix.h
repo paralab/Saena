@@ -300,6 +300,7 @@ public:
     void matvec_sparse(const value_t *v, value_t *w);
     void matvec_sparse2(const value_t *v, value_t *w);
     void matvec_sparse3(const value_t *v, value_t *w);
+    void matvec_sparse4(const value_t *v, value_t *w);
     void matvec_sparse_float(const value_t *v, value_t *w);
 
     // for profiling

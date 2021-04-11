@@ -301,6 +301,135 @@ void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
 //    }
 }
 
+void saena_matrix::matvec_sparse4(const value_t *v, value_t *w) {
+    // combination of openmp and waitany - add openmp to also the remote part
+
+    int nprocs, rank;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+    const index_t sz = M;
+
+//    print_info(-1);
+//    print_vector(v, -1, "v", comm);
+
+    // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
+    // put the values of thoss indices in vSend to send to other procs.
+#pragma omp parallel for
+    for(index_t i = 0; i < vIndexSize; ++i)
+        vSend[i] = v[vIndex[i]];
+
+//    print_vector(vSend, 1, "vSend", comm);
+
+    // receive and put the remote parts of v in vecValues.
+    // they are received in order: first put the values from the lowest rank matrix, and so on.
+    for(int i = 0; i < numRecvProc; ++i){
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
+//        MPI_Test(&requests[i], &MPI_flag, &statuses[i]);
+    }
+
+    MPI_Request *requests_p = &requests[numRecvProc];
+    for(int i = 0; i < numSendProc; ++i){
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests_p[i]);
+        MPI_Test(&requests_p[i], &MPI_flag, MPI_STATUSES_IGNORE);
+    }
+
+    // initialize w to 0
+    fill(&w[0], &w[sz], 0.0);
+
+    // local loop
+    // ----------
+    // compute the on-diagonal part of matvec on each thread and save it in w_local.
+    // then, do a reduction on w_local on all threads, based on a binary tree.
+
+#pragma omp parallel
+    {
+        value_t  tmp            = 0.0;
+        const value_t* v_p      = &v[0] - split[rank];
+        index_t* col_local_p    = nullptr;
+        value_t* values_local_p = nullptr;
+        nnz_t    iter           = iter_local_array[omp_get_thread_num()];
+#pragma omp for
+        for (index_t i = 0; i < sz; ++i) {
+            col_local_p    = &col_local[iter];
+            values_local_p = &val_local[iter];
+            const index_t jend = nnzPerRow_local[i];
+            tmp = 0.0;
+//#pragma omp simd reduction(+: tmp) aligned(v_p, col_local_p: ALIGN_SZ)
+            for (index_t j = 0; j < jend; ++j) {
+//                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], val_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
+                tmp += values_local_p[j] * v_p[col_local_p[j]];
+            }
+            w[i] += tmp;
+            iter += jend;
+        }
+    }
+
+    static int tid;
+    static value_t *w_local;
+#pragma omp threadprivate(tid, w_local)
+#pragma omp parallel
+    {
+        tid = omp_get_thread_num();
+        w_local = &w_buff[tid * sz];
+        if(tid==0)
+            w_local = &w[0];
+        else
+            std::fill(&w_local[0], &w_local[sz], 0.0);
+    }
+
+    index_t* row_remote_p = nullptr;
+    value_t* val_remote_p = nullptr;
+    nnz_t iter = 0;
+    int recv_proc_idx = 0;
+    for(int np = 0; np < numRecvProc; ++np){
+        MPI_Waitany(numRecvProc, &requests[0], &recv_proc_idx, MPI_STATUS_IGNORE);
+        const int recv_proc = recvProcRank[recv_proc_idx];
+//        if(rank==1) printf("recv_proc_idx = %d, recv_proc = %d, np = %d, numRecvProc = %d, recvCount[recv_proc] = %d\n",
+//                              recv_proc_idx, recv_proc, np, numRecvProc, recvCount[recv_proc]);
+
+        iter = nnzPerProcScan[recv_proc];
+        value_t *vecValues_p        = &vecValues[rdispls[recv_proc]];
+        auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
+        for (index_t j = 0; j < recvCount[recv_proc]; ++j) {
+//            if(rank==1) printf("%u\n", nnzPerCol_remote_p[j]);
+            row_remote_p = &row_remote[iter];
+            val_remote_p = &val_remote[iter];
+            const index_t iend = nnzPerCol_remote_p[j];
+            const value_t vrem = vecValues_p[j];
+//#pragma omp simd aligned(row_remote_p, val_remote_p: ALIGN_SZ)
+#pragma omp parallel for
+            for (index_t i = 0; i < iend; ++i) {
+//                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
+//                iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[rdispls[recv_proc] + j]);
+                w_local[row_remote_p[i]] += val_remote_p[i] * vrem;
+            }
+            iter += iend;
+        }
+    }
+
+#pragma omp parallel
+    {
+        index_t i = 0, l = 0;
+        int thread_partner = 0;
+        int levels = (int)ceil(log2(num_threads));
+        for (l = 0; l < levels; l++) {
+            if (tid % int(pow(2, l+1)) == 0) {
+                thread_partner = tid + int(pow(2, l));
+//                printf("l = %d, levels = %d, thread_id = %d, thread_partner = %d \n", l, levels, thread_id, thread_partner);
+                if(thread_partner < num_threads){
+                    value_t *w_buff_p = &w_buff[thread_partner * sz];
+                    for (i = 0; i < sz; ++i){
+                        w_local[i] += w_buff_p[i];
+                    }
+                }
+            }
+#pragma omp barrier
+        }
+    }
+
+    MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
+}
+
 void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
     // combination of openmp and waitany
 
