@@ -1431,10 +1431,8 @@ int saena_object::solve_petsc(value_t *&u, const string &petsc_solver, const dou
 	solver_tol = tol;
 	
 	string petsc_option;
-	if(u == nullptr){
-        u = saena_aligned_alloc<value_t>(sz);
-	}
-	fill(&u[0], &u[sz], 0.0);
+    saena_free(u);
+    u = saena_aligned_alloc<value_t>(sz);
 
 	if (petsc_solver == "gamg")	{
     	// call gamg
