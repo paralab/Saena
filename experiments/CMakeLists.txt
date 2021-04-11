@@ -36,5 +36,8 @@
 #add_executable(poisson_petsc Poisson_PETSc.cpp ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
 #target_link_libraries(poisson_petsc ${SAENA_LIB_DEPENDENCIES})
 
-add_executable(profile_f profile_file.cpp ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
-target_link_libraries(profile_f ${SAENA_LIB_DEPENDENCIES})
+#add_executable(profile_f profile_file.cpp ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
+#target_link_libraries(profile_f ${SAENA_LIB_DEPENDENCIES})
+
+add_executable(profile_f_petsc profile_file_PETSc.cpp ${SAENA_SOURCE_FILES} ${SAENA_HEADER_FILES})
+target_link_libraries(profile_f_petsc ${SAENA_LIB_DEPENDENCIES})
