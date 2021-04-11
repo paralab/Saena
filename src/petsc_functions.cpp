@@ -386,19 +386,22 @@ int petsc_saena_matrix(const saena_matrix *A, Mat &B){
 
     MPI_Comm comm = A->comm;
     PETSC_COMM_WORLD = comm;
+    const int sz = A->M;
 
-    std::vector<int> nnz_per_row_diag(A->M, 0);
-    for(nnz_t i = 0; i < A->nnz_l_local; i++){
-        nnz_per_row_diag[A->row_local[i]]++;
+    std::vector<int> nnz_per_row_diag(sz, 0);
+    const index_t iendl = A->nnz_l_local;
+    for(nnz_t i = 0; i < iendl; ++i){
+        ++nnz_per_row_diag[A->row_local[i]];
     }
 
-    std::vector<int> nnz_per_row_off_diag(A->M, 0);
-    for(nnz_t i = 0; i < A->nnz_l_remote; i++){
-        nnz_per_row_off_diag[A->row_remote[i]]++;
+    const index_t iendr = A->nnz_l_remote;
+    std::vector<int> nnz_per_row_off_diag(sz, 0);
+    for(nnz_t i = 0; i < iendr; ++i){
+        ++nnz_per_row_off_diag[A->row_remote[i]];
     }
 
     MatCreate(comm, &B);
-    MatSetSizes(B, A->M, A->M, A->Mbig, A->Mbig);
+    MatSetSizes(B, sz, sz, A->Mbig, A->Mbig);
 
     // for serial
 //    MatSetType(B, MATSEQAIJ);
@@ -407,7 +410,8 @@ int petsc_saena_matrix(const saena_matrix *A, Mat &B){
     MatSetType(B, MATMPIAIJ); // Documentation: A matrix type to be used for parallel sparse matrices
     MatMPIAIJSetPreallocation(B, 0, &nnz_per_row_diag[0], 0, &nnz_per_row_off_diag[0]);
 
-    for (nnz_t i = 0; i < A->nnz_l; ++i) {
+    const index_t iend = A->nnz_l;
+    for (nnz_t i = 0; i < iend; ++i) {
 //        if(rank == 1) printf("%6d\t%6d\t%6f\n", A->entry[i].row, A->entry[i].col, A->entry[i].val);
 //        assert(A->entry[i].row >= A->split[rank] && A->entry[i].row < A->split[rank + 1]);
 //        assert(A->entry[i].col >= 0 && A->entry[i].col < A->Mbig);
