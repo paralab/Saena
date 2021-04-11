@@ -1435,26 +1435,28 @@ int saena_object::solve_petsc(value_t *&u, const string &petsc_solver, const dou
     u = saena_aligned_alloc<value_t>(sz);
 
 	if (petsc_solver == "all") {
-
+        if (rank == 0) std::cout << "PETSc: using all solvers" << std::endl;
+        petsc_solver_all(A, rhs, u, tol);
+        return 0;
     } else if (petsc_solver == "gamg")	{
-		if (rank == 0) std::cout << "using GAMG solver" << std::endl;
-		petsc_option = gamg_opts;
+		if (rank == 0) std::cout << "PETSc: using GAMG solver" << std::endl;
+		petsc_option = return_petsc_opts("gamg");
 	} else if (petsc_solver == "ml") {
-		if (rank == 0) std::cout << "using ML solver" << std::endl;petsc_option = ml_opts;
+		if (rank == 0) std::cout << "PETSc: using ML solver" << std::endl;
+		petsc_option = return_petsc_opts("ml");
 	} else if (petsc_solver == "boomerAMG") {
-		if (rank == 0) std::cout << "using HYPRE solver" << std::endl;
-		petsc_option = hypre_opts;
+		if (rank == 0) std::cout << "PETSc: using HYPRE solver" << std::endl;
+		petsc_option = return_petsc_opts("boomerAMG");
 	} else if (petsc_solver == "dcg") {
-		if (rank == 0) std::cout << "using dcg solver" << std::endl;
-		//u_petsc.clear();
-		petsc_option = dcg_opts;
+		if (rank == 0) std::cout << "PETSc: using dcg solver" << std::endl;
+		petsc_option = return_petsc_opts("dcg");
 	} else {
 		if (rank == 0) cout << "petsc solver not specified" << endl;
 		return 0;
 	}
 
 	petsc_solve(A, rhs, u, solver_tol, petsc_option.c_str(), petsc_solver);
-	
+
 #else
 	if(!rank) cout << "PETSc should be enabled in Saena's cmake to be able to call solve_petsc() function!" << endl;
 #endif

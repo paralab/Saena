@@ -1357,4 +1357,158 @@ int petsc_solve(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_
     return 0;
 }
 
+int petsc_solver_all(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_tol){
+    Vec            x,b;      /* approx solution, RHS */
+    Mat            A;        /* linear system matrix */
+
+    MPI_Comm comm = A1->comm;
+    PETSC_COMM_WORLD = comm;
+    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+//    PetscLogDefaultBegin();
+//    CHKERRQ(PetscOptionsInsertString(nullptr, in_str));
+
+    int rank = 0;
+    MPI_Comm_rank(comm, &rank);
+
+    const index_t sz = A1->M;
+    petsc_saena_matrix(A1, A);
+    petsc_std_vector(b1, b, sz, A1->split[rank], comm);
+    A1->erase();
+    if (!rank) std::cout << "destroy saena matrix" << std::endl;
+    MatCreateVecs(A, &x, NULL);
+    VecSet(x, 0.0);
+
+    if (!rank) print_sep();
+    petsc_solve(A, b, x, rel_tol, return_petsc_opts("gamg"));
+    if (!rank) print_3sep();
+    petsc_solve(A, b, x, rel_tol, return_petsc_opts("ml"));
+//    if (!rank) print_3sep();
+//    petsc_solve(A, b, x, rel_tol, return_petsc_opts("boomerAMG"));
+    if (!rank) print_sep();
+
+    VecDestroy(&x);
+    VecDestroy(&b);
+    MatDestroy(&A);
+    PetscFinalize();
+    return 0;
+}
+
+int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &in_str){
+    KSP            ksp;      /* linear solver context */
+//    PetscReal      norm;     /* norm of solution error */
+//    PetscInt       its;
+//    PetscScalar    *array;
+//    PC             pc;
+
+//    MPI_Comm comm = A->comm;
+//    PETSC_COMM_WORLD = comm;
+//    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
+    PetscLogDefaultBegin();
+    CHKERRQ(PetscOptionsInsertString(nullptr, in_str.c_str()));
+
+    KSPCreate(PETSC_COMM_WORLD, &ksp);
+    KSPSetOperators(ksp, A, A);
+    KSPSetFromOptions(ksp);
+//    if (!rank) std::cout << "ksp setup" << std::endl;
+    KSPSetUp(ksp);
+
+//    if (!rank) std::cout << "ksp solve" << std::endl;
+    KSPSolve(ksp,b,x);
+
+//    VecGetArray(x, &array);
+//    for (int i = 0; i < sz; ++i)
+//        x1[i] = array[i];
+//    VecRestoreArray(x, &array);
+
+//    VecAXPY(x,-1.0,b);
+//    VecNorm(x,NORM_2,&norm);
+//    KSPGetIterationNumber(ksp,&its);
+//    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Norm of error %g, iterations %D\n",(double)norm,its);
+
+    KSPDestroy(&ksp);
+    return 0;
+}
+
+string return_petsc_opts(const string &petsc_solver){
+    string opts;
+    if(petsc_solver == "gamg"){ // info at the bottom
+        opts = "-ksp_type cg -pc_type gamg -pc_gamg_type agg -pc_gamg_agg_nsmooths 1"
+               " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
+               " -pc_gamg_threshold 0.01 -pc_gamg_sym_graph false -pc_gamg_square_graph 0 -pc_gamg_coarse_eq_limit 100"
+               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";
+    } else if(petsc_solver == "ml"){
+        opts = "-ksp_type cg -pc_type ml"
+               " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
+               " -pc_ml_maxNlevels 10 -pc_ml_Threshold 0.0 -pc_ml_CoarsenScheme Uncoupled -pc_ml_maxCoarseSize 100"
+               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";
+    } else if(petsc_solver == "boomerAMG"){
+        opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg -pc_hypre_boomeramg_max_levels 6"
+               " -pc_hypre_boomeramg_relax_type_all Chebyshev -pc_hypre_boomeramg_grid_sweeps_all 3"
+               " -pc_hypre_boomeramg_strong_threshold 0.0 -pc_hypre_boomeramg_coarsen_type Falgout"
+               " -pc_hypre_boomeramg_agg_nl 3 -pc_hypre_boomeramg_agg_num_paths 4"
+               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";// -pc_hypre_boomeramg_print_statistics";
+    } else if(petsc_solver == "dcg"){
+        opts = "-ksp_type cg -pc_type jacobi"
+               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";
+    }else{
+        printf("invalid petsc_solver!\n");
+    }
+    return opts;
+}
+
+// info:
+// pc_gamg_threshold: Relative threshold to use for dropping edges in aggregation graph
+//                    Increasing the threshold decreases the rate of coarsening. Conversely reducing the threshold increases the rate of coarsening (aggressive coarsening) and thereby reduces the complexity of the coarse grids, and generally results in slower solver converge rates. Reducing coarse grid complexity reduced the complexity of Galerkin coarse grid construction considerably.
+//                    Before coarsening or aggregating the graph, GAMG removes small values from the graph with this threshold, and thus reducing the coupling in the graph and a different (perhaps better) coarser set of points.
+//                    0.0 means keep all nonzero entries in the graph; negative means keep even zero entries in the graph
+
+// the following info is from the PETSc code gamg.c:
+/*      PCGAMG - Geometric algebraic multigrid (AMG) preconditioner
+       Options Database Keys:
+    +   -pc_gamg_type <type> - one of agg, geo, or classical
+    .   -pc_gamg_repartition  <true,default=false> - repartition the degrees of freedom accross the coarse grids as they are determined
+    .   -pc_gamg_reuse_interpolation <true,default=false> - when rebuilding the algebraic multigrid preconditioner reuse the previously computed interpolations
+    .   -pc_gamg_asm_use_agg <true,default=false> - use the aggregates from the coasening process to defined the subdomains on each level for the PCASM smoother
+    .   -pc_gamg_process_eq_limit <limit, default=50> - GAMG will reduce the number of MPI processes used directly on the coarse grids so that there are around <limit>
+                                            equations on each process that has degrees of freedom
+    .   -pc_gamg_coarse_eq_limit <limit, default=50> - Set maximum number of equations on coarsest grid to aim for.
+    .   -pc_gamg_threshold[] <thresh,default=0> - Before aggregating the graph GAMG will remove small values from the graph on each level
+    -   -pc_gamg_threshold_scale <scale,default=1> - Scaling of threshold on each coarser grid if not specified
+
+       Options Database Keys for default Aggregation:
+    +  -pc_gamg_agg_nsmooths <nsmooth, default=1> - number of smoothing steps to use with smooth aggregation
+    .  -pc_gamg_sym_graph <true,default=false> - symmetrize the graph before computing the aggregation
+    -  -pc_gamg_square_graph <n,default=1> - number of levels to square the graph before aggregating it
+
+       Multigrid options:
+    +  -pc_mg_cycles <v> - v or w, see PCMGSetCycleType()
+    .  -pc_mg_distinct_smoothup - configure the up and down (pre and post) smoothers separately, see PCMGSetDistinctSmoothUp()
+    .  -pc_mg_type <multiplicative> - (one of) additive multiplicative full kascade
+    -  -pc_mg_levels <levels> - Number of levels of multigrid to use.
+ */
+
+/*		gamg_option =  "-ksp_type cg -pc_type gamg"
+						" -pc_gamg_type agg -pc_gamg_agg_nsmooths 1"
+					    " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 2"
+						" -pc_gamg_threshold 0.015 -pc_gamg_sym_graph false -pc_gamg_square_graph 0"
+						" -pc_gamg_coarse_eq_limit 500 -pc_gamg_sym_graph false -pc_gamg_square_graph 2"
+						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 2000 -ksp_rtol 1e-6 -ksp_converged_reason -ksp_view -log_view";
+*/
+
+/*		ml_option =  "-ksp_type cg -pc_type ml"
+						" -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 2"
+						" -pc_ml_maxNlevels 7"
+						" -pc_ml_Threshold 0.125 -pc_ml_CoarsenScheme MIS -pc_ml_maxCoarseSize 1000"
+						" -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 2000 -ksp_rtol 1e-6 -ksp_converged_reason -ksp_view -log_view";
+*/
+
+/*		hypre_option = 	"-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg"
+       " -pc_hypre_boomeramg_max_levels 7 -pc_hypre_boomeramg_relax_type_all Chebyshev -pc_hypre_boomeramg_grid_sweeps_all 2"
+       " -pc_hypre_boomeramg_strong_threshold 0.11 -pc_hypre_boomeramg_coarsen_type Falgout"
+       " -pc_hypre_boomeramg_agg_nl 3 -pc_hypre_boomeramg_agg_num_paths 3 -pc_hypre_boomeramg_truncfactor 0"
+       " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 2000 -ksp_rtol 1e-6 -ksp_converged_reason -ksp_view"
+       " -pc_hypre_boomeramg_print_statistics -log_view";
+       //" -pc_hypre_boomeramg_print_debug";// -log_view";
+*/
+
 #endif //_USE_PETSC_
