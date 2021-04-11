@@ -40,7 +40,7 @@ int petsc_solve(const saena_matrix *A, const vector<value_t> &rhs, vector<value_
 int petsc_solve(saena_matrix *A1, vector<value_t> &b1, vector<value_t> &x1, const double &rel_tol, const char in_str[], string pc_type);
 int petsc_solve(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_tol, const char in_str[], const string &pc_type);
 int petsc_solver_all(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_tol);
-int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &in_str);
+int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &petsc_solver);
 
 string return_petsc_opts(const string &petsc_solver);
 

@@ -1360,11 +1360,12 @@ int petsc_solve(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_
 int petsc_solver_all(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_tol){
     Vec            x,b;      /* approx solution, RHS */
     Mat            A;        /* linear system matrix */
+    PetscViewer viewer;
 
     MPI_Comm comm = A1->comm;
     PETSC_COMM_WORLD = comm;
     PetscInitialize(nullptr, nullptr, nullptr, nullptr);
-//    PetscLogDefaultBegin();
+    PetscLogDefaultBegin();
 //    CHKERRQ(PetscOptionsInsertString(nullptr, in_str));
 
     int rank = 0;
@@ -1379,11 +1380,11 @@ int petsc_solver_all(saena_matrix *A1, value_t *&b1, value_t *&x1, const double 
     VecSet(x, 0.0);
 
     if (!rank) print_sep();
-    petsc_solve(A, b, x, rel_tol, return_petsc_opts("gamg"));
+    petsc_solve(A, b, x, rel_tol, "gamg");
     if (!rank) print_3sep();
-    petsc_solve(A, b, x, rel_tol, return_petsc_opts("ml"));
+    petsc_solve(A, b, x, rel_tol, "ml");
 //    if (!rank) print_3sep();
-//    petsc_solve(A, b, x, rel_tol, return_petsc_opts("boomerAMG"));
+//    petsc_solve(A, b, x, rel_tol, "boomerAMG");
     if (!rank) print_sep();
 
     VecDestroy(&x);
@@ -1393,8 +1394,9 @@ int petsc_solver_all(saena_matrix *A1, value_t *&b1, value_t *&x1, const double 
     return 0;
 }
 
-int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &in_str){
+int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &petsc_solver){
     KSP            ksp;      /* linear solver context */
+    PetscLogEvent  SETUP,SOLVE;
 //    PetscReal      norm;     /* norm of solution error */
 //    PetscInt       its;
 //    PetscScalar    *array;
@@ -1403,17 +1405,27 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &in_
 //    MPI_Comm comm = A->comm;
 //    PETSC_COMM_WORLD = comm;
 //    PetscInitialize(nullptr, nullptr, nullptr, nullptr);
-    PetscLogDefaultBegin();
-    CHKERRQ(PetscOptionsInsertString(nullptr, in_str.c_str()));
+//    PetscLogDefaultBegin();
+
+    string opts = return_petsc_opts(petsc_solver);
+    CHKERRQ(PetscOptionsInsertString(nullptr, opts.c_str()));
 
     KSPCreate(PETSC_COMM_WORLD, &ksp);
     KSPSetOperators(ksp, A, A);
     KSPSetFromOptions(ksp);
 //    if (!rank) std::cout << "ksp setup" << std::endl;
+    string event = petsc_solver + " setup";
+    PetscLogEventRegister(event.c_str(),0,&SETUP);
+    PetscLogEventBegin(SETUP,0,0,0,0);
     KSPSetUp(ksp);
+    PetscLogEventEnd(SETUP,0,0,0,0);
 
 //    if (!rank) std::cout << "ksp solve" << std::endl;
+    event = petsc_solver + " solve";
+    PetscLogEventRegister(event.c_str(),0,&SOLVE);
+    PetscLogEventBegin(SOLVE,0,0,0,0);
     KSPSolve(ksp,b,x);
+    PetscLogEventEnd(SOLVE,0,0,0,0);
 
 //    VecGetArray(x, &array);
 //    for (int i = 0; i < sz; ++i)
