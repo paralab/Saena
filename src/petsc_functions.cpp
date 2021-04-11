@@ -1321,6 +1321,9 @@ int petsc_solve(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &rel_
     //KSPGetType(ksp,&ksptype);
     //PetscPrintf(PETSC_COMM_WORLD,"KSPType: %s\n", ksptype);
 
+    if (!rank) std::cout << "ksp setup" << std::endl;
+    KSPSetUp(ksp);
+
     if (!rank) std::cout << "ksp solve" << std::endl;
     //double ksp_solve_t1 = omp_get_wtime();
     KSPSolve(ksp,b,x);
