@@ -512,6 +512,10 @@ int saena_matrix::set2(index_t* row, index_t* col, value_t* val, nnz_t nnz_local
 }
 
 
+void saena_matrix::set_remove_boundary(bool remove_bound){
+    remove_boundary = remove_bound;
+}
+
 void saena_matrix::set_p_order(int _p_order){
     p_order = _p_order;
 }

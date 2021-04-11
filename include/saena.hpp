@@ -35,6 +35,8 @@ namespace saena {
 
         void set_num_threads(const int &nth);
 
+        void set_remove_boundary(bool remove_bound);
+
         bool add_dup = true; // if false replace the duplicate, otherwise add the values together.
         int add_duplicates(bool add);
 

@@ -42,6 +42,7 @@ int main(int argc, char* argv[]){
 
     saena::matrix A(comm);
     char* file_name(argv[1]);
+    A.set_remove_boundary(true);
     A.read_file(file_name);
     A.assemble(scale);
 

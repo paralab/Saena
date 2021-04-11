@@ -252,6 +252,8 @@ public:
 //    int set3(unsigned int row, unsigned int col, double val);
 //    int set3(unsigned int* row, unsigned int* col, double* val, unsigned int nnz_local);
 
+    void set_remove_boundary(bool remove_bound);
+
     void set_p_order(int _p_order);
     void set_prodim(int _prodim);
 

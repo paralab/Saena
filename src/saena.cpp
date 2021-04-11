@@ -125,6 +125,9 @@ void saena::matrix::set_num_threads(const int &nth){
     omp_set_num_threads(nth);
 }
 
+void saena::matrix::set_remove_boundary(bool remove_bound){
+    m_pImpl->set_remove_boundary(remove_bound);
+}
 
 int saena::matrix::assemble(bool scale /*= false*/, bool use_den /*= false*/) {
     m_pImpl->assemble(scale, use_den);
