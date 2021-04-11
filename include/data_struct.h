@@ -82,6 +82,13 @@ void inline print_sep(){
     std::cout << buf.str();
 }
 
+void inline print_3sep(){
+    std::stringstream buf;
+    buf << "\n******************************************************\n"
+        << "******************************************************\n"
+        << "******************************************************\n";
+    std::cout << buf.str();
+}
 
 inline nnz_t rem_sz(const nnz_t sz, const unsigned int &k){
     return static_cast<index_t>( sz * ((k+1) / 8.0) );
