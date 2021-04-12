@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!--options for petsc: petsc="", "gamg", "ml", "boomerAMG", "dcg"-->
+<!--options for petsc: petsc="", "gamg", "ml", "boomerAMG", "dcg", "all"-->
 <SAENA>
     <OPTIONS
 	solver_max_iter="50"
@@ -8,7 +8,7 @@
 	preSmooth="3"
 	postSmooth="3"
 	PSmoother="jacobi"
-	conn_str="0.3"
+	conn_str="0.1"
 	dynamic_levels="1"
 	max_level="14"
 	float_level="10"
