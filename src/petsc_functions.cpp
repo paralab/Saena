@@ -1480,18 +1480,24 @@ string return_petsc_opts(const string &petsc_solver){
         opts = "-ksp_type cg -pc_type gamg -pc_gamg_type agg -pc_gamg_agg_nsmooths 1"
                " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
                " -pc_gamg_threshold 0.01 -pc_gamg_sym_graph false -pc_gamg_square_graph 0 -pc_gamg_coarse_eq_limit 100"
-               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";
+               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8"
+               " -ksp_converged_reason -ksp_view -log_view";
     } else if(petsc_solver == "ml"){
         opts = "-ksp_type cg -pc_type ml"
                " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
-               " -pc_ml_maxNlevels 10 -pc_ml_Threshold 0.0 -pc_ml_CoarsenScheme Uncoupled -pc_ml_maxCoarseSize 100"
-               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";
+               " -pc_ml_maxCoarseSize 100 -pc_ml_CoarsenScheme MIS"
+               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8"
+               " -ksp_converged_reason -ksp_view -log_view";
+//               " -pc_ml_maxNlevels 10 -pc_ml_Threshold 0.0"
     } else if(petsc_solver == "boomerAMG"){
-        opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg -pc_hypre_boomeramg_max_levels 6"
+        opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg"
                " -pc_hypre_boomeramg_relax_type_all Chebyshev -pc_hypre_boomeramg_grid_sweeps_all 3"
-               " -pc_hypre_boomeramg_strong_threshold 0.0 -pc_hypre_boomeramg_coarsen_type Falgout"
-               " -pc_hypre_boomeramg_agg_nl 3 -pc_hypre_boomeramg_agg_num_paths 4"
-               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";// -pc_hypre_boomeramg_print_statistics";
+               " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8"
+               " -ksp_converged_reason -ksp_view -log_view";
+//               " -pc_hypre_boomeramg_strong_threshold 0.25 -pc_hypre_boomeramg_coarsen_type Falgout"
+//               " -pc_hypre_boomeramg_max_levels 6"
+//               " -pc_hypre_boomeramg_print_statistics"
+//               " -pc_hypre_boomeramg_agg_nl 1 -pc_hypre_boomeramg_agg_num_paths 4"
     } else if(petsc_solver == "dcg"){
         opts = "-ksp_type cg -pc_type jacobi"
                " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500 -ksp_rtol 1e-8 -ksp_converged_reason -ksp_view -log_view";
@@ -1501,15 +1507,22 @@ string return_petsc_opts(const string &petsc_solver){
     return opts;
 }
 
-// info:
-// pc_gamg_threshold: Relative threshold to use for dropping edges in aggregation graph
-//                    Increasing the threshold decreases the rate of coarsening. Conversely reducing the threshold increases the rate of coarsening (aggressive coarsening) and thereby reduces the complexity of the coarse grids, and generally results in slower solver converge rates. Reducing coarse grid complexity reduced the complexity of Galerkin coarse grid construction considerably.
-//                    Before coarsening or aggregating the graph, GAMG removes small values from the graph with this threshold, and thus reducing the coupling in the graph and a different (perhaps better) coarser set of points.
-//                    0.0 means keep all nonzero entries in the graph; negative means keep even zero entries in the graph
+/*
+ * general info for petsc options:
+    ksp_norm_type (KSPSetNormType): Sets the norm that is used for convergence testing.
+            KSP_NORM_NONE - skips computing the norm
+            KSP_NORM_PRECONDITIONED - the default for left preconditioned solves, uses the l2 norm
+                of the preconditioned residual P^{-1}(b - A x)
+            KSP_NORM_UNPRECONDITIONED - uses the l2 norm of the true b - Ax residual.
+            KSP_NORM_NATURAL - supported  by KSPCG, KSPCR, KSPCGNE, KSPCGS
+        from user's guide: For the conjugate gradient, Richardson, and Chebyshev methods the
+                           true residual can be used by the options database command ksp_norm_type unpreconditioned.
+ */
 
-// the following info is from the PETSc code gamg.c:
-/*      PCGAMG - Geometric algebraic multigrid (AMG) preconditioner
-       Options Database Keys:
+/*  info for gamg:
+    from: the PETSc code gamg.c:
+    PCGAMG - Geometric algebraic multigrid (AMG) preconditioner
+        Options Database Keys:
     +   -pc_gamg_type <type> - one of agg, geo, or classical
     .   -pc_gamg_repartition  <true,default=false> - repartition the degrees of freedom accross the coarse grids as they are determined
     .   -pc_gamg_reuse_interpolation <true,default=false> - when rebuilding the algebraic multigrid preconditioner reuse the previously computed interpolations
@@ -1530,7 +1543,97 @@ string return_petsc_opts(const string &petsc_solver){
     .  -pc_mg_distinct_smoothup - configure the up and down (pre and post) smoothers separately, see PCMGSetDistinctSmoothUp()
     .  -pc_mg_type <multiplicative> - (one of) additive multiplicative full kascade
     -  -pc_mg_levels <levels> - Number of levels of multigrid to use.
+
+    pc_gamg_threshold: Relative threshold to use for dropping edges in aggregation graph
+        Increasing the threshold decreases the rate of coarsening. Conversely reducing the threshold increases the rate of coarsening (aggressive coarsening) and thereby reduces the complexity of the coarse grids, and generally results in slower solver converge rates. Reducing coarse grid complexity reduced the complexity of Galerkin coarse grid construction considerably.
+        Before coarsening or aggregating the graph, GAMG removes small values from the graph with this threshold, and thus reducing the coupling in the graph and a different (perhaps better) coarser set of points.
+        0.0 means keep all nonzero entries in the graph; negative means keep even zero entries in the graph.
  */
+
+
+/*
+info for ml:
+from here: https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/PC/PCML.html
+
+Multigrid options(inherited)
+-pc_mg_cycles <1>	- 1 for V cycle, 2 for W-cycle (MGSetCycles)
+-pc_mg_distinct_smoothup	- Should one configure the up and down smoothers separately (PCMGSetDistinctSmoothUp)
+-pc_mg_type <multiplicative>	- (one of) additive multiplicative full kascade
+
+ML options
+-pc_ml_PrintLevel <0>	- Print level (ML_Set_PrintLevel)
+-pc_ml_maxNlevels <10>	- Maximum number of levels (None)
+-pc_ml_maxCoarseSize <1>	- Maximum coarsest mesh size (ML_Aggregate_Set_MaxCoarseSize)
+-pc_ml_CoarsenScheme <Uncoupled>	- (one of) Uncoupled Coupled MIS METIS
+-pc_ml_DampingFactor <1.33333>	- P damping factor (ML_Aggregate_Set_DampingFactor)
+-pc_ml_Threshold <0>	- Smoother drop tol (ML_Aggregate_Set_Threshold)
+-pc_ml_SpectralNormScheme_Anorm <false>	- Method used for estimating spectral radius (ML_Set_SpectralNormScheme_Anorm)
+-pc_ml_repartition <false>	- Allow ML to repartition levels of the heirarchy (ML_Repartition_Activate)
+-pc_ml_repartitionMaxMinRatio <1.3>	- Acceptable ratio of repartitioned sizes (ML_Repartition_Set_LargestMinMaxRatio)
+-pc_ml_repartitionMinPerProc <512>: Smallest repartitioned size (ML_Repartition_Set_MinPerProc)
+-pc_ml_repartitionPutOnSingleProc <5000>	- Problem size automatically repartitioned to one processor (ML_Repartition_Set_PutOnSingleProc)
+-pc_ml_repartitionType <Zoltan>	- Repartitioning library to use (ML_Repartition_Set_Partitioner)
+-pc_ml_repartitionZoltanScheme <RCB>	- Repartitioning scheme to use (None)
+-pc_ml_Aux <false>	- Aggregate using auxiliary coordinate-based laplacian (None)
+-pc_ml_AuxThreshold <0.0>	- Auxiliary smoother drop tol (None)
+*/
+
+
+/*
+info for hypre:
+from here: https://mooseframework.inl.gov/application_development/hypre.html
+
+HYPRE preconditioner options
+  -pc_hypre_type <boomeramg> (choose one of) pilut parasails boomeramg ams (PCHYPRESetType)
+HYPRE BoomerAMG Options
+  -pc_hypre_boomeramg_cycle_type <V> (choose one of) V W (None)
+  -pc_hypre_boomeramg_max_levels <25>: Number of levels (of grids) allowed (None)
+  -pc_hypre_boomeramg_max_iter <1>: Maximum iterations used PER hypre call (None)
+  -pc_hypre_boomeramg_tol <0.>: Convergence tolerance PER hypre call (0.0 = use a fixed number of iterations) (None)
+  -pc_hypre_boomeramg_truncfactor <0.>: Truncation factor for interpolation (0=no truncation) (None)
+  -pc_hypre_boomeramg_P_max <0>: Max elements per row for interpolation operator (0=unlimited) (None)
+  -pc_hypre_boomeramg_agg_nl <0>: Number of levels of aggressive coarsening (None)
+  -pc_hypre_boomeramg_agg_num_paths <1>: Number of paths for aggressive coarsening (None)
+  -pc_hypre_boomeramg_strong_threshold <0.25>: Threshold for being strongly connected (None)
+  -pc_hypre_boomeramg_max_row_sum <0.9>: Maximum row sum (None)
+  -pc_hypre_boomeramg_grid_sweeps_all <1>: Number of sweeps for the up and down grid levels (None)
+  -pc_hypre_boomeramg_nodal_coarsen <0>: Use a nodal based coarsening 1-6 (HYPRE_BoomerAMGSetNodal)
+  -pc_hypre_boomeramg_vec_interp_variant <0>: Variant of algorithm 1-3 (HYPRE_BoomerAMGSetInterpVecVariant)
+  -pc_hypre_boomeramg_grid_sweeps_down <1>: Number of sweeps for the down cycles (None)
+  -pc_hypre_boomeramg_grid_sweeps_up <1>: Number of sweeps for the up cycles (None)
+  -pc_hypre_boomeramg_grid_sweeps_coarse <1>: Number of sweeps for the coarse level (None)
+  -pc_hypre_boomeramg_smooth_type <Schwarz-smoothers> (choose one of) Schwarz-smoothers Pilut ParaSails Euclid (None)
+  -pc_hypre_boomeramg_smooth_num_levels <25>: Number of levels on which more complex smoothers are used (None)
+  -pc_hypre_boomeramg_eu_level <0>: Number of levels for ILU(k) in Euclid smoother (None)
+  -pc_hypre_boomeramg_eu_droptolerance <0.>: Drop tolerance for ILU(k) in Euclid smoother (None)
+  -pc_hypre_boomeramg_eu_bj: <FALSE> Use Block Jacobi for ILU in Euclid smoother? (None)
+  -pc_hypre_boomeramg_relax_type_all <symmetric-SOR/Jacobi> (choose one of) Jacobi sequential-Gauss-Seidel seqboundary-Gauss-Seidel SOR/Jacobi backward-SOR/Jacobi  symmetric-SOR/Jacobi  l1scaled-SOR/Jacobi Gaussian-elimination      CG Chebyshev FCF-Jacobi l1scaled-Jacobi (None)
+  -pc_hypre_boomeramg_relax_type_down <symmetric-SOR/Jacobi> (choose one of) Jacobi sequential-Gauss-Seidel seqboundary-Gauss-Seidel SOR/Jacobi backward-SOR/Jacobi  symmetric-SOR/Jacobi  l1scaled-SOR/Jacobi Gaussian-elimination      CG Chebyshev FCF-Jacobi l1scaled-Jacobi (None)
+  -pc_hypre_boomeramg_relax_type_up <symmetric-SOR/Jacobi> (choose one of) Jacobi sequential-Gauss-Seidel seqboundary-Gauss-Seidel SOR/Jacobi backward-SOR/Jacobi  symmetric-SOR/Jacobi  l1scaled-SOR/Jacobi Gaussian-elimination      CG Chebyshev FCF-Jacobi l1scaled-Jacobi (None)
+  -pc_hypre_boomeramg_relax_type_coarse <Gaussian-elimination> (choose one of) Jacobi sequential-Gauss-Seidel seqboundary-Gauss-Seidel SOR/Jacobi backward-SOR/Jacobi  symmetric-SOR/Jacobi  l1scaled-SOR/Jacobi Gaussian-elimination      CG Chebyshev FCF-Jacobi l1scaled-Jacobi (None)
+  -pc_hypre_boomeramg_relax_weight_all <1.>: Relaxation weight for all levels (0 = hypre estimates, -k = determined with k CG steps) (None)
+  -pc_hypre_boomeramg_relax_weight_level <1.>: Set the relaxation weight for a particular level (weight,level) (None)
+  -pc_hypre_boomeramg_outer_relax_weight_all <1.>: Outer relaxation weight for all levels (-k = determined with k CG steps) (None)
+  -pc_hypre_boomeramg_outer_relax_weight_level <1.>: Set the outer relaxation weight for a particular level (weight,level) (None)
+  -pc_hypre_boomeramg_no_CF: <FALSE> Do not use CF-relaxation (None)
+  -pc_hypre_boomeramg_measure_type <local> (choose one of) local global (None)
+  -pc_hypre_boomeramg_coarsen_type <Falgout> (choose one of) CLJP Ruge-Stueben  modifiedRuge-Stueben   Falgout  PMIS  HMIS (None)
+  -pc_hypre_boomeramg_interp_type <classical> (choose one of) classical   direct multipass multipass-wts ext+i ext+i-cc standard standard-wts   FF FF1 (None)
+  -pc_hypre_boomeramg_print_statistics: Print statistics (None)
+  -pc_hypre_boomeramg_print_statistics <3>: Print statistics (None)
+  -pc_hypre_boomeramg_print_debug: Print debug information (None)
+  -pc_hypre_boomeramg_nodal_relaxation: <FALSE> Nodal relaxation via Schwarz (None)
+
+
+Agressive Coarsening
+Another option that can do a lot of coarsening is "Aggressive Coarsening". BoomerAMG actually has many parameters surrounding this - but currently only 2 are available to us as PETSc options: -pc_hypre_boomeramg_agg_nl and -pc_hypre_boomeramg_agg_num_paths.
+
+-pc_hypre_boomeramg_agg_nl is the number of coarsening levels to apply "aggressive coarsening" to. Aggressive coarsening does just what you think it does: it tries even harder to remove matrix entries. The way it does this is looking at "second-order" connections: does there exist a path from one important entry to another important entry through several other entries. By looking at these pathways the algorithm will decide whether or not to keep an entry. Doing more aggressive coarsening will result in less time spent in BoomerAMG (and a lot less communication done) but will also impact the effectiveness of the preconditioner by quite a lot - so it's a balance.
+
+-pc_hypre_boomeramg_agg_num_paths is the number of pathways to consider to find a connection and keep something. That means increasing this value will _reduce_ the ammount of aggressive coarsening happening in each aggressive coarsening level. What this means is that a higher -pc_hypre_boomeramg_agg_num_paths will improve accuracy/effectiveness but slow things down. So it's a balance.
+
+By default aggressive coarsening is off (-pc_hypre_boomeramg_agg_nl 0), so to turn it on set -pc_hypre_boomeramg_agg_nl to something higher than zero. I recommend 2 or 3 to start with, but even 4 can be ok in 3D. -pc_hypre_boomeramg_agg_num_paths defaults to 1: which is the most aggressive setting. If the aggressive coarsening levels are causing too many linear iterations, try increasing the number of paths _first_. Go up to about 4,5 or 6 and see if it helps reduce the number of linear iterations. If it doesn't, then you may need to back off on the number of aggressive coarsening levels you are doing.
+*/
 
 /*		gamg_option =  "-ksp_type cg -pc_type gamg"
 						" -pc_gamg_type agg -pc_gamg_agg_nsmooths 1"
