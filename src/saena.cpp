@@ -121,6 +121,19 @@ void saena::matrix::set_prodim(int _prodim){
 }
 
 
+void saena::matrix::set_eig(const string &opts_fname){
+    pugi::xml_document doc;
+    if (!doc.load_file(opts_fname.c_str())){
+        std::cout << "Could not find the xml file!" << std::endl;
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+    }
+    pugi::xml_node node = doc.child("SAENA").first_child();
+    double eig = node.attribute("eig").as_double();
+    m_pImpl->set_eig(eig);
+//    cout << "\neig = " << eig << endl;
+}
+
 void saena::matrix::set_num_threads(const int &nth){
     omp_set_num_threads(nth);
 }
@@ -435,6 +448,10 @@ void saena::options::set_from_file(const string &name){
         MPI_Finalize();
         exit(EXIT_FAILURE);
     }
+
+//    pugi::xml_node node = doc.child("SAENA").first_child();
+//    double eig1 = node.attribute("eig").as_double();
+//    cout << "\neig = " << eig1 << endl;
 
     pugi::xml_node opts = doc.child("SAENA").first_child();
 

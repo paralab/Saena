@@ -524,6 +524,15 @@ void saena_matrix::set_prodim(int _prodim){
     prodim = _prodim;
 }
 
+void saena_matrix::set_eig(const double &eig){
+    eig_max_of_invdiagXA = eig;
+}
+
+double saena_matrix::get_eig(){
+    return eig_max_of_invdiagXA;
+}
+
+
 // int saena_matrix::set3(unsigned int row, unsigned int col, double val)
 /*
 int saena_matrix::set3(unsigned int row, unsigned int col, double val){

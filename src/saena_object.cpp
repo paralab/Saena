@@ -195,9 +195,12 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
         print_parameters(A);
     }
 
-//    if(smoother=="chebyshev"){
-        find_eig(*A);
-//    }
+    // check if the eigenvalue of the input matrix is not set in the options file, then compute it.
+    if(smoother=="chebyshev"){
+        if(almost_zero(A->get_eig()))
+            find_eig(*A);
+//        if(!rank) cout << "eig = " << A->get_eig() << endl;
+    }
 
 #ifdef __DEBUG1__
     if(verbose_setup_steps){

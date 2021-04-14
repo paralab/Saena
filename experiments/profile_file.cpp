@@ -112,6 +112,7 @@ int main(int argc, char* argv[]){
     if(argc == 4){
         const string optsfile(argv[3]);
         opts.set_from_file(optsfile);
+        A.set_eig(optsfile); // set eigenvalue from the options file, if it is provided.
     }
 
     t1 = omp_get_wtime();

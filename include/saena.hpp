@@ -33,6 +33,8 @@ namespace saena {
         void set_p_order(int _p_order);
         void set_prodim(int _prodim);
 
+        void set_eig(const string &opts_fname);
+
         void set_num_threads(const int &nth);
 
         void set_remove_boundary(bool remove_bound);

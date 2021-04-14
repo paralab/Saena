@@ -257,6 +257,9 @@ public:
     void set_p_order(int _p_order);
     void set_prodim(int _prodim);
 
+    void set_eig(const double &eig);
+    double get_eig();
+
     int assemble(bool scale = false, bool use_dense = false);
     int setup_initial_data();
     int remove_duplicates();
