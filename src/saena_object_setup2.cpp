@@ -152,7 +152,7 @@ int saena_object::compute_coarsen(Grid *grid) {
     // form Ac
     // *******************************************************
 
-    filter(Ac->entry);
+    filter(Ac->entry, Ac->M, Ac->split[rank]);
 
     if (doSparsify) {
 
@@ -842,9 +842,10 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
 }
 
 
-void saena_object::filter(vector<cooEntry> &v) {
-    // filter out entries less than THRE
+void saena_object::filter(vector<cooEntry> &v, const index_t &sz, const index_t &ofst) {
+    // filter out entries less than THRE and add them to their corresponding diagonal entries
     // keep the diagonal entries
+    // read: 3.1. Diagonal lumping from REDUCING PARALLEL COMMUNICATION IN ALGEBRAIC MULTIGRID THROUGH SPARSIFICATION
 
     if(++filter_it < filter_start){
         return;
@@ -858,11 +859,30 @@ void saena_object::filter(vector<cooEntry> &v) {
     }
     const double THRE = filter_thre;
 
+    vector<value_t> add2diag(sz, 0.0); // add the removed entry's value to its diagonal entry
+    value_t *add2diag_p = &add2diag[0] - ofst;
     vector<cooEntry> w;
     for(const auto &a : v){
-        if(fabs(a.val) > THRE || a.row == a.col)
+        if(fabs(a.val) > THRE || a.row == a.col){
             w.emplace_back(a);
+        }else{
+//            add2diag[a.row - ofst] += a.val;
+            add2diag_p[a.row] += a.val;
+        }
     }
+
+    for(auto &a : w){
+        if(a.row == a.col){
+            a.val += add2diag_p[a.row];
+
+            if(almost_zero(fabs(a.val))){
+                printf("Error: there is a zero diagonal element at row index %d: %f\n", a.row, a.val);
+                MPI_Finalize();
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
     w.swap(v);
 }
 

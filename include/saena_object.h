@@ -269,7 +269,7 @@ public:
     int compute_coarsen(Grid *grid);
     int compute_coarsen_update_Ac(Grid *grid, std::vector<cooEntry> &diff);
     int triple_mat_mult(Grid *grid, bool symm = true);
-    void filter(vector<cooEntry> &v);
+    void filter(vector<cooEntry> &v, const index_t &sz, const index_t &ofst);
 
     int matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, bool assemble = true, bool print_timing = false, bool B_trans = true);
     int matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool trans = false);
