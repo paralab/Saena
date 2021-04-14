@@ -1569,11 +1569,9 @@ int saena_matrix::inverse_diag() {
 //                        highest_diag_val = fabs(temp);
 //                    }
                 } else {
-                    // there is no zero entry in the matrix (sparse), but just to be sure, this part is added.
-                    if (rank == 0)
-                        printf("Error: there is a zero diagonal element (at row index = %u)\n", entry[i].row);
+                    printf("Error on rank %d: there is a zero diagonal element at row index = %d\n", rank, entry[i].row);
                     MPI_Finalize();
-                    return -1;
+                    exit(EXIT_FAILURE);
                 }
             }
         }
