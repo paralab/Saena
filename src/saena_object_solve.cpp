@@ -1057,10 +1057,10 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
 
     auto *res         = &grid->res[0];
     auto *uCorr       = &grid->uCorr[0];
-    auto *res_coarse  = &grid->res_coarse[0];
-    auto *uCorrCoarse = &grid->uCorrCoarse[0];
-//    auto *res_coarse  = saena_aligned_alloc<value_t>(grid->Ac.M_old);
-//    auto *uCorrCoarse = saena_aligned_alloc<value_t>(grid->Ac.M);
+//    auto *res_coarse  = &grid->res_coarse[0];
+//    auto *uCorrCoarse = &grid->uCorrCoarse[0];
+    auto *res_coarse  = saena_aligned_alloc<value_t>(grid->Ac.M_old);
+    auto *uCorrCoarse = saena_aligned_alloc<value_t>(grid->Ac.M);
 
 #ifdef PROFILE_VCYCLE
     double time_other2 = omp_get_wtime();
@@ -1412,11 +1412,8 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
         if(rank==0) std::cout << "level = " << grid->level << ", after post-smooth = " << sqrt(dot) << std::endl;
     }
 #endif
-//    saena_free(uCorrCoarse);
-//    saena_free(res_coarse);
-    // reset pointers
-    swap(grid->u_old, uCorrCoarse);
-    swap(res_coarse, grid->u_old);
+    saena_free(uCorrCoarse);
+    saena_free(res_coarse);
 }
 
 
