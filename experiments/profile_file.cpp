@@ -169,7 +169,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-    print_time((t2 - t1) / solve_iter, "Solve:", comm);
+    print_time(t1 / solve_iter, t2 / solve_iter, "Solve:", comm);
 
     solver.solve_pCG_profile(u, &opts);
 
