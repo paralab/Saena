@@ -1687,7 +1687,7 @@ void saena_object::vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs) {
             time_other2 = omp_get_wtime();
             vcycle_other += time_other2 - time_other1;
 
-            vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
+            vcycle_profile(grid->coarseGrid, uCorrCoarse, res_coarse);
 
             MPI_Barrier(comm);
             time_other1 = omp_get_wtime();
