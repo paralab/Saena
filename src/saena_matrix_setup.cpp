@@ -1580,7 +1580,11 @@ int saena_matrix::inverse_diag() {
     }
 
     for(int i = 0; i < M; ++i){
-        ASSERT(inv_diag[i] != 0, "rank " << rank << ": " << i << "\t" << inv_diag[i]);
+        if(almost_zero(inv_diag[i])){
+            printf("rank %d: zero diagonal at row %d: %f\n", rank, i, inv_diag[i]);
+            exit(EXIT_FAILURE);
+        }
+//        ASSERT(inv_diag[i] != 0, "rank " << rank << ": " << i << "\t" << inv_diag[i]);
     }
 
 #ifdef __DEBUG1__
