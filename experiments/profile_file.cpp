@@ -171,15 +171,16 @@ int main(int argc, char* argv[]){
     t2 = omp_get_wtime();
     print_time(t1 / solve_iter, t2 / solve_iter, "Solve:", comm);
 
-    solver.solve_pCG_profile(u, &opts);
-
     // *************************** print or write the solution ****************************
 
 //    print_vector(u, -1, "solution", comm);
 //    print_vector(u_direct, -1, "solution", comm);
 //    write_to_file_vec(u, "solution", comm);
 
-    // *************************** profile matvecs ****************************
+    // *************************** profile solve and matvecs ****************************
+
+    solver.solve_pCG_profile(u, &opts);
+
     // profile matvec times on all multigrid levels
     solver.profile_matvecs();
 //    solver.profile_matvecs_breakdown();
