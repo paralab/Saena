@@ -4,7 +4,7 @@
     <OPTIONS
 	solver_max_iter="50"
 	solver_tol="1e-8"
-	smoother="jacobi"
+	smoother="chebyshev"
 	preSmooth="3"
 	postSmooth="3"
 	PSmoother="jacobi"
@@ -19,5 +19,6 @@
 	switch_to_dense="0"
 	dense_thre="0.1"
 	dense_sz_thre="5000"
-	petsc=""/>
+	petsc=""
+	eig="0"/>
 </SAENA>
