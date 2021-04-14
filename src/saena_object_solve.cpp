@@ -1416,6 +1416,424 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
     saena_free(res_coarse);
 }
 
+
+void saena_object::vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs) {
+
+    if (!grid->A->active) {
+        return;
+    }
+
+    MPI_Comm comm = grid->A->comm;
+    int rank = -1, nprocs = -1;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+    const index_t sz = grid->A->M;
+    double t1 = 0, t2 = 0;
+    value_t dot = 0.0;
+
+#ifdef __DEBUG1__
+    std::string func_name;
+//    print_vector(rhs, -1, "rhs in vcycle", comm);
+
+    if (verbose_vcycle) {
+        MPI_Barrier(comm);
+        if (!rank) printf("\n");
+        MPI_Barrier(comm);
+        printf("rank = %d: vcycle level = %d, A->M = %u\n", rank, grid->level, grid->A->M);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // **************************************** 0. direct-solve the coarsest level ****************************************
+
+    if (grid->level == max_level) {
+
+#ifdef __DEBUG1__
+        if (verbose_vcycle) {
+            MPI_Barrier(comm);
+            if (rank == 0) std::cout << "vcycle: solving the coarsest level using " << direct_solver << std::endl;
+            MPI_Barrier(comm);
+        }
+        if (verbose) t1 = omp_get_wtime();
+#endif
+
+        MPI_Barrier(comm);
+        double slu1 = omp_get_wtime();
+
+        if (direct_solver == "CG") {
+            solve_coarsest_CG(grid->A, &u[0], rhs);
+        } else if (direct_solver == "SuperLU") {
+            solve_coarsest_SuperLU(grid->A, u, rhs);
+        } else {
+            if (!rank) printf("Error: Unknown direct solver! \n");
+            exit(EXIT_FAILURE);
+        }
+
+        double slu2 = omp_get_wtime();
+        superlu_time += slu2 - slu1;
+
+#ifdef __DEBUG1__
+        {
+            if (verbose) {
+                t2 = omp_get_wtime();
+                func_name = "vcycle: level " + std::to_string(grid->level) + ": solve coarsest";
+                print_time(t1, t2, func_name, comm);
+            }
+
+            if (verbose_vcycle_residuals) {
+                std::vector<value_t> res(sz);
+                grid->A->residual(&u[0], &rhs[0], &res[0]);
+                dotProduct(&res[0], &res[0], sz, &dot, comm);
+                if (rank == 0)
+                    std::cout << "\nlevel = " << grid->level
+                              << ", after coarsest level = " << sqrt(dot) << std::endl;
+            }
+
+            // print the solution
+            // ------------------
+//            print_vector(u, -1, "solution from the direct solver", grid->A->comm);
+
+            // check if the solution is correct
+            // --------------------------------
+//            std::vector<double> rhs_matvec(u.size(), 0);
+//            grid->A->matvec(u, rhs_matvec);
+//            if(rank==0){
+//                printf("\nA*u - rhs:\n");
+//                for(i = 0; i < rhs_matvec.size(); i++){
+//                    if(rhs_matvec[i] - rhs[i] > 1e-6)
+//                        printf("%lu \t%f - %f = \t%f \n", i, rhs_matvec[i], rhs[i], rhs_matvec[i] - rhs[i]);}
+//                printf("-----------------------\n");
+//            }
+        }
+#endif
+
+        return;
+    }
+
+    MPI_Barrier(comm);
+    double time_other1 = omp_get_wtime();
+
+    auto *res         = &grid->res[0];
+    auto *uCorr       = &grid->uCorr[0];
+//    auto *res_coarse  = &grid->res_coarse[0];
+//    auto *uCorrCoarse = &grid->uCorrCoarse[0];
+    auto *res_coarse  = saena_aligned_alloc<value_t>(grid->Ac.M_old);
+    auto *uCorrCoarse = saena_aligned_alloc<value_t>(grid->Ac.M);
+
+    double time_other2 = omp_get_wtime();
+    vcycle_other += time_other2 - time_other1;
+
+#ifdef __DEBUG1__
+    if (verbose_vcycle_residuals) {
+        grid->A->residual(&u[0], &rhs[0], &res[0]);
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
+        if (!rank)
+            std::cout << "\nlevel = " << grid->level << ", vcycle start      = " << sqrt(dot) << std::endl;
+    }
+#endif
+
+    // **************************************** 1. pre-smooth ****************************************
+
+#ifdef __DEBUG1__
+    if (verbose_vcycle) {
+        MPI_Barrier(comm);
+        if (rank == 0) printf("vcycle level %d: presmooth\n", grid->level);
+        MPI_Barrier(comm);
+    }
+
+    t1 = omp_get_wtime();
+#endif
+
+    double time_smooth_pre1 = 0.0, time_smooth_pre2 = 0.0;
+//    if (grid->level == 0) {
+    MPI_Barrier(comm);
+    time_smooth_pre1 = omp_get_wtime();
+//    }
+
+    if (preSmooth) {
+        smooth(grid, u, rhs, preSmooth);
+    }
+
+//    if (grid->level == 0) {
+    time_smooth_pre2 = omp_get_wtime();
+    vcycle_smooth_time += time_smooth_pre2 - time_smooth_pre1;
+//    }
+
+#ifdef __DEBUG1__
+    t2 = omp_get_wtime();
+    func_name = "Vcycle: level " + std::to_string(grid->level) + ": pre";
+    if (verbose) print_time(t1, t2, func_name, comm);
+
+//    print_vector(u, -1, "u in vcycle", comm);
+//    if(rank==0) std::cout << "\n1. pre-smooth: u, level = " << grid->level << std::endl;
+#endif
+
+    // **************************************** 2. compute residual ****************************************
+
+#ifdef __DEBUG1__
+    if (verbose_vcycle) {
+        MPI_Barrier(comm);
+        if (rank == 0) printf("vcycle level %d: residual\n", grid->level);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    MPI_Barrier(comm);
+    time_other1 = omp_get_wtime();
+
+    grid->A->residual(&u[0], &rhs[0], &res[0]);
+
+    time_other2 = omp_get_wtime();
+    vcycle_resid += time_other2 - time_other1;
+
+#ifdef __DEBUG1__
+//    print_vector(res, -1, "res", comm);
+
+    if (verbose_vcycle_residuals) {
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
+        if (rank == 0)
+            std::cout << "level = " << grid->level << ", after pre-smooth  = " << sqrt(dot) << std::endl;
+    }
+#endif
+
+    // **************************************** 3. restrict ****************************************
+
+#ifdef __DEBUG1__
+    if (verbose_vcycle) {
+        MPI_Barrier(comm);
+        if (rank == 0) printf("vcycle level %d: restrict\n", grid->level);
+//        printf("rank %d: grid->Ac.M_old = %u \n", rank, grid->Ac.M_old);
+        MPI_Barrier(comm);
+    }
+
+    t1 = omp_get_wtime();
+#endif
+
+    MPI_Barrier(comm);
+    double t_trans1 = omp_get_wtime();
+
+    grid->R.matvec(&res[0], &res_coarse[0]);
+
+    double t_trans2 = omp_get_wtime();
+    Rtransfer_time += t_trans2 - t_trans1;
+
+#ifdef __DEBUG1__
+//    grid->R.print_entry(-1);
+//    print_vector(res_coarse, -1, "res_coarse in vcycle", comm);
+
+    if (verbose_vcycle) {
+        MPI_Barrier(comm);
+        if (rank == 0) printf("vcycle level %d: repart_u_shrink\n", grid->level);
+//        printf("rank %d: res.size() = %lu \tres_coarse.size() = %lu \n", rank, res.size(), res_coarse.size());
+        MPI_Barrier(comm);
+    }
+#endif
+
+    MPI_Barrier(comm);
+    time_other1 = omp_get_wtime();
+
+    if (grid->Ac.active_minor) {
+
+        if (nprocs > 1) {
+            grid->repart_u(res_coarse);
+        }
+
+        time_other2 = omp_get_wtime();
+        vcycle_repart += time_other2 - time_other1;
+
+        if (grid->Ac.active) {
+
+            comm = grid->Ac.comm;
+            MPI_Comm_rank(comm, &rank);
+            MPI_Comm_size(comm, &nprocs);
+
+#ifdef __DEBUG1__
+            {
+//                MPI_Barrier(comm);
+//                printf("rank %d: after  repart_u_shrink: res_coarse.size = %ld \n", rank, res_coarse.size());
+//                MPI_Barrier(comm);
+//                print_vector(res_coarse, 0, "res_coarse", comm);
+
+                t2 = omp_get_wtime();
+                func_name = "Vcycle: level " + std::to_string(grid->level) + ": restriction";
+                if (verbose) print_time(t1, t2, func_name, comm);
+            }
+#endif
+
+            // **************************************** 4. recurse ****************************************
+
+#ifdef __DEBUG1__
+            if (verbose_vcycle) {
+                MPI_Barrier(comm);
+                if (rank == 0) printf("vcycle level %d: recurse\n", grid->level);
+                MPI_Barrier(comm);
+            }
+#endif
+
+//            MPI_Barrier(comm); // barrier is not needed, because there is synchronization at the end of repart_u()
+            time_other1 = omp_get_wtime();
+
+            // scale rhs of the next level
+            if(scale) {
+                scale_vector(&res_coarse[0], &grid->coarseGrid->A->inv_sq_diag_orig[0], grid->Ac.M);
+            }
+
+            fill(&uCorrCoarse[0], &uCorrCoarse[grid->Ac.M], 0);
+
+            time_other2 = omp_get_wtime();
+            vcycle_other += time_other2 - time_other1;
+
+            vcycle(grid->coarseGrid, uCorrCoarse, res_coarse);
+
+            MPI_Barrier(comm);
+            time_other1 = omp_get_wtime();
+
+            // scale uCorrCoarse
+            if(scale) {
+                scale_vector(&uCorrCoarse[0], &grid->coarseGrid->A->inv_sq_diag_orig[0], grid->Ac.M);
+            }
+
+            time_other2 = omp_get_wtime();
+            vcycle_other += time_other2 - time_other1;
+
+#ifdef __DEBUG1__
+//            print_vector(uCorrCoarse, -1, "uCorrCoarse", grid->A->comm);
+#endif
+
+        } // if (grid->Ac.active)
+    } // if (grid->Ac.active_minor)
+
+    // **************************************** 5. prolong ****************************************
+
+    comm = grid->A->comm;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+    t1 = omp_get_wtime();
+
+    if (verbose_vcycle) {
+        MPI_Barrier(comm);
+        if (rank == 0) printf("\nvcycle level %d: repart_back_u_shrink\n", grid->level);
+        MPI_Barrier(comm);
+    }
+#endif
+
+    MPI_Barrier(comm);
+    time_other1 = omp_get_wtime();
+
+    if(nprocs > 1 && grid->Ac.active_minor){
+        grid->repart_back_u(uCorrCoarse);
+    }
+
+    time_other2 = omp_get_wtime();
+    vcycle_repart += time_other2 - time_other1;
+
+#ifdef __DEBUG1__
+//    MPI_Barrier(comm); printf("rank %d: after  repart_back_u_shrink: uCorrCoarse.size = %ld \n", rank, uCorrCoarse.size()); MPI_Barrier(comm);
+//    print_vector(uCorrCoarse, -1, "uCorrCoarse", grid->A->comm);
+
+    if(verbose_vcycle){
+        MPI_Barrier(comm);
+        if(rank==0) printf("vcycle level %d: prolong\n", grid->level);
+        MPI_Barrier(comm);}
+#endif
+
+    MPI_Barrier(comm);
+    t_trans1 = omp_get_wtime();
+
+    grid->P.matvec(uCorrCoarse, uCorr);
+
+    t_trans2 = omp_get_wtime();
+    Ptransfer_time += t_trans2 - t_trans1;
+
+#ifdef __DEBUG1__
+    t2 = omp_get_wtime();
+    func_name = "Vcycle: level " + std::to_string(grid->level) + ": prolongation";
+    if (verbose) print_time(t1, t2, func_name, comm);
+
+//    if(rank==0)
+//        std::cout << "\n5. prolongation: uCorr = P*uCorrCoarse , level = " << grid->level
+//                  << ", uCorr.size = " << uCorr.size() << std::endl;
+//    print_vector(uCorr, -1, "uCorr", grid->A->comm);
+#endif
+
+    // **************************************** 6. correct ****************************************
+
+#ifdef __DEBUG1__
+    if(verbose_vcycle){
+        MPI_Barrier(comm);
+        if(rank==0) printf("vcycle level %d: correct\n", grid->level);
+        MPI_Barrier(comm);}
+#endif
+
+    MPI_Barrier(comm);
+    time_other1 = omp_get_wtime();
+
+#pragma omp parallel for default(none) shared(u, uCorr, sz)
+    for (index_t i = 0; i < sz; ++i)
+        u[i] -= uCorr[i];
+
+    time_other2 = omp_get_wtime();
+    vcycle_other += time_other2 - time_other1;
+
+#ifdef __DEBUG1__
+//    print_vector(u, 0, "u after correction", grid->A->comm);
+
+    if(verbose_vcycle_residuals){
+        grid->A->residual(&u[0], &rhs[0], &res[0]);
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
+        if(rank==0) std::cout << "level = " << grid->level << ", after correction  = " << sqrt(dot) << std::endl;
+    }
+#endif
+
+    // **************************************** 7. post-smooth ****************************************
+
+#ifdef __DEBUG1__
+    if(verbose_vcycle){
+        MPI_Barrier(comm);
+        if(rank==0) printf("vcycle level %d: post-smooth\n", grid->level);
+        MPI_Barrier(comm);}
+
+    t1 = omp_get_wtime();
+#endif
+
+    double time_smooth_post1 = 0.0, time_smooth_post2 = 0.0;
+//    if (grid->level == 0) {
+    MPI_Barrier(comm);
+    time_smooth_post1 = omp_get_wtime();
+//    }
+
+    if(postSmooth){
+        smooth(grid, u, rhs, postSmooth);
+    }
+
+//    if (grid->level == 0) {
+    time_smooth_post2 = omp_get_wtime();
+    vcycle_smooth_time += time_smooth_post2 - time_smooth_post1;
+//    }
+
+#ifdef __DEBUG1__
+    t2 = omp_get_wtime();
+    func_name = "Vcycle: level " + std::to_string(grid->level) + ": post";
+    if (verbose) print_time(t1, t2, func_name, comm);
+
+    if(verbose_vcycle_residuals){
+
+//        if(rank==1) std::cout << "\n7. post-smooth: u, level = " << grid->level << std::endl;
+//        print_vector(u, 0, "u post-smooth", grid->A->comm);
+
+        grid->A->residual(&u[0], &rhs[0], &res[0]);
+        dotProduct(&res[0], &res[0], sz, &dot, comm);
+        if(rank==0) std::cout << "level = " << grid->level << ", after post-smooth = " << sqrt(dot) << std::endl;
+    }
+#endif
+    saena_free(uCorrCoarse);
+    saena_free(res_coarse);
+}
+
+
 int saena_object::solve_petsc(value_t *&u, const string &petsc_solver, const double &tol) {
 
     auto *A = grids[0].A;
@@ -2343,6 +2761,794 @@ int saena_object::solve_pCG(value_t *&u){
 //    petsc_solve(A, rhs, u_petsc, solver_tol);
 
     return 0;
+}
+
+
+void saena_object::solve_pCG_profile(value_t *&u) {
+    solve_pCG_profile_part1(u);
+    solve_pCG_profile_part2(u);
+}
+
+void saena_object::solve_pCG_profile_part1(value_t *&u){
+
+    auto *A = grids[0].A;
+    value_t *rhs = &grids[0].rhs[0];
+
+    MPI_Comm comm = A->comm;
+    int nprocs = 0, rank = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+//    print_vector(u, -1, "u", comm);
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: start!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+    const index_t sz = A->M;
+
+    Rtransfer_time = 0;
+    Ptransfer_time = 0;
+    superlu_time = 0;
+    vcycle_smooth_time = 0;
+    vcycle_resid = 0;
+    vcycle_repart = 0;
+    double vcycle_time = 0;
+    double matvec_time1 = 0;
+    double dots = 0;
+
+#ifdef PROFILE_TOTAL_PCG
+    MPI_Barrier(comm);
+    double t_pcg1 = omp_get_wtime();
+#endif
+
+    for(int l = 0; l < max_level; ++l){
+        if(grids[l].active) {
+            grids[l].P.tloc  = 0;
+            grids[l].P.tcomm = 0;
+            grids[l].P.trem  = 0;
+            grids[l].P.ttot  = 0;
+            grids[l].R.tloc  = 0;
+            grids[l].R.tcomm = 0;
+            grids[l].R.trem  = 0;
+            grids[l].R.ttot  = 0;
+        }
+    }
+
+    // ************** check u size **************
+/*
+    index_t u_size_local = u.size();
+    index_t u_size_total;
+    MPI_Allreduce(&u_size_local, &u_size_total, 1, MPI_UNSIGNED, MPI_SUM, grids[0].A->comm);
+    if(grids[0].A->Mbig != u_size_total){
+        if(rank==0) printf("Error: size of LHS (=%u) and the solution vector u (=%u) are not equal!\n", grids[0].A->Mbig, u_size_total);
+        MPI_Finalize();
+        return -1;
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: check u size!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+*/
+
+    // ************** repartition u **************
+    // todo: using repartition(), give the user the option of passing an initial guess for u. in that case comment
+    //  out "initialize u" part.
+
+/*
+    std::fill(u.begin(), u.end(), 0);
+    if(repartition)
+        repartition_u(u);
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition u!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+*/
+
+    // ************** initialize u **************
+
+    if(u == nullptr){
+        u = saena_aligned_alloc<value_t>(sz);
+    }
+
+    fill(&u[0], &u[sz], 0);
+
+    // ************** allocate memory for vcycle **************
+
+    alloc_vcycle_memory();
+
+    // ************** solve **************
+
+//    double t1 = MPI_Wtime();
+
+//    double temp;
+//    dot(rhs, rhs, &temp, comm);
+//    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
+
+    auto *r = saena_aligned_alloc<value_t>(sz);
+    A->residual(&u[0], &rhs[0], &r[0]);
+
+    double init_dot = 0.0, current_dot = 0.0;
+//    double previous_dot;
+    dotProduct(&r[0], &r[0], sz, &init_dot, comm);
+    if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
+
+    // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
+    if(max_level == 0){
+        vcycle(&grids[0], u, rhs);
+        A->residual(&u[0], &rhs[0], &r[0]);
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
+
+#ifdef __DEBUG1__
+//        print_vector(r, -1, "res", comm);
+//        if(rank==0) std::cout << "dot = " << current_dot << std::endl;
+#endif
+
+        if(rank==0){
+//            print_sep();
+            printf("\nonly using the direct solver! \nfinal absolute residual = %e"
+                   "\nrelative residual       = %e \n", sqrt(current_dot), sqrt(current_dot / init_dot));
+            print_sep();
+        }
+
+        // scale the solution u
+        if(scale) {
+            scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
+        }
+    }
+
+    auto *rho = saena_aligned_alloc<value_t>(sz);
+    fill(&rho[0], &rho[sz], 0.0);
+    vcycle(&grids[0], rho, r);
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: first vcycle!\n");
+        MPI_Barrier(comm);
+    }
+//    for(i = 0; i < r.size(); i++)
+//        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
+
+//    if(rank==0){
+//        printf("Vcycle #: absolute residual \tconvergence factor\n");
+//        printf("--------------------------------------------------------\n");
+//    }
+#endif
+
+    std::vector<value_t> h(sz);
+    auto *p = saena_aligned_alloc<value_t>(sz);
+    copy(&rho[0], &rho[sz], &p[0]);
+
+    const double THRSHLD = init_dot * solver_tol * solver_tol;
+
+    int i = 0;
+    double rho_res = 0.0, pdoth = 0.0, alpha = 0.0, beta = 0.0;
+    current_dot = init_dot;
+//    previous_dot = init_dot;
+
+    for(i = 0; i < solver_max_iter; i++){
+        MPI_Barrier(comm);
+        double time_matvec1 = omp_get_wtime();
+
+        A->matvec(&p[0], &h[0]);
+
+        double time_matvec2 = omp_get_wtime();
+        matvec_time1 += time_matvec2 - time_matvec1;
+        MPI_Barrier(comm);
+        double dot1 = omp_get_wtime();
+
+        dotProduct(&r[0], &rho[0], sz, &rho_res, comm);
+        dotProduct(&p[0], &h[0],   sz, &pdoth,   comm);
+
+        double dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
+
+        alpha = rho_res / pdoth;
+
+#pragma omp parallel for default(none) shared(u, r, p, h, alpha, sz)
+        for(index_t j = 0; j < sz; ++j){
+            u[j] -= alpha * p[j];
+            r[j] -= alpha * h[j];
+        }
+
+        MPI_Barrier(comm);
+        dot1 = omp_get_wtime();
+
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
+
+        dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
+
+#ifdef __DEBUG1__
+//        printf("rho_res = %e, pdoth = %e, alpha = %f \n", rho_res, pdoth, alpha);
+//        print_vector(u, -1, "v inside solve_pcg", A->comm);
+//        previous_dot = current_dot;
+
+        // print the "absolute residual" and the "convergence factor":
+//        if(rank==0) printf("%d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
+//        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
+#endif
+
+        if(current_dot < THRSHLD)
+            break;
+
+#ifdef __DEBUG1__
+        if(verbose){
+            MPI_Barrier(comm);
+            if(!rank) printf("_______________________________\n\n***** Vcycle %u *****\n", i+1);
+            MPI_Barrier(comm);
+        }
+#endif
+
+        // **************************************************************
+        // Precondition
+        // solve A * rho = r, in which rho is initialized to the 0 vector.
+        // **************************************************************
+
+        double time_vcycle1 = omp_get_wtime();
+
+        std::fill(&rho[0], &rho[sz], 0.0);
+        vcycle(&grids[0], rho, r);
+
+        double time_vcycle2 = omp_get_wtime();
+        vcycle_time += time_vcycle2 - time_vcycle1;
+
+        // **************************************************************
+
+        MPI_Barrier(comm);
+        dot1 = omp_get_wtime();
+
+        dotProduct(&r[0], &rho[0], sz, &beta, comm);
+
+        dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
+
+        beta /= rho_res;
+
+//#pragma omp parallel for default(none) shared(u, p, rho, beta)
+        for(index_t j = 0; j < sz; ++j) {
+            p[j] = rho[j] + beta * p[j];
+        }
+    } // for i
+
+    // set number of iterations that took to find the solution.
+    // only do the following if the end of the previous for loop was reached.
+    if(i == solver_max_iter)
+        i--;
+
+//    double t_dif = MPI_Wtime() - t1;
+//    print_time(t_dif, "solve_pcg", comm);
+
+    if(rank==0){
+//        double t_pcg2 = omp_get_wtime();
+//        print_sep();
+        printf("stopped at iteration    = %d \nfinal absolute residual = %e"
+               "\nrelative residual       = %e \n", i+1, sqrt(current_dot), sqrt(current_dot / init_dot));
+//        printf("total   time per iteration = %e \n", (t_pcg2 - t_pcg1)/(i+1));
+//        printf("vcycle  time per iteration = %e \n", vcycle_time/(i+1));
+//        printf("superlu time per iteration = %e \n", superlu_time/(i+1));
+//        printf("matvec1 time per iteration = %e \n", matvec_time1/(i+1));
+//        printf("smooth  time per iteration = %e \n", vcycle_smooth_time/(i+1));
+        print_sep();
+    }
+
+    // uncomment to print info for the lazy update feature
+//    iter_num_lazy.emplace_back(i+1);
+//    if(iter_num_lazy.size() == ITER_LAZY){
+//        print_vector(iter_num_lazy, 0, "iter_num_lazy", comm);
+//    }
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(verbose_solve) if(rank == 0) printf("solve_pcg: solve!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // ************** scale u **************
+
+//    writeVectorToFile(u, "sol", comm);
+
+    if(scale){
+        scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
+    }
+
+    // ************** repartition u back **************
+
+//    print_vector(u, 2, "final u before repartition_back_u", comm);
+
+//    if(repartition){
+//        repartition_back_u(u);
+//    }
+
+    // ************** free memory **************
+
+    free_vcycle_memory();
+    saena_free(rho);
+    saena_free(p);
+    saena_free(r);
+
+#ifdef PROFILE_TOTAL_PCG
+    double t_pcg2 = omp_get_wtime();
+#endif
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: end!\n");
+        MPI_Barrier(comm);
+
+//        print_vector(u, 0, "final u", comm);
+    }
+#endif
+
+    for(int k = 0; k < 3; ++k){
+        // k = 0: average time
+        // k = 1: min time
+        // k = 2: max time
+
+//        print_vcycle_time(i, k, comm);
+
+        if(!rank) printf("\nvcycle_pCG\nL0matvec\ndots\n");
+        print_time(vcycle_time / (i+1),        "vcycle_pCG",   comm, true, false, k);
+        print_time(matvec_time1 / (i+1),       "L0matvec",     comm, true, false, k);
+        print_time(dots / (i+1),               "dots",         comm, true, false, k);
+
+#ifdef PROFILE_TOTAL_PCG
+        if(!rank) printf("\npCG_total\n");
+        print_time((t_pcg2 - t_pcg1) / (i+1),  "pCG_total",    comm, true, false, k);
+        if(!rank) print_sep();
+#endif
+
+    }
+
+#if 0
+    if(!rank) printf("\nP matvec:\n");
+    if(!rank) printf("loc\ncomm\nrem\ntot\n");
+    for(int l = 0; l < max_level; ++l){
+//    for(int l = 0; l < 1; ++l){
+        if(grids[l].active) {
+            if(!rank) printf("\nlevel %d: \n", l);
+            if(!rank) printf("matvec_comm_sz: %d\n", grids[l].P.matvec_comm_sz);
+            print_time_ave(grids[l].P.tloc / (i+1),  "Ploc",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.tcomm / (i+1), "Pcomm", grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.trem / (i+1),  "Prem",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.ttot / (i+1),  "Ptot",  grids[l].A->comm, true, false);
+        }
+    }
+
+    if(!rank) printf("\nR matvec:\n");
+    if(!rank) printf("loc\ncomm\nrem\ntot\n");
+    for(int l = 0; l < max_level; ++l){
+//    for(int l = 0; l < 1; ++l){
+        if(grids[l].active) {
+            if(!rank) printf("\nlevel %d: \n", l);
+            if(!rank) printf("matvec_comm_sz: %d\n", grids[l].R.matvec_comm_sz);
+            print_time_ave(grids[l].R.tloc / (i+1),  "Rloc",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].R.tcomm / (i+1), "Rcomm", grids[l].A->comm, true, false);
+            print_time_ave(grids[l].R.trem / (i+1),  "Rrem",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].R.ttot / (i+1),  "Rtot",  grids[l].A->comm, true, false);
+        }
+    }
+#endif
+
+    // call petsc solver
+//    std::vector<double> u_petsc(rhs.size());
+//    petsc_solve(A, rhs, u_petsc, solver_tol);
+}
+
+void saena_object::solve_pCG_profile_part2(value_t *&u){
+
+    auto *A = grids[0].A;
+    value_t *rhs = &grids[0].rhs[0];
+
+    MPI_Comm comm = A->comm;
+    int nprocs = 0, rank = 0;
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &rank);
+
+#ifdef __DEBUG1__
+//    print_vector(u, -1, "u", comm);
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: start!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+    const index_t sz = A->M;
+
+    Rtransfer_time = 0;
+    Ptransfer_time = 0;
+    superlu_time = 0;
+    vcycle_smooth_time = 0;
+    vcycle_resid = 0;
+    vcycle_repart = 0;
+    double vcycle_time = 0;
+    double matvec_time1 = 0;
+    double dots = 0;
+
+#ifdef PROFILE_TOTAL_PCG
+    MPI_Barrier(comm);
+    double t_pcg1 = omp_get_wtime();
+#endif
+
+    for(int l = 0; l < max_level; ++l){
+        if(grids[l].active) {
+            grids[l].P.tloc  = 0;
+            grids[l].P.tcomm = 0;
+            grids[l].P.trem  = 0;
+            grids[l].P.ttot  = 0;
+            grids[l].R.tloc  = 0;
+            grids[l].R.tcomm = 0;
+            grids[l].R.trem  = 0;
+            grids[l].R.ttot  = 0;
+        }
+    }
+
+    // ************** check u size **************
+/*
+    index_t u_size_local = u.size();
+    index_t u_size_total;
+    MPI_Allreduce(&u_size_local, &u_size_total, 1, MPI_UNSIGNED, MPI_SUM, grids[0].A->comm);
+    if(grids[0].A->Mbig != u_size_total){
+        if(rank==0) printf("Error: size of LHS (=%u) and the solution vector u (=%u) are not equal!\n", grids[0].A->Mbig, u_size_total);
+        MPI_Finalize();
+        return -1;
+    }
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: check u size!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+*/
+
+    // ************** repartition u **************
+    // todo: using repartition(), give the user the option of passing an initial guess for u. in that case comment
+    //  out "initialize u" part.
+
+/*
+    std::fill(u.begin(), u.end(), 0);
+    if(repartition)
+        repartition_u(u);
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(verbose_solve) if(rank == 0) printf("solve_pcg: repartition u!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+*/
+
+    // ************** initialize u **************
+
+    if(u == nullptr){
+        u = saena_aligned_alloc<value_t>(sz);
+    }
+
+    fill(&u[0], &u[sz], 0);
+
+    // ************** allocate memory for vcycle **************
+
+    alloc_vcycle_memory();
+
+    // ************** solve **************
+
+//    double t1 = MPI_Wtime();
+
+//    double temp;
+//    dot(rhs, rhs, &temp, comm);
+//    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
+
+    auto *r = saena_aligned_alloc<value_t>(sz);
+    A->residual(&u[0], &rhs[0], &r[0]);
+
+    double init_dot = 0.0, current_dot = 0.0;
+//    double previous_dot;
+    dotProduct(&r[0], &r[0], sz, &init_dot, comm);
+    if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
+
+    // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
+    if(max_level == 0){
+        vcycle_profile(&grids[0], u, rhs);
+        A->residual(&u[0], &rhs[0], &r[0]);
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
+
+#ifdef __DEBUG1__
+//        print_vector(r, -1, "res", comm);
+//        if(rank==0) std::cout << "dot = " << current_dot << std::endl;
+#endif
+
+        if(rank==0){
+//            print_sep();
+            printf("\nonly using the direct solver! \nfinal absolute residual = %e"
+                   "\nrelative residual       = %e \n", sqrt(current_dot), sqrt(current_dot / init_dot));
+            print_sep();
+        }
+
+        // scale the solution u
+        if(scale) {
+            scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
+        }
+    }
+
+    auto *rho = saena_aligned_alloc<value_t>(sz);
+    fill(&rho[0], &rho[sz], 0.0);
+    vcycle_profile(&grids[0], rho, r);
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: first vcycle!\n");
+        MPI_Barrier(comm);
+    }
+//    for(i = 0; i < r.size(); i++)
+//        printf("rho[%lu] = %f,\t r[%lu] = %f \n", i, rho[i], i, r[i]);
+
+//    if(rank==0){
+//        printf("Vcycle #: absolute residual \tconvergence factor\n");
+//        printf("--------------------------------------------------------\n");
+//    }
+#endif
+
+    std::vector<value_t> h(sz);
+    auto *p = saena_aligned_alloc<value_t>(sz);
+    copy(&rho[0], &rho[sz], &p[0]);
+
+    const double THRSHLD = init_dot * solver_tol * solver_tol;
+
+    int i = 0;
+    double rho_res = 0.0, pdoth = 0.0, alpha = 0.0, beta = 0.0;
+    current_dot = init_dot;
+//    previous_dot = init_dot;
+
+    for(i = 0; i < solver_max_iter; i++){
+#ifdef PROFILE_PCG
+        MPI_Barrier(comm);
+        double time_matvec1 = omp_get_wtime();
+#endif
+
+        A->matvec(&p[0], &h[0]);
+
+#ifdef PROFILE_PCG
+        double time_matvec2 = omp_get_wtime();
+        matvec_time1 += time_matvec2 - time_matvec1;
+        MPI_Barrier(comm);
+        double dot1 = omp_get_wtime();
+#endif
+
+        dotProduct(&r[0], &rho[0], sz, &rho_res, comm);
+        dotProduct(&p[0], &h[0],   sz, &pdoth,   comm);
+
+#ifdef PROFILE_PCG
+        double dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
+#endif
+
+        alpha = rho_res / pdoth;
+
+#pragma omp parallel for default(none) shared(u, r, p, h, alpha, sz)
+        for(index_t j = 0; j < sz; ++j){
+            u[j] -= alpha * p[j];
+            r[j] -= alpha * h[j];
+        }
+
+#ifdef PROFILE_PCG
+        MPI_Barrier(comm);
+        dot1 = omp_get_wtime();
+#endif
+
+        dotProduct(&r[0], &r[0], sz, &current_dot, comm);
+
+#ifdef PROFILE_PCG
+        dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
+#endif
+
+#ifdef __DEBUG1__
+//        printf("rho_res = %e, pdoth = %e, alpha = %f \n", rho_res, pdoth, alpha);
+//        print_vector(u, -1, "v inside solve_pcg", A->comm);
+//        previous_dot = current_dot;
+
+        // print the "absolute residual" and the "convergence factor":
+//        if(rank==0) printf("%d: %.10f  \t%.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/previous_dot));
+//        if(rank==0) printf("%6d: aboslute = %.10f, relative = %.10f \n", i+1, sqrt(current_dot), sqrt(current_dot/init_dot));
+#endif
+
+        if(current_dot < THRSHLD)
+            break;
+
+#ifdef __DEBUG1__
+        if(verbose){
+            MPI_Barrier(comm);
+            if(!rank) printf("_______________________________\n\n***** Vcycle %u *****\n", i+1);
+            MPI_Barrier(comm);
+        }
+#endif
+
+        // **************************************************************
+        // Precondition
+        // solve A * rho = r, in which rho is initialized to the 0 vector.
+        // **************************************************************
+
+#ifdef PROFILE_PCG
+        double time_vcycle1 = omp_get_wtime();
+#endif
+
+        std::fill(&rho[0], &rho[sz], 0.0);
+        vcycle_profile(&grids[0], rho, r);
+
+#ifdef PROFILE_PCG
+        double time_vcycle2 = omp_get_wtime();
+        vcycle_time += time_vcycle2 - time_vcycle1;
+#endif
+
+        // **************************************************************
+
+#ifdef PROFILE_PCG
+        MPI_Barrier(comm);
+        dot1 = omp_get_wtime();
+#endif
+
+        dotProduct(&r[0], &rho[0], sz, &beta, comm);
+
+#ifdef PROFILE_PCG
+        dot2 = omp_get_wtime();
+        dots += dot2 - dot1;
+#endif
+
+        beta /= rho_res;
+
+//#pragma omp parallel for default(none) shared(u, p, rho, beta)
+        for(index_t j = 0; j < sz; ++j) {
+            p[j] = rho[j] + beta * p[j];
+        }
+    } // for i
+
+    // set number of iterations that took to find the solution.
+    // only do the following if the end of the previous for loop was reached.
+    if(i == solver_max_iter)
+        i--;
+
+//    double t_dif = MPI_Wtime() - t1;
+//    print_time(t_dif, "solve_pcg", comm);
+
+    if(rank==0){
+//        double t_pcg2 = omp_get_wtime();
+//        print_sep();
+        printf("stopped at iteration    = %d \nfinal absolute residual = %e"
+               "\nrelative residual       = %e \n", i+1, sqrt(current_dot), sqrt(current_dot / init_dot));
+//        printf("total   time per iteration = %e \n", (t_pcg2 - t_pcg1)/(i+1));
+//        printf("vcycle  time per iteration = %e \n", vcycle_time/(i+1));
+//        printf("superlu time per iteration = %e \n", superlu_time/(i+1));
+//        printf("matvec1 time per iteration = %e \n", matvec_time1/(i+1));
+//        printf("smooth  time per iteration = %e \n", vcycle_smooth_time/(i+1));
+        print_sep();
+    }
+
+    // uncomment to print info for the lazy update feature
+//    iter_num_lazy.emplace_back(i+1);
+//    if(iter_num_lazy.size() == ITER_LAZY){
+//        print_vector(iter_num_lazy, 0, "iter_num_lazy", comm);
+//    }
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(verbose_solve) if(rank == 0) printf("solve_pcg: solve!\n");
+        MPI_Barrier(comm);
+    }
+#endif
+
+    // ************** scale u **************
+
+//    writeVectorToFile(u, "sol", comm);
+
+    if(scale){
+        scale_vector(&u[0], &A->inv_sq_diag_orig[0], sz);
+    }
+
+    // ************** repartition u back **************
+
+//    print_vector(u, 2, "final u before repartition_back_u", comm);
+
+//    if(repartition){
+//        repartition_back_u(u);
+//    }
+
+    // ************** free memory **************
+
+    free_vcycle_memory();
+    saena_free(rho);
+    saena_free(p);
+    saena_free(r);
+
+#ifdef PROFILE_TOTAL_PCG
+    double t_pcg2 = omp_get_wtime();
+#endif
+
+#ifdef __DEBUG1__
+    if(verbose_solve){
+        MPI_Barrier(comm);
+        if(rank == 0) printf("solve_pcg: end!\n");
+        MPI_Barrier(comm);
+
+//        print_vector(u, 0, "final u", comm);
+    }
+#endif
+
+    for(int k = 0; k < 3; ++k){
+        // k = 0: average time
+        // k = 1: min time
+        // k = 2: max time
+
+        print_vcycle_time(i, k, comm);
+
+#ifdef PROFILE_PCG
+        if(!rank) printf("\nvcycle_pCG\nL0matvec\ndots\n");
+        print_time(vcycle_time / (i+1),        "vcycle_pCG",   comm, true, false, k);
+        print_time(matvec_time1 / (i+1),       "L0matvec",     comm, true, false, k);
+        print_time(dots / (i+1),               "dots",         comm, true, false, k);
+#endif
+
+#ifdef PROFILE_TOTAL_PCG
+        if(!rank) printf("\npCG_total\n");
+        print_time((t_pcg2 - t_pcg1) / (i+1),  "pCG_total",    comm, true, false, k);
+        if(!rank) print_sep();
+#endif
+
+    }
+
+#if 0
+    if(!rank) printf("\nP matvec:\n");
+    if(!rank) printf("loc\ncomm\nrem\ntot\n");
+    for(int l = 0; l < max_level; ++l){
+//    for(int l = 0; l < 1; ++l){
+        if(grids[l].active) {
+            if(!rank) printf("\nlevel %d: \n", l);
+            if(!rank) printf("matvec_comm_sz: %d\n", grids[l].P.matvec_comm_sz);
+            print_time_ave(grids[l].P.tloc / (i+1),  "Ploc",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.tcomm / (i+1), "Pcomm", grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.trem / (i+1),  "Prem",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].P.ttot / (i+1),  "Ptot",  grids[l].A->comm, true, false);
+        }
+    }
+
+    if(!rank) printf("\nR matvec:\n");
+    if(!rank) printf("loc\ncomm\nrem\ntot\n");
+    for(int l = 0; l < max_level; ++l){
+//    for(int l = 0; l < 1; ++l){
+        if(grids[l].active) {
+            if(!rank) printf("\nlevel %d: \n", l);
+            if(!rank) printf("matvec_comm_sz: %d\n", grids[l].R.matvec_comm_sz);
+            print_time_ave(grids[l].R.tloc / (i+1),  "Rloc",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].R.tcomm / (i+1), "Rcomm", grids[l].A->comm, true, false);
+            print_time_ave(grids[l].R.trem / (i+1),  "Rrem",  grids[l].A->comm, true, false);
+            print_time_ave(grids[l].R.ttot / (i+1),  "Rtot",  grids[l].A->comm, true, false);
+        }
+    }
+#endif
+
+    // call petsc solver
+//    std::vector<double> u_petsc(rhs.size());
+//    petsc_solve(A, rhs, u_petsc, solver_tol);
 }
 
 

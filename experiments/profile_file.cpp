@@ -142,8 +142,9 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    int warmup_iter = 2;
-    int solve_iter  = 3;
+    int warmup_iter = 5;
+    int solve_iter  = 10;
+    
     // warm-up
     for(int i = 0; i < warmup_iter; ++i)
         solver.solve_pCG(u, &opts);
@@ -167,7 +168,9 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-    print_time(t1, t2, "Solve:", comm);
+    print_time((t2 - t1) / solve_iter, "Solve:", comm);
+
+    solver.solve_pCG_profile(u, &opts);
 
     // *************************** print or write the solution ****************************
 

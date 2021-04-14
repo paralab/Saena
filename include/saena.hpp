@@ -228,6 +228,9 @@ namespace saena {
         int solve_GMRES(value_t *&u, saena::options* opts);
         int solve_pGMRES(value_t *&u, saena::options* opts);
 
+        // to run profiling on different solve parts
+        int solve_pCG_profile(value_t *&u, saena::options* opts);
+
         int update1(saena::matrix* A_ne); // only update the finest level A, which is the input matrix.
         int update2(saena::matrix* A_ne); // updates grids[i].A for all levels, using the previously made grids[i].P and R.
         int update3(saena::matrix* A_ne); // like update 2, but only update local parts of As.

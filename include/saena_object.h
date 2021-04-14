@@ -350,6 +350,12 @@ public:
     void vcycle(Grid* grid, value_t *&u, value_t *&rhs);
     void inline smooth(Grid *grid, value_t *&u, value_t *rhs, int iter) const;
 
+    // for profiling
+    void solve_pCG_profile(value_t *&u);
+    void solve_pCG_profile_part1(value_t *&u);
+    void solve_pCG_profile_part2(value_t *&u);
+    void vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs);
+
     // *****************
     // GMRES functions
     // *****************
