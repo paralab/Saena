@@ -1476,6 +1476,10 @@ int saena_object::matmat(saena_matrix *A, saena_matrix *B, saena_matrix *C, cons
     Bcsc.val = nullptr;
     Bcsc.col_scan = nullptr;
 
+    // free memory taken by C_temp which was used in matmat
+    C_temp.clear();
+    C_temp.shrink_to_fit();
+
     matmat_memory_free();
 
     return 0;

@@ -331,6 +331,10 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     MPI_Allreduce(&max_level_send, &max_level, 1, MPI_INT, MPI_MIN, grids[0].A->comm);
     grids.resize(max_level + 1);
 
+    // free memory taken by C_temp which was used in matmat in triple_mat_mult
+    C_temp.clear();
+    C_temp.shrink_to_fit();
+
 #ifdef __DEBUG1__
     {
         if(verbose_setup_steps){

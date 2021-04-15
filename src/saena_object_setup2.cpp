@@ -828,6 +828,9 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     saena_free(Pcsc.val);
     saena_free(Pcsc.col_scan);
 
+//    C_temp.clear();
+//    C_temp.shrink_to_fit();
+
     matmat_memory_free();
 
 #ifdef __DEBUG1__
