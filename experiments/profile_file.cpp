@@ -143,8 +143,8 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    int warmup_iter = 5;
-    int solve_iter  = 10;
+    int warmup_iter = 0;
+    int solve_iter  = 1;
     
     // warm-up
     for(int i = 0; i < warmup_iter; ++i)
@@ -179,10 +179,10 @@ int main(int argc, char* argv[]){
 
     // *************************** profile solve and matvecs ****************************
 
-    solver.solve_pCG_profile(u, &opts);
+//    solver.solve_pCG_profile(u, &opts);
 
     // profile matvec times on all multigrid levels
-    solver.profile_matvecs();
+//    solver.profile_matvecs();
 //    solver.profile_matvecs_breakdown();
 
     // *************************** check correctness of the solution 1 ****************************
