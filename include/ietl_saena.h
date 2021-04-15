@@ -18,7 +18,6 @@
 typedef saena_matrix Matrix;
 typedef boost::numeric::ublas::vector<value_t> Vector;
 
-
 int find_eig_ietl(Matrix& A){
     // this function uses IETL library to find the biggest eigenvalue.
     // IETL is modified to work in parallel (only ietl/interface/ublas.h).
@@ -130,6 +129,22 @@ int find_eig_ietl(Matrix& A){
 #endif
 
     return 0;
+}
+
+void find_eig(saena_matrix& A, const bool scale){
+    // if the linear system is not scaled, scale the matrix only for computing the eigenvalue that is
+    // being used in chebyshev, since chebyshev uses the preconditioned matrix.
+
+    if(!scale)
+        A.scale_matrix(false);
+
+//    find_eig_Elemental(A);
+    find_eig_ietl(A);
+
+    if(!scale)
+        A.scale_back_matrix(false);
+
+//    A.print_entry(-1, "A");
 }
 
 #endif //IETL_SAENA_H

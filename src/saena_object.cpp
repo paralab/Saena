@@ -198,7 +198,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     // check if the eigenvalue of the input matrix is not set in the options file, then compute it.
     if(smoother=="chebyshev"){
         if(almost_zero(A->get_eig()))
-            find_eig(*A);
+            find_eig(*A, scale);
 //        if(!rank) cout << "eig = " << A->get_eig() << endl;
     }
 
@@ -306,7 +306,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
                     MPI_Barrier(grids[i].Ac.comm);
                 }
 #endif
-                find_eig(grids[i].Ac);
+                find_eig(grids[i].Ac, scale);
             }
 
             if (verbose_setup) {
@@ -547,26 +547,6 @@ void saena_object::scale_vector(value_t *v, const value_t *w, const index_t sz) 
 #pragma omp parallel for
     for(index_t i = 0; i < sz; ++i)
         v[i] *= w[i];
-}
-
-
-int saena_object::find_eig(saena_matrix& A) const{
-
-    // if the linear system is not scaled, scale the matrix only for computing the eigenvalue that is
-    // being used in chebyshev, since chebyshev uses the preconditioned matrix.
-
-    if(!scale)
-        A.scale_matrix(false);
-
-//    find_eig_Elemental(A);
-    find_eig_ietl(A);
-
-    if(!scale)
-        A.scale_back_matrix(false);
-
-//    A.print_entry(-1, "A");
-
-    return 0;
 }
 
 
