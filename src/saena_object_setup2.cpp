@@ -874,16 +874,34 @@ void saena_object::filter(vector<cooEntry> &v, const index_t &sz, const index_t 
         }
     }
 
+    vector<bool> check_diag(sz, false);
     for(auto &a : w){
         if(a.row == a.col){
             a.val += add2diag_p[a.row];
+            check_diag[a.row - ofst] = true;
 
             if(almost_zero(fabs(a.val))){
-                printf("Error: there is a zero diagonal element at row index %d: %f\n", a.row, a.val);
-                MPI_Finalize();
-                exit(EXIT_FAILURE);
+                a.val = 1.0;
+//                printf("Error: there is a zero diagonal element at row index %d: %e\n", a.row, a.val);
+//                MPI_Finalize();
+//                exit(EXIT_FAILURE);
             }
         }
+    }
+
+    // if any diagonal entry is zero, add a diagonal entry of value 1.0
+    bool added = false;
+    for(index_t i = 0; i < sz; ++i) {
+        if(!check_diag[i]){
+            w.emplace_back(cooEntry(i + ofst, i + ofst, 1.0));
+            added = true;
+        }
+    }
+
+//    print_vector(w, 1, "w", MPI_COMM_WORLD);
+
+    if(added){
+        sort(w.begin(), w.end());
     }
 
     w.swap(v);
