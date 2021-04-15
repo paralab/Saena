@@ -100,17 +100,17 @@ public:
     index_t *mempool4 = nullptr;
     value_t *mempool5 = nullptr;
     uchar   *mempool6 = nullptr;
-    uchar   *mempool7 = nullptr;
+//    uchar   *mempool7 = nullptr;
 
     nnz_t    mempool3_sz     = 0;
     nnz_t    mempool4and5_sz = 0;
     nnz_t    mempool6_sz     = 0;
-    nnz_t    mempool7_sz     = 0;
+//    nnz_t    mempool7_sz     = 0;
 
     index_t *Cmkl_r      = nullptr;
     index_t *Cmkl_c_scan = nullptr;
     value_t *Cmkl_v      = nullptr;
-    bool    use_dcsrmultcsr = true;
+//    bool    use_dcsrmultcsr = true;
 
     std::vector<cooEntry> C_temp;
 
