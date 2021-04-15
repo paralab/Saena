@@ -2420,7 +2420,7 @@ int saena_object::matmat_CSC(CSCMat &Acsc, CSCMat &Bcsc, saena_matrix &C, bool t
                     tmp.val += C_temp[++i].val;
                 }
 
-                if(fabs(tmp.val) > ALMOST_ZERO){
+                if( (fabs(tmp.val) > ALMOST_ZERO) || tmp.row == tmp.col ){
                     C.entry.emplace_back(tmp);
                 }
             }
