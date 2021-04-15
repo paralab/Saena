@@ -2477,7 +2477,7 @@ int saena_object::solve_pCG(value_t *&u, const bool print_info /*= true*/){
 //        if(rank==0) std::cout << "dot = " << current_dot << std::endl;
 #endif
 
-        if(rank==0){
+        if(print_info && rank==0){
 //            print_sep();
             printf("\nonly using the direct solver! \nfinal absolute residual = %e"
                    "\nrelative residual       = %e \n", sqrt(current_dot), sqrt(current_dot / init_dot));
