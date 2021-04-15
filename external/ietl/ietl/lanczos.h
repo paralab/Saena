@@ -37,7 +37,7 @@ namespace ietl {
     public:
     enum errorinfo {ok = 0, no_eigenvalue, not_calculated};      
     Info() {}    
-    Info(std::vector<int> M1, std::vector<int> M2, std::vector<int> Ma,
+    Info(std::vector<long> M1, std::vector<long> M2, std::vector<long> Ma,
          std::vector<magnitude_type> Eigenvalue,std::vector<magnitude_type> Residuum,
          std::vector<errorinfo> Status):
       m1_(M1),
@@ -47,17 +47,17 @@ namespace ietl {
       residuum_(Residuum),
       status_(Status){}
     
-    int m1(int i) const {return m1_[i];}
-    int m2(int i) const {return m2_[i];}
-    int ma(int i) const {return ma_[i];}
-    int size() {return m1_.size();}
-    magnitude_type eigenvalue(int i) const {return eigenvalue_[i];}
-    magnitude_type residual(int i) const {return residuum_[i];}
-    errorinfo error_info(int i) const {return status_[i];}    
+    long m1(long i) const {return m1_[i];}
+    long m2(long i) const {return m2_[i];}
+    long ma(long i) const {return ma_[i];}
+    long size() {return m1_.size();}
+    magnitude_type eigenvalue(long i) const {return eigenvalue_[i];}
+    magnitude_type residual(long i) const {return residuum_[i];}
+    errorinfo error_info(long i) const {return status_[i];}    
 private:
-    std::vector<int> m1_;
-    std::vector<int> m2_;
-    std::vector<int> ma_;
+    std::vector<long> m1_;
+    std::vector<long> m2_;
+    std::vector<long> ma_;
     std::vector<magnitude_type> eigenvalue_;
     std::vector<magnitude_type> residuum_;
     std::vector<errorinfo> status_;
@@ -82,13 +82,13 @@ private:
 
     
     template <class IN, class OUT, class GEN>
-    void eigenvectors(IN in_eigvals_start, IN in_eigvals_end , OUT eig_vectors, Info<magnitude_type>& inf, GEN gen, int maxiter=0);    
+    void eigenvectors(IN in_eigvals_start, IN in_eigvals_end , OUT eig_vectors, Info<magnitude_type>& inf, GEN gen, long maxiter=0);    
   private:
     template <class IN> void find_m1m2(IN in_eigvals_start, IN in_eigvals_end);
     // m1 m2 finder for eigen vector calculation.
     
     template <class GEN> std::pair<magnitude_type,magnitude_type> make_first_step(GEN gen);
-    std::pair<magnitude_type,magnitude_type> make_step(int j, vector_type& vec3);
+    std::pair<magnitude_type,magnitude_type> make_step(long j, vector_type& vec3);
   
     template <class IT, class GEN> void generate_tmatrix(IT& iter, GEN gen); 
     template <class IT> void generate_tmatrix(IT& iter);     
@@ -98,8 +98,8 @@ private:
     const VS vecspace_;
     vector_type startvector;
     vector_type vec2;
-    unsigned int n; // index of vec2
-    std::vector<int> M1, M2, Ma;
+    unsigned long n; // index of vec2
+    std::vector<long> M1, M2, Ma;
 
     MPI_Comm comm = MPI_COMM_WORLD;
   }; // end of class lanczos.
@@ -121,27 +121,27 @@ private:
   template <class MATRIX, class VS>
     template <class IN, class OUT, class GEN>
     void lanczos<MATRIX, VS>::eigenvectors(IN in_eigvals_start, 
-         IN in_eigvals_end , OUT eig_vectors, Info<magnitude_type>& inf, GEN gen_, int maxiter) {
+         IN in_eigvals_end , OUT eig_vectors, Info<magnitude_type>& inf, GEN gen_, long maxiter) {
     vector_type vec3 = new_vector(vecspace_); // a temporary vector.
     std::vector<vector_type> eigvectors; // contains ritz vectors.
     std::vector<std::vector<magnitude_type> > Tvectors; // contains
                                              // eigenvectors of T matrix.
     // calculation of eigen vectors of T matrix(consists of alphas & betas):    
-    int n1 =  super_type::alpha.size();
+    long n1 =  super_type::alpha.size();
     magnitude_type mamax, error, lambda;
     std::pair<magnitude_type,magnitude_type> a_and_b;
-    unsigned int ma = 0, deltam;
-    int nth, maMax = 0, count;
+    unsigned long ma = 0, deltam;
+    long nth, maMax = 0, count;
     std::vector<magnitude_type> eigenval_a, residuum;
     std::vector<typename Info<magnitude_type>::errorinfo> status;
     
     find_m1m2(in_eigvals_start, in_eigvals_end);    
-    std::vector<int>::iterator M1_itr = M1.begin();
-    std::vector<int>::iterator M2_itr = M2.begin();
+    std::vector<long>::iterator M1_itr = M1.begin();
+    std::vector<long>::iterator M2_itr = M2.begin();
     
     while(in_eigvals_start !=  in_eigvals_end) {
     
-      int maxcount = 10;
+      long maxcount = 10;
       lambda = 0; count = 0;
       typename Info<magnitude_type>::errorinfo errInf = Info<magnitude_type>::ok;
       
@@ -154,7 +154,7 @@ private:
         if(*M1_itr != 0 && *M2_itr == 0) {
           ma = (5 * (*M1_itr))/4 + 1;
           mamax = std::min((11 * n1)/8 + 12, (13 * (*M1_itr))/8 + 1);
-          deltam = int((mamax - ma)/10) + 1;
+          deltam = long((mamax - ma)/10) + 1;
           if (maxiter > 0)
             maxcount = maxiter/deltam;
         }      
@@ -182,7 +182,7 @@ private:
             generate_tmatrix(iter_temp,gen_);
           }
         count++;
-        int info = ietl2lapack::stev(super_type::alpha, super_type::beta, eval, z, ma);
+        long info = ietl2lapack::stev(super_type::alpha, super_type::beta, eval, z, ma);
         if (info > 0)
           throw std::runtime_error("LAPACK error, stev function failed.");
           
@@ -213,7 +213,7 @@ private:
         }
         else { // if error is small enough.
           if(ma != 0) {
-            for(int i = 0; i < ma; i++)
+            for(long i = 0; i < ma; i++)
               (Tvectors.back()).push_back(z(i,nth));
             if(ma > maMax) maMax = ma;
             lambda = eval[nth];
@@ -251,7 +251,7 @@ private:
       Tvectors_itr++;
     }
     n=2;
-    for(int j = 2; j < maMax; j++) {
+    for(long j = 2; j < maMax; j++) {
       a_and_b = make_step(j-1,vec3);
       if(a_and_b.first != super_type::alpha[j-1]|| a_and_b.second != super_type::beta[j-1])
         throw std::runtime_error("T-matrix problem");
@@ -270,7 +270,7 @@ private:
       // end of basis transformation.  
     
     // copying to the output iterator & residuum calculation starts:    
-    int i = 0;
+    long i = 0;
     for(eigenvectors_itr = eigvectors.begin(); 
         eigenvectors_itr != eigvectors.end(); eigenvectors_itr++) {
       *eig_vectors = *eigenvectors_itr;
@@ -287,8 +287,8 @@ private:
 //------------------------------------------------------  
   template <class MATRIX, class VS> template <class IN>
   void lanczos<MATRIX, VS>::find_m1m2(IN in_eigvals_start,  IN in_eigvals_end) {
-    int info,  m2counter = 0;
-    unsigned int n = 1;
+    long info,  m2counter = 0;
+    unsigned long n = 1;
     IN in_eigvals = in_eigvals_start;
     M1.resize(in_eigvals_end - in_eigvals_start,0);
     M2.resize(in_eigvals_end - in_eigvals_start,0);
@@ -300,8 +300,8 @@ private:
       if (info > 0)
         throw std::runtime_error("LAPACK error, stev function failed.");
       
-      std::vector<int>::iterator M1_itr = M1.begin();        
-      std::vector<int>::iterator M2_itr = M2.begin();
+      std::vector<long>::iterator M1_itr = M1.begin();        
+      std::vector<long>::iterator M2_itr = M2.begin();
       in_eigvals = in_eigvals_start;
       
       while(in_eigvals != in_eigvals_end) {        
@@ -345,7 +345,7 @@ private:
     vector_type vec3 = new_vector(vecspace_);
     std::pair<magnitude_type,magnitude_type> a_and_b;
     
-    for(int j = 0; j < n; j++) 
+    for(long j = 0; j < n; j++) 
       ++iter;    
     if(super_type::alpha.size() == 0) 
       throw std::runtime_error("T matrix error, size of T matrix is zero, more_eigenvalues() cannot be called.");        
@@ -379,7 +379,7 @@ private:
 
   template <class MATRIX, class VS>
   std::pair<typename lanczos<MATRIX, VS>::magnitude_type, typename lanczos<MATRIX, VS>::magnitude_type> 
-  lanczos<MATRIX, VS>::make_step(int j,vector_type& vec3) {
+  lanczos<MATRIX, VS>::make_step(long j,vector_type& vec3) {
     magnitude_type a, b;
     b = super_type::beta[j-1];
     ietl::mult(matrix_,vec2,vec3);
