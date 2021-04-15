@@ -1554,7 +1554,10 @@ int saena_matrix::inverse_diag() {
     double temp;
     inv_diag = saena_aligned_alloc<value_t>(M);
     fill(&inv_diag[0], &inv_diag[M], 0.0);
-    inv_sq_diag.assign(M, 0);
+    inv_sq_diag.assign(M, 0.0);
+
+    value_t *inv_diag_p    = &inv_diag[0] - split[rank];
+    value_t *inv_sq_diag_p = &inv_sq_diag[0] - split[rank];
 
     if(!entry.empty()) {
         for (nnz_t i = 0; i < nnz_l; i++) {
@@ -1563,8 +1566,8 @@ int saena_matrix::inverse_diag() {
 //                if(rank==0) std::cout << i << "\t" << entry[i] << std::endl;
                 if ( !almost_zero(entry[i].val) ) {
                     temp = 1.0 / entry[i].val;
-                    inv_diag[entry[i].row - split[rank]] = temp;
-                    inv_sq_diag[entry[i].row - split[rank]] = sqrt(temp);
+                    inv_diag_p[entry[i].row] = temp;
+                    inv_sq_diag_p[entry[i].row] = sqrt(temp);
 //                    if (fabs(temp) > highest_diag_val) {
 //                        highest_diag_val = fabs(temp);
 //                    }
