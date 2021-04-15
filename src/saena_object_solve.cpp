@@ -2351,7 +2351,7 @@ int saena_object::solve_CG(value_t *&u){
 }
 
 
-int saena_object::solve_pCG(value_t *&u){
+int saena_object::solve_pCG(value_t *&u, const bool print_info /*= true*/){
 
     auto *A = grids[0].A;
     value_t *rhs = &grids[0].rhs[0];
@@ -2464,7 +2464,7 @@ int saena_object::solve_pCG(value_t *&u){
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
     dotProduct(&r[0], &r[0], sz, &init_dot, comm);
-    if(rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
+    if(print_info && rank==0) printf("\ninitial residual        = %e \n", sqrt(init_dot));
 
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
@@ -2638,7 +2638,7 @@ int saena_object::solve_pCG(value_t *&u){
 //    double t_dif = MPI_Wtime() - t1;
 //    print_time(t_dif, "solve_pcg", comm);
 
-    if(rank==0){
+    if(print_info && rank==0){
 //        double t_pcg2 = omp_get_wtime();
 //        print_sep();
         printf("stopped at iteration    = %d \nfinal absolute residual = %e"

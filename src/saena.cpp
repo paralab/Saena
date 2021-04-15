@@ -781,10 +781,10 @@ int saena::amg::solve_petsc(value_t *&u, saena::options* opts){
     return 0;
 }
 
-int saena::amg::solve_pCG(value_t *&u, saena::options* opts){
+int saena::amg::solve_pCG(value_t *&u, saena::options* opts, const bool print_info /*= true*/){
     m_pImpl->set_solve_params(opts->get_max_iter(), opts->get_tol(), opts->get_smoother(), opts->get_preSmooth(),
                               opts->get_postSmooth());
-    m_pImpl->solve_pCG(u);
+    m_pImpl->solve_pCG(u, print_info);
 
     if(m_pImpl->remove_boundary){
 //        m_pImpl->add_boundary_sol(u); // TODO: this part should be fixed

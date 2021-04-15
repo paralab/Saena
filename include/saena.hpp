@@ -221,7 +221,7 @@ namespace saena {
         int solve_smoother(value_t *&u, saena::options* opts);
         int solve_CG(value_t *&u, saena::options* opts);
 		int solve_petsc(value_t *&u, saena::options* opts);
-        int solve_pCG(value_t *&u, saena::options* opts);
+        int solve_pCG(value_t *&u, saena::options* opts, bool print_info = true);
         // if solver is made based of a matrix, let's call it A, and there is an updated version of A, let's call it B,
         // and one wants to solve B*x = rhs instead of A*x = rhs, then solve_pcg_update can be used and B can be passed as the third argument.
 //        int solve_pcg_update(std::vector<value_t>& u, saena::options* opts, saena::matrix* A_new);

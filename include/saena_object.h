@@ -344,7 +344,7 @@ public:
     int solve_smoother(value_t *&u);
     int solve_CG(value_t *&u);
 	int solve_petsc(value_t *&u, const string &petsc_solver, const double &tol);
-    int solve_pCG(value_t *&u);
+    int solve_pCG(value_t *&u, bool print_info = true);
     inline void alloc_vcycle_memory();
     inline void free_vcycle_memory();
     void vcycle(Grid* grid, value_t *&u, value_t *&rhs);
