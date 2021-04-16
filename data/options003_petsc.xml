@@ -19,5 +19,6 @@
 	switch_to_dense="0"
 	dense_thre="0.1"
 	dense_sz_thre="5000"
-	petsc="gamg"/>
+	petsc="gamg"
+	eig="1"/> <!--put nonzero to avoid computing eigenvalue for input matrix-->
 </SAENA>
