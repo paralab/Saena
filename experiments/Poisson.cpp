@@ -36,6 +36,18 @@ int main(int argc, char* argv[]){
 
     bool scale = false;
 
+    bool use_petsc = false;
+    {
+        saena::options opts_tmp;
+        if (argc == 3) {
+            const string optsfile(argv[2]);
+            opts_tmp.set_from_file(optsfile);
+            if (!opts_tmp.get_petsc_solver().empty()) {
+                use_petsc = true;
+            }
+        }
+    }
+
     // *************************** initialize the matrix ****************************
 
     int mx(std::stoi(argv[1]));
@@ -55,8 +67,10 @@ int main(int argc, char* argv[]){
 
     saena::matrix A(comm);
 //    saena::laplacian2D(&A, mx, my, scale);
-    saena::laplacian3D(&A, mx, my, mz, scale);
+    saena::laplacian3D(&A, mx, my, mz);
 //    saena::laplacian3D_old2(&A, mx, my, mz, scale);
+    A.set_remove_boundary(!use_petsc); // if using petsc dont remove boundary, otherwise remove
+    A.assemble(scale);
 
     double t2 = omp_get_wtime();
 //    print_time(t1, t2, "Matrix Assemble:", comm);
@@ -144,7 +158,7 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
-    if(!opts.get_petsc_solver().empty()){
+    if(use_petsc){
         solver.solve_petsc(u, &opts);
         A.destroy();
         if(free_amg)

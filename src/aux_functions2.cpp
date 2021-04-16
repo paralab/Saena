@@ -251,7 +251,7 @@ int saena::laplacian2D_old(saena::matrix* A, index_t n_matrix_local){
 }
 
 
-int saena::laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale /*= true*/){
+int saena::laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz){
 // NOTE: this info should be updated!
 // changed the function in: petsc-3.13.5/src/ksp/ksp/tutorials/ex45.c
 /*
@@ -368,8 +368,6 @@ with Dirichlet boundary conditions f(x) defined on the boundary
             }
         }
     }
-
-    A->assemble(scale);
 
     return 0;
 }
