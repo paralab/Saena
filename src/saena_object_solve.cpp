@@ -1021,12 +1021,12 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
             }
 
             if (verbose_vcycle_residuals) {
-                std::vector<value_t> res(sz);
-                grid->A->residual(&u[0], &rhs[0], &res[0]);
-                dotProduct(&res[0], &res[0], sz, &dot, comm);
-                if (rank == 0)
-                    std::cout << "\nlevel = " << grid->level
-                              << ", after coarsest level = " << sqrt(dot) << std::endl;
+//                std::vector<value_t> res(sz);
+//                grid->A->residual(&u[0], &rhs[0], res);
+//                dotProduct(&res[0], &res[0], sz, &dot, comm);
+//                if (rank == 0)
+//                    std::cout << "\nlevel = " << grid->level
+//                              << ", after coarsest level = " << sqrt(dot) << std::endl;
             }
 
             // print the solution
@@ -1069,10 +1069,10 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
 
 #ifdef __DEBUG1__
     if (verbose_vcycle_residuals) {
-        grid->A->residual(&u[0], &rhs[0], &res[0]);
-        dotProduct(&res[0], &res[0], sz, &dot, comm);
-        if (!rank)
-            std::cout << "\nlevel = " << grid->level << ", vcycle start      = " << sqrt(dot) << std::endl;
+//        grid->A->residual(&u[0], &rhs[0], &res[0]);
+//        dotProduct(&res[0], &res[0], sz, &dot, comm);
+//        if (!rank)
+//            std::cout << "\nlevel = " << grid->level << ", vcycle start      = " << sqrt(dot) << std::endl;
     }
 #endif
 
@@ -1131,7 +1131,7 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
     time_other1 = omp_get_wtime();
 #endif
 
-    grid->A->residual(&u[0], &rhs[0], &res[0]);
+    grid->A->residual(&u[0], &rhs[0], res);
 
 #ifdef PROFILE_VCYCLE
     time_other2 = omp_get_wtime();
@@ -1361,7 +1361,7 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
 //    print_vector(u, 0, "u after correction", grid->A->comm);
 
     if(verbose_vcycle_residuals){
-        grid->A->residual(&u[0], &rhs[0], &res[0]);
+        grid->A->residual(&u[0], &rhs[0], res);
         dotProduct(&res[0], &res[0], sz, &dot, comm);
         if(rank==0) std::cout << "level = " << grid->level << ", after correction  = " << sqrt(dot) << std::endl;
     }
@@ -1407,7 +1407,7 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
 //        if(rank==1) std::cout << "\n7. post-smooth: u, level = " << grid->level << std::endl;
 //        print_vector(u, 0, "u post-smooth", grid->A->comm);
 
-        grid->A->residual(&u[0], &rhs[0], &res[0]);
+        grid->A->residual(&u[0], &rhs[0], res);
         dotProduct(&res[0], &res[0], sz, &dot, comm);
         if(rank==0) std::cout << "level = " << grid->level << ", after post-smooth = " << sqrt(dot) << std::endl;
     }
@@ -1482,12 +1482,12 @@ void saena_object::vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs) {
             }
 
             if (verbose_vcycle_residuals) {
-                std::vector<value_t> res(sz);
-                grid->A->residual(&u[0], &rhs[0], &res[0]);
-                dotProduct(&res[0], &res[0], sz, &dot, comm);
-                if (rank == 0)
-                    std::cout << "\nlevel = " << grid->level
-                              << ", after coarsest level = " << sqrt(dot) << std::endl;
+//                std::vector<value_t> res(sz);
+//                grid->A->residual(&u[0], &rhs[0], &res[0]);
+//                dotProduct(&res[0], &res[0], sz, &dot, comm);
+//                if (rank == 0)
+//                    std::cout << "\nlevel = " << grid->level
+//                              << ", after coarsest level = " << sqrt(dot) << std::endl;
             }
 
             // print the solution
@@ -1526,7 +1526,7 @@ void saena_object::vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs) {
 
 #ifdef __DEBUG1__
     if (verbose_vcycle_residuals) {
-        grid->A->residual(&u[0], &rhs[0], &res[0]);
+        grid->A->residual(&u[0], &rhs[0], res);
         dotProduct(&res[0], &res[0], sz, &dot, comm);
         if (!rank)
             std::cout << "\nlevel = " << grid->level << ", vcycle start      = " << sqrt(dot) << std::endl;
@@ -1582,7 +1582,7 @@ void saena_object::vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs) {
     MPI_Barrier(comm);
     time_other1 = omp_get_wtime();
 
-    grid->A->residual(&u[0], &rhs[0], &res[0]);
+    grid->A->residual(&u[0], &rhs[0], res);
 
     time_other2 = omp_get_wtime();
     vcycle_resid += time_other2 - time_other1;
@@ -1782,7 +1782,7 @@ void saena_object::vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs) {
 //    print_vector(u, 0, "u after correction", grid->A->comm);
 
     if(verbose_vcycle_residuals){
-        grid->A->residual(&u[0], &rhs[0], &res[0]);
+        grid->A->residual(&u[0], &rhs[0], res);
         dotProduct(&res[0], &res[0], sz, &dot, comm);
         if(rank==0) std::cout << "level = " << grid->level << ", after correction  = " << sqrt(dot) << std::endl;
     }
@@ -1824,7 +1824,7 @@ void saena_object::vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs) {
 //        if(rank==1) std::cout << "\n7. post-smooth: u, level = " << grid->level << std::endl;
 //        print_vector(u, 0, "u post-smooth", grid->A->comm);
 
-        grid->A->residual(&u[0], &rhs[0], &res[0]);
+        grid->A->residual(&u[0], &rhs[0], res);
         dotProduct(&res[0], &res[0], sz, &dot, comm);
         if(rank==0) std::cout << "level = " << grid->level << ", after post-smooth = " << sqrt(dot) << std::endl;
     }
@@ -1923,8 +1923,9 @@ int saena_object::solve(value_t *&u){
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 #endif
 
-    std::vector<value_t> r(sz);
-    A->residual(&u[0], &rhs[0], &r[0]);
+//    std::vector<value_t> r(sz);
+    auto *r = saena_aligned_alloc<value_t>(sz);
+    A->residual(&u[0], &rhs[0], r);
     double init_dot = 0.0, current_dot = 0.0;
     dotProduct(&r[0], &r[0], sz, &init_dot, comm);
     if(!rank){
@@ -1942,7 +1943,7 @@ int saena_object::solve(value_t *&u){
     int i = 0;
     for(; i < solver_max_iter; ++i){
         vcycle(&grids[0], u, rhs);
-        A->residual(&u[0], &rhs[0], &r[0]);
+        A->residual(&u[0], &rhs[0], r);
         dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 #ifdef __DEBUG1__
@@ -1984,6 +1985,7 @@ int saena_object::solve(value_t *&u){
     // ************** free memory **************
 
     free_vcycle_memory();
+    saena_free(r);
 
 #ifdef __DEBUG1__
 //    print_vector(u, -1, "u", comm);
@@ -2040,8 +2042,9 @@ int saena_object::solve_smoother(value_t *&u){
 //    current_dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
-    std::vector<value_t> r(sz);
-    A->residual(&u[0], &rhs[0], &r[0]);
+//    std::vector<value_t> r(sz);
+    auto *r = saena_aligned_alloc<value_t>(sz);
+    A->residual(&u[0], &rhs[0], r);
     double init_dot = 0.0, current_dot = 0.0;
     dotProduct(&r[0], &r[0], sz, &init_dot, comm);
     if(!rank){
@@ -2055,7 +2058,7 @@ int saena_object::solve_smoother(value_t *&u){
     int i = 0;
     for(i = 0; i < solver_max_iter; ++i){
         smooth(&grids[0], u, &rhs[0], preSmooth);
-        A->residual(&u[0], &rhs[0], &r[0]);
+        A->residual(&u[0], &rhs[0], r);
         dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 //        if(rank==0) printf("Vcycle %d: \t%.10f \n", i, sqrt(current_dot));
@@ -2090,6 +2093,10 @@ int saena_object::solve_smoother(value_t *&u){
 //        repartition_back_u(u);
 
 //    print_vector(u, -1, "u", comm);
+
+    // ************** free memory **************
+
+    saena_free(r);
 
     return 0;
 }
@@ -2169,8 +2176,9 @@ int saena_object::solve_CG(value_t *&u){
 //    dot(rhs, rhs, &temp, comm);
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
-    std::vector<value_t> r(sz);
-    A->residual(&u[0], &rhs[0], &r[0]);
+//    std::vector<value_t> r(sz);
+    auto *r = saena_aligned_alloc<value_t>(sz);
+    A->residual(&u[0], &rhs[0], r);
 
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
@@ -2210,7 +2218,10 @@ int saena_object::solve_CG(value_t *&u){
 
 //    std::vector<value_t> rho(A->M, 0);
 //    vcycle(&grids[0], rho, r);
-    std::vector<value_t> rho(r);
+
+//    std::vector<value_t> rho(r);
+    auto *rho = saena_aligned_alloc<value_t>(sz);
+    copy(&r[0], &r[sz], &rho[0]);
 
 #ifdef __DEBUG1__
     if(verbose_solve){
@@ -2228,7 +2239,9 @@ int saena_object::solve_CG(value_t *&u){
 #endif
 
     std::vector<value_t> h(sz);
-    std::vector<value_t> p = rho;
+//    std::vector<value_t> p = rho;
+    auto *p = saena_aligned_alloc<value_t>(sz);
+    copy(&rho[0], &rho[sz], &p[0]);
 
     const double THRSHLD = init_dot * solver_tol * solver_tol;
 
@@ -2345,6 +2358,12 @@ int saena_object::solve_CG(value_t *&u){
     }
 #endif
 
+    // ************** free memory **************
+
+    saena_free(rho);
+    saena_free(p);
+    saena_free(r);
+
 //    if(rank==0) dollar::text(std::cout);
 
     return 0;
@@ -2459,7 +2478,7 @@ int saena_object::solve_pCG(value_t *&u, const bool print_info /*= true*/){
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
     auto *r = saena_aligned_alloc<value_t>(sz);
-    A->residual(&u[0], &rhs[0], &r[0]);
+    A->residual(&u[0], &rhs[0], r);
 
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
@@ -2469,7 +2488,7 @@ int saena_object::solve_pCG(value_t *&u, const bool print_info /*= true*/){
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
         vcycle(&grids[0], u, rhs);
-        A->residual(&u[0], &rhs[0], &r[0]);
+        A->residual(&u[0], &rhs[0], r);
         dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 #ifdef __DEBUG1__
@@ -2877,7 +2896,7 @@ void saena_object::solve_pCG_profile_part1(value_t *&u){
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
     auto *r = saena_aligned_alloc<value_t>(sz);
-    A->residual(&u[0], &rhs[0], &r[0]);
+    A->residual(&u[0], &rhs[0], r);
 
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
@@ -2887,7 +2906,7 @@ void saena_object::solve_pCG_profile_part1(value_t *&u){
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
         vcycle(&grids[0], u, rhs);
-        A->residual(&u[0], &rhs[0], &r[0]);
+        A->residual(&u[0], &rhs[0], r);
         dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 #ifdef __DEBUG1__
@@ -3258,7 +3277,7 @@ void saena_object::solve_pCG_profile_part2(value_t *&u){
 //    if(rank==0) std::cout << "norm(rhs) = " << sqrt(temp) << std::endl;
 
     auto *r = saena_aligned_alloc<value_t>(sz);
-    A->residual(&u[0], &rhs[0], &r[0]);
+    A->residual(&u[0], &rhs[0], r);
 
     double init_dot = 0.0, current_dot = 0.0;
 //    double previous_dot;
@@ -3268,7 +3287,7 @@ void saena_object::solve_pCG_profile_part2(value_t *&u){
     // if max_level==0, it means only direct solver is being used inside the previous vcycle, and that is all needed.
     if(max_level == 0){
         vcycle_profile(&grids[0], u, rhs);
-        A->residual(&u[0], &rhs[0], &r[0]);
+        A->residual(&u[0], &rhs[0], r);
         dotProduct(&r[0], &r[0], sz, &current_dot, comm);
 
 #ifdef __DEBUG1__

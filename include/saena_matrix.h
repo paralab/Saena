@@ -333,10 +333,10 @@ public:
 //    int matvec_timing5_alltoall(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
 
     // Vector res = A * u - rhs;
-    inline void residual(const value_t *u, const value_t *rhs, value_t *res);
+    inline void residual(const value_t *u, const value_t *rhs, value_t *&res);
     // Vector res = rhs - A * u
-    inline void residual_negative(const value_t *u, const value_t *rhs, value_t *res);
-    inline void residual_multiply(const value_t *u, const value_t *rhs, value_t *res,const value_t *w,const value_t &c);
+    inline void residual_negative(const value_t *u, const value_t *rhs, value_t *&res);
+    inline void residual_multiply(const value_t *u, const value_t *rhs, value_t *&res,const value_t *w,const value_t &c);
 
     int inverse_diag();
     vector<index_t> get_orig_split();

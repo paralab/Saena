@@ -1094,7 +1094,7 @@ void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const va
 
     // first loop
 //    residual_negative(&u[0], &rhs[0], &res[0]);
-    residual_multiply(&u[0], &rhs[0], &d[0], inv_diag_p, 1 / theta);
+    residual_multiply(&u[0], &rhs[0], d, inv_diag_p, 1 / theta);
 
     const index_t sz = M;
 //    #pragma omp parallel for simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
@@ -1114,7 +1114,7 @@ void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const va
         rhok   = rhokp1;
 
 //        residual_negative(&u[0], &rhs[0], &res[0]);
-        residual_multiply(&u[0], &rhs[0], &res[0], inv_diag_p, d2);
+        residual_multiply(&u[0], &rhs[0], res, inv_diag_p, d2);
 
 //        #pragma omp parallel for
 //        #pragma omp parallel for simd aligned(d, res, u: ALIGN_SZ)
