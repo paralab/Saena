@@ -76,28 +76,26 @@ int main(int argc, char* argv[]){
     // first line shows the value in row 0, second line shows the value in row 1, ...
     // entries should be in double.
 
-    auto orig_split = A.get_orig_split();
-    const nnz_t orig_sz = orig_split[rank + 1] - orig_split[rank];
-
     // set the size of rhs as the local number of rows on each process
 //    unsigned int num_local_row = A.get_num_local_rows();
 //    std::vector<double> rhs_std;
     value_t *rhs_std = nullptr;
 
 //    saena::laplacian2D_set_rhs(rhs_std, mx, my, comm);
-    saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
+    index_t orig_sz = saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
     //saena::laplacian3D_set_rhs_old2(rhs_std, mx, my, mz, comm);
 
+//    printf("rank %d: orig_sz = %ld\n", rank, orig_sz);
 //    print_vector(rhs_std, -1, "rhs_std", comm);
-//    print_array(rhs_std, 64, -1, "rhs_std", comm);
+//    print_array(rhs_std, orig_sz, -1, "rhs_std", comm);
 
-//    index_t my_split = 0;
-//    saena::find_split((index_t)rhs_std.size(), my_split, comm);
+    index_t my_split = 0;
+    saena::find_split(orig_sz, my_split, comm);
 
 //    cout << "orig_sz = " << orig_sz << ", split = " << orig_split[rank] << endl;
 
     saena::vector rhs(comm);
-    rhs.set(&rhs_std[0], orig_sz, orig_split[rank]);
+    rhs.set(&rhs_std[0], orig_sz, my_split);
     rhs.assemble();
 
 //    rhs.print_entry(-1);
@@ -137,7 +135,7 @@ int main(int argc, char* argv[]){
 //    int max_level(std::stoi(argv[4]));
 //    solver.set_multigrid_max_level(max_level);
     solver.set_scale(scale);
-    solver.set_matrix(&A, &opts);
+    solver.set_matrix(&A, &opts); free_amg = true;
     solver.set_rhs(rhs);
 
     t2 = omp_get_wtime();
@@ -157,8 +155,8 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    int warmup_iter = 0;
-    int solve_iter  = 0;
+    int warmup_iter = 5;
+    int solve_iter  = 10;
 
     // warm-up
     if(warmup_iter != 0){
@@ -170,7 +168,7 @@ int main(int argc, char* argv[]){
     t1 = omp_get_wtime();
 
     // solve the system using AMG as the solver
-    solver.solve(u, &opts);
+//    solver.solve(u, &opts);
 
     // solve the system, using pure CG.
 //    solver.solve_CG(u, &opts);

@@ -675,7 +675,7 @@ int saena::laplacian3D_set_rhs(value_t *&rhs, index_t mx, index_t my, index_t mz
         rhs = saena_aligned_alloc<value_t>(xm * ym * zm);
         assert(rhs);
 //        rhs.resize(xm * ym * zm);
-//        printf("rank %d: rhs.sz = %lu\n", rank, rhs.size());
+//        printf("rank %d: rhs.sz = %d\n", rank, xm * ym * zm);
 
         index_t iter = 0;
         for (k=zs; k<zs+zm; k++) {
@@ -695,6 +695,7 @@ int saena::laplacian3D_set_rhs(value_t *&rhs, index_t mx, index_t my, index_t mz
                 }
             }
         }
+        return xm * ym * zm;
     }
 
     return 0;
