@@ -234,7 +234,7 @@ void print_array(const T &v, const nnz_t sz, const int ran, const std::string &n
         if (rank == ran) {
             printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), ran, sz);
             for (index_t i = 0; i < sz; i++) {
-                std::cout << iter << "\t" << v[i] << std::endl;
+                std::cout << iter << "\t" << std::setprecision(16) << v[i] << std::endl;
                 iter++;
             }
             printf("\n");
@@ -245,7 +245,7 @@ void print_array(const T &v, const nnz_t sz, const int ran, const std::string &n
             if (rank == proc) {
                 printf("\n%s on proc = %d, size = %ld: \n", name.c_str(), proc, sz);
                 for (index_t i = 0; i < sz; i++) {
-                    std::cout << iter << "\t" << v[i] << std::endl;
+                    std::cout << iter << "\t" << std::setprecision(16) << v[i] << std::endl;
                     iter++;
                 }
                 printf("\n");
