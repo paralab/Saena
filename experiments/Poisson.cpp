@@ -76,21 +76,28 @@ int main(int argc, char* argv[]){
     // first line shows the value in row 0, second line shows the value in row 1, ...
     // entries should be in double.
 
+    auto orig_split = A.get_orig_split();
+    const nnz_t orig_sz = orig_split[rank + 1] - orig_split[rank];
+
     // set the size of rhs as the local number of rows on each process
-    unsigned int num_local_row = A.get_num_local_rows();
-    std::vector<double> rhs_std;
+//    unsigned int num_local_row = A.get_num_local_rows();
+//    std::vector<double> rhs_std;
+    value_t *rhs_std = nullptr;
 
 //    saena::laplacian2D_set_rhs(rhs_std, mx, my, comm);
     saena::laplacian3D_set_rhs(rhs_std, mx, my, mz, comm);
     //saena::laplacian3D_set_rhs_old2(rhs_std, mx, my, mz, comm);
 
 //    print_vector(rhs_std, -1, "rhs_std", comm);
+//    print_array(rhs_std, 64, -1, "rhs_std", comm);
 
-    index_t my_split = 0;
-    saena::find_split((index_t)rhs_std.size(), my_split, comm);
+//    index_t my_split = 0;
+//    saena::find_split((index_t)rhs_std.size(), my_split, comm);
+
+//    cout << "orig_sz = " << orig_sz << ", split = " << orig_split[rank] << endl;
 
     saena::vector rhs(comm);
-    rhs.set(&rhs_std[0], (index_t)rhs_std.size(), my_split);
+    rhs.set(&rhs_std[0], orig_sz, orig_split[rank]);
     rhs.assemble();
 
 //    rhs.print_entry(-1);
@@ -99,7 +106,8 @@ int main(int argc, char* argv[]){
 
     // u is the initial guess. at the end, it will be the solution.
 //    std::vector<double> u(num_local_row, 0); // initial guess = 0
-    std::vector<value_t> u;
+//    std::vector<value_t> u;
+    value_t *u = nullptr;
 
     // *************************** AMG - Setup ****************************
     // There are 3 ways to set options:
@@ -111,15 +119,19 @@ int main(int argc, char* argv[]){
 //    int    postSmooth         = 3;
 //    saena::options opts(solver_max_iter, relative_tolerance, smoother, preSmooth, postSmooth);
 
-    // 2- read the options from an xml file
-    const string optsfile(argv[2]);
-    saena::options opts(optsfile);
+    // 2- use the default options
+    saena::options opts;
 
-    // 3- use the default options
-//    saena::options opts;
+    // 3- read the options from an xml file
+    if(argc == 3){
+        const string optsfile(argv[2]);
+        opts.set_from_file(optsfile);
+        A.set_eig(optsfile); // set eigenvalue from the options file, if it is provided.
+    }
 
     t1 = omp_get_wtime();
 
+    bool free_amg = false;
     saena::amg solver;
 //    solver.set_dynamic_levels(false);
 //    int max_level(std::stoi(argv[4]));
@@ -129,28 +141,43 @@ int main(int argc, char* argv[]){
     solver.set_rhs(rhs);
 
     t2 = omp_get_wtime();
-    print_time(t2 - t1, "Setup:", comm, true, true);
+//    print_time(t2 - t1, "Setup:", comm, true, true);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
-    int warmup_iter = 2;
-    int solve_iter = 3;
+    if(!opts.get_petsc_solver().empty()){
+        solver.solve_petsc(u, &opts);
+        A.destroy();
+        if(free_amg)
+            solver.destroy();
+        saena_free(rhs_std);
+        saena_free(u);
+        MPI_Finalize();
+        return 0;
+    }
+
+    int warmup_iter = 0;
+    int solve_iter  = 0;
+
     // warm-up
-    for(int i = 0; i < warmup_iter; ++i)
+    if(warmup_iter != 0){
         solver.solve_pCG(u, &opts);
+        for(int i = 1; i < warmup_iter; ++i)
+            solver.solve_pCG(u, &opts, false);
+    }
 
     t1 = omp_get_wtime();
 
     // solve the system using AMG as the solver
-//    solver.solve(u, &opts);
+    solver.solve(u, &opts);
 
     // solve the system, using pure CG.
 //    solver.solve_CG(u, &opts);
 
     // solve the system, using AMG as the preconditioner. this is preconditioned conjugate gradient (PCG).
     for(int i = 0; i < solve_iter; ++i)
-        solver.solve_pCG(u, &opts);
+        solver.solve_pCG(u, &opts, false);
 
     // solve the system, using pure GMRES.
 //    solver.solve_GMRES(u, &opts);
@@ -159,7 +186,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-    print_time((t2 - t1) / solve_iter, "Solve:", comm, true, true);
+//    print_time(t1 / solve_iter, t2 / solve_iter, "Solve:", comm);
 
 //    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
 //    saena::laplacian2D_check_solution(u, mx, my, comm);
@@ -171,8 +198,11 @@ int main(int argc, char* argv[]){
 //    write_to_file_vec(u, "solution", comm);
 
     // *************************** profile matvecs ****************************
+
+//    solver.solve_pCG_profile(u, &opts);
+
     // profile matvec times on all multigrid levels
-    solver.profile_matvecs();
+//    solver.profile_matvecs();
 //    solver.profile_matvecs_breakdown();
 
     // *************************** solve the system with other options ****************************
@@ -307,7 +337,10 @@ int main(int argc, char* argv[]){
     // *************************** Destroy ****************************
 
     A.destroy();
-    solver.destroy();
+    if(free_amg)
+        solver.destroy();
+    saena_free(u);
+    saena_free(rhs_std);
     MPI_Finalize();
     return 0;
 }

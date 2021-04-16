@@ -98,7 +98,7 @@ public:
     std::vector<nnz_t>   nnz_list;          // number of nonzeros on each process.
                                             // todo: Since it is local to each processor, int is enough. nnz_l should be changed too.
 
-    bool remove_boundary = false;
+    bool remove_boundary = true;
     std::vector<index_t> bound_row; // boundary node row index
     std::vector<value_t> bound_val; // boundary node value
 
