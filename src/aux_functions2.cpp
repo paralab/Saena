@@ -628,7 +628,7 @@ with Dirichlet boundary conditions f(x) defined on the boundary
     return 0;
 }
 
-int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm){
+int saena::laplacian3D_set_rhs(value_t *&rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm){
 //    u = sin(2 * SAENA_PI * x) * sin(2 * SAENA_PI * y) * sin(2 * SAENA_PI * z)
 //    rhs = 12 * SAENA_PI * SAENA_PI * sin(2 * SAENA_PI * x) * sin(2 * SAENA_PI * y) * sin(2 * SAENA_PI * z)
 
@@ -672,7 +672,9 @@ int saena::laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my,
         const double TWOPI       = 2 * SAENA_PI;
         const double TWOELVEPISQ = 12 * SAENA_PI * SAENA_PI;
 
-        rhs.resize(xm * ym * zm);
+        rhs = saena_aligned_alloc<value_t>(xm * ym * zm);
+        assert(rhs);
+//        rhs.resize(xm * ym * zm);
 //        printf("rank %d: rhs.sz = %lu\n", rank, rhs.size());
 
         index_t iter = 0;

@@ -588,7 +588,7 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
             val_remote_p = &val_remote[iter];
             const index_t iend = nnzPerCol_remote_p[j];
             const value_t vrem = vecValues_p[j];
-#pragma omp simd
+//#pragma omp simd
             for (index_t i = 0; i < iend; ++i) {
 //                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
 //                iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[rdispls[recv_proc] + j]);
@@ -712,7 +712,7 @@ void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
             val_remote_p = &val_remote[iter];
             const index_t iend = nnzPerCol_remote_p[j];
             const value_t vrem = vecValues_p[j];
-#pragma omp simd
+//#pragma omp simd
             for (index_t i = 0; i < iend; ++i) {
 //                if(rank==1) printf("%ld \t%u \t%u \t%f \t%f\n",
 //                iter, row_remote[iter], col_remote2[iter], val_remote[iter], vecValues[rdispls[recv_proc] + j]);

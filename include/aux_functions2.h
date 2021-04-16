@@ -16,7 +16,7 @@ namespace saena {
     int laplacian3D(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale = true);
     int laplacian3D_no_boundary(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale = true);
     int laplacian3D_no_boundary_lower(saena::matrix* A, index_t mx, index_t my, index_t mz, bool scale = true);
-    int laplacian3D_set_rhs(std::vector<double> &rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm);
+    int laplacian3D_set_rhs(value_t *&rhs, index_t mx, index_t my, index_t mz, MPI_Comm comm);
     int laplacian3D_check_solution(std::vector<double> &u, index_t mx, index_t my, index_t mz, MPI_Comm comm);
 
     // second argument is degree-of-freedom on each processor
