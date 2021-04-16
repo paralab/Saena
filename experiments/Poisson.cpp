@@ -139,7 +139,7 @@ int main(int argc, char* argv[]){
     solver.set_rhs(rhs);
 
     t2 = omp_get_wtime();
-//    print_time(t2 - t1, "Setup:", comm, true, true);
+    print_time(t2 - t1, "Setup:", comm, true, true);
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
@@ -184,7 +184,7 @@ int main(int argc, char* argv[]){
 //    solver.solve_pGMRES(u, &opts);
 
     t2 = omp_get_wtime();
-//    print_time(t1 / solve_iter, t2 / solve_iter, "Solve:", comm);
+    print_time(t1 / solve_iter, t2 / solve_iter, "Solve:", comm);
 
 //    saena::laplacian3D_check_solution(u, mx, my, mz, comm);
 //    saena::laplacian2D_check_solution(u, mx, my, comm);
@@ -197,10 +197,10 @@ int main(int argc, char* argv[]){
 
     // *************************** profile matvecs ****************************
 
-//    solver.solve_pCG_profile(u, &opts);
+    solver.solve_pCG_profile(u, &opts);
 
     // profile matvec times on all multigrid levels
-//    solver.profile_matvecs();
+    solver.profile_matvecs();
 //    solver.profile_matvecs_breakdown();
 
     // *************************** solve the system with other options ****************************
