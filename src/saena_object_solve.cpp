@@ -276,6 +276,7 @@ int saena_object::setup_SuperLU() {
 
 //    index_t fst_row = A_coarsest->split[rank_coarsest]; // the offset for the first row
     fst_row = A_coarsest->split[rank_coarsest]; // the offset for the first row
+//    if (rank_coarsest == 0) printf("fst_row = %d \n", fst_row);
 
     // these will be freed when calling Destroy_CompRowLoc_Matrix_dist on the matrix.
     auto *rowptr    = (index_t *) intMalloc_dist(m_loc + 1);     // scan on nonzeros per row
@@ -304,25 +305,16 @@ int saena_object::setup_SuperLU() {
     assert(rowptr[m_loc] == nnz_loc);
 
 #ifdef __DEBUG1__
-//    for(nnz_t i = 0; i < m_loc; i++){
-//        for(nnz_t j = rowptr[i]; j < rowptr[i+1] - 1; j++){
-//            assert(colind[j] <= colind[j + 1]);
-//            std::cout << i + fst_row << "\t" << colind[j] << "\t" << nzval_loc[j] << std::endl;
-//        }
-//    }
-
     for(nnz_t i = 0; i < entry_temp.size() - 1; i++){
         assert(entry_temp[i].row <= entry_temp[i+1].row);
         if(entry_temp[i].row == entry_temp[i+1].row)
             assert(entry_temp[i].col <= entry_temp[i+1].col);
     }
-#endif
 
-#ifdef __DEBUG1__
 /*
     MPI_Barrier(*comm_coarsest);
 //    grids[0].A->print_entry(-1);
-    if(rank_coarsest == 1) {
+    if(rank_coarsest == 0) {
         printf("\nmatrix entries in row-major format to be passed to SuperLU:\n");
         for (nnz_t i = 0; i < nnz_loc; i++) {
             std::cout << entry_temp[i].row << "\t" << colind[i] << "\t" << nzval_loc[i] << std::endl;
@@ -335,7 +327,7 @@ int saena_object::setup_SuperLU() {
     }
 
     MPI_Barrier(*comm_coarsest);
-    if(rank_coarsest == 1){
+    if(rank_coarsest == 0){
         printf("\n");
         for(nnz_t i = 0; i < m_loc; i++){
             for(nnz_t j = rowptr[i]; j < rowptr[i+1]; j++){
