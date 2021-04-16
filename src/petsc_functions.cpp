@@ -1113,8 +1113,8 @@ int petsc_solve_all(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &
     petsc_solve(A, b, x, rel_tol, "gamg");
     if (!rank) print_3sep();
     petsc_solve(A, b, x, rel_tol, "ml");
-//    if (!rank) print_3sep();
-//    petsc_solve(A, b, x, rel_tol, "boomerAMG");
+    if (!rank) print_3sep();
+    petsc_solve(A, b, x, rel_tol, "boomerAMG");
     if (!rank) print_sep();
 
     VecDestroy(&x);
