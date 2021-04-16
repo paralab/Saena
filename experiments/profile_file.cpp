@@ -35,6 +35,18 @@ int main(int argc, char* argv[]){
 
     bool scale = false;
 
+    bool use_petsc = false;
+    {
+        saena::options opts_tmp;
+        if (argc == 4) {
+            const string optsfile(argv[3]);
+            opts_tmp.set_from_file(optsfile);
+            if (!opts_tmp.get_petsc_solver().empty()) {
+                use_petsc = true;
+            }
+        }
+    }
+
     // *************************** initialize the matrix ****************************
 
     // timing the matrix setup phase
@@ -42,7 +54,7 @@ int main(int argc, char* argv[]){
 
     saena::matrix A(comm);
     char* file_name(argv[1]);
-    A.set_remove_boundary(true);
+    A.set_remove_boundary(!use_petsc); // if using petsc dont remove boundary, otherwise remove
     A.read_file(file_name);
     A.assemble(scale);
 
@@ -132,7 +144,7 @@ int main(int argc, char* argv[]){
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
 
-    if(!opts.get_petsc_solver().empty()){
+    if(use_petsc){
         solver.solve_petsc(u, &opts);
         A.destroy();
         if(free_amg)
