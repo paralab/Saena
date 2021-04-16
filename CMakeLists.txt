@@ -132,6 +132,16 @@ set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
         )
 
 # -----------------------------------------------------------------------
+# Lambda Lanczos: eigensolver
+# https://github.com/mrcdr/lambda-lanczos/
+
+set(LAMLAN_DIR ${EXT_DIR}/lambda_lanczos)
+include_directories(${LAMLAN_DIR}/include/lambda_lanczos)
+set(SAENA_HEADER_FILES ${SAENA_HEADER_FILES}
+        ${SAENA_INCLUDE_DIR}/lamlan_saena.h
+        )
+
+# -----------------------------------------------------------------------
 # usort: to sort elements in parallel
 
 set(USORT_DIR ${EXT_DIR}/usort)

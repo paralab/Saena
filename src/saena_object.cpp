@@ -5,6 +5,7 @@
 #include "grid.h"
 #include "aux_functions.h"
 #include "ietl_saena.h"
+#include "lamlan_saena.h"
 
 #include <random>
 
@@ -560,6 +561,7 @@ int saena_object::find_eig(saena_matrix& A) const{
 
 //    find_eig_Elemental(A);
     find_eig_ietl(A);
+//    find_eig_lamlan(A);
 
     if(!scale)
         A.scale_back_matrix(false);

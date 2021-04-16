@@ -1,0 +1,55 @@
+# helpful link:
+#https://stackoverflow.com/questions/27644586/how-to-set-up-travis-ci-with-multiple-languages
+
+language: cpp
+os: linux
+dist: bionic # "dist" specifies the operating system ("bionic"=ubuntu18.04)
+jobs:
+  include:
+    - compiler: gcc
+      addons:
+        apt:
+          packages:
+            - g++
+            - cmake
+            - cmake-data
+            - libgtest-dev
+            - libeigen3-dev
+            - lcov
+            - valgrind
+      env: COMPILER=g++
+      after_success:
+        # Report code-coverage test results to codecov.io
+        - bash <(curl -s https://codecov.io/bash)
+
+    - compiler: clang
+      addons:
+        apt:
+          packages:
+            - cmake
+            - cmake-data
+            - libgtest-dev
+            - libeigen3-dev
+            - lcov
+            - valgrind
+      env: COMPILER=clang++
+
+#install:
+  # Optional: To test the output of your program after running, you can use
+  # - git clone https://github.com/kward/shunit2 shunit2
+
+before_script:
+  - mkdir -p gtest_build
+  - pushd gtest_build
+  - cmake -DCMAKE_CXX_COMPILER=$COMPILER /usr/src/gtest/
+  - make
+  - sudo cp *.a /usr/lib
+  - popd
+
+script:
+  - mkdir -p build
+  - cd build
+  - cmake -DCMAKE_CXX_COMPILER=$COMPILER -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" ..
+  - make lambda_lanczos_test VERBOSE=1
+  - ctest --verbose
+  - valgrind --leak-check=full --error-exitcode=1 ctest --verbose
