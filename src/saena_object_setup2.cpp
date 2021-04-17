@@ -152,7 +152,11 @@ int saena_object::compute_coarsen(Grid *grid) {
     // form Ac
     // *******************************************************
 
-    filter(Ac->entry, Ac->M, Ac->split[rank]);
+    if(Ac->active_minor) {
+        int rank_minor = 0;
+        MPI_Comm_rank(Ac->comm, &rank_minor);
+        filter(Ac->entry, Ac->M, Ac->split[rank_minor]);
+    }
 
     if (doSparsify) {
 
