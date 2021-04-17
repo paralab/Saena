@@ -1144,11 +1144,18 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
     KSPSetOperators(ksp, A, A);
     KSPSetFromOptions(ksp);
 //    if (!rank) std::cout << "ksp setup" << std::endl;
+
+    double t1 = omp_get_wtime();
+
     string event = petsc_solver + " setup";
     PetscLogEventRegister(event.c_str(),0,&SETUP);
     PetscLogEventBegin(SETUP,0,0,0,0);
     KSPSetUp(ksp);
     PetscLogEventEnd(SETUP,0,0,0,0);
+
+    double t2 = omp_get_wtime();
+
+    double t3 = omp_get_wtime();
 
 //    if (!rank) std::cout << "ksp solve" << std::endl;
     event = petsc_solver + " solve";
@@ -1156,6 +1163,8 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
     PetscLogEventBegin(SOLVE,0,0,0,0);
     KSPSolve(ksp,b,x);
     PetscLogEventEnd(SOLVE,0,0,0,0);
+
+    double t4 = omp_get_wtime();
 
 //    VecGetArray(x, &array);
 //    for (int i = 0; i < sz; ++i)
@@ -1168,6 +1177,10 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
 //    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Norm of error %g, iterations %D\n",(double)norm,its);
 
     KSPDestroy(&ksp);
+
+    print_time(t1, t2, "PETSc Setup:", MPI_COMM_WORLD);
+    print_time(t3, t4, "PETSc Solve:", MPI_COMM_WORLD);
+
     return 0;
 }
 
