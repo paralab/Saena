@@ -56,10 +56,9 @@ int saena_matrix::decide_shrinking(std::vector<double> &prev_time){
         if(cpu_shrink_thre2 <= 1) cpu_shrink_thre2 = 2; // shrink at least by a factor of 2
         if(cpu_shrink_thre2 > 4) cpu_shrink_thre2 = 4;  // shrink at most by a factor of 4
 
-//        int rank = 0, nprocs = 0;
-//        MPI_Comm_size(comm, &nprocs);
-//        MPI_Comm_rank(comm, &rank);
-//        if(!rank) printf("cpu_shrink_thre2 = %d\n", cpu_shrink_thre2);
+        int rank = 0;
+        MPI_Comm_rank(comm, &rank);
+        if(!rank) printf("shrink factor   = %d\n", cpu_shrink_thre2);
     }
 
     return 0;
