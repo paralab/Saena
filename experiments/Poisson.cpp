@@ -137,6 +137,7 @@ int main(int argc, char* argv[]){
     // 3- read the options from an xml file
     if(argc == 3){
         const string optsfile(argv[2]);
+        if(!rank) printf("options file: %s\n", optsfile.c_str());
         opts.set_from_file(optsfile);
         A.set_eig(optsfile); // set eigenvalue from the options file, if it is provided.
     }

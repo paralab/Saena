@@ -54,6 +54,7 @@ int main(int argc, char* argv[]){
 
     saena::matrix A(comm);
     char* file_name(argv[1]);
+    if(!rank) printf("matrix file:  %s\n", file_name);
     A.set_remove_boundary(!use_petsc); // if using petsc dont remove boundary, otherwise remove
     A.read_file(file_name);
     A.assemble(scale);
@@ -83,6 +84,7 @@ int main(int argc, char* argv[]){
     auto *rhs_std = saena_aligned_alloc<value_t>(orig_sz);
     assert(rhs_std);
     char* Vname(argv[2]);
+    if(!rank) printf("rhs file:     %s\n", Vname);
     read_from_file_rhs(rhs_std, orig_split, Vname, comm);
     //-------------------
 
@@ -123,6 +125,7 @@ int main(int argc, char* argv[]){
     // 3- read the options from an xml file
     if(argc == 4){
         const string optsfile(argv[3]);
+        if(!rank) printf("options file: %s\n", optsfile.c_str());
         opts.set_from_file(optsfile);
         A.set_eig(optsfile); // set eigenvalue from the options file, if it is provided.
     }
