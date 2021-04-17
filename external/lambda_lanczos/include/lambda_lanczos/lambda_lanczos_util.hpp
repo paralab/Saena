@@ -39,6 +39,32 @@ template <typename T>
 using real_t = typename realTypeMap<T>::type;
 
 
+template<typename T>
+MPI_Datatype get_type()
+{
+    char name = typeid(T).name()[0];
+    switch (name) {
+        case 'i':
+            return MPI_INT;
+        case 'f':
+            return MPI_FLOAT;
+        case 'j':
+            return MPI_UNSIGNED;
+        case 'd':
+            return MPI_DOUBLE;
+        case 'c':
+            return MPI_CHAR;
+        case 's':
+            return MPI_SHORT;
+        case 'l':
+            return MPI_LONG;
+        case 'm':
+            return MPI_UNSIGNED_LONG;
+        case 'b':
+            return MPI_BYTE;
+    }
+}
+
 /**
  * @brief Template class to implement positive-definite product
  *
@@ -72,21 +98,44 @@ public:
  *
  */
 template <typename T>
-inline T inner_prod(const std::vector<T>& v1, const std::vector<T>& v2) {
-  assert(v1.size() == v2.size());
-  return std::inner_product(std::begin(v1), std::end(v1),
-			    std::begin(v2), T(),
-			    [](T a, T b) -> T { return a+b; },
-			    ConjugateProduct<T>::prod);
+inline T inner_prod(const std::vector<T>& v1, const std::vector<T>& v2, MPI_Comm comm) {
+    assert(v1.size() == v2.size());
+//    T dot_l = (T)std::inner_product(std::begin(v1), std::end(v1),
+//                           std::begin(v2), T(),
+//                           [](T a, T b) -> T { return a+b; },
+//                           ConjugateProduct<T>::prod);
+
+//    MPI_Datatype mpit = MPI_DOUBLE;
+//    if(sizeof(T) == sizeof(float)){
+//        mpit = MPI_FLOAT;
+//    }else if(sizeof(T) == sizeof(double)){
+//        mpit = MPI_DOUBLE;
+//    }
+
+//    auto dot = T();
+//    MPI_Allreduce(&dot_l, &dot, 1, par::Mpi_datatype<T>::value(), MPI_SUM, comm);
+//    MPI_Allreduce(&dot_l, &dot, 1, get_type<T>(), MPI_SUM, comm);
+
+//return std::inner_product(std::begin(v1), std::end(v1),
+//    std::begin(v2), T(),
+//    [](T a, T b) -> T { return a+b; },
+//    ConjugateProduct<T>::prod);
   // T() means zero value of type T
+
+    const index_t sz = v1.size();
+    T dot_l = 0.0, dot = 0.0;
+    for(index_t i = 0; i < sz; ++i)
+        dot_l += v1[i] * v2[i];
+    MPI_Allreduce(&dot_l, &dot, 1, par::Mpi_datatype<T>::value(), MPI_SUM, comm);
+    return dot;
 }
 
 /**
  * @brief Returns Euclidean norm of given vector.
  */
 template <typename T>
-inline real_t<T> norm(const std::vector<T>& vec) {
-  return std::sqrt(std::real(inner_prod(vec, vec)));
+inline real_t<T> norm(const std::vector<T>& vec, const MPI_Comm &comm) {
+  return std::sqrt(std::real(inner_prod(vec, vec, comm)));
   // The norm of any complex vector <v|v> is real by definition.
 }
 
@@ -104,8 +153,8 @@ inline void scalar_mul(T1 a, std::vector<T2>& vec) {
  * @brief Normalizes given vector.
  */
 template <typename T>
-inline void normalize(std::vector<T>& vec) {
-  scalar_mul(1.0/norm(vec), vec);
+inline void normalize(std::vector<T>& vec, const MPI_Comm &comm) {
+  scalar_mul(1.0/norm(vec, comm), vec);
 }
 
 
@@ -113,14 +162,22 @@ inline void normalize(std::vector<T>& vec) {
  * @brief Returns 1-norm of given vector.
  */
 template <typename T>
-inline real_t<T> l1_norm(const std::vector<T>& vec) {
-  real_t<T> norm = real_t<T>(); // Zero initialization
+inline real_t<T> l1_norm(const std::vector<T>& vec, const MPI_Comm &comm) {
+//    real_t<T> norm_l = real_t<T>(); // Zero initialization
+//
+//    for(const T& element : vec) {
+//        norm_l += std::abs(element);
+//    }
+//
+//    real_t<T> norm = real_t<T>(); // Zero initialization
+//    MPI_Allreduce(&norm_l, &norm, 1, par::Mpi_datatype<double>::value(), MPI_SUM, comm);
 
-  for(const T& element : vec) {
-    norm += std::abs(element);
-  }
+    real_t<T> norm = real_t<T>(); // Zero initialization
+    for(const T& element : vec) {
+        norm += std::abs(element);
+    }
 
-  return norm;
+    return norm;
 }
 
 
@@ -130,11 +187,11 @@ inline real_t<T> l1_norm(const std::vector<T>& vec) {
  * Vectors in `u` must be normalized, but uorth doesn't have to be.
  */
 template <typename T>
-inline void schmidt_orth(std::vector<T>& uorth, const std::vector<std::vector<T>>& u) {
+inline void schmidt_orth(std::vector<T>& uorth, const std::vector<std::vector<T>>& u, const MPI_Comm &comm) {
   const auto n = uorth.size();
 
   for(const auto& uk : u) {
-    T innprod = util::inner_prod(uk, uorth);
+    T innprod = util::inner_prod(uk, uorth, comm);
 
     for(size_t i = 0;i < n;i++) {
       uorth[i] -= innprod * uk[i];

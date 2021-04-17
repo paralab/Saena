@@ -30,39 +30,34 @@ int find_eig_lamlan(saena_matrix &A){
 
 //    A.print_entry(-1);
 //    A.print_info(-1);
-
-//    MPI_Barrier(A.comm);
-//    for(unsigned long i = 0; i < A.nnz_l_local; i++) {
-//        if(rank==0) printf("%lu \t%u \t%f \tietl, local \n", i, A.row_local[i], (A.val_local[i]*A.inv_diag[A.row_local[i]] - A.entry[i].val * A.inv_diag[A.entry[i].row - A.split[rank]]));
-//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, local \n", i, A.row_local[i]+A.split[rank], A.val_local[i], A.inv_diag[A.row_local[i]], A.val_local[i]*A.inv_diag[A.row_local[i]]);
-//        A.val_local[i] *= A.inv_diag[A.row_local[i]];
-//    }
-
-//    MPI_Barrier(A.comm);
-//    for(unsigned long i = 0; i < A.nnz_l_remote; i++) {
-//        if(rank==0) printf("%lu \t%u \t%f \t%f \t%f \tietl, remote \n", i, A.row_remote[i], A.val_remote[i], A.inv_diag[A.row_remote[i]], A.val_remote[i]*A.inv_diag[A.row_remote[i]]);
-//        A.val_remote[i] *= A.inv_diag[A.row_remote[i]];
-//    }
-//    MPI_Barrier(A.comm);
     }
 #endif
 
     // the matrix-vector multiplication routine
-    auto mv_mul = [&](const vector<double>& in, vector<double>& out) {
+    auto mv_mul = [&](const vector<value_t>& in, vector<value_t>& out) {
         A.matvec(&in[0], &out[0]);
 //        for(int i = 0;i < matrix.size();i++) {
 //            out[matrix[i].r] += matrix[i].value*in[matrix[i].c];
 //        }
     };
 
-    const index_t n = A.Mbig;
-    LambdaLanczos<double> engine(mv_mul, n, true); // true means to calculate the smallest eigenvalue.
-    double eigenvalue = 0.0;
-    vector<double> eigenvector(n);
+    const size_t n = A.M;
+//    if(!rank) printf("n = %ld\n", n);
+
+    // max_iteration is set to 20 in lambda_lanzcos.hpp
+    // eps (Convergence threshold) can be set in lambda_lanzcos.hpp
+    LambdaLanczos<value_t> engine(mv_mul, n, true, A.comm); // true means to calculate the smallest eigenvalue.
+    value_t eigenvalue = 0.0;
+
+    // computing the eigenvector is commented out. Uncomment it at the end of run() if needed.
+    vector<value_t> eigenvector;
+
     int itern = engine.run(eigenvalue, eigenvector);
 
-    cout << "Iteration count: " << itern << endl;
-    cout << "Eigen value: " << setprecision(12) << eigenvalue << endl;
+    A.eig_max_of_invdiagXA = eigenvalue;
+
+#ifdef __DEBUG1__
+//    if(!rank) printf("Iteration count = %d, Eigenvalue = %f\n", itern, eigenvalue);
 
 //    cout << "Eigen vector: ";
 //    for(int i = 0;i < n;i++) {
@@ -70,9 +65,6 @@ int find_eig_lamlan(saena_matrix &A){
 //    }
 //    cout << endl;
 
-    A.eig_max_of_invdiagXA = eigenvalue;
-
-#ifdef __DEBUG1__
     if(verbose_eig) {
 //        if(rank==0) printf("the biggest eigenvalue of D^{-1}*A is %f (IETL) \n", A.eig_max_of_invdiagXA);
         MPI_Barrier(comm);

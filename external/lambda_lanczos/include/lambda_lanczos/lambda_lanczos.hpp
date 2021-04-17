@@ -92,7 +92,7 @@ public:
   /** @brief Dimension of the matrix to be diagonalized. */
   size_t matrix_size;
   /** @brief Iteration limit of Lanczos algorithm, set to `matrix_size` automatically. */
-  size_t max_iteration;
+  size_t max_iteration = 20;
   /** @brief Convergence threshold of Lanczos iteration.
    *
    * `eps` = 1e-12 means that the eigenvalue will be calculated with 12 digits of precision.
@@ -104,7 +104,8 @@ public:
    * | double                             | 8 bytes            | 1e-12   |
    * | long double                        | 16 bytes           | 1e-19   |
    */
-  real_t<T> eps = util::minimum_effective_decimal<real_t<T>>() * 1e3;
+//  real_t<T> eps = util::minimum_effective_decimal<real_t<T>>() * 1e3;
+  real_t<T> eps = 1e-8;
 
   /** @brief true to calculate maximum eigenvalue, false to calculate minimum one.*/
   bool find_maximum;
@@ -135,6 +136,12 @@ public:
    */
   size_t initial_vector_size = 200;
 
+    /** @brief MPI Communicator
+   *
+   * This variable specifies the MPI Communicator, when the funcions used in parallel using MPI.
+   */
+   MPI_Comm comm = MPI_COMM_WORLD;
+
   /**
     * @brief Constructs Lanczos calculation engine.
     *
@@ -144,8 +151,9 @@ public:
     * @param find_maximum specifies which of the minimum or maximum eigenvalue to be calculated.
     * By default, `find_maximum=false` so the library will calculates the minimum one.
     */
-  LambdaLanczos(std::function<void(const std::vector<T>&, std::vector<T>&)> mv_mul, size_t matrix_size, bool find_maximum = false) :
-    mv_mul(mv_mul), matrix_size(matrix_size), max_iteration(matrix_size), find_maximum(find_maximum) {}
+  LambdaLanczos(std::function<void(const std::vector<T>&, std::vector<T>&)> mv_mul, size_t matrix_size,
+                bool find_maximum = false, MPI_Comm comm_ = MPI_COMM_WORLD) :
+    mv_mul(mv_mul), matrix_size(matrix_size), find_maximum(find_maximum), comm(comm_) {}
 
   /**
    * @brief Executes Lanczos algorithm and stores the result into reference variables passed as arguments.
@@ -175,7 +183,7 @@ public:
 
     std::vector<T> uk(n);
     this->init_vector(uk);
-    util::normalize(uk);
+    util::normalize(uk, comm);
     u.push_back(uk);
 
     real_t<T> ev = 0.0; // Calculated eigenvalue (the initial value will never be used)
@@ -190,7 +198,7 @@ public:
         vk[i] += uk[i]*this->eigenvalue_offset;
       }
 
-      alphak = std::real(util::inner_prod(u.back(), vk));
+      alphak = std::real(util::inner_prod(u.back(), vk, comm));
 
       /* The inner product <uk|vk> is real.
        * Proof:
@@ -209,9 +217,9 @@ public:
         uk[i] = vk[i] - betak*u[k-1][i] - alphak*u[k][i];
       }
 
-      util::schmidt_orth(uk, u);
+      util::schmidt_orth(uk, u, comm);
 
-      betak = util::norm(uk);
+      betak = util::norm(uk, comm);
       beta.push_back(betak);
 
       ev = find_mth_eigenvalue(alpha, beta, this->find_maximum ? alpha.size()-2 : 0);
@@ -228,7 +236,7 @@ public:
         break;
       }
 
-      util::normalize(uk);
+      util::normalize(uk, comm);
       u.push_back(uk);
 
       if(std::abs(ev-pev) < std::min(std::abs(ev), std::abs(pev))*this->eps) {
@@ -241,6 +249,9 @@ public:
 
     eigvalue = ev - this->eigenvalue_offset;
 
+    // this part computes the eigenvector.
+    // the eigenvector is not needed for Saena.
+/*
     auto m = alpha.size();
     std::vector<T> cv(m+1);
     cv[0] = 0.0;
@@ -265,8 +276,8 @@ public:
       }
     }
 
-    util::normalize(eigvec);
-
+    util::normalize(eigvec, comm);
+*/
     return itern;
   }
 
@@ -330,8 +341,8 @@ private:
    */
   util::real_t<T> tridiagonal_eigen_limit(const std::vector<real_t<T>>& alpha,
                                           const std::vector<real_t<T>>& beta) const {
-    real_t<T> r = util::l1_norm(alpha);
-    r += 2*util::l1_norm(beta);
+    real_t<T> r = util::l1_norm(alpha, comm);
+    r += 2*util::l1_norm(beta, comm);
 
     return r;
   }
