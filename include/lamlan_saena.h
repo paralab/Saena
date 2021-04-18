@@ -54,7 +54,9 @@ int find_eig_lamlan(saena_matrix &A){
 
     int itern = engine.run(eigenvalue, eigenvector);
 
-    A.eig_max_of_invdiagXA = eigenvalue;
+    // NOTE: the computed eigenvalue slightly fluctuates in each execution. Since an upperbound is needed for Chebyshev,
+    // upscale it slightly.
+    A.eig_max_of_invdiagXA = 1.0001 * eigenvalue;
 
 #ifdef __DEBUG1__
 //    if(!rank) printf("Iteration count = %d, Eigenvalue = %f\n", itern, eigenvalue);
