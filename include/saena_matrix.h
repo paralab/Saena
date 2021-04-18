@@ -123,7 +123,7 @@ public:
     value_t *inv_diag      = nullptr;
     value_t *inv_diag_orig = nullptr;
 //    std::vector<value_t> inv_diag;
-    std::vector<value_t> inv_sq_diag;
+    std::vector<value_t> inv_sq_diag;       // D^{-1/2}
 //    std::vector<value_t> inv_diag_orig;
     std::vector<value_t> inv_sq_diag_orig;
 

@@ -920,6 +920,10 @@ int saena_matrix::set_off_on_diagonal(){
             val_local[i] = ent_loc_row[i].val;
         }
 
+//        print_array(row_local, nnzl, -1, "row_local", comm);
+//        print_array(col_local, nnzl, -1, "col_local", comm);
+//        print_array(val_local, nnzl, -1, "val_local", comm);
+
         ent_loc_row.clear();
         ent_loc_row.shrink_to_fit();
 
@@ -1334,7 +1338,7 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
 
 #pragma omp parallel for
     for(nnz_t i = 0; i < nnz_l_local; i++) {
-//        cout << i << "\t" << std::setprecision(16) << val_local[i] << "\t" << std::setprecision(16) << inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]] << endl;
+//        cout << i << "\t" << std::setprecision(16) << val_local[i] << "\t" << std::setprecision(16) << inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]] << endl;
 //        val_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag_p[col_local[i]]; //D^{-1/2} * A * D^{-1/2}
         val_local[i] *= inv_sq_diag[row_local[i]] * inv_sq_diag[col_local[i] - split[rank]]; //D^{-1/2} * A * D^{-1/2}
     }
@@ -1554,7 +1558,7 @@ int saena_matrix::inverse_diag() {
     double temp;
     inv_diag = saena_aligned_alloc<value_t>(M);
     fill(&inv_diag[0], &inv_diag[M], 0.0);
-    inv_sq_diag.assign(M, 0.0);
+    inv_sq_diag.assign(M, 0.0);     // D^{-1/2}
 
     value_t *inv_diag_p    = &inv_diag[0] - split[rank];
     value_t *inv_sq_diag_p = &inv_sq_diag[0] - split[rank];
@@ -1567,7 +1571,7 @@ int saena_matrix::inverse_diag() {
                 if ( !almost_zero(entry[i].val) ) {
                     temp = 1.0 / entry[i].val;
                     inv_diag_p[entry[i].row] = temp;
-                    inv_sq_diag_p[entry[i].row] = sqrt(temp);
+                    inv_sq_diag_p[entry[i].row] = sqrt(fabs(temp)); // TODO: should fabs be used here?
 //                    if (fabs(temp) > highest_diag_val) {
 //                        highest_diag_val = fabs(temp);
 //                    }
