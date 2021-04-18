@@ -166,6 +166,7 @@ int main(int argc, char* argv[]){
         solver.solve_pCG(u, &opts);
         for(int i = 1; i < warmup_iter; ++i)
             solver.solve_pCG(u, &opts, false);
+        saena_free(u);
     }
 
     t1 = omp_get_wtime();
@@ -197,6 +198,7 @@ int main(int argc, char* argv[]){
 
     // *************************** profile solve and matvecs ****************************
 
+    saena_free(u);
     solver.solve_pCG_profile(u, &opts);
 
     // profile matvec times on all multigrid levels
