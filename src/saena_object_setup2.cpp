@@ -860,10 +860,6 @@ void saena_object::filter(vector<cooEntry> &v, const index_t &sz, const index_t 
 
 //    printf("\nfilter next level: filter_it = %d,filter_start = %d\n", filter_it, filter_start);
 
-    filter_thre *= pow(10, filter_rate);
-    if(filter_thre > filter_max){
-        filter_thre = filter_max ;
-    }
     const double THRE = filter_thre;
 
     vector<value_t> add2diag(sz, 0.0); // add the removed entry's value to its diagonal entry
@@ -897,6 +893,7 @@ void saena_object::filter(vector<cooEntry> &v, const index_t &sz, const index_t 
     bool added = false;
     for(index_t i = 0; i < sz; ++i) {
         if(!check_diag[i]){
+//            printf("i = %d, ofst = %d\n", i, ofst);
             w.emplace_back(cooEntry(i + ofst, i + ofst, 1.0));
             added = true;
         }
@@ -909,6 +906,12 @@ void saena_object::filter(vector<cooEntry> &v, const index_t &sz, const index_t 
     }
 
     w.swap(v);
+
+    // update filter_thre for the next call
+    filter_thre *= pow(10, filter_rate);
+    if(filter_thre > filter_max){
+        filter_thre = filter_max ;
+    }
 }
 
 // from here: http://www.algolist.net/Algorithms/Sorting/Quicksort
