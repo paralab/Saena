@@ -880,7 +880,7 @@ void saena_object::filter(vector<cooEntry> &v, const index_t &sz, const index_t 
             a.val += add2diag_p[a.row];
             check_diag[a.row - ofst] = true;
 
-            if(almost_zero(fabs(a.val))){
+            if(almost_zero(a.val)){
                 a.val = 1.0;
 //                printf("Error: there is a zero diagonal element at row index %d: %e\n", a.row, a.val);
 //                MPI_Finalize();
