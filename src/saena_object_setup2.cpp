@@ -858,6 +858,10 @@ void saena_object::filter(vector<cooEntry> &v, const index_t &sz, const index_t 
         return;
     }
 
+    if(filter_thre > filter_max){
+        filter_thre = filter_max ;
+    }
+
 //    printf("\nfilter next level: filter_it = %d,filter_start = %d\n", filter_it, filter_start);
 
     const double THRE = filter_thre;
@@ -909,9 +913,6 @@ void saena_object::filter(vector<cooEntry> &v, const index_t &sz, const index_t 
 
     // update filter_thre for the next call
     filter_thre *= pow(10, filter_rate);
-    if(filter_thre > filter_max){
-        filter_thre = filter_max ;
-    }
 }
 
 // from here: http://www.algolist.net/Algorithms/Sorting/Quicksort

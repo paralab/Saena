@@ -192,15 +192,15 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
         bound_val = std::move(A->bound_val);
     }
 
-    if(verbose_setup) {
-        print_parameters(A);
-    }
-
     // check if the eigenvalue of the input matrix is not set in the options file, then compute it.
     if(smoother=="chebyshev"){
         if(almost_zero(A->get_eig()))
             find_eig(*A);
 //        if(!rank) cout << "eig = " << A->get_eig() << endl;
+    }
+
+    if(verbose_setup) {
+        print_parameters(A);
     }
 
 #ifdef __DEBUG1__
@@ -311,8 +311,12 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
             }
 
             if (verbose_setup) {
-                if (!rank_new)
+                if (!rank_new){
                     print_lev_info(grids[i + 1], grids[i].A->p_order);
+                    double fil_thr = filter_thre / pow(10, filter_rate);
+                    if(!rank && filter_it >= filter_start)
+                        printf("filter rate     = %e\n", fil_thr);
+                }
             }
 
             // write matrix to file
