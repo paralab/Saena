@@ -481,7 +481,7 @@ int prolong_matrix::openmp_setup() {
 }
 
 
-void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
+void prolong_matrix::matvec_sparse(const value_t *v, value_t *w) {
 
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
@@ -525,11 +525,11 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
 
 #pragma omp parallel
     {
-        value_t  tmp         = 0.0;
-        value_t* v_p         = &v[0] - splitNew[rank];
-        index_t* col_local_p = nullptr;
-        value_t* val_local_p = nullptr;
-        nnz_t    iter        = iter_local_array[omp_get_thread_num()];
+              value_t  tmp         = 0.0;
+        const value_t* v_p         = &v[0] - splitNew[rank];
+        const index_t* col_local_p = nullptr;
+        const value_t* val_local_p = nullptr;
+              nnz_t    iter        = iter_local_array[omp_get_thread_num()];
 //        nnz_t iter = 0;
 #pragma omp for
         for (index_t i = 0; i < sz; ++i) {
@@ -569,8 +569,8 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
 
 //    double t1rem = omp_get_wtime();
 
-    index_t* row_remote_p = nullptr;
-    value_t* val_remote_p = nullptr;
+    const index_t* row_remote_p = nullptr;
+    const value_t* val_remote_p = nullptr;
     nnz_t iter = 0;
     int recv_proc_idx = 0;
     for(int np = 0; np < numRecvProc; ++np){
@@ -580,8 +580,8 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
 //                              recv_proc_idx, recv_proc, np, numRecvProc, recvCount[recv_proc]);
 
         iter = nnzPerProcScan[recv_proc];
-        value_t *vecValues_p        = &vecValues[rdispls[recv_proc]];
-        auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
+        const value_t *vecValues_p        = &vecValues[rdispls[recv_proc]];
+        const auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
         for (index_t j = 0; j < recvCount[recv_proc]; ++j) {
 //            if(rank==1) printf("%u\n", nnzPerCol_remote_p[j]);
             row_remote_p = &row_remote[iter];
@@ -608,7 +608,7 @@ void prolong_matrix::matvec_sparse(value_t *v, value_t *w) {
 //    tcomm += (t2comm - t1comm) - (t2loc - t1loc) - (t2rem - t1rem);
 }
 
-void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
+void prolong_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
 
     int rank = 0;
     MPI_Comm_rank(comm, &rank);
@@ -650,11 +650,11 @@ void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
 
 #pragma omp parallel
     {
-        value_t  tmp         = 0.0;
-        value_t* v_p         = &v[0] - splitNew[rank];
-        index_t* col_local_p = nullptr;
-        value_t* val_local_p = nullptr;
-        nnz_t    iter        = iter_local_array[omp_get_thread_num()];
+              value_t  tmp         = 0.0;
+        const value_t* v_p         = &v[0] - splitNew[rank];
+        const index_t* col_local_p = nullptr;
+        const value_t* val_local_p = nullptr;
+              nnz_t    iter        = iter_local_array[omp_get_thread_num()];
 //        nnz_t iter = 0;
 #pragma omp for
         for (index_t i = 0; i < M; ++i) {
@@ -693,8 +693,8 @@ void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
 
 //    double t1rem = omp_get_wtime();
 
-    index_t* row_remote_p = nullptr;
-    value_t* val_remote_p = nullptr;
+    const index_t* row_remote_p = nullptr;
+    const value_t* val_remote_p = nullptr;
     nnz_t iter = 0;
     int recv_proc_idx = 0;
     for(int np = 0; np < numRecvProc; ++np){
@@ -704,8 +704,8 @@ void prolong_matrix::matvec_sparse_float(value_t *v, value_t *w) {
 //                              recv_proc_idx, recv_proc, np, numRecvProc, recvCount[recv_proc]);
 
         iter = nnzPerProcScan[recv_proc];
-        float   *vecValues_p        = &vecValues_f[rdispls[recv_proc]];
-        auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
+        const float   *vecValues_p        = &vecValues_f[rdispls[recv_proc]];
+        const auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
         for (index_t j = 0; j < recvCount[recv_proc]; ++j) {
 //            if(rank==1) printf("%u\n", nnzPerCol_remote_p[j]);
             row_remote_p = &row_remote[iter];

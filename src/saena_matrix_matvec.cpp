@@ -48,29 +48,29 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
 
 #pragma omp parallel
     {
-        value_t  tmp            = 0.0;
-        const value_t* v_p      = &v[0] - split[rank];
-        index_t* col_local_p    = nullptr;
-        value_t* values_local_p = nullptr;
-        nnz_t    iter           = iter_local_array[omp_get_thread_num()];
+              value_t  tmp         = 0.0;
+        const value_t* v_p         = &v[0] - split[rank];
+        const index_t* col_local_p = nullptr;
+        const value_t* val_local_p = nullptr;
+              nnz_t iter           = iter_local_array[omp_get_thread_num()];
 #pragma omp for
         for (index_t i = 0; i < sz; ++i) {
-            col_local_p    = &col_local[iter];
-            values_local_p = &val_local[iter];
+            col_local_p = &col_local[iter];
+            val_local_p = &val_local[iter];
             const index_t jend = nnzPerRow_local[i];
             tmp = 0.0;
 //#pragma omp simd reduction(+: tmp) aligned(v_p, col_local_p: ALIGN_SZ)
             for (index_t j = 0; j < jend; ++j) {
 //                if(rank==0) printf("%u \t%u \t%f \t%f \t%f \n", row_local[indicesP_local[iter]], col_local[indicesP_local[iter]], val_local[indicesP_local[iter]], v_p[col_local[indicesP_local[iter]]], val_local[indicesP_local[iter]] * v_p[col_local[indicesP_local[iter]]]);
-                tmp += values_local_p[j] * v_p[col_local_p[j]];
+                tmp += val_local_p[j] * v_p[col_local_p[j]];
             }
             w[i] += tmp;
             iter += jend;
         }
     }
 
-    index_t* row_remote_p = nullptr;
-    value_t* val_remote_p = nullptr;
+    const index_t* row_remote_p = nullptr;
+    const value_t* val_remote_p = nullptr;
     nnz_t iter = 0;
     int recv_proc_idx = 0;
     for(int np = 0; np < numRecvProc; ++np){
@@ -80,8 +80,8 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
 //                              recv_proc_idx, recv_proc, np, numRecvProc, recvCount[recv_proc]);
 
         iter = nnzPerProcScan[recv_proc];
-        value_t *vecValues_p        = &vecValues[rdispls[recv_proc]];
-        auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
+        const value_t *vecValues_p        = &vecValues[rdispls[recv_proc]];
+        const auto    *nnzPerCol_remote_p = &nnzPerCol_remote[rdispls[recv_proc]];
         for (index_t j = 0; j < recvCount[recv_proc]; ++j) {
 //            if(rank==1) printf("%u\n", nnzPerCol_remote_p[j]);
             row_remote_p = &row_remote[iter];
