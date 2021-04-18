@@ -1557,8 +1557,8 @@ int saena_matrix::inverse_diag() {
 
     double temp;
     inv_diag = saena_aligned_alloc<value_t>(M);
-    fill(&inv_diag[0], &inv_diag[M], 0.0);
-    inv_sq_diag.assign(M, 0.0);     // D^{-1/2}
+    fill(&inv_diag[0], &inv_diag[M], 1.0);
+    inv_sq_diag.assign(M, 1.0);     // D^{-1/2}
 
     value_t *inv_diag_p    = &inv_diag[0] - split[rank];
     value_t *inv_sq_diag_p = &inv_sq_diag[0] - split[rank];
@@ -1584,13 +1584,13 @@ int saena_matrix::inverse_diag() {
         }
     }
 
-    for(int i = 0; i < M; ++i){
-        if(almost_zero(inv_diag[i])){
-            printf("rank %d: zero diagonal at row %d: %f\n", rank, i, inv_diag[i]);
-            exit(EXIT_FAILURE);
-        }
+//    for(int i = 0; i < M; ++i){
+//        if(almost_zero(inv_diag[i])){
+//            printf("rank %d: zero inverse diagonal at row %d: %f\n", rank, i, inv_diag[i]);
+//            exit(EXIT_FAILURE);
+//        }
 //        ASSERT(inv_diag[i] != 0, "rank " << rank << ": " << i << "\t" << inv_diag[i]);
-    }
+//    }
 
 #ifdef __DEBUG1__
 //    MPI_Barrier(comm);
