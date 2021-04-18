@@ -315,7 +315,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
                     print_lev_info(grids[i + 1], grids[i].A->p_order);
                     double fil_thr = filter_thre / pow(10, filter_rate);
                     if(!rank && filter_it >= filter_start)
-                        printf("filter rate     = %e\n", fil_thr);
+                        printf("filter rate     = %.1e\n", fil_thr);
                 }
             }
 
