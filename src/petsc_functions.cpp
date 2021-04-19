@@ -165,7 +165,7 @@ int petsc_viewer(const Mat &A){
 
     int sz = 1800;
 
-    int m, n;
+    pindex_t m, n;
     MatGetSize(A, &m, &n);
 
     // set the window size
@@ -233,12 +233,12 @@ int petsc_prolong_matrix(const prolong_matrix *P, Mat &B){
     if(!rank) printf("petsc_prolong_matrix: P.split is cleared. This func. needs to be updated!\n");
     return 0;
 
-    std::vector<int> nnz_per_row_diag(P->M, 0);
+    std::vector<pindex_t> nnz_per_row_diag(P->M, 0);
     for(nnz_t i = 0; i < P->nnz_l_local; ++i){
         ++nnz_per_row_diag[P->row_local[i]];
     }
 
-    std::vector<int> nnz_per_row_off_diag(P->M, 0);
+    std::vector<pindex_t> nnz_per_row_off_diag(P->M, 0);
     for(nnz_t i = 0; i < P->nnz_l_remote; ++i){
         ++nnz_per_row_off_diag[P->row_remote[i]];
     }
@@ -347,12 +347,12 @@ int petsc_restrict_matrix(const restrict_matrix *R, Mat &B){
     if(!rank) printf("petsc_restrict_matrix: R.splitNew is cleared. This func. needs to be updated!\n");
     return 0;
 
-    std::vector<int> nnz_per_row_diag(R->M, 0);
+    std::vector<pindex_t> nnz_per_row_diag(R->M, 0);
     for(nnz_t i = 0; i < R->nnz_l_local; i++){
 //        nnz_per_row_diag[R->row_local[i]]++;
     }
 
-    std::vector<int> nnz_per_row_off_diag(R->M, 0);
+    std::vector<pindex_t> nnz_per_row_off_diag(R->M, 0);
     for(nnz_t i = 0; i < R->nnz_l_remote; i++){
         nnz_per_row_off_diag[R->row_remote[i]]++;
     }
@@ -386,16 +386,16 @@ int petsc_saena_matrix(const saena_matrix *A, Mat &B){
 
     MPI_Comm comm = A->comm;
     PETSC_COMM_WORLD = comm;
-    const int sz = A->M;
+    const pindex_t sz = A->M;
 
-    std::vector<int> nnz_per_row_diag(sz, 0);
+    std::vector<pindex_t> nnz_per_row_diag(sz, 0);
     const index_t iendl = A->nnz_l_local;
     for(nnz_t i = 0; i < iendl; ++i){
         ++nnz_per_row_diag[A->row_local[i]];
     }
 
     const index_t iendr = A->nnz_l_remote;
-    std::vector<int> nnz_per_row_off_diag(sz, 0);
+    std::vector<pindex_t> nnz_per_row_off_diag(sz, 0);
     for(nnz_t i = 0; i < iendr; ++i){
         ++nnz_per_row_off_diag[A->row_remote[i]];
     }

@@ -214,6 +214,11 @@ if(ENABLE_PETSC)
 
 #    add_compile_definitions(_USE_PETSC_) // requires newer cmake versions
     add_definitions(-D_USE_PETSC_)
+
+    option(PETSC_64BIT OFF)
+    if(PETSC_64BIT)
+        add_definitions(-D_PETSC_64BIT_)
+    endif(PETSC_64BIT)
 endif(ENABLE_PETSC)
 
 # -----------------------------------------------------------------------

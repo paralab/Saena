@@ -8,6 +8,13 @@
 #include "restrict_matrix.h"
 #include "prolong_matrix.h"
 
+// PETSc index type
+#ifdef _PETSC_64BIT_
+typedef long pindex_t;
+#else
+typedef int pindex_t;
+#endif
+
 PetscErrorCode ComputeMatrix(KSP ksp, Mat J, Mat jac, void *ctx);
 PetscErrorCode ComputeRHS(KSP ksp,Vec b,void *ctx);
 
