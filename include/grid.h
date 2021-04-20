@@ -51,8 +51,8 @@ public:
 
     value_t *res         = nullptr;
     value_t *uCorr       = nullptr;
-//    value_t *res_coarse  = nullptr;
-//    value_t *uCorrCoarse = nullptr;
+    value_t *res_coarse  = nullptr;
+    value_t *uCorrCoarse = nullptr;
 
     Grid() = default;
 
@@ -66,6 +66,8 @@ public:
         saena_free(u_old);
         saena_free(res);
         saena_free(uCorr);
+        saena_free(res_coarse);
+        saena_free(uCorrCoarse);
     }
 
     void repart_u_prepare();
