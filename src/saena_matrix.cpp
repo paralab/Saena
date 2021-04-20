@@ -1081,11 +1081,11 @@ void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const va
 
     const double alpha = 0.13 * eig_max_of_invdiagXA; // homg: 0.25 * eig_max
     const double beta  = eig_max_of_invdiagXA;
-    const double delta = (beta - alpha) / 2;
-    const double theta = (beta + alpha) / 2;
+    const double delta = (beta - alpha) / 2.0;
+    const double theta = (beta + alpha) / 2.0;
     const double s1    = theta / delta;
-    const double twos1 = 2 * s1;     // to avoid the multiplication in the "for" loop.
-          double rhok  = 1 / s1;
+    const double twos1 = 2.0 * s1;     // to avoid the multiplication in the "for" loop.
+          double rhok  = 1.0 / s1;
           double rhokp1 = 0.0, two_rhokp1 = 0.0, d1 = 0.0, d2 = 0.0;
 
     value_t *res = temp1;
@@ -1094,7 +1094,7 @@ void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const va
 
     // first loop
 //    residual_negative(&u[0], &rhs[0], &res[0]);
-    residual_multiply(&u[0], &rhs[0], d, inv_diag_p, 1 / theta);
+    residual_multiply(&u[0], &rhs[0], d, inv_diag_p, 1.0 / theta);
 
     const index_t sz = M;
 //    #pragma omp parallel for simd aligned(inv_diag_p, d, res, u: ALIGN_SZ)
@@ -1107,8 +1107,8 @@ void saena_matrix::chebyshev(const int &iter, value_t * __restrict__ u, const va
     }
 
     for(int i = 1; i < iter; ++i){
-        rhokp1 = 1 / (twos1 - rhok);
-        two_rhokp1 = 2 * rhokp1;
+        rhokp1 = 1.0 / (twos1 - rhok);
+        two_rhokp1 = 2.0 * rhokp1;
         d1     = rhokp1 * rhok;
         d2     = two_rhokp1 / delta;
         rhok   = rhokp1;
