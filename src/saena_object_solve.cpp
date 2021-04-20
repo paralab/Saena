@@ -121,7 +121,12 @@ int saena_object::setup_SuperLU() {
 //        int *colind;      pointer to array of column indices of the nonzeros
 //    } NRformat_loc;
 
-//    saena_matrix *A_coarsest = &grids.back().Ac;
+    if(A_coarsest->Mbig > 50000){
+        printf("The matrix size (%d) is too large for SuperLU!"
+               "If you still want to execute the code, comment out the first line in"
+               "saena_object::setup_SuperLU()\n", A_coarsest->Mbig );
+        return 1;
+    }
 
 //    MPI_Barrier(A_coarsest->comm);
 //    printf("A_coarsest->print_entry\n");

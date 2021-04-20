@@ -380,7 +380,12 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
 
     if(grids.back().active) {
         A_coarsest = grids.back().A;
-        setup_SuperLU();
+        int superlu_setup = setup_SuperLU();
+        if(superlu_setup == 1){
+            destroy();
+            grids.begin()->A->destroy();
+            exit(EXIT_FAILURE);
+        }
     }
 
 #ifdef __DEBUG1__
