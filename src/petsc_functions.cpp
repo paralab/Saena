@@ -1145,6 +1145,7 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
     KSPSetFromOptions(ksp);
 //    if (!rank) std::cout << "ksp setup" << std::endl;
 
+    MPI_Barrier(PETSC_COMM_WORLD);
     double t1 = omp_get_wtime();
 
     string event = petsc_solver + " setup";
@@ -1155,6 +1156,7 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
 
     double t2 = omp_get_wtime();
 
+    MPI_Barrier(PETSC_COMM_WORLD);
     double t3 = omp_get_wtime();
 
 //    if (!rank) std::cout << "ksp solve" << std::endl;

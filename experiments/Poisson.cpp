@@ -63,6 +63,7 @@ int main(int argc, char* argv[]){
 //    }
 
     // timing the matrix setup phase
+    MPI_Barrier(comm);
     double t1 = omp_get_wtime();
 
     saena::matrix A(comm);
@@ -142,6 +143,7 @@ int main(int argc, char* argv[]){
         A.set_eig(optsfile); // set eigenvalue from the options file, if it is provided.
     }
 
+    MPI_Barrier(comm);
     t1 = omp_get_wtime();
 
     bool free_amg = false;
@@ -180,6 +182,7 @@ int main(int argc, char* argv[]){
             solver.solve_pCG(u, &opts, false);
     }
 
+    MPI_Barrier(comm);
     t1 = omp_get_wtime();
 
     // solve the system using AMG as the solver
