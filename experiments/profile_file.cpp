@@ -108,7 +108,7 @@ int main(int argc, char* argv[]){
 //    std::vector<double> u;
     value_t *u = nullptr;
 
-    // *************************** AMG - Setup ****************************
+    // *************************** Options ****************************
     // There are 3 ways to set options:
 
     // 1- set them manually
@@ -130,6 +130,21 @@ int main(int argc, char* argv[]){
         A.set_eig(optsfile); // set eigenvalue from the options file, if it is provided.
     }
 
+    // *************************** Run PETSc ****************************
+    // run PETSc if it is set in the options file
+
+    if(use_petsc){
+        saena_matrix *AA = A.get_internal_matrix();
+        if(!rank) printf("Matrix: size = %d, nnz = %ld, solver = %s\n", AA->Mbig, AA->nnz_g, opts.get_petsc_solver().c_str());
+        petsc_solve(AA, rhs_std, u, opts.get_tol(), opts.get_petsc_solver());
+        saena_free(rhs_std);
+        saena_free(u);
+        MPI_Finalize();
+        return 0;
+    }
+
+    // *************************** AMG - Setup ****************************
+
     MPI_Barrier(comm);
     t1 = omp_get_wtime();
 
@@ -147,17 +162,6 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
-
-    if(use_petsc){
-        solver.solve_petsc(u, &opts);
-        A.destroy();
-        if(free_amg)
-            solver.destroy();
-        saena_free(rhs_std);
-        saena_free(u);
-        MPI_Finalize();
-        return 0;
-    }
 
     int warmup_iter = 5;
     int solve_iter  = 10;
