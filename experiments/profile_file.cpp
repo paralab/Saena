@@ -31,10 +31,12 @@ int main(int argc, char* argv[]){
     // set the number of OpenMP threads at run-time
 //    omp_set_num_threads(1);
 
-    // *************************** set the scaling factor ****************************
+    // *************************** basic options ****************************
 
+    // set the scaling factor
     bool scale = false;
 
+    // check if petsc is set in the options file
     bool use_petsc = false;
     {
         saena::options opts_tmp;
@@ -42,7 +44,12 @@ int main(int argc, char* argv[]){
             const string optsfile(argv[3]);
             opts_tmp.set_from_file(optsfile);
             if (!opts_tmp.get_petsc_solver().empty()) {
+#ifdef _USE_PETSC_
                 use_petsc = true;
+#else
+                if(!rank) cout << "PETSc should be enabled in Saena's cmake to be able to call solve_petsc() function!" << endl;
+                return 1;
+#endif
             }
         }
     }
@@ -134,6 +141,7 @@ int main(int argc, char* argv[]){
     // run PETSc if it is set in the options file
 
     if(use_petsc){
+#ifdef _USE_PETSC_
         saena_matrix *AA = A.get_internal_matrix();
         if(!rank) printf("Matrix: size = %d, nnz = %ld, solver = %s\n", AA->Mbig, AA->nnz_g, opts.get_petsc_solver().c_str());
         petsc_solve(AA, rhs_std, u, opts.get_tol(), opts.get_petsc_solver());
@@ -141,6 +149,7 @@ int main(int argc, char* argv[]){
         saena_free(u);
         MPI_Finalize();
         return 0;
+#endif
     }
 
     // *************************** AMG - Setup ****************************
