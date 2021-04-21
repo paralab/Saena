@@ -157,6 +157,11 @@ int main(int argc, char* argv[]){
 #ifdef _USE_PETSC_
         saena_matrix *AA = A.get_internal_matrix();
         if(!rank) printf("Matrix: size = %d, nnz = %ld, solver = %s\n", AA->Mbig, AA->nnz_g, opts.get_petsc_solver().c_str());
+
+        // repart rhs based on the matrix's partition
+        repart_vector(rhs_std, orig_sz, AA->split, comm);
+//        print_array(rhss, rhs.get_internal_vector()->get_size(), -1, "rhss", comm);
+
         petsc_solve(AA, rhs_std, u, opts.get_tol(), opts.get_petsc_solver());
         saena_free(rhs_std);
         saena_free(u);
