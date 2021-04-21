@@ -41,8 +41,8 @@ int main(int argc, char* argv[]){
     bool use_petsc = false;
     {
         saena::options opts_tmp;
-        if (argc == 4) {
-            const string optsfile(argv[3]);
+        if (argc == 3) {
+            const string optsfile(argv[2]);
             opts_tmp.set_from_file(optsfile);
             if (!opts_tmp.get_petsc_solver().empty()) {
 #ifdef _USE_PETSC_

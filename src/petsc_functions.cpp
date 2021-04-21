@@ -1501,7 +1501,7 @@ string return_petsc_opts(const string &petsc_solver){
                " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
                " -pc_gamg_threshold 0.01 -pc_gamg_sym_graph false -pc_gamg_square_graph 0 -pc_gamg_coarse_eq_limit 100"
                " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500"
-               " -ksp_converged_reason -ksp_view -log_view";
+               " -ksp_converged_reason";
     } else if(petsc_solver == "ml"){
         opts = "-ksp_type cg -pc_type ml"
                " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
@@ -1513,7 +1513,7 @@ string return_petsc_opts(const string &petsc_solver){
         opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg"
                " -pc_hypre_boomeramg_relax_type_all Chebyshev -pc_hypre_boomeramg_grid_sweeps_all 3"
                " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500"
-               " -ksp_converged_reason -ksp_view -log_view";
+               " -ksp_converged_reason";
 //               " -pc_hypre_boomeramg_strong_threshold 0.25 -pc_hypre_boomeramg_coarsen_type Falgout"
 //               " -pc_hypre_boomeramg_max_levels 6"
 //               " -pc_hypre_boomeramg_print_statistics"
