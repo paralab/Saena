@@ -1157,15 +1157,19 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
 
     double t2 = omp_get_wtime();
 
-    MPI_Barrier(PETSC_COMM_WORLD);
-    double t3 = omp_get_wtime();
-
 //    if (!rank) std::cout << "ksp solve" << std::endl;
     event = petsc_solver + " solve";
     PetscLogEventRegister(event.c_str(),0,&SOLVE);
-    PetscLogEventBegin(SOLVE,0,0,0,0);
-    KSPSolve(ksp,b,x);
-    PetscLogEventEnd(SOLVE,0,0,0,0);
+    const int solve_iter = 10;
+
+    MPI_Barrier(PETSC_COMM_WORLD);
+    double t3 = omp_get_wtime();
+
+    for(int i = 0; i < solve_iter; ++i){
+        PetscLogEventBegin(SOLVE,0,0,0,0);
+        KSPSolve(ksp,b,x);
+        PetscLogEventEnd(SOLVE,0,0,0,0);
+    }
 
     double t4 = omp_get_wtime();
 
@@ -1182,8 +1186,8 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
     KSPDestroy(&ksp);
 
     print_time(t1, t2, "PETSc Setup:", MPI_COMM_WORLD);
-    print_time(t3, t4, "PETSc Solve:", MPI_COMM_WORLD);
-
+    print_time(t3 / solve_iter, t4 / solve_iter, "PETSc Solve:", MPI_COMM_WORLD);
+    PetscLogView(PETSC_VIEWER_STDOUT_WORLD);
     return 0;
 }
 
@@ -1503,7 +1507,7 @@ string return_petsc_opts(const string &petsc_solver){
                " -mg_levels_ksp_type chebyshev -mg_levels_pc_type jacobi -mg_levels_ksp_max_it 3"
                " -pc_ml_maxCoarseSize 100 -pc_ml_CoarsenScheme MIS"
                " -ksp_monitor_true_residual -ksp_norm_type unpreconditioned -ksp_max_it 500"
-               " -ksp_converged_reason -ksp_view -log_view";
+               " -ksp_converged_reason";
 //               " -pc_ml_maxNlevels 10 -pc_ml_Threshold 0.0"
     } else if(petsc_solver == "boomerAMG"){
         opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg"
