@@ -798,6 +798,11 @@ void saena_object::solve_coarsest_SuperLU(saena_matrix *A, value_t *&u, value_t 
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
 
+    if(!superlu_allocated){
+        if(!rank) printf("Error: SuperLU is not setup!\n");
+        exit(EXIT_FAILURE);
+    }
+
 #ifdef __DEBUG1__
     if(verbose_solve_coarse) {
         MPI_Barrier(comm);
