@@ -484,3 +484,148 @@ int read_from_file_rhs(value_t *v, const std::vector<index_t>& split, char *file
 
     return 0;
 }
+
+int repart_vector(value_t *&v, index_t &sz, vector<index_t> &split, MPI_Comm comm){
+    // v: the vector to be repartitioned
+    // split: the desired repartition
+
+    int rank = 0, nprocs = 0;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &nprocs);
+
+    if(nprocs == 1){
+        return 0;
+    }
+
+    bool verbose_repart_v = false;
+
+    // ************** set variables **************
+
+//    print_vector(split, rank_v, "split", comm);
+//    print_vector(v, -1, "v", comm);
+
+    // ************** repartition v, based on A.split **************
+
+    std::vector<index_t> split_init(nprocs + 1);
+    MPI_Allgather(&sz, 1, par::Mpi_datatype<index_t>::value(), &split_init[1], 1, par::Mpi_datatype<index_t>::value(), comm);
+
+    split_init[0] = 0;
+    for(int i = 1; i < nprocs+1; i++)
+        split_init[i] += split_init[i - 1];
+
+    index_t start = 0, end = 0, start_proc = 0, end_proc = 0;
+    start = split[rank];
+    end   = split[rank+1];
+    start_proc = lower_bound2(&*split_init.begin(), &*split_init.end(), start);
+    end_proc   = lower_bound2(&*split_init.begin(), &*split_init.end(), end);
+    if(split_init[rank + 1] == split[rank + 1])
+        end_proc--;
+
+//    if(rank == rank_v) printf("\nstart_proc = %u, end_proc = %u \n", start_proc, end_proc);
+    assert(start_proc <= end_proc);
+
+    std::vector<int> rcount(nprocs, 0);
+    std::vector<int> scount(nprocs, 0);
+    std::vector<int> rdispls(nprocs);
+    std::vector<int> sdispls(nprocs);
+
+    if(start_proc < end_proc){
+//        if(rank==1) printf("start_proc = %u, end_proc = %u\n", start_proc, end_proc);
+//        if(rank==1) printf("split_init[start_proc+1] = %u, split[rank] = %u\n", split_init[start_proc+1], split[rank]);
+        if(start_proc < nprocs)
+            rcount[start_proc] = split_init[start_proc + 1] - split[rank];
+        if(end_proc < nprocs)
+            rcount[end_proc]   = split[rank+1] - split_init[end_proc];
+
+        const int max_proc = min(nprocs, end_proc);
+        for(int i = start_proc+1; i < max_proc; i++){
+//            if(rank==ran) printf("split_init[i+1] = %lu, split_init[i] = %lu\n", split_init[i+1], split_init[i]);
+            rcount[i] = split_init[i + 1] - split_init[i];
+        }
+
+    }else if(start_proc == end_proc){
+//        grids[0].rcount[start_proc] = split[start_proc + 1] - split[start_proc];
+        if (start_proc < nprocs)
+            rcount[start_proc] = split[rank + 1] - split[rank];
+    }
+
+#ifdef __DEBUG1__
+//    print_vector(grids[0].rcount, -1, "grids[0].rcount", comm);
+//    print_vector(split_init, rank_v, "split_init", comm);
+//    print_vector(split, rank_v, "split", comm);
+    if(verbose_repart_v){MPI_Barrier(comm); if(!rank) printf("repart_vec: step 3\n"); MPI_Barrier(comm);}
+#endif
+
+    start = split_init[rank];
+    end   = split_init[rank + 1];
+    start_proc = lower_bound2(&*split.begin(), &*split.end(), start);
+    end_proc   = lower_bound2(&*split.begin(), &*split.end(), end);
+//    if( (split_init[rank] != split_init[rank + 1]) && (split_init[rank + 1] == split[rank + 1]) )
+    if( (split_init[rank] != split_init[rank + 1]) && (split_init[rank + 1] == split[rank + 1]) )
+        end_proc--;
+
+//    if(rank == rank_v) printf("\nstart_proc = %d, end_proc = %d, start = %d, end = %d\n", start_proc, end_proc, start, end);
+    assert(start_proc <= end_proc);
+
+    if(end_proc > start_proc){
+//        if(rank==1) printf("start_proc = %u, end_proc = %u\n", start_proc, end_proc);
+//        if(rank==1) printf("split_init[rank+1] = %u, split[end_proc] = %u\n", split_init[rank+1], split[end_proc]);
+        if(start_proc < nprocs)
+            scount[start_proc] = split[start_proc+1] - split_init[rank];
+        if(end_proc < nprocs)
+            scount[end_proc] = split_init[rank + 1] - split[end_proc];
+
+        const int max_proc = min(nprocs, end_proc);
+        for(int i = start_proc+1; i < max_proc; ++i){
+            scount[i] = split[i+1] - split[i];
+        }
+    } else if(start_proc == end_proc) {
+        if (start_proc < nprocs)
+            scount[start_proc] = split_init[rank + 1] - split_init[rank];
+    }
+
+#ifdef __DEBUG1__
+//    print_vector(grids[0].scount, -1, "grids[0].scount", comm);
+    if(verbose_repart_v){MPI_Barrier(comm); if(!rank) printf("repart_vec: step 4\n"); MPI_Barrier(comm);}
+#endif
+
+    rdispls[0] = 0;
+    for(int i = 1; i < nprocs; i++)
+        rdispls[i] = rcount[i-1] + rdispls[i-1];
+
+    sdispls[0] = 0;
+    for(int i = 1; i < nprocs; i++)
+        sdispls[i] = sdispls[i-1] + scount[i-1];
+
+#ifdef __DEBUG1__
+//    print_vector(grids[0].rdispls, -1, "grids[0].rdispls", comm);
+//    print_vector(grids[0].sdispls, -1, "grids[0].sdispls", comm);
+    if(verbose_repart_v){MPI_Barrier(comm); if(!rank) printf("repart_vec: step 5\n"); MPI_Barrier(comm);}
+#endif
+
+    // check if repartition is required. it is not required if the number of rows on all processors does not change.
+    bool repartition_local = true, repartition = true;
+    if(start_proc == end_proc)
+        repartition_local = false;
+    MPI_Allreduce(&repartition_local, &repartition, 1, MPI_CXX_BOOL, MPI_LOR, comm);
+//    printf("rank = %d, repartition_local = %d, repartition = %d \n", rank, repartition_local, repartition);
+
+//    print_vector(v, -1, "v inside repartition", comm);
+
+    // todo: replace Alltoall with a for loop of send and recv.
+    if(repartition){
+        value_t *v_tmp = nullptr;
+        swap(v_tmp, v);
+        sz = split[rank + 1] - split[rank];
+        v = saena_aligned_alloc<value_t>(sz);
+        MPI_Alltoallv(&v_tmp[0], &scount[0], &sdispls[0], par::Mpi_datatype<value_t>::value(),
+                      &v[0],     &rcount[0], &rdispls[0], par::Mpi_datatype<value_t>::value(), comm);
+        saena_free(v_tmp);
+    }
+
+#ifdef __DEBUG1__
+//    print_vector(v, -1, "v after repartition", comm);
+    if(verbose_repart_v){MPI_Barrier(comm); if(!rank) printf("repart_vec: end\n"); MPI_Barrier(comm);}
+#endif
+    return 0;
+}

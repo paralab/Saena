@@ -347,4 +347,7 @@ int write_to_file_vec(std::vector<T>& v, const std::string &name, MPI_Comm comm)
 }
 
 
+int repart_vector(value_t *&v, index_t &sz, vector<index_t> &split, MPI_Comm comm);
+
+
 #endif //SAENA_AUXFUNCTIONS_H
