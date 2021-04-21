@@ -1849,8 +1849,6 @@ int saena_object::solve_petsc(value_t *&u, const string &petsc_solver, const dou
     MPI_Comm_rank(comm, &rank);
 
 #ifdef _USE_PETSC_
-	solver_tol = tol;
-	
 	string petsc_option;
     saena_free(u);
     u = saena_aligned_alloc<value_t>(sz);
@@ -1860,7 +1858,7 @@ int saena_object::solve_petsc(value_t *&u, const string &petsc_solver, const dou
         petsc_solve_all(A, rhs, u, tol);
         return 0;
     } else{
-        petsc_solve(A, rhs, u, solver_tol, petsc_solver);
+        petsc_solve(A, rhs, u, tol, petsc_solver);
     }
 
 #else
