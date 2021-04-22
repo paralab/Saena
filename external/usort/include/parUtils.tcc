@@ -1929,7 +1929,7 @@ namespace par {
         if(!SortedElem.empty()) {
           par::bitonicSort<T>(SortedElem, new_comm);
         }
-
+          return 0;
 #ifdef __DEBUG_PAR__
         MPI_Barrier(comm);
         if(!myrank) {
@@ -2282,7 +2282,7 @@ namespace par {
 
       omp_par::merge_sort(&in[0],&in[in.size()]);
       MPI_Barrier(comm);
-      
+
       if(npes > 1) {
 
         // check if npes is a power of two ...
@@ -2316,6 +2316,9 @@ namespace par {
           } else {
             bitonicSort<T>(in, new_comm);
           }
+
+          MPI_Comm_free(&new_comm);
+
         }//end if isPower of 2
       }//end if single processor
     }//end function

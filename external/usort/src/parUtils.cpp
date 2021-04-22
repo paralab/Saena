@@ -115,6 +115,9 @@ namespace par {
     delete [] ranksDesc;
     ranksDesc = NULL;
 
+    MPI_Group_free(&orig_group);
+    MPI_Group_free(&new_group);
+
     return splitterRank;
   }//end function
 
