@@ -1136,10 +1136,6 @@ int petsc_solve_all(saena_matrix *A1, value_t *&b1, value_t *&x1, const double &
 int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &petsc_solver){
     KSP            ksp;      /* linear solver context */
     PetscLogEvent  SETUP,SOLVE;
-    PetscReal      norm;     /* norm of solution error */
-    PetscInt       its;
-    PetscScalar    *array;
-//    PC             pc;
 
 //    MPI_Comm comm = A->comm;
 //    PETSC_COMM_WORLD = comm;
@@ -1188,10 +1184,19 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
 //    VecRestoreArray(x, &array);
 
     // compute the norm of error
-    VecAXPY(x,-1.0,b);
-    VecNorm(x,NORM_2,&norm);
+    PetscReal      norm, normb;     /* norm of solution error */
+    PetscInt       its;
+    PetscScalar    *array;
+    Vec            Ax;
+
+    MatCreateVecs(A, NULL, &Ax);
+    MatMult(A,x,Ax);
+    VecAXPY(Ax,-1.0,b);
+    VecNorm(Ax,NORM_2,&norm);
+    VecNorm(b,NORM_2,&normb);
     KSPGetIterationNumber(ksp,&its);
-    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Norm of error %g, iterations %D\n",(double)norm,its);
+    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Norm of error %g, iterations %D\n",(double)norm,its); // ||Ax - b||
+    PetscPrintf(PETSC_COMM_WORLD,"PETSc: Relative Norm of error %g, iterations %D\n",(double)norm / normb,its); // ||Ax - b|| / ||b||
 
     KSPDestroy(&ksp);
 
