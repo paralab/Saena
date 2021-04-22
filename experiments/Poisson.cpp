@@ -160,11 +160,19 @@ int main(int argc, char* argv[]){
 
         // repart rhs based on the matrix's partition
         repart_vector(rhs_std, orig_sz, AA->split, comm);
-//        print_array(rhss, rhs.get_internal_vector()->get_size(), -1, "rhss", comm);
+
+//        const index_t sz_l = AA->split[rank + 1] - AA->split[rank];
+//        print_array(rhs_std, sz_l, -1, "rhs_std", comm);
 
         petsc_solve(AA, rhs_std, u, opts.get_tol(), opts.get_petsc_solver());
+
+        // print solution
+//        print_array(u, sz_l, -1, "u", comm);
+
+        A.destroy();
         saena_free(rhs_std);
-        saena_free(u);
+//        saena_free(u);
+        delete [] u;
         MPI_Finalize();
         return 0;
 #endif
