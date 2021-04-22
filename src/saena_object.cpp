@@ -378,7 +378,7 @@ int saena_object::setup(saena_matrix* A, std::vector<std::vector<int>> &m_l2g, s
     }
 #endif
 
-    if(grids.back().active) {
+    if(!use_petsc && grids.back().active) {
         A_coarsest = grids.back().A;
         int superlu_setup = setup_SuperLU();
         if(superlu_setup == 1){

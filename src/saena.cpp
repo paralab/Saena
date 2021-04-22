@@ -681,6 +681,8 @@ int saena::amg::set_matrix(saena::matrix* A, saena::options* opts, std::vector<s
                             opts->get_float_lev(), opts->get_filter_thre(), opts->get_filter_max(),
                             opts->get_filter_start(), opts->get_filter_rate(), opts->get_switch_dense(),
                             opts->get_dense_thre(), opts->get_dense_sz_thre());
+    if(!opts->get_petsc_solver().empty())
+        m_pImpl->set_use_petsc(true);
     m_pImpl->setup(A->get_internal_matrix(), m_l2g, m_g2u, m_bdydof, order_dif);
     return 0;
 }

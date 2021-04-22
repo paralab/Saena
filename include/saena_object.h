@@ -117,6 +117,9 @@ public:
     index_t case1_iter = 0,       case2_iter = 0,       case3_iter = 0;
     double  case1_iter_ave = 0.0, case2_iter_ave = 0.0, case3_iter_ave = 0.0;
 
+    bool use_petsc = false;
+    void set_use_petsc(const bool use_petsc_){use_petsc = use_petsc_;}
+
     // *****************
     // shrink
     // *****************
