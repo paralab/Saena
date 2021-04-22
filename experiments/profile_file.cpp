@@ -139,7 +139,7 @@ int main(int argc, char* argv[]){
 
     // *************************** Run PETSc ****************************
     // run PETSc if it is set in the options file
-
+#if 0
     if(use_petsc){
 #ifdef _USE_PETSC_
         saena_matrix *AA = A.get_internal_matrix();
@@ -151,6 +151,7 @@ int main(int argc, char* argv[]){
         return 0;
 #endif
     }
+#endif
 
     // *************************** AMG - Setup ****************************
 
@@ -171,6 +172,17 @@ int main(int argc, char* argv[]){
 
     // *************************** AMG - Solve ****************************
     // solve the system Au = rhs
+
+    if(use_petsc){
+        solver.solve_petsc(u, &opts);
+        A.destroy();
+        if(free_amg)
+            solver.destroy();
+        saena_free(rhs_std);
+        saena_free(u);
+        MPI_Finalize();
+        return 0;
+    }
 
     int warmup_iter = 5;
     int solve_iter  = 10;
