@@ -1165,7 +1165,7 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
 //    if (!rank) std::cout << "ksp solve" << std::endl;
     event = petsc_solver + " solve";
     PetscLogEventRegister(event.c_str(),0,&SOLVE);
-    const int solve_iter = 10;
+    const int solve_iter = 1;
 
     MPI_Barrier(PETSC_COMM_WORLD);
     double t3 = omp_get_wtime();
@@ -1200,9 +1200,9 @@ int petsc_solve(Mat &A, Vec &b, Vec &x, const double &rel_tol, const string &pet
 
     KSPDestroy(&ksp);
 
-    print_time(t1, t2, "PETSc Setup:", MPI_COMM_WORLD);
-    print_time(t3 / solve_iter, t4 / solve_iter, "PETSc Solve:", MPI_COMM_WORLD);
-    PetscLogView(PETSC_VIEWER_STDOUT_WORLD);
+//    print_time(t1, t2, "PETSc Setup:", MPI_COMM_WORLD);
+//    print_time(t3 / solve_iter, t4 / solve_iter, "PETSc Solve:", MPI_COMM_WORLD);
+//    PetscLogView(PETSC_VIEWER_STDOUT_WORLD);
     return 0;
 }
 
