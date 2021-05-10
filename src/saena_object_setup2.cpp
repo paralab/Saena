@@ -583,9 +583,14 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     // perform the multiplication R * A
     // =======================================
 
+    double t1 = omp_get_wtime();
+
     matmat_CSC(Rcsc, Acsc, RA);
 
-#ifdef __DEBUG1__
+    double t2 = omp_get_wtime();
+    print_time(t2 - t1, "RA:", comm, true);
+
+    #ifdef __DEBUG1__
     if (verbose_triple_mat_mult) {
         MPI_Barrier(comm);
         if (rank == 0) printf("triple_mat_mult: step 5\n");
@@ -800,6 +805,8 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
     // perform the multiplication RA * P
     // =======================================
 
+    t1 = omp_get_wtime();
+
     MPI_Comm comm_temp = Ac->comm;
     Ac->comm = A->comm;
     if(symm){
@@ -808,6 +815,9 @@ int saena_object::triple_mat_mult(Grid *grid, bool symm /*=true*/){
         matmat_CSC(RAcsc, Pcsc, *Ac, true); // transpose the result
     }
     Ac->comm = comm_temp;
+
+    t2 = omp_get_wtime();
+    print_time(t2 - t1, "RA * P:", comm, true);
 
 //    assert(!Ac->entry.empty());
 
