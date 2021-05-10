@@ -200,17 +200,6 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
 
     // receive and put the remote parts of v in vecValues.
     // they are received in order: first put the values from the lowest rank matrix, and so on.
-    for(int i = 0; i < numRecvProc; ++i){
-        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
-        MPI_Test(&requests[i], &MPI_flag, MPI_STATUS_IGNORE);
-    }
-
-   MPI_Request *requests_p = &requests[numRecvProc];
-   for(int i = 0; i < numSendProc; ++i){
-      MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests_p[i]);
-      MPI_Test(&requests_p[i], &MPI_flag, MPI_STATUS_IGNORE);
-   }
-
 //    }
 
    // initialize w to 0
@@ -243,6 +232,17 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
       }
    }
 
+    for(int i = 0; i < numRecvProc; ++i){
+        MPI_Irecv(&vecValues[rdispls[recvProcRank[i]]], recvProcCount[i], par::Mpi_datatype<value_t>::value(), recvProcRank[i], 1, comm, &requests[i]);
+        MPI_Test(&requests[i], &MPI_flag, MPI_STATUS_IGNORE);
+    }
+
+    MPI_Request *requests_p = &requests[numRecvProc];
+    for(int i = 0; i < numSendProc; ++i){
+        MPI_Isend(&vSend[vdispls[sendProcRank[i]]], sendProcCount[i], par::Mpi_datatype<value_t>::value(), sendProcRank[i], 1, comm, &requests_p[i]);
+        MPI_Test(&requests_p[i], &MPI_flag, MPI_STATUS_IGNORE);
+    }
+    
     MPI_Waitall(numRecvProc, &requests[0], MPI_STATUSES_IGNORE);
 
 //    print_vector(vecValues, 1, "vecValues", comm);
