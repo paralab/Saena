@@ -43,7 +43,7 @@ typedef unsigned char uchar;
 #define ALIGN_SZ 64
 
 // uncomment to disable compression in matmat
-#define MATMAT_NO_COMPRESS
+//#define MATMAT_NO_COMPRESS
 
 //the following are UBUNTU/LINUX, and MacOS ONLY terminal color codes.
 #define COLORRESET  "\033[0m"
