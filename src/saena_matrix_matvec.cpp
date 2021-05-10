@@ -6,7 +6,7 @@
 //                              std::transform(omp_out.begin(), omp_out.end(), omp_in.begin(), omp_out.begin(), std::plus<value_t>())) \
 //                    initializer(omp_priv = omp_orig)
 
-void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
+void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
     // combination of openmp and waitany
 
     int nprocs, rank;
@@ -178,7 +178,7 @@ void saena_matrix::matvec_sparse2(const value_t *v, value_t *w) {
 //    }
 }
 
-void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
+void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
     // with openmp, no waitany
 
     int nprocs, rank;
