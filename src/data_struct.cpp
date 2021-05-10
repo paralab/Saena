@@ -160,6 +160,7 @@ void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_s
     // size is smaller than the original size.
     comp_sz.tot = v_sz * sizeof(index_t);
 
+#ifdef MATMAT_NO_COMPRESS
     if(v_sz != 0) {
 
         for (int kiter = k_start; kiter < k_end; kiter += 8) {
@@ -246,6 +247,7 @@ void CSCMat::compress_prep_compute(const index_t *v, index_t v_sz, GR_sz &comp_s
 #endif
 
     } // if(v_sz != 0)
+#endif
 
     comp_sz.ks.resize(nprocs);
     comp_sz.qs.resize(nprocs);
