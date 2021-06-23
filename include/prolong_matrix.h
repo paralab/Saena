@@ -111,7 +111,10 @@ public:
     void matvec_sparse(const value_t *v, value_t *w);
     void matvec_sparse_float(const value_t *v, value_t *w);
     void matvec2(std::vector<value_t>& v, std::vector<value_t>& w);
+
+#ifdef SAENA_USE_OPENMP
     void matvec_omp(std::vector<value_t>& v, std::vector<value_t>& w);
+#endif
 
     int print_entry(int ran);
     int print_info(int ran);
