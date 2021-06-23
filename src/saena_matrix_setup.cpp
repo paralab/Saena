@@ -1371,8 +1371,9 @@ int saena_matrix::scale_matrix(bool full_scale/* = false*/){
         {
             index_t i;
             int thread_id = omp_get_thread_num();
-            nnz_t iter = iter_remote_array[thread_id];
+            nnz_t iter = 0;
 #ifdef SAENA_USE_OPENMP
+            iter = iter_remote_array[thread_id];
 #pragma omp for
 #endif
             for (index_t j = 0; j < col_remote_size; ++j) {
@@ -1513,8 +1514,9 @@ int saena_matrix::scale_back_matrix(bool full_scale/* = false*/){
         {
             index_t i;
             int thread_id = omp_get_thread_num();
-            nnz_t iter = iter_remote_array[thread_id];
+            nnz_t iter = 0;
 #ifdef SAENA_USE_OPENMP
+            iter = iter_remote_array[thread_id];
 #pragma omp for
 #endif
             for (index_t j = 0; j < col_remote_size; ++j) {
