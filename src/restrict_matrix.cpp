@@ -416,7 +416,9 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
         }
 #endif
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
         for (index_t i = 0; i < vIndexSize; ++i) {
 //            if(rank==1) cout << vIndex[i] << "\t" << vIndex[i]-P->split[rank] << endl;
             vIndex[i] -= split[rank];
@@ -494,6 +496,7 @@ int restrict_matrix::transposeP(prolong_matrix* P) {
 
 int restrict_matrix::openmp_setup() {
 
+#ifdef SAENA_USE_OPENMP
     int nprocs = 0, rank = 0;
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &rank);
@@ -595,6 +598,10 @@ int restrict_matrix::openmp_setup() {
 //    print_vector(iter_local_array, 0, "iter_local_array", comm);
 //    print_vector(iter_remote_array, 0, "iter_remote_array", comm);
 
+#else
+    num_threads = 1;
+#endif
+
     return 0;
 }
 
@@ -610,7 +617,9 @@ void restrict_matrix::matvec_sparse(const value_t *v, value_t *w) {
     const index_t sz = M;
 
     // put the values of the vector in vSend, for sending to other processors
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
     for(index_t i = 0; i < vIndexSize; ++i)
         vSend[i] = v[vIndex[i]];
 
@@ -645,15 +654,23 @@ void restrict_matrix::matvec_sparse(const value_t *v, value_t *w) {
 //        }
 //    }
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel
+#endif
     {
               value_t  tmp         = 0.0;
         const value_t* v_p         = &v[0] - split[rank];
         const index_t* col_local_p = nullptr;
         const value_t* val_local_p = nullptr;
-              nnz_t    iter        = iter_local_array[omp_get_thread_num()];
-//        nnz_t iter = 0;
+#ifdef SAENA_USE_OPENMP
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
+#else
+        nnz_t iter = 0;
+#endif
+
+#ifdef SAENA_USE_OPENMP
 #pragma omp for
+#endif
         for (index_t i = 0; i < sz; ++i) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
@@ -734,7 +751,9 @@ void restrict_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
     const index_t sz = M;
 
     // put the values of the vector in vSend, for sending to other processors
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
     for(index_t i = 0; i < vIndexSize; ++i)
         vSend_f[i] = v[vIndex[i]];
 
@@ -762,15 +781,23 @@ void restrict_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
     // ----------
 //    double t1loc = omp_get_wtime();
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel
+#endif
     {
               value_t  tmp         = 0.0;
         const value_t* v_p         = &v[0] - split[rank];
         const index_t* col_local_p = nullptr;
         const value_t* val_local_p = nullptr;
-              nnz_t    iter        = iter_local_array[omp_get_thread_num()];
-//        nnz_t iter = 0;
+#ifdef SAENA_USE_OPENMP
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
+#else
+        nnz_t iter = 0;
+#endif
+
+#ifdef SAENA_USE_OPENMP
 #pragma omp for
+#endif
         for (index_t i = 0; i < sz; ++i) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
@@ -917,6 +944,7 @@ void restrict_matrix::matvec2(std::vector<value_t>& v, std::vector<value_t>& w) 
 //    tcomm += (t2comm - t1comm) - (t2loc - t1loc) - (t2rem - t1rem);
 }
 
+#ifdef SAENA_USE_OPENMP
 void restrict_matrix::matvec_omp(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int rank = 0;
@@ -1024,7 +1052,7 @@ void restrict_matrix::matvec_omp(std::vector<value_t>& v, std::vector<value_t>& 
 //    ttot  += (t2comm - t1comm);
 //    tcomm += (t2comm - t1comm) - (t2loc - t1loc) - (t2rem - t1rem);
 }
-
+#endif
 
 int restrict_matrix::print_entry(int ran) const{
 
