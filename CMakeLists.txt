@@ -24,11 +24,16 @@ set(SAENA_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # -----------------------------------------------------------------------
 # OpenMP
 
-find_package(OpenMP REQUIRED)
-if(OPENMP_FOUND)
-    set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    add_definitions(-D_USE_OPENMP_)
+option(SAENA_USE_OPENMP OFF)
+
+if(SAENA_USE_OPENMP)
+    find_package(OpenMP REQUIRED)
+    if(OPENMP_FOUND)
+        set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        add_definitions(-D_USE_OPENMP_)
+    endif()
+    add_definitions(-DSAENA_USE_OPENMP)
 endif()
 
 # -----------------------------------------------------------------------
