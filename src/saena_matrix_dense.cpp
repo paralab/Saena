@@ -235,7 +235,9 @@ void saena_matrix_dense::matvec_dense(const value_t *v, value_t *w){
         const index_t jend = split[owner + 1] - jst;
         v_p = &v_send[jst] - split[owner];
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
         for(index_t i = 0; i < M; ++i) {
             entry_p = &entry[i * Nbig + jst];
             value_t tmp = 0;
@@ -311,7 +313,9 @@ void saena_matrix_dense::matvec_dense_float(const value_t *v, value_t *w){
         const index_t jend = split[owner + 1] - jst;
         v_p = &v_send_f[jst] - split[owner];
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
         for(index_t i = 0; i < M; ++i) {
             entry_p = &entry[i * Nbig + jst];
             value_t tmp = 0;
@@ -392,7 +396,10 @@ int saena_matrix_dense::matvec_test(std::vector<value_t>& v, std::vector<value_t
         t = MPI_Wtime();
 
         owner = k%nprocs;
+
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
         for(index_t i = 0; i < M; i++) {
             for (index_t j = split[owner]; j < split[owner + 1]; j++) {
                 w[i] += entry[i * Nbig + j] * v_send[j - split[owner]];
@@ -773,7 +780,9 @@ int saena_matrix_dense::convert_saena_matrix(saena_matrix *A){
         assert(entry);
     }
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
     for(nnz_t i = 0; i < A->nnz_l; i++){
         entry[(A->entry[i].row - split[rank]) * Nbig + A->entry[i].col] = A->entry[i].val;
     }
