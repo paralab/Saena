@@ -1028,7 +1028,9 @@ int saena_matrix::erase_no_shrink_to_fit(){
 
 int saena_matrix::set_zero(){
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
     for(nnz_t i = 0; i < nnz_l; i++)
         entry[i].val = 0;
 

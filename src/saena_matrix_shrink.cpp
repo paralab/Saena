@@ -737,7 +737,9 @@ void saena_matrix::set_off_on_diagonal_dummy(){
 #endif
 
             // change the indices from global to local
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
             for (i = 0; i < vIndexSize; i++){
                 vIndex[i] -= split[rank];
             }

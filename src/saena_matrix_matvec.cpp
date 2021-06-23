@@ -19,7 +19,9 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
 
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
     for(index_t i = 0; i < vIndexSize; ++i)
         vSend[i] = v[vIndex[i]];
 
@@ -46,14 +48,23 @@ void saena_matrix::matvec_sparse(const value_t *v, value_t *w) {
     // compute the on-diagonal part of matvec on each thread and save it in w_local.
     // then, do a reduction on w_local on all threads, based on a binary tree.
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel
+#endif
     {
               value_t  tmp         = 0.0;
         const value_t* v_p         = &v[0] - split[rank];
         const index_t* col_local_p = nullptr;
         const value_t* val_local_p = nullptr;
-              nnz_t iter           = iter_local_array[omp_get_thread_num()];
+#ifdef SAENA_USE_OPENMP
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
+#else
+        nnz_t iter = 0;
+#endif
+
+#ifdef SAENA_USE_OPENMP
 #pragma omp for
+#endif
         for (index_t i = 0; i < sz; ++i) {
             col_local_p = &col_local[iter];
             val_local_p = &val_local[iter];
@@ -178,6 +189,7 @@ void saena_matrix::matvec_sparse2(const value_t *v, value_t *w) {
 //    }
 }
 
+#ifdef SAENA_USE_OPENMP
 void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
     // with openmp, no waitany
 
@@ -300,7 +312,9 @@ void saena_matrix::matvec_sparse3(const value_t *v, value_t *w) {
     MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
 //    }
 }
+#endif
 
+#ifdef SAENA_USE_OPENMP
 void saena_matrix::matvec_sparse4(const value_t *v, value_t *w) {
     // combination of openmp and waitany - add openmp to also the remote part
 
@@ -429,6 +443,7 @@ void saena_matrix::matvec_sparse4(const value_t *v, value_t *w) {
 
     MPI_Waitall(numSendProc, &requests[numRecvProc], MPI_STATUSES_IGNORE);
 }
+#endif
 
 void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
     // combination of openmp and waitany
@@ -442,7 +457,9 @@ void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
 
     // the indices of the v on this proc that should be sent to other procs are saved in vIndex.
     // put the values of thoss indices in vSend to send to other procs.
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
     for(index_t i = 0; i < vIndexSize; ++i)
         vSend_f[i] = v[vIndex[i]];
 
@@ -468,14 +485,23 @@ void saena_matrix::matvec_sparse_float(const value_t *v, value_t *w) {
     // initialize w to 0
     fill(&w[0], &w[M], 0.0);
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel
+#endif
     {
         value_t  tmp            = 0.0;
         const value_t* v_p      = &v[0] - split[rank];
         index_t* col_local_p    = nullptr;
         value_t* values_local_p = nullptr;
-        nnz_t    iter           = iter_local_array[omp_get_thread_num()];
+#ifdef SAENA_USE_OPENMP
+        nnz_t iter = iter_local_array[omp_get_thread_num()];
+#else
+        nnz_t iter = 0;
+#endif
+
+#ifdef SAENA_USE_OPENMP
 #pragma omp for
+#endif
         for (index_t i = 0; i < M; ++i) {
             col_local_p    = &col_local[iter];
             values_local_p = &val_local[iter];
@@ -1214,6 +1240,7 @@ void saena_matrix::matvec_sparse_test3(std::vector<value_t>& v, std::vector<valu
 #endif
 }
 
+#ifdef SAENA_USE_OPENMP
 void saena_matrix::matvec_sparse_test4(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int rank;
@@ -1349,7 +1376,9 @@ void saena_matrix::matvec_sparse_test4(std::vector<value_t>& v, std::vector<valu
     tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
 }
+#endif
 
+#ifdef SAENA_USE_OPENMP
 void saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w) {
 
     int nprocs, rank;
@@ -1486,3 +1515,4 @@ void saena_matrix::matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<v
     tcomm = omp_get_wtime() - tcomm;
     part3 += tcomm;
 }
+#endif

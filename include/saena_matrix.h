@@ -304,8 +304,12 @@ public:
     inline void matvec(const value_t *v, value_t *w);
     void matvec_sparse(const value_t *v, value_t *w);
     void matvec_sparse2(const value_t *v, value_t *w);
+
+#ifdef SAENA_USE_OPENMP
     void matvec_sparse3(const value_t *v, value_t *w);
     void matvec_sparse4(const value_t *v, value_t *w);
+#endif
+
     void matvec_sparse_float(const value_t *v, value_t *w);
 
     // for profiling
@@ -320,8 +324,11 @@ public:
     void matvec_sparse_test1(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_test2(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_test3(std::vector<value_t>& v, std::vector<value_t>& w);
+
+#ifdef SAENA_USE_OPENMP
     void matvec_sparse_test4(std::vector<value_t>& v, std::vector<value_t>& w);
     void matvec_sparse_test_omp(std::vector<value_t>& v, std::vector<value_t>& w); // openmp version
+#endif
 
     // matvec timing functions for the matvec paper
 //    int matvec_timing1(std::vector<value_t>& v, std::vector<value_t>& w, std::vector<double>& time);
