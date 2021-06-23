@@ -5,8 +5,11 @@
 //#include "grid.h"
 #include "saena.hpp"
 #include "data_struct.h"
-#include "petsc_functions.h"
 #include "aux_functions2.h"
+
+#ifdef _USE_PETSC_
+#include "petsc_functions.h"
+#endif
 
 using namespace std;
 
