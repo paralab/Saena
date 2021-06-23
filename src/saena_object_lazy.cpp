@@ -2,6 +2,8 @@
 #include "saena_matrix.h"
 
 
+// TODO: enclose OpenMP commands in if statements (ifdef SAENA_USE_OPENMP)
+
 int saena_object::update1(saena_matrix* A_new){
 #if 0
     // ************** update grids[0].A **************

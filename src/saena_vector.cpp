@@ -407,7 +407,9 @@ int saena_vector::return_vec(const value_t *u1, value_t *&u2){
 #endif
 
             // change the indices from global to local
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
             for (index_t i = 0; i < send_sz; i++) {
                 send_idx[i] -= split[rank];
             }

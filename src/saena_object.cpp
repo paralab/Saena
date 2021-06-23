@@ -77,9 +77,14 @@ void saena_object::print_parameters(saena_matrix *A) const{
 
     MPI_Barrier(A->comm);
     if(!rank){
+
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel default(none) shared(rank, nprocs)
         if(omp_get_thread_num()==0)
             printf("\nNumber of MPI tasks: %d\nNumber of threads:   %d\n", nprocs, omp_get_num_threads());
+#else
+        printf("\nNumber of MPI tasks: %d\n", nprocs);
+#endif
 
         printf("Smoother:            %s (%d, %d)\n", smoother.c_str(), preSmooth, postSmooth);
         printf("Operator Smoother:   %s (%.2f)\n", PSmoother.c_str(), connStrength);
@@ -548,13 +553,17 @@ int saena_object::create_prolongation(Grid *grid, std::vector< std::vector< std:
 
 void saena_object::scale_vector(std::vector<value_t>& v, std::vector<value_t>& w) {
     const index_t sz = v.size();
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
     for(index_t i = 0; i < sz; i++)
         v[i] *= w[i];
 }
 
 void saena_object::scale_vector(value_t *v, const value_t *w, const index_t sz) const{
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
     for(index_t i = 0; i < sz; ++i)
         v[i] *= w[i];
 }

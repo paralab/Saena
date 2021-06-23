@@ -139,7 +139,9 @@ int saena_object::pcoarsen(Grid *grid, vector< vector< vector<int> > > &map_all,
     P->entry.resize(Pent.size());
     int row_ofst = P->split[rank];
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for default(none) shared(P, Pent, row_ofst)
+#endif
     for(int i = 0; i < Pent.size(); ++i){
         P->entry[i] = cooEntry( (Pent[i].row - row_ofst), Pent[i].col, Pent[i].val);
     }

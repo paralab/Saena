@@ -182,7 +182,9 @@ int strength_matrix::setup_matrix_test(float connStrength){
 #endif
 
          // change the indices from global to local
-         #pragma omp parallel for
+#ifdef SAENA_USE_OPENMP
+#pragma omp parallel for
+#endif
          for (index_t j = 0; j < vIndexSize; j++)
              vIndex[j] -= split[rank];
     }
@@ -400,7 +402,9 @@ int strength_matrix::setup_matrix(float connStrength){
 #endif
 
         // change the indices from global to local
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for
+#endif
         for (index_t j = 0; j < vIndexSize; j++)
             vIndex[j] -= split[rank];
     }
