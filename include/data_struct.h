@@ -23,7 +23,10 @@
 #endif
 
 #include <mpi.h>
+
+#ifdef SAENA_USE_OPENMP
 #include <omp.h>
+#endif
 
 //#include "dollar.hpp"
 #include "combblas_functions.h"
