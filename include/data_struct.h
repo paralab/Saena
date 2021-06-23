@@ -45,6 +45,7 @@ typedef unsigned char uchar;
 // uncomment to disable compression in matmat
 //#define MATMAT_NO_COMPRESS
 
+// from usort
 //the following are UBUNTU/LINUX, and MacOS ONLY terminal color codes.
 #define COLORRESET  "\033[0m"
 #define BLACK       "\033[30m"          /* Black */
@@ -64,7 +65,7 @@ typedef unsigned char uchar;
 #define BOLDCYAN    "\033[1m\033[36m"   /* Bold Cyan */
 #define BOLDWHITE   "\033[1m\033[37m"   /* Bold White */
 
-
+// customize assert to print message
 #ifndef NDEBUG
 #   define ASSERT(condition, message) \
     do { \
@@ -78,13 +79,14 @@ typedef unsigned char uchar;
 #   define ASSERT(condition, message) do { } while (false)
 #endif
 
-
+// print a line to separate messages
 void inline print_sep(){
     std::stringstream buf;
     buf << "\n******************************************************\n";
     std::cout << buf.str();
 }
 
+// print 3 lines to separate messages
 void inline print_3sep(){
     std::stringstream buf;
     buf << "\n******************************************************\n"
@@ -93,10 +95,12 @@ void inline print_3sep(){
     std::cout << buf.str();
 }
 
+// remainder size in compression
 inline nnz_t rem_sz(const nnz_t sz, const unsigned int &k){
     return static_cast<index_t>( sz * ((k+1) / 8.0) );
 }
 
+// total size in compression
 inline nnz_t tot_sz(const nnz_t sz, const unsigned int &k, const int &q){
 //    printf("r_sz: %u, \tq: %d, \tsizeof(short): %ld, tot: %ld\n", rem_sz(sz, k), q, sizeof(short), rem_sz(sz, k) + q * sizeof(short));
 //    return rem_sz(sz, k) + q * sizeof(short);
@@ -104,6 +108,7 @@ inline nnz_t tot_sz(const nnz_t sz, const unsigned int &k, const int &q){
 }
 
 
+// matrix entries in COO format: row, col, val
 // the order of this class is "column-major order"
 class cooEntry{
 public:
@@ -235,12 +240,14 @@ public:
 };
 
 
+// overload << for cooEntry class
 std::ostream & operator<<(std::ostream & stream, const cooEntry & item);
 
 
 bool row_major (const cooEntry& node1, const cooEntry& node2);
 
 
+// matrix entries in COO format: row, col, val
 // the order of this class is "row-major order".
 class cooEntry_row{
 public:
@@ -332,9 +339,11 @@ public:
     }
 };
 
+// overload << for cooEntry_row class
 std::ostream & operator<<(std::ostream & stream, const cooEntry_row & item);
 
 
+// a class to store vector entries
 class vecEntry {
 public:
     index_t row;
@@ -393,6 +402,7 @@ public:
     }
 };
 
+// overload << for vecEntry class
 std::ostream & operator<<(std::ostream & stream, const vecEntry & item);
 
 
@@ -442,73 +452,10 @@ public:
 //    }
 };
 
+// overload << for tuple1 class
 std::ostream & operator<<(std::ostream & stream, const tuple1 & item);
 
-
-class vecCol{
-public:
-    vecEntry *rv;
-    index_t  *c;
-//    nnz_t sz;
-
-    vecCol() = default;
-    vecCol(vecEntry *_rv, index_t *_c){
-        rv = _rv;
-        c  = _c;
-//        sz = _sz;
-    }
-
-    bool operator == (const vecCol& node2) const
-    {
-        return (rv->row == node2.rv->row && c == node2.c);
-    }
-
-    bool operator < (const vecCol& node2) const
-    {
-        if(c < node2.c)
-            return (true);
-        else if(c == node2.c)
-            return(rv->row < node2.rv->row);
-        else
-            return false;
-    }
-
-    bool operator <= (const vecCol& node2) const
-    {
-        if(c < node2.c)
-            return (true);
-        else if(c == node2.c)
-            return(rv->row <= node2.rv->row);
-        else
-            return false;
-    }
-
-    bool operator > (const vecCol& node2) const
-    {
-        if(c > node2.c)
-            return (true);
-        else if(c == node2.c)
-            return(rv->row > node2.rv->row);
-        else
-            return false;
-    }
-
-    bool operator >= (const vecCol& node2) const
-    {
-        if(c > node2.c)
-            return (true);
-        else if(c == node2.c)
-            return(rv->row >= node2.rv->row);
-        else
-            return false;
-    }
-};
-
-std::ostream & operator<<(std::ostream & stream, const vecCol & item);
-
-bool vecCol_col_major (const vecCol& node1, const vecCol& node2);
-
-
+// a class to store parameters for Golomb-Rice method
 class GR_sz {
 public:
     unsigned int k   = 0; // Golomb-Rice parameter (M = 2^k)
@@ -524,6 +471,8 @@ public:
     GR_sz() = default;
 };
 
+// A class to store matrix in CSC (Compressed Sparse Column) format
+// this is used in the matmat compression part
 class CSCMat{
 public:
 
@@ -563,6 +512,7 @@ public:
 };
 
 
+// a class to facilitate calling the recusive function fast_mm (used in matmat)
 class CSCMat_mm{
 public:
     index_t row_sz, row_offset, col_sz, col_offset;
@@ -621,75 +571,6 @@ public:
         r          = _r;
         v          = _v;
         col_scan   = _col_scan;
-    }
-};
-
-
-class CSRMat{
-private:
-    MPI_Comm comm = MPI_COMM_WORLD;
-
-public:
-    index_t *col      = nullptr;
-    value_t *val      = nullptr;
-    index_t *row_scan = nullptr;
-
-    index_t row_sz  = 0;
-    nnz_t   nnz     = 0;
-    nnz_t   max_nnz = 0;
-    index_t max_M   = 0;
-
-    std::vector<index_t> split;
-    std::vector<nnz_t>   nnz_list;
-
-    CSRMat() = default;
-    explicit CSRMat(MPI_Comm comm_): comm(comm_) {}
-};
-
-
-class saena_mesh{
-public:
-    std::vector<std::vector<int>> l2g;
-    std::vector<int> g2u;
-    std::vector<int> order_dif;
-    int bdydof = 0;
-
-    saena_mesh() = default;
-
-    saena_mesh(std::vector<std::vector<int>> &&_l2g, std::vector<int> &&_g2u, std::vector<int> &&_order_dif, int _bdydof) :
-            l2g(std::move(_l2g)), g2u(std::move(_g2u)), order_dif(std::move(_order_dif)), bdydof(_bdydof) {}
-
-    ~saena_mesh() {
-        l2g.clear();
-        g2u.clear();
-        order_dif.clear();
-    }
-
-    void clear(){
-        l2g.clear();
-        g2u.clear();
-        order_dif.clear();
-    }
-
-    void printf_l2g(){
-        for(auto const &r : l2g){
-            for(auto const &c : r){
-                cout << c << " ";
-            }
-            cout << endl;
-        }
-    }
-
-    void printf_g2u(){
-        for(auto const &i : g2u){
-            cout << i << endl;
-        }
-    }
-
-    void printf_order_dif(){
-        for(auto const &i : order_dif){
-            cout << i << endl;
-        }
     }
 };
 

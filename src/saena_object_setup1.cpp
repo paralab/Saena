@@ -1014,8 +1014,6 @@ int saena_object::aggregation_1_dist_new(strength_matrix *Scoo, std::vector<inde
     Scoo->print_entry(-1);
 #endif
 
-    CSRMat S(comm);
-
     std::vector<cooEntry> entry(Scoo->nnz_l);
     for(index_t i = 0; i < Scoo->nnz_l_local; i++){
         // values of the strength matrix do not matter after forming its structure. set 1 just for printing nonzeros.
