@@ -64,7 +64,9 @@ void saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) 
         factor = dot / factor;
 //        if(rank==1) std::cout << "\nsolveCoarsest: factor = " << factor << std::endl;
 
-        #pragma omp parallel for
+#ifdef SAENA_USE_OPENMP
+#pragma omp parallel for
+#endif
         for(index_t j = 0; j < sz; ++j){
             u[j]   += factor * dir[j];
             res[j] -= factor * matvecTemp[j];
@@ -93,7 +95,9 @@ void saena_object::solve_coarsest_CG(saena_matrix* A, value_t *u, value_t *rhs) 
 //        if(rank==1) std::cout << "\nsolveCoarsest: update factor = " << factor << std::endl;
 
         // update direction
-        #pragma omp parallel for
+#ifdef SAENA_USE_OPENMP
+#pragma omp parallel for
+#endif
         for(index_t j = 0; j < sz; j++)
             dir[j] = res[j] + factor * dir[j];
 
@@ -1350,7 +1354,9 @@ void saena_object::vcycle(Grid* grid, value_t *&u, value_t *&rhs) {
     time_other1 = omp_get_wtime();
 #endif
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for default(none) shared(u, uCorr, sz)
+#endif
     for (index_t i = 0; i < sz; ++i)
         u[i] -= uCorr[i];
 
@@ -1779,7 +1785,9 @@ void saena_object::vcycle_profile(Grid* grid, value_t *&u, value_t *&rhs) {
     MPI_Barrier(comm);
     time_other1 = omp_get_wtime();
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for default(none) shared(u, uCorr, sz)
+#endif
     for (index_t i = 0; i < sz; ++i)
         u[i] -= uCorr[i];
 
@@ -2262,7 +2270,9 @@ int saena_object::solve_CG(value_t *&u){
         dotProduct(&p[0], &h[0],   sz, &pdoth,   comm);
         alpha = rho_res / pdoth;
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for default(none) shared(u, r, p, h, alpha, sz)
+#endif
         for(index_t j = 0; j < sz; ++j){
             u[j] -= alpha * p[j];
             r[j] -= alpha * h[j];
@@ -2577,7 +2587,9 @@ int saena_object::solve_pCG(value_t *&u, const bool print_info /*= true*/){
 
         alpha = rho_res / pdoth;
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for default(none) shared(u, r, p, h, alpha, sz)
+#endif
         for(index_t j = 0; j < sz; ++j){
             u[j] -= alpha * p[j];
             r[j] -= alpha * h[j];
@@ -2982,7 +2994,9 @@ void saena_object::solve_pCG_profile_part1(value_t *&u){
 
         alpha = rho_res / pdoth;
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for default(none) shared(u, r, p, h, alpha, sz)
+#endif
         for(index_t j = 0; j < sz; ++j){
             u[j] -= alpha * p[j];
             r[j] -= alpha * h[j];
@@ -3369,7 +3383,9 @@ void saena_object::solve_pCG_profile_part2(value_t *&u){
 
         alpha = rho_res / pdoth;
 
+#ifdef SAENA_USE_OPENMP
 #pragma omp parallel for default(none) shared(u, r, p, h, alpha, sz)
+#endif
         for(index_t j = 0; j < sz; ++j){
             u[j] -= alpha * p[j];
             r[j] -= alpha * h[j];
